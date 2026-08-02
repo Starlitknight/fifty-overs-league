@@ -144,13 +144,50 @@
       // the Colts Cup arrives a beat later; the room does not wait for it
       snapshot("colts/" + ac.country).then(function (cup) {
         var box = document.getElementById("fo-ac-cup");
-        if (box) box.innerHTML = cupHTML(cup, ac.club);
+        if (box) box.innerHTML = cupHTML(cup, ac.slot);
+        // and the squad panel behind it: who you could send out, and who you
+        // said you would
+        rpc("world_my_colts_squad", {}).then(function (sq) {
+          var slot = document.getElementById("fo-ac-name");
+          if (!slot) return;
+          slot.innerHTML = nameHTML(sq);
+          wireSquad(slot, sq);
+        }).catch(function () { /* not signed in, or no season yet: the bracket stands alone */ });
       });
     }).catch(function (e) {
       page.innerHTML = shell("<div class='fo-ac-note'>The world could not be reached (" + E(String(e.message).slice(0, 90)) +
         "). The boys are training regardless - try again in a minute.</div>");
     });
   };
+
+  // ticking a boy in or out is only arithmetic until you press the button; the
+  // count in the footer is what tells you whether the side is legal yet
+  function wireSquad(root, sq) {
+    var floor = sq.floor || 15, ceil = sq.ceiling || 18;
+    var boxes = function () { return [].slice.call(root.querySelectorAll("[data-fo-colt]")); };
+    var count = function () { return boxes().filter(function (b) { return b.checked; }).length; };
+    var out = root.querySelector("#fo-ac-sqn");
+    var btn = root.querySelector("[data-fo-namecolts]");
+    var paint = function () {
+      var n = count(), ok = n >= floor && n <= ceil;
+      if (out) out.innerHTML = n + " picked &middot; " +
+        (ok ? "a legal squad" : n < floor ? "need " + (floor - n) + " more" : (n - ceil) + " too many");
+      if (btn) { btn.disabled = !ok; btn.className = "fo-ac-btn" + (ok ? "" : " off"); }
+      boxes().forEach(function (b) {
+        var lab = b.parentNode; if (lab) lab.className = "fo-ac-sqp" + (b.checked ? " on" : "");
+      });
+    };
+    boxes().forEach(function (b) { b.addEventListener("change", paint); });
+    if (btn) btn.addEventListener("click", function () {
+      var names = boxes().filter(function (b) { return b.checked; })
+        .map(function (b) { return b.getAttribute("data-fo-colt"); });
+      btn.disabled = true;
+      rpc("world_set_colts_squad", { p_names: names })
+        .then(function () { window.foRenderAcademyPage(); })
+        .catch(function (e) { btn.disabled = false; alert(String(e.message).slice(0, 200)); });
+    });
+    paint();
+  }
 
   function shell(body) {
     // the room keeps its own table: the club that matters here is the one in
@@ -317,31 +354,78 @@
   }
 
   // THE COLTS CUP: the boys' own competition, played in its own week.
-  function cupHTML(cup, myClub) {
-    var head = "<h3>The Colts Cup<span>" + (cup && cup.roundsPlayed ? cup.roundsPlayed + " of " + cup.rounds : "not started") + "</span></h3>";
-    if (!cup || !cup.results || !cup.results.length) {
-      return head + "<div class='fo-ac-note'>Week four of the season belongs to the academies: the league stands down and every club in the country goes into one hat. You must be able to name fifteen men under twenty-one, or the tie is forfeited.</div>";
+  // ---- THE COLTS CUP -------------------------------------------------------
+  // Week four's knockout, as a bracket rather than a table: sixteen clubs in
+  // one hat, the draw made once, and a forfeit for anyone who cannot name
+  // fifteen. What a manager needs from this card is three things - am I in it,
+  // can I field a side, and who do I play - so those are the three things it
+  // leads with.
+  var STAGE_NM = { r16: "Last sixteen", qf: "Quarter-finals", sf: "Semi-finals", final: "The Final" };
+  var STAGE_ORDER = ["r16", "qf", "sf", "final"];
+
+  // MINE IS A SLOT, NOT A NAME. The bracket calls a side "Rustford Colts" and
+  // the club is "Rustford", so matching on the name never matched and a
+  // manager's own tie was never picked out. The slot is the club's identity
+  // everywhere else in the world; it is the club's identity here too.
+  function tieHTML(t, mySlot) {
+    var mine = t.homeSlot === mySlot || t.awaySlot === mySlot;
+    var side = function (nm, slot, isWinner) {
+      return "<b class='" + (isWinner ? "won" : "out") + (slot === mySlot ? " me" : "") + "'>" + E(nm) + "</b>";
+    };
+    var ff = t.forfeit
+      ? "<i class='fo-ac-ff' title='" + E(t.text || "") + "'>forfeit</i>" : "";
+    return "<div class='fo-ac-tie" + (mine ? " mine" : "") + "'>" +
+      side(t.home, t.homeSlot, t.winnerSlot === t.homeSlot) + "<em>v</em>" +
+      side(t.away, t.awaySlot, t.winnerSlot === t.awaySlot) + ff + "</div>";
+  }
+
+  function cupHTML(cup, mySlot) {
+    var done = cup && cup.stagesDone ? cup.stagesDone : 0;
+    var head = "<h3>The Colts Cup<span>" +
+      (cup && cup.champion ? "won" : done ? STAGE_NM[STAGE_ORDER[done - 1]] + " played" : "not started") +
+      "</span></h3>";
+    if (!cup || !done) {
+      return head + "<div class='fo-ac-note'>Week four of the season belongs to the academies: the league stands down and every club in the country goes into one hat. You must be able to name fifteen men under twenty-one, or the tie is forfeited.</div>" +
+        "<div id='fo-ac-name'></div>";
     }
-    var rows = cup.table.map(function (t, i) {
-      return "<tr" + (t.name === myClub ? " class='me'" : "") + "><td>" + (i + 1) + "</td><td class='nm'>" + E(t.name) + "</td>" +
-        "<td>" + t.p + "</td><td>" + t.w + "</td><td>" + t.l + "</td><td class='pt'>" + t.pts + "</td>" +
-        "<td class='nrr'>" + (t.nrr > 0 ? "+" : "") + t.nrr.toFixed(2) + "</td></tr>";
-    }).join("");
-    var mine = cup.results.filter(function (r) { return r.home === myClub || r.away === myClub; }).slice(-4).reverse();
-    var card = mine.map(function (r) {
-      var won = r.winner === myClub, tied = r.winner === null;
-      var sc = function (s) { return s ? s.r + "/" + s.w : "&mdash;"; };
-      return "<div class='fo-ac-res'><i class='" + (tied ? "t" : won ? "w" : "l") + "'>" + (tied ? "T" : won ? "W" : "L") + "</i>" +
-        "<b>" + E(r.home) + "</b><u>" + sc(r.hs) + "</u><em>v</em><b>" + E(r.away) + "</b><u>" + sc(r.as) + "</u></div>";
+    var champ = cup.champion
+      ? "<div class='fo-ac-champ'><i>&#9733;</i><b>" + E(cup.champion) + "</b><em>Colts Cup champions</em></div>" : "";
+    var cols = STAGE_ORDER.filter(function (k) { return (cup.stages[k] || []).length; }).map(function (k) {
+      return "<div class='fo-ac-bcol'><h4>" + STAGE_NM[k] + "</h4>" +
+        cup.stages[k].map(function (t) { return tieHTML(t, mySlot); }).join("") + "</div>";
     }).join("");
     var lead = (cup.runs && cup.runs[0])
       ? "<div class='fo-ac-note'>Leading the cup: <b>" + E(cup.runs[0].name) + "</b> " + cup.runs[0].runs + " runs" +
         (cup.wickets && cup.wickets[0] ? ", <b>" + E(cup.wickets[0].name) + "</b> " + cup.wickets[0].wkts + " wickets" : "") + ".</div>"
       : "";
-    return head +
-      "<div class='fo-ac-tw'><table class='fo-ac-tbl'><thead><tr><th></th><th class='nm'>Club</th><th>P</th><th>W</th><th>L</th><th class='pt'>Pts</th><th class='nrr'>NRR</th></tr></thead><tbody>" +
-        rows + "</tbody></table></div>" +
-      (card ? "<div class='fo-ac-sub'>Your boys, lately</div>" + card : "") + lead;
+    return head + champ + "<div id='fo-ac-name'></div>" +
+      "<div class='fo-ac-bracket'>" + cols + "</div>" + lead;
+  }
+
+  // WHO YOU WOULD SEND OUT. The squad is fifteen to eighteen men under
+  // twenty-one, and the umpire names it for you if you do not - so this panel
+  // is never a task, only an edge. It says plainly which it currently is.
+  function nameHTML(sq) {
+    if (!sq || !sq.men) return "";
+    var n = sq.men.length, floor = sq.floor || 15, ceil = sq.ceiling || 18;
+    if (n < floor) {
+      return "<div class='fo-ac-warn'><b>You cannot field a Colts Cup side.</b> " +
+        n + " under twenty-one on the books, and a side is " + floor +
+        ". A tie played now would be forfeited &mdash; scout, and sign what you find.</div>";
+    }
+    var named = sq.named && sq.named.length;
+    return "<div class='fo-ac-sqd'>" +
+      "<div class='fo-ac-sqh'><b>Your Colts Cup squad</b>" +
+        "<i>" + (named ? named + " named" : "not named &mdash; the umpire will send out the youngest " +
+          Math.min(ceil, n)) + "</i></div>" +
+      "<div class='fo-ac-sqm'>" + sq.men.map(function (m) {
+        var on = !named || sq.named.indexOf(m.name) >= 0;
+        return "<label class='fo-ac-sqp" + (on ? " on" : "") + "'>" +
+          "<input type='checkbox' data-fo-colt='" + E(m.name) + "'" + (on ? " checked" : "") + ">" +
+          "<b>" + E(m.name) + "</b><i>" + (+m.age) + "</i><u>" + Math.round(+m.rating || 0) + "</u></label>";
+      }).join("") + "</div>" +
+      "<div class='fo-ac-sqf'><span id='fo-ac-sqn'></span>" +
+        "<button type='button' class='fo-ac-btn' data-fo-namecolts='1'>Name this squad</button></div></div>";
   }
 
   function coltCard(p, ac) {
@@ -413,6 +497,38 @@
       "html body #page .fo-ac-sel{flex:1 1 190px;min-width:0;font:500 13px/1.2 Inter,sans-serif;color:#141C28;background:#FFFEFC;border:1px solid rgba(20,28,40,.2);border-radius:10px;padding:10px 11px;cursor:pointer}",
       "html body #page .fo-ac-note.thin{font-size:11.5px;line-height:1.55;color:rgba(20,28,40,.55);margin-top:9px}",
       "html body #page .fo-ac-warn{background:#FFF6DA;border:1px solid rgba(200,84,47,.28);border-left:3px solid #C8542F;border-radius:11px;padding:11px 13px;margin:0 0 12px;font:500 12.5px/1.55 Inter,sans-serif;color:#5A3410}",
+      // THE BRACKET. Four columns that scroll sideways in their own box, never
+      // the page - a knockout is wide and a phone is not.
+      "html body #page .fo-ac-bracket{display:flex;gap:10px;overflow-x:auto;padding:2px 0 6px;-webkit-overflow-scrolling:touch}",
+      "html body #page .fo-ac-bcol{flex:0 0 172px;min-width:172px}",
+      "html body #page .fo-ac-bcol h4{margin:0 0 6px;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#8A7F70}",
+      "html body #page .fo-ac-tie{background:#FBF8F2;border:1px solid rgba(20,28,40,.10);border-radius:9px;padding:7px 9px;margin:0 0 6px;font:500 12px/1.5 Inter,sans-serif;position:relative}",
+      "html body #page .fo-ac-tie.mine{background:#FFF6DA;border-color:rgba(200,84,47,.32)}",
+      "html body #page .fo-ac-tie b{display:block;color:#141C28}",
+      "html body #page .fo-ac-tie b.out{color:#9A9187;text-decoration:line-through;text-decoration-thickness:1px}",
+      "html body #page .fo-ac-tie b.won{font-weight:700}",
+      "html body #page .fo-ac-tie b.me{color:#C8542F}",
+      "html body #page .fo-ac-tie em{display:block;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;color:#B4A996;margin:2px 0;font-style:normal}",
+      "html body #page .fo-ac-ff{position:absolute;top:6px;right:8px;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#C8542F;font-style:normal}",
+      "html body #page .fo-ac-champ{display:flex;align-items:center;gap:9px;background:linear-gradient(120deg,#0B1D3A,#12325C);border-radius:12px;padding:11px 14px;margin:0 0 12px;color:#FFFEFC}",
+      "html body #page .fo-ac-champ i{font-style:normal;font-size:17px;color:#E8B96A}",
+      "html body #page .fo-ac-champ b{font:700 14px/1.2 Fraunces,Georgia,serif}",
+      "html body #page .fo-ac-champ em{margin-left:auto;font:600 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#E8B96A;font-style:normal}",
+      // THE SQUAD PICKER
+      "html body #page .fo-ac-sqd{background:#FBF8F2;border:1px solid rgba(20,28,40,.10);border-radius:12px;padding:12px 13px;margin:0 0 12px}",
+      "html body #page .fo-ac-sqh{display:flex;align-items:baseline;gap:10px;margin:0 0 9px}",
+      "html body #page .fo-ac-sqh b{font:700 13px/1.2 Fraunces,Georgia,serif;color:#141C28}",
+      "html body #page .fo-ac-sqh i{margin-left:auto;font:500 11px/1.4 Inter,sans-serif;color:#8A7F70;font-style:normal;text-align:right}",
+      "html body #page .fo-ac-sqm{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:5px}",
+      "html body #page .fo-ac-sqp{display:flex;align-items:center;gap:6px;background:#FFFEFC;border:1px solid rgba(20,28,40,.10);border-radius:8px;padding:5px 8px;font:500 11.5px/1.3 Inter,sans-serif;cursor:pointer}",
+      "html body #page .fo-ac-sqp.on{background:#FFF6DA;border-color:rgba(200,84,47,.30)}",
+      "html body #page .fo-ac-sqp input{margin:0;accent-color:#C8542F;flex:0 0 auto}",
+      "html body #page .fo-ac-sqp b{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:#141C28}",
+      "html body #page .fo-ac-sqp i{font-style:normal;color:#8A7F70;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-ac-sqp u{text-decoration:none;font-weight:700;color:#0B1D3A;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-ac-sqf{display:flex;align-items:center;gap:10px;margin:10px 0 0}",
+      "html body #page .fo-ac-sqf span{font:500 11.5px/1.4 Inter,sans-serif;color:#8A7F70}",
+      "html body #page .fo-ac-sqf button{margin-left:auto}",
       "html body #page .fo-ac-warn b{display:block;font:700 13px/1.4 Inter,sans-serif;color:#141C28;margin-bottom:2px}",
       "html body #page .fo-ac-warn.cup{background:#F3F6FA;border-left-color:#2F5FC8;color:#20304A}",
       "html body #page .fo-ac-offer{background:#FFFEFC;border:1px solid rgba(20,28,40,.14);border-radius:13px;padding:13px 14px}",
