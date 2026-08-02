@@ -10150,7 +10150,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260802-2251-614f52";
+  var FO_BUILD = "20260802-2304-190c1b";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -33153,7 +33153,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 })();
 // ---- 19-modern-shell.js — the modern app shell -------------------------------
 // The game's pages got art; the chrome around them stayed 2012. This module is
-// the product-design pass: a glass topbar, a phone tab dock, motion on route
+// the product-design pass: a glass topbar, motion on route
 // changes, real press/hover/focus states, and a live match-centre where the
 // dead "No match selected" panel used to be. Pure overlay: it restyles and
 // augments the existing DOM, never replaces engine markup.
@@ -33162,112 +33162,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 
   var ACCENT = "#FF7A50";
-
-  // ---- the phone tab dock ----------------------------------------------------
-  // Five destinations cover 90% of sessions; the hamburger keeps the rest.
-  var DOCK = [
-    { k: "club", label: "Club", hash: "#/home", ic: "<path d='M3.5 10.6 12 3.4l8.5 7.2'/><path d='M5.5 9.4V20a.6.6 0 0 0 .6.6h11.8a.6.6 0 0 0 .6-.6V9.4'/><path d='M9.8 20.4v-5.6h4.4v5.6'/>" },
-    { k: "league", label: "League", hash: "#/league", ic: "<path d='M8 21.2h8'/><path d='M12 17.4v3.8'/><path d='M7.2 3.6h9.6v4.6a4.8 4.8 0 0 1-9.6 0z'/><path d='M7.2 5H4.4v1.8a3 3 0 0 0 3 3'/><path d='M16.8 5h2.8v1.8a3 3 0 0 1-3 3'/>" },
-    { k: "squad", label: "Squad", hash: "#/squad", ic: "<circle cx='9.2' cy='7.8' r='3.4'/><path d='M3.6 20.2c0-3.1 2.5-5.2 5.6-5.2s5.6 2.1 5.6 5.2'/><path d='M15.4 4.8a3.4 3.4 0 0 1 0 6'/><path d='M16.8 15.2c2.3.5 3.9 2.3 3.9 5'/>" },
-    { k: "nets", label: "Nets", hash: "#/training", ic: "<circle cx='12' cy='12' r='8.4'/><circle cx='12' cy='12' r='4.4'/><circle cx='12' cy='12' r='.9' fill='currentColor' stroke='none'/>" },
-    // The Desk held this slot until the room was retired. The fixture list took
-    // it: every upcoming match on it opens a preview, which is where a manager
-    // goes between rounds now.
-    { k: "fixtures", label: "Fixtures", hash: "#/fixtures", ic: "<rect x='3.6' y='5.4' width='16.8' height='15' rx='2'/><path d='M3.8 10.2h16.4'/><path d='M8.4 3.4v4M15.6 3.4v4'/><path d='M7.6 14h3.2M13.2 14h3.2'/>" }
-  ];
-  // which dock lamp lights up for which route
-  // Every room belongs to exactly one lamp. A room missing from this map lit
-  // nothing at all, which is how the academy, the books and the invitationals
-  // spent their first weeks: reachable, but with the dock going dark the
-  // moment you arrived.
-  var DOCK_MAP = {
-    club: ["club", "home", "finance"],
-    league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "champions", "natteams", "nations", "watch", "rankings", "team"],
-    squad: ["squad", "player", "matchlab"],
-    nets: ["training", "academy"],
-    fixtures: ["fixtures", "matchday", "preview", "report", "journal", "lore", "milestones", "paper"]
-  };
-  // immersive rooms keep the whole stage: no dock over the broadcast
-  var DOCK_HIDE = { match: 1, friendly: 1, welcome: 1, create: 1, scorecard: 1, orders: 1 };
-
-  function curRoute() { return ((location.hash || "#/club").split("?")[0] || "").replace("#/", ""); }
-
-  function ensureDock() {
-    try {
-      var d = document.getElementById("fo-dock");
-      if (!d) {
-        d = document.createElement("nav");
-        d.id = "fo-dock";
-        d.setAttribute("aria-label", "Primary");
-        d.innerHTML = DOCK.map(function (t) {
-          return "<a data-dock='" + t.k + "' href='" + t.hash + "'>" +
-            "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'>" + t.ic + "</svg>" +
-            "<span>" + E(t.label) + "</span></a>";
-        }).join("");
-        document.body.appendChild(d);
-        d.addEventListener("click", function (ev) {
-          var a = ev.target && ev.target.closest ? ev.target.closest("a[data-dock]") : null;
-          if (!a) return;
-          ev.preventDefault();
-          location.hash = a.getAttribute("href");
-          if (typeof window.route === "function") window.route();
-        });
-      }
-      var r = curRoute();
-      var tb = document.getElementById("topbar");
-      var tbGone = !tb || !tb.offsetParent; // door / theatre hide the topbar; the dock follows
-      var hide = tbGone || DOCK_HIDE[r] === 1 || document.body.classList.contains("fo-mnav-lock");
-      d.classList.toggle("off", !!hide);
-      document.body.classList.toggle("fo-dock-on", !hide);
-      var lit = null;
-      for (var k in DOCK_MAP) if (DOCK_MAP[k].indexOf(r) !== -1) { lit = k; break; }
-      [].slice.call(d.querySelectorAll("a[data-dock]")).forEach(function (a) {
-        a.classList.toggle("on", a.getAttribute("data-dock") === lit);
-      });
-      if (r !== dockRoute) { dockRoute = r; dockPane = null; lastY = 0; d.classList.remove("away"); }
-    } catch (e) {}
-  }
-
-  // THE DOCK STANDS DOWN WHILE YOU READ.
-  // A bar fixed to the bottom of a scrolling page always covers something, and
-  // padding underneath it only ever clears the very last row - everything you
-  // scroll PAST still goes behind it. So the bar gets out of the way instead:
-  // scroll down and it drops off the bottom; scroll up, stop near the top, or
-  // reach the foot of the page and it comes back. Nothing is ever hidden by it
-  // for longer than the flick of a thumb.
-  var dockRoute = null, lastY = 0, dockTick = false, dockPane = null;
-  // some rooms lock the document and scroll a pane inside it, so the position
-  // is read off whatever last reported a scroll, not off the window alone
-  function dockAt() {
-    var p = dockPane;
-    if (p && p.nodeType === 1 && p !== document.documentElement && p !== document.body) {
-      return { y: p.scrollTop, h: p.scrollHeight, vh: p.clientHeight };
-    }
-    var doc = document.documentElement;
-    return { y: window.pageYOffset || doc.scrollTop || 0, h: doc.scrollHeight, vh: window.innerHeight };
-  }
-  function dockScroll() {
-    dockTick = false;
-    var d = document.getElementById("fo-dock");
-    if (!d || d.classList.contains("off")) return;
-    var a = dockAt();
-    if (a.h - a.vh < 160) { d.classList.remove("away"); lastY = a.y; return; }  // nothing to scroll past
-    if ((a.y + a.vh) >= (a.h - 48) || a.y < 96) d.classList.remove("away");
-    else if (a.y > lastY + 8) d.classList.add("away");
-    else if (a.y < lastY - 8) d.classList.remove("away");
-    lastY = a.y;
-  }
-  try {
-    // capture, so a scroll on any inner pane is seen too - scroll does not bubble
-    window.addEventListener("scroll", function (ev) {
-      var t = ev && ev.target;
-      dockPane = (t && t.nodeType === 1) ? t : null;
-      if (dockTick) return;
-      dockTick = true;
-      if (window.requestAnimationFrame) window.requestAnimationFrame(dockScroll);
-      else setTimeout(dockScroll, 60);
-    }, { capture: true, passive: true });
-  } catch (e) {}
 
   // ---- route-change motion ---------------------------------------------------
   // A short fade on every route; opacity only, so fixed-position page art
@@ -33339,7 +33233,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       document.body.appendChild(el);
     } catch (e) {}
   }
-  function afterRoute() { ensureDock(); matchCentre(); tidyNav(); ordersDoor(); }
+  function afterRoute() { matchCentre(); tidyNav(); ordersDoor(); }
   function wireRoute() {
     try {
       if (typeof window.route === "function" && !window.route.__foMs) {
@@ -33398,49 +33292,19 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "#fo-mdrawer#fo-mdrawer .fo-mdl{border-radius:12px;margin:2px 8px;font:600 13.5px/1 Inter,sans-serif;color:rgba(233,238,246,.78) !important;border:none !important}",
     "#fo-mdrawer#fo-mdrawer .fo-mdl:hover{background:rgba(255,255,255,.08) !important}",
     "#fo-mdrawer#fo-mdrawer .fo-mdl.on{background:#C95532 !important;color:#FFFEFC !important}",
-    // == the phone tab dock ====================================================
-    "#fo-dock{display:none}",
-    "@media(max-width:820px){",
-    "#fo-dock{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:340;display:flex;align-items:stretch;background:rgba(7,22,46,.94);-webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4);border:1px solid rgba(255,255,255,.12);border-radius:24px;box-shadow:0 18px 44px rgba(7,22,46,.4),inset 0 1px 0 rgba(255,255,255,.08);padding:7px 6px calc(7px + env(safe-area-inset-bottom,0px)*0)}",
-    "#fo-dock.off{display:none}",
-    // out of the way while you read, back the moment you look for it
-    "#fo-dock{transition:transform .2s cubic-bezier(.4,0,.2,1),opacity .2s ease}",
-    "#fo-dock.away{transform:translateY(calc(100% + 22px));opacity:0;pointer-events:none}",
-    "@media(prefers-reduced-motion:reduce){#fo-dock{transition:none}}",
-    "#fo-dock a,body.ftpskin #fo-dock a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0 3px;border-radius:16px;color:rgba(233,238,246,.55) !important;text-decoration:none;transition:color .15s ease,transform .12s ease}",
-    "#fo-dock a svg{width:22px;height:22px}",
-    "#fo-dock a span{font:600 9.5px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase}",
-    "#fo-dock a:active{transform:scale(.94)}",
-    "#fo-dock a.on,body.ftpskin #fo-dock a.on{color:#FF8A5C !important}",
-    "#fo-dock a.on svg{filter:drop-shadow(0 0 8px rgba(255,138,92,.5))}",
-    // room to scroll past the dock
-    "body.fo-dock-on #page{padding-bottom:88px}",
-    // full-bleed heroes pin a quick-link bar to the viewport floor; the dock
-    // covers those destinations, so the old bar retires on phones
-    "body.fo-dock-on .fo-home2 .hg-bar button:not(.hg-cta){display:none}",
-    "body.fo-dock-on .fo-home2 .hg-bar{bottom:86px;background:none;padding-bottom:0}",
-    // ...and a bar with one button left in it is no longer a bar across the
-    // foot of the picture - it is a single pill in the MIDDLE of it, landing
-    // on the club's own name. Above 760px the title block is still absolutely
-    // placed, so lifting it clears the pill.
-    "body.fo-dock-on .fo-home2 .hg-id{bottom:150px}",
-    "}",
-    // Below 760px the hero is a flex COLUMN and the title block is in flow -
-    // so no amount of lifting helps, because the bar is the only thing still
-    // floating over it. Put the bar in the column too. The name, the league
-    // line, the form beads and then the one button, in that order, with room
-    // at the foot for the dock to sit under rather than on top of.
+    // == the full-bleed hero on a phone =========================================
+    // Below 760px the hero is a flex COLUMN and the title block is in flow, so
+    // a quick-link bar pinned to the viewport floor lands ON the club's name.
+    // Put the bar in the column instead: the name, the league line, the form
+    // beads, then the buttons, in that order.
     "@media(max-width:760px){",
-    // the dock floats 10px off the floor and stands about 62px tall, so the
-    // column's foot has to clear roughly ninety plus whatever the phone's own
-    // home-bar reserves - the same inset the dock itself is offset by
-    "body.fo-dock-on .fo-home2{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}",
-    "body.fo-dock-on .fo-home2 .hg-bar{position:static;order:4;bottom:auto;margin-top:15px;padding:0;justify-content:flex-start;background:none}",
+    ".fo-home2{padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}",
+    ".fo-home2 .hg-bar{position:static;order:4;bottom:auto;margin-top:15px;padding:0;justify-content:flex-start;background:none}",
     "}",
     // == the dressing-room door ================================================
     "#fo-ord-door{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:350;background:#C95532;color:#FFFEFC;font:700 12.5px/1 Inter,sans-serif;letter-spacing:.03em;border-radius:999px;padding:13px 20px;text-decoration:none;box-shadow:0 10px 28px rgba(201,85,50,.5)}",
     "#fo-ord-door:hover{background:#A64426;text-decoration:none;color:#FFFEFC}",
-    "@media(max-width:820px){#fo-ord-door{right:12px;bottom:calc(88px + env(safe-area-inset-bottom,0px))}}",
+    "@media(max-width:820px){#fo-ord-door{right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px))}}",
     // == motion ================================================================
     "@media (prefers-reduced-motion:no-preference){",
     "#page.fo-page-in{animation:foMsPageIn .22s ease-out}",
