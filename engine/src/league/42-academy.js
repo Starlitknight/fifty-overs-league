@@ -113,8 +113,8 @@
     // the room keeps its own table: the club that matters here is the one in
     // the served world, not whatever the device calls home
     return "<div class='fo-ac' data-fo-owntable><div class='fo-ac-in'>" +
-      "<div class='fo-ac-hero'><div class='fo-ac-k'>The academy</div>" +
-      "<h1>The Colts</h1></div>" +
+      "<div class='fo-ac-hero'><div class='fo-ac-k'>Your club</div>" +
+      "<h1>Youth Academy</h1></div>" +
       body +
       "<div class='fo-ac-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/training'>The nets &rsaquo;</a></div>" +
       "</div></div>";

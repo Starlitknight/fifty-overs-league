@@ -10150,7 +10150,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260802-1321-e6f7e9";
+  var FO_BUILD = "20260802-1329-db245e";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -42325,8 +42325,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     // the room keeps its own table: the club that matters here is the one in
     // the served world, not whatever the device calls home
     return "<div class='fo-ac' data-fo-owntable><div class='fo-ac-in'>" +
-      "<div class='fo-ac-hero'><div class='fo-ac-k'>The academy</div>" +
-      "<h1>The Colts</h1></div>" +
+      "<div class='fo-ac-hero'><div class='fo-ac-k'>Your club</div>" +
+      "<h1>Youth Academy</h1></div>" +
       body +
       "<div class='fo-ac-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/training'>The nets &rsaquo;</a></div>" +
       "</div></div>";
@@ -43692,7 +43692,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ["home", "house", "Home ground"],
       ["squad", "people", "The squad"],
       ["training", "net", "The nets"],
-      ["academy", "star", "The academy"],
+      ["academy", "star", "Youth Academy"],
       ["finance", "coin", "The books"],
       ["fixtures", "cal", "The fixture list"],
       ["matchday", "pitch", "Matchday"],

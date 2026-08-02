@@ -60,7 +60,7 @@
       ["home", "house", "Home ground"],
       ["squad", "people", "The squad"],
       ["training", "net", "The nets"],
-      ["academy", "star", "The academy"],
+      ["academy", "star", "Youth Academy"],
       ["finance", "coin", "The books"],
       ["fixtures", "cal", "The fixture list"],
       ["matchday", "pitch", "Matchday"],
