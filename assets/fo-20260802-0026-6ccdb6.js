@@ -10115,7 +10115,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260801-1921-027ca0";
+  var FO_BUILD = "20260802-0026-6ccdb6";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -33338,6 +33338,23 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     // covers those destinations, so the old bar retires on phones
     "body.fo-dock-on .fo-home2 .hg-bar button:not(.hg-cta){display:none}",
     "body.fo-dock-on .fo-home2 .hg-bar{bottom:86px;background:none;padding-bottom:0}",
+    // ...and a bar with one button left in it is no longer a bar across the
+    // foot of the picture - it is a single pill in the MIDDLE of it, landing
+    // on the club's own name. Above 760px the title block is still absolutely
+    // placed, so lifting it clears the pill.
+    "body.fo-dock-on .fo-home2 .hg-id{bottom:150px}",
+    "}",
+    // Below 760px the hero is a flex COLUMN and the title block is in flow -
+    // so no amount of lifting helps, because the bar is the only thing still
+    // floating over it. Put the bar in the column too. The name, the league
+    // line, the form beads and then the one button, in that order, with room
+    // at the foot for the dock to sit under rather than on top of.
+    "@media(max-width:760px){",
+    // the dock floats 10px off the floor and stands about 62px tall, so the
+    // column's foot has to clear roughly ninety plus whatever the phone's own
+    // home-bar reserves - the same inset the dock itself is offset by
+    "body.fo-dock-on .fo-home2{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}",
+    "body.fo-dock-on .fo-home2 .hg-bar{position:static;order:4;bottom:auto;margin-top:15px;padding:0;justify-content:flex-start;background:none}",
     "}",
     // == the dressing-room door ================================================
     "#fo-ord-door{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:350;background:#C95532;color:#FFFEFC;font:700 12.5px/1 Inter,sans-serif;letter-spacing:.03em;border-radius:999px;padding:13px 20px;text-decoration:none;box-shadow:0 10px 28px rgba(201,85,50,.5)}",
