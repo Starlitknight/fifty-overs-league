@@ -3241,8 +3241,33 @@ function saveGame(tell){
     }
     return false}
 }
+// A PRACTICE WORLD IS NOT YOUR WORLD.
+// The retired local stack's practice() and startLeagueFromMerge() replace
+// GD.teams wholesale with clubs invented by makeBotTeam - which walks the
+// nation list, so one of them comes out Dutch, and every one of them plays at
+// a ground called Neutral Park. That world then goes into the save. On the
+// next boot your pinned club is not in it, userTeam() falls back to
+// GD.teams[App.teamIx], and a stranger's XI is presented as your side: a
+// batting order full of men you never signed.
+//
+// So a saved world that (a) does not contain the club this device is pinned to
+// and (b) is visibly that generated furniture is refused at the door. Both
+// conditions are needed: a snapshot from another manager's league is a real
+// world and must still load, and a device with no club pinned yet has nothing
+// to be robbed of.
+function foIsPracticeWorld(teams, pinned){
+  if(!pinned||!Array.isArray(teams)||teams.length<2)return false;
+  if(teams.some(t=>t&&t.name===pinned))return false;      // my club is in it: a real world
+  let park=0;
+  for(const t of teams)if(t&&t.ground==='Neutral Park'&&t.founded!==true)park++;
+  return park>=3;
+}
 function restoreFrom(d){
   if(!d||!d.teams)return false;
+  if(foIsPracticeWorld(d.teams,foMyClub())){
+    try{console.warn('Fifty Overs: discarded a stale practice world from the save; loading the served one.')}catch(e){}
+    return false;                                          // no save: the served world loads instead
+  }
   GD.teams=d.teams;
   // d.teamIx BELONGS TO WHOEVER MADE THIS SNAPSHOT. In a league that is the
   // founder, the resolver, or another manager taking over a bot - never you.
@@ -10150,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260802-2153-520989";
+  var FO_BUILD = "20260802-2358-a437be";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -10453,7 +10478,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // opens the league menu instead. Keep the element (hidden) so old refs are safe.
   var btn = document.createElement("button");
   btn.id = "folBtn"; btn.textContent = "League"; btn.style.display = "none";
-  function openLeagueMenu() { openWrap(true); if (!JWT) renderWelcome(); else if (SYNC && LG) showWait(!!SYNC.myTeam); else enterApp(); }
+  function openLeagueMenu() { openWrap(true); if (!JWT) renderWelcome(); else enterApp(); }
   function doLogout() { JWT = ""; LG = null; SYNC = null; clearSession(); openWrap(true); renderLogin(); }
 
   var wrap = document.createElement("div");
@@ -10503,15 +10528,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       },
       soloContinue: function () { foSoloBegin(""); },
       sendReset: sendReset, joinNew: doJoinSignup,
-      openId: function () { enterGameById(t.getAttribute("data-id")); }, join: joinLeague,
-      startLeague: startLeague, mkInvite: mkInvite,
-      relaunch: relaunchLeague, refound: foRefound,
-      delTeam: function () { delTeam(t.getAttribute("data-id"), t.getAttribute("data-name")); },
-      draftMine: draftMine, practice: practice,
       reload: function () { location.reload(); },
-      // the wedged-load escape: go where a member who has not loaded belongs -
-      // the lobby, which paints from the small tables rather than the snapshot
-      lobby: function () { try { preStart(); } catch (e) { location.reload(); } },
       backToGame: function () { openWrap(false); if (typeof window.route === "function") window.route(); }
     };
     if (acts[a]) acts[a]();
@@ -10603,8 +10620,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       foNetPanel() +
       '<div style="display:flex;flex-direction:column;gap:8px;align-items:stretch">' +
       '<button class="p" data-act="reload">&#8635; Try again</button>' +
-      '<button class="mini" data-act="lobby">Open the league lobby</button>' +
-      '<button class="mini" data-act="practice">Play a practice game meanwhile</button>' +
       '<button class="mini" data-act="logout">Log out</button>' +
       "</div></div></div></div>";
   }
@@ -10629,8 +10644,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // exactly what has already been tried
       '<div style="display:flex;flex-direction:column;gap:8px;align-items:stretch">' +
       '<button class="p" data-act="reload">&#8635; Try again</button>' +
-      '<button class="mini" data-act="lobby">Open the league lobby</button>' +
-      '<button class="mini" data-act="practice">Play a practice game meanwhile</button>' +
       '<button class="mini" data-act="logout">Log out</button>' +
       "</div></div></div></div>";
   }
@@ -10768,20 +10781,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       }).catch(function (e) { unbusyBtn("login"); say(e); });
   }
 
-  // After login, go straight into the league: RLS scopes `leagues` to the ones
-  // you belong to, so no league id is ever needed. One league opens directly
-  // (admin -> Admin, player -> Squad); several show a quick picker; none shows
-  // the join-by-invite form.
+  // After login there is no lobby and nothing to pick: the served world IS
+  // the game. Boot the cloud save, settle any invite left from signup, then
+  // get the overlay out of the way and let the game route itself - the world
+  // modules read the session and take it from there.
   function enterApp() {
     foLoading("Signing you in…");
     try { foCloudBoot(); } catch (eCl) {}
-    return redeemPending().then(function () {
-      return sel("leagues", "select=id,name,status,build_hash,draft_budget,season_no");
-    }).then(function (ls) {
-      if (!ls || !ls.length) { renderEnter(); return; }
-      if (ls.length === 1) { return enterGame(ls[0]); }
-      renderPicker(ls);
-    }).catch(function () { renderEnter(); });
+    return redeemPending().catch(function () {}).then(function () {
+      openWrap(false);
+      try { if (typeof window.route === "function") window.route(); } catch (e) {}
+    });
   }
   // If the user signed up with an invite code (and email confirmation was on, so
   // it could not be redeemed at signup), redeem it now that they are logged in.
@@ -10798,784 +10808,24 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         if (!(e && e.name === "TypeError")) lsSet(PEND, JSON.stringify({ dn: p.dn, tn: p.tn }));
       });
   }
-  function renderPicker(ls) {
-    setNavy(false);
-    wrap.querySelector("#folWho").textContent = "";
-    main.innerHTML = '<div class="folbody"><div class="folcard"><h4>Your leagues</h4><div class="folpad" style="display:grid;gap:8px">' +
-      ls.map(function (l) { return '<button class="p" style="text-align:left" data-act="openId" data-id="' + l.id + '">' + E(l.name) + "</button>"; }).join("") +
-      '</div></div></div>';
-  }
-  function enterGameById(id) {
-    return sel("leagues", "id=eq." + id + "&select=id,name,status,build_hash,draft_budget,season_no")
-      .then(function (a) { if (a[0]) return enterGame(a[0]); });
-  }
 
   // =================================================================
-  //  In-game sync engine. Your game IS the multiplayer game: we hand
-  //  the screen to the real game and keep it in step with the server –
-  //  pull the shared league snapshot, push your own orders packet, and
-  //  let the game's own table/fixtures/match screens do the rest.
+  //  ACCOUNT AUTH + THE COUNTRY PLAYER POOL.
+  //
+  //  This file used to be the in-game multiplayer sync engine: the league
+  //  lobby, the shared-snapshot poller, the practice worlds, the relaunch
+  //  machinery. That stack is retired - the served world (world_* RPCs,
+  //  the umpire, 52-served-truth) is the only multiplayer now - and the
+  //  sync engine's practice() could replace the whole world with generated
+  //  bot clubs, which is how a Dutch XI once turned up wearing your shirt.
+  //
+  //  What remains is the two things the live game still needs from here:
+  //    - account signup and password reset (Supabase auth, used by the
+  //      sign-in overlay in 01-club-home)
+  //    - buildCountryPool and the bowler-batting laws: the deterministic,
+  //      country-flavoured player generator that onboarding, scouting and
+  //      the transfer market all draw from
   // =================================================================
-  // THE SEASON YOU ALREADY HAVE IS NOT WORTH DOWNLOADING AGAIN.
-  // The shared snapshot is the whole league - every club, every squad, every
-  // result - and it only changes when the umpire advances a round, which is
-  // once a day. Re-downloading it every time you open the game is the single
-  // most expensive thing the client does, and almost always for a copy of
-  // something this device already had. So it is kept here, stamped with the
-  // version it came from, and a season whose version still matches the
-  // server's is opened without touching the wire at all.
-  // IndexedDB rather than localStorage: megabytes belong nowhere near the
-  // five-megabyte drawer the career save already lives in.
-  var IDB_NAME = "fifty-overs", IDB_STORE = "snap";
-  function idbOpen() {
-    return new Promise(function (res, rej) {
-      try {
-        var rq = window.indexedDB.open(IDB_NAME, 1);
-        rq.onupgradeneeded = function () { try { rq.result.createObjectStore(IDB_STORE); } catch (e) {} };
-        rq.onsuccess = function () { res(rq.result); };
-        rq.onerror = function () { rej(rq.error); };
-        rq.onblocked = function () { rej(new Error("blocked")); };
-      } catch (e) { rej(e); }
-    });
-  }
-  // THE CACHE MAY NEVER HOLD THE DOOR. This read sits on the entry's critical
-  // path, and IndexedDB - unlike a network request - has no timeout of its own:
-  // a browser profile in a bad mood can leave open() pending forever, and every
-  // callback above it waits politely. Three seconds is more than a healthy disk
-  // needs; after that entry proceeds as if there were no cache, which is merely
-  // the old behaviour.
-  function foSnapGet(leagueId) {
-    var read = idbOpen().then(function (db) {
-      return new Promise(function (res, rej) {
-        var rq = db.transaction(IDB_STORE, "readonly").objectStore(IDB_STORE).get("snap:" + leagueId);
-        rq.onsuccess = function () { res(rq.result || null); };
-        rq.onerror = function () { rej(rq.error); };
-      });
-    }).then(function (v) {
-      return (v && typeof v.version === "number" && v.snapshot) ? v : null;
-    });
-    var late = new Promise(function (res) { setTimeout(function () { res(null); }, 3000); });
-    return Promise.race([read, late]).catch(function () { return null; });
-  }
-  // one row per league, overwritten each round · the store cannot grow
-  // NEVER WHILE THE SEASON IS BEING OPENED. Storing it copies the whole thing
-  // again, and the moment it arrives is the moment the phone is already holding
-  // the response, the parsed season and the game being rebuilt from it, all at
-  // once. That is where a tab gets killed. Waiting for the browser to go idle
-  // costs nothing - the copy is just as useful a second later - and takes the
-  // write off the peak entirely.
-  // The deadline is short on purpose. restoreFrom adopts the snapshot's objects
-  // rather than copying them, so from the moment the season is applied the game
-  // is playing on the very thing we are about to store. A frame or two after
-  // the work finishes nothing has moved; a minute later it might have. The
-  // stored copy is therefore "the season as this device had it at version N",
-  // which is what the version stamp claims and what restoring it reproduces -
-  // the engine's repair passes run again on load and are idempotent.
-  function foIdle(fn) {
-    try { if (window.requestIdleCallback) { window.requestIdleCallback(fn, { timeout: 2000 }); return; } } catch (e) {}
-    setTimeout(fn, 1200);
-  }
-  function foSnapPut(leagueId, st) {
-    try {
-      if (!st || typeof st.version !== "number" || !st.snapshot) return;
-      var keep = { version: st.version, round: st.round, snapshot: st.snapshot };
-      foIdle(function () {
-        idbOpen().then(function (db) {
-          try { db.transaction(IDB_STORE, "readwrite").objectStore(IDB_STORE).put(keep, "snap:" + leagueId); } catch (e) {}
-        }).catch(function () {});
-      });
-    } catch (e) {}
-  }
-
-  function enterGame(league) {
-    LG = league;
-    // NAME THE STEP, NOT JUST THE LEAGUE. Entry is four requests, one of them
-    // a couple of megabytes, and a manager watching a card that only ever says
-    // "Loading" cannot tell a slow season from a dead connection - and neither
-    // can anyone they show it to. Each stage says what it is waiting for, so a
-    // stall points at the request that caused it.
-    foLoading("Loading " + (league.name || "your league") + " · finding your club…");
-    // ALL OF IT AT ONCE. Which club is yours and what the season looks like are
-    // independent questions, and asking the second only after the first came
-    // back made entry the sum of two waits instead of the longer of them. The
-    // version probe is a few bytes and rides alongside the club lookup, so by
-    // the time we know who you are we already know whether the season this
-    // device is holding is still the current one.
-    var stateP = sel("league_state", "league_id=eq." + LG.id + "&select=version,round")
-      .then(function (a) { return { ok: a }; }, function (e) { return { err: e }; });
-    var cacheP = foSnapGet(LG.id);
-    return Promise.all([
-      sel("teams", "league_id=eq." + LG.id + "&select=id,name,country,draft_seed,manager_id"),
-      sel("members", "league_id=eq." + LG.id + "&select=id,role,display_name"),
-      rpc("resolve_manager_id", { p_league_id: LG.id }),
-      stateP, cacheP
-    ]).then(function (r) {
-      var teams = r[0], mem = r[1], myMid = r[2], state = r[3], cached = r[4];
-      SYNC = {
-        myMid: myMid,
-        me: mem.filter(function (m) { return m.id === myMid; })[0] || null,
-        myTeam: teams.filter(function (t) { return t.manager_id === myMid; })[0] || null,
-        lastVersion: 0, started: false, lastOrderSig: null, pollTimer: null
-      };
-      SYNC.isFounder = !!(SYNC.me && SYNC.me.role === "founder");
-      // THE LEAGUE IS THE AUTHORITY ON WHO YOU ARE. The teams row carries the
-      // club this account manages; pin it by name now, before any snapshot
-      // lands, so every restore that follows finds the right club instead of
-      // inheriting the pusher's index.
-      try { if (SYNC.myTeam && SYNC.myTeam.name && typeof foSetMyClub === "function") foSetMyClub(SYNC.myTeam.name); } catch (eMc) {}
-      if (LG.build_hash && LG.build_hash !== BUILD_HASH) console.warn("Fifty Overs: your game build differs from this league's pinned engine.");
-      // the probe failed · fall back to the old single request, whose own error
-      // handling knows the difference between a missing table and a bad line
-      if (state.err) { foLoading("Loading " + (league.name || "your league") + " · downloading the season…"); return syncTick(true); }
-      var st = state.ok && state.ok[0];
-      if (!st) return syncTick(true, []);                       // no season pushed yet
-      if (cached && cached.version === st.version) {            // already have this exact season
-        foLoading("Loading " + (league.name || "your league") + " · opening the season…");
-        return syncTick(true, [{ snapshot: cached.snapshot, version: st.version, round: st.round }]);
-      }
-      foLoading("Loading " + (league.name || "your league") + " · downloading the season…");
-      return syncTick(true);
-    }).catch(function (e) { foFatal("Could not load the league (" + ((e && e.message) || e) + "). Check your connection and reload."); });
-  }
-
-  // Detect a "table not created yet" error (0011/0012 SQL not run in Supabase).
-  function isMissingTable(e) { var m = ((e && e.message) || e || "") + ""; return /PGRST205|Could not find the table|schema cache|does not exist/i.test(m); }
-  function setupNeeded() {
-    openWrap(true); setNavy(false);
-    var who = wrap.querySelector("#folWho"); if (who) who.textContent = LG ? LG.name : "";
-    main.innerHTML = '<div class="folbody"><div class="folcard"><h4>Almost ready</h4><div class="folpad">' +
-      '<div class="folsmall" style="margin-bottom:10px;line-height:1.5">This league still needs its sync tables in your database. Open <b>Supabase → SQL Editor</b>, run the setup SQL (the 0011 and 0012 snippets), then reload this page.</div>' +
-      '<button class="mini" data-act="logout">log out</button>' +
-      "</div></div></div>";
-  }
-
-  // Is MY club part of the published season snapshot? A member who joins (or
-  // re-drafts) after kick-off isn't in it yet · never dump them into someone
-  // else's club; send them to the draft / waiting lobby instead.
-  function myClubInSnap(snap) {
-    try {
-      if (!snap || !snap.teams) return false;
-      var names = [];
-      if (SYNC && SYNC.myTeam && SYNC.myTeam.name) names.push(SYNC.myTeam.name);
-      // ALSO the club this device has already pinned. The teams row and the
-      // club JSON can carry different names (the club was renamed during
-      // founding, or a takeover renamed a bot), and when they did, a manager
-      // who WAS in the snapshot was told he was not - and the rejoin that
-      // followed re-spliced him over a bot and moved his identity again.
-      try { var mine = (typeof foMyClub === "function") && foMyClub(); if (mine) names.push(mine); } catch (e2) {}
-      if (!names.length) return false;
-      return snap.teams.some(function (t) { return t && names.indexOf(t.name) >= 0; });
-    } catch (e) { return false; }
-  }
-  // `pre` lets entry hand in a season it already has - from this device's copy,
-  // or from a probe that has just proved the copy current - so the common case
-  // opens without the megabytes. Everything downstream is unchanged.
-  function syncTick(first, pre) {
-    if (!LG) return Promise.resolve();
-    return (pre ? Promise.resolve(pre) : sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version,round").then(function (a) {
-      try { if (a && a[0]) foSnapPut(LG.id, a[0]); } catch (e) {}
-      return a;
-    })).then(function (a) {
-      var st = a[0];
-      if (st) {
-        if (!myClubInSnap(st.snapshot)) {
-          // Season is running but my club isn't in it yet (joined after kick-off,
-          // or my club was removed). Draft / wait for a rebuild · the poll below
-          // pulls us in automatically once a snapshot that includes us is pushed.
-          SYNC.lastVersion = st.version; SYNC.started = true;
-          schedulePoll();
-          // a relaunched league greets old-era clubs with the relaunch note
-          if (foRelaunchCheck(st.snapshot)) return;
-          // a club that was drafted and confirmed but fell out of the snapshot
-          // (its join was clobbered by the 9 AM banking or lost a joiner race)
-          // re-splices itself instead of stranding the manager in the lobby.
-          // a commissioner-deleted club has no league_clubs row, so it won't.
-          // a rejoin that died mid-flight (tab slept, network dropped between
-          // the lookup and the splice) must not wedge the client forever
-          if (window.__foRejoin === "busy" && Date.now() - (window.__foRejoinAt || 0) > 120000) window.__foRejoin = null;
-          if (!SYNC.isFounder && !window.__foRejoin) {
-            window.__foRejoin = "busy"; window.__foRejoinAt = Date.now();
-            return sel("league_clubs", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&select=club").then(function (rows) {
-              var club = rows && rows[0] && rows[0].club;
-              if (club && club.name && club.players && club.players.length) {
-                // THE CLUB RECORD IS THE OTHER AUTHORITY on who you are, and it
-                // is the one whose NAME appears in the snapshot. When the teams
-                // row and the club disagree - a rename during founding, a
-                // takeover that renamed a bot - this is the name to trust.
-                try { if (typeof foSetMyClub === "function") foSetMyClub(club.name); } catch (eMc) {}
-                // and if that club is in fact already in the season, we were
-                // never missing: apply it instead of re-splicing, which would
-                // push a whole snapshot back over the league for no reason
-                if (st.snapshot && (st.snapshot.teams || []).some(function (t3) { return t3 && t3.name === club.name; })) {
-                  window.__foRejoin = null;
-                  applySnapshot(st.snapshot, true);
-                  return;
-                }
-                foJoinRunningSeason(JSON.parse(JSON.stringify(club))); return;
-              }
-              window.__foRejoin = "lobby";
-              return preStart();
-            }).catch(function () { window.__foRejoin = "lobby"; return preStart(); });
-          }
-          // while a rejoin is in flight its status screen owns the wrap;
-          // otherwise behave as before and show the lobby / draft
-          if (window.__foRejoin === "busy") return;
-          return preStart();
-        }
-        if (st.version > SYNC.lastVersion) {
-          SYNC.lastVersion = st.version;
-          // the download is done; what follows is this device's own work, and
-          // on a phone with little memory to spare it is the slow part
-          if (first) foLoading("Loading " + ((LG && LG.name) || "your league") + " · opening the season…");
-          applySnapshot(st.snapshot, first);
-        }
-        else openWrap(false);
-        schedulePoll();
-      } else {
-        return preStart();
-      }
-    }).catch(function (e) {
-      if (isMissingTable(e)) { setupNeeded(); return; }
-      console.warn("Fifty Overs syncTick error", e);
-      if (!SYNC.started) return preStart().catch(function (e2) { if (isMissingTable(e2)) setupNeeded(); else say(e2); });
-      schedulePoll();
-    });
-  }
-
-  // Load the shared league snapshot into the game and point it at MY club.
-  function applySnapshot(snap, focus) {
-    try {
-      var prevRound = (window.App && App.season && typeof App.season.round === "number") ? App.season.round : -1;
-      var myOrders = (window.App && App.orders) ? App.orders : null;
-      // remember which club was mine BEFORE the restore: snap.teamIx belongs to
-      // whoever pushed the snapshot, and inheriting it silently makes
-      // userTeam() someone else's club
-      var prevClub = null;
-      try { prevClub = (typeof GD !== "undefined" && GD.teams && GD.teams[App.teamIx] && GD.teams[App.teamIx].name) || null; } catch (e0) {}
-      // the resolver stamps each advance with its New York date - the client
-      // uses it to date rounds truthfully and to anchor the 9 AM broadcast
-      try { if (snap && snap.__foAdvDate) window.__foAdvDate = String(snap.__foAdvDate); } catch (eAdv) {}
-      if (typeof window.restoreFrom === "function") window.restoreFrom(snap);
-      foRepairBowlerBatting();
-      foUniqueNames();
-      foHistRepair();
-      foPurgeGhosts();
-      if (!SYNC.submittedLoaded) foLoadSubmitted();
-      SYNC.started = true;
-      // restoreFrom has already resolved the pinned club by name. This is the
-      // belt to that braces: the league's own teams row, then the club this
-      // device was holding a moment ago. Whatever lands, PIN IT - the whole
-      // class of "two squads on one device" comes from an identity that was
-      // re-derived on every restore and never written down.
-      var myName = SYNC.myTeam ? SYNC.myTeam.name : null;
-      if (typeof GD !== "undefined" && GD.teams) {
-        var ix = myName ? GD.teams.findIndex(function (t) { return t.name === myName; }) : -1;
-        if (ix < 0 && prevClub) ix = GD.teams.findIndex(function (t) { return t.name === prevClub; });
-        if (ix < 0 && typeof foMyClubIx === "function") ix = foMyClubIx(GD.teams);
-        if (ix >= 0) {
-          App.teamIx = ix;
-          try { if (typeof foSetMyClub === "function") foSetMyClub(GD.teams[ix].name); } catch (eP) {}
-        }
-      }
-      // keep my working line-up; if the round advanced, it needs re-saving for the new round
-      var newRound = (window.App && App.season && typeof App.season.round === "number") ? App.season.round : prevRound;
-      if (myOrders) { App.orders = myOrders; if (newRound !== prevRound) App.orders.saved = false; }
-      foReapplyTraining();
-      // The snapshot's App.fin belongs to whoever pushed it. Members must see THEIR
-      // club's treasury (t.bank, settled fairly by the resolver), not the pusher's.
-      try {
-        if (snap && typeof snap.teamIx === "number" && snap.teamIx !== App.teamIx && App.fin) {
-          var myClub = GD.teams[App.teamIx];
-          if (myClub) { App.fin.bank = myClub.bank || 0; App.fin.ledger = []; App.fin.sponsorBase = foDealResolve(myClub).d.base; }
-        }
-      } catch (e) {}
-      try { if (typeof window.store === "function") window.store("fo_welcomed", "1"); } catch (e) {}
-      if (typeof window.saveGame === "function") window.saveGame(false);
-      openWrap(false);
-      // land on the club home only when there is nowhere better to be - a
-      // refresh keeps the page the manager was already on
-      if (focus) {
-        var h0 = (location.hash || "").split("?")[0];
-        if (!h0 || h0 === "#" || h0 === "#/" || h0 === "#/welcome" || h0 === "#/login") location.hash = "#/club";
-      }
-      if (typeof window.route === "function") window.route();
-    } catch (e) {
-      console.warn("Fifty Overs applySnapshot failed", e);
-      foFatal("Could not load the league season. Reload to try again · if it keeps happening, ask your commissioner to restart the season.");
-    }
-  }
-
-  // Before the season starts: draft in the game, then wait for kick-off.
-  function preStart() {
-    return sel("league_clubs", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&select=manager_id").then(function (mine) {
-      var drafted = !!(mine && mine.length);
-      // the commissioner's home base is the admin lobby (invite / manage / start),
-      // where they can also draft their own club when they want.
-      if (SYNC.isFounder) { showWait(drafted); return; }
-      if (drafted) { showWait(true); return; }
-      // straight into the onboarding · it collects club name / crest / country
-      // itself when the team row is missing or incomplete (no separate setup page)
-      startDraft(SYNC.myTeam || {});
-    }).catch(function (e) { if (isMissingTable(e)) setupNeeded(); else say(e); });
-  }
-  // Make bot clubs equal in strength to the human clubs: scale each bot's skills
-  // so its average player rating matches the humans' average (with slight variety).
-  function humanAvgRating() {
-    var sum = 0, n = 0;
-    (GD.teams || []).forEach(function (t) { if (t.founded) (t.players || []).forEach(function (p) { sum += (p.rating || 0); n++; }); });
-    return n ? sum / n : 2000;
-  }
-  // scale one squad's skills toward an average-rating target (shared by the
-  // bot-balancing pass and the relaunch world builder)
-  function foScaleSquadTo(t, tgt) {
-    for (var pass = 0; pass < 5; pass++) {
-      var avg = t.players.reduce(function (s, p) { return s + (p.rating || 0); }, 0) / Math.max(1, t.players.length);
-      var f = Math.max(0.5, Math.min(1.7, tgt / Math.max(1, avg)));
-      if (Math.abs(f - 1) < 0.02) break;
-      var sf = Math.pow(f, 0.85);
-      t.players.forEach(function (p) { for (var k in p.skills) p.skills[k] = Math.max(4, Math.min(96, Math.round(p.skills[k] * sf))); if (typeof window.jsDerive === "function") window.jsDerive(p); });
-    }
-  }
-  function balanceBots() {
-    try {
-      var target = humanAvgRating();
-      for (var i = 0; i < GD.teams.length; i++) {
-        var t = GD.teams[i]; if (t.founded) continue;                 // never touch human clubs
-        foScaleSquadTo(t, target * (0.97 + ((i * 89) % 70) / 1000));  // 97-104% of the human level: true peers
-        t._botCal = 1;
-      }
-    } catch (e) { console.warn("balanceBots", e); }
-  }
-
-  // Generate fresh bot clubs from the draft pool (so we never depend on whatever
-  // GD.teams currently holds · a restarted league was capped by that before).
-  var BOT_NAMES = ["Riverside Rovers", "Coastal Comets", "Summit Strikers", "Valley Vanguard", "Harbour Hawks", "Prairie Pioneers", "Delta Dynamos", "Frontier Falcons", "Metro Mavericks", "Highland Hunters", "Canyon Kings", "Orchard Owls"];
-  function byRating(a, b) { return (b.rating || 0) - (a.rating || 0); }
-  function makeBotTeam(i, taken) {
-    var cty = NAT[i % NAT.length];
-    var pool = buildCountryPool(700003 + i * 104729, cty);
-    var keepers = pool.filter(function (p) { return p.keeper; }).sort(byRating);
-    var bowlers = pool.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none" && !p.keeper; }).sort(byRating);
-    var others = pool.filter(function (p) { return !p.keeper && (!p.bowlTypeFull || p.bowlTypeFull === "none"); }).sort(byRating);
-    var squad = []; if (keepers[0]) squad.push(keepers[0]);
-    squad = squad.concat(bowlers.slice(0, 6)).concat(others.slice(0, 7));
-    var chosen = {}; squad.forEach(function (p) { chosen[p.name] = 1; });
-    var rest = pool.filter(function (p) { return !chosen[p.name]; }).sort(byRating);
-    while (squad.length < 14 && rest.length) squad.push(rest.shift());
-    squad = squad.slice(0, 14).map(function (p) { var q = JSON.parse(JSON.stringify(p)); delete q.fee; q.fatigue = "rested"; q.formIx = 3; return q; });
-    var nm = BOT_NAMES[i % BOT_NAMES.length]; while (taken && taken[nm]) nm = nm + " II";
-    var pitches = ["green", "dry", "flat", "slow", "cracked", "balanced"];
-    return { name: nm, ground: "Neutral Park", players: squad, youth: [], founded: false, homePitch: pitches[i % pitches.length], bank: 300000, seats: 9000, supporters: 2600, mood: 3, acadY: 2, acadS: 2 };
-  }
-  function fillBots(world) {
-    var taken = {}; world.forEach(function (t) { taken[t.name] = 1; });
-    var i = 0;
-    while (world.length < 10 && i < 40) { try { var b = makeBotTeam(i, taken); taken[b.name] = 1; world.push(b); } catch (e) { break; } i++; }
-    return world;
-  }
-
-  // draft (or set up + draft) my own club, from the lobby.
-  function draftMine() { startDraft((SYNC && SYNC.myTeam) || {}); }
-
-  // Practice Game: a private local season against ALL the league's clubs (your
-  // friends' real squads + bots). Play matches interactively; nothing syncs.
-  function practice() {
-    var go = function (world, myName) {
-      GD.teams = world;
-      if (typeof window.econInit === "function") window.econInit();
-      var mine = myName ? GD.teams.findIndex(function (t) { return t.name === myName; }) : 0;
-      App.teamIx = mine >= 0 ? mine : 0;
-      try { if (typeof foSetMyClub === "function") foSetMyClub((GD.teams[App.teamIx] || {}).name); } catch (eMc) {}
-      App.season = null; if (typeof window.seasonInit === "function") window.seasonInit();
-      App.round = 1; App.seasonNo = App.seasonNo || 1; App.results = []; App.cup = { stage: 0, alive: null, results: [], out: false };
-      if (typeof window.mpInit === "function") window.mpInit();
-      SYNC.practice = true;
-      if (SYNC.pollTimer) { clearInterval(SYNC.pollTimer); SYNC.pollTimer = null; }
-      try { if (typeof window.store === "function") window.store("fo_welcomed", "1"); } catch (e) {}
-      if (typeof window.saveGame === "function") window.saveGame(false);
-      openWrap(false); location.hash = "#/matches"; if (typeof window.route === "function") window.route();
-    };
-    // if the league season is live, practise against those very teams
-    if (SYNC.started && typeof GD !== "undefined" && GD.teams && GD.teams.length >= 2) {
-      var meNm = (SYNC.myTeam && SYNC.myTeam.name) || null;
-      if (!meNm) { try { meNm = (userTeam() || {}).name || null; } catch (eNm) {} }
-      go(GD.teams.slice(), meNm); return;
-    }
-    sel("league_clubs", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&select=club").then(function (rows) {
-      var myClub = (rows && rows[0] && rows[0].club) || makeBotTeam(0);
-      myClub.founded = true;
-      var world = fillBots([myClub]); GD.teams = world; balanceBots();
-      go(world, myClub.name);
-    }).catch(function (e) { if (isMissingTable(e)) setupNeeded(); else { try { alert("Could not start Practice Game: " + ((e && e.message) || e)); } catch (_) {} say(e); } });
-  }
-
-  // Minimal onboarding: pick home country + names, then draft in the game.
-  // Waiting room (pre-season). The founder gets invite + start controls.
-  function showWait(drafted) {
-    openWrap(true); setNavy(false);
-    wrap.querySelector("#folWho").textContent = LG ? LG.name : "";
-    Promise.all([
-      sel("teams", "league_id=eq." + LG.id + "&select=id,manager_id,name"),
-      sel("league_clubs", "league_id=eq." + LG.id + "&select=manager_id")
-    ]).then(function (r) {
-      var teams = r[0], clubs = r[1], ready = {};
-      clubs.forEach(function (c) { ready[c.manager_id] = 1; });
-      var isF = SYNC.isFounder;
-      var rows = teams.map(function (t) {
-        var del = isF ? '<td style="text-align:right"><button class="mini" data-act="delTeam" data-id="' + t.id + '" data-name="' + E(t.name) + '" style="background:#5a2620;border-color:#7a3a30;color:#f0d0c8">✕ delete</button></td>' : "";
-        return "<tr><td>" + E(t.name) + "</td><td>" + (ready[t.manager_id] ? '<span class="folbadge ok">drafted</span>' : '<span class="folbadge warn">drafting…</span>') + "</td>" + del + "</tr>";
-      }).join("") || ('<tr><td colspan=' + (isF ? 3 : 2) + ' class="folsmall">No clubs yet.</td></tr>');
-      var draftedCount = teams.filter(function (t) { return ready[t.manager_id]; }).length;
-      var allReady = draftedCount >= 1 && draftedCount === teams.length;   // every club present has drafted
-      var solo = draftedCount < 10;
-      // The founder can ALWAYS start/restart once at least one club is drafted –
-      // clubs still drafting join automatically later (they replace a bot).
-      var canStart = SYNC.started || draftedCount >= 1;
-      var startLabel = SYNC.started ? "Restart season (rebuild from clubs) ▸" : (draftedCount < 2 ? "Start season (you + bots) ▸" : "Start the league ▸");
-      var ctl = isF
-        ? '<div style="margin-top:10px">' +
-            (canStart
-              ? '<button class="p" data-act="startLeague">' + startLabel + '</button>' +
-                '<div class="folsmall" style="margin-top:4px">' +
-                (allReady ? "" : "Clubs still drafting join automatically when they finish · they take over a bot club. ") +
-                (solo ? "Empty slots fill with bot clubs to make a full 10-team league." : "") + "</div>" +
-                (SYNC.started ? '<button class="mini" data-act="relaunch" style="margin-top:8px;background:#5a2620;border-color:#7a3a30;color:#f0d0c8">Relaunch league · new era, everyone re-founds ▸</button>' : "")
-              : '<div class="folsmall">The season starts once at least one club has drafted.</div>') +
-            '<div style="margin-top:8px"><button class="mini" data-act="mkInvite">Create invite code</button> <span id="folInvite" class="folsmall"></span></div>' +
-          "</div>"
-        : '<div class="folsmall" style="margin-top:10px">' + (SYNC.started
-            ? "The season is already running · your club joins as soon as the commissioner restarts it (their lobby has the Restart button). You can jump in the moment that happens; this screen updates itself."
-            : "Waiting for the commissioner to start the season.") + "</div>";
-      var back = SYNC.started ? '<button class="mini" data-act="backToGame">◂ back to the game</button> ' : "";
-      var draftBtn = drafted ? "" : '<button class="p" data-act="draftMine" style="margin-bottom:10px">Draft my squad ▸</button>';
-      var practiceBtn = '<button class="mini" data-act="practice" style="margin-top:8px">Practice vs bots</button>';
-      main.innerHTML = '<div class="folbody"><div class="folcard"><h4><span>' + E(LG.name) + (isF ? " · commissioner" : "") + "</span>" +
-        (drafted ? '<span class="folbadge ok">you\'re in</span>' : "") + '</h4><div class="folpad">' + draftBtn +
-        "<table><tr><th>Club</th><th>Status</th>" + (isF ? "<th></th>" : "") + "</tr>" + rows + "</table>" + ctl +
-        '<div style="margin-top:10px">' + back + practiceBtn + ' <button class="mini" data-act="logout">log out</button></div>' +
-        "</div></div></div>";
-    }).catch(function (e) { if (isMissingTable(e)) setupNeeded(); else say(e); });
-  }
-  function delTeam(id, name) {
-    foConfirm({
-      danger: true, title: 'Delete "' + name + '"?',
-      body: "Its club, squad and orders are permanently removed. This cannot be undone.",
-      confirm: "Delete club", cancel: "Keep it"
-    }).then(function (ok) {
-      if (!ok) return;
-      rpc("founder_delete_team", { p_league_id: LG.id, p_team_id: id })
-        .then(function () {
-          // The started league reads its teams from the published snapshot, so the
-          // club lingers in the game until the world is rebuilt from the clubs that
-          // remain. Offer to do that now (it restarts the season table).
-          if (SYNC && SYNC.started) {
-            return foConfirm({
-              title: '"' + name + '" removed',
-              body: "Rebuild the league now so it disappears from the game? This restarts the season table from the remaining clubs.",
-              confirm: "Rebuild now", cancel: "Later"
-            }).then(function (ok2) { if (ok2) { startLeague(); } else { say("Deleted " + name + "."); showWait(!!(SYNC && SYNC.myTeam)); } });
-          }
-          say("Deleted " + name + ".");
-          showWait(!!(SYNC && SYNC.myTeam));
-        }).catch(say);
-    });
-  }
-
-  function mkInvite() {
-    // one standing code for the whole league · share it with every friend
-    rpc("league_code", { p_league_id: LG.id })
-      .then(function (code) {
-        var el = wrap.querySelector("#folInvite");
-        if (el) el.innerHTML = "League code: <b style='font-size:16px;letter-spacing:.08em'>" + E((code || "") + "") + "</b> · share the same code with all your friends. It never expires.";
-        try { navigator.clipboard && navigator.clipboard.writeText(code + ""); toast("League code copied: " + code); } catch (e) {}
-      })
-      .catch(function (e) {
-        var m = ((e && e.message) || e) + "";
-        if (/Could not find the function/i.test(m)) {
-          // 0016 not run yet · fall back to classic one-time invites
-          var code = ("FO" + Math.random().toString(36).slice(2, 7) + Math.random().toString(36).slice(2, 4)).toUpperCase().replace(/[^A-Z0-9]/g, "").slice(0, 7);
-          rpc("create_invite", { p_league_id: LG.id, p_code: code, p_role: "manager" })
-            .then(function () { var el = wrap.querySelector("#folInvite"); if (el) el.textContent = "Share this code (single use): " + code; })
-            .catch(say);
-        } else say(e);
-      });
-  }
-
-  // Founder assembles the league from everyone's drafted clubs and kicks off.
-  // With only one human club, the game's own bot teams fill the league so there
-  // is something to play; with two or more, it is a pure human league.
-  function startLeague() {
-    // after a relaunch, only clubs founded in the current era may be rebuilt -
-    // retired squads from the old era must never ride back in
-    sel("league_state", "league_id=eq." + LG.id + "&select=snapshot").then(function (aSt) {
-      var era = foRelaunchEpochOf(aSt && aSt[0] && aSt[0].snapshot);
-      return sel("league_clubs", "league_id=eq." + LG.id + "&select=club,manager_id").then(function (clubs) {
-      if (era) clubs = (clubs || []).filter(function (c) { return c && c.club && +c.club.__foEpoch === era; });
-      if (!clubs || !clubs.length) { say(era ? "No club from the relaunched era yet - found yours first, then start." : "Draft your squad first, then start the season."); return; }
-      try {
-        var world = fillBots(clubs.map(function (c) { return c.club; }));   // top up to a full 10-team league
-        if (era) world.forEach(function (t) { t.__foEpoch = era; });        // the era rides on every team, bots included
-        GD.teams = world;
-        if (typeof window.econInit === "function") window.econInit();
-        var myName = SYNC.myTeam ? SYNC.myTeam.name : null;
-        var mine = GD.teams.findIndex(function (t) { return t.name === myName; });
-        App.teamIx = mine >= 0 ? mine : 0;
-        try { if (typeof foSetMyClub === "function") foSetMyClub((GD.teams[App.teamIx] || {}).name); } catch (eMc) {}
-        balanceBots();
-        App.season = null; if (typeof window.seasonInit === "function") window.seasonInit();
-        App.round = 1; App.seasonNo = App.seasonNo || 1; App.results = [];
-        App.cup = { stage: 0, alive: null, results: [], out: false };
-        if (typeof window.mpInit === "function") window.mpInit();
-        try { if (typeof window.store === "function") window.store("fo_welcomed", "1"); } catch (e) {}
-        if (typeof window.saveGame === "function") window.saveGame(false);
-        var snap = (typeof window.snapshot === "function") ? window.snapshot(true) : null;
-        if (!snap) { say("Game engine not ready. Reload and try again."); return; }
-        rpc("push_league_state", { p_league_id: LG.id, p_snapshot: snap, p_round: 0 }).then(function (ver) {
-          SYNC.lastVersion = ver || 1; SYNC.started = true;
-          say("Season started! Matches resolve automatically as orders come in.");
-          openWrap(false); location.hash = "#/matches"; if (typeof window.route === "function") window.route();
-          schedulePoll();
-        }).catch(say);
-      } catch (e) { say(e); }
-      });
-    }).catch(say);
-  }
-
-  // ===========================================================================
-  //  LEAGUE RELAUNCH · new format, everyone re-founds
-  //  The commissioner resets the world to fresh bot clubs stamped with a new
-  //  era ("epoch"). Every club record carries its era: a manager whose club
-  //  belongs to an older era is met with a short note about the relaunch and
-  //  walked through the quick-start; their new club replaces a bot via the
-  //  battle-tested running-season join. No schema changes - the epoch rides
-  //  inside the club JSON and the snapshot's team records.
-  // ===========================================================================
-  function foRelaunchEpochOf(snap) {
-    var ep = 0;
-    try { ((snap && snap.teams) || []).forEach(function (t) { if (t && +t.__foEpoch > ep) ep = +t.__foEpoch; }); } catch (e) {}
-    return ep;
-  }
-  // Shared by the sync loop and the poll: when the snapshot belongs to a newer
-  // era than my club record, show the relaunch note instead of auto-rejoining.
-  // Returns true when the relaunch flow has taken over.
-  function foRelaunchCheck(snap) {
-    var ep = foRelaunchEpochOf(snap);
-    if (!ep || myClubInSnap(snap)) return false;
-    if (window.__foRejoin === "busy" && Date.now() - (window.__foRejoinAt || 0) > 120000) window.__foRejoin = null;
-    if (window.__foRejoin === "busy" || window.__foRejoin === "gate") return true;
-    window.__foRejoin = "busy"; window.__foRejoinAt = Date.now();
-    sel("league_clubs", "league_id=eq." + LG.id + "&manager_id=eq." + SYNC.myMid + "&select=club").then(function (rows) {
-      var club = rows && rows[0] && rows[0].club;
-      // same era? then this is just a clobbered join - re-splice as before
-      if (club && +club.__foEpoch === ep && club.name && club.players && club.players.length) {
-        foJoinRunningSeason(JSON.parse(JSON.stringify(club)));
-        return;
-      }
-      window.__foRejoin = "gate";
-      window.__foRelaunchEpoch = ep;
-      // never finished founding a club (mid-draft when the relaunch hit, or a
-      // brand-new joiner)? nothing was retired - straight into the onboarding
-      if (!club) { startDraft((SYNC && SYNC.myTeam) || {}); return; }
-      foRelaunchGate(ep);
-    }).catch(function () { window.__foRejoin = null; });
-    return true;
-  }
-  // The message existing managers see, and the door into the new onboarding.
-  function foRelaunchGate(epoch) {
-    try {
-      window.__foRelaunchEpoch = epoch;
-      openWrap(true); setNavy(true);
-      var who = wrap.querySelector("#folWho"); if (who) who.textContent = LG ? LG.name : "";
-      main.innerHTML = folAuthShell(
-        "<h1>A new era is starting</h1>" +
-        '<div class="fol-sub">The game has been rebuilt and your commissioner has relaunched the league. Old clubs are retired with honour - everyone founds a fresh club and the table starts from zero.</div>' +
-        '<div class="fol-form">' +
-        '<div class="folsmall" style="line-height:1.6;margin-bottom:4px">Founding a club is a whole new experience now: the <b>Gaffer</b> walks you through naming your club and hands you the squad the board has signed for you. League matches play at <b>9:00 AM ET</b>.</div>' +
-        '<button class="fol-cta" data-act="refound">Found my new club ▸</button>' +
-        "</div>" +
-        '<div class="fol-links"><a class="fol-mut" data-act="logout">Log out</a></div>' + FOOT);
-    } catch (e) { say(e); }
-  }
-  function foRefound() {
-    try {
-      // retire this device's old-club state so nothing bleeds into the new era
-      try {
-        window.store("fo_onb_done", ""); lsDel("fo_qs_new");
-        if (SYNC) {
-          SYNC.submitted = {}; SYNC.submittedLoaded = false; SYNC.pushedSig = {};
-          SYNC.plannedOrders = {}; foSavePlanned();
-          SYNC.lastOrderSig = null;
-        }
-      } catch (e) {}
-      startDraft((SYNC && SYNC.myTeam) || {});
-    } catch (e) { say(e); }
-  }
-  // Commissioner action: reset the world to fresh bots (pitched at the
-  // quick-start strength budget), stamp the new era, push round 0, and walk
-  // straight into the new onboarding yourself.
-  function relaunchLeague() {
-    var sure = confirm("Relaunch the league for the new era?\n\nEvery current club is retired, the table and results reset, and every manager - including you - founds a fresh club through the new Gaffer-led founding journey. Managers see a note explaining the relaunch the next time they open the game.\n\nThis cannot be undone.");
-    if (!sure) return;
-    try {
-      var epoch = Date.now();
-      var world = fillBots([]);
-      // bots pitched at the quick-start budget, not at whatever the old squads were
-      try {
-        var ref = foGenArchetypeSquad("relaunch-" + ((LG && LG.id) || "x"), NAT[0], "rock").players;
-        var refAvg = ref.reduce(function (s, p) { return s + (p.rating || 0); }, 0) / Math.max(1, ref.length);
-        world.forEach(function (t, i) { foScaleSquadTo(t, refAvg * (0.97 + ((i * 89) % 70) / 1000)); });
-      } catch (eCal) {}
-      world.forEach(function (t) { t.__foEpoch = epoch; });
-      GD.teams = world;
-      // a relaunch is a fresh WORLD, not just fresh teams: the snapshot below
-      // carries App.* to every member, so the commissioner's old-era treasury,
-      // ledger, news feed, market listings and fielding stats must all retire
-      // with the old clubs. econInit no-ops while App.fin exists - clear it so
-      // the full fresh init (fin/history/market/cup + team defaults) runs.
-      App.fin = null;
-      App.news = []; App.fieldStats = {};
-      if (typeof window.econInit === "function") window.econInit();
-      App.teamIx = 0;
-      // a relaunch retires every club including the commissioner's: the old
-      // pinned name no longer exists, so pin the new one rather than leave a
-      // stale name that resolves to nothing
-      try { if (typeof foSetMyClub === "function") foSetMyClub((GD.teams[0] || {}).name); } catch (eMc) {}
-      App.season = null; if (typeof window.seasonInit === "function") window.seasonInit();
-      App.round = 1; App.seasonNo = 1; App.results = []; App.playerHist = {};
-      App.cup = { stage: 0, alive: null, results: [], out: false };
-      if (typeof window.mpInit === "function") window.mpInit();
-      var snap = (typeof window.snapshot === "function") ? window.snapshot(true) : null;
-      if (!snap) { say("Game engine not ready. Reload and try again."); return; }
-      rpc("push_league_state", { p_league_id: LG.id, p_snapshot: snap, p_round: 0 }).then(function (ver) {
-        SYNC.lastVersion = typeof ver === "number" ? ver : ((SYNC.lastVersion || 0) + 1);
-        SYNC.started = true;
-        window.__foRelaunchEpoch = epoch;
-        window.__foRejoin = null;
-        // push_league_state is last-write-wins with no version guard: a
-        // resolver pass that read the OLD snapshot before the relaunch will
-        // overwrite it minutes later when its sims finish. Watch the era for
-        // an hour and re-push the relaunch until it sticks - any new-era club
-        // that joined in between is re-spliced by its own join watchdog.
-        try { (window.__foRelTimers || []).forEach(clearTimeout); } catch (eT) {}
-        window.__foRelTimers = [45, 180, 600, 1800, 3600].map(function (sec) {
-          return setTimeout(function () {
-            sel("league_state", "league_id=eq." + LG.id + "&select=snapshot").then(function (a2) {
-              var cur = a2 && a2[0];
-              if (cur && cur.snapshot && foRelaunchEpochOf(cur.snapshot) !== epoch) {
-                rpc("push_league_state", { p_league_id: LG.id, p_snapshot: snap, p_round: 0 }).catch(function () {});
-              }
-            }).catch(function () {});
-          }, sec * 1000);
-        });
-        toast("League relaunched · now found your own new club.");
-        foRefound();
-      }).catch(say);
-    } catch (e) { say(e); }
-  }
-  window.__foRelaunch = { epochOf: foRelaunchEpochOf, gate: foRelaunchGate, go: relaunchLeague, check: foRelaunchCheck };
-
-  // Background sync loop: push my saved orders as a packet; pull new snapshots.
-  function schedulePoll() {
-    if (SYNC && SYNC.pollTimer) return;
-    if (SYNC) SYNC.pollTimer = setInterval(pollOnce, 15000);
-    // coming back to the tab syncs immediately rather than waiting a tick
-    try { document.addEventListener("visibilitychange", function () { if (!document.hidden) setTimeout(pollOnce, 400); }); } catch (eV) {}
-  }
-  // Push the current round's packet (orders + club orders). Runs from the
-  // 15s poll AND the moment Save orders is clicked, so the green states
-  // confirm within a second of saving instead of a poll tick later.
-  function foPushCurrentPacket(force) {
-    if (!LG || !SYNC || SYNC.practice) return;
-    // While planning a future round, don't auto-push the current round's orders.
-    if (!(SYNC.planRound == null && SYNC.started && window.App && App.season && typeof GD !== "undefined" && GD.teams)) return;
-    var tro = foTrainState();
-    // COMPETITION SCOPE: App.orders is shared with the tutorial, friendlies and
-    // the Circuit. Never serialize those into a LEAGUE packet - a Circuit XI must
-    // not silently become the plan for the next competitive round. Training,
-    // youth and market pending are competition-independent and still push.
-    var inNonLeague = !!(App.pending && (App.pending.__circuit || App.pending.__friendly || App.pending.__tut) || (typeof M !== "undefined" && M && !M.done && M.meta && (M.meta.__circuit || M.meta.__friendly || M.meta.__tut)));
-    var ordersReady = App.orders && App.orders.saved && !inNonLeague;
-    var sig = (ordersReady ? JSON.stringify(App.orders) : "-") + "|" + JSON.stringify(tro.training) + "|" + JSON.stringify(tro.youthPending.map(function (y) { return y.name; })) + "|" + JSON.stringify((tro.marketPending || []).map(function (y) { return y.name; })) + "|" + JSON.stringify(tro.seatsPending || null) + "|" + (tro.sponsorPending || "") + "|" + App.season.round;
-    if (!force && sig === SYNC.lastOrderSig) return;
-    if (!(ordersReady || Object.keys(tro.training).length || tro.youthPending.length || (tro.marketPending || []).length || tro.seatsPending || tro.sponsorPending)) return;
-    SYNC.lastOrderSig = sig;
-    var pkt = {
-      fo_packet: 1, teamIx: App.teamIx, club: (GD.teams[App.teamIx] || {}).name, round: App.season.round,
-      manager: (SYNC.me && SYNC.me.display_name) || "manager",
-      orders: ordersReady ? App.orders : null,
-      fo_training: tro.training, fo_youth: tro.youthPending, fo_market: tro.marketPending || [], fo_seats: tro.seatsPending || null, fo_sponsor: tro.sponsorPending || null
-    };
-    var pushRound = App.season.round;
-    rpc("push_packet", { p_league_id: LG.id, p_round: pushRound, p_packet: pkt }).then(function () {
-      if (pkt.orders) {
-        SYNC.submitted = SYNC.submitted || {}; SYNC.submitted[pushRound] = true;
-        SYNC.__pushInfo = "R" + (pushRound + 1) + " confirmed " + new Date().toLocaleTimeString();
-        foRefreshLineupButtons();
-      }
-    }).catch(function (e) {
-      SYNC.lastOrderSig = null;                      // retry on the next poll
-      SYNC.__pushInfo = "R" + (pushRound + 1) + " FAILED: " + String((e && e.message) || e).slice(0, 140);
-    });
-  }
-  // the engine's Save orders button is an inline onclick - catch the click as
-  // it bubbles and upload right away (planned rounds too), so every green
-  // state confirms immediately rather than on the next poll
-  document.addEventListener("click", function (ev) {
-    try {
-      var b = ev.target && ev.target.closest ? ev.target.closest("button.primary") : null;
-      if (!b || !/save orders/i.test((b.textContent || "").trim())) return;
-      setTimeout(function () {
-        try {
-          if (!(SYNC && SYNC.started && !SYNC.practice && LG)) return;
-          if (!(App.orders && App.orders.saved)) return;
-          if (App.pending && (App.pending.__circuit || App.pending.__friendly || App.pending.__tut)) return;   // never push a non-league XI
-          if (SYNC.planRound != null) foPushRound(SYNC.planRound, App.orders);
-          else foPushCurrentPacket(true);
-          foRefreshLineupButtons();
-        } catch (e2) {}
-      }, 40);
-    } catch (e) {}
-  });
-  function pollOnce() {
-    if (!LG || !SYNC || SYNC.practice) return;   // practice mode is a private local game
-    // a hidden tab reads nothing: every 15s tick in a backgrounded phone or a
-    // forgotten desktop tab was paid Supabase egress. The next visible tick
-    // (or the visibilitychange below) catches the tab up instantly.
-    try { if (document.hidden) return; } catch (eH) {}
-    if (SYNC.started && !SYNC.submittedLoaded) { try { foLoadSubmitted(); } catch (e) {} }
-    if (SYNC.started && !SYNC.__plannedLoaded) { SYNC.__plannedLoaded = 1; try { foLoadPlanned(); } catch (e) {} }
-    try { foRetryPlanned(); } catch (e) {}
-    try { foPushCurrentPacket(false); } catch (e) {}
-    // transfer news: tell everyone when a club claims a market player
-    if (SYNC.started) {
-      sel("league_market", "league_id=eq." + LG.id + "&select=player_name,club,manager_id&order=created_at.desc&limit=6").then(function (rows) {
-        if (!SYNC.__mkSeen) { SYNC.__mkSeen = {}; (rows || []).forEach(function (r) { SYNC.__mkSeen[r.player_name] = 1; }); return; }
-        (rows || []).forEach(function (r) {
-          if (SYNC.__mkSeen[r.player_name]) return;
-          SYNC.__mkSeen[r.player_name] = 1;
-          if (!(SYNC.myMid && r.manager_id === SYNC.myMid)) toast(r.player_name + " has signed for " + r.club + ".");
-        });
-      }).catch(function () {});
-    }
-    // egress guard: the snapshot is megabytes and this poll runs every 15s on
-    // every open tab - ask for the tiny version number first and download the
-    // snapshot ONLY when it actually moved
-    sel("league_state", "league_id=eq." + LG.id + "&select=version").then(function (a0) {
-      var v0 = a0 && a0[0] && a0[0].version;
-      if (v0 == null || v0 <= SYNC.lastVersion) return [];
-      return sel("league_state", "league_id=eq." + LG.id + "&select=snapshot,version,round");
-    }).then(function (a) {
-      var st = a && a[0]; if (!st || st.version <= SYNC.lastVersion) return;
-      try { foSnapPut(LG.id, st); } catch (eC) {}                  // keep it, so tomorrow's first load is instant
-      if (document.getElementById("fo-onb")) return;               // never yank the draft room away mid-pick
-      SYNC.lastVersion = st.version;
-      // auto-enter once a rebuild includes us; if we were parked in the lobby, land on the club page
-      if (myClubInSnap(st.snapshot)) { applySnapshot(st.snapshot, wrap.classList.contains("on")); return; }
-      // mid-session relaunch: stop play and show the note right away
-      foRelaunchCheck(st.snapshot);
-    }).catch(function () {});
-  }
-
   function doJoinSignup() {
     var email = val("folEmail"), password = wrap.querySelector("#folPass").value;
     var code = val("folCode"), dn = val("folDn"), tn = val("folTn");
@@ -11602,38 +10852,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       .then(function () { say("If that email has an account, a reset link is on its way."); renderLogin(); }).catch(function (e) { unbusyBtn("sendReset"); say(e); });
   }
 
-  // ---- join a league (shown only when you are not in one yet) ----
-  function renderEnter() {
-    setNavy(true);
-    wrap.querySelector("#folWho").textContent = "";
-    // pre-fill from the invite remembered at signup, if we still have it
-    var p = null; try { p = JSON.parse(lsGet(PEND) || "null"); } catch (e) {}
-    main.innerHTML = folAuthShell(
-      "<h1>Join your league</h1>" +
-      '<div class="fol-sub">You\'re signed in · enter the invite code from your commissioner.</div>' +
-      '<div class="fol-form">' +
-      '<div><label for="folCode">Invite code</label><input id="folCode" placeholder="from your commissioner" value="' + E((p && p.code) || "") + '"></div>' +
-      '<div><label for="folDn">Manager name</label><input id="folDn" placeholder="your name" value="' + E((p && p.dn) || "") + '"></div>' +
-      '<div><label for="folTn">Team name</label><input id="folTn" placeholder="your club" value="' + E((p && p.tn) || "") + '"></div>' +
-      '<button class="fol-cta" data-act="join">Join</button>' +
-      "</div>" +
-      '<div class="fol-links"><a class="fol-mut" data-act="logout">Log out</a></div>' +
-      FOOT);
-  }
-  function joinLeague() {
-    var code = val("folCode"), dn = val("folDn"), tn = val("folTn");
-    if (!code || !dn) { say("Enter the invite code and your name"); return; }
-    busyBtn("join", "Joining\u2026");
-    rpc("redeem_invite", { p_code: code, p_display_name: dn, p_team_name: tn || dn + " XI" })
-      .then(function (mid) { lsDel(PEND); return sel("members", "id=eq." + mid + "&select=league_id"); })
-      .then(function (m) { return enterGameById(m[0].league_id); })
-      .catch(function (e) { unbusyBtn("join"); say(e); });
-  }
-  // ============================================================================
-  // IN-GAME DRAFT: build a balanced, country-flavoured, unique pool from the
-  // manager's server draft_seed, drive the game's real draft screen (pgFounder),
-  // relabel the confirm button to "Start Season", and save the squad on confirm.
-  // ============================================================================
+
+  // The orders screen still offers window.__foGame.pushPacket (module 12
+  // exports it eagerly, so the name must exist). The league it pushed to is
+  // retired; the served world takes orders through world_* RPCs instead.
+  function foPushCurrentPacket() { return false; }
 
   // 42 balanced players (same tier structure for everyone), all set to the
   // manager's country with country names, deterministic from their draft_seed.
@@ -11802,6 +11025,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   window.__folBuildPool = buildCountryPool;   // debug/test hook (harmless)
   window.__folRepairBowlerBat = foRepairBowlerBatting;
+
 
   // ===========================================================================
   //  QUICK-START · "pick one starter, get a club"
@@ -19107,6 +18331,25 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var order = ["", "att", "bal", "def"], v = foMfVal(nm);
     foMfSet(nm, order[(order.indexOf(v) + 1) % order.length]);
   }
+  // ONE PLACE UP OR DOWN THE ORDER.
+  // Only inside the XI: the eleventh man cannot be nudged onto the bench by an
+  // arrow, because dropping a man from the side has consequences (his overs,
+  // the gloves, the armband) that belong to the bench swap, not to this.
+  // The scroll position is held across the redraw - a manager moving a man
+  // from eight to three taps five times, and the list must not jump under him.
+  function foOrdMove(nm, step) {
+    try {
+      var bo = (App.orders && App.orders.batOrder) || [];
+      var last = Math.min(10, bo.length - 1);
+      var from = bo.indexOf(nm), to = from + step;
+      if (from < 0 || from > last || to < 0 || to > last) return;
+      bo.splice(from, 1);
+      bo.splice(to, 0, nm);
+      var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+      foOrdersUI();
+      try { window.scrollTo(0, y); } catch (e2) {}
+    } catch (e) {}
+  }
   function foOrdFieldRows() {
     var tot = foOrdTotals();
     var pool = foOrdPool(true).filter(function (p) { return (tot[p.name] || 0) > 0; });
@@ -19462,7 +18705,20 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
   // the saved plan as a matchday visual: game-plan cards, the XI strip,
   // a tempo curve, and the fifty overs of bowling as a coloured timeline
-  function foOrdPlanVisual() {
+  // WHICH HALF OF THE SHEET IS OPEN. Batting and bowling used to share one
+  // long page, and a manager scrolling for the overs grid waded through the
+  // whole XI to reach it. They are two jobs, so they are two pages, and the
+  // choice is remembered.
+  function foOrdTab() {
+    var v = null; try { v = lsGet("fo_ord_tab"); } catch (e) {}
+    return v === "bowl" ? "bowl" : "bat";
+  }
+  function foOrdTabBar(tab) {
+    return "<div class='fo-ord-tabs'>" +
+      "<button type='button' class='" + (tab === "bat" ? "on" : "") + "' data-fo-ordtab='bat'>Batting</button>" +
+      "<button type='button' class='" + (tab === "bowl" ? "on" : "") + "' data-fo-ordtab='bowl'>Bowling</button></div>";
+  }
+  function foOrdPlanVisual(tab) {
     try {
       gridState();
       var bo = App.orders.batOrder || [], sn = foOrdSurname;
@@ -19484,18 +18740,38 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           (p.keeper ? "<i class='bdg" + (isK ? " on" : "") + "' data-fo-mkk='" + E(nm) + "' title='" + (isK ? "Wicket-keeper" : "Give him the gloves") + "'>WK</i>" : "");
         var role = p.bowlType && p.bowlType !== "none" ? (/spin/i.test(p.bowlTypeFull || p.bowlType) ? "spin" : "pace") : (p.keeper ? "wk" : "bat");
         var pills = foOrdTalPills(p, 2);
-        return "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + "' data-fo-pc='" + E(nm) + "'>" +
-          "<span class='dh' title='Drag to move' aria-hidden='true'>&#x2261;</span>" +
+        // ARROWS ON THE XI, A GRIP ON THE BENCH.
+        // Dragging is fine on a desk and a nuisance on a phone: you must hold,
+        // then travel, and the list is trying to scroll under your thumb the
+        // whole way. So a man in the order gets a stacked up/down pair, which
+        // is one tap per place and cannot be fumbled. The bench keeps the grip
+        // because a bench man is not moving one place - he is being carried
+        // onto a slot in the XI, which only dragging expresses.
+        // The rail sits BESIDE the card, never inside it. The card is itself a
+        // <button>; a control nested in a button is ambiguous - WebKit can
+        // report the click against the outer button, and no keyboard can reach
+        // the inner one. Outside, these are ordinary buttons that behave like
+        // buttons everywhere.
+        var mvR = i == null ? "" :
+          "<span class='mv'>" +
+            "<button type='button' class='mvb" + (i === 0 ? " off" : "") + "' data-fo-mv='up:" + E(nm) +
+              "' title='Move up' aria-label='Move " + E(dispNm(nm)) + " up the order'>&#x25B2;</button>" +
+            "<button type='button' class='mvb" + (i >= xiNames.length - 1 ? " off" : "") + "' data-fo-mv='dn:" + E(nm) +
+              "' title='Move down' aria-label='Move " + E(dispNm(nm)) + " down the order'>&#x25BC;</button>" +
+          "</span>";
+        var card = "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + "' data-fo-pc='" + E(nm) + "'>" +
+          (i == null ? "<span class='dh' title='Drag to move' aria-hidden='true'>&#x2261;</span>" : "") +
           "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + "<b>" + E(dispNm(nm)) + "</b>" + foOrdRoleIcon(p) + tag +
           "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
           "<span class='ov' title='Overall rating'><b>" + foPkOvr(p) + "</b></span></span>" +
           "<span class='r2'>" + foOrdStarHTML(foOrdStars(foOrdBatComp(p))) + "</span>" +
           "<span class='r3'>" + (pills || "") + "</span></button>";
+        return i == null ? card : "<div class='xcw'>" + mvR + card + "</div>";
       };
       var xiNames = bo.slice(0, 11);
       var benchNames = ((t && t.players) || []).map(function (p9) { return p9.name; }).filter(function (nm) { return xiNames.indexOf(nm) < 0; });
       // vertical, editable: the XI as a draggable list, the bench beside it
-      var xiCol = "<div class='pv-xi'><div class='fo-ord-vzh' style='margin-top:2px'>Batting order <span>&middot; drag to reorder &middot; tap a man's letter to tell him how to bat: N normal, A attack, L launch, D defend</span></div><div class='fo-ord-xis' id='fo-ord-xi-list'>" + xiNames.map(function (nm, i) { return chip(nm, i, false); }).join("") + "</div></div>";
+      var xiCol = "<div class='pv-xi'><div class='fo-ord-vzh' style='margin-top:2px'>Batting order <span>&middot; tap &#x25B2;&#x25BC; to move a man, or drag him &middot; tap a man's letter to tell him how to bat: N normal, A attack, L launch, D defend</span></div><div class='fo-ord-xis' id='fo-ord-xi-list'>" + xiNames.map(function (nm, i) { return chip(nm, i, false); }).join("") + "</div></div>";
       var benchCol = "<div class='pv-bench'><div class='fo-ord-vzh' style='margin-top:2px'>Bench</div><div class='fo-ord-xis' id='fo-ord-bench-list'>" + benchNames.map(function (nm) { return chip(nm, null, true); }).join("") + "</div></div>";
       // one lane per bowling option (even the unused sixth): filled blocks
       // are his overs, and every cell is a BUTTON - tap an empty over to
@@ -19551,7 +18827,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var colorIx = {}; bowlNames.forEach(function (n9, i9) { colorIx[n9] = i9 % 6; });
       var inits = function (nm9) { var a9 = String(nm9).split(" "); return (a9[0].charAt(0) + (a9.length > 1 ? a9[a9.length - 1].charAt(0) : "")).toUpperCase(); };
       var mgrid = "<div class='fo-ord-mgrid'>" +
-        "<div class='mg-hint'>Pick a bowler, then tap overs to hand them to him &middot; tap his over again to clear it. Top row is the powerplay, bottom row the death. Tap a bowler's badge to set his field: attacking, balanced or defensive.</div>" +
+        "<div class='mg-hint'>Pick a bowler, then tap overs to hand them to him &middot; tap his over again to clear it. The list runs over 1 to over 50. Tap a bowler's badge to set his field: attacking, balanced or defensive.</div>" +
         "<div class='fo-ord-clearrow'><button type='button' class='fo-ord-clearp' data-fo-clearplan>&#8709; Clear the bowling plan</button></div>" +
         "<div class='mg-chips'>" + bowlNames.map(function (n9) {
           // the lanes are desktop-only, so a phone gets the bowler's field
@@ -19561,15 +18837,24 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             "<s class='fbd" + (foMfVal(n9) ? " on" : "") + "' data-fo-mfc='" + E(n9) + "' title='" + E(foMfTitle(n9)) + "'>" + foMfShort(n9) + "</s></button>";
         }).join("") + "</div>" +
         "<div class='mg-grid'>" + (function () {
+          // a vertical over-list, not a mosaic: over 1 at the top, over 50 at
+          // the foot, one row a tap-target, the phases named where they start
           var h9 = "";
           for (var o9 = 1; o9 <= 50; o9++) {
+            if (o9 === 1) h9 += "<span class='mg-ph pp'>Powerplay &middot; overs 1-10</span>";
+            if (o9 === 11) h9 += "<span class='mg-ph'>Middle &middot; overs 11-40</span>";
+            if (o9 === 41) h9 += "<span class='mg-ph dth'>Death &middot; overs 41-50</span>";
             var b9 = g[o9];
-            h9 += "<button type='button' class='mgc" + (b9 ? " mgc-c" + colorIx[b9] : "") + (o9 <= 10 ? " pp" : o9 >= 41 ? " dth" : "") + "' data-mo='" + o9 + "'><em>" + o9 + "</em>" + (b9 ? "<b>" + inits(b9) + "</b>" : "") + "</button>";
+            h9 += "<button type='button' class='mgc" + (b9 ? " mgc-c" + colorIx[b9] : "") + (o9 <= 10 ? " pp" : o9 >= 41 ? " dth" : "") + "' data-mo='" + o9 + "'><em>" + o9 + "</em>" +
+              (b9 ? "<b>" + inits(b9) + "</b><span class='mgn'>" + E(dispNm(b9)) + "</span>" : "<span class='mgn mgn-e'>tap to assign</span>") + "</button>";
           }
           return h9;
         })() + "</div></div>";
-      return "<div class='fo-ord-planv'>" + toss + xiCol + benchCol +
-        "<div class='pv-bowl'><div class='fo-ord-vzh'>Bowling</div>" + lanes + mgrid + legend + "</div></div>";
+      // two pages, one sheet: the tab decides which half paints
+      if (tab === "bowl")
+        return "<div class='fo-ord-planv'>" +
+          "<div class='pv-bowl'><div class='fo-ord-vzh'>Bowling</div>" + lanes + mgrid + legend + "</div></div>";
+      return "<div class='fo-ord-planv'>" + toss + xiCol + benchCol + "</div>";
     } catch (e) { return ""; }
   }
   // scorecards speak the same star language: gold batting stars on the
@@ -19646,7 +18931,38 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (!App.orders.keeper || !xi.some(function (p) { return p.name === App.orders.keeper; }))
       App.orders.keeper = (xi.filter(function (p) { return p.keeper; })[0] || xi[0]).name;
     gridState();
-    var opp = App.pending;
+    // A LEAGUE MATCH IS THE UMPIRE'S TO PLAY. On a device holding a world
+    // claim, a pending league fixture can only be a ghost off the retired
+    // local sim - another round, another opponent, at a ground called Neutral
+    // Park - because real league cricket is played by the server, not here.
+    // Only an arranged friendly legitimately pends on a claimed device. So a
+    // league ghost dies at the door, and the banner reads the world instead:
+    // the umpire's own next fixture, its real ground, and the conditions the
+    // engine will actually use - condOf, the same pure function the served
+    // preview and the resolver both read.
+    var wOpp = null;
+    try {
+      var cl9 = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+      if (cl9 && cl9.country && cl9.slot != null) {
+        var arranged = App.pending && (App.pending.__friendly || App.pending.__chal || App.pending.comp === "friendly");
+        if (App.pending && !arranged) App.pending = null;
+        if (!App.pending && typeof window.foNextFixture === "function") {
+          var fx9 = window.foNextFixture();
+          if (fx9 && fx9.served) {
+            var meNm9 = t.name, opNm9 = (fx9.opp && fx9.opp.name) || "a club";
+            var c9 = null;
+            try {
+              var P9 = window.__foPlanet;
+              if (P9 && P9.condOf) c9 = P9.condOf(cl9.country, fx9.world.h, fx9.world.season, fx9.round);
+            } catch (eC9) {}
+            wOpp = { home: fx9.isHome ? meNm9 : opNm9, away: fx9.isHome ? opNm9 : meNm9,
+                     ground: fx9.ground || "", pitch: (c9 && c9.pitch) || "balanced",
+                     weather: (c9 && c9.weather) || "", comp: "league", round: fx9.round, __served: true };
+          }
+        }
+      }
+    } catch (eW9) {}
+    var opp = App.pending || wOpp;
     if (!opp) { try { if (App.season && App.season.schedule) opp = foFixtureMeta(App.season.round); } catch (eFm) {} }
     if (!opp) opp = { home: t.name, away: "(practice)", ground: t.ground, pitch: "balanced", weather: "-" };
     var cond = "<div class='fo-ord-cond'><b>" + E(opp.home) + " v " + E(opp.away) + "</b> · " + E(foPitchName(opp.pitch)) + " pitch · " + E(opp.weather || "") + " · " + E(opp.ground || "") + "</div>" + foCondRead(opp);
@@ -19656,13 +18972,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var INT = [[-1, "Defend"], [0, "Normal"], [1, "Attack"], [2, "Launch"]];
     var FLD = [["bal", "Balanced"], ["att", "Attacking"], ["def", "Defensive"]];
     var cell2 = function (lbl, inner) { return "<label class='fo-ord-cell'><span>" + lbl + "</span>" + inner + "</label>"; };
-    var tac = "<div class='fo-ord-tac'>" +
+    // the tactics follow their discipline: intent and the toss live with the
+    // bat, the field lives with the ball
+    var tacBat = "<div class='fo-ord-tac'>" +
       "<div class='fo-ord-tach'>Batting intent</div>" +
       "<div class='fo-ord-tr3'>" + cell2("Powerplay", sel2("pi:pp", INT, App.orders.phaseIntent.pp)) + cell2("Middle", sel2("pi:mid", INT, App.orders.phaseIntent.mid)) + cell2("Death", sel2("pi:death", INT, App.orders.phaseIntent.death)) + "</div>" +
-      "<div class='fo-ord-tach'>Field when bowling</div>" +
-      "<div class='fo-ord-tr3'>" + cell2("Powerplay", sel2("fp:pp", FLD, App.orders.fieldPlan.pp)) + cell2("Middle", sel2("fp:mid", FLD, App.orders.fieldPlan.mid)) + cell2("Death", sel2("fp:death", FLD, App.orders.fieldPlan.death)) + "</div>" +
       "<div class='fo-ord-tach'>Toss</div>" +
       "<div class='fo-ord-tr3'>" + cell2("Call", sel2("toss:call", [["H", "Heads"], ["T", "Tails"]], App.orders.tossCall || "H")) + cell2("If won", sel2("toss:dec", [["bat", "Bat"], ["bowl", "Bowl"]], App.orders.tossDecision || "bat")) + "<span></span></div></div>";
+    var tacBowl = "<div class='fo-ord-tac'>" +
+      "<div class='fo-ord-tach'>Field when bowling</div>" +
+      "<div class='fo-ord-tr3'>" + cell2("Powerplay", sel2("fp:pp", FLD, App.orders.fieldPlan.pp)) + cell2("Middle", sel2("fp:mid", FLD, App.orders.fieldPlan.mid)) + cell2("Death", sel2("fp:death", FLD, App.orders.fieldPlan.death)) + "</div></div>";
     var prev = null; try { prev = (typeof foPreviousOrders === "function") ? foPreviousOrders() : null; } catch (e) {}
     // ---- simple mode: the Gaffer fills the sheet, the manager reads it -----
     if (foOrdMode() === "simple") {
@@ -19676,13 +18995,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       } catch (eSg) {}
       // the fixture IS the occasion: a broadcast-sized matchup title, the
       // conditions in one quiet line beneath, and no conditions essay
+      var tabS = foOrdTab();
       page.innerHTML =
         "<div class='fo-ord-hero'><span class='h-t'>" + E(opp.home) + "</span><span class='h-v'>v</span><span class='h-t'>" + E(opp.away) + "</span></div>" +
         "<div class='fo-ord-herosub'>" + E(foPitchName(opp.pitch)) + " pitch &middot; " + E(opp.weather || "") + " &middot; " + E(opp.ground || "") + "</div>" +
-        "<div class='panel fo-keep'><h4>The Gaffer's plan</h4><div class='pad'>" +
-        "<div class='fo-j-gbox' style='max-width:none;margin:2px 0 10px'><img class='gf' src='" + FO_ART + "gaffer.png' alt=''>" +
-        "<span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;My plan for these conditions, boss. Move anything you like - it's all live.&rdquo;</span></span></div>" +
-        foOrdPlanVisual() +
+        foOrdTabBar(tabS) +
+        "<div class='panel fo-keep'><h4>The Gaffer's plan &middot; " + (tabS === "bowl" ? "Bowling" : "Batting") + "</h4><div class='pad'>" +
+        (tabS === "bat" ? "<div class='fo-j-gbox' style='max-width:none;margin:2px 0 10px'><img class='gf' src='" + FO_ART + "gaffer.png' alt=''>" +
+        "<span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;My plan for these conditions, boss. Move anything you like - it's all live.&rdquo;</span></span></div>" : "") +
+        foOrdPlanVisual(tabS) +
         "<div class='fo-ord-acts' style='margin-top:12px'>" +
         "<button class='primary fo-ord-save'>" + (App.pending ? "Play with this plan &#9654;" : "Save this plan") + "</button>" +
         (SYNC && SYNC.started && !SYNC.practice && App.pending && !App.pending.__friendly
@@ -19692,14 +19013,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       foOrdWire(page);
       return;
     }
-    page.innerHTML = cond +
-      "<div class='fo-ord-cols'>" +
-      "<div class='panel fo-keep'><h4>Batting order</h4><div class='pad'>" +
-      "<div class='small' style='margin-bottom:6px'>Arrows move a batter · tap <b>C</b> for captain, <b>WK</b> for the gloves · tap the letter to tell a man how to bat: <b>N</b>ormal, <b>A</b>ttack, <b>L</b>aunch, <b>D</b>efend.</div>" +
-      "<div id='fo-bat-rows'>" + foOrdBatRows() + "</div>" + tac + "</div></div>" +
-      "<div class='panel fo-keep'><h4>Bowling plan</h4><div class='pad'>" +
-      "<div class='fo-og-hint'>Pick a bowler &middot; tap overs to paint his spells &middot; tap again to clear. Ten overs each, never two in a row.</div>" +
-      "<div id='fo-bowl-body'>" + foOrdBowlBody() + "</div></div></div></div>" +
+    var tabA = foOrdTab();
+    page.innerHTML = cond + foOrdTabBar(tabA) +
+      "<div class='fo-ord-cols fo-ord-one'>" +
+      (tabA === "bat"
+        ? "<div class='panel fo-keep'><h4>Batting order</h4><div class='pad'>" +
+          "<div class='small' style='margin-bottom:6px'>Arrows move a batter · tap <b>C</b> for captain, <b>WK</b> for the gloves · tap the letter to tell a man how to bat: <b>N</b>ormal, <b>A</b>ttack, <b>L</b>aunch, <b>D</b>efend.</div>" +
+          "<div id='fo-bat-rows'>" + foOrdBatRows() + "</div>" + tacBat + "</div></div>"
+        : "<div class='panel fo-keep'><h4>Bowling plan</h4><div class='pad'>" +
+          "<div class='fo-og-hint'>Pick a bowler &middot; tap overs to paint his spells &middot; tap again to clear. Ten overs each, never two in a row.</div>" +
+          "<div id='fo-bowl-body'>" + foOrdBowlBody() + "</div>" + tacBowl + "</div></div>") + "</div>" +
       "<div class='fo-ord-acts'>" +
       "<button class='primary fo-ord-save'>Save orders" + (App.pending ? "" : "") + "</button>" +
       "<button data-fo-act='suggest'>Suggest lineup</button>" +
@@ -19720,6 +19043,19 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           if (!/^#\/orders/.test(location.hash || "")) return;
           var q = function (sel3) { return ev.target.closest ? ev.target.closest(sel3) : null; };
           var el;
+          // FIRST, ALWAYS. An arrow tap is never a drag and never a card open,
+          // so nothing downstream may swallow it.
+          if ((el = q("[data-fo-mv]"))) {
+            var mvA = el.getAttribute("data-fo-mv").split(":");
+            foOrdMove(mvA.slice(1).join(":"), mvA[0] === "up" ? -1 : 1);
+            return;
+          }
+          if ((el = q("[data-fo-ordtab]"))) {
+            try { lsSet("fo_ord_tab", el.getAttribute("data-fo-ordtab")); } catch (eT9) {}
+            foOrdersUI();
+            try { window.scrollTo(0, 0); } catch (eS9) {}   // a tab is a page: it opens at its top
+            return;
+          }
           if ((el = q("[data-fo-up]"))) { var i1 = +el.getAttribute("data-fo-up"); var a1 = App.orders.batOrder; var tmp1 = a1[i1 - 1]; a1[i1 - 1] = a1[i1]; a1[i1] = tmp1; foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-dn]"))) { var i2 = +el.getAttribute("data-fo-dn"); var a2 = App.orders.batOrder; var tmp2 = a2[i2 + 1]; a2[i2 + 1] = a2[i2]; a2[i2] = tmp2; foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-swap]"))) { foOrdBenchSheet(el.getAttribute("data-fo-swap")); return; }
@@ -20021,12 +19357,25 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-ord-vzh{margin:8px 0 4px}" +
       ".fo-ord-planv .fo-j-gbox{padding:7px 11px}" +
       "}" +
+      // ---- the batting / bowling tab bar: two pages, one sheet -------------
+      ".fo-ord-tabs{display:flex;gap:6px;margin:10px 0 12px}" +
+      "html body.ftpskin #page .fo-ord-tabs button,html body #page .fo-ord-tabs button{flex:1;padding:11px 0;border-radius:12px;border:1px solid rgba(28,36,51,.16)!important;background:#FFFEFC!important;color:#5b6472!important;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;box-shadow:none!important}" +
+      "html body #page .fo-ord-tabs button.on{background:#0E233F!important;border-color:#0E233F!important;color:#FFFEFC!important}" +
       // ---- phone bowling: arm a bowler, tap big over-cells (the 50-wide
       // lanes are desktop-only - their cells are unusably narrow on a phone)
       ".fo-ord-mgrid{display:none}" +
       "@media(max-width:820px){" +
-      "html body #page .fo-ord-lanes{display:none!important}" +   // outranks the base .fo-ord-lanes{display:flex} that follows in this sheet
+      "html body #page .fo-ord-lanes{display:none!important}" +
+      ".fo-ord-clearrow.lanes{display:none}" +   // the lanes' clear button leaves with the lanes; the mgrid has its own
+   // outranks the base .fo-ord-lanes{display:flex} that follows in this sheet
       ".fo-ord-mgrid{display:block}" +
+      // ---- the overs run DOWN the page on a phone: one over a row, big
+      // targets, the phases named where they begin, and the bowler chips
+      // riding along at the top so assigning over 43 never means scrolling
+      // back up to re-arm a man
+      ".mg-chips{position:sticky;top:calc(var(--fo-tbh,52px) + 44px);z-index:6;background:rgba(248,245,238,.96);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);padding:6px 0;border-radius:0 0 10px 10px}" +
+      ".mg-ph{display:block;margin:10px 0 4px;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#8a93a3}" +
+      ".mg-ph.pp{color:#4E7A4E}.mg-ph.dth{color:#B04A2C}" +
       ".mg-hint{font-size:11.5px;color:#5b6472;line-height:1.5;margin:0 0 8px}" +
       ".mg-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 9px}" +
       "html body #page .mg-chips button.mgb{display:inline-flex;align-items:center;gap:6px;border:2px solid rgba(28,36,51,.14)!important;background:#FFFEFC!important;border-radius:99px;padding:7px 12px;font-size:12.5px;font-weight:800;color:#243244;cursor:pointer}" +
@@ -20040,23 +19389,40 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-ord-clearrow.lanes{margin:7px 0 0}" +
       "html body.ftpskin #page button.fo-ord-clearp,html body #page button.fo-ord-clearp{border:1px solid rgba(28,36,51,.16)!important;background:#FFFEFC!important;color:#5a6472!important;border-radius:999px;padding:7px 13px;font-size:11px;font-weight:700;letter-spacing:.02em;cursor:pointer}" +
       "html body #page button.fo-ord-clearp:hover{border-color:#B04A2C!important;color:#B04A2C!important}" +
-      ".mg-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}" +
-      "html body #page .mg-grid button.mgc{position:relative;border:1px solid rgba(28,36,51,.16)!important;background:#F6F3EC!important;border-radius:7px;height:36px;padding:0;cursor:pointer;overflow:hidden}" +
-      "html body #page .mg-grid button.mgc.pp{border-bottom:3px solid #4E7A4E!important}" +
-      "html body #page .mg-grid button.mgc.dth{border-bottom:3px solid #B04A2C!important}" +
-      ".mg-grid .mgc em{position:absolute;top:1px;left:3px;font-style:normal;font-size:7.5px;color:#a8aeb9;font-weight:700}" +
-      ".mg-grid .mgc b{display:flex;align-items:center;justify-content:center;height:100%;font-size:11px;font-weight:800;color:#fff}" +
+      // the overs run DOWN the page: one over a row, the over number on the
+      // left, the bowler's chip and name beside it, the phase named by the
+      // coloured left edge - over 1 at the top, over 50 at the foot
+      ".mg-grid{display:flex;flex-direction:column;gap:3px}" +
+      "html body #page .mg-grid button.mgc{display:flex;align-items:center;gap:9px;border:1px solid rgba(28,36,51,.16)!important;border-left:4px solid #c8cfd9!important;background:#FFFEFC!important;border-radius:8px;height:42px;padding:0 10px 0 0!important;cursor:pointer;overflow:hidden}" +
+      "html body #page .mg-grid button.mgc.pp{border-left-color:#4E7A4E!important}" +
+      "html body #page .mg-grid button.mgc.dth{border-left-color:#B04A2C!important}" +
+      ".mg-grid .mgc em{font-style:normal;width:28px;text-align:right;font-size:11px;font-weight:700;color:#8a93a3;flex:0 0 auto;font-variant-numeric:tabular-nums}" +
+      ".mg-grid .mgc b{display:flex;align-items:center;justify-content:center;height:24px;width:34px;flex:0 0 auto;border-radius:6px;font-size:10.5px;font-weight:800;color:#fff}" +
+      ".mg-grid .mgc .mgn{font-size:13px;font-weight:700;color:#243244;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".mg-grid .mgc .mgn-e{color:#b6bdc9;font-weight:600;font-style:italic}" +
       "}" +
       // one uniform navy for every bowler's cells - the initials tell them
       // apart, the colour stays calm
       ".mg-chips .mgb i{display:none}" +
-      "html body #page .mg-grid button.mgc-c0,html body #page .mg-grid button.mgc-c1,html body #page .mg-grid button.mgc-c2,html body #page .mg-grid button.mgc-c3,html body #page .mg-grid button.mgc-c4,html body #page .mg-grid button.mgc-c5{background:#41577a!important}" +
-      ".mg-grid .mgc-c0 em,.mg-grid .mgc-c1 em,.mg-grid .mgc-c2 em,.mg-grid .mgc-c3 em,.mg-grid .mgc-c4 em,.mg-grid .mgc-c5 em{color:rgba(255,255,255,.75)}" +
+      ".mg-grid .mgc-c0 b,.mg-grid .mgc-c1 b,.mg-grid .mgc-c2 b,.mg-grid .mgc-c3 b,.mg-grid .mgc-c4 b,.mg-grid .mgc-c5 b{background:#41577a}" +
       // ---- the ≡ drag handle: hidden for mouse users (drag-anywhere covers
       // them), a fat instant-drag target on touch screens
       ".fo-ord-xis .xc .dh{display:none}" +
-      "@media(pointer:coarse){.fo-ord-xis .xc .dh{display:flex;align-items:center;justify-content:center;position:absolute;right:4px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:8px;background:#EEF2F7;color:#41577a;font-size:17px;font-weight:400;touch-action:none}" +
-      "html body #page .fo-ord-xis button.xc{position:relative;padding-right:46px!important}}" +
+      "@media(pointer:coarse){.fo-ord-xis .xc .dh{display:flex;align-items:center;justify-content:center;position:absolute;right:4px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:8px;background:#EEF2F7;color:#41577a;font-size:17px;font-weight:400;touch-action:none}}" +
+      // the up/down rail on every man in the XI - on a desk as well as a phone,
+      // because one tap per place beats a drag on either
+      "html body #page .fo-ord-xis button.xc{position:relative}" +
+      // the bench keeps its grip on the right, where the drag has always been
+      "@media(pointer:coarse){html body #page .fo-ord-xis button.xc.xc-dim{padding-right:46px!important}}" +
+      // a row is the rail and then the card; the rail is a sibling, not a
+      // passenger, so its buttons are real buttons the keyboard can reach
+      ".fo-ord-xis .xcw{display:flex;align-items:stretch;gap:5px;min-width:0}" +
+      ".fo-ord-xis .xcw>.mv{flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;gap:3px;touch-action:manipulation}" +
+      "html body #page .fo-ord-xis .xcw>button.xc{flex:1 1 auto;min-width:0}" +
+      "html body.ftpskin #page .fo-ord-xis button.mvb,html body #page .fo-ord-xis button.mvb{display:flex!important;align-items:center;justify-content:center;width:36px;min-width:0;flex:1 1 auto;margin:0!important;padding:0!important;border:1px solid rgba(28,36,51,.12)!important;border-radius:8px;background:#EEF2F7!important;color:#41577a!important;font-size:10px;line-height:1;cursor:pointer;box-shadow:none!important;-webkit-user-select:none;user-select:none;transition:background .12s,color .12s}" +
+      "html body #page .fo-ord-xis button.mvb:hover{background:#DCE5F0!important;border-color:#B04A2C!important;color:#B04A2C!important}" +
+      "html body #page .fo-ord-xis button.mvb:active{background:#B04A2C!important;color:#FFFEFC!important}" +
+      "html body #page .fo-ord-xis button.mvb.off{opacity:.25;pointer-events:none}" +
       // the player-card modal is narrow: slim the v2 art panel so the name
       // never truncates beside the OVR
       "#fo-ord-pc .pkm{padding-left:84px}" +
@@ -33153,7 +32519,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 })();
 // ---- 19-modern-shell.js — the modern app shell -------------------------------
 // The game's pages got art; the chrome around them stayed 2012. This module is
-// the product-design pass: a glass topbar, a phone tab dock, motion on route
+// the product-design pass: a glass topbar, motion on route
 // changes, real press/hover/focus states, and a live match-centre where the
 // dead "No match selected" panel used to be. Pure overlay: it restyles and
 // augments the existing DOM, never replaces engine markup.
@@ -33162,70 +32528,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 
   var ACCENT = "#FF7A50";
-
-  // ---- the phone tab dock ----------------------------------------------------
-  // Five destinations cover 90% of sessions; the hamburger keeps the rest.
-  var DOCK = [
-    { k: "club", label: "Club", hash: "#/home", ic: "<path d='M3.5 10.6 12 3.4l8.5 7.2'/><path d='M5.5 9.4V20a.6.6 0 0 0 .6.6h11.8a.6.6 0 0 0 .6-.6V9.4'/><path d='M9.8 20.4v-5.6h4.4v5.6'/>" },
-    { k: "league", label: "League", hash: "#/league", ic: "<path d='M8 21.2h8'/><path d='M12 17.4v3.8'/><path d='M7.2 3.6h9.6v4.6a4.8 4.8 0 0 1-9.6 0z'/><path d='M7.2 5H4.4v1.8a3 3 0 0 0 3 3'/><path d='M16.8 5h2.8v1.8a3 3 0 0 1-3 3'/>" },
-    { k: "squad", label: "Squad", hash: "#/squad", ic: "<circle cx='9.2' cy='7.8' r='3.4'/><path d='M3.6 20.2c0-3.1 2.5-5.2 5.6-5.2s5.6 2.1 5.6 5.2'/><path d='M15.4 4.8a3.4 3.4 0 0 1 0 6'/><path d='M16.8 15.2c2.3.5 3.9 2.3 3.9 5'/>" },
-    { k: "nets", label: "Nets", hash: "#/training", ic: "<circle cx='12' cy='12' r='8.4'/><circle cx='12' cy='12' r='4.4'/><circle cx='12' cy='12' r='.9' fill='currentColor' stroke='none'/>" },
-    // The Desk held this slot until the room was retired. The fixture list took
-    // it: every upcoming match on it opens a preview, which is where a manager
-    // goes between rounds now.
-    { k: "fixtures", label: "Fixtures", hash: "#/fixtures", ic: "<rect x='3.6' y='5.4' width='16.8' height='15' rx='2'/><path d='M3.8 10.2h16.4'/><path d='M8.4 3.4v4M15.6 3.4v4'/><path d='M7.6 14h3.2M13.2 14h3.2'/>" }
-  ];
-  // which dock lamp lights up for which route
-  // Every room belongs to exactly one lamp. A room missing from this map lit
-  // nothing at all, which is how the academy, the books and the invitationals
-  // spent their first weeks: reachable, but with the dock going dark the
-  // moment you arrived.
-  var DOCK_MAP = {
-    club: ["club", "home", "finance"],
-    league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "champions", "natteams", "nations", "watch", "rankings", "team"],
-    squad: ["squad", "player", "matchlab"],
-    nets: ["training", "academy"],
-    fixtures: ["fixtures", "matchday", "preview", "report", "journal", "lore", "milestones", "paper"]
-  };
-  // immersive rooms keep the whole stage: no dock over the broadcast
-  var DOCK_HIDE = { match: 1, friendly: 1, welcome: 1, create: 1, scorecard: 1, orders: 1 };
-
-  function curRoute() { return ((location.hash || "#/club").split("?")[0] || "").replace("#/", ""); }
-
-  function ensureDock() {
-    try {
-      var d = document.getElementById("fo-dock");
-      if (!d) {
-        d = document.createElement("nav");
-        d.id = "fo-dock";
-        d.setAttribute("aria-label", "Primary");
-        d.innerHTML = DOCK.map(function (t) {
-          return "<a data-dock='" + t.k + "' href='" + t.hash + "'>" +
-            "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'>" + t.ic + "</svg>" +
-            "<span>" + E(t.label) + "</span></a>";
-        }).join("");
-        document.body.appendChild(d);
-        d.addEventListener("click", function (ev) {
-          var a = ev.target && ev.target.closest ? ev.target.closest("a[data-dock]") : null;
-          if (!a) return;
-          ev.preventDefault();
-          location.hash = a.getAttribute("href");
-          if (typeof window.route === "function") window.route();
-        });
-      }
-      var r = curRoute();
-      var tb = document.getElementById("topbar");
-      var tbGone = !tb || !tb.offsetParent; // door / theatre hide the topbar; the dock follows
-      var hide = tbGone || DOCK_HIDE[r] === 1 || document.body.classList.contains("fo-mnav-lock");
-      d.classList.toggle("off", !!hide);
-      document.body.classList.toggle("fo-dock-on", !hide);
-      var lit = null;
-      for (var k in DOCK_MAP) if (DOCK_MAP[k].indexOf(r) !== -1) { lit = k; break; }
-      [].slice.call(d.querySelectorAll("a[data-dock]")).forEach(function (a) {
-        a.classList.toggle("on", a.getAttribute("data-dock") === lit);
-      });
-    } catch (e) {}
-  }
 
   // ---- route-change motion ---------------------------------------------------
   // A short fade on every route; opacity only, so fixed-position page art
@@ -33297,7 +32599,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       document.body.appendChild(el);
     } catch (e) {}
   }
-  function afterRoute() { ensureDock(); matchCentre(); tidyNav(); ordersDoor(); }
+  function afterRoute() { matchCentre(); tidyNav(); ordersDoor(); }
   function wireRoute() {
     try {
       if (typeof window.route === "function" && !window.route.__foMs) {
@@ -33356,45 +32658,19 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "#fo-mdrawer#fo-mdrawer .fo-mdl{border-radius:12px;margin:2px 8px;font:600 13.5px/1 Inter,sans-serif;color:rgba(233,238,246,.78) !important;border:none !important}",
     "#fo-mdrawer#fo-mdrawer .fo-mdl:hover{background:rgba(255,255,255,.08) !important}",
     "#fo-mdrawer#fo-mdrawer .fo-mdl.on{background:#C95532 !important;color:#FFFEFC !important}",
-    // == the phone tab dock ====================================================
-    "#fo-dock{display:none}",
-    "@media(max-width:820px){",
-    "#fo-dock{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:340;display:flex;align-items:stretch;background:rgba(7,22,46,.94);-webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4);border:1px solid rgba(255,255,255,.12);border-radius:24px;box-shadow:0 18px 44px rgba(7,22,46,.4),inset 0 1px 0 rgba(255,255,255,.08);padding:7px 6px calc(7px + env(safe-area-inset-bottom,0px)*0)}",
-    "#fo-dock.off{display:none}",
-    "#fo-dock a,body.ftpskin #fo-dock a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0 3px;border-radius:16px;color:rgba(233,238,246,.55) !important;text-decoration:none;transition:color .15s ease,transform .12s ease}",
-    "#fo-dock a svg{width:22px;height:22px}",
-    "#fo-dock a span{font:600 9.5px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase}",
-    "#fo-dock a:active{transform:scale(.94)}",
-    "#fo-dock a.on,body.ftpskin #fo-dock a.on{color:#FF8A5C !important}",
-    "#fo-dock a.on svg{filter:drop-shadow(0 0 8px rgba(255,138,92,.5))}",
-    // room to scroll past the dock
-    "body.fo-dock-on #page{padding-bottom:88px}",
-    // full-bleed heroes pin a quick-link bar to the viewport floor; the dock
-    // covers those destinations, so the old bar retires on phones
-    "body.fo-dock-on .fo-home2 .hg-bar button:not(.hg-cta){display:none}",
-    "body.fo-dock-on .fo-home2 .hg-bar{bottom:86px;background:none;padding-bottom:0}",
-    // ...and a bar with one button left in it is no longer a bar across the
-    // foot of the picture - it is a single pill in the MIDDLE of it, landing
-    // on the club's own name. Above 760px the title block is still absolutely
-    // placed, so lifting it clears the pill.
-    "body.fo-dock-on .fo-home2 .hg-id{bottom:150px}",
-    "}",
-    // Below 760px the hero is a flex COLUMN and the title block is in flow -
-    // so no amount of lifting helps, because the bar is the only thing still
-    // floating over it. Put the bar in the column too. The name, the league
-    // line, the form beads and then the one button, in that order, with room
-    // at the foot for the dock to sit under rather than on top of.
+    // == the full-bleed hero on a phone =========================================
+    // Below 760px the hero is a flex COLUMN and the title block is in flow, so
+    // a quick-link bar pinned to the viewport floor lands ON the club's name.
+    // Put the bar in the column instead: the name, the league line, the form
+    // beads, then the buttons, in that order.
     "@media(max-width:760px){",
-    // the dock floats 10px off the floor and stands about 62px tall, so the
-    // column's foot has to clear roughly ninety plus whatever the phone's own
-    // home-bar reserves - the same inset the dock itself is offset by
-    "body.fo-dock-on .fo-home2{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}",
-    "body.fo-dock-on .fo-home2 .hg-bar{position:static;order:4;bottom:auto;margin-top:15px;padding:0;justify-content:flex-start;background:none}",
+    ".fo-home2{padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}",
+    ".fo-home2 .hg-bar{position:static;order:4;bottom:auto;margin-top:15px;padding:0;justify-content:flex-start;background:none}",
     "}",
     // == the dressing-room door ================================================
     "#fo-ord-door{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:350;background:#C95532;color:#FFFEFC;font:700 12.5px/1 Inter,sans-serif;letter-spacing:.03em;border-radius:999px;padding:13px 20px;text-decoration:none;box-shadow:0 10px 28px rgba(201,85,50,.5)}",
     "#fo-ord-door:hover{background:#A64426;text-decoration:none;color:#FFFEFC}",
-    "@media(max-width:820px){#fo-ord-door{right:12px;bottom:calc(88px + env(safe-area-inset-bottom,0px))}}",
+    "@media(max-width:820px){#fo-ord-door{right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px))}}",
     // == motion ================================================================
     "@media (prefers-reduced-motion:no-preference){",
     "#page.fo-page-in{animation:foMsPageIn .22s ease-out}",
@@ -44206,6 +43482,220 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     d.classList.add("open");
     document.body.classList.add("fo-mnav-lock");
   };
+
+  /* ==========================================================================
+     THE MENU BAR — the building's index as a bar you can read without opening
+     anything (the panel above is still the whole index, one screen; this is
+     the fast path). A row of menus under the masthead: click one and its
+     rooms drop beneath it, the way a menu bar has always worked.
+
+     Three things this has to survive that a naive dropdown does not:
+
+       - THE BAR SCROLLS SIDEWAYS ON A PHONE. Four menus do not fit in 430px
+         with any type size worth reading, so the bar is an overflow-x strip.
+         A dropdown positioned INSIDE that strip would be clipped by it, so
+         the panel is position:fixed and placed from the button's own
+         bounding rect - it cannot be clipped by anything.
+       - THE MASTHEAD IS STICKY AND ITS HEIGHT MOVES. The bar sticks
+         underneath it, so it reads the masthead's height into a custom
+         property rather than guessing at one.
+       - THE MASTHEAD IS HIDDEN ON SOME SCREENS (the door, the theatre). The
+         bar follows it exactly, by the same test the phone dock uses.
+     ======================================================================== */
+  var BAR = [
+    { k: "Your club", short: "Club" },
+    { k: "Tournaments", short: "Tournaments" },
+    { k: "The world", short: "World" },
+    { k: "The record", short: "Record" }
+  ];
+  function groupOf(room) {
+    for (var i = 0; i < MAP.length; i++) {
+      if (MAP[i].rooms.some(function (r) { return r[0] === room; })) return i;
+    }
+    return -1;
+  }
+
+  function barCSS() {
+    if (document.getElementById("fo-mb-css")) return;
+    var st = document.createElement("style"); st.id = "fo-mb-css";
+    st.textContent = [
+      "#fo-menubar{position:sticky;top:var(--fo-tbh,52px);z-index:310;background:rgba(9,25,50,.96);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);border-bottom:1px solid rgba(255,255,255,.1);box-shadow:0 6px 18px rgba(7,22,46,.18)}",
+      "#fo-menubar.off{display:none}",
+      "#fo-menubar .fo-mb-in{display:flex;align-items:stretch;gap:2px;max-width:1120px;margin:0 auto;padding:0 8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}",
+      "#fo-menubar .fo-mb-in::-webkit-scrollbar{display:none}",
+      "html body #fo-menubar button.fo-mb-t{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;background:transparent !important;border:0 !important;border-bottom:2px solid transparent !important;color:rgba(255,254,252,.78) !important;font:600 11px/1 Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;padding:13px 13px 11px !important;margin:0;cursor:pointer;white-space:nowrap;box-shadow:none !important;border-radius:0 !important;transition:color .14s,border-color .14s,background .14s}",
+      "html body #fo-menubar button.fo-mb-t:hover{color:#FFFEFC !important;background:rgba(255,255,255,.06) !important}",
+      "html body #fo-menubar button.fo-mb-t.here{color:#E8B96A !important;border-bottom-color:#C95532 !important}",
+      "html body #fo-menubar button.fo-mb-t.open{color:#FFFEFC !important;background:rgba(201,85,50,.24) !important;border-bottom-color:#E8B96A !important}",
+      "#fo-menubar .fo-mb-cv{width:11px;height:11px;opacity:.65;transition:transform .16s ease}",
+      // Log out sits off at the end where a menu bar puts it - but ONLY when
+      // the bar has room. In a sideways-scrolling strip margin-left:auto
+      // pushes it to the end of the SCROLL, not the end of the screen, so a
+      // phone showed a permanently half-cut "LOG" that reads as breakage.
+      "html body #fo-menubar button.fo-mb-out{color:rgba(255,254,252,.5) !important}",
+      "html body #fo-menubar button.fo-mb-out:hover{color:#FFFEFC !important}",
+      "@media(min-width:721px){html body #fo-menubar button.fo-mb-out{margin-left:auto}}",
+      // and when it DOES overflow, the last item fades out rather than being
+      // guillotined, so the strip reads as something you can push
+      "@media(max-width:720px){#fo-menubar .fo-mb-in{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent)}}",
+      // TWO NAVIGATIONS IS ONE TOO MANY. The masthead's pill row listed the
+      // same rooms the bar now lists, one row above it. The pills stay in the
+      // DOM - the overlay's foot still proxies Admin and Log out off them, and
+      // the engine still owns their handlers - but they are no longer drawn.
+      "html body #topbar .fo-nav-scroll{display:none !important}",
+      "#fo-menubar button.fo-mb-t.open .fo-mb-cv{transform:rotate(180deg);opacity:1}",
+      // the panel: fixed, so the bar's own sideways scroll cannot clip it
+      "#fo-mb-pop{position:fixed;z-index:430;display:none;min-width:230px;max-width:min(340px,calc(100vw - 16px));background:linear-gradient(168deg,#0B1D3A,#07162E 70%);border:1px solid rgba(255,255,255,.13);border-radius:14px;box-shadow:0 26px 60px rgba(4,12,26,.55);padding:7px;animation:fo-mb-drop .15s ease}",
+      "#fo-mb-pop.on{display:block}",
+      "@keyframes fo-mb-drop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}",
+      "html body #fo-mb-pop a{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:10px;color:#FFFEFC !important;text-decoration:none !important;font:600 13px/1.25 Inter,sans-serif}",
+      "html body #fo-mb-pop a:hover,html body #fo-mb-pop a:focus{background:rgba(255,255,255,.1) !important;outline:none}",
+      "html body #fo-mb-pop a.on{background:rgba(201,85,50,.26) !important}",
+      "#fo-mb-pop a em{flex:none;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:#E8B96A;font-style:normal}",
+      "#fo-mb-pop a em svg{width:16px;height:16px;display:block}",
+      "#fo-mb-pop a.on em{background:rgba(232,185,106,.24);border-color:rgba(232,185,106,.55);color:#FFE7BE}"
+    ].join("\n");
+    document.head.appendChild(st);
+  }
+
+  var popEl = null, openIx = -1;
+  function pop() {
+    if (!popEl) {
+      popEl = document.createElement("div"); popEl.id = "fo-mb-pop";
+      popEl.setAttribute("role", "menu");
+      document.body.appendChild(popEl);
+    }
+    return popEl;
+  }
+  function closeBar() {
+    if (popEl) popEl.classList.remove("on");
+    openIx = -1;
+    var bar = document.getElementById("fo-menubar");
+    if (bar) [].slice.call(bar.querySelectorAll("button.fo-mb-t")).forEach(function (b) { b.classList.remove("open"); });
+  }
+  function openBar(ix, btn) {
+    var g = MAP[ix]; if (!g) return;
+    var here = curRoom(); here = ALIAS[here] || here;
+    var p = pop();
+    p.innerHTML = g.rooms.map(function (r) {
+      return "<a role='menuitem' class='" + (r[0] === here ? "on" : "") + "' href='#/" + r[0] + "'>" +
+        "<em>" + glyph(r[1]) + "</em><span>" + E(r[2]) + "</span></a>";
+    }).join("");
+    p.classList.add("on");
+    // place it under the button, clamped inside the viewport on both sides
+    var rc = btn.getBoundingClientRect();
+    var w = p.offsetWidth;
+    var left = Math.max(8, Math.min(rc.left, (window.innerWidth || 360) - w - 8));
+    p.style.left = left + "px";
+    p.style.top = (rc.bottom + 4) + "px";
+    openIx = ix;
+    [].slice.call(btn.parentNode.querySelectorAll("button.fo-mb-t")).forEach(function (b) { b.classList.remove("open"); });
+    btn.classList.add("open");
+    p.querySelectorAll("a").forEach(function (a) {
+      a.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        closeBar();
+        location.hash = a.getAttribute("href");
+        try { if (typeof window.route === "function") window.route(); } catch (e) {}
+      });
+    });
+  }
+
+  function buildBar() {
+    try {
+      barCSS();
+      var tb = document.getElementById("topbar"); if (!tb) return;
+      var bar = document.getElementById("fo-menubar");
+      if (!bar) {
+        bar = document.createElement("nav");
+        bar.id = "fo-menubar";
+        bar.setAttribute("aria-label", "Sections");
+        bar.innerHTML = "<div class='fo-mb-in' role='menubar'></div>";
+        tb.parentNode.insertBefore(bar, tb.nextSibling);
+        var inner = bar.firstChild;
+        BAR.forEach(function (b, i) {
+          var ix = -1;
+          for (var m = 0; m < MAP.length; m++) if (MAP[m].k === b.k) ix = m;
+          if (ix < 0) return;
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "fo-mb-t";
+          btn.setAttribute("data-mb", String(ix));
+          btn.setAttribute("aria-haspopup", "true");
+          btn.innerHTML = "<span>" + E(b.short) + "</span>" +
+            "<svg class='fo-mb-cv' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' " +
+            "stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>";
+          btn.addEventListener("click", function (ev) {
+            ev.preventDefault(); ev.stopPropagation();
+            if (openIx === ix) closeBar(); else openBar(ix, btn);
+          });
+          // a mouse expects the menus to follow the pointer once one is down
+          btn.addEventListener("mouseenter", function () {
+            if (openIx >= 0 && openIx !== ix) openBar(ix, btn);
+          });
+          inner.appendChild(btn);
+        });
+        // ...and the way a menu bar ends: the engine's own Log out, proxied so
+        // it keeps its handler and its state rather than being reimplemented.
+        // It is only drawn once the engine has actually put one there.
+        var out = document.createElement("button");
+        out.type = "button";
+        out.className = "fo-mb-t fo-mb-out";
+        out.innerHTML = "<span>Log out</span>";
+        out.addEventListener("click", function (ev) {
+          ev.preventDefault(); ev.stopPropagation();
+          closeBar();
+          var a2 = tb.querySelector("a.fo-logout");
+          if (a2) a2.click();
+        });
+        inner.appendChild(out);
+        // closing: anywhere else, Escape, a route change, or the page moving
+        document.addEventListener("click", function (ev) {
+          if (openIx < 0) return;
+          if (popEl && popEl.contains(ev.target)) return;
+          closeBar();
+        });
+        window.addEventListener("keydown", function (ev) {
+          if (ev.key !== "Escape" || openIx < 0) return;
+          var btn2 = bar.querySelector("button.fo-mb-t[data-mb='" + openIx + "']");
+          closeBar();
+          if (btn2) btn2.focus();
+        });
+        window.addEventListener("hashchange", closeBar);
+        window.addEventListener("scroll", function () { if (openIx >= 0) closeBar(); }, true);
+        window.addEventListener("resize", closeBar);
+        // arrow keys walk the bar, as a menubar should
+        inner.addEventListener("keydown", function (ev) {
+          if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") return;
+          var all = [].slice.call(inner.querySelectorAll("button.fo-mb-t"));
+          var at = all.indexOf(document.activeElement);
+          if (at < 0) return;
+          ev.preventDefault();
+          var nxt = all[(at + (ev.key === "ArrowRight" ? 1 : all.length - 1)) % all.length];
+          nxt.focus();
+          if (openIx >= 0) nxt.click();
+        });
+      }
+      // the bar lives and dies with the masthead, and sticks under it
+      var gone = !tb.offsetParent;
+      bar.classList.toggle("off", !!gone);
+      if (!gone) {
+        try { document.documentElement.style.setProperty("--fo-tbh", tb.offsetHeight + "px"); } catch (eV) {}
+      } else if (openIx >= 0) closeBar();
+      // and the menu you are standing in is lit
+      var outBtn = bar.querySelector(".fo-mb-out");
+      if (outBtn) outBtn.style.display = tb.querySelector("a.fo-logout") ? "" : "none";
+      var here2 = curRoom(); here2 = ALIAS[here2] || here2;
+      var lit = groupOf(here2);
+      [].slice.call(bar.querySelectorAll("button.fo-mb-t")).forEach(function (b) {
+        b.classList.toggle("here", +b.getAttribute("data-mb") === lit);
+      });
+    } catch (e) {}
+  }
+  try { setInterval(buildBar, 1200); } catch (e) {}
+  window.addEventListener("hashchange", function () { setTimeout(buildBar, 60); });
+  setTimeout(buildBar, 300);
+  setTimeout(buildBar, 1200);
 
   // the masthead button exists before this module loads; make sure it opens
   // the index rather than the old pill proxy, however it was wired

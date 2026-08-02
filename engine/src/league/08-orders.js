@@ -460,7 +460,20 @@
   }
   // the saved plan as a matchday visual: game-plan cards, the XI strip,
   // a tempo curve, and the fifty overs of bowling as a coloured timeline
-  function foOrdPlanVisual() {
+  // WHICH HALF OF THE SHEET IS OPEN. Batting and bowling used to share one
+  // long page, and a manager scrolling for the overs grid waded through the
+  // whole XI to reach it. They are two jobs, so they are two pages, and the
+  // choice is remembered.
+  function foOrdTab() {
+    var v = null; try { v = lsGet("fo_ord_tab"); } catch (e) {}
+    return v === "bowl" ? "bowl" : "bat";
+  }
+  function foOrdTabBar(tab) {
+    return "<div class='fo-ord-tabs'>" +
+      "<button type='button' class='" + (tab === "bat" ? "on" : "") + "' data-fo-ordtab='bat'>Batting</button>" +
+      "<button type='button' class='" + (tab === "bowl" ? "on" : "") + "' data-fo-ordtab='bowl'>Bowling</button></div>";
+  }
+  function foOrdPlanVisual(tab) {
     try {
       gridState();
       var bo = App.orders.batOrder || [], sn = foOrdSurname;
@@ -569,7 +582,7 @@
       var colorIx = {}; bowlNames.forEach(function (n9, i9) { colorIx[n9] = i9 % 6; });
       var inits = function (nm9) { var a9 = String(nm9).split(" "); return (a9[0].charAt(0) + (a9.length > 1 ? a9[a9.length - 1].charAt(0) : "")).toUpperCase(); };
       var mgrid = "<div class='fo-ord-mgrid'>" +
-        "<div class='mg-hint'>Pick a bowler, then tap overs to hand them to him &middot; tap his over again to clear it. Top row is the powerplay, bottom row the death. Tap a bowler's badge to set his field: attacking, balanced or defensive.</div>" +
+        "<div class='mg-hint'>Pick a bowler, then tap overs to hand them to him &middot; tap his over again to clear it. The list runs over 1 to over 50. Tap a bowler's badge to set his field: attacking, balanced or defensive.</div>" +
         "<div class='fo-ord-clearrow'><button type='button' class='fo-ord-clearp' data-fo-clearplan>&#8709; Clear the bowling plan</button></div>" +
         "<div class='mg-chips'>" + bowlNames.map(function (n9) {
           // the lanes are desktop-only, so a phone gets the bowler's field
@@ -579,15 +592,24 @@
             "<s class='fbd" + (foMfVal(n9) ? " on" : "") + "' data-fo-mfc='" + E(n9) + "' title='" + E(foMfTitle(n9)) + "'>" + foMfShort(n9) + "</s></button>";
         }).join("") + "</div>" +
         "<div class='mg-grid'>" + (function () {
+          // a vertical over-list, not a mosaic: over 1 at the top, over 50 at
+          // the foot, one row a tap-target, the phases named where they start
           var h9 = "";
           for (var o9 = 1; o9 <= 50; o9++) {
+            if (o9 === 1) h9 += "<span class='mg-ph pp'>Powerplay &middot; overs 1-10</span>";
+            if (o9 === 11) h9 += "<span class='mg-ph'>Middle &middot; overs 11-40</span>";
+            if (o9 === 41) h9 += "<span class='mg-ph dth'>Death &middot; overs 41-50</span>";
             var b9 = g[o9];
-            h9 += "<button type='button' class='mgc" + (b9 ? " mgc-c" + colorIx[b9] : "") + (o9 <= 10 ? " pp" : o9 >= 41 ? " dth" : "") + "' data-mo='" + o9 + "'><em>" + o9 + "</em>" + (b9 ? "<b>" + inits(b9) + "</b>" : "") + "</button>";
+            h9 += "<button type='button' class='mgc" + (b9 ? " mgc-c" + colorIx[b9] : "") + (o9 <= 10 ? " pp" : o9 >= 41 ? " dth" : "") + "' data-mo='" + o9 + "'><em>" + o9 + "</em>" +
+              (b9 ? "<b>" + inits(b9) + "</b><span class='mgn'>" + E(dispNm(b9)) + "</span>" : "<span class='mgn mgn-e'>tap to assign</span>") + "</button>";
           }
           return h9;
         })() + "</div></div>";
-      return "<div class='fo-ord-planv'>" + toss + xiCol + benchCol +
-        "<div class='pv-bowl'><div class='fo-ord-vzh'>Bowling</div>" + lanes + mgrid + legend + "</div></div>";
+      // two pages, one sheet: the tab decides which half paints
+      if (tab === "bowl")
+        return "<div class='fo-ord-planv'>" +
+          "<div class='pv-bowl'><div class='fo-ord-vzh'>Bowling</div>" + lanes + mgrid + legend + "</div></div>";
+      return "<div class='fo-ord-planv'>" + toss + xiCol + benchCol + "</div>";
     } catch (e) { return ""; }
   }
   // scorecards speak the same star language: gold batting stars on the
@@ -705,13 +727,16 @@
     var INT = [[-1, "Defend"], [0, "Normal"], [1, "Attack"], [2, "Launch"]];
     var FLD = [["bal", "Balanced"], ["att", "Attacking"], ["def", "Defensive"]];
     var cell2 = function (lbl, inner) { return "<label class='fo-ord-cell'><span>" + lbl + "</span>" + inner + "</label>"; };
-    var tac = "<div class='fo-ord-tac'>" +
+    // the tactics follow their discipline: intent and the toss live with the
+    // bat, the field lives with the ball
+    var tacBat = "<div class='fo-ord-tac'>" +
       "<div class='fo-ord-tach'>Batting intent</div>" +
       "<div class='fo-ord-tr3'>" + cell2("Powerplay", sel2("pi:pp", INT, App.orders.phaseIntent.pp)) + cell2("Middle", sel2("pi:mid", INT, App.orders.phaseIntent.mid)) + cell2("Death", sel2("pi:death", INT, App.orders.phaseIntent.death)) + "</div>" +
-      "<div class='fo-ord-tach'>Field when bowling</div>" +
-      "<div class='fo-ord-tr3'>" + cell2("Powerplay", sel2("fp:pp", FLD, App.orders.fieldPlan.pp)) + cell2("Middle", sel2("fp:mid", FLD, App.orders.fieldPlan.mid)) + cell2("Death", sel2("fp:death", FLD, App.orders.fieldPlan.death)) + "</div>" +
       "<div class='fo-ord-tach'>Toss</div>" +
       "<div class='fo-ord-tr3'>" + cell2("Call", sel2("toss:call", [["H", "Heads"], ["T", "Tails"]], App.orders.tossCall || "H")) + cell2("If won", sel2("toss:dec", [["bat", "Bat"], ["bowl", "Bowl"]], App.orders.tossDecision || "bat")) + "<span></span></div></div>";
+    var tacBowl = "<div class='fo-ord-tac'>" +
+      "<div class='fo-ord-tach'>Field when bowling</div>" +
+      "<div class='fo-ord-tr3'>" + cell2("Powerplay", sel2("fp:pp", FLD, App.orders.fieldPlan.pp)) + cell2("Middle", sel2("fp:mid", FLD, App.orders.fieldPlan.mid)) + cell2("Death", sel2("fp:death", FLD, App.orders.fieldPlan.death)) + "</div></div>";
     var prev = null; try { prev = (typeof foPreviousOrders === "function") ? foPreviousOrders() : null; } catch (e) {}
     // ---- simple mode: the Gaffer fills the sheet, the manager reads it -----
     if (foOrdMode() === "simple") {
@@ -725,13 +750,15 @@
       } catch (eSg) {}
       // the fixture IS the occasion: a broadcast-sized matchup title, the
       // conditions in one quiet line beneath, and no conditions essay
+      var tabS = foOrdTab();
       page.innerHTML =
         "<div class='fo-ord-hero'><span class='h-t'>" + E(opp.home) + "</span><span class='h-v'>v</span><span class='h-t'>" + E(opp.away) + "</span></div>" +
         "<div class='fo-ord-herosub'>" + E(foPitchName(opp.pitch)) + " pitch &middot; " + E(opp.weather || "") + " &middot; " + E(opp.ground || "") + "</div>" +
-        "<div class='panel fo-keep'><h4>The Gaffer's plan</h4><div class='pad'>" +
-        "<div class='fo-j-gbox' style='max-width:none;margin:2px 0 10px'><img class='gf' src='" + FO_ART + "gaffer.png' alt=''>" +
-        "<span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;My plan for these conditions, boss. Move anything you like - it's all live.&rdquo;</span></span></div>" +
-        foOrdPlanVisual() +
+        foOrdTabBar(tabS) +
+        "<div class='panel fo-keep'><h4>The Gaffer's plan &middot; " + (tabS === "bowl" ? "Bowling" : "Batting") + "</h4><div class='pad'>" +
+        (tabS === "bat" ? "<div class='fo-j-gbox' style='max-width:none;margin:2px 0 10px'><img class='gf' src='" + FO_ART + "gaffer.png' alt=''>" +
+        "<span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;My plan for these conditions, boss. Move anything you like - it's all live.&rdquo;</span></span></div>" : "") +
+        foOrdPlanVisual(tabS) +
         "<div class='fo-ord-acts' style='margin-top:12px'>" +
         "<button class='primary fo-ord-save'>" + (App.pending ? "Play with this plan &#9654;" : "Save this plan") + "</button>" +
         (SYNC && SYNC.started && !SYNC.practice && App.pending && !App.pending.__friendly
@@ -741,14 +768,16 @@
       foOrdWire(page);
       return;
     }
-    page.innerHTML = cond +
-      "<div class='fo-ord-cols'>" +
-      "<div class='panel fo-keep'><h4>Batting order</h4><div class='pad'>" +
-      "<div class='small' style='margin-bottom:6px'>Arrows move a batter · tap <b>C</b> for captain, <b>WK</b> for the gloves · tap the letter to tell a man how to bat: <b>N</b>ormal, <b>A</b>ttack, <b>L</b>aunch, <b>D</b>efend.</div>" +
-      "<div id='fo-bat-rows'>" + foOrdBatRows() + "</div>" + tac + "</div></div>" +
-      "<div class='panel fo-keep'><h4>Bowling plan</h4><div class='pad'>" +
-      "<div class='fo-og-hint'>Pick a bowler &middot; tap overs to paint his spells &middot; tap again to clear. Ten overs each, never two in a row.</div>" +
-      "<div id='fo-bowl-body'>" + foOrdBowlBody() + "</div></div></div></div>" +
+    var tabA = foOrdTab();
+    page.innerHTML = cond + foOrdTabBar(tabA) +
+      "<div class='fo-ord-cols fo-ord-one'>" +
+      (tabA === "bat"
+        ? "<div class='panel fo-keep'><h4>Batting order</h4><div class='pad'>" +
+          "<div class='small' style='margin-bottom:6px'>Arrows move a batter · tap <b>C</b> for captain, <b>WK</b> for the gloves · tap the letter to tell a man how to bat: <b>N</b>ormal, <b>A</b>ttack, <b>L</b>aunch, <b>D</b>efend.</div>" +
+          "<div id='fo-bat-rows'>" + foOrdBatRows() + "</div>" + tacBat + "</div></div>"
+        : "<div class='panel fo-keep'><h4>Bowling plan</h4><div class='pad'>" +
+          "<div class='fo-og-hint'>Pick a bowler &middot; tap overs to paint his spells &middot; tap again to clear. Ten overs each, never two in a row.</div>" +
+          "<div id='fo-bowl-body'>" + foOrdBowlBody() + "</div>" + tacBowl + "</div></div>") + "</div>" +
       "<div class='fo-ord-acts'>" +
       "<button class='primary fo-ord-save'>Save orders" + (App.pending ? "" : "") + "</button>" +
       "<button data-fo-act='suggest'>Suggest lineup</button>" +
@@ -774,6 +803,12 @@
           if ((el = q("[data-fo-mv]"))) {
             var mvA = el.getAttribute("data-fo-mv").split(":");
             foOrdMove(mvA.slice(1).join(":"), mvA[0] === "up" ? -1 : 1);
+            return;
+          }
+          if ((el = q("[data-fo-ordtab]"))) {
+            try { lsSet("fo_ord_tab", el.getAttribute("data-fo-ordtab")); } catch (eT9) {}
+            foOrdersUI();
+            try { window.scrollTo(0, 0); } catch (eS9) {}   // a tab is a page: it opens at its top
             return;
           }
           if ((el = q("[data-fo-up]"))) { var i1 = +el.getAttribute("data-fo-up"); var a1 = App.orders.batOrder; var tmp1 = a1[i1 - 1]; a1[i1 - 1] = a1[i1]; a1[i1] = tmp1; foOrdRepaint("bat"); return; }
@@ -1077,12 +1112,25 @@
       ".fo-ord-vzh{margin:8px 0 4px}" +
       ".fo-ord-planv .fo-j-gbox{padding:7px 11px}" +
       "}" +
+      // ---- the batting / bowling tab bar: two pages, one sheet -------------
+      ".fo-ord-tabs{display:flex;gap:6px;margin:10px 0 12px}" +
+      "html body.ftpskin #page .fo-ord-tabs button,html body #page .fo-ord-tabs button{flex:1;padding:11px 0;border-radius:12px;border:1px solid rgba(28,36,51,.16)!important;background:#FFFEFC!important;color:#5b6472!important;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;box-shadow:none!important}" +
+      "html body #page .fo-ord-tabs button.on{background:#0E233F!important;border-color:#0E233F!important;color:#FFFEFC!important}" +
       // ---- phone bowling: arm a bowler, tap big over-cells (the 50-wide
       // lanes are desktop-only - their cells are unusably narrow on a phone)
       ".fo-ord-mgrid{display:none}" +
       "@media(max-width:820px){" +
-      "html body #page .fo-ord-lanes{display:none!important}" +   // outranks the base .fo-ord-lanes{display:flex} that follows in this sheet
+      "html body #page .fo-ord-lanes{display:none!important}" +
+      ".fo-ord-clearrow.lanes{display:none}" +   // the lanes' clear button leaves with the lanes; the mgrid has its own
+   // outranks the base .fo-ord-lanes{display:flex} that follows in this sheet
       ".fo-ord-mgrid{display:block}" +
+      // ---- the overs run DOWN the page on a phone: one over a row, big
+      // targets, the phases named where they begin, and the bowler chips
+      // riding along at the top so assigning over 43 never means scrolling
+      // back up to re-arm a man
+      ".mg-chips{position:sticky;top:calc(var(--fo-tbh,52px) + 44px);z-index:6;background:rgba(248,245,238,.96);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);padding:6px 0;border-radius:0 0 10px 10px}" +
+      ".mg-ph{display:block;margin:10px 0 4px;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#8a93a3}" +
+      ".mg-ph.pp{color:#4E7A4E}.mg-ph.dth{color:#B04A2C}" +
       ".mg-hint{font-size:11.5px;color:#5b6472;line-height:1.5;margin:0 0 8px}" +
       ".mg-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 9px}" +
       "html body #page .mg-chips button.mgb{display:inline-flex;align-items:center;gap:6px;border:2px solid rgba(28,36,51,.14)!important;background:#FFFEFC!important;border-radius:99px;padding:7px 12px;font-size:12.5px;font-weight:800;color:#243244;cursor:pointer}" +
@@ -1096,18 +1144,22 @@
       ".fo-ord-clearrow.lanes{margin:7px 0 0}" +
       "html body.ftpskin #page button.fo-ord-clearp,html body #page button.fo-ord-clearp{border:1px solid rgba(28,36,51,.16)!important;background:#FFFEFC!important;color:#5a6472!important;border-radius:999px;padding:7px 13px;font-size:11px;font-weight:700;letter-spacing:.02em;cursor:pointer}" +
       "html body #page button.fo-ord-clearp:hover{border-color:#B04A2C!important;color:#B04A2C!important}" +
-      ".mg-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px}" +
-      "html body #page .mg-grid button.mgc{position:relative;border:1px solid rgba(28,36,51,.16)!important;background:#F6F3EC!important;border-radius:7px;height:36px;padding:0;cursor:pointer;overflow:hidden}" +
-      "html body #page .mg-grid button.mgc.pp{border-bottom:3px solid #4E7A4E!important}" +
-      "html body #page .mg-grid button.mgc.dth{border-bottom:3px solid #B04A2C!important}" +
-      ".mg-grid .mgc em{position:absolute;top:1px;left:3px;font-style:normal;font-size:7.5px;color:#a8aeb9;font-weight:700}" +
-      ".mg-grid .mgc b{display:flex;align-items:center;justify-content:center;height:100%;font-size:11px;font-weight:800;color:#fff}" +
+      // the overs run DOWN the page: one over a row, the over number on the
+      // left, the bowler's chip and name beside it, the phase named by the
+      // coloured left edge - over 1 at the top, over 50 at the foot
+      ".mg-grid{display:flex;flex-direction:column;gap:3px}" +
+      "html body #page .mg-grid button.mgc{display:flex;align-items:center;gap:9px;border:1px solid rgba(28,36,51,.16)!important;border-left:4px solid #c8cfd9!important;background:#FFFEFC!important;border-radius:8px;height:42px;padding:0 10px 0 0!important;cursor:pointer;overflow:hidden}" +
+      "html body #page .mg-grid button.mgc.pp{border-left-color:#4E7A4E!important}" +
+      "html body #page .mg-grid button.mgc.dth{border-left-color:#B04A2C!important}" +
+      ".mg-grid .mgc em{font-style:normal;width:28px;text-align:right;font-size:11px;font-weight:700;color:#8a93a3;flex:0 0 auto;font-variant-numeric:tabular-nums}" +
+      ".mg-grid .mgc b{display:flex;align-items:center;justify-content:center;height:24px;width:34px;flex:0 0 auto;border-radius:6px;font-size:10.5px;font-weight:800;color:#fff}" +
+      ".mg-grid .mgc .mgn{font-size:13px;font-weight:700;color:#243244;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".mg-grid .mgc .mgn-e{color:#b6bdc9;font-weight:600;font-style:italic}" +
       "}" +
       // one uniform navy for every bowler's cells - the initials tell them
       // apart, the colour stays calm
       ".mg-chips .mgb i{display:none}" +
-      "html body #page .mg-grid button.mgc-c0,html body #page .mg-grid button.mgc-c1,html body #page .mg-grid button.mgc-c2,html body #page .mg-grid button.mgc-c3,html body #page .mg-grid button.mgc-c4,html body #page .mg-grid button.mgc-c5{background:#41577a!important}" +
-      ".mg-grid .mgc-c0 em,.mg-grid .mgc-c1 em,.mg-grid .mgc-c2 em,.mg-grid .mgc-c3 em,.mg-grid .mgc-c4 em,.mg-grid .mgc-c5 em{color:rgba(255,255,255,.75)}" +
+      ".mg-grid .mgc-c0 b,.mg-grid .mgc-c1 b,.mg-grid .mgc-c2 b,.mg-grid .mgc-c3 b,.mg-grid .mgc-c4 b,.mg-grid .mgc-c5 b{background:#41577a}" +
       // ---- the ≡ drag handle: hidden for mouse users (drag-anywhere covers
       // them), a fat instant-drag target on touch screens
       ".fo-ord-xis .xc .dh{display:none}" +
