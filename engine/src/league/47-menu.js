@@ -250,6 +250,220 @@
     document.body.classList.add("fo-mnav-lock");
   };
 
+  /* ==========================================================================
+     THE MENU BAR — the building's index as a bar you can read without opening
+     anything (the panel above is still the whole index, one screen; this is
+     the fast path). A row of menus under the masthead: click one and its
+     rooms drop beneath it, the way a menu bar has always worked.
+
+     Three things this has to survive that a naive dropdown does not:
+
+       - THE BAR SCROLLS SIDEWAYS ON A PHONE. Four menus do not fit in 430px
+         with any type size worth reading, so the bar is an overflow-x strip.
+         A dropdown positioned INSIDE that strip would be clipped by it, so
+         the panel is position:fixed and placed from the button's own
+         bounding rect - it cannot be clipped by anything.
+       - THE MASTHEAD IS STICKY AND ITS HEIGHT MOVES. The bar sticks
+         underneath it, so it reads the masthead's height into a custom
+         property rather than guessing at one.
+       - THE MASTHEAD IS HIDDEN ON SOME SCREENS (the door, the theatre). The
+         bar follows it exactly, by the same test the phone dock uses.
+     ======================================================================== */
+  var BAR = [
+    { k: "Your club", short: "Club" },
+    { k: "Tournaments", short: "Tournaments" },
+    { k: "The world", short: "World" },
+    { k: "The record", short: "Record" }
+  ];
+  function groupOf(room) {
+    for (var i = 0; i < MAP.length; i++) {
+      if (MAP[i].rooms.some(function (r) { return r[0] === room; })) return i;
+    }
+    return -1;
+  }
+
+  function barCSS() {
+    if (document.getElementById("fo-mb-css")) return;
+    var st = document.createElement("style"); st.id = "fo-mb-css";
+    st.textContent = [
+      "#fo-menubar{position:sticky;top:var(--fo-tbh,52px);z-index:310;background:rgba(9,25,50,.96);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);border-bottom:1px solid rgba(255,255,255,.1);box-shadow:0 6px 18px rgba(7,22,46,.18)}",
+      "#fo-menubar.off{display:none}",
+      "#fo-menubar .fo-mb-in{display:flex;align-items:stretch;gap:2px;max-width:1120px;margin:0 auto;padding:0 8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}",
+      "#fo-menubar .fo-mb-in::-webkit-scrollbar{display:none}",
+      "html body #fo-menubar button.fo-mb-t{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;background:transparent !important;border:0 !important;border-bottom:2px solid transparent !important;color:rgba(255,254,252,.78) !important;font:600 11px/1 Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;padding:13px 13px 11px !important;margin:0;cursor:pointer;white-space:nowrap;box-shadow:none !important;border-radius:0 !important;transition:color .14s,border-color .14s,background .14s}",
+      "html body #fo-menubar button.fo-mb-t:hover{color:#FFFEFC !important;background:rgba(255,255,255,.06) !important}",
+      "html body #fo-menubar button.fo-mb-t.here{color:#E8B96A !important;border-bottom-color:#C95532 !important}",
+      "html body #fo-menubar button.fo-mb-t.open{color:#FFFEFC !important;background:rgba(201,85,50,.24) !important;border-bottom-color:#E8B96A !important}",
+      "#fo-menubar .fo-mb-cv{width:11px;height:11px;opacity:.65;transition:transform .16s ease}",
+      // Log out sits off at the end where a menu bar puts it - but ONLY when
+      // the bar has room. In a sideways-scrolling strip margin-left:auto
+      // pushes it to the end of the SCROLL, not the end of the screen, so a
+      // phone showed a permanently half-cut "LOG" that reads as breakage.
+      "html body #fo-menubar button.fo-mb-out{color:rgba(255,254,252,.5) !important}",
+      "html body #fo-menubar button.fo-mb-out:hover{color:#FFFEFC !important}",
+      "@media(min-width:721px){html body #fo-menubar button.fo-mb-out{margin-left:auto}}",
+      // and when it DOES overflow, the last item fades out rather than being
+      // guillotined, so the strip reads as something you can push
+      "@media(max-width:720px){#fo-menubar .fo-mb-in{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent)}}",
+      // TWO NAVIGATIONS IS ONE TOO MANY. The masthead's pill row listed the
+      // same rooms the bar now lists, one row above it. The pills stay in the
+      // DOM - the overlay's foot still proxies Admin and Log out off them, and
+      // the engine still owns their handlers - but they are no longer drawn.
+      "html body #topbar .fo-nav-scroll{display:none !important}",
+      "#fo-menubar button.fo-mb-t.open .fo-mb-cv{transform:rotate(180deg);opacity:1}",
+      // the panel: fixed, so the bar's own sideways scroll cannot clip it
+      "#fo-mb-pop{position:fixed;z-index:430;display:none;min-width:230px;max-width:min(340px,calc(100vw - 16px));background:linear-gradient(168deg,#0B1D3A,#07162E 70%);border:1px solid rgba(255,255,255,.13);border-radius:14px;box-shadow:0 26px 60px rgba(4,12,26,.55);padding:7px;animation:fo-mb-drop .15s ease}",
+      "#fo-mb-pop.on{display:block}",
+      "@keyframes fo-mb-drop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}",
+      "html body #fo-mb-pop a{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:10px;color:#FFFEFC !important;text-decoration:none !important;font:600 13px/1.25 Inter,sans-serif}",
+      "html body #fo-mb-pop a:hover,html body #fo-mb-pop a:focus{background:rgba(255,255,255,.1) !important;outline:none}",
+      "html body #fo-mb-pop a.on{background:rgba(201,85,50,.26) !important}",
+      "#fo-mb-pop a em{flex:none;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:#E8B96A;font-style:normal}",
+      "#fo-mb-pop a em svg{width:16px;height:16px;display:block}",
+      "#fo-mb-pop a.on em{background:rgba(232,185,106,.24);border-color:rgba(232,185,106,.55);color:#FFE7BE}"
+    ].join("\n");
+    document.head.appendChild(st);
+  }
+
+  var popEl = null, openIx = -1;
+  function pop() {
+    if (!popEl) {
+      popEl = document.createElement("div"); popEl.id = "fo-mb-pop";
+      popEl.setAttribute("role", "menu");
+      document.body.appendChild(popEl);
+    }
+    return popEl;
+  }
+  function closeBar() {
+    if (popEl) popEl.classList.remove("on");
+    openIx = -1;
+    var bar = document.getElementById("fo-menubar");
+    if (bar) [].slice.call(bar.querySelectorAll("button.fo-mb-t")).forEach(function (b) { b.classList.remove("open"); });
+  }
+  function openBar(ix, btn) {
+    var g = MAP[ix]; if (!g) return;
+    var here = curRoom(); here = ALIAS[here] || here;
+    var p = pop();
+    p.innerHTML = g.rooms.map(function (r) {
+      return "<a role='menuitem' class='" + (r[0] === here ? "on" : "") + "' href='#/" + r[0] + "'>" +
+        "<em>" + glyph(r[1]) + "</em><span>" + E(r[2]) + "</span></a>";
+    }).join("");
+    p.classList.add("on");
+    // place it under the button, clamped inside the viewport on both sides
+    var rc = btn.getBoundingClientRect();
+    var w = p.offsetWidth;
+    var left = Math.max(8, Math.min(rc.left, (window.innerWidth || 360) - w - 8));
+    p.style.left = left + "px";
+    p.style.top = (rc.bottom + 4) + "px";
+    openIx = ix;
+    [].slice.call(btn.parentNode.querySelectorAll("button.fo-mb-t")).forEach(function (b) { b.classList.remove("open"); });
+    btn.classList.add("open");
+    p.querySelectorAll("a").forEach(function (a) {
+      a.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        closeBar();
+        location.hash = a.getAttribute("href");
+        try { if (typeof window.route === "function") window.route(); } catch (e) {}
+      });
+    });
+  }
+
+  function buildBar() {
+    try {
+      barCSS();
+      var tb = document.getElementById("topbar"); if (!tb) return;
+      var bar = document.getElementById("fo-menubar");
+      if (!bar) {
+        bar = document.createElement("nav");
+        bar.id = "fo-menubar";
+        bar.setAttribute("aria-label", "Sections");
+        bar.innerHTML = "<div class='fo-mb-in' role='menubar'></div>";
+        tb.parentNode.insertBefore(bar, tb.nextSibling);
+        var inner = bar.firstChild;
+        BAR.forEach(function (b, i) {
+          var ix = -1;
+          for (var m = 0; m < MAP.length; m++) if (MAP[m].k === b.k) ix = m;
+          if (ix < 0) return;
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "fo-mb-t";
+          btn.setAttribute("data-mb", String(ix));
+          btn.setAttribute("aria-haspopup", "true");
+          btn.innerHTML = "<span>" + E(b.short) + "</span>" +
+            "<svg class='fo-mb-cv' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' " +
+            "stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>";
+          btn.addEventListener("click", function (ev) {
+            ev.preventDefault(); ev.stopPropagation();
+            if (openIx === ix) closeBar(); else openBar(ix, btn);
+          });
+          // a mouse expects the menus to follow the pointer once one is down
+          btn.addEventListener("mouseenter", function () {
+            if (openIx >= 0 && openIx !== ix) openBar(ix, btn);
+          });
+          inner.appendChild(btn);
+        });
+        // ...and the way a menu bar ends: the engine's own Log out, proxied so
+        // it keeps its handler and its state rather than being reimplemented.
+        // It is only drawn once the engine has actually put one there.
+        var out = document.createElement("button");
+        out.type = "button";
+        out.className = "fo-mb-t fo-mb-out";
+        out.innerHTML = "<span>Log out</span>";
+        out.addEventListener("click", function (ev) {
+          ev.preventDefault(); ev.stopPropagation();
+          closeBar();
+          var a2 = tb.querySelector("a.fo-logout");
+          if (a2) a2.click();
+        });
+        inner.appendChild(out);
+        // closing: anywhere else, Escape, a route change, or the page moving
+        document.addEventListener("click", function (ev) {
+          if (openIx < 0) return;
+          if (popEl && popEl.contains(ev.target)) return;
+          closeBar();
+        });
+        window.addEventListener("keydown", function (ev) {
+          if (ev.key !== "Escape" || openIx < 0) return;
+          var btn2 = bar.querySelector("button.fo-mb-t[data-mb='" + openIx + "']");
+          closeBar();
+          if (btn2) btn2.focus();
+        });
+        window.addEventListener("hashchange", closeBar);
+        window.addEventListener("scroll", function () { if (openIx >= 0) closeBar(); }, true);
+        window.addEventListener("resize", closeBar);
+        // arrow keys walk the bar, as a menubar should
+        inner.addEventListener("keydown", function (ev) {
+          if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") return;
+          var all = [].slice.call(inner.querySelectorAll("button.fo-mb-t"));
+          var at = all.indexOf(document.activeElement);
+          if (at < 0) return;
+          ev.preventDefault();
+          var nxt = all[(at + (ev.key === "ArrowRight" ? 1 : all.length - 1)) % all.length];
+          nxt.focus();
+          if (openIx >= 0) nxt.click();
+        });
+      }
+      // the bar lives and dies with the masthead, and sticks under it
+      var gone = !tb.offsetParent;
+      bar.classList.toggle("off", !!gone);
+      if (!gone) {
+        try { document.documentElement.style.setProperty("--fo-tbh", tb.offsetHeight + "px"); } catch (eV) {}
+      } else if (openIx >= 0) closeBar();
+      // and the menu you are standing in is lit
+      var outBtn = bar.querySelector(".fo-mb-out");
+      if (outBtn) outBtn.style.display = tb.querySelector("a.fo-logout") ? "" : "none";
+      var here2 = curRoom(); here2 = ALIAS[here2] || here2;
+      var lit = groupOf(here2);
+      [].slice.call(bar.querySelectorAll("button.fo-mb-t")).forEach(function (b) {
+        b.classList.toggle("here", +b.getAttribute("data-mb") === lit);
+      });
+    } catch (e) {}
+  }
+  try { setInterval(buildBar, 1200); } catch (e) {}
+  window.addEventListener("hashchange", function () { setTimeout(buildBar, 60); });
+  setTimeout(buildBar, 300);
+  setTimeout(buildBar, 1200);
+
   // the masthead button exists before this module loads; make sure it opens
   // the index rather than the old pill proxy, however it was wired
   function adopt() {
