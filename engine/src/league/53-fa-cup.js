@@ -223,4 +223,8 @@
   document.addEventListener("DOMContentLoaded", function () { setTimeout(paint, 60); });
   setTimeout(paint, 120);
   window.__foFaCup = { render: render, renderCC: renderCC };
+  // AND A DOOR THE ROUTER KNOWS. Painting on hashchange is not enough: the
+  // router's own table is what decides whether #/facup survives at all, and a
+  // page missing from it is bounced to the front door before it can paint.
+  window.foRenderFaCupPage = function () { render(); renderCC(); };
 })();

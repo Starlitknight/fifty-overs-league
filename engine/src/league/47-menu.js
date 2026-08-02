@@ -66,11 +66,15 @@
       ["matchday", "pitch", "Matchday"],
       ["milestones", "medal", "The honours board"]
     ] },
+    { k: "Tournaments", rooms: [
+      ["colts", "star", "The Colts Cup"],
+      ["facup", "shield", "The FA Cup"],
+      ["champions", "crown", "The Champions Cup"]
+    ] },
     { k: "The world", rooms: [
       ["planet", "globe", "World cricket"],
       ["league", "table", "My league"],
       ["nations", "plane", "The international game"],
-      ["champions", "crown", "The Champions Cup"],
       ["rankings", "chart", "The world rankings"],
       ["world", "map", "The world map"],
       ["atlas", "book", "The atlas"],
@@ -84,8 +88,23 @@
   ];
 
   function curRoom() { return ((location.hash || "#/home").split("?")[0] || "").replace("#/", "") || "home"; }
+  // WHICH MENU IS DOWN. A manager who opened Tournaments and navigated to the
+  // Colts Cup should find Tournaments still down when he comes back, so the
+  // choice is remembered for the session; failing that, the menu he is
+  // standing in opens itself, and failing that the first one.
+  var PICK = "fo_menu_group";
+  function chosen() { try { var v = sessionStorage.getItem(PICK); return v == null ? null : +v; } catch (e) { return null; } }
+  function choose(gi) { try { sessionStorage.setItem(PICK, String(gi)); } catch (e) {} }
+  function openGroup(g, gi, here) {
+    var pick = chosen();
+    if (pick != null) return gi === pick;
+    if (g.rooms.some(function (r) { return r[0] === here; })) return true;
+    // nothing chosen and the room is in none of them: open the first
+    return gi === 0 && !MAP.some(function (h) { return h.rooms.some(function (r) { return r[0] === here; }); });
+  }
   // rooms that are really the same door, so the lamp lights in one place
   var ALIAS = { club: "home", nation: "league", natteams: "nations", circuit: "world", tour: "world",
+    cup: "champions", wcmatch: "champions",
     player: "squad", matchlab: "squad", star: "squad", city: "atlas", side: "atlas", boss: "atlas",
     report: "lore", journal: "lore", scorecard: "lore" };
 
@@ -110,8 +129,18 @@
       "#fo-menu .fo-mu-h i{display:block;font:500 9px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#E8B96A;font-style:normal}",
       "html body #fo-menu .fo-mu-x{margin-left:auto;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08) !important;border:0 !important;color:#FFFEFC !important;font:400 19px/1 inherit !important;border-radius:12px;cursor:pointer;padding:0 !important;box-shadow:none !important}",
       "html body #fo-menu .fo-mu-x:hover{background:rgba(255,255,255,.16) !important}",
-      "#fo-menu .fo-mu-sec{margin:16px 0 8px;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#E8B96A}",
-      "#fo-menu .fo-mu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}",
+      // A HEADING IS A MENU. It is a button, it says how many rooms are behind
+      // it, and the chevron turns when it drops.
+      "html body #fo-menu button.fo-mu-sec{display:flex;align-items:center;gap:10px;width:100%;margin:10px 0 0;padding:13px 14px;border-radius:13px;background:rgba(255,255,255,.045) !important;border:1px solid rgba(255,255,255,.075) !important;color:#E8B96A !important;font:700 10px/1 Oswald,sans-serif !important;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;text-align:left;box-shadow:none !important;transition:background .14s,border-color .14s}",
+      "html body #fo-menu button.fo-mu-sec:hover{background:rgba(255,255,255,.1) !important;border-color:rgba(232,185,106,.42) !important}",
+      "html body #fo-menu button.fo-mu-sec.open{background:rgba(201,85,50,.2) !important;border-color:rgba(232,185,106,.55) !important}",
+      "#fo-menu button.fo-mu-sec span{flex:1 1 auto;min-width:0}",
+      "#fo-menu button.fo-mu-sec i{flex:none;font-style:normal;font:600 10px/1 Inter,sans-serif;letter-spacing:0;color:rgba(255,254,252,.5);font-variant-numeric:tabular-nums}",
+      "#fo-menu .fo-mu-chev{flex:none;width:15px;height:15px;transition:transform .18s ease}",
+      "#fo-menu button.fo-mu-sec.open .fo-mu-chev{transform:rotate(180deg)}",
+      "#fo-menu .fo-mu-grid{display:none;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;margin-top:8px}",
+      "#fo-menu .fo-mu-grid.open{display:grid;animation:fo-mu-drop .16s ease}",
+      "@keyframes fo-mu-drop{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}",
       "html body #fo-menu a.fo-mu-r{display:flex;align-items:center;gap:12px;min-height:50px;padding:8px 13px;border-radius:14px;background:rgba(255,255,255,.045) !important;border:1px solid rgba(255,255,255,.075);color:#FFFEFC !important;text-decoration:none !important;transition:background .14s,border-color .14s,transform .14s}",
       "html body #fo-menu a.fo-mu-r:hover{background:rgba(255,255,255,.1) !important;border-color:rgba(232,185,106,.42);transform:translateY(-1px)}",
       "html body #fo-menu a.fo-mu-r.on{background:rgba(201,85,50,.2) !important;border-color:rgba(232,185,106,.6)}",
@@ -173,8 +202,19 @@
     d.innerHTML = "<div class='fo-mu-k'></div><div class='fo-mu-p'><div class='fo-mu-in'>" +
       "<div class='fo-mu-h'><div><i>Fifty Overs</i><b>Every room in the club</b></div>" +
       "<button class='fo-mu-x' aria-label='Close menu'>&#10005;</button></div>" +
-      MAP.map(function (g) {
-        return "<div class='fo-mu-sec'>" + E(g.k) + "</div><div class='fo-mu-grid'>" +
+      MAP.map(function (g, gi) {
+        // ONE MENU AT A TIME, the way a menu bar behaves. Nineteen rooms laid
+        // out flat is a scroll, not an index: you go looking for the door you
+        // wanted rather than seeing it. Each heading is a menu; clicking it
+        // drops its rooms down and folds the others away. The menu you are
+        // standing in opens itself, so the panel always answers "where am I"
+        // before you touch anything.
+        var open = openGroup(g, gi, here);
+        return "<button type='button' class='fo-mu-sec" + (open ? " open" : "") + "' data-fo-grp='" + gi + "'>" +
+            "<span>" + E(g.k) + "</span><i>" + g.rooms.length + "</i>" +
+            "<svg class='fo-mu-chev' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' " +
+              "stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg></button>" +
+          "<div class='fo-mu-grid" + (open ? " open" : "") + "' data-fo-grpof='" + gi + "'>" +
           g.rooms.map(function (r) {
             return "<a class='fo-mu-r" + (r[0] === here ? " on" : "") + "' href='#/" + r[0] + "'>" +
               "<em>" + glyph(r[1]) + "</em><div><b>" + E(r[2]) + "</b></div></a>";
@@ -184,6 +224,20 @@
     d.querySelector(".fo-mu-k").addEventListener("click", close);
     d.querySelector(".fo-mu-x").addEventListener("click", close);
     engineLinks(d.querySelector(".fo-mu-foot"));
+    d.querySelectorAll("button.fo-mu-sec").forEach(function (h) {
+      h.addEventListener("click", function () {
+        var gi = +h.getAttribute("data-fo-grp");
+        var was = h.classList.contains("open");
+        d.querySelectorAll("button.fo-mu-sec").forEach(function (o) { o.classList.remove("open"); });
+        d.querySelectorAll(".fo-mu-grid").forEach(function (o) { o.classList.remove("open"); });
+        if (!was) {
+          h.classList.add("open");
+          var grid = d.querySelector(".fo-mu-grid[data-fo-grpof='" + gi + "']");
+          if (grid) grid.classList.add("open");
+          choose(gi);
+        } else { try { sessionStorage.removeItem(PICK); } catch (e) {} }
+      });
+    });
     d.querySelectorAll("a.fo-mu-r").forEach(function (a) {
       a.addEventListener("click", function (ev) {
         ev.preventDefault();

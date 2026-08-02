@@ -1537,7 +1537,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',lore:'foRenderLore',report:'foRenderReport',preview:'foRenderPreviewPage',training:'foRenderNetsPage',milestones:'foRenderHonoursPage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',statement:'foRenderStatementPage'}[App.page];
+  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',lore:'foRenderLore',report:'foRenderReport',preview:'foRenderPreviewPage',training:'foRenderNetsPage',milestones:'foRenderHonoursPage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',facup:'foRenderFaCupPage',colts:'foRenderColtsPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',statement:'foRenderStatementPage'}[App.page];
   if(P[App.page])P[App.page](q);
   // A RENDERER THAT THROWS USED TO VANISH. This catch was empty, so a page
   // whose painter hit an error left the topbar, the clock and the nav in place
@@ -10150,7 +10150,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260802-1643-1d4d97";
+  var FO_BUILD = "20260802-2153-520989";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -36244,10 +36244,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         return { key: "up", liveIds: [], chip: "Season " + ANCHOR.season + " opens " + (toGo === 1 ? "tomorrow" : "in " + toGo + " days") };
       }
       return { key: "fin", liveIds: [],
-        chip: p.kind === "cup" ? "World Cup week - " + stageName(p.stage) :
-              p.kind === "honours" ? "Honours night - no league play today" :
-              p.kind === "draw" ? "World Cup draw day - no league play" :
-              "Rest day - the new season starts tomorrow" };
+        chip: dayWord(p) ||
+              (p.kind === "honours" ? "Honours night - no league play today" :
+               p.kind === "draw" ? "World Cup draw day - no league play" :
+               "Rest day - no club cricket anywhere today") };
     }
     var h = hourOfDay(now), liveIds = [], nextAt = null;
     regionList().forEach(function (r) {
@@ -36260,6 +36260,24 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return { key: "fin", liveIds: [], chip: "The world's play is done for today" };
   }
   function stageName(st) { return { r16: "The Last Sixteen", qf: "Quarter-finals", sf: "Semi-finals", final: "THE WORLD CUP FINAL" }[st] || st; }
+  // WHAT IS ON TODAY, IN WORDS. Every day that was not a league round used to
+  // fall through to "Rest day", which said rest on the evening of a final. A
+  // six-week season has MORE of those days, not fewer - a whole Colts Week of
+  // them - so each one is named and only a genuine rest day says rest.
+  function roundName(st) { return { r16: "the last sixteen", qf: "quarter-finals", sf: "semi-finals", final: "THE FINAL" }[st] || st; }
+  function dayWord(p) {
+    if (p.kind === "colts") return p.stage === "final"
+      ? "THE COLTS CUP FINAL - the academies' day"
+      : "Colts Cup " + roundName(p.stage) + " - the boys play, the league rests";
+    if (p.kind === "playoff") return p.stage === "final"
+      ? "THE LEAGUE FINALS - champions crowned tonight"
+      : "League playoff semi-finals - 1v4 and 2v3, both divisions";
+    if (p.kind === "facup") return "FA Cup " + roundName(p.stage);
+    if (p.kind === "cup") return "Champions Cup - " + roundName(p.stage);
+    if (p.kind === "transition") return "The turning of the year - a season older, and the ladders redrawn";
+    if (p.window) return "Tour day - the internationals are away, and miss round " + p.window;
+    return null;
+  }
 
   // one repaint for however many nations answer at once: nineteen snapshots
   // landing in the same second must not repaint the page nineteen times
@@ -36304,8 +36322,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         p.kind === "league" ? "Round " + p.round + " of " + ROUNDS + " across the world's leagues" :
         p.kind === "honours" ? "Honours day - champions are crowned tonight" :
         p.kind === "draw" ? "World Cup draw day - sixteen nations learn their fate" :
-        p.kind === "cup" ? "World Cup - " + stageName(p.stage) :
-        "Rest day - the season " + (p.season + 1) + " calendar begins tomorrow";
+        dayWord(p) ||
+        "Rest day - no club cricket anywhere today";
 
       // -- your own league card: the WORLD's league, your claimed club -------
       // one world: this card speaks only served data - your claim, the served
@@ -42385,13 +42403,50 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // the Colts Cup arrives a beat later; the room does not wait for it
       snapshot("colts/" + ac.country).then(function (cup) {
         var box = document.getElementById("fo-ac-cup");
-        if (box) box.innerHTML = cupHTML(cup, ac.club);
+        if (box) box.innerHTML = cupHTML(cup, ac.slot);
+        // and the squad panel behind it: who you could send out, and who you
+        // said you would
+        rpc("world_my_colts_squad", {}).then(function (sq) {
+          var slot = document.getElementById("fo-ac-name");
+          if (!slot) return;
+          slot.innerHTML = nameHTML(sq);
+          wireSquad(slot, sq);
+        }).catch(function () { /* not signed in, or no season yet: the bracket stands alone */ });
       });
     }).catch(function (e) {
       page.innerHTML = shell("<div class='fo-ac-note'>The world could not be reached (" + E(String(e.message).slice(0, 90)) +
         "). The boys are training regardless - try again in a minute.</div>");
     });
   };
+
+  // ticking a boy in or out is only arithmetic until you press the button; the
+  // count in the footer is what tells you whether the side is legal yet
+  function wireSquad(root, sq) {
+    var floor = sq.floor || 15, ceil = sq.ceiling || 18;
+    var boxes = function () { return [].slice.call(root.querySelectorAll("[data-fo-colt]")); };
+    var count = function () { return boxes().filter(function (b) { return b.checked; }).length; };
+    var out = root.querySelector("#fo-ac-sqn");
+    var btn = root.querySelector("[data-fo-namecolts]");
+    var paint = function () {
+      var n = count(), ok = n >= floor && n <= ceil;
+      if (out) out.innerHTML = n + " picked &middot; " +
+        (ok ? "a legal squad" : n < floor ? "need " + (floor - n) + " more" : (n - ceil) + " too many");
+      if (btn) { btn.disabled = !ok; btn.className = "fo-ac-btn" + (ok ? "" : " off"); }
+      boxes().forEach(function (b) {
+        var lab = b.parentNode; if (lab) lab.className = "fo-ac-sqp" + (b.checked ? " on" : "");
+      });
+    };
+    boxes().forEach(function (b) { b.addEventListener("change", paint); });
+    if (btn) btn.addEventListener("click", function () {
+      var names = boxes().filter(function (b) { return b.checked; })
+        .map(function (b) { return b.getAttribute("data-fo-colt"); });
+      btn.disabled = true;
+      rpc("world_set_colts_squad", { p_names: names })
+        .then(function () { window.foRenderAcademyPage(); })
+        .catch(function (e) { btn.disabled = false; alert(String(e.message).slice(0, 200)); });
+    });
+    paint();
+  }
 
   function shell(body) {
     // the room keeps its own table: the club that matters here is the one in
@@ -42558,31 +42613,78 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   // THE COLTS CUP: the boys' own competition, played in its own week.
-  function cupHTML(cup, myClub) {
-    var head = "<h3>The Colts Cup<span>" + (cup && cup.roundsPlayed ? cup.roundsPlayed + " of " + cup.rounds : "not started") + "</span></h3>";
-    if (!cup || !cup.results || !cup.results.length) {
-      return head + "<div class='fo-ac-note'>Week four of the season belongs to the academies: the league stands down and every club in the country goes into one hat. You must be able to name fifteen men under twenty-one, or the tie is forfeited.</div>";
+  // ---- THE COLTS CUP -------------------------------------------------------
+  // Week four's knockout, as a bracket rather than a table: sixteen clubs in
+  // one hat, the draw made once, and a forfeit for anyone who cannot name
+  // fifteen. What a manager needs from this card is three things - am I in it,
+  // can I field a side, and who do I play - so those are the three things it
+  // leads with.
+  var STAGE_NM = { r16: "Last sixteen", qf: "Quarter-finals", sf: "Semi-finals", final: "The Final" };
+  var STAGE_ORDER = ["r16", "qf", "sf", "final"];
+
+  // MINE IS A SLOT, NOT A NAME. The bracket calls a side "Rustford Colts" and
+  // the club is "Rustford", so matching on the name never matched and a
+  // manager's own tie was never picked out. The slot is the club's identity
+  // everywhere else in the world; it is the club's identity here too.
+  function tieHTML(t, mySlot) {
+    var mine = t.homeSlot === mySlot || t.awaySlot === mySlot;
+    var side = function (nm, slot, isWinner) {
+      return "<b class='" + (isWinner ? "won" : "out") + (slot === mySlot ? " me" : "") + "'>" + E(nm) + "</b>";
+    };
+    var ff = t.forfeit
+      ? "<i class='fo-ac-ff' title='" + E(t.text || "") + "'>forfeit</i>" : "";
+    return "<div class='fo-ac-tie" + (mine ? " mine" : "") + "'>" +
+      side(t.home, t.homeSlot, t.winnerSlot === t.homeSlot) + "<em>v</em>" +
+      side(t.away, t.awaySlot, t.winnerSlot === t.awaySlot) + ff + "</div>";
+  }
+
+  function cupHTML(cup, mySlot) {
+    var done = cup && cup.stagesDone ? cup.stagesDone : 0;
+    var head = "<h3>The Colts Cup<span>" +
+      (cup && cup.champion ? "won" : done ? STAGE_NM[STAGE_ORDER[done - 1]] + " played" : "not started") +
+      "</span></h3>";
+    if (!cup || !done) {
+      return head + "<div class='fo-ac-note'>Week four of the season belongs to the academies: the league stands down and every club in the country goes into one hat. You must be able to name fifteen men under twenty-one, or the tie is forfeited.</div>" +
+        "<div id='fo-ac-name'></div>";
     }
-    var rows = cup.table.map(function (t, i) {
-      return "<tr" + (t.name === myClub ? " class='me'" : "") + "><td>" + (i + 1) + "</td><td class='nm'>" + E(t.name) + "</td>" +
-        "<td>" + t.p + "</td><td>" + t.w + "</td><td>" + t.l + "</td><td class='pt'>" + t.pts + "</td>" +
-        "<td class='nrr'>" + (t.nrr > 0 ? "+" : "") + t.nrr.toFixed(2) + "</td></tr>";
-    }).join("");
-    var mine = cup.results.filter(function (r) { return r.home === myClub || r.away === myClub; }).slice(-4).reverse();
-    var card = mine.map(function (r) {
-      var won = r.winner === myClub, tied = r.winner === null;
-      var sc = function (s) { return s ? s.r + "/" + s.w : "&mdash;"; };
-      return "<div class='fo-ac-res'><i class='" + (tied ? "t" : won ? "w" : "l") + "'>" + (tied ? "T" : won ? "W" : "L") + "</i>" +
-        "<b>" + E(r.home) + "</b><u>" + sc(r.hs) + "</u><em>v</em><b>" + E(r.away) + "</b><u>" + sc(r.as) + "</u></div>";
+    var champ = cup.champion
+      ? "<div class='fo-ac-champ'><i>&#9733;</i><b>" + E(cup.champion) + "</b><em>Colts Cup champions</em></div>" : "";
+    var cols = STAGE_ORDER.filter(function (k) { return (cup.stages[k] || []).length; }).map(function (k) {
+      return "<div class='fo-ac-bcol'><h4>" + STAGE_NM[k] + "</h4>" +
+        cup.stages[k].map(function (t) { return tieHTML(t, mySlot); }).join("") + "</div>";
     }).join("");
     var lead = (cup.runs && cup.runs[0])
       ? "<div class='fo-ac-note'>Leading the cup: <b>" + E(cup.runs[0].name) + "</b> " + cup.runs[0].runs + " runs" +
         (cup.wickets && cup.wickets[0] ? ", <b>" + E(cup.wickets[0].name) + "</b> " + cup.wickets[0].wkts + " wickets" : "") + ".</div>"
       : "";
-    return head +
-      "<div class='fo-ac-tw'><table class='fo-ac-tbl'><thead><tr><th></th><th class='nm'>Club</th><th>P</th><th>W</th><th>L</th><th class='pt'>Pts</th><th class='nrr'>NRR</th></tr></thead><tbody>" +
-        rows + "</tbody></table></div>" +
-      (card ? "<div class='fo-ac-sub'>Your boys, lately</div>" + card : "") + lead;
+    return head + champ + "<div id='fo-ac-name'></div>" +
+      "<div class='fo-ac-bracket'>" + cols + "</div>" + lead;
+  }
+
+  // WHO YOU WOULD SEND OUT. The squad is fifteen to eighteen men under
+  // twenty-one, and the umpire names it for you if you do not - so this panel
+  // is never a task, only an edge. It says plainly which it currently is.
+  function nameHTML(sq) {
+    if (!sq || !sq.men) return "";
+    var n = sq.men.length, floor = sq.floor || 15, ceil = sq.ceiling || 18;
+    if (n < floor) {
+      return "<div class='fo-ac-warn'><b>You cannot field a Colts Cup side.</b> " +
+        n + " under twenty-one on the books, and a side is " + floor +
+        ". A tie played now would be forfeited &mdash; scout, and sign what you find.</div>";
+    }
+    var named = sq.named && sq.named.length;
+    return "<div class='fo-ac-sqd'>" +
+      "<div class='fo-ac-sqh'><b>Your Colts Cup squad</b>" +
+        "<i>" + (named ? named + " named" : "not named &mdash; the umpire will send out the youngest " +
+          Math.min(ceil, n)) + "</i></div>" +
+      "<div class='fo-ac-sqm'>" + sq.men.map(function (m) {
+        var on = !named || sq.named.indexOf(m.name) >= 0;
+        return "<label class='fo-ac-sqp" + (on ? " on" : "") + "'>" +
+          "<input type='checkbox' data-fo-colt='" + E(m.name) + "'" + (on ? " checked" : "") + ">" +
+          "<b>" + E(m.name) + "</b><i>" + (+m.age) + "</i><u>" + Math.round(+m.rating || 0) + "</u></label>";
+      }).join("") + "</div>" +
+      "<div class='fo-ac-sqf'><span id='fo-ac-sqn'></span>" +
+        "<button type='button' class='fo-ac-btn' data-fo-namecolts='1'>Name this squad</button></div></div>";
   }
 
   function coltCard(p, ac) {
@@ -42654,6 +42756,38 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-ac-sel{flex:1 1 190px;min-width:0;font:500 13px/1.2 Inter,sans-serif;color:#141C28;background:#FFFEFC;border:1px solid rgba(20,28,40,.2);border-radius:10px;padding:10px 11px;cursor:pointer}",
       "html body #page .fo-ac-note.thin{font-size:11.5px;line-height:1.55;color:rgba(20,28,40,.55);margin-top:9px}",
       "html body #page .fo-ac-warn{background:#FFF6DA;border:1px solid rgba(200,84,47,.28);border-left:3px solid #C8542F;border-radius:11px;padding:11px 13px;margin:0 0 12px;font:500 12.5px/1.55 Inter,sans-serif;color:#5A3410}",
+      // THE BRACKET. Four columns that scroll sideways in their own box, never
+      // the page - a knockout is wide and a phone is not.
+      "html body #page .fo-ac-bracket{display:flex;gap:10px;overflow-x:auto;padding:2px 0 6px;-webkit-overflow-scrolling:touch}",
+      "html body #page .fo-ac-bcol{flex:0 0 172px;min-width:172px}",
+      "html body #page .fo-ac-bcol h4{margin:0 0 6px;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#8A7F70}",
+      "html body #page .fo-ac-tie{background:#FBF8F2;border:1px solid rgba(20,28,40,.10);border-radius:9px;padding:7px 9px;margin:0 0 6px;font:500 12px/1.5 Inter,sans-serif;position:relative}",
+      "html body #page .fo-ac-tie.mine{background:#FFF6DA;border-color:rgba(200,84,47,.32)}",
+      "html body #page .fo-ac-tie b{display:block;color:#141C28}",
+      "html body #page .fo-ac-tie b.out{color:#9A9187;text-decoration:line-through;text-decoration-thickness:1px}",
+      "html body #page .fo-ac-tie b.won{font-weight:700}",
+      "html body #page .fo-ac-tie b.me{color:#C8542F}",
+      "html body #page .fo-ac-tie em{display:block;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;color:#B4A996;margin:2px 0;font-style:normal}",
+      "html body #page .fo-ac-ff{position:absolute;top:6px;right:8px;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#C8542F;font-style:normal}",
+      "html body #page .fo-ac-champ{display:flex;align-items:center;gap:9px;background:linear-gradient(120deg,#0B1D3A,#12325C);border-radius:12px;padding:11px 14px;margin:0 0 12px;color:#FFFEFC}",
+      "html body #page .fo-ac-champ i{font-style:normal;font-size:17px;color:#E8B96A}",
+      "html body #page .fo-ac-champ b{font:700 14px/1.2 Fraunces,Georgia,serif}",
+      "html body #page .fo-ac-champ em{margin-left:auto;font:600 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#E8B96A;font-style:normal}",
+      // THE SQUAD PICKER
+      "html body #page .fo-ac-sqd{background:#FBF8F2;border:1px solid rgba(20,28,40,.10);border-radius:12px;padding:12px 13px;margin:0 0 12px}",
+      "html body #page .fo-ac-sqh{display:flex;align-items:baseline;gap:10px;margin:0 0 9px}",
+      "html body #page .fo-ac-sqh b{font:700 13px/1.2 Fraunces,Georgia,serif;color:#141C28}",
+      "html body #page .fo-ac-sqh i{margin-left:auto;font:500 11px/1.4 Inter,sans-serif;color:#8A7F70;font-style:normal;text-align:right}",
+      "html body #page .fo-ac-sqm{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:5px}",
+      "html body #page .fo-ac-sqp{display:flex;align-items:center;gap:6px;background:#FFFEFC;border:1px solid rgba(20,28,40,.10);border-radius:8px;padding:5px 8px;font:500 11.5px/1.3 Inter,sans-serif;cursor:pointer}",
+      "html body #page .fo-ac-sqp.on{background:#FFF6DA;border-color:rgba(200,84,47,.30)}",
+      "html body #page .fo-ac-sqp input{margin:0;accent-color:#C8542F;flex:0 0 auto}",
+      "html body #page .fo-ac-sqp b{flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600;color:#141C28}",
+      "html body #page .fo-ac-sqp i{font-style:normal;color:#8A7F70;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-ac-sqp u{text-decoration:none;font-weight:700;color:#0B1D3A;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-ac-sqf{display:flex;align-items:center;gap:10px;margin:10px 0 0}",
+      "html body #page .fo-ac-sqf span{font:500 11.5px/1.4 Inter,sans-serif;color:#8A7F70}",
+      "html body #page .fo-ac-sqf button{margin-left:auto}",
       "html body #page .fo-ac-warn b{display:block;font:700 13px/1.4 Inter,sans-serif;color:#141C28;margin-bottom:2px}",
       "html body #page .fo-ac-warn.cup{background:#F3F6FA;border-left-color:#2F5FC8;color:#20304A}",
       "html body #page .fo-ac-offer{background:#FFFEFC;border:1px solid rgba(20,28,40,.14);border-radius:13px;padding:13px 14px}",
@@ -43889,11 +44023,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ["matchday", "pitch", "Matchday"],
       ["milestones", "medal", "The honours board"]
     ] },
+    { k: "Tournaments", rooms: [
+      ["colts", "star", "The Colts Cup"],
+      ["facup", "shield", "The FA Cup"],
+      ["champions", "crown", "The Champions Cup"]
+    ] },
     { k: "The world", rooms: [
       ["planet", "globe", "World cricket"],
       ["league", "table", "My league"],
       ["nations", "plane", "The international game"],
-      ["champions", "crown", "The Champions Cup"],
       ["rankings", "chart", "The world rankings"],
       ["world", "map", "The world map"],
       ["atlas", "book", "The atlas"],
@@ -43907,8 +44045,23 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   ];
 
   function curRoom() { return ((location.hash || "#/home").split("?")[0] || "").replace("#/", "") || "home"; }
+  // WHICH MENU IS DOWN. A manager who opened Tournaments and navigated to the
+  // Colts Cup should find Tournaments still down when he comes back, so the
+  // choice is remembered for the session; failing that, the menu he is
+  // standing in opens itself, and failing that the first one.
+  var PICK = "fo_menu_group";
+  function chosen() { try { var v = sessionStorage.getItem(PICK); return v == null ? null : +v; } catch (e) { return null; } }
+  function choose(gi) { try { sessionStorage.setItem(PICK, String(gi)); } catch (e) {} }
+  function openGroup(g, gi, here) {
+    var pick = chosen();
+    if (pick != null) return gi === pick;
+    if (g.rooms.some(function (r) { return r[0] === here; })) return true;
+    // nothing chosen and the room is in none of them: open the first
+    return gi === 0 && !MAP.some(function (h) { return h.rooms.some(function (r) { return r[0] === here; }); });
+  }
   // rooms that are really the same door, so the lamp lights in one place
   var ALIAS = { club: "home", nation: "league", natteams: "nations", circuit: "world", tour: "world",
+    cup: "champions", wcmatch: "champions",
     player: "squad", matchlab: "squad", star: "squad", city: "atlas", side: "atlas", boss: "atlas",
     report: "lore", journal: "lore", scorecard: "lore" };
 
@@ -43933,8 +44086,18 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "#fo-menu .fo-mu-h i{display:block;font:500 9px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#E8B96A;font-style:normal}",
       "html body #fo-menu .fo-mu-x{margin-left:auto;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08) !important;border:0 !important;color:#FFFEFC !important;font:400 19px/1 inherit !important;border-radius:12px;cursor:pointer;padding:0 !important;box-shadow:none !important}",
       "html body #fo-menu .fo-mu-x:hover{background:rgba(255,255,255,.16) !important}",
-      "#fo-menu .fo-mu-sec{margin:16px 0 8px;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#E8B96A}",
-      "#fo-menu .fo-mu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}",
+      // A HEADING IS A MENU. It is a button, it says how many rooms are behind
+      // it, and the chevron turns when it drops.
+      "html body #fo-menu button.fo-mu-sec{display:flex;align-items:center;gap:10px;width:100%;margin:10px 0 0;padding:13px 14px;border-radius:13px;background:rgba(255,255,255,.045) !important;border:1px solid rgba(255,255,255,.075) !important;color:#E8B96A !important;font:700 10px/1 Oswald,sans-serif !important;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;text-align:left;box-shadow:none !important;transition:background .14s,border-color .14s}",
+      "html body #fo-menu button.fo-mu-sec:hover{background:rgba(255,255,255,.1) !important;border-color:rgba(232,185,106,.42) !important}",
+      "html body #fo-menu button.fo-mu-sec.open{background:rgba(201,85,50,.2) !important;border-color:rgba(232,185,106,.55) !important}",
+      "#fo-menu button.fo-mu-sec span{flex:1 1 auto;min-width:0}",
+      "#fo-menu button.fo-mu-sec i{flex:none;font-style:normal;font:600 10px/1 Inter,sans-serif;letter-spacing:0;color:rgba(255,254,252,.5);font-variant-numeric:tabular-nums}",
+      "#fo-menu .fo-mu-chev{flex:none;width:15px;height:15px;transition:transform .18s ease}",
+      "#fo-menu button.fo-mu-sec.open .fo-mu-chev{transform:rotate(180deg)}",
+      "#fo-menu .fo-mu-grid{display:none;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;margin-top:8px}",
+      "#fo-menu .fo-mu-grid.open{display:grid;animation:fo-mu-drop .16s ease}",
+      "@keyframes fo-mu-drop{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}",
       "html body #fo-menu a.fo-mu-r{display:flex;align-items:center;gap:12px;min-height:50px;padding:8px 13px;border-radius:14px;background:rgba(255,255,255,.045) !important;border:1px solid rgba(255,255,255,.075);color:#FFFEFC !important;text-decoration:none !important;transition:background .14s,border-color .14s,transform .14s}",
       "html body #fo-menu a.fo-mu-r:hover{background:rgba(255,255,255,.1) !important;border-color:rgba(232,185,106,.42);transform:translateY(-1px)}",
       "html body #fo-menu a.fo-mu-r.on{background:rgba(201,85,50,.2) !important;border-color:rgba(232,185,106,.6)}",
@@ -43996,8 +44159,19 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     d.innerHTML = "<div class='fo-mu-k'></div><div class='fo-mu-p'><div class='fo-mu-in'>" +
       "<div class='fo-mu-h'><div><i>Fifty Overs</i><b>Every room in the club</b></div>" +
       "<button class='fo-mu-x' aria-label='Close menu'>&#10005;</button></div>" +
-      MAP.map(function (g) {
-        return "<div class='fo-mu-sec'>" + E(g.k) + "</div><div class='fo-mu-grid'>" +
+      MAP.map(function (g, gi) {
+        // ONE MENU AT A TIME, the way a menu bar behaves. Nineteen rooms laid
+        // out flat is a scroll, not an index: you go looking for the door you
+        // wanted rather than seeing it. Each heading is a menu; clicking it
+        // drops its rooms down and folds the others away. The menu you are
+        // standing in opens itself, so the panel always answers "where am I"
+        // before you touch anything.
+        var open = openGroup(g, gi, here);
+        return "<button type='button' class='fo-mu-sec" + (open ? " open" : "") + "' data-fo-grp='" + gi + "'>" +
+            "<span>" + E(g.k) + "</span><i>" + g.rooms.length + "</i>" +
+            "<svg class='fo-mu-chev' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' " +
+              "stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg></button>" +
+          "<div class='fo-mu-grid" + (open ? " open" : "") + "' data-fo-grpof='" + gi + "'>" +
           g.rooms.map(function (r) {
             return "<a class='fo-mu-r" + (r[0] === here ? " on" : "") + "' href='#/" + r[0] + "'>" +
               "<em>" + glyph(r[1]) + "</em><div><b>" + E(r[2]) + "</b></div></a>";
@@ -44007,6 +44181,20 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     d.querySelector(".fo-mu-k").addEventListener("click", close);
     d.querySelector(".fo-mu-x").addEventListener("click", close);
     engineLinks(d.querySelector(".fo-mu-foot"));
+    d.querySelectorAll("button.fo-mu-sec").forEach(function (h) {
+      h.addEventListener("click", function () {
+        var gi = +h.getAttribute("data-fo-grp");
+        var was = h.classList.contains("open");
+        d.querySelectorAll("button.fo-mu-sec").forEach(function (o) { o.classList.remove("open"); });
+        d.querySelectorAll(".fo-mu-grid").forEach(function (o) { o.classList.remove("open"); });
+        if (!was) {
+          h.classList.add("open");
+          var grid = d.querySelector(".fo-mu-grid[data-fo-grpof='" + gi + "']");
+          if (grid) grid.classList.add("open");
+          choose(gi);
+        } else { try { sessionStorage.removeItem(PICK); } catch (e) {} }
+      });
+    });
     d.querySelectorAll("a.fo-mu-r").forEach(function (a) {
       a.addEventListener("click", function (ev) {
         ev.preventDefault();
@@ -45583,6 +45771,214 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   document.addEventListener("DOMContentLoaded", function () { setTimeout(paint, 60); });
   setTimeout(paint, 120);
   window.__foFaCup = { render: render, renderCC: renderCC };
+  // AND A DOOR THE ROUTER KNOWS. Painting on hashchange is not enough: the
+  // router's own table is what decides whether #/facup survives at all, and a
+  // page missing from it is bounced to the front door before it can paint.
+  window.foRenderFaCupPage = function () { render(); renderCC(); };
+})();
+// ---- 54-colts-cup.js — THE COLTS CUP PAGE (#/colts) -------------------------
+// Week four of the season belongs to the academies: the league stands down and
+// all sixteen clubs of a nation go into one hat, both divisions together, so a
+// Division Two academy can knock out the champions. Four days - the last
+// sixteen on the Monday, quarters Tuesday, semis Thursday, the final Friday -
+// and a club that cannot name fifteen men under twenty-one forfeits its tie in
+// public. docs/ACADEMY.md is the law.
+//
+// This page draws the bracket AS BANKED, from the colts/<nation> snapshot the
+// umpire derives from cup_matches. It is a sibling of the FA Cup page in every
+// way that matters: same shell, same idiom, results only ever from the served
+// record. What it adds is the forfeit - the one result in the world reached
+// without a ball - and the purse, which is why a poor club runs an academy.
+(function () {
+  "use strict";
+  var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
+  var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function P() { return window.__foPlanet || null; }
+  function hashPath() { return (location.hash || "").split("?")[0]; }
+  function onPage() { return hashPath() === "#/colts"; }
+  function qparam(k) {
+    var q = (location.hash.split("?")[1] || "").split("&");
+    for (var i = 0; i < q.length; i++) { var kv = q[i].split("="); if (kv[0] === k) return decodeURIComponent(kv[1] || ""); }
+    return "";
+  }
+  function myNation() {
+    try {
+      var c = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+      if (c && c.country) return c.country;
+    } catch (e) {}
+    try { return (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || "eng"; } catch (e2) { return "eng"; }
+  }
+  function mySlot(rid) {
+    try {
+      var c = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+      if (c && c.country === rid) return c.slot | 0;
+    } catch (e) {}
+    return null;
+  }
+  function money(v) {
+    var n = Number(v);
+    if (!isFinite(n) || !n) return "";
+    return n >= 1000000 ? "£" + (n / 1000000).toFixed(n >= 10000000 ? 0 : 1) + "m"
+         : n >= 1000 ? "£" + Math.round(n / 1000) + "k" : "£" + Math.round(n);
+  }
+
+  // ---- the served bracket, cached per nation ---------------------------------
+  var CUP = {};
+  function want(rid, cb) {
+    if (CUP[rid] && Date.now() - CUP[rid].at < 120000) return cb(CUP[rid].body || null);
+    fetch(SB_URL + "/rest/v1/world_snapshots?key=eq." + encodeURIComponent("colts/" + rid) + "&select=body",
+      { headers: { apikey: SB_ANON } })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        CUP[rid] = { body: (j && j[0] && j[0].body) || null, at: Date.now() };
+        cb(CUP[rid].body);
+      })
+      .catch(function () { CUP[rid] = { body: null, at: Date.now() }; cb(null); });
+  }
+
+  var STAGE_NM = { r16: "The last sixteen", qf: "Quarter-finals", sf: "Semi-finals", final: "THE FINAL" };
+  var STAGE_ORDER = ["r16", "qf", "sf", "final"];
+  var WEEKDAY = { r16: "Colts Week, Monday", qf: "Colts Week, Tuesday", sf: "Colts Week, Thursday", final: "Colts Week, Friday" };
+  var PURSE_NM = { winner: "Winners", finalist: "Beaten finalist", semi: "Losing semi-finalist" };
+
+  function render() {
+    try {
+      if (!onPage()) return;
+      var page = document.getElementById("page"); if (!page) return;
+      var rid = qparam("n") || myNation();
+      var body = null;
+      if (CUP[rid]) body = CUP[rid].body || null;
+      else want(rid, function () { if (onPage()) render(); });
+
+      var natNm = rid.toUpperCase();
+      try { natNm = (window.__foCxAPI.regions() || []).filter(function (r) { return r.id === rid; })[0].nm || natNm; } catch (e2) {}
+      var me = mySlot(rid);
+      var seasonNo = (body && body.seasonNo) || 1;
+      try {
+        var cal = P() && P().phaseOf ? P().phaseOf(Date.now()) : null;
+        if (!body && cal && cal.season >= 1) seasonNo = cal.season;
+      } catch (e) {}
+
+      var html = "<div class='fo-cc-page'>" +
+        "<div class='fo-cc-hero'><span class='fo-cc-eyebrow'>The academies&rsquo; week &middot; season " + seasonNo + "</span>" +
+        "<h1>The " + E(natNm) + " Colts Cup</h1>" +
+        "<p>Sixteen clubs, both divisions, one hat. Name fifteen men under twenty-one or forfeit the tie.</p></div>";
+
+      if (!body || !body.stages || !Object.keys(body.stages).length) {
+        html += "<div class='fo-cc-card'><h3>The draw awaits</h3><p class='dim'>" +
+          "No colts cricket has been banked for this season yet. The league stands down for week four and the boys " +
+          "play four days: the last sixteen on the Monday, the quarter-finals on the Tuesday, the semi-finals on " +
+          "the Thursday and the final on the Friday. The draw is made once and the bracket holds, so you will be " +
+          "able to see your path to the final on the Monday morning.</p></div>";
+      } else {
+        if (body.champion) {
+          html += "<div class='fo-cc-champ'><span>&#127942;</span><div><i>Colts Cup champions, season " + seasonNo + "</i><b>" +
+            E(body.champion) + "</b></div></div>";
+        }
+        // THE PURSE. Not a footnote: it is the reason a club that cannot buy
+        // players still runs an academy.
+        if (body.purse && body.purse.length) {
+          var mineP = body.purse.filter(function (p) { return me != null && p.slot === me; })[0];
+          html += "<div class='fo-cc-purse'><h4>The purse</h4><div class='fo-cc-prow'>" +
+            body.purse.map(function (p) {
+              return "<span" + (mineP && p === mineP ? " class='me'" : "") + "><i>" + (PURSE_NM[p.kind] || p.kind) +
+                "</i><b>" + money(p.amount) + "</b></span>";
+            }).join("") + "</div></div>";
+        }
+        STAGE_ORDER.forEach(function (st) {
+          var ties = body.stages[st];
+          if (!ties || !ties.length) return;
+          html += "<div class='fo-cc-card'><h3>" + STAGE_NM[st] + "<span>" + WEEKDAY[st] + "</span></h3>";
+          ties.forEach(function (t) {
+            var hWin = t.winnerSlot === t.homeSlot, aWin = t.winnerSlot === t.awaySlot;
+            var meH = me != null && t.homeSlot === me, meA = me != null && t.awaySlot === me;
+            var short = (t.forfeit && t.forfeit.short) || [];
+            // the club's name ellipsises; the SHORT tag beside it never does -
+            // it is the whole reason the tie went the way it did
+            var sideHTML = function (nm, win, mine2, isShort) {
+              return "<span class='side" + (win ? " w" : "") + (mine2 ? " me" : "") + "'>" +
+                "<b class='nm'>" + E(nm) + "</b>" + (isShort ? "<u>short</u>" : "") + "</span>";
+            };
+            html += "<div class='fo-cc-tie" + (meH || meA ? " mine" : "") + "'>" +
+              sideHTML(t.home, hWin, meH, short.indexOf(t.homeSlot) >= 0) +
+              "<span class='vs'>v</span>" +
+              sideHTML(t.away, aWin, meA, short.indexOf(t.awaySlot) >= 0) +
+              (t.forfeit ? "<em class='ff'>forfeit</em>" : "") + "</div>" +
+              (t.text ? "<p class='fo-cc-line'>" + E(t.text) + "</p>" : "");
+          });
+          html += "</div>";
+        });
+        if ((body.runs && body.runs.length) || (body.wickets && body.wickets.length)) {
+          html += "<div class='fo-cc-card'><h3>The boys who did it<span>from the cards themselves</span></h3><div class='fo-cc-lead'>";
+          (body.runs || []).slice(0, 5).forEach(function (p) {
+            html += "<div class='fo-cc-lrow'><b>" + E(p.name) + "</b><i>" + E(p.club) + "</i><u>" + p.runs + " runs" +
+              (p.hs ? " (" + p.hs + " best)" : "") + "</u></div>";
+          });
+          (body.wickets || []).slice(0, 5).forEach(function (p) {
+            html += "<div class='fo-cc-lrow'><b>" + E(p.name) + "</b><i>" + E(p.club) + "</i><u>" + p.wkts + " wickets</u></div>";
+          });
+          html += "</div></div>";
+        }
+      }
+      html += "<div class='fo-cc-foot'><a href='#/academy'>&lsaquo; Your academy</a>" +
+        "<a href='#/facup'>The FA Cup &rsaquo;</a></div></div>";
+      page.innerHTML = html;
+      css();
+    } catch (e) { /* never take the shell down */ }
+  }
+
+  function css() {
+    if (document.getElementById("fo-cc-css")) return;
+    var s = document.createElement("style"); s.id = "fo-cc-css";
+    s.textContent = [
+      "html body #page .fo-cc-page{max-width:760px;margin:0 auto;padding:12px 14px 40px}",
+      "html body #page .fo-cc-hero{padding:18px 4px 10px}",
+      "html body #page .fo-cc-eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a6d3b}",
+      "html body #page .fo-cc-hero h1{font-family:Fraunces,serif;font-size:34px;margin:4px 0 6px}",
+      "html body #page .fo-cc-hero p{color:#5b5b56;max-width:56ch;margin:0}",
+      "html body #page .fo-cc-champ{display:flex;gap:12px;align-items:center;background:#fdf6e3;border:1px solid #e8d9ab;border-radius:12px;padding:12px 16px;margin:10px 0}",
+      "html body #page .fo-cc-champ span{font-size:28px}",
+      "html body #page .fo-cc-champ i{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a6d3b;font-style:normal}",
+      "html body #page .fo-cc-champ b{font-family:Fraunces,serif;font-size:20px}",
+      "html body #page .fo-cc-purse{background:#fff;border:1px solid #e6e3da;border-radius:12px;padding:12px 16px;margin:12px 0}",
+      "html body #page .fo-cc-purse h4{margin:0 0 8px;font:600 10px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#8a6d3b}",
+      "html body #page .fo-cc-prow{display:flex;flex-wrap:wrap;gap:8px}",
+      "html body #page .fo-cc-prow span{flex:1 1 120px;background:#faf8f2;border:1px solid #eee9dc;border-radius:9px;padding:8px 10px}",
+      "html body #page .fo-cc-prow span.me{background:#fdf6e3;border-color:#e8d9ab}",
+      "html body #page .fo-cc-prow i{display:block;font-size:10.5px;color:#98938a;font-style:normal}",
+      "html body #page .fo-cc-prow b{font-family:Fraunces,serif;font-size:16px;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-cc-card{background:#fff;border:1px solid #e6e3da;border-radius:12px;padding:14px 16px;margin:12px 0}",
+      "html body #page .fo-cc-card h3{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-family:Fraunces,serif;font-size:17px;margin:0 0 8px}",
+      "html body #page .fo-cc-card h3 span{font-size:11px;color:#98938a;font-weight:400;white-space:nowrap}",
+      "html body #page .fo-cc-card p.dim{color:#5b5b56;margin:0}",
+      "html body #page .fo-cc-tie{display:flex;gap:10px;align-items:center;padding:7px 0;border-top:1px solid #f0ede4;position:relative}",
+      "html body #page .fo-cc-tie.mine{background:#fdf6e3;margin:0 -16px;padding-left:16px;padding-right:16px}",
+      "html body #page .fo-cc-tie .side{display:flex;align-items:baseline;gap:6px;flex:1 1 0;min-width:0;font-size:13.5px;color:#6b6862}",
+      "html body #page .fo-cc-tie .side .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:400}",
+      "html body #page .fo-cc-tie .side.w .nm{color:#141C28;font-weight:600}",
+      "html body #page .fo-cc-tie .side.me .nm{color:#C8542F}",
+      "html body #page .fo-cc-tie .side u{flex:none;text-decoration:none;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#C8542F}",
+      "html body #page .fo-cc-tie .vs{flex:none;font-size:10.5px;color:#b4aa98;font-style:italic}",
+      "html body #page .fo-cc-tie .ff{flex:none;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#C8542F;font-style:normal}",
+      "html body #page .fo-cc-line{margin:0 0 6px;font-size:12px;color:#8a857c}",
+      "html body #page .fo-cc-lead{display:grid;gap:4px}",
+      "html body #page .fo-cc-lrow{display:flex;gap:8px;align-items:baseline;padding:5px 0;border-top:1px solid #f0ede4}",
+      "html body #page .fo-cc-lrow b{font-size:13.5px}",
+      "html body #page .fo-cc-lrow i{flex:1 1 0;min-width:0;font-size:11.5px;color:#98938a;font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      "html body #page .fo-cc-lrow u{text-decoration:none;font-size:12px;color:#6b6862;font-variant-numeric:tabular-nums;white-space:nowrap}",
+      "html body #page .fo-cc-foot{display:flex;justify-content:space-between;gap:10px;margin:18px 0 0;font:600 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
+      "html body #page .fo-cc-foot a{color:#8a6d3b;text-decoration:none}"
+    ].join("\n");
+    document.head.appendChild(s);
+  }
+
+  function paint() { render(); }
+  window.addEventListener("hashchange", function () { setTimeout(paint, 30); });
+  document.addEventListener("DOMContentLoaded", function () { setTimeout(paint, 60); });
+  setTimeout(paint, 120);
+  window.__foColtsCup = { render: render, want: want };
+  window.foRenderColtsPage = render;
 })();
 
 ;
