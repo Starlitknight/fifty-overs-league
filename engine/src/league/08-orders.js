@@ -489,22 +489,26 @@
         // is one tap per place and cannot be fumbled. The bench keeps the grip
         // because a bench man is not moving one place - he is being carried
         // onto a slot in the XI, which only dragging expresses.
-        // Spans, not buttons: this card IS a button, and a button inside a
-        // button is dropped by the parser. Same trick the C and WK badges use.
-        var mvR = i == null ? "<span class='dh' title='Drag to move' aria-hidden='true'>&#x2261;</span>" :
+        // The rail sits BESIDE the card, never inside it. The card is itself a
+        // <button>; a control nested in a button is ambiguous - WebKit can
+        // report the click against the outer button, and no keyboard can reach
+        // the inner one. Outside, these are ordinary buttons that behave like
+        // buttons everywhere.
+        var mvR = i == null ? "" :
           "<span class='mv'>" +
-            "<span class='mvb" + (i === 0 ? " off" : "") + "' role='button' tabindex='0' data-fo-mv='up:" + E(nm) +
-              "' title='Move up' aria-label='Move " + E(dispNm(nm)) + " up the order'>&#x25B2;</span>" +
-            "<span class='mvb" + (i >= xiNames.length - 1 ? " off" : "") + "' role='button' tabindex='0' data-fo-mv='dn:" + E(nm) +
-              "' title='Move down' aria-label='Move " + E(dispNm(nm)) + " down the order'>&#x25BC;</span>" +
+            "<button type='button' class='mvb" + (i === 0 ? " off" : "") + "' data-fo-mv='up:" + E(nm) +
+              "' title='Move up' aria-label='Move " + E(dispNm(nm)) + " up the order'>&#x25B2;</button>" +
+            "<button type='button' class='mvb" + (i >= xiNames.length - 1 ? " off" : "") + "' data-fo-mv='dn:" + E(nm) +
+              "' title='Move down' aria-label='Move " + E(dispNm(nm)) + " down the order'>&#x25BC;</button>" +
           "</span>";
-        return "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + (i == null ? "" : " xc-mv") + "' data-fo-pc='" + E(nm) + "'>" +
-          mvR +
+        var card = "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + "' data-fo-pc='" + E(nm) + "'>" +
+          (i == null ? "<span class='dh' title='Drag to move' aria-hidden='true'>&#x2261;</span>" : "") +
           "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + "<b>" + E(dispNm(nm)) + "</b>" + foOrdRoleIcon(p) + tag +
           "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
           "<span class='ov' title='Overall rating'><b>" + foPkOvr(p) + "</b></span></span>" +
           "<span class='r2'>" + foOrdStarHTML(foOrdStars(foOrdBatComp(p))) + "</span>" +
           "<span class='r3'>" + (pills || "") + "</span></button>";
+        return i == null ? card : "<div class='xcw'>" + mvR + card + "</div>";
       };
       var xiNames = bo.slice(0, 11);
       var benchNames = ((t && t.players) || []).map(function (p9) { return p9.name; }).filter(function (nm) { return xiNames.indexOf(nm) < 0; });
@@ -734,6 +738,13 @@
           if (!/^#\/orders/.test(location.hash || "")) return;
           var q = function (sel3) { return ev.target.closest ? ev.target.closest(sel3) : null; };
           var el;
+          // FIRST, ALWAYS. An arrow tap is never a drag and never a card open,
+          // so nothing downstream may swallow it.
+          if ((el = q("[data-fo-mv]"))) {
+            var mvA = el.getAttribute("data-fo-mv").split(":");
+            foOrdMove(mvA.slice(1).join(":"), mvA[0] === "up" ? -1 : 1);
+            return;
+          }
           if ((el = q("[data-fo-up]"))) { var i1 = +el.getAttribute("data-fo-up"); var a1 = App.orders.batOrder; var tmp1 = a1[i1 - 1]; a1[i1 - 1] = a1[i1]; a1[i1] = tmp1; foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-dn]"))) { var i2 = +el.getAttribute("data-fo-dn"); var a2 = App.orders.batOrder; var tmp2 = a2[i2 + 1]; a2[i2 + 1] = a2[i2]; a2[i2] = tmp2; foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-swap]"))) { foOrdBenchSheet(el.getAttribute("data-fo-swap")); return; }
@@ -825,11 +836,6 @@
             toast("The bowling plan is clear - paint it again, or let the AI captain improvise.");
             return;
           }
-          if ((el = q("[data-fo-mv]"))) {
-            var mvA = el.getAttribute("data-fo-mv").split(":");
-            foOrdMove(mvA.slice(1).join(":"), mvA[0] === "up" ? -1 : 1);
-            return;
-          }
           if ((el = q("[data-fo-mb]"))) { foMbCycle(el.getAttribute("data-fo-mb")); foOrdersUI(); return; }
           if ((el = q("[data-fo-mfc]"))) { foMfCycle(el.getAttribute("data-fo-mfc")); foOrdersUI(); return; }
           if ((el = q("[data-fo-mkc]"))) { App.orders.captain = el.getAttribute("data-fo-mkc"); foOrdersUI(); return; }
@@ -898,9 +904,6 @@
       page.addEventListener("pointerdown", function (ev) {
         try {
           if (!/^#\/orders/.test(location.hash || "")) return;
-          // a thumb resting on an arrow is pressing a button, not beginning a
-          // drag - without this the 260ms hold below fires underneath it
-          if (ev.target.closest && ev.target.closest(".mv")) return;
           var chipEl = ev.target.closest ? ev.target.closest(".fo-ord-xis .xc") : null;
           if (!chipEl) return;
           var list = document.getElementById("fo-ord-xi-list"); if (!list) return;
@@ -1081,15 +1084,17 @@
       // the up/down rail on every man in the XI - on a desk as well as a phone,
       // because one tap per place beats a drag on either
       "html body #page .fo-ord-xis button.xc{position:relative}" +
-      // the rail sits on the LEFT, beside the position number it changes
-      "html body #page .fo-ord-xis button.xc.xc-mv{padding-left:46px!important}" +
       // the bench keeps its grip on the right, where the drag has always been
       "@media(pointer:coarse){html body #page .fo-ord-xis button.xc.xc-dim{padding-right:46px!important}}" +
-      ".fo-ord-xis .xc .mv{position:absolute;left:4px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;touch-action:manipulation}" +
-      ".fo-ord-xis .xc .mvb{display:flex;align-items:center;justify-content:center;width:34px;height:25px;border-radius:7px;background:#EEF2F7;color:#41577a;font-size:10px;line-height:1;cursor:pointer;-webkit-user-select:none;user-select:none;transition:background .12s,color .12s}" +
-      ".fo-ord-xis .xc .mvb:hover{background:#DCE5F0;color:#B04A2C}" +
-      ".fo-ord-xis .xc .mvb:active{background:#B04A2C;color:#FFFEFC}" +
-      ".fo-ord-xis .xc .mvb.off{opacity:.25;pointer-events:none}" +
+      // a row is the rail and then the card; the rail is a sibling, not a
+      // passenger, so its buttons are real buttons the keyboard can reach
+      ".fo-ord-xis .xcw{display:flex;align-items:stretch;gap:5px;min-width:0}" +
+      ".fo-ord-xis .xcw>.mv{flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;gap:3px;touch-action:manipulation}" +
+      "html body #page .fo-ord-xis .xcw>button.xc{flex:1 1 auto;min-width:0}" +
+      "html body.ftpskin #page .fo-ord-xis button.mvb,html body #page .fo-ord-xis button.mvb{display:flex!important;align-items:center;justify-content:center;width:36px;min-width:0;flex:1 1 auto;margin:0!important;padding:0!important;border:1px solid rgba(28,36,51,.12)!important;border-radius:8px;background:#EEF2F7!important;color:#41577a!important;font-size:10px;line-height:1;cursor:pointer;box-shadow:none!important;-webkit-user-select:none;user-select:none;transition:background .12s,color .12s}" +
+      "html body #page .fo-ord-xis button.mvb:hover{background:#DCE5F0!important;border-color:#B04A2C!important;color:#B04A2C!important}" +
+      "html body #page .fo-ord-xis button.mvb:active{background:#B04A2C!important;color:#FFFEFC!important}" +
+      "html body #page .fo-ord-xis button.mvb.off{opacity:.25;pointer-events:none}" +
       // the player-card modal is narrow: slim the v2 art panel so the name
       // never truncates beside the OVR
       "#fo-ord-pc .pkm{padding-left:84px}" +
