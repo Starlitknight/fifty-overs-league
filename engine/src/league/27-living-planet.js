@@ -721,10 +721,10 @@
         return { key: "up", liveIds: [], chip: "Season " + ANCHOR.season + " opens " + (toGo === 1 ? "tomorrow" : "in " + toGo + " days") };
       }
       return { key: "fin", liveIds: [],
-        chip: p.kind === "cup" ? "World Cup week - " + stageName(p.stage) :
-              p.kind === "honours" ? "Honours night - no league play today" :
-              p.kind === "draw" ? "World Cup draw day - no league play" :
-              "Rest day - the new season starts tomorrow" };
+        chip: dayWord(p) ||
+              (p.kind === "honours" ? "Honours night - no league play today" :
+               p.kind === "draw" ? "World Cup draw day - no league play" :
+               "Rest day - no club cricket anywhere today") };
     }
     var h = hourOfDay(now), liveIds = [], nextAt = null;
     regionList().forEach(function (r) {
@@ -737,6 +737,24 @@
     return { key: "fin", liveIds: [], chip: "The world's play is done for today" };
   }
   function stageName(st) { return { r16: "The Last Sixteen", qf: "Quarter-finals", sf: "Semi-finals", final: "THE WORLD CUP FINAL" }[st] || st; }
+  // WHAT IS ON TODAY, IN WORDS. Every day that was not a league round used to
+  // fall through to "Rest day", which said rest on the evening of a final. A
+  // six-week season has MORE of those days, not fewer - a whole Colts Week of
+  // them - so each one is named and only a genuine rest day says rest.
+  function roundName(st) { return { r16: "the last sixteen", qf: "quarter-finals", sf: "semi-finals", final: "THE FINAL" }[st] || st; }
+  function dayWord(p) {
+    if (p.kind === "colts") return p.stage === "final"
+      ? "THE COLTS CUP FINAL - the academies' day"
+      : "Colts Cup " + roundName(p.stage) + " - the boys play, the league rests";
+    if (p.kind === "playoff") return p.stage === "final"
+      ? "THE LEAGUE FINALS - champions crowned tonight"
+      : "League playoff semi-finals - 1v4 and 2v3, both divisions";
+    if (p.kind === "facup") return "FA Cup " + roundName(p.stage);
+    if (p.kind === "cup") return "Champions Cup - " + roundName(p.stage);
+    if (p.kind === "transition") return "The turning of the year - a season older, and the ladders redrawn";
+    if (p.window) return "Tour day - the internationals are away, and miss round " + p.window;
+    return null;
+  }
 
   // one repaint for however many nations answer at once: nineteen snapshots
   // landing in the same second must not repaint the page nineteen times
@@ -781,8 +799,8 @@
         p.kind === "league" ? "Round " + p.round + " of " + ROUNDS + " across the world's leagues" :
         p.kind === "honours" ? "Honours day - champions are crowned tonight" :
         p.kind === "draw" ? "World Cup draw day - sixteen nations learn their fate" :
-        p.kind === "cup" ? "World Cup - " + stageName(p.stage) :
-        "Rest day - the season " + (p.season + 1) + " calendar begins tomorrow";
+        dayWord(p) ||
+        "Rest day - no club cricket anywhere today";
 
       // -- your own league card: the WORLD's league, your claimed club -------
       // one world: this card speaks only served data - your claim, the served
