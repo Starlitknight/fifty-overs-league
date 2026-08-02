@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260802-2341-0837b9";
+  var FO_BUILD = "20260802-2350-c728f3";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18909,7 +18909,38 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (!App.orders.keeper || !xi.some(function (p) { return p.name === App.orders.keeper; }))
       App.orders.keeper = (xi.filter(function (p) { return p.keeper; })[0] || xi[0]).name;
     gridState();
-    var opp = App.pending;
+    // A LEAGUE MATCH IS THE UMPIRE'S TO PLAY. On a device holding a world
+    // claim, a pending league fixture can only be a ghost off the retired
+    // local sim - another round, another opponent, at a ground called Neutral
+    // Park - because real league cricket is played by the server, not here.
+    // Only an arranged friendly legitimately pends on a claimed device. So a
+    // league ghost dies at the door, and the banner reads the world instead:
+    // the umpire's own next fixture, its real ground, and the conditions the
+    // engine will actually use - condOf, the same pure function the served
+    // preview and the resolver both read.
+    var wOpp = null;
+    try {
+      var cl9 = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+      if (cl9 && cl9.country && cl9.slot != null) {
+        var arranged = App.pending && (App.pending.__friendly || App.pending.__chal || App.pending.comp === "friendly");
+        if (App.pending && !arranged) App.pending = null;
+        if (!App.pending && typeof window.foNextFixture === "function") {
+          var fx9 = window.foNextFixture();
+          if (fx9 && fx9.served) {
+            var meNm9 = t.name, opNm9 = (fx9.opp && fx9.opp.name) || "a club";
+            var c9 = null;
+            try {
+              var P9 = window.__foPlanet;
+              if (P9 && P9.condOf) c9 = P9.condOf(cl9.country, fx9.world.h, fx9.world.season, fx9.round);
+            } catch (eC9) {}
+            wOpp = { home: fx9.isHome ? meNm9 : opNm9, away: fx9.isHome ? opNm9 : meNm9,
+                     ground: fx9.ground || "", pitch: (c9 && c9.pitch) || "balanced",
+                     weather: (c9 && c9.weather) || "", comp: "league", round: fx9.round, __served: true };
+          }
+        }
+      }
+    } catch (eW9) {}
+    var opp = App.pending || wOpp;
     if (!opp) { try { if (App.season && App.season.schedule) opp = foFixtureMeta(App.season.round); } catch (eFm) {} }
     if (!opp) opp = { home: t.name, away: "(practice)", ground: t.ground, pitch: "balanced", weather: "-" };
     var cond = "<div class='fo-ord-cond'><b>" + E(opp.home) + " v " + E(opp.away) + "</b> · " + E(foPitchName(opp.pitch)) + " pitch · " + E(opp.weather || "") + " · " + E(opp.ground || "") + "</div>" + foCondRead(opp);
