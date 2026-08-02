@@ -3241,8 +3241,33 @@ function saveGame(tell){
     }
     return false}
 }
+// A PRACTICE WORLD IS NOT YOUR WORLD.
+// The retired local stack's practice() and startLeagueFromMerge() replace
+// GD.teams wholesale with clubs invented by makeBotTeam - which walks the
+// nation list, so one of them comes out Dutch, and every one of them plays at
+// a ground called Neutral Park. That world then goes into the save. On the
+// next boot your pinned club is not in it, userTeam() falls back to
+// GD.teams[App.teamIx], and a stranger's XI is presented as your side: a
+// batting order full of men you never signed.
+//
+// So a saved world that (a) does not contain the club this device is pinned to
+// and (b) is visibly that generated furniture is refused at the door. Both
+// conditions are needed: a snapshot from another manager's league is a real
+// world and must still load, and a device with no club pinned yet has nothing
+// to be robbed of.
+function foIsPracticeWorld(teams, pinned){
+  if(!pinned||!Array.isArray(teams)||teams.length<2)return false;
+  if(teams.some(t=>t&&t.name===pinned))return false;      // my club is in it: a real world
+  let park=0;
+  for(const t of teams)if(t&&t.ground==='Neutral Park'&&t.founded!==true)park++;
+  return park>=3;
+}
 function restoreFrom(d){
   if(!d||!d.teams)return false;
+  if(foIsPracticeWorld(d.teams,foMyClub())){
+    try{console.warn('Fifty Overs: discarded a stale practice world from the save; loading the served one.')}catch(e){}
+    return false;                                          // no save: the served world loads instead
+  }
   GD.teams=d.teams;
   // d.teamIx BELONGS TO WHOEVER MADE THIS SNAPSHOT. In a league that is the
   // founder, the resolver, or another manager taking over a bot - never you.
@@ -10150,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260802-2324-acce97";
+  var FO_BUILD = "20260802-2332-acce97";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
