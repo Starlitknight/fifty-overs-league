@@ -1,13 +1,19 @@
 // clock.mjs — the world calendar, server-side, injectable time throughout.
 // Mirrors the shipped client calendar (engine/src/league/27-living-planet.js):
-// same epoch, same 35-day cycle, same 14 rounds, same national hours.
+// same epoch, same 42-day cycle, same 14 rounds, same national hours.
 export const EPOCH = Date.UTC(2026, 7, 3);    // MONDAY 3 August 2026 = world day 0, season 1 day 1
 export const DAY = 86400000;
 // ---------------------------------------------------------------------------
-//  THE 35-DAY SEASON — FIVE EXACT WEEKS (docs/PYRAMID.md is the authority)
+//  THE 42-DAY SEASON — SIX EXACT WEEKS (docs/PYRAMID.md is the authority)
 //
-//  Day 0 is always a Monday: CYCLE is 35, so di % 7 IS the weekday, forever.
+//  Day 0 is always a Monday: CYCLE is 42, so di % 7 IS the weekday, forever.
 //  A season is one year of a cricketer's life.
+//
+//  Weeks 1-3 are untouched from the five-week season that preceded this one:
+//  league rounds 1-12 on the same days, the same six tour days, the FA Cup on
+//  the same three Sundays. What the sixth week bought is WEEK 4 - the boys get
+//  a week of the calendar to themselves, and the league pauses while they have
+//  it. Everything after Colts Week is the old closing fortnight, a week later.
 //
 //    di      weekday   what plays
 //    0  1    Mon Tue   league rounds 1-2        (both divisions)
@@ -25,44 +31,61 @@ export const DAY = 86400000;
 //    17 18   Thu Fri   league rounds 11-12
 //    19      Sat       internationals
 //    20      Sun       FA CUP semi-finals
-//    21 22   Mon Tue   league rounds 13-14 — the double round robin complete
-//    23      Wed       rest: the players breathe before finals
-//    24      Thu       LEAGUE PLAYOFF SEMIS (1v4, 2v3, both divisions)
-//    25      Fri       THE LEAGUE FINALS — champions crowned
+//   --- THE COLTS WEEK: the league stands down and the academies play ---
+//    21      Mon       COLTS CUP round of 16   (all sixteen clubs, one hat)
+//    22      Tue       COLTS CUP quarter-finals
+//    23      Wed       rest
+//    24      Thu       COLTS CUP semi-finals
+//    25      Fri       THE COLTS CUP FINAL
 //    26      Sat       rest
-//    27      Sun       THE FA CUP FINAL
-//    28-30   Mon-Wed   CHAMPIONS CUP group rounds 1-3 (4 groups of 4)
-//    31      Thu       THE TURNING OF THE YEAR — ageing, youth, promotion & relegation
-//    32      Fri       Champions Cup quarter-finals
-//    33      Sat       Champions Cup semi-finals
-//    34      Sun       THE CHAMPIONS CUP FINAL
+//    27      Sun       rest
+//   --- and the league comes back for its last two rounds ---
+//    28 29   Mon Tue   league rounds 13-14 — the double round robin complete
+//    30      Wed       rest: the players breathe before finals
+//    31      Thu       LEAGUE PLAYOFF SEMIS (1v4, 2v3, both divisions)
+//    32      Fri       THE LEAGUE FINALS — champions crowned
+//    33      Sat       rest
+//    34      Sun       THE FA CUP FINAL
+//    35-37   Mon-Wed   CHAMPIONS CUP group rounds 1-3 (4 groups of 4)
+//    38      Thu       THE TURNING OF THE YEAR — ageing, youth, promotion & relegation
+//    39      Fri       Champions Cup quarter-finals
+//    40      Sat       Champions Cup semi-finals
+//    41      Sun       THE CHAMPIONS CUP FINAL
 //
 //  NOTHING ANYWHERE MAY ASSUME round === day + 1. The functions below are the
 //  only place the day<->round mapping lives - server and client both.
 // ---------------------------------------------------------------------------
-export const CYCLE = 35;                      // days in a season = one year
+export const CYCLE = 42;                      // days in a season = one year
 export const ROUNDS = 14;                     // eight clubs, double round robin
-export const LEAGUE_DAYS = 23;                // last league round settles di 22
+export const WEEK_ROUNDS = 12;                // rounds 1-12 fall on the weekly pattern
+export const LATE_DAYS = [28, 29];            // rounds 13 and 14, after Colts Week
+export const LEAGUE_DAYS = 30;                // last league round settles di 29
 export const LIVE_HOURS = 3;
 // the league week: Mon Tue . Thu Fri . . — rounds at di%7 in {0,1,3,4}
 const WEEK_POS = { 0: 1, 1: 2, 3: 3, 4: 4 };  // di%7 -> round-in-week
 // day-in-season -> league round number, or null if no league cricket that day.
-// Playoffs are rounds 15 (di 24) and 16 (di 25) — real fixtures, not table rounds.
+// Playoffs are rounds 15 (di 31) and 16 (di 32) — real fixtures, not table rounds.
 export function roundOfDay(di) {
   if (!(di >= 0)) return null;
   if (di === PLAYOFF_DAYS.semi) return 15;
   if (di === PLAYOFF_DAYS.final) return 16;
-  if (di >= LEAGUE_DAYS) return null;
+  if (di === LATE_DAYS[0]) return 13;
+  if (di === LATE_DAYS[1]) return 14;
+  // Colts Week and everything after it carries no league cricket of its own;
+  // rounds 13-16 are named above, day by day.
+  if (di >= COLTS_DAYS.r16) return null;
   const w = Math.floor(di / 7), pos = WEEK_POS[di % 7];
   if (!pos) return null;
   const r = w * 4 + pos;
-  return r >= 1 && r <= ROUNDS ? r : null;
+  return r >= 1 && r <= WEEK_ROUNDS ? r : null;
 }
 // round number -> day-in-season. The exact inverse of roundOfDay.
 export function dayOfRound(round) {
   if (round === 15) return PLAYOFF_DAYS.semi;
   if (round === 16) return PLAYOFF_DAYS.final;
-  if (!(round >= 1 && round <= ROUNDS)) return null;
+  if (round === 13) return LATE_DAYS[0];
+  if (round === 14) return LATE_DAYS[1];
+  if (!(round >= 1 && round <= WEEK_ROUNDS)) return null;
   const w = Math.floor((round - 1) / 4), pos = (round - 1) % 4;
   return w * 7 + [0, 1, 3, 4][pos];
 }
@@ -87,13 +110,18 @@ export function windowDayOfRound(round) { const i = WINDOWS.indexOf(round); retu
 // groups on the first three, quarters, semis, the final on the sixth.
 export const WC_EVERY = 4;
 export function isWorldCupSeason(seasonNo) { return seasonNo % WC_EVERY === 0; }
+// THE COLTS WEEK. Week four belongs to the academies: all sixteen clubs of a
+// nation in one hat, a straight knockout over four days, and no league cricket
+// anywhere in the world while it runs. A club that cannot name fifteen men
+// under twenty-one forfeits its tie - see docs/ACADEMY.md.
+export const COLTS_DAYS = { r16: 21, qf: 22, sf: 24, final: 25 };
 // finals week and the closing week
-export const PLAYOFF_DAYS = { semi: 24, final: 25 };
-export const FA_DAYS = { r16: 6, qf: 13, sf: 20, final: 27 };
-export const HONOURS_DAY = 25;                // champions are crowned with the league finals
-export const TRANSITION_DAY = 31;             // the turning of the year
+export const PLAYOFF_DAYS = { semi: 31, final: 32 };
+export const FA_DAYS = { r16: 6, qf: 13, sf: 20, final: 34 };
+export const HONOURS_DAY = 32;                // champions are crowned with the league finals
+export const TRANSITION_DAY = 38;             // the turning of the year
 // the Champions Cup week: groups Mon-Wed, then knockout Fri-Sun
-export const CUP_DAYS = { g1: 28, g2: 29, g3: 30, qf: 32, sf: 33, final: 34 };
+export const CUP_DAYS = { g1: 35, g2: 36, g3: 37, qf: 39, sf: 40, final: 41 };
 // the staggered globe, same formula as the client planet: England is the
 // 14:00 UTC league; every other nation hashes onto one of eight slots.
 // Parity with the shipped build is asserted by tests/world-p2.test.mjs.
@@ -112,9 +140,11 @@ export function phaseOf(nowMs) {
   const p = { day: d, season, di, weekday: di % 7 };
   const r = roundOfDay(di);
   const fa = Object.keys(FA_DAYS).find(k => FA_DAYS[k] === di);
+  const colts = Object.keys(COLTS_DAYS).find(k => COLTS_DAYS[k] === di);
   if (r && r <= ROUNDS) { p.kind = 'league'; p.round = r; }
   else if (r === 15 || r === 16) { p.kind = 'playoff'; p.round = r; p.stage = r === 15 ? 'semi' : 'final'; }
   else if (fa) { p.kind = 'facup'; p.stage = fa; }
+  else if (colts) { p.kind = 'colts'; p.stage = colts; }
   else if (di === TRANSITION_DAY) p.kind = 'transition';
   else if (di >= CUP_DAYS.g1) {
     const st = Object.keys(CUP_DAYS).find(k => CUP_DAYS[k] === di);
@@ -123,6 +153,15 @@ export function phaseOf(nowMs) {
   else { p.kind = 'rest'; p.window = windowRoundOfDay(di); }
   return p;
 }
+// A REST DAY is a day on which the world stages no club cricket at all - the
+// tour days, the two Saturdays and Sundays either side of Colts Week, and the
+// Wednesday before the finals. These are the days an academy may scout, one
+// recruit apiece, so the list has to be a pure function of the calendar and
+// nothing else: a manager can count his chances a season in advance, offline.
+export function isRestDay(di) {
+  return phaseOf(EPOCH + di * DAY).kind === 'rest';
+}
+export const REST_DAYS = Array.from({ length: CYCLE }, (_, i) => i).filter(isRestDay);
 // a day's play is settled once its window has closed
 export function daySettled(nowMs, day, countryId) {
   return nowMs >= EPOCH + day * DAY + (natHour(countryId) + LIVE_HOURS) * 3600000;

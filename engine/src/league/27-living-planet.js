@@ -43,16 +43,20 @@
   }
 
   // ---- the calendar -----------------------------------------------------------
-  // THE 35-DAY SEASON — FIVE EXACT WEEKS. Day 0 is always a Monday (3 August
+  // THE 42-DAY SEASON — SIX EXACT WEEKS. Day 0 is always a Monday (3 August
   // 2026), so di % 7 IS the weekday, forever: Sunday is cup day, Wednesday and
-  // Saturday are international days, the last week is the Champions Cup.
+  // Saturday are international days, WEEK FOUR BELONGS TO THE BOYS, and the
+  // last week is the Champions Cup.
   // docs/PYRAMID.md is the authority; server/clock.mjs must agree ball for ball.
   var EPOCH = Date.UTC(2026, 7, 3);            // MONDAY 3 August 2026, day 0 - season 1 day 1
-  var DAY = 86400000, CYCLE = 35, ROUNDS = 14;  // eight clubs a division, double round robin
-  var LEAGUE_DAYS = 23;                         // last league round settles di 22
-  var PLAYOFF_DAYS = { semi: 24, final: 25 };
-  var FA_DAYS = { r16: 6, qf: 13, sf: 20, final: 27 };
-  var TRANSITION_DAY = 31;
+  var DAY = 86400000, CYCLE = 42, ROUNDS = 14;  // eight clubs a division, double round robin
+  var WEEK_ROUNDS = 12;                         // rounds 1-12 fall on the weekly pattern
+  var LATE_DAYS = [28, 29];                     // rounds 13 and 14, after Colts Week
+  var LEAGUE_DAYS = 30;                         // last league round settles di 29
+  var COLTS_DAYS = { r16: 21, qf: 22, sf: 24, final: 25 };
+  var PLAYOFF_DAYS = { semi: 31, final: 32 };
+  var FA_DAYS = { r16: 6, qf: 13, sf: 20, final: 34 };
+  var TRANSITION_DAY = 38;
   // the league week: Mon Tue . Thu Fri . . — rounds at di%7 in {0,1,3,4}
   var WEEK_POS = { 0: 1, 1: 2, 3: 3, 4: 4 };
   // day-in-season <-> round. NOTHING may assume round === day + 1 any more.
@@ -61,21 +65,42 @@
     if (!(di >= 0)) return null;
     if (di === PLAYOFF_DAYS.semi) return 15;
     if (di === PLAYOFF_DAYS.final) return 16;
-    if (di >= LEAGUE_DAYS) return null;
+    if (di === LATE_DAYS[0]) return 13;
+    if (di === LATE_DAYS[1]) return 14;
+    // Colts Week and everything after it carries no league cricket of its own;
+    // rounds 13-16 are named above, day by day.
+    if (di >= COLTS_DAYS.r16) return null;
     var w = Math.floor(di / 7), pos = WEEK_POS[di % 7];
     if (!pos) return null;
     var r = w * 4 + pos;
-    return r >= 1 && r <= ROUNDS ? r : null;
+    return r >= 1 && r <= WEEK_ROUNDS ? r : null;
   }
   function dayOfRound(round) {
     if (round === 15) return PLAYOFF_DAYS.semi;
     if (round === 16) return PLAYOFF_DAYS.final;
-    if (!(round >= 1 && round <= ROUNDS)) return null;
+    if (round === 13) return LATE_DAYS[0];
+    if (round === 14) return LATE_DAYS[1];
+    if (!(round >= 1 && round <= WEEK_ROUNDS)) return null;
     return Math.floor((round - 1) / 4) * 7 + [0, 1, 3, 4][(round - 1) % 4];
   }
   var WINDOW_DAYS = [2, 5, 9, 12, 16, 19], WINDOWS = [3, 5, 7, 9, 11, 13];
   function windowRoundOfDay(di) { var i = WINDOW_DAYS.indexOf(di); return i < 0 ? null : WINDOWS[i]; }
-  var HONOURS_DAY = 25, CUP_DAYS = { g1: 28, g2: 29, g3: 30, qf: 32, sf: 33, final: 34 };
+  var HONOURS_DAY = 32, CUP_DAYS = { g1: 35, g2: 36, g3: 37, qf: 39, sf: 40, final: 41 };
+  // A REST DAY is a day on which the world stages no club cricket at all - the
+  // tour days, the Saturday and Sunday either side of Colts Week, and the
+  // Wednesday before the finals. These are the days an academy may scout, one
+  // recruit apiece, so the list is a pure function of the calendar and nothing
+  // else: a manager can count his chances a season in advance, offline.
+  function isRestDay(di) {
+    if (!(di >= 0) || di >= CYCLE) return false;
+    if (roundOfDay(di) != null) return false;
+    if (di === TRANSITION_DAY) return false;
+    for (var f in FA_DAYS) if (FA_DAYS[f] === di) return false;
+    for (var c in COLTS_DAYS) if (COLTS_DAYS[c] === di) return false;
+    for (var g in CUP_DAYS) if (CUP_DAYS[g] === di) return false;
+    return true;
+  }
+  var REST_DAYS = (function () { var a = [], i; for (i = 0; i < CYCLE; i++) if (isRestDay(i)) a.push(i); return a; })();
   var LIVE_LEN = 3;                             // a day's play runs three hours
   // the staggered globe: each nation bowls its first ball at its own UTC hour.
   // England is the 14:00 UTC league; the rest spread around the clock so
@@ -116,9 +141,12 @@
     var r = roundOfDay(di);
     var faStage = null;
     for (var fk in FA_DAYS) if (FA_DAYS[fk] === di) faStage = fk;
+    var coltsStage = null;
+    for (var yk in COLTS_DAYS) if (COLTS_DAYS[yk] === di) coltsStage = yk;
     if (r && r <= ROUNDS) { p.kind = "league"; p.round = r; }
     else if (r === 15 || r === 16) { p.kind = "playoff"; p.round = r; p.stage = r === 15 ? "semi" : "final"; }
     else if (faStage) { p.kind = "facup"; p.stage = faStage; }
+    else if (coltsStage) { p.kind = "colts"; p.stage = coltsStage; }
     else if (di === TRANSITION_DAY) p.kind = "transition";
     else if (di >= CUP_DAYS.g1) {
       var ccStage = null;
@@ -1087,5 +1115,6 @@
     dateTxt: dateTxt, hhTxt: hhTxt, whenTxt: whenTxt,
     FA_DAYS: FA_DAYS, faDayOf: faDayOf, faDrawR16: faDrawR16,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
+    COLTS_DAYS: COLTS_DAYS, isRestDay: isRestDay, REST_DAYS: REST_DAYS, dayOfRound: dayOfRound, roundOfDay: roundOfDay,
     phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();

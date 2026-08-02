@@ -2,17 +2,23 @@
 
 The world becomes a pyramid: sixteen nations, each with sixteen clubs in two
 divisions of eight, a national knockout cup, finals-week playoffs, and a
-Champions Cup of the sixteen national champions. One season is 35 days — five
+Champions Cup of the sixteen national champions. One season is 42 days — six
 exact weeks — and one season is one year of a cricketer's life.
 
 This document is the single authority for the build. Where code and this file
 disagree, one of them is wrong on purpose and the tests say which.
 
-## 1. The calendar — 35 days, five weeks, day 0 is always a Monday
+## 1. The calendar — 42 days, six weeks, day 0 is always a Monday
 
 `EPOCH = Date.UTC(2026, 7, 3)` — Monday 3 August 2026, world day 0, season 1
-day 1. `CYCLE = 35`, so every season starts on a Monday and `di % 7` is the
+day 1. `CYCLE = 42`, so every season starts on a Monday and `di % 7` is the
 weekday (0=Mon .. 6=Sun), forever.
+
+The fourth week belongs to the academies. The league stands down for it and the
+Colts Cup is played over four days — see docs/ACADEMY.md. Weeks 1-3 are exactly
+as they were when a season was five weeks: the same twelve league rounds on the
+same days, the same six tour days, the same three FA Cup Sundays. Everything
+after Colts Week is the old closing fortnight, one week later.
 
 Day-in-season (di, 0-based) map:
 
@@ -33,26 +39,39 @@ Day-in-season (di, 0-based) map:
 | 17,18 | Thu,Fri | league rounds 11,12 |
 | 19 | Sat | internationals (tour day 6) |
 | 20 | Sun | **FA Cup semi-finals** |
-| 21,22 | Mon,Tue | league rounds 13,14 (double round robin complete) |
-| 23 | Wed | rest — the players breathe before finals |
-| 24 | Thu | **league playoff semi-finals** (both divisions: 1v4, 2v3) |
-| 25 | Fri | **league finals** — champions crowned, both divisions |
+| 21 | Mon | **COLTS CUP round of 16** — all sixteen clubs in one hat |
+| 22 | Tue | **Colts Cup quarter-finals** |
+| 23 | Wed | rest |
+| 24 | Thu | **Colts Cup semi-finals** |
+| 25 | Fri | **THE COLTS CUP FINAL** |
 | 26 | Sat | rest |
-| 27 | Sun | **FA Cup final** |
-| 28,29,30 | Mon-Wed | **Champions Cup group rounds 1-3** (4 groups of 4) |
-| 31 | Thu | **the turning of the year**: ageing, retirements, youth intake, promotion & relegation — the season transition day |
-| 32 | Fri | **Champions Cup quarter-finals** (top 2 per group) |
-| 33 | Sat | **Champions Cup semi-finals** |
-| 34 | Sun | **Champions Cup final** |
+| 27 | Sun | rest |
+| 28,29 | Mon,Tue | league rounds 13,14 (double round robin complete) |
+| 30 | Wed | rest — the players breathe before finals |
+| 31 | Thu | **league playoff semi-finals** (both divisions: 1v4, 2v3) |
+| 32 | Fri | **league finals** — champions crowned, both divisions |
+| 33 | Sat | rest |
+| 34 | Sun | **FA Cup final** |
+| 35,36,37 | Mon-Wed | **Champions Cup group rounds 1-3** (4 groups of 4) |
+| 38 | Thu | **the turning of the year**: ageing, retirements, boys who reach 21 leaving, promotion & relegation — the season transition day |
+| 39 | Fri | **Champions Cup quarter-finals** (top 2 per group) |
+| 40 | Sat | **Champions Cup semi-finals** |
+| 41 | Sun | **Champions Cup final** |
 
-`ROUNDS = 14` (8 clubs, double round robin). League rounds fall on
-di ∈ {0,1,3,4} + 7·week for weeks 0..3. Playoffs are rounds 15 (semis) and
-16 (final) in the matches table; they never count toward the table.
+`ROUNDS = 14` (8 clubs, double round robin). Rounds 1-12 fall on
+di ∈ {0,1,3,4} + 7·week for weeks 0..2; rounds 13 and 14 are di 28 and 29,
+the far side of Colts Week. Playoffs are rounds 15 (semis) and 16 (final) in
+the matches table; they never count toward the table.
 
 International tour days are di {2,5,9,12,16,19} — the Wed/Sat of weeks 1-3.
 Each robs the NEXT league round of its called-up men (rounds 3,5,7,9,11,13),
-exactly the existing call-up law. The Wed/Sat of finals week (23, 26) are
-pure rest: no tours, so finals are full-strength.
+exactly the existing call-up law. Colts Week and finals week carry no tours,
+so both the boys' competition and the finals are full-strength.
+
+**REST DAYS** are the days the world stages no club cricket at all —
+di {2,5,9,12,16,19,23,26,27,30,33}, eleven of them. They are what the academies
+scout on, one recruit apiece, so the list must stay a pure function of the
+calendar: `isRestDay(di)` derives it, and nothing hardcodes the list.
 
 ## 2. Sixteen nations
 

@@ -104,9 +104,10 @@ test("P3: a claimant's orders genuinely steer the engine", async () => {
 
 test('P4+P5: a full planet season, then the cup window crowns two champions', async () => {
   // settle the fourteen rounds AND FINALS NIGHT everywhere (round 1 for eng
-  // already played above): the playoff final settles on day-in-season 25, so
-  // 02:00 on day +27 is past every nation's window.
-  const allDone = EPOCH + (101 + 27) * DAY + 2 * 3600000;
+  // already played above): the playoff final settles on day-in-season 32, so
+  // 02:00 on day +33 is past every nation's window - and still short of the
+  // FA Cup final on day-in-season 34.
+  const allDone = EPOCH + (101 + 33) * DAY + 2 * 3600000;
   await runAllDue(pool, host, { now: allDone });
   const n = await pool.query('SELECT count(*)::int AS n FROM matches');
   assert.equal(n.rows[0].n, 16 * 118,
@@ -129,8 +130,8 @@ test('P4+P5: a full planet season, then the cup window crowns two champions', as
   const early = await runCupWindow(pool, host, { now: allDone });
   assert.equal((early.s1.wcl || []).filter(x => !x.skipped).length, 0, 'no cup stage before its window closes');
 
-  // after the final's window (start_day+34 at 21:00): everything settles in one call
-  const cupDone = EPOCH + (101 + 35) * DAY + 1 * 3600000;
+  // after the final's window (start_day+41 at 21:00): everything settles in one call
+  const cupDone = EPOCH + (101 + 42) * DAY + 1 * 3600000;
   const cups = await runCupWindow(pool, host, { now: cupDone });
   const wcl = cups.s1.wcl.filter(x => !x.skipped);
   assert.deepEqual(wcl.map(x => x.stage), ['g1', 'g2', 'g3', 'qf', 'sf', 'final']);
@@ -171,13 +172,13 @@ test('P4+P5: a full planet season, then the cup window crowns two champions', as
 });
 
 test('seasons roll at the turning of the year, and the pyramid breathes', async () => {
-  const beforeRoll = await rollSeasons(pool, { now: EPOCH + (101 + 30) * DAY });
+  const beforeRoll = await rollSeasons(pool, { now: EPOCH + (101 + 37) * DAY });
   assert.equal(beforeRoll.length, 0, 'no rollover before the transition day');
-  const rolled = await rollSeasons(pool, { now: EPOCH + (101 + 32) * DAY + 2 * 3600000 });
+  const rolled = await rollSeasons(pool, { now: EPOCH + (101 + 39) * DAY + 2 * 3600000 });
   assert.equal(rolled.length, 16);
   const s2 = await pool.query('SELECT count(*)::int AS n, min(start_day) AS d FROM seasons WHERE season_no=2');
   assert.equal(s2.rows[0].n, 16);
-  assert.equal(s2.rows[0].d, 101 + 35, 'season 2 opens five weeks after season 1');
+  assert.equal(s2.rows[0].d, 101 + 42, 'season 2 opens six weeks after season 1');
   // PROMOTION AND RELEGATION happened: season 2's divisions differ from the
   // founding map by exactly two clubs each way, in every nation
   const rows = (await pool.query(`SELECT country_id, divisions FROM seasons WHERE season_no=2 ORDER BY country_id`)).rows;
@@ -189,7 +190,7 @@ test('seasons roll at the turning of the year, and the pyramid breathes', async 
     assert.equal(promoted.length, 2, r.country_id + ' promoted two: ' + promoted.join(','));
     assert.equal(relegated.length, 2, r.country_id + ' relegated two: ' + relegated.join(','));
   }
-  const again = await rollSeasons(pool, { now: EPOCH + (101 + 32) * DAY + 2 * 3600000 });
+  const again = await rollSeasons(pool, { now: EPOCH + (101 + 39) * DAY + 2 * 3600000 });
   assert.equal(again.length, 0, 'season 2 already current: nothing further rolls');
   const s2b = await pool.query('SELECT count(*)::int AS n FROM seasons WHERE season_no=2');
   assert.equal(s2b.rows[0].n, 16);

@@ -53,7 +53,11 @@ const PLAY_TABLES = [
   'matches', 'cup_matches', 'nat_matches', 'youth_matches', 'comp_matches',
   'ticks', 'orders', 'callups', 'nat_squad', 'nat_squads', 'friendlies',
   'listings', 'bids', 'scouted', 'training_rounds', 'snapshots',
-  'comps', 'comp_clubs'
+  'comps', 'comp_clubs',
+  // the club statement. Every line in it is rewritten from the finance walk
+  // each time the money settles, so it is play, not world: wipe it with the
+  // season and the next settle writes it back from the matches that remain.
+  'ledger'
 ];
 // the world itself: its countries, its clubs, who has claimed them, the
 // calendar, and the migration ledger. These are not play and are left alone.

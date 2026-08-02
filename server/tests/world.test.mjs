@@ -9,7 +9,9 @@ import { initWorld } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { runTick, runDue, rebuildSnapshots, matchId } from '../tick.mjs';
 import { applyLiving } from '../living.mjs';
-import { EPOCH, DAY, dayIx, seedOf, CYCLE, ROUNDS, roundOfDay, dayOfRound } from '../clock.mjs';
+import { EPOCH, DAY, dayIx, seedOf, CYCLE, ROUNDS, roundOfDay, dayOfRound,
+         COLTS_DAYS, PLAYOFF_DAYS, FA_DAYS, CUP_DAYS, TRANSITION_DAY,
+         REST_DAYS, isRestDay } from '../clock.mjs';
 
 const DBNAME = 'foworld_test';
 let pool, host;
@@ -141,15 +143,42 @@ test('the league week is Mon Tue . Thu Fri . Sun-is-cup-day, without anyone onli
   assert.equal(snap.roundsPlayed, 6);
 });
 
-test('the calendar is 35 days: five exact weeks, fourteen rounds plus finals', async () => {
+test('the calendar is 42 days: six exact weeks, fourteen rounds plus finals', async () => {
+  assert.equal(CYCLE, 42, 'a season is six exact weeks, so di % 7 is the weekday forever');
+  assert.equal(CYCLE % 7, 0, 'and it must stay a whole number of weeks');
   const seen = [];
   for (let di = 0; di < CYCLE; di++) seen.push(roundOfDay(di));
   // fourteen league days plus the two playoff nights (rounds 15 and 16)
   assert.equal(seen.filter(r => r !== null).length, ROUNDS + 2, 'sixteen days with club cricket');
   assert.deepEqual(seen.slice(0, 8), [1, 2, null, 3, 4, null, null, 5], 'Mon Tue . Thu Fri . Sun');
-  assert.deepEqual([seen[24], seen[25]], [15, 16], 'playoff semis Thursday, the final Friday');
+  // THE COLTS WEEK carries no league cricket at all - the boys have week four
+  // to themselves and the league stands down for it (docs/ACADEMY.md).
+  for (const di of [COLTS_DAYS.r16, COLTS_DAYS.qf, COLTS_DAYS.sf, COLTS_DAYS.final]) {
+    assert.equal(roundOfDay(di), null, 'day ' + di + ' belongs to the boys, not the league');
+  }
+  assert.deepEqual([seen[21], seen[22], seen[23], seen[24], seen[25], seen[26], seen[27]],
+    [null, null, null, null, null, null, null], 'the whole of week four is clear of the league');
+  // and the league comes back on the far side of it for its last two rounds
+  assert.deepEqual([seen[28], seen[29]], [13, 14], 'rounds 13 and 14 follow Colts Week');
+  assert.deepEqual([seen[31], seen[32]], [15, 16], 'playoff semis Thursday, the final Friday');
   for (let r = 1; r <= 16; r++) {
     assert.equal(roundOfDay(dayOfRound(r)), r, 'round ' + r + ' maps to its day and back');
   }
   assert.deepEqual([roundOfDay(0), roundOfDay(1), roundOfDay(2)], [1, 2, null]);
+});
+
+// The scouting cadence is one recruit per rest day, so what counts as a rest
+// day is a rule a manager plans around - it has to be derived, and it has to
+// be the same list on the client. If this number moves, the academy's whole
+// economy moves with it.
+test('a season has eleven rest days, and they are derived from the calendar', async () => {
+  assert.deepEqual(REST_DAYS, [2, 5, 9, 12, 16, 19, 23, 26, 27, 30, 33]);
+  for (const di of REST_DAYS) {
+    assert.equal(roundOfDay(di), null, 'day ' + di + ' has no league cricket');
+    assert.ok(isRestDay(di), 'day ' + di + ' reads as a rest day');
+  }
+  // no day is both a rest day and a fixture of some other competition
+  for (const di of [COLTS_DAYS.final, PLAYOFF_DAYS.final, FA_DAYS.final, CUP_DAYS.final, TRANSITION_DAY]) {
+    assert.equal(isRestDay(di), false, 'day ' + di + ' has cricket or the turning of the year on it');
+  }
 });

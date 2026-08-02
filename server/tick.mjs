@@ -854,7 +854,7 @@ export async function runAllDue(pool, host, opts = {}) {
 //
 // A stage settles once its three-hour window closes (global UTC hours).
 // Same laws as the leagues: idempotency keys per stage, results immutable,
-// snapshots derived. Season s+1 begins at start_day + 35, forever.
+// snapshots derived. Season s+1 begins at start_day + CYCLE, forever.
 // ============================================================================
 const CUP_STAGES = {
   wcl: [['g1', CUP_DAYS.g1, 15], ['g2', CUP_DAYS.g2, 15], ['g3', CUP_DAYS.g3, 15],
@@ -1166,7 +1166,7 @@ async function rebuildFaSnapshot(pool, country, seasonNo, now) {
 
 // THE TURNING OF THE YEAR (di 31, the quiet Thursday of the closing week):
 // promotion and relegation are applied, every colt ages, and season s+1 is
-// founded at start_day + 35 carrying the division map the cricket earned.
+// founded at start_day + CYCLE carrying the division map the cricket earned.
 //
 // PROMOTION & RELEGATION: Division One's bottom two (the fourteen-round
 // table) swap with Division Two's shield winner and playoff champion (if
