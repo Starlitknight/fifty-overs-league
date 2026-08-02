@@ -71,8 +71,50 @@
       [].slice.call(d.querySelectorAll("a[data-dock]")).forEach(function (a) {
         a.classList.toggle("on", a.getAttribute("data-dock") === lit);
       });
+      if (r !== dockRoute) { dockRoute = r; dockPane = null; lastY = 0; d.classList.remove("away"); }
     } catch (e) {}
   }
+
+  // THE DOCK STANDS DOWN WHILE YOU READ.
+  // A bar fixed to the bottom of a scrolling page always covers something, and
+  // padding underneath it only ever clears the very last row - everything you
+  // scroll PAST still goes behind it. So the bar gets out of the way instead:
+  // scroll down and it drops off the bottom; scroll up, stop near the top, or
+  // reach the foot of the page and it comes back. Nothing is ever hidden by it
+  // for longer than the flick of a thumb.
+  var dockRoute = null, lastY = 0, dockTick = false, dockPane = null;
+  // some rooms lock the document and scroll a pane inside it, so the position
+  // is read off whatever last reported a scroll, not off the window alone
+  function dockAt() {
+    var p = dockPane;
+    if (p && p.nodeType === 1 && p !== document.documentElement && p !== document.body) {
+      return { y: p.scrollTop, h: p.scrollHeight, vh: p.clientHeight };
+    }
+    var doc = document.documentElement;
+    return { y: window.pageYOffset || doc.scrollTop || 0, h: doc.scrollHeight, vh: window.innerHeight };
+  }
+  function dockScroll() {
+    dockTick = false;
+    var d = document.getElementById("fo-dock");
+    if (!d || d.classList.contains("off")) return;
+    var a = dockAt();
+    if (a.h - a.vh < 160) { d.classList.remove("away"); lastY = a.y; return; }  // nothing to scroll past
+    if ((a.y + a.vh) >= (a.h - 48) || a.y < 96) d.classList.remove("away");
+    else if (a.y > lastY + 8) d.classList.add("away");
+    else if (a.y < lastY - 8) d.classList.remove("away");
+    lastY = a.y;
+  }
+  try {
+    // capture, so a scroll on any inner pane is seen too - scroll does not bubble
+    window.addEventListener("scroll", function (ev) {
+      var t = ev && ev.target;
+      dockPane = (t && t.nodeType === 1) ? t : null;
+      if (dockTick) return;
+      dockTick = true;
+      if (window.requestAnimationFrame) window.requestAnimationFrame(dockScroll);
+      else setTimeout(dockScroll, 60);
+    }, { capture: true, passive: true });
+  } catch (e) {}
 
   // ---- route-change motion ---------------------------------------------------
   // A short fade on every route; opacity only, so fixed-position page art
@@ -208,6 +250,10 @@
     "@media(max-width:820px){",
     "#fo-dock{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:340;display:flex;align-items:stretch;background:rgba(7,22,46,.94);-webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4);border:1px solid rgba(255,255,255,.12);border-radius:24px;box-shadow:0 18px 44px rgba(7,22,46,.4),inset 0 1px 0 rgba(255,255,255,.08);padding:7px 6px calc(7px + env(safe-area-inset-bottom,0px)*0)}",
     "#fo-dock.off{display:none}",
+    // out of the way while you read, back the moment you look for it
+    "#fo-dock{transition:transform .2s cubic-bezier(.4,0,.2,1),opacity .2s ease}",
+    "#fo-dock.away{transform:translateY(calc(100% + 22px));opacity:0;pointer-events:none}",
+    "@media(prefers-reduced-motion:reduce){#fo-dock{transition:none}}",
     "#fo-dock a,body.ftpskin #fo-dock a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0 3px;border-radius:16px;color:rgba(233,238,246,.55) !important;text-decoration:none;transition:color .15s ease,transform .12s ease}",
     "#fo-dock a svg{width:22px;height:22px}",
     "#fo-dock a span{font:600 9.5px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase}",
