@@ -3152,7 +3152,7 @@
   // opens the league menu instead. Keep the element (hidden) so old refs are safe.
   var btn = document.createElement("button");
   btn.id = "folBtn"; btn.textContent = "League"; btn.style.display = "none";
-  function openLeagueMenu() { openWrap(true); if (!JWT) renderWelcome(); else if (SYNC && LG) showWait(!!SYNC.myTeam); else enterApp(); }
+  function openLeagueMenu() { openWrap(true); if (!JWT) renderWelcome(); else enterApp(); }
   function doLogout() { JWT = ""; LG = null; SYNC = null; clearSession(); openWrap(true); renderLogin(); }
 
   var wrap = document.createElement("div");
@@ -3202,15 +3202,7 @@
       },
       soloContinue: function () { foSoloBegin(""); },
       sendReset: sendReset, joinNew: doJoinSignup,
-      openId: function () { enterGameById(t.getAttribute("data-id")); }, join: joinLeague,
-      startLeague: startLeague, mkInvite: mkInvite,
-      relaunch: relaunchLeague, refound: foRefound,
-      delTeam: function () { delTeam(t.getAttribute("data-id"), t.getAttribute("data-name")); },
-      draftMine: draftMine, practice: practice,
       reload: function () { location.reload(); },
-      // the wedged-load escape: go where a member who has not loaded belongs -
-      // the lobby, which paints from the small tables rather than the snapshot
-      lobby: function () { try { preStart(); } catch (e) { location.reload(); } },
       backToGame: function () { openWrap(false); if (typeof window.route === "function") window.route(); }
     };
     if (acts[a]) acts[a]();
@@ -3302,8 +3294,6 @@
       foNetPanel() +
       '<div style="display:flex;flex-direction:column;gap:8px;align-items:stretch">' +
       '<button class="p" data-act="reload">&#8635; Try again</button>' +
-      '<button class="mini" data-act="lobby">Open the league lobby</button>' +
-      '<button class="mini" data-act="practice">Play a practice game meanwhile</button>' +
       '<button class="mini" data-act="logout">Log out</button>' +
       "</div></div></div></div>";
   }
@@ -3328,8 +3318,6 @@
       // exactly what has already been tried
       '<div style="display:flex;flex-direction:column;gap:8px;align-items:stretch">' +
       '<button class="p" data-act="reload">&#8635; Try again</button>' +
-      '<button class="mini" data-act="lobby">Open the league lobby</button>' +
-      '<button class="mini" data-act="practice">Play a practice game meanwhile</button>' +
       '<button class="mini" data-act="logout">Log out</button>' +
       "</div></div></div></div>";
   }
@@ -3467,20 +3455,17 @@
       }).catch(function (e) { unbusyBtn("login"); say(e); });
   }
 
-  // After login, go straight into the league: RLS scopes `leagues` to the ones
-  // you belong to, so no league id is ever needed. One league opens directly
-  // (admin -> Admin, player -> Squad); several show a quick picker; none shows
-  // the join-by-invite form.
+  // After login there is no lobby and nothing to pick: the served world IS
+  // the game. Boot the cloud save, settle any invite left from signup, then
+  // get the overlay out of the way and let the game route itself - the world
+  // modules read the session and take it from there.
   function enterApp() {
     foLoading("Signing you in…");
     try { foCloudBoot(); } catch (eCl) {}
-    return redeemPending().then(function () {
-      return sel("leagues", "select=id,name,status,build_hash,draft_budget,season_no");
-    }).then(function (ls) {
-      if (!ls || !ls.length) { renderEnter(); return; }
-      if (ls.length === 1) { return enterGame(ls[0]); }
-      renderPicker(ls);
-    }).catch(function () { renderEnter(); });
+    return redeemPending().catch(function () {}).then(function () {
+      openWrap(false);
+      try { if (typeof window.route === "function") window.route(); } catch (e) {}
+    });
   }
   // If the user signed up with an invite code (and email confirmation was on, so
   // it could not be redeemed at signup), redeem it now that they are logged in.
@@ -3496,16 +3481,5 @@
         // the dead code but keep the names so the join form can prefill them.
         if (!(e && e.name === "TypeError")) lsSet(PEND, JSON.stringify({ dn: p.dn, tn: p.tn }));
       });
-  }
-  function renderPicker(ls) {
-    setNavy(false);
-    wrap.querySelector("#folWho").textContent = "";
-    main.innerHTML = '<div class="folbody"><div class="folcard"><h4>Your leagues</h4><div class="folpad" style="display:grid;gap:8px">' +
-      ls.map(function (l) { return '<button class="p" style="text-align:left" data-act="openId" data-id="' + l.id + '">' + E(l.name) + "</button>"; }).join("") +
-      '</div></div></div>';
-  }
-  function enterGameById(id) {
-    return sel("leagues", "id=eq." + id + "&select=id,name,status,build_hash,draft_budget,season_no")
-      .then(function (a) { if (a[0]) return enterGame(a[0]); });
   }
 

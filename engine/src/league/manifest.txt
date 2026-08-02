@@ -1,6 +1,6 @@
 00-boot-auth.js
 01-club-home.js
-02-sync.js
+02-country-pool.js
 03-onboarding.js
 04-training-scouting.js
 05-transfer-market.js
