@@ -81,7 +81,11 @@
     css();
     page.innerHTML = shell("<div class='fo-ac-note'>Walking down to the academy&hellip;</div>");
     if (!jwt()) {
-      page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>Your academy belongs to your club in the served world. Sign in to the account that holds it and the colts will be here waiting.</p></div>");
+      page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>" +
+        (window.__foAuthPending
+          ? "Reaching your club&hellip; the colts will be here in a moment."
+          : "Your academy belongs to your club in the served world. Sign in to the account that holds it and the colts will be here waiting.") +
+        "</p></div>");
       return;
     }
     rpc("world_my_status").then(function (st) {

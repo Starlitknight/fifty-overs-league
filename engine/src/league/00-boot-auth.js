@@ -250,6 +250,41 @@
       .catch(function () { clearSession(); return false; });
   }
 
+  // A SESSION BEING RESTORED IS NOT A SESSION THAT IS ABSENT.
+  // restoreSession is asynchronous - a token within a minute of expiry is
+  // refreshed over the network first - so for as long as that takes, __foJWT()
+  // answers "". Every room that keeps its own books behind a sign-in read
+  // that as SIGNED OUT and printed so, on a device whose session was about to
+  // come back. Worse, nothing repainted when it did: the manager was left
+  // looking at "sign in to the account that holds your club" while holding it.
+  //
+  // So the device says which of the two it is. While a stored session is
+  // being made good the answer is "not yet", not "no"; and the moment it
+  // settles, whatever is on screen is drawn again.
+  try { window.__foAuthPending = !!lsGet(SESS); } catch (eAp0) { window.__foAuthPending = false; }
+  function foAuthSettled() {
+    if (!window.__foAuthPending) return;
+    window.__foAuthPending = false;
+    try {
+      var pg = document.getElementById("page");
+      if (pg) { pg.__foLgSig = null; pg.__foPmSig = null; pg.__foHomeSig = null; pg.__foClSig = null; pg.__foSig = null; }
+      if (typeof window.route === "function") window.route();
+    } catch (eAs) {}
+  }
+  try { window.__foAuthSettled = foAuthSettled; } catch (eAs2) {}
+  (function () {
+    var _rs = restoreSession;
+    restoreSession = function () {
+      var p;
+      try { p = _rs.apply(this, arguments); } catch (eR) { foAuthSettled(); throw eR; }
+      return Promise.resolve(p).then(
+        function (v) { foAuthSettled(); return v; },
+        function (eR2) { foAuthSettled(); throw eR2; });
+    };
+  })();
+  // and a session that is never restored at all must not hang the wait
+  setTimeout(function () { try { foAuthSettled(); } catch (eT) {} }, 8000);
+
   // ---- cross-device cloud saves (needs the 0022 migration; fails silently
   // until it is run). The whole game state already lives in fo_*/fol_*
   // localStorage keys (career save, circuit progress, journey flags), so the

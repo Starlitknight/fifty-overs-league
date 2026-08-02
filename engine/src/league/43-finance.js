@@ -485,7 +485,9 @@
     document.body.classList.add("fo-fin-on");
     if (!jwt()) {
       page.innerHTML = shell(head("The statement",
-        "Sign in to your Fifty Overs account and the treasurer will open the book."));
+        window.__foAuthPending
+          ? "Reaching your club&hellip; the treasurer is fetching the book."
+          : "Sign in to your Fifty Overs account and the treasurer will open the book."));
       return;
     }
     if (SM.loaded) { stPaint(); return; }
@@ -512,7 +514,9 @@
     page.innerHTML = shell(head("The books", "Walking down to the treasurer&rsquo;s office&hellip;"));
     if (!jwt()) {
       page.innerHTML = shell(head("The books",
-        "The club&rsquo;s money is the club&rsquo;s, and the world keeps it. Sign in to the account that holds your club and the ledger is here."));
+        (window.__foAuthPending
+          ? "Reaching your club&hellip; the ledger is on its way."
+          : "The club&rsquo;s money is the club&rsquo;s, and the world keeps it. Sign in to the account that holds your club and the ledger is here.")));
       return;
     }
     rpc("world_my_status").then(function (st) {

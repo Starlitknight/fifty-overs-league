@@ -6489,6 +6489,41 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       .catch(function () { clearSession(); return false; });
   }
 
+  // A SESSION BEING RESTORED IS NOT A SESSION THAT IS ABSENT.
+  // restoreSession is asynchronous - a token within a minute of expiry is
+  // refreshed over the network first - so for as long as that takes, __foJWT()
+  // answers "". Every room that keeps its own books behind a sign-in read
+  // that as SIGNED OUT and printed so, on a device whose session was about to
+  // come back. Worse, nothing repainted when it did: the manager was left
+  // looking at "sign in to the account that holds your club" while holding it.
+  //
+  // So the device says which of the two it is. While a stored session is
+  // being made good the answer is "not yet", not "no"; and the moment it
+  // settles, whatever is on screen is drawn again.
+  try { window.__foAuthPending = !!lsGet(SESS); } catch (eAp0) { window.__foAuthPending = false; }
+  function foAuthSettled() {
+    if (!window.__foAuthPending) return;
+    window.__foAuthPending = false;
+    try {
+      var pg = document.getElementById("page");
+      if (pg) { pg.__foLgSig = null; pg.__foPmSig = null; pg.__foHomeSig = null; pg.__foClSig = null; pg.__foSig = null; }
+      if (typeof window.route === "function") window.route();
+    } catch (eAs) {}
+  }
+  try { window.__foAuthSettled = foAuthSettled; } catch (eAs2) {}
+  (function () {
+    var _rs = restoreSession;
+    restoreSession = function () {
+      var p;
+      try { p = _rs.apply(this, arguments); } catch (eR) { foAuthSettled(); throw eR; }
+      return Promise.resolve(p).then(
+        function (v) { foAuthSettled(); return v; },
+        function (eR2) { foAuthSettled(); throw eR2; });
+    };
+  })();
+  // and a session that is never restored at all must not hang the wait
+  setTimeout(function () { try { foAuthSettled(); } catch (eT) {} }, 8000);
+
   // ---- cross-device cloud saves (needs the 0022 migration; fails silently
   // until it is run). The whole game state already lives in fo_*/fol_*
   // localStorage keys (career save, circuit progress, journey flags), so the
@@ -10115,7 +10150,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260802-1308-d0dded";
+  var FO_BUILD = "20260802-1321-e6f7e9";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -42258,7 +42293,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     css();
     page.innerHTML = shell("<div class='fo-ac-note'>Walking down to the academy&hellip;</div>");
     if (!jwt()) {
-      page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>Your academy belongs to your club in the served world. Sign in to the account that holds it and the colts will be here waiting.</p></div>");
+      page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>" +
+        (window.__foAuthPending
+          ? "Reaching your club&hellip; the colts will be here in a moment."
+          : "Your academy belongs to your club in the served world. Sign in to the account that holds it and the colts will be here waiting.") +
+        "</p></div>");
       return;
     }
     rpc("world_my_status").then(function (st) {
@@ -42972,7 +43011,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     document.body.classList.add("fo-fin-on");
     if (!jwt()) {
       page.innerHTML = shell(head("The statement",
-        "Sign in to your Fifty Overs account and the treasurer will open the book."));
+        window.__foAuthPending
+          ? "Reaching your club&hellip; the treasurer is fetching the book."
+          : "Sign in to your Fifty Overs account and the treasurer will open the book."));
       return;
     }
     if (SM.loaded) { stPaint(); return; }
@@ -42999,7 +43040,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     page.innerHTML = shell(head("The books", "Walking down to the treasurer&rsquo;s office&hellip;"));
     if (!jwt()) {
       page.innerHTML = shell(head("The books",
-        "The club&rsquo;s money is the club&rsquo;s, and the world keeps it. Sign in to the account that holds your club and the ledger is here."));
+        (window.__foAuthPending
+          ? "Reaching your club&hellip; the ledger is on its way."
+          : "The club&rsquo;s money is the club&rsquo;s, and the world keeps it. Sign in to the account that holds your club and the ledger is here.")));
       return;
     }
     rpc("world_my_status").then(function (st) {
