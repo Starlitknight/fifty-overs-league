@@ -1537,7 +1537,7 @@ function route(){
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',lore:'foRenderLore',report:'foRenderReport',preview:'foRenderPreviewPage',training:'foRenderNetsPage',milestones:'foRenderHonoursPage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',statement:'foRenderStatementPage'}[App.page];
+  const OV={home:'foRenderHome',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',lore:'foRenderLore',report:'foRenderReport',preview:'foRenderPreviewPage',training:'foRenderNetsPage',milestones:'foRenderHonoursPage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',facup:'foRenderFaCupPage',colts:'foRenderColtsPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',watch:'foRenderWatchPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',statement:'foRenderStatementPage'}[App.page];
   if(P[App.page])P[App.page](q);
   // A RENDERER THAT THROWS USED TO VANISH. This catch was empty, so a page
   // whose painter hit an error left the topbar, the clock and the nav in place
@@ -10150,7 +10150,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260802-2130-8f7c23";
+  var FO_BUILD = "20260802-2316-37ef4e";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -19107,6 +19107,25 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var order = ["", "att", "bal", "def"], v = foMfVal(nm);
     foMfSet(nm, order[(order.indexOf(v) + 1) % order.length]);
   }
+  // ONE PLACE UP OR DOWN THE ORDER.
+  // Only inside the XI: the eleventh man cannot be nudged onto the bench by an
+  // arrow, because dropping a man from the side has consequences (his overs,
+  // the gloves, the armband) that belong to the bench swap, not to this.
+  // The scroll position is held across the redraw - a manager moving a man
+  // from eight to three taps five times, and the list must not jump under him.
+  function foOrdMove(nm, step) {
+    try {
+      var bo = (App.orders && App.orders.batOrder) || [];
+      var last = Math.min(10, bo.length - 1);
+      var from = bo.indexOf(nm), to = from + step;
+      if (from < 0 || from > last || to < 0 || to > last) return;
+      bo.splice(from, 1);
+      bo.splice(to, 0, nm);
+      var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+      foOrdersUI();
+      try { window.scrollTo(0, y); } catch (e2) {}
+    } catch (e) {}
+  }
   function foOrdFieldRows() {
     var tot = foOrdTotals();
     var pool = foOrdPool(true).filter(function (p) { return (tot[p.name] || 0) > 0; });
@@ -19484,8 +19503,24 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           (p.keeper ? "<i class='bdg" + (isK ? " on" : "") + "' data-fo-mkk='" + E(nm) + "' title='" + (isK ? "Wicket-keeper" : "Give him the gloves") + "'>WK</i>" : "");
         var role = p.bowlType && p.bowlType !== "none" ? (/spin/i.test(p.bowlTypeFull || p.bowlType) ? "spin" : "pace") : (p.keeper ? "wk" : "bat");
         var pills = foOrdTalPills(p, 2);
-        return "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + "' data-fo-pc='" + E(nm) + "'>" +
-          "<span class='dh' title='Drag to move' aria-hidden='true'>&#x2261;</span>" +
+        // ARROWS ON THE XI, A GRIP ON THE BENCH.
+        // Dragging is fine on a desk and a nuisance on a phone: you must hold,
+        // then travel, and the list is trying to scroll under your thumb the
+        // whole way. So a man in the order gets a stacked up/down pair, which
+        // is one tap per place and cannot be fumbled. The bench keeps the grip
+        // because a bench man is not moving one place - he is being carried
+        // onto a slot in the XI, which only dragging expresses.
+        // Spans, not buttons: this card IS a button, and a button inside a
+        // button is dropped by the parser. Same trick the C and WK badges use.
+        var mvR = i == null ? "<span class='dh' title='Drag to move' aria-hidden='true'>&#x2261;</span>" :
+          "<span class='mv'>" +
+            "<span class='mvb" + (i === 0 ? " off" : "") + "' role='button' tabindex='0' data-fo-mv='up:" + E(nm) +
+              "' title='Move up' aria-label='Move " + E(dispNm(nm)) + " up the order'>&#x25B2;</span>" +
+            "<span class='mvb" + (i >= xiNames.length - 1 ? " off" : "") + "' role='button' tabindex='0' data-fo-mv='dn:" + E(nm) +
+              "' title='Move down' aria-label='Move " + E(dispNm(nm)) + " down the order'>&#x25BC;</span>" +
+          "</span>";
+        return "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + (i == null ? "" : " xc-mv") + "' data-fo-pc='" + E(nm) + "'>" +
+          mvR +
           "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + "<b>" + E(dispNm(nm)) + "</b>" + foOrdRoleIcon(p) + tag +
           "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
           "<span class='ov' title='Overall rating'><b>" + foPkOvr(p) + "</b></span></span>" +
@@ -19495,7 +19530,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var xiNames = bo.slice(0, 11);
       var benchNames = ((t && t.players) || []).map(function (p9) { return p9.name; }).filter(function (nm) { return xiNames.indexOf(nm) < 0; });
       // vertical, editable: the XI as a draggable list, the bench beside it
-      var xiCol = "<div class='pv-xi'><div class='fo-ord-vzh' style='margin-top:2px'>Batting order <span>&middot; drag to reorder &middot; tap a man's letter to tell him how to bat: N normal, A attack, L launch, D defend</span></div><div class='fo-ord-xis' id='fo-ord-xi-list'>" + xiNames.map(function (nm, i) { return chip(nm, i, false); }).join("") + "</div></div>";
+      var xiCol = "<div class='pv-xi'><div class='fo-ord-vzh' style='margin-top:2px'>Batting order <span>&middot; tap &#x25B2;&#x25BC; to move a man, or drag him &middot; tap a man's letter to tell him how to bat: N normal, A attack, L launch, D defend</span></div><div class='fo-ord-xis' id='fo-ord-xi-list'>" + xiNames.map(function (nm, i) { return chip(nm, i, false); }).join("") + "</div></div>";
       var benchCol = "<div class='pv-bench'><div class='fo-ord-vzh' style='margin-top:2px'>Bench</div><div class='fo-ord-xis' id='fo-ord-bench-list'>" + benchNames.map(function (nm) { return chip(nm, null, true); }).join("") + "</div></div>";
       // one lane per bowling option (even the unused sixth): filled blocks
       // are his overs, and every cell is a BUTTON - tap an empty over to
@@ -19811,6 +19846,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             toast("The bowling plan is clear - paint it again, or let the AI captain improvise.");
             return;
           }
+          if ((el = q("[data-fo-mv]"))) {
+            var mvA = el.getAttribute("data-fo-mv").split(":");
+            foOrdMove(mvA.slice(1).join(":"), mvA[0] === "up" ? -1 : 1);
+            return;
+          }
           if ((el = q("[data-fo-mb]"))) { foMbCycle(el.getAttribute("data-fo-mb")); foOrdersUI(); return; }
           if ((el = q("[data-fo-mfc]"))) { foMfCycle(el.getAttribute("data-fo-mfc")); foOrdersUI(); return; }
           if ((el = q("[data-fo-mkc]"))) { App.orders.captain = el.getAttribute("data-fo-mkc"); foOrdersUI(); return; }
@@ -19879,6 +19919,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       page.addEventListener("pointerdown", function (ev) {
         try {
           if (!/^#\/orders/.test(location.hash || "")) return;
+          // a thumb resting on an arrow is pressing a button, not beginning a
+          // drag - without this the 260ms hold below fires underneath it
+          if (ev.target.closest && ev.target.closest(".mv")) return;
           var chipEl = ev.target.closest ? ev.target.closest(".fo-ord-xis .xc") : null;
           if (!chipEl) return;
           var list = document.getElementById("fo-ord-xi-list"); if (!list) return;
@@ -20055,8 +20098,19 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // ---- the ≡ drag handle: hidden for mouse users (drag-anywhere covers
       // them), a fat instant-drag target on touch screens
       ".fo-ord-xis .xc .dh{display:none}" +
-      "@media(pointer:coarse){.fo-ord-xis .xc .dh{display:flex;align-items:center;justify-content:center;position:absolute;right:4px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:8px;background:#EEF2F7;color:#41577a;font-size:17px;font-weight:400;touch-action:none}" +
-      "html body #page .fo-ord-xis button.xc{position:relative;padding-right:46px!important}}" +
+      "@media(pointer:coarse){.fo-ord-xis .xc .dh{display:flex;align-items:center;justify-content:center;position:absolute;right:4px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:8px;background:#EEF2F7;color:#41577a;font-size:17px;font-weight:400;touch-action:none}}" +
+      // the up/down rail on every man in the XI - on a desk as well as a phone,
+      // because one tap per place beats a drag on either
+      "html body #page .fo-ord-xis button.xc{position:relative}" +
+      // the rail sits on the LEFT, beside the position number it changes
+      "html body #page .fo-ord-xis button.xc.xc-mv{padding-left:46px!important}" +
+      // the bench keeps its grip on the right, where the drag has always been
+      "@media(pointer:coarse){html body #page .fo-ord-xis button.xc.xc-dim{padding-right:46px!important}}" +
+      ".fo-ord-xis .xc .mv{position:absolute;left:4px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;touch-action:manipulation}" +
+      ".fo-ord-xis .xc .mvb{display:flex;align-items:center;justify-content:center;width:34px;height:25px;border-radius:7px;background:#EEF2F7;color:#41577a;font-size:10px;line-height:1;cursor:pointer;-webkit-user-select:none;user-select:none;transition:background .12s,color .12s}" +
+      ".fo-ord-xis .xc .mvb:hover{background:#DCE5F0;color:#B04A2C}" +
+      ".fo-ord-xis .xc .mvb:active{background:#B04A2C;color:#FFFEFC}" +
+      ".fo-ord-xis .xc .mvb.off{opacity:.25;pointer-events:none}" +
       // the player-card modal is narrow: slim the v2 art panel so the name
       // never truncates beside the OVR
       "#fo-ord-pc .pkm{padding-left:84px}" +
@@ -33153,7 +33207,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 })();
 // ---- 19-modern-shell.js — the modern app shell -------------------------------
 // The game's pages got art; the chrome around them stayed 2012. This module is
-// the product-design pass: a glass topbar, a phone tab dock, motion on route
+// the product-design pass: a glass topbar, motion on route
 // changes, real press/hover/focus states, and a live match-centre where the
 // dead "No match selected" panel used to be. Pure overlay: it restyles and
 // augments the existing DOM, never replaces engine markup.
@@ -33162,70 +33216,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 
   var ACCENT = "#FF7A50";
-
-  // ---- the phone tab dock ----------------------------------------------------
-  // Five destinations cover 90% of sessions; the hamburger keeps the rest.
-  var DOCK = [
-    { k: "club", label: "Club", hash: "#/home", ic: "<path d='M3.5 10.6 12 3.4l8.5 7.2'/><path d='M5.5 9.4V20a.6.6 0 0 0 .6.6h11.8a.6.6 0 0 0 .6-.6V9.4'/><path d='M9.8 20.4v-5.6h4.4v5.6'/>" },
-    { k: "league", label: "League", hash: "#/league", ic: "<path d='M8 21.2h8'/><path d='M12 17.4v3.8'/><path d='M7.2 3.6h9.6v4.6a4.8 4.8 0 0 1-9.6 0z'/><path d='M7.2 5H4.4v1.8a3 3 0 0 0 3 3'/><path d='M16.8 5h2.8v1.8a3 3 0 0 1-3 3'/>" },
-    { k: "squad", label: "Squad", hash: "#/squad", ic: "<circle cx='9.2' cy='7.8' r='3.4'/><path d='M3.6 20.2c0-3.1 2.5-5.2 5.6-5.2s5.6 2.1 5.6 5.2'/><path d='M15.4 4.8a3.4 3.4 0 0 1 0 6'/><path d='M16.8 15.2c2.3.5 3.9 2.3 3.9 5'/>" },
-    { k: "nets", label: "Nets", hash: "#/training", ic: "<circle cx='12' cy='12' r='8.4'/><circle cx='12' cy='12' r='4.4'/><circle cx='12' cy='12' r='.9' fill='currentColor' stroke='none'/>" },
-    // The Desk held this slot until the room was retired. The fixture list took
-    // it: every upcoming match on it opens a preview, which is where a manager
-    // goes between rounds now.
-    { k: "fixtures", label: "Fixtures", hash: "#/fixtures", ic: "<rect x='3.6' y='5.4' width='16.8' height='15' rx='2'/><path d='M3.8 10.2h16.4'/><path d='M8.4 3.4v4M15.6 3.4v4'/><path d='M7.6 14h3.2M13.2 14h3.2'/>" }
-  ];
-  // which dock lamp lights up for which route
-  // Every room belongs to exactly one lamp. A room missing from this map lit
-  // nothing at all, which is how the academy, the books and the invitationals
-  // spent their first weeks: reachable, but with the dock going dark the
-  // moment you arrived.
-  var DOCK_MAP = {
-    club: ["club", "home", "finance"],
-    league: ["league", "nation", "atlas", "planet", "almanack", "star", "wcmatch", "cup", "world", "city", "side", "boss", "tour", "champions", "natteams", "nations", "watch", "rankings", "team"],
-    squad: ["squad", "player", "matchlab"],
-    nets: ["training", "academy"],
-    fixtures: ["fixtures", "matchday", "preview", "report", "journal", "lore", "milestones", "paper"]
-  };
-  // immersive rooms keep the whole stage: no dock over the broadcast
-  var DOCK_HIDE = { match: 1, friendly: 1, welcome: 1, create: 1, scorecard: 1, orders: 1 };
-
-  function curRoute() { return ((location.hash || "#/club").split("?")[0] || "").replace("#/", ""); }
-
-  function ensureDock() {
-    try {
-      var d = document.getElementById("fo-dock");
-      if (!d) {
-        d = document.createElement("nav");
-        d.id = "fo-dock";
-        d.setAttribute("aria-label", "Primary");
-        d.innerHTML = DOCK.map(function (t) {
-          return "<a data-dock='" + t.k + "' href='" + t.hash + "'>" +
-            "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'>" + t.ic + "</svg>" +
-            "<span>" + E(t.label) + "</span></a>";
-        }).join("");
-        document.body.appendChild(d);
-        d.addEventListener("click", function (ev) {
-          var a = ev.target && ev.target.closest ? ev.target.closest("a[data-dock]") : null;
-          if (!a) return;
-          ev.preventDefault();
-          location.hash = a.getAttribute("href");
-          if (typeof window.route === "function") window.route();
-        });
-      }
-      var r = curRoute();
-      var tb = document.getElementById("topbar");
-      var tbGone = !tb || !tb.offsetParent; // door / theatre hide the topbar; the dock follows
-      var hide = tbGone || DOCK_HIDE[r] === 1 || document.body.classList.contains("fo-mnav-lock");
-      d.classList.toggle("off", !!hide);
-      document.body.classList.toggle("fo-dock-on", !hide);
-      var lit = null;
-      for (var k in DOCK_MAP) if (DOCK_MAP[k].indexOf(r) !== -1) { lit = k; break; }
-      [].slice.call(d.querySelectorAll("a[data-dock]")).forEach(function (a) {
-        a.classList.toggle("on", a.getAttribute("data-dock") === lit);
-      });
-    } catch (e) {}
-  }
 
   // ---- route-change motion ---------------------------------------------------
   // A short fade on every route; opacity only, so fixed-position page art
@@ -33297,7 +33287,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       document.body.appendChild(el);
     } catch (e) {}
   }
-  function afterRoute() { ensureDock(); matchCentre(); tidyNav(); ordersDoor(); }
+  function afterRoute() { matchCentre(); tidyNav(); ordersDoor(); }
   function wireRoute() {
     try {
       if (typeof window.route === "function" && !window.route.__foMs) {
@@ -33356,45 +33346,19 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "#fo-mdrawer#fo-mdrawer .fo-mdl{border-radius:12px;margin:2px 8px;font:600 13.5px/1 Inter,sans-serif;color:rgba(233,238,246,.78) !important;border:none !important}",
     "#fo-mdrawer#fo-mdrawer .fo-mdl:hover{background:rgba(255,255,255,.08) !important}",
     "#fo-mdrawer#fo-mdrawer .fo-mdl.on{background:#C95532 !important;color:#FFFEFC !important}",
-    // == the phone tab dock ====================================================
-    "#fo-dock{display:none}",
-    "@media(max-width:820px){",
-    "#fo-dock{position:fixed;left:12px;right:12px;bottom:calc(10px + env(safe-area-inset-bottom,0px));z-index:340;display:flex;align-items:stretch;background:rgba(7,22,46,.94);-webkit-backdrop-filter:blur(24px) saturate(1.4);backdrop-filter:blur(24px) saturate(1.4);border:1px solid rgba(255,255,255,.12);border-radius:24px;box-shadow:0 18px 44px rgba(7,22,46,.4),inset 0 1px 0 rgba(255,255,255,.08);padding:7px 6px calc(7px + env(safe-area-inset-bottom,0px)*0)}",
-    "#fo-dock.off{display:none}",
-    "#fo-dock a,body.ftpskin #fo-dock a{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;padding:4px 0 3px;border-radius:16px;color:rgba(233,238,246,.55) !important;text-decoration:none;transition:color .15s ease,transform .12s ease}",
-    "#fo-dock a svg{width:22px;height:22px}",
-    "#fo-dock a span{font:600 9.5px/1 Inter,sans-serif;letter-spacing:.06em;text-transform:uppercase}",
-    "#fo-dock a:active{transform:scale(.94)}",
-    "#fo-dock a.on,body.ftpskin #fo-dock a.on{color:#FF8A5C !important}",
-    "#fo-dock a.on svg{filter:drop-shadow(0 0 8px rgba(255,138,92,.5))}",
-    // room to scroll past the dock
-    "body.fo-dock-on #page{padding-bottom:88px}",
-    // full-bleed heroes pin a quick-link bar to the viewport floor; the dock
-    // covers those destinations, so the old bar retires on phones
-    "body.fo-dock-on .fo-home2 .hg-bar button:not(.hg-cta){display:none}",
-    "body.fo-dock-on .fo-home2 .hg-bar{bottom:86px;background:none;padding-bottom:0}",
-    // ...and a bar with one button left in it is no longer a bar across the
-    // foot of the picture - it is a single pill in the MIDDLE of it, landing
-    // on the club's own name. Above 760px the title block is still absolutely
-    // placed, so lifting it clears the pill.
-    "body.fo-dock-on .fo-home2 .hg-id{bottom:150px}",
-    "}",
-    // Below 760px the hero is a flex COLUMN and the title block is in flow -
-    // so no amount of lifting helps, because the bar is the only thing still
-    // floating over it. Put the bar in the column too. The name, the league
-    // line, the form beads and then the one button, in that order, with room
-    // at the foot for the dock to sit under rather than on top of.
+    // == the full-bleed hero on a phone =========================================
+    // Below 760px the hero is a flex COLUMN and the title block is in flow, so
+    // a quick-link bar pinned to the viewport floor lands ON the club's name.
+    // Put the bar in the column instead: the name, the league line, the form
+    // beads, then the buttons, in that order.
     "@media(max-width:760px){",
-    // the dock floats 10px off the floor and stands about 62px tall, so the
-    // column's foot has to clear roughly ninety plus whatever the phone's own
-    // home-bar reserves - the same inset the dock itself is offset by
-    "body.fo-dock-on .fo-home2{padding-bottom:calc(112px + env(safe-area-inset-bottom,0px))}",
-    "body.fo-dock-on .fo-home2 .hg-bar{position:static;order:4;bottom:auto;margin-top:15px;padding:0;justify-content:flex-start;background:none}",
+    ".fo-home2{padding-bottom:calc(20px + env(safe-area-inset-bottom,0px))}",
+    ".fo-home2 .hg-bar{position:static;order:4;bottom:auto;margin-top:15px;padding:0;justify-content:flex-start;background:none}",
     "}",
     // == the dressing-room door ================================================
     "#fo-ord-door{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:350;background:#C95532;color:#FFFEFC;font:700 12.5px/1 Inter,sans-serif;letter-spacing:.03em;border-radius:999px;padding:13px 20px;text-decoration:none;box-shadow:0 10px 28px rgba(201,85,50,.5)}",
     "#fo-ord-door:hover{background:#A64426;text-decoration:none;color:#FFFEFC}",
-    "@media(max-width:820px){#fo-ord-door{right:12px;bottom:calc(88px + env(safe-area-inset-bottom,0px))}}",
+    "@media(max-width:820px){#fo-ord-door{right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px))}}",
     // == motion ================================================================
     "@media (prefers-reduced-motion:no-preference){",
     "#page.fo-page-in{animation:foMsPageIn .22s ease-out}",
@@ -44023,11 +43987,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ["matchday", "pitch", "Matchday"],
       ["milestones", "medal", "The honours board"]
     ] },
+    { k: "Tournaments", rooms: [
+      ["colts", "star", "The Colts Cup"],
+      ["facup", "shield", "The FA Cup"],
+      ["champions", "crown", "The Champions Cup"]
+    ] },
     { k: "The world", rooms: [
       ["planet", "globe", "World cricket"],
       ["league", "table", "My league"],
       ["nations", "plane", "The international game"],
-      ["champions", "crown", "The Champions Cup"],
       ["rankings", "chart", "The world rankings"],
       ["world", "map", "The world map"],
       ["atlas", "book", "The atlas"],
@@ -44041,8 +44009,23 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   ];
 
   function curRoom() { return ((location.hash || "#/home").split("?")[0] || "").replace("#/", "") || "home"; }
+  // WHICH MENU IS DOWN. A manager who opened Tournaments and navigated to the
+  // Colts Cup should find Tournaments still down when he comes back, so the
+  // choice is remembered for the session; failing that, the menu he is
+  // standing in opens itself, and failing that the first one.
+  var PICK = "fo_menu_group";
+  function chosen() { try { var v = sessionStorage.getItem(PICK); return v == null ? null : +v; } catch (e) { return null; } }
+  function choose(gi) { try { sessionStorage.setItem(PICK, String(gi)); } catch (e) {} }
+  function openGroup(g, gi, here) {
+    var pick = chosen();
+    if (pick != null) return gi === pick;
+    if (g.rooms.some(function (r) { return r[0] === here; })) return true;
+    // nothing chosen and the room is in none of them: open the first
+    return gi === 0 && !MAP.some(function (h) { return h.rooms.some(function (r) { return r[0] === here; }); });
+  }
   // rooms that are really the same door, so the lamp lights in one place
   var ALIAS = { club: "home", nation: "league", natteams: "nations", circuit: "world", tour: "world",
+    cup: "champions", wcmatch: "champions",
     player: "squad", matchlab: "squad", star: "squad", city: "atlas", side: "atlas", boss: "atlas",
     report: "lore", journal: "lore", scorecard: "lore" };
 
@@ -44067,8 +44050,18 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "#fo-menu .fo-mu-h i{display:block;font:500 9px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#E8B96A;font-style:normal}",
       "html body #fo-menu .fo-mu-x{margin-left:auto;width:44px;height:44px;display:flex;align-items:center;justify-content:center;background:rgba(255,255,255,.08) !important;border:0 !important;color:#FFFEFC !important;font:400 19px/1 inherit !important;border-radius:12px;cursor:pointer;padding:0 !important;box-shadow:none !important}",
       "html body #fo-menu .fo-mu-x:hover{background:rgba(255,255,255,.16) !important}",
-      "#fo-menu .fo-mu-sec{margin:16px 0 8px;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#E8B96A}",
-      "#fo-menu .fo-mu-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px}",
+      // A HEADING IS A MENU. It is a button, it says how many rooms are behind
+      // it, and the chevron turns when it drops.
+      "html body #fo-menu button.fo-mu-sec{display:flex;align-items:center;gap:10px;width:100%;margin:10px 0 0;padding:13px 14px;border-radius:13px;background:rgba(255,255,255,.045) !important;border:1px solid rgba(255,255,255,.075) !important;color:#E8B96A !important;font:700 10px/1 Oswald,sans-serif !important;letter-spacing:.24em;text-transform:uppercase;cursor:pointer;text-align:left;box-shadow:none !important;transition:background .14s,border-color .14s}",
+      "html body #fo-menu button.fo-mu-sec:hover{background:rgba(255,255,255,.1) !important;border-color:rgba(232,185,106,.42) !important}",
+      "html body #fo-menu button.fo-mu-sec.open{background:rgba(201,85,50,.2) !important;border-color:rgba(232,185,106,.55) !important}",
+      "#fo-menu button.fo-mu-sec span{flex:1 1 auto;min-width:0}",
+      "#fo-menu button.fo-mu-sec i{flex:none;font-style:normal;font:600 10px/1 Inter,sans-serif;letter-spacing:0;color:rgba(255,254,252,.5);font-variant-numeric:tabular-nums}",
+      "#fo-menu .fo-mu-chev{flex:none;width:15px;height:15px;transition:transform .18s ease}",
+      "#fo-menu button.fo-mu-sec.open .fo-mu-chev{transform:rotate(180deg)}",
+      "#fo-menu .fo-mu-grid{display:none;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:8px;margin-top:8px}",
+      "#fo-menu .fo-mu-grid.open{display:grid;animation:fo-mu-drop .16s ease}",
+      "@keyframes fo-mu-drop{from{opacity:0;transform:translateY(-5px)}to{opacity:1;transform:none}}",
       "html body #fo-menu a.fo-mu-r{display:flex;align-items:center;gap:12px;min-height:50px;padding:8px 13px;border-radius:14px;background:rgba(255,255,255,.045) !important;border:1px solid rgba(255,255,255,.075);color:#FFFEFC !important;text-decoration:none !important;transition:background .14s,border-color .14s,transform .14s}",
       "html body #fo-menu a.fo-mu-r:hover{background:rgba(255,255,255,.1) !important;border-color:rgba(232,185,106,.42);transform:translateY(-1px)}",
       "html body #fo-menu a.fo-mu-r.on{background:rgba(201,85,50,.2) !important;border-color:rgba(232,185,106,.6)}",
@@ -44130,8 +44123,19 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     d.innerHTML = "<div class='fo-mu-k'></div><div class='fo-mu-p'><div class='fo-mu-in'>" +
       "<div class='fo-mu-h'><div><i>Fifty Overs</i><b>Every room in the club</b></div>" +
       "<button class='fo-mu-x' aria-label='Close menu'>&#10005;</button></div>" +
-      MAP.map(function (g) {
-        return "<div class='fo-mu-sec'>" + E(g.k) + "</div><div class='fo-mu-grid'>" +
+      MAP.map(function (g, gi) {
+        // ONE MENU AT A TIME, the way a menu bar behaves. Nineteen rooms laid
+        // out flat is a scroll, not an index: you go looking for the door you
+        // wanted rather than seeing it. Each heading is a menu; clicking it
+        // drops its rooms down and folds the others away. The menu you are
+        // standing in opens itself, so the panel always answers "where am I"
+        // before you touch anything.
+        var open = openGroup(g, gi, here);
+        return "<button type='button' class='fo-mu-sec" + (open ? " open" : "") + "' data-fo-grp='" + gi + "'>" +
+            "<span>" + E(g.k) + "</span><i>" + g.rooms.length + "</i>" +
+            "<svg class='fo-mu-chev' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' " +
+              "stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg></button>" +
+          "<div class='fo-mu-grid" + (open ? " open" : "") + "' data-fo-grpof='" + gi + "'>" +
           g.rooms.map(function (r) {
             return "<a class='fo-mu-r" + (r[0] === here ? " on" : "") + "' href='#/" + r[0] + "'>" +
               "<em>" + glyph(r[1]) + "</em><div><b>" + E(r[2]) + "</b></div></a>";
@@ -44141,6 +44145,20 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     d.querySelector(".fo-mu-k").addEventListener("click", close);
     d.querySelector(".fo-mu-x").addEventListener("click", close);
     engineLinks(d.querySelector(".fo-mu-foot"));
+    d.querySelectorAll("button.fo-mu-sec").forEach(function (h) {
+      h.addEventListener("click", function () {
+        var gi = +h.getAttribute("data-fo-grp");
+        var was = h.classList.contains("open");
+        d.querySelectorAll("button.fo-mu-sec").forEach(function (o) { o.classList.remove("open"); });
+        d.querySelectorAll(".fo-mu-grid").forEach(function (o) { o.classList.remove("open"); });
+        if (!was) {
+          h.classList.add("open");
+          var grid = d.querySelector(".fo-mu-grid[data-fo-grpof='" + gi + "']");
+          if (grid) grid.classList.add("open");
+          choose(gi);
+        } else { try { sessionStorage.removeItem(PICK); } catch (e) {} }
+      });
+    });
     d.querySelectorAll("a.fo-mu-r").forEach(function (a) {
       a.addEventListener("click", function (ev) {
         ev.preventDefault();
@@ -44152,6 +44170,220 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     d.classList.add("open");
     document.body.classList.add("fo-mnav-lock");
   };
+
+  /* ==========================================================================
+     THE MENU BAR — the building's index as a bar you can read without opening
+     anything (the panel above is still the whole index, one screen; this is
+     the fast path). A row of menus under the masthead: click one and its
+     rooms drop beneath it, the way a menu bar has always worked.
+
+     Three things this has to survive that a naive dropdown does not:
+
+       - THE BAR SCROLLS SIDEWAYS ON A PHONE. Four menus do not fit in 430px
+         with any type size worth reading, so the bar is an overflow-x strip.
+         A dropdown positioned INSIDE that strip would be clipped by it, so
+         the panel is position:fixed and placed from the button's own
+         bounding rect - it cannot be clipped by anything.
+       - THE MASTHEAD IS STICKY AND ITS HEIGHT MOVES. The bar sticks
+         underneath it, so it reads the masthead's height into a custom
+         property rather than guessing at one.
+       - THE MASTHEAD IS HIDDEN ON SOME SCREENS (the door, the theatre). The
+         bar follows it exactly, by the same test the phone dock uses.
+     ======================================================================== */
+  var BAR = [
+    { k: "Your club", short: "Club" },
+    { k: "Tournaments", short: "Tournaments" },
+    { k: "The world", short: "World" },
+    { k: "The record", short: "Record" }
+  ];
+  function groupOf(room) {
+    for (var i = 0; i < MAP.length; i++) {
+      if (MAP[i].rooms.some(function (r) { return r[0] === room; })) return i;
+    }
+    return -1;
+  }
+
+  function barCSS() {
+    if (document.getElementById("fo-mb-css")) return;
+    var st = document.createElement("style"); st.id = "fo-mb-css";
+    st.textContent = [
+      "#fo-menubar{position:sticky;top:var(--fo-tbh,52px);z-index:310;background:rgba(9,25,50,.96);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);border-bottom:1px solid rgba(255,255,255,.1);box-shadow:0 6px 18px rgba(7,22,46,.18)}",
+      "#fo-menubar.off{display:none}",
+      "#fo-menubar .fo-mb-in{display:flex;align-items:stretch;gap:2px;max-width:1120px;margin:0 auto;padding:0 8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}",
+      "#fo-menubar .fo-mb-in::-webkit-scrollbar{display:none}",
+      "html body #fo-menubar button.fo-mb-t{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;background:transparent !important;border:0 !important;border-bottom:2px solid transparent !important;color:rgba(255,254,252,.78) !important;font:600 11px/1 Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;padding:13px 13px 11px !important;margin:0;cursor:pointer;white-space:nowrap;box-shadow:none !important;border-radius:0 !important;transition:color .14s,border-color .14s,background .14s}",
+      "html body #fo-menubar button.fo-mb-t:hover{color:#FFFEFC !important;background:rgba(255,255,255,.06) !important}",
+      "html body #fo-menubar button.fo-mb-t.here{color:#E8B96A !important;border-bottom-color:#C95532 !important}",
+      "html body #fo-menubar button.fo-mb-t.open{color:#FFFEFC !important;background:rgba(201,85,50,.24) !important;border-bottom-color:#E8B96A !important}",
+      "#fo-menubar .fo-mb-cv{width:11px;height:11px;opacity:.65;transition:transform .16s ease}",
+      // Log out sits off at the end where a menu bar puts it - but ONLY when
+      // the bar has room. In a sideways-scrolling strip margin-left:auto
+      // pushes it to the end of the SCROLL, not the end of the screen, so a
+      // phone showed a permanently half-cut "LOG" that reads as breakage.
+      "html body #fo-menubar button.fo-mb-out{color:rgba(255,254,252,.5) !important}",
+      "html body #fo-menubar button.fo-mb-out:hover{color:#FFFEFC !important}",
+      "@media(min-width:721px){html body #fo-menubar button.fo-mb-out{margin-left:auto}}",
+      // and when it DOES overflow, the last item fades out rather than being
+      // guillotined, so the strip reads as something you can push
+      "@media(max-width:720px){#fo-menubar .fo-mb-in{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent)}}",
+      // TWO NAVIGATIONS IS ONE TOO MANY. The masthead's pill row listed the
+      // same rooms the bar now lists, one row above it. The pills stay in the
+      // DOM - the overlay's foot still proxies Admin and Log out off them, and
+      // the engine still owns their handlers - but they are no longer drawn.
+      "html body #topbar .fo-nav-scroll{display:none !important}",
+      "#fo-menubar button.fo-mb-t.open .fo-mb-cv{transform:rotate(180deg);opacity:1}",
+      // the panel: fixed, so the bar's own sideways scroll cannot clip it
+      "#fo-mb-pop{position:fixed;z-index:430;display:none;min-width:230px;max-width:min(340px,calc(100vw - 16px));background:linear-gradient(168deg,#0B1D3A,#07162E 70%);border:1px solid rgba(255,255,255,.13);border-radius:14px;box-shadow:0 26px 60px rgba(4,12,26,.55);padding:7px;animation:fo-mb-drop .15s ease}",
+      "#fo-mb-pop.on{display:block}",
+      "@keyframes fo-mb-drop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}",
+      "html body #fo-mb-pop a{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:10px;color:#FFFEFC !important;text-decoration:none !important;font:600 13px/1.25 Inter,sans-serif}",
+      "html body #fo-mb-pop a:hover,html body #fo-mb-pop a:focus{background:rgba(255,255,255,.1) !important;outline:none}",
+      "html body #fo-mb-pop a.on{background:rgba(201,85,50,.26) !important}",
+      "#fo-mb-pop a em{flex:none;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:#E8B96A;font-style:normal}",
+      "#fo-mb-pop a em svg{width:16px;height:16px;display:block}",
+      "#fo-mb-pop a.on em{background:rgba(232,185,106,.24);border-color:rgba(232,185,106,.55);color:#FFE7BE}"
+    ].join("\n");
+    document.head.appendChild(st);
+  }
+
+  var popEl = null, openIx = -1;
+  function pop() {
+    if (!popEl) {
+      popEl = document.createElement("div"); popEl.id = "fo-mb-pop";
+      popEl.setAttribute("role", "menu");
+      document.body.appendChild(popEl);
+    }
+    return popEl;
+  }
+  function closeBar() {
+    if (popEl) popEl.classList.remove("on");
+    openIx = -1;
+    var bar = document.getElementById("fo-menubar");
+    if (bar) [].slice.call(bar.querySelectorAll("button.fo-mb-t")).forEach(function (b) { b.classList.remove("open"); });
+  }
+  function openBar(ix, btn) {
+    var g = MAP[ix]; if (!g) return;
+    var here = curRoom(); here = ALIAS[here] || here;
+    var p = pop();
+    p.innerHTML = g.rooms.map(function (r) {
+      return "<a role='menuitem' class='" + (r[0] === here ? "on" : "") + "' href='#/" + r[0] + "'>" +
+        "<em>" + glyph(r[1]) + "</em><span>" + E(r[2]) + "</span></a>";
+    }).join("");
+    p.classList.add("on");
+    // place it under the button, clamped inside the viewport on both sides
+    var rc = btn.getBoundingClientRect();
+    var w = p.offsetWidth;
+    var left = Math.max(8, Math.min(rc.left, (window.innerWidth || 360) - w - 8));
+    p.style.left = left + "px";
+    p.style.top = (rc.bottom + 4) + "px";
+    openIx = ix;
+    [].slice.call(btn.parentNode.querySelectorAll("button.fo-mb-t")).forEach(function (b) { b.classList.remove("open"); });
+    btn.classList.add("open");
+    p.querySelectorAll("a").forEach(function (a) {
+      a.addEventListener("click", function (ev) {
+        ev.preventDefault();
+        closeBar();
+        location.hash = a.getAttribute("href");
+        try { if (typeof window.route === "function") window.route(); } catch (e) {}
+      });
+    });
+  }
+
+  function buildBar() {
+    try {
+      barCSS();
+      var tb = document.getElementById("topbar"); if (!tb) return;
+      var bar = document.getElementById("fo-menubar");
+      if (!bar) {
+        bar = document.createElement("nav");
+        bar.id = "fo-menubar";
+        bar.setAttribute("aria-label", "Sections");
+        bar.innerHTML = "<div class='fo-mb-in' role='menubar'></div>";
+        tb.parentNode.insertBefore(bar, tb.nextSibling);
+        var inner = bar.firstChild;
+        BAR.forEach(function (b, i) {
+          var ix = -1;
+          for (var m = 0; m < MAP.length; m++) if (MAP[m].k === b.k) ix = m;
+          if (ix < 0) return;
+          var btn = document.createElement("button");
+          btn.type = "button";
+          btn.className = "fo-mb-t";
+          btn.setAttribute("data-mb", String(ix));
+          btn.setAttribute("aria-haspopup", "true");
+          btn.innerHTML = "<span>" + E(b.short) + "</span>" +
+            "<svg class='fo-mb-cv' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' " +
+            "stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>";
+          btn.addEventListener("click", function (ev) {
+            ev.preventDefault(); ev.stopPropagation();
+            if (openIx === ix) closeBar(); else openBar(ix, btn);
+          });
+          // a mouse expects the menus to follow the pointer once one is down
+          btn.addEventListener("mouseenter", function () {
+            if (openIx >= 0 && openIx !== ix) openBar(ix, btn);
+          });
+          inner.appendChild(btn);
+        });
+        // ...and the way a menu bar ends: the engine's own Log out, proxied so
+        // it keeps its handler and its state rather than being reimplemented.
+        // It is only drawn once the engine has actually put one there.
+        var out = document.createElement("button");
+        out.type = "button";
+        out.className = "fo-mb-t fo-mb-out";
+        out.innerHTML = "<span>Log out</span>";
+        out.addEventListener("click", function (ev) {
+          ev.preventDefault(); ev.stopPropagation();
+          closeBar();
+          var a2 = tb.querySelector("a.fo-logout");
+          if (a2) a2.click();
+        });
+        inner.appendChild(out);
+        // closing: anywhere else, Escape, a route change, or the page moving
+        document.addEventListener("click", function (ev) {
+          if (openIx < 0) return;
+          if (popEl && popEl.contains(ev.target)) return;
+          closeBar();
+        });
+        window.addEventListener("keydown", function (ev) {
+          if (ev.key !== "Escape" || openIx < 0) return;
+          var btn2 = bar.querySelector("button.fo-mb-t[data-mb='" + openIx + "']");
+          closeBar();
+          if (btn2) btn2.focus();
+        });
+        window.addEventListener("hashchange", closeBar);
+        window.addEventListener("scroll", function () { if (openIx >= 0) closeBar(); }, true);
+        window.addEventListener("resize", closeBar);
+        // arrow keys walk the bar, as a menubar should
+        inner.addEventListener("keydown", function (ev) {
+          if (ev.key !== "ArrowRight" && ev.key !== "ArrowLeft") return;
+          var all = [].slice.call(inner.querySelectorAll("button.fo-mb-t"));
+          var at = all.indexOf(document.activeElement);
+          if (at < 0) return;
+          ev.preventDefault();
+          var nxt = all[(at + (ev.key === "ArrowRight" ? 1 : all.length - 1)) % all.length];
+          nxt.focus();
+          if (openIx >= 0) nxt.click();
+        });
+      }
+      // the bar lives and dies with the masthead, and sticks under it
+      var gone = !tb.offsetParent;
+      bar.classList.toggle("off", !!gone);
+      if (!gone) {
+        try { document.documentElement.style.setProperty("--fo-tbh", tb.offsetHeight + "px"); } catch (eV) {}
+      } else if (openIx >= 0) closeBar();
+      // and the menu you are standing in is lit
+      var outBtn = bar.querySelector(".fo-mb-out");
+      if (outBtn) outBtn.style.display = tb.querySelector("a.fo-logout") ? "" : "none";
+      var here2 = curRoom(); here2 = ALIAS[here2] || here2;
+      var lit = groupOf(here2);
+      [].slice.call(bar.querySelectorAll("button.fo-mb-t")).forEach(function (b) {
+        b.classList.toggle("here", +b.getAttribute("data-mb") === lit);
+      });
+    } catch (e) {}
+  }
+  try { setInterval(buildBar, 1200); } catch (e) {}
+  window.addEventListener("hashchange", function () { setTimeout(buildBar, 60); });
+  setTimeout(buildBar, 300);
+  setTimeout(buildBar, 1200);
 
   // the masthead button exists before this module loads; make sure it opens
   // the index rather than the old pill proxy, however it was wired
@@ -45717,6 +45949,214 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   document.addEventListener("DOMContentLoaded", function () { setTimeout(paint, 60); });
   setTimeout(paint, 120);
   window.__foFaCup = { render: render, renderCC: renderCC };
+  // AND A DOOR THE ROUTER KNOWS. Painting on hashchange is not enough: the
+  // router's own table is what decides whether #/facup survives at all, and a
+  // page missing from it is bounced to the front door before it can paint.
+  window.foRenderFaCupPage = function () { render(); renderCC(); };
+})();
+// ---- 54-colts-cup.js — THE COLTS CUP PAGE (#/colts) -------------------------
+// Week four of the season belongs to the academies: the league stands down and
+// all sixteen clubs of a nation go into one hat, both divisions together, so a
+// Division Two academy can knock out the champions. Four days - the last
+// sixteen on the Monday, quarters Tuesday, semis Thursday, the final Friday -
+// and a club that cannot name fifteen men under twenty-one forfeits its tie in
+// public. docs/ACADEMY.md is the law.
+//
+// This page draws the bracket AS BANKED, from the colts/<nation> snapshot the
+// umpire derives from cup_matches. It is a sibling of the FA Cup page in every
+// way that matters: same shell, same idiom, results only ever from the served
+// record. What it adds is the forfeit - the one result in the world reached
+// without a ball - and the purse, which is why a poor club runs an academy.
+(function () {
+  "use strict";
+  var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
+  var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+  function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  function P() { return window.__foPlanet || null; }
+  function hashPath() { return (location.hash || "").split("?")[0]; }
+  function onPage() { return hashPath() === "#/colts"; }
+  function qparam(k) {
+    var q = (location.hash.split("?")[1] || "").split("&");
+    for (var i = 0; i < q.length; i++) { var kv = q[i].split("="); if (kv[0] === k) return decodeURIComponent(kv[1] || ""); }
+    return "";
+  }
+  function myNation() {
+    try {
+      var c = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+      if (c && c.country) return c.country;
+    } catch (e) {}
+    try { return (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || "eng"; } catch (e2) { return "eng"; }
+  }
+  function mySlot(rid) {
+    try {
+      var c = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+      if (c && c.country === rid) return c.slot | 0;
+    } catch (e) {}
+    return null;
+  }
+  function money(v) {
+    var n = Number(v);
+    if (!isFinite(n) || !n) return "";
+    return n >= 1000000 ? "£" + (n / 1000000).toFixed(n >= 10000000 ? 0 : 1) + "m"
+         : n >= 1000 ? "£" + Math.round(n / 1000) + "k" : "£" + Math.round(n);
+  }
+
+  // ---- the served bracket, cached per nation ---------------------------------
+  var CUP = {};
+  function want(rid, cb) {
+    if (CUP[rid] && Date.now() - CUP[rid].at < 120000) return cb(CUP[rid].body || null);
+    fetch(SB_URL + "/rest/v1/world_snapshots?key=eq." + encodeURIComponent("colts/" + rid) + "&select=body",
+      { headers: { apikey: SB_ANON } })
+      .then(function (r) { return r.json(); })
+      .then(function (j) {
+        CUP[rid] = { body: (j && j[0] && j[0].body) || null, at: Date.now() };
+        cb(CUP[rid].body);
+      })
+      .catch(function () { CUP[rid] = { body: null, at: Date.now() }; cb(null); });
+  }
+
+  var STAGE_NM = { r16: "The last sixteen", qf: "Quarter-finals", sf: "Semi-finals", final: "THE FINAL" };
+  var STAGE_ORDER = ["r16", "qf", "sf", "final"];
+  var WEEKDAY = { r16: "Colts Week, Monday", qf: "Colts Week, Tuesday", sf: "Colts Week, Thursday", final: "Colts Week, Friday" };
+  var PURSE_NM = { winner: "Winners", finalist: "Beaten finalist", semi: "Losing semi-finalist" };
+
+  function render() {
+    try {
+      if (!onPage()) return;
+      var page = document.getElementById("page"); if (!page) return;
+      var rid = qparam("n") || myNation();
+      var body = null;
+      if (CUP[rid]) body = CUP[rid].body || null;
+      else want(rid, function () { if (onPage()) render(); });
+
+      var natNm = rid.toUpperCase();
+      try { natNm = (window.__foCxAPI.regions() || []).filter(function (r) { return r.id === rid; })[0].nm || natNm; } catch (e2) {}
+      var me = mySlot(rid);
+      var seasonNo = (body && body.seasonNo) || 1;
+      try {
+        var cal = P() && P().phaseOf ? P().phaseOf(Date.now()) : null;
+        if (!body && cal && cal.season >= 1) seasonNo = cal.season;
+      } catch (e) {}
+
+      var html = "<div class='fo-cc-page'>" +
+        "<div class='fo-cc-hero'><span class='fo-cc-eyebrow'>The academies&rsquo; week &middot; season " + seasonNo + "</span>" +
+        "<h1>The " + E(natNm) + " Colts Cup</h1>" +
+        "<p>Sixteen clubs, both divisions, one hat. Name fifteen men under twenty-one or forfeit the tie.</p></div>";
+
+      if (!body || !body.stages || !Object.keys(body.stages).length) {
+        html += "<div class='fo-cc-card'><h3>The draw awaits</h3><p class='dim'>" +
+          "No colts cricket has been banked for this season yet. The league stands down for week four and the boys " +
+          "play four days: the last sixteen on the Monday, the quarter-finals on the Tuesday, the semi-finals on " +
+          "the Thursday and the final on the Friday. The draw is made once and the bracket holds, so you will be " +
+          "able to see your path to the final on the Monday morning.</p></div>";
+      } else {
+        if (body.champion) {
+          html += "<div class='fo-cc-champ'><span>&#127942;</span><div><i>Colts Cup champions, season " + seasonNo + "</i><b>" +
+            E(body.champion) + "</b></div></div>";
+        }
+        // THE PURSE. Not a footnote: it is the reason a club that cannot buy
+        // players still runs an academy.
+        if (body.purse && body.purse.length) {
+          var mineP = body.purse.filter(function (p) { return me != null && p.slot === me; })[0];
+          html += "<div class='fo-cc-purse'><h4>The purse</h4><div class='fo-cc-prow'>" +
+            body.purse.map(function (p) {
+              return "<span" + (mineP && p === mineP ? " class='me'" : "") + "><i>" + (PURSE_NM[p.kind] || p.kind) +
+                "</i><b>" + money(p.amount) + "</b></span>";
+            }).join("") + "</div></div>";
+        }
+        STAGE_ORDER.forEach(function (st) {
+          var ties = body.stages[st];
+          if (!ties || !ties.length) return;
+          html += "<div class='fo-cc-card'><h3>" + STAGE_NM[st] + "<span>" + WEEKDAY[st] + "</span></h3>";
+          ties.forEach(function (t) {
+            var hWin = t.winnerSlot === t.homeSlot, aWin = t.winnerSlot === t.awaySlot;
+            var meH = me != null && t.homeSlot === me, meA = me != null && t.awaySlot === me;
+            var short = (t.forfeit && t.forfeit.short) || [];
+            // the club's name ellipsises; the SHORT tag beside it never does -
+            // it is the whole reason the tie went the way it did
+            var sideHTML = function (nm, win, mine2, isShort) {
+              return "<span class='side" + (win ? " w" : "") + (mine2 ? " me" : "") + "'>" +
+                "<b class='nm'>" + E(nm) + "</b>" + (isShort ? "<u>short</u>" : "") + "</span>";
+            };
+            html += "<div class='fo-cc-tie" + (meH || meA ? " mine" : "") + "'>" +
+              sideHTML(t.home, hWin, meH, short.indexOf(t.homeSlot) >= 0) +
+              "<span class='vs'>v</span>" +
+              sideHTML(t.away, aWin, meA, short.indexOf(t.awaySlot) >= 0) +
+              (t.forfeit ? "<em class='ff'>forfeit</em>" : "") + "</div>" +
+              (t.text ? "<p class='fo-cc-line'>" + E(t.text) + "</p>" : "");
+          });
+          html += "</div>";
+        });
+        if ((body.runs && body.runs.length) || (body.wickets && body.wickets.length)) {
+          html += "<div class='fo-cc-card'><h3>The boys who did it<span>from the cards themselves</span></h3><div class='fo-cc-lead'>";
+          (body.runs || []).slice(0, 5).forEach(function (p) {
+            html += "<div class='fo-cc-lrow'><b>" + E(p.name) + "</b><i>" + E(p.club) + "</i><u>" + p.runs + " runs" +
+              (p.hs ? " (" + p.hs + " best)" : "") + "</u></div>";
+          });
+          (body.wickets || []).slice(0, 5).forEach(function (p) {
+            html += "<div class='fo-cc-lrow'><b>" + E(p.name) + "</b><i>" + E(p.club) + "</i><u>" + p.wkts + " wickets</u></div>";
+          });
+          html += "</div></div>";
+        }
+      }
+      html += "<div class='fo-cc-foot'><a href='#/academy'>&lsaquo; Your academy</a>" +
+        "<a href='#/facup'>The FA Cup &rsaquo;</a></div></div>";
+      page.innerHTML = html;
+      css();
+    } catch (e) { /* never take the shell down */ }
+  }
+
+  function css() {
+    if (document.getElementById("fo-cc-css")) return;
+    var s = document.createElement("style"); s.id = "fo-cc-css";
+    s.textContent = [
+      "html body #page .fo-cc-page{max-width:760px;margin:0 auto;padding:12px 14px 40px}",
+      "html body #page .fo-cc-hero{padding:18px 4px 10px}",
+      "html body #page .fo-cc-eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a6d3b}",
+      "html body #page .fo-cc-hero h1{font-family:Fraunces,serif;font-size:34px;margin:4px 0 6px}",
+      "html body #page .fo-cc-hero p{color:#5b5b56;max-width:56ch;margin:0}",
+      "html body #page .fo-cc-champ{display:flex;gap:12px;align-items:center;background:#fdf6e3;border:1px solid #e8d9ab;border-radius:12px;padding:12px 16px;margin:10px 0}",
+      "html body #page .fo-cc-champ span{font-size:28px}",
+      "html body #page .fo-cc-champ i{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a6d3b;font-style:normal}",
+      "html body #page .fo-cc-champ b{font-family:Fraunces,serif;font-size:20px}",
+      "html body #page .fo-cc-purse{background:#fff;border:1px solid #e6e3da;border-radius:12px;padding:12px 16px;margin:12px 0}",
+      "html body #page .fo-cc-purse h4{margin:0 0 8px;font:600 10px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#8a6d3b}",
+      "html body #page .fo-cc-prow{display:flex;flex-wrap:wrap;gap:8px}",
+      "html body #page .fo-cc-prow span{flex:1 1 120px;background:#faf8f2;border:1px solid #eee9dc;border-radius:9px;padding:8px 10px}",
+      "html body #page .fo-cc-prow span.me{background:#fdf6e3;border-color:#e8d9ab}",
+      "html body #page .fo-cc-prow i{display:block;font-size:10.5px;color:#98938a;font-style:normal}",
+      "html body #page .fo-cc-prow b{font-family:Fraunces,serif;font-size:16px;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-cc-card{background:#fff;border:1px solid #e6e3da;border-radius:12px;padding:14px 16px;margin:12px 0}",
+      "html body #page .fo-cc-card h3{display:flex;justify-content:space-between;align-items:baseline;gap:10px;font-family:Fraunces,serif;font-size:17px;margin:0 0 8px}",
+      "html body #page .fo-cc-card h3 span{font-size:11px;color:#98938a;font-weight:400;white-space:nowrap}",
+      "html body #page .fo-cc-card p.dim{color:#5b5b56;margin:0}",
+      "html body #page .fo-cc-tie{display:flex;gap:10px;align-items:center;padding:7px 0;border-top:1px solid #f0ede4;position:relative}",
+      "html body #page .fo-cc-tie.mine{background:#fdf6e3;margin:0 -16px;padding-left:16px;padding-right:16px}",
+      "html body #page .fo-cc-tie .side{display:flex;align-items:baseline;gap:6px;flex:1 1 0;min-width:0;font-size:13.5px;color:#6b6862}",
+      "html body #page .fo-cc-tie .side .nm{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:400}",
+      "html body #page .fo-cc-tie .side.w .nm{color:#141C28;font-weight:600}",
+      "html body #page .fo-cc-tie .side.me .nm{color:#C8542F}",
+      "html body #page .fo-cc-tie .side u{flex:none;text-decoration:none;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#C8542F}",
+      "html body #page .fo-cc-tie .vs{flex:none;font-size:10.5px;color:#b4aa98;font-style:italic}",
+      "html body #page .fo-cc-tie .ff{flex:none;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#C8542F;font-style:normal}",
+      "html body #page .fo-cc-line{margin:0 0 6px;font-size:12px;color:#8a857c}",
+      "html body #page .fo-cc-lead{display:grid;gap:4px}",
+      "html body #page .fo-cc-lrow{display:flex;gap:8px;align-items:baseline;padding:5px 0;border-top:1px solid #f0ede4}",
+      "html body #page .fo-cc-lrow b{font-size:13.5px}",
+      "html body #page .fo-cc-lrow i{flex:1 1 0;min-width:0;font-size:11.5px;color:#98938a;font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      "html body #page .fo-cc-lrow u{text-decoration:none;font-size:12px;color:#6b6862;font-variant-numeric:tabular-nums;white-space:nowrap}",
+      "html body #page .fo-cc-foot{display:flex;justify-content:space-between;gap:10px;margin:18px 0 0;font:600 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
+      "html body #page .fo-cc-foot a{color:#8a6d3b;text-decoration:none}"
+    ].join("\n");
+    document.head.appendChild(s);
+  }
+
+  function paint() { render(); }
+  window.addEventListener("hashchange", function () { setTimeout(paint, 30); });
+  document.addEventListener("DOMContentLoaded", function () { setTimeout(paint, 60); });
+  setTimeout(paint, 120);
+  window.__foColtsCup = { render: render, want: want };
+  window.foRenderColtsPage = render;
 })();
 
 ;

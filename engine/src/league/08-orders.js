@@ -1081,9 +1081,11 @@
       // the up/down rail on every man in the XI - on a desk as well as a phone,
       // because one tap per place beats a drag on either
       "html body #page .fo-ord-xis button.xc{position:relative}" +
-      "html body #page .fo-ord-xis button.xc.xc-mv{padding-right:46px!important}" +
-      "@media(pointer:coarse){html body #page .fo-ord-xis button.xc{padding-right:46px!important}}" +
-      ".fo-ord-xis .xc .mv{position:absolute;right:4px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;touch-action:manipulation}" +
+      // the rail sits on the LEFT, beside the position number it changes
+      "html body #page .fo-ord-xis button.xc.xc-mv{padding-left:46px!important}" +
+      // the bench keeps its grip on the right, where the drag has always been
+      "@media(pointer:coarse){html body #page .fo-ord-xis button.xc.xc-dim{padding-right:46px!important}}" +
+      ".fo-ord-xis .xc .mv{position:absolute;left:4px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;touch-action:manipulation}" +
       ".fo-ord-xis .xc .mvb{display:flex;align-items:center;justify-content:center;width:34px;height:25px;border-radius:7px;background:#EEF2F7;color:#41577a;font-size:10px;line-height:1;cursor:pointer;-webkit-user-select:none;user-select:none;transition:background .12s,color .12s}" +
       ".fo-ord-xis .xc .mvb:hover{background:#DCE5F0;color:#B04A2C}" +
       ".fo-ord-xis .xc .mvb:active{background:#B04A2C;color:#FFFEFC}" +
