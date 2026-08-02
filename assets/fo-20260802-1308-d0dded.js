@@ -10115,7 +10115,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260802-0125-5e3a4a";
+  var FO_BUILD = "20260802-1308-d0dded";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -40291,6 +40291,31 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return out;
   }
 
+  // ---- THE TRANSFER HISTORY ------------------------------------------------
+  // The diary carries a transfer as one line among the day's business, which
+  // answers "what happened on Tuesday". It does not answer "what has this club
+  // spent, what has it recouped, and is it a buying club or a selling one" -
+  // the question you ask before you deal with somebody. Every sale is already
+  // a settled row in the register, so the totals are sums over it and the
+  // ledger is the same rows in order.
+  var TR = {};                                   // "cid:slot" -> {loading, d}
+  function transfersOf(key, cid, slot, onLand) {
+    if (TR[key]) return TR[key];
+    TR[key] = { loading: true, d: null };
+    rpc("world_club_transfers", { p_country: cid, p_slot: slot, p_limit: 200 })
+      .then(function (r) { TR[key] = { loading: false, d: r || null }; try { if (onLand) onLand(); } catch (e) {} })
+      .catch(function () { TR[key] = { loading: false, d: null }; try { if (onLand) onLand(); } catch (e2) {} });
+    return TR[key];
+  }
+  function trMoney(v) {
+    var n = Math.round(+v || 0), neg = n < 0; n = Math.abs(n);
+    return (neg ? "-$" : "$") + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
+  function trDate(ms) {
+    var d = new Date(Number(ms) || 0);
+    return d.getDate() + " " + MO[d.getMonth()] + " " + String(d.getFullYear()).slice(2);
+  }
+
   var CLUB_CACHE = {}, SQ_CACHE = {}, HON_CACHE = null;
   function grab(url, cb) {
     fetch(SB_URL + url, { headers: { apikey: SB_ANON } })
@@ -40670,6 +40695,47 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
               "<span>" + E(n9[0]) + "</span><em>" + E(n9[1]) + "</em></div>";
           }).join("") + "</div>" +
           "</div>";
+      } else if (tab === "transfers") {
+        var tk = cid + ":" + slot;
+        var tf = transfersOf(tk, cid, slot, function () {
+          if ((location.hash || "").indexOf("#/team") === 0) window.foRenderClubPage();
+        });
+        var trBody;
+        if (tf.loading || !tf.d) {
+          trBody = "<p class='fo-cp-dim'>" + (tf.loading ? "Opening the transfer register&hellip;"
+            : "The register could not be reached.") + "</p>";
+        } else {
+          var D = tf.d, deals = D.deals || [];
+          var kvT = function (k, v, cls) {
+            return "<div class='fo-cp-trk" + (cls ? " " + cls : "") + "'><span>" + k + "</span><b>" + v + "</b></div>";
+          };
+          var sums = "<div class='fo-cp-trsum'>" +
+            kvT("Paid out", trMoney(D.spent)) +
+            kvT("Taken in", trMoney(D.received)) +
+            kvT("Net", trMoney(D.net), (+D.net >= 0 ? "up" : "dn")) +
+            kvT("Transfers", D.transfers) +
+            kvT("Average bought", D.avgBuy == null ? "&mdash;" : trMoney(D.avgBuy)) +
+            kvT("Average sold", D.avgSell == null ? "&mdash;" : trMoney(D.avgSell)) +
+            "</div>";
+          trBody = sums + (deals.length
+            ? "<div class='fo-cp-scroll'><table class='fo-cp-tr'>" +
+              "<thead><tr><th>S</th><th>Date</th><th>Deal</th><th class='nm'>Player</th>" +
+              "<th class='nm'>To / from</th><th>Age</th><th>Fee</th></tr></thead><tbody>" +
+              deals.map(function (d) {
+                var inb = d.way === "in";
+                return "<tr class='" + (inb ? "in" : "out") + "'>" +
+                  "<td>" + (d.season || "") + "</td>" +
+                  "<td class='dt'>" + trDate(d.at) + "</td>" +
+                  "<td class='wy'>" + (inb ? "Bought" : "Sold") + "</td>" +
+                  "<td class='nm'>" + evPlayer(cid, slot, d.player) + "</td>" +
+                  "<td class='nm'>" + evClub(cid, d) + "</td>" +
+                  "<td>" + (d.age == null ? "&mdash;" : Math.floor(+d.age)) + "</td>" +
+                  "<td class='fe'>" + trMoney(d.fee) + "</td></tr>";
+              }).join("") + "</tbody></table></div>"
+            : "<p class='fo-cp-dim'>No player has come or gone yet. The register opens with the first deal.</p>");
+        }
+        bodyHTML = "<div class='fo-cp-panel'>" +
+          "<div class='fo-cp-ph'><h2>&#10022; Transfer history &#10022;</h2></div>" + trBody + "</div>";
       } else if (tab === "events") {
         var ek = cid + ":" + slot;
         var feed = eventsOf(ek, cid, slot, function () {
@@ -40737,7 +40803,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           "<div id='fo-cp-chlist'></div></div>";
       }
 
-      var TABS = [["squad", "Squad"], ["record", "Record"], ["ground", "Ground"], ["honours", "Honours"], ["events", "Events"]];
+      var TABS = [["squad", "Squad"], ["record", "Record"], ["ground", "Ground"],
+        ["transfers", "Transfers"], ["honours", "Honours"], ["events", "Events"]];
       var tabBar = "<div class='fo-cp-tabs'>" + TABS.map(function (t) {
         return "<a class='" + (tab === t[0] ? "on" : "") + "' href='#/team?c=" + encodeURIComponent(cid) + "&s=" + slot + "&t=" + t[0] + "'>" + t[1] + "</a>";
       }).join("") + "</div>";
@@ -40953,6 +41020,26 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-cp-gpr em{display:block;margin-top:3px;font-style:normal;font:400 11.5px/1.45 Inter,sans-serif;color:rgba(12,27,51,.55)}",
       "@media(max-width:760px){.fo-cp-gfr{grid-template-columns:30px minmax(0,1fr) 76px;gap:8px}",
       ".fo-cp-gfr .w{grid-column:2/4;text-align:right;margin-top:-4px;font-size:11px}}",
+      // the transfer register: six figures across the top, then the deals
+      ".fo-cp-trsum{display:grid;grid-template-columns:repeat(auto-fit,minmax(126px,1fr));gap:8px;margin-bottom:14px}",
+      ".fo-cp-trk{background:#FFFDF7;border:1px solid rgba(12,27,51,.1);border-radius:10px;padding:9px 11px}",
+      ".fo-cp-trk span{display:block;font:600 8px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(12,27,51,.45)}",
+      ".fo-cp-trk b{display:block;margin-top:5px;font:700 16px/1.15 Oswald,sans-serif;color:var(--navy);font-variant-numeric:tabular-nums}",
+      ".fo-cp-trk.up b{color:var(--grn)}.fo-cp-trk.dn b{color:#B23230}",
+      ".fo-cp-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}",
+      "html body #page table.fo-cp-tr{border-collapse:collapse;width:100%;min-width:560px;font-variant-numeric:tabular-nums}",
+      "html body #page table.fo-cp-tr th{background:var(--navy);color:#FFFDF7;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;text-align:right;padding:9px 7px;white-space:nowrap}",
+      "html body #page table.fo-cp-tr th.nm{text-align:left}",
+      "html body #page table.fo-cp-tr td{padding:8px 7px;text-align:right;white-space:nowrap;font:600 12px/1.2 Oswald,sans-serif;color:#141C28;border-bottom:1px solid rgba(12,27,51,.07)}",
+      "html body #page table.fo-cp-tr td.nm{text-align:left;font-family:Inter,sans-serif;font-weight:500;font-size:12.5px;white-space:normal}",
+      "html body #page table.fo-cp-tr td.dt{font-weight:400;color:rgba(12,27,51,.55)}",
+      "html body #page table.fo-cp-tr td.nm a{color:#B44A22 !important;text-decoration:none !important;font-weight:600}",
+      "html body #page table.fo-cp-tr td.wy{font:700 9px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;text-align:left}",
+      "html body #page table.fo-cp-tr tr.in td.wy{color:#B23230}",
+      "html body #page table.fo-cp-tr tr.out td.wy{color:var(--grn)}",
+      "html body #page table.fo-cp-tr tr.in td.fe{color:#B23230}",
+      "html body #page table.fo-cp-tr tr.out td.fe{color:var(--grn)}",
+      "html body #page table.fo-cp-tr tbody tr:nth-child(even){background:rgba(12,27,51,.022)}",
       // the diary: a day rule, then a line an hour at a time
       ".fo-cp-evday{margin:14px -22px 0;padding:8px 22px;background:rgba(12,27,51,.05);font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--navy)}",
       ".fo-cp-panel .fo-cp-evday:first-child{margin-top:0}",

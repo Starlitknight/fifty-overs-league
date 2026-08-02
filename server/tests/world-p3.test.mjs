@@ -949,6 +949,40 @@ test('016c: a club\'s events are the record, in order', async () => {
   await assert.rejects(pool.query(`SELECT public.world_club_events('eng', 99)`), /no such club/);
 });
 
+// THE TRANSFER REGISTER: what a club has bought and sold, and what that adds
+// up to - summed live off the settled listings rather than kept anywhere.
+test('016d: the transfer register sums the deals it lists', async () => {
+  const t = (await pool.query(`SELECT public.world_club_transfers('eng', 1, 300) AS t`)).rows[0].t;
+  assert.equal(t.ok, true);
+  assert.equal(t.transfers, t.bought + t.sold, 'the count is both directions');
+  const deals = t.deals;
+  assert.equal(deals.length, Math.min(t.transfers, 300), 'every deal is listed');
+  for (let i = 1; i < deals.length; i++) {
+    assert.ok(deals[i].at <= deals[i - 1].at, 'newest first at row ' + i);
+  }
+  // the headline figures ARE the rows added up
+  const inRows = deals.filter(d => d.way === 'in'), outRows = deals.filter(d => d.way === 'out');
+  assert.equal(inRows.length, t.bought);
+  assert.equal(outRows.length, t.sold);
+  assert.equal(Number(t.spent), inRows.reduce((a, d) => a + Number(d.fee), 0), 'paid out is the buys');
+  assert.equal(Number(t.received), outRows.reduce((a, d) => a + Number(d.fee), 0), 'taken in is the sells');
+  assert.equal(Number(t.net), Number(t.received) - Number(t.spent), 'net is the difference');
+  if (t.bought) assert.equal(Number(t.avgBuy), Math.round(Number(t.spent) / t.bought));
+  if (t.sold) assert.equal(Number(t.avgSell), Math.round(Number(t.received) / t.sold));
+  // and a deal names the club at the other end of it, never this one
+  deals.forEach(d => {
+    assert.ok(d.player, 'a deal names its cricketer');
+    assert.ok(!(d.oppCountry === 'eng' && d.oppSlot === 1), 'a club never trades with itself');
+    assert.ok(d.season >= 1, 'and belongs to a season');
+  });
+  // it agrees with the books beside it: the same fees the walk counted
+  const fin = (await pool.query(
+    `SELECT finance FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].finance;
+  assert.equal(Number(t.spent), fin.feesOut, 'paid out matches the books');
+  assert.equal(Number(t.received), fin.feesIn, 'taken in matches the books');
+  await assert.rejects(pool.query(`SELECT public.world_club_transfers('eng', 99)`), /no such club/);
+});
+
 // 017: WHAT A RIVAL MAY READ. The club pages show a scout's summary - one
 // overall rating a man, his batting, his bowling, his fielding, and the three
 // team strengths - computed in SQL so a page costs one small request. Those
