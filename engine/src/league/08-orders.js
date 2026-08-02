@@ -86,6 +86,25 @@
     var order = ["", "att", "bal", "def"], v = foMfVal(nm);
     foMfSet(nm, order[(order.indexOf(v) + 1) % order.length]);
   }
+  // ONE PLACE UP OR DOWN THE ORDER.
+  // Only inside the XI: the eleventh man cannot be nudged onto the bench by an
+  // arrow, because dropping a man from the side has consequences (his overs,
+  // the gloves, the armband) that belong to the bench swap, not to this.
+  // The scroll position is held across the redraw - a manager moving a man
+  // from eight to three taps five times, and the list must not jump under him.
+  function foOrdMove(nm, step) {
+    try {
+      var bo = (App.orders && App.orders.batOrder) || [];
+      var last = Math.min(10, bo.length - 1);
+      var from = bo.indexOf(nm), to = from + step;
+      if (from < 0 || from > last || to < 0 || to > last) return;
+      bo.splice(from, 1);
+      bo.splice(to, 0, nm);
+      var y = window.pageYOffset || document.documentElement.scrollTop || 0;
+      foOrdersUI();
+      try { window.scrollTo(0, y); } catch (e2) {}
+    } catch (e) {}
+  }
   function foOrdFieldRows() {
     var tot = foOrdTotals();
     var pool = foOrdPool(true).filter(function (p) { return (tot[p.name] || 0) > 0; });
@@ -463,8 +482,24 @@
           (p.keeper ? "<i class='bdg" + (isK ? " on" : "") + "' data-fo-mkk='" + E(nm) + "' title='" + (isK ? "Wicket-keeper" : "Give him the gloves") + "'>WK</i>" : "");
         var role = p.bowlType && p.bowlType !== "none" ? (/spin/i.test(p.bowlTypeFull || p.bowlType) ? "spin" : "pace") : (p.keeper ? "wk" : "bat");
         var pills = foOrdTalPills(p, 2);
-        return "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + "' data-fo-pc='" + E(nm) + "'>" +
-          "<span class='dh' title='Drag to move' aria-hidden='true'>&#x2261;</span>" +
+        // ARROWS ON THE XI, A GRIP ON THE BENCH.
+        // Dragging is fine on a desk and a nuisance on a phone: you must hold,
+        // then travel, and the list is trying to scroll under your thumb the
+        // whole way. So a man in the order gets a stacked up/down pair, which
+        // is one tap per place and cannot be fumbled. The bench keeps the grip
+        // because a bench man is not moving one place - he is being carried
+        // onto a slot in the XI, which only dragging expresses.
+        // Spans, not buttons: this card IS a button, and a button inside a
+        // button is dropped by the parser. Same trick the C and WK badges use.
+        var mvR = i == null ? "<span class='dh' title='Drag to move' aria-hidden='true'>&#x2261;</span>" :
+          "<span class='mv'>" +
+            "<span class='mvb" + (i === 0 ? " off" : "") + "' role='button' tabindex='0' data-fo-mv='up:" + E(nm) +
+              "' title='Move up' aria-label='Move " + E(dispNm(nm)) + " up the order'>&#x25B2;</span>" +
+            "<span class='mvb" + (i >= xiNames.length - 1 ? " off" : "") + "' role='button' tabindex='0' data-fo-mv='dn:" + E(nm) +
+              "' title='Move down' aria-label='Move " + E(dispNm(nm)) + " down the order'>&#x25BC;</span>" +
+          "</span>";
+        return "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + (i == null ? "" : " xc-mv") + "' data-fo-pc='" + E(nm) + "'>" +
+          mvR +
           "<span class='r1'>" + (i != null ? "<u>" + (i + 1) + "</u>" : "") + "<b>" + E(dispNm(nm)) + "</b>" + foOrdRoleIcon(p) + tag +
           "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
           "<span class='ov' title='Overall rating'><b>" + foPkOvr(p) + "</b></span></span>" +
@@ -474,7 +509,7 @@
       var xiNames = bo.slice(0, 11);
       var benchNames = ((t && t.players) || []).map(function (p9) { return p9.name; }).filter(function (nm) { return xiNames.indexOf(nm) < 0; });
       // vertical, editable: the XI as a draggable list, the bench beside it
-      var xiCol = "<div class='pv-xi'><div class='fo-ord-vzh' style='margin-top:2px'>Batting order <span>&middot; drag to reorder &middot; tap a man's letter to tell him how to bat: N normal, A attack, L launch, D defend</span></div><div class='fo-ord-xis' id='fo-ord-xi-list'>" + xiNames.map(function (nm, i) { return chip(nm, i, false); }).join("") + "</div></div>";
+      var xiCol = "<div class='pv-xi'><div class='fo-ord-vzh' style='margin-top:2px'>Batting order <span>&middot; tap &#x25B2;&#x25BC; to move a man, or drag him &middot; tap a man's letter to tell him how to bat: N normal, A attack, L launch, D defend</span></div><div class='fo-ord-xis' id='fo-ord-xi-list'>" + xiNames.map(function (nm, i) { return chip(nm, i, false); }).join("") + "</div></div>";
       var benchCol = "<div class='pv-bench'><div class='fo-ord-vzh' style='margin-top:2px'>Bench</div><div class='fo-ord-xis' id='fo-ord-bench-list'>" + benchNames.map(function (nm) { return chip(nm, null, true); }).join("") + "</div></div>";
       // one lane per bowling option (even the unused sixth): filled blocks
       // are his overs, and every cell is a BUTTON - tap an empty over to
@@ -790,6 +825,11 @@
             toast("The bowling plan is clear - paint it again, or let the AI captain improvise.");
             return;
           }
+          if ((el = q("[data-fo-mv]"))) {
+            var mvA = el.getAttribute("data-fo-mv").split(":");
+            foOrdMove(mvA.slice(1).join(":"), mvA[0] === "up" ? -1 : 1);
+            return;
+          }
           if ((el = q("[data-fo-mb]"))) { foMbCycle(el.getAttribute("data-fo-mb")); foOrdersUI(); return; }
           if ((el = q("[data-fo-mfc]"))) { foMfCycle(el.getAttribute("data-fo-mfc")); foOrdersUI(); return; }
           if ((el = q("[data-fo-mkc]"))) { App.orders.captain = el.getAttribute("data-fo-mkc"); foOrdersUI(); return; }
@@ -858,6 +898,9 @@
       page.addEventListener("pointerdown", function (ev) {
         try {
           if (!/^#\/orders/.test(location.hash || "")) return;
+          // a thumb resting on an arrow is pressing a button, not beginning a
+          // drag - without this the 260ms hold below fires underneath it
+          if (ev.target.closest && ev.target.closest(".mv")) return;
           var chipEl = ev.target.closest ? ev.target.closest(".fo-ord-xis .xc") : null;
           if (!chipEl) return;
           var list = document.getElementById("fo-ord-xi-list"); if (!list) return;
@@ -1034,8 +1077,17 @@
       // ---- the ≡ drag handle: hidden for mouse users (drag-anywhere covers
       // them), a fat instant-drag target on touch screens
       ".fo-ord-xis .xc .dh{display:none}" +
-      "@media(pointer:coarse){.fo-ord-xis .xc .dh{display:flex;align-items:center;justify-content:center;position:absolute;right:4px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:8px;background:#EEF2F7;color:#41577a;font-size:17px;font-weight:400;touch-action:none}" +
-      "html body #page .fo-ord-xis button.xc{position:relative;padding-right:46px!important}}" +
+      "@media(pointer:coarse){.fo-ord-xis .xc .dh{display:flex;align-items:center;justify-content:center;position:absolute;right:4px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:8px;background:#EEF2F7;color:#41577a;font-size:17px;font-weight:400;touch-action:none}}" +
+      // the up/down rail on every man in the XI - on a desk as well as a phone,
+      // because one tap per place beats a drag on either
+      "html body #page .fo-ord-xis button.xc{position:relative}" +
+      "html body #page .fo-ord-xis button.xc.xc-mv{padding-right:46px!important}" +
+      "@media(pointer:coarse){html body #page .fo-ord-xis button.xc{padding-right:46px!important}}" +
+      ".fo-ord-xis .xc .mv{position:absolute;right:4px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;gap:2px;touch-action:manipulation}" +
+      ".fo-ord-xis .xc .mvb{display:flex;align-items:center;justify-content:center;width:34px;height:25px;border-radius:7px;background:#EEF2F7;color:#41577a;font-size:10px;line-height:1;cursor:pointer;-webkit-user-select:none;user-select:none;transition:background .12s,color .12s}" +
+      ".fo-ord-xis .xc .mvb:hover{background:#DCE5F0;color:#B04A2C}" +
+      ".fo-ord-xis .xc .mvb:active{background:#B04A2C;color:#FFFEFC}" +
+      ".fo-ord-xis .xc .mvb.off{opacity:.25;pointer-events:none}" +
       // the player-card modal is narrow: slim the v2 art panel so the name
       // never truncates beside the OVR
       "#fo-ord-pc .pkm{padding-left:84px}" +
