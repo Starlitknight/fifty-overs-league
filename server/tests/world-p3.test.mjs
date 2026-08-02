@@ -19,13 +19,13 @@ import { initWorld, countryConfigs, squadFor } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { runAllDue, runCupWindow, runFaCup, rollSeasons, runTick, computeLeague, rebuildHonours, computeRankings, runFriendlies, settleMoney } from '../tick.mjs';
 import { evolveCountry, applyLiving, livingPatch } from '../living.mjs';
-import { CAP, SQUAD_CAP, RETIRE_AT, makeColt, ensureYouth, ageYouth,
+import { SQUAD_CAP, RETIRE_AT, ACADEMY_FLOOR, makeRecruit, ageYouth,
   coltsRoundOf, coltsSquad, playColtsRound, coltRecords } from '../youth.mjs';
 import { academyRate } from '../living.mjs';
 import { fantasyPoints, unitRatings, matchRatings, teamRatings, matchRating,
          ladderRating, strengthRating, RATING_UNITS, RANK_BASE } from '../ratings.mjs';
 import { roundRobin, bracket, roundsOf, closeEnrolment, playComps, computeComp, rebuildComps } from '../comps.mjs';
-import { ACADEMY_UPKEEP, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, DEBT_LIMIT, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance } from '../economy.mjs';
+import { academyUpkeep, academyBuild, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, DEBT_LIMIT, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance } from '../economy.mjs';
 import { EPOCH, DAY, seedOf, dayOfRound } from '../clock.mjs';
 
 const DBNAME = 'foworld_p3_test';
@@ -1022,51 +1022,39 @@ test('017: the served club card matches the engine, and hides the coaching book'
   }
 });
 
-// 018: THE ACADEMY. Every club runs one and the umpire works it: a boy arrives
-// when there is room, every colt ages at the rollover, and a twenty-one-year-old
-// gets a senior shirt whether his manager logged in or not. What a manager may
-// do is pay for a better academy and decide, early, which boys are ready. All
-// of it still settles from genesis - the boys are a pure function of their seed
-// and the money is a pure function of the record.
-test('018: the academy brings boys through, paid for and recomputable', async () => {
-  // A BOY IS HIS SEED. The same seed makes the same cricketer, always.
-  const a = makeColt(host, 'England', 'rock', 'youth|eng|1|s1|r1', 2);
-  const b = makeColt(host, 'England', 'rock', 'youth|eng|1|s1|r1', 2);
+// 018: THE ACADEMY'S MONEY. What the academy IS - scouting, signing, the boys
+// who walk at twenty-one - belongs to tests/world-academy.test.mjs, which
+// exercises it against docs/ACADEMY.md end to end. What is proved here is the
+// only part the books care about: a level is a spent fact, so the treasury
+// still recomputes from genesis however many times you settle it.
+test('018: the academy is paid for, and it recomputes', async () => {
+  // A BOY IS HIS SEED. The same seed makes the same cricketer, always - which
+  // is what lets the umpire and the manager agree about who walked in.
+  const a = makeRecruit(host, 'England', 'rock', 'good', 'youth|eng|1|s1|r1');
+  const b = makeRecruit(host, 'England', 'rock', 'good', 'youth|eng|1|s1|r1');
   assert.deepEqual(a, b, 'the same seed turns out the same young cricketer');
-  assert.ok(a.age >= 17 && a.age <= 20, 'a colt is a colt');
+  assert.ok(a.age >= 16 && a.age <= 20, 'a boy is sixteen to twenty');
   assert.equal(a.colt, true);
-  const strong = makeColt(host, 'England', 'rock', 'youth|eng|1|s1|r1', 5);
-  assert.ok(strong.promise > a.promise, 'a better academy turns them out closer to ready');
+  // and a tier is a real ladder: more of the man has arrived in a better one
+  const jewel = makeRecruit(host, 'England', 'rock', 'jewel', 'youth|eng|1|s1|r1');
+  const poor = makeRecruit(host, 'England', 'rock', 'poor', 'youth|eng|1|s1|r1');
+  assert.ok(jewel.rating > poor.rating, 'a jewel out-rates a boy who will never make it');
 
-  // THE INTAKE. Every club in the country, bot or human, has boys on its books.
+  // EVERY CLUB IN THE WORLD can field a Colts Cup side from the day it is founded
   const clubs = (await pool.query(
     `SELECT slot, academy, youth FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows;
   assert.equal(clubs.length, 16);
   for (const c of clubs) {
     assert.equal(c.academy, 2, 'every club opens with a level-two academy');
-    assert.ok(c.youth.length > 0, 'club ' + c.slot + ' has brought boys in');
-    assert.ok(c.youth.length <= CAP(c.academy), 'and never more than the academy holds');
+    // (this world has already rolled over more than once by now, so some of the
+    // fifteen it was founded with have turned twenty-one and walked - that a
+    // FRESH world founds every club with fifteen is world-academy's to prove)
+    assert.ok(c.youth.length > 0, 'club ' + c.slot + ' still has boys on the books');
     for (const y of c.youth) {
-      assert.equal(y.colt, true);
-      assert.ok(y.age >= 17 && y.age <= 20, 'a colt on the books is under twenty-one');
+      assert.ok(y.age >= 16 && y.age <= 20, 'a boy on the books is under twenty-one');
       assert.ok(!y.career, 'a boy has no first-class record yet');
     }
   }
-
-  // an intake window that has already been worked never doubles up
-  const seas = (await pool.query(
-    `SELECT season_no FROM seasons WHERE country_id='eng' ORDER BY season_no DESC LIMIT 1`)).rows[0];
-  const win = { seasonNo: seas.season_no, round: 90 };            // a window never yet worked
-  const first = await ensureYouth(pool, host, 'eng', win);
-  const again = await ensureYouth(pool, host, 'eng', win);
-  assert.equal(again, 0, 'the same window brings in the same boy, so nobody is signed twice');
-  assert.ok(first >= 0);
-
-  // and the cap holds: a level-two academy stops at four however many windows pass
-  for (let r = 91; r < 100; r++) await ensureYouth(pool, host, 'eng', { seasonNo: seas.season_no, round: r });
-  const full = (await pool.query(
-    `SELECT slot, academy, youth FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows;
-  full.forEach(c => assert.equal(c.youth.length, CAP(c.academy), 'club ' + c.slot + ' filled to its capacity and stopped'));
 
   // THE MONEY. An upgrade is a spent fact, so the treasury still recomputes.
   await settleMoney(pool, 'eng');
@@ -1080,30 +1068,39 @@ test('018: the academy brings boys through, paid for and recomputable', async ()
   await assert.rejects(as(U1, `SELECT public.world_set_academy(1)`), /never sold back/);
   const up = await as(U1, `SELECT public.world_set_academy(4) AS r`);
   assert.equal(up.rows[0].r.academy, 4);
-  assert.equal(Number(up.rows[0].r.cost), 2 * 60000 + 3 * 60000, 'each step up costs sixty thousand a level');
+  assert.equal(Number(up.rows[0].r.cost), academyBuild(2, 4), 'the build ladder, and the steps get steeper');
   const paid = (await pool.query(
     `SELECT academy, academy_paid, bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
   assert.equal(paid.academy, 4);
-  assert.equal(Number(paid.academy_paid), 300000, 'what was spent is remembered');
-  assert.equal(Number(paid.bank), bank0 - 300000, 'and it came straight out of the treasury');
+  assert.equal(Number(paid.academy_paid), academyBuild(2, 4), 'what was spent is remembered');
+  assert.equal(Number(paid.bank), bank0 - academyBuild(2, 4), 'and it came straight out of the treasury');
 
   await settleMoney(pool, 'eng');
   const bank1 = Number((await pool.query(`SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank);
-  assert.equal(bank1, bank0 - 300000 - rounds * 2 * ACADEMY_UPKEEP,
-    'settling from genesis charges the upgrade once and the bigger academy every round');
+  // the upgrade is charged ONCE and the academy is charged EVERY ROUND, at the
+  // level the club holds. Read the upkeep the walk actually took rather than
+  // recomputing it here: how many rounds a club has settled is the walk's
+  // business, and a test that guesses it is a test that breaks on the calendar.
+  const fin1 = (await computeFinance(pool, 'eng')).find(f => f.slot === 1).finance;
+  assert.equal(fin1.upkeep, fin1.rounds * academyUpkeep(4),
+    'every settled round charged the academy the club holds NOW');
+  // and that is the point of a walk that recomputes from genesis: buying a
+  // level does not only cost the lump, it re-charges every round already
+  // played at the dearer rate. So the treasury falls by the building AND by
+  // the difference in upkeep across the whole season so far.
+  assert.equal(bank1, bank0 - academyBuild(2, 4)
+                          - fin1.rounds * (academyUpkeep(4) - academyUpkeep(2)),
+    'the upgrade is charged once and the bigger academy for every round settled');
   await settleMoney(pool, 'eng');
   assert.equal(Number((await pool.query(
     `SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank), bank1, 'settling twice settles the same figure');
 
-  // a bigger academy holds more boys, and the umpire fills it
-  await ensureYouth(pool, host, 'eng', { seasonNo: seas.season_no, round: 101 });
+  // THE MANAGER'S TWO CALLS: hand a boy a senior shirt, or let him go. There
+  // is no cap on the list any more - the wage bill is the only brake there is.
   const mine = (await pool.query(`SELECT academy, youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
-  assert.equal(CAP(mine.academy), 6);
-  assert.equal(mine.youth.length, 5, 'one more boy through the door, one window at a time');
-
-  // THE MANAGER'S TWO CALLS: bring a boy up early, or let him go.
+  assert.ok(mine.youth.length > 0, 'there are boys on the books to make a call about');
   await assert.rejects(pool.query(`SELECT public.world_colt('anyone','promote')`), /sign in/);
-  await assert.rejects(as(U1, `SELECT public.world_colt('Nobody At All','promote')`), /no colt of that name/);
+  await assert.rejects(as(U1, `SELECT public.world_colt('Nobody At All','promote')`), /no boy of that name/);
   await assert.rejects(as(U1, `SELECT public.world_colt($1,'sell')`, [mine.youth[0].name]), /promote or release/);
 
   const squadWas = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad.length;
@@ -1113,7 +1110,7 @@ test('018: the academy brings boys through, paid for and recomputable', async ()
   const after = (await pool.query(`SELECT squad, youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
   assert.equal(after.squad.length, squadWas + 1, 'the boy who was brought up is a senior');
   assert.ok(after.squad.some(p => p.name === lad && !p.colt), 'and he wears a senior shirt, not a colt\'s');
-  assert.equal(after.youth.length, 3, 'one promoted, one released');
+  assert.equal(after.youth.length, mine.youth.length - 2, 'one promoted, one released');
   assert.ok(!after.youth.some(y => y.name === lad || y.name === gone));
 
   // and he is handed no nets he was never at: the round he came up is
@@ -1125,18 +1122,21 @@ test('018: the academy brings boys through, paid for and recomputable', async ()
     `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad.find(p => p.name === lad);
   assert.deepEqual(post.skills, shirt.baseSkills, 'he starts from the cricketer the academy turned out');
 
-  // THE ROLLOVER. A year on every colt and a shirt for the twenty-one-year-old,
-  // with nobody watching. Keyed by season, so a re-run never ages a boy twice.
+  // THE ROLLOVER. A year on every boy, and the one who reaches twenty-one
+  // WALKS - he is not handed a shirt behind his manager's back, because a
+  // senior contract costs money and is the manager's call to make or to miss.
+  // Keyed by season, so a re-run never ages a boy twice.
   await pool.query(`UPDATE clubs SET youth=$1::jsonb WHERE country_id='eng' AND slot=3`,
-    [JSON.stringify([{ name: 'Ready Lad', age: 20, wage: 400, colt: true, promise: 71 },
-                     { name: 'Green Lad', age: 18, wage: 300, colt: true, promise: 58 }])]);
+    [JSON.stringify([{ name: 'Ready Lad', age: 20, wage: 400, colt: true },
+                     { name: 'Green Lad', age: 18, wage: 300, colt: true }])]);
   const seniorWas = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=3`)).rows[0].squad.length;
   const rolled = await ageYouth(pool, 'eng', 4242);
   assert.equal(rolled.skipped, false);
-  assert.ok(rolled.promoted >= 1);
+  assert.equal(rolled.promoted, 0, 'the umpire hands out no shirts');
+  assert.ok(rolled.released >= 1, 'and the twenty-one-year-old left');
   const bot = (await pool.query(`SELECT squad, youth FROM clubs WHERE country_id='eng' AND slot=3`)).rows[0];
-  assert.equal(bot.squad.length, seniorWas + 1, 'twenty-one is twenty-one, watched or not');
-  assert.ok(bot.squad.some(p => p.name === 'Ready Lad' && p.age === 21 && !p.colt));
+  assert.equal(bot.squad.length, seniorWas, 'the staff is exactly as its manager left it');
+  assert.ok(!bot.squad.some(p => p.name === 'Ready Lad'), 'he is gone from the world, not promoted');
   assert.equal(bot.youth.length, 1);
   assert.equal(bot.youth[0].name, 'Green Lad');
   assert.equal(bot.youth[0].age, 19, 'a year on the ones who stay');
@@ -1316,7 +1316,7 @@ test('020: the books are a ledger, and they recompute from the record', async ()
     const expect = f.founded + f.gate + f.awayCut + f.sponsor + (f.compensation || 0)
       + (f.feesIn || 0) + f.writtenOff
       - f.wages - f.upkeep - f.interest - f.academyPaid - f.seatsPaid
-      - (f.feesOut || 0) - (f.scouting || 0);
+      - (f.feesOut || 0) - (f.scouting || 0) - (f.academySpend || 0);
     assert.equal(Number(r.bank), Math.round(expect), 'club ' + r.slot + ': the books add up');
   }
   assert.ok(rows.reduce((s, r) => s + (r.finance.capsAway || 0), 0) > 0,
@@ -1649,35 +1649,39 @@ test('023: a year ages everybody, retires the oldest, and a staff is twenty', as
   assert.equal(s5.find(p => p.name === 'Kid').age, 23, 'and everybody else is a year older');
   assert.equal(s5.find(p => p.name === 'Middle').age, 31);
 
-  // A STAFF IS TWENTY. A boy better than the weakest man makes room; a boy who
-  // is not is let go rather than swelling the books.
+  // A BOY WHO REACHES TWENTY-ONE WALKS, however good he is and however much
+  // room there is. Nothing is promoted behind the manager's back any more - a
+  // senior shirt costs a flat fee and is his decision to make or to miss.
   const full = [];
   for (let i = 0; i < 20; i++) full.push(man('Pro' + i, 26, 2000 + i * 10));
   await seat(6, full, [boy('Better', 20, 5000), boy('Worse', 20, 100)]);
   const r2 = await ageYouth(pool, 'eng', 5102);
-  const s6 = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=6`)).rows[0].squad;
-  assert.equal(s6.length, 20, 'the staff is still twenty, not twenty-two');
-  assert.ok(s6.some(p => p.name === 'Better'), 'the boy worth a place got one');
-  assert.ok(!s6.some(p => p.name === 'Worse'), 'the boy who was not, did not');
-  assert.ok(!s6.some(p => p.name === 'Pro0'), 'and the weakest professional made way');
-  assert.equal(r2.madeWay, 1);
-  assert.equal(r2.released, 1);
-  assert.ok(s6.find(p => p.name === 'Better').joined, 'the graduate remembers when he came up');
-  assert.ok(!s6.find(p => p.name === 'Better').colt, 'and is not a colt any more');
+  const c6 = (await pool.query(`SELECT squad, youth FROM clubs WHERE country_id='eng' AND slot=6`)).rows[0];
+  assert.equal(c6.squad.length, 20, 'the staff is still twenty, not twenty-two');
+  assert.ok(!c6.squad.some(p => p.name === 'Better'), 'not even the good one was handed a shirt');
+  assert.ok(!c6.squad.some(p => p.name === 'Worse'));
+  assert.ok(c6.squad.some(p => p.name === 'Pro0'), 'and no professional was moved aside for a boy');
+  assert.equal(c6.youth.length, 0, 'both turned twenty-one and left');
+  assert.equal(r2.promoted, 0);
+  assert.equal(r2.madeWay, 0);
+  // released counts the whole country: every twenty-year-old in England walked
+  // on the same day, and these two are among them
+  assert.ok(r2.released >= 2, "this club's two, and the rest of the nation's");
 
-  // ROOM UNDER THE CAP IS SIMPLY TAKEN
+  // ROOM UNDER THE CAP CHANGES NOTHING: he still walks
   await seat(7, [man('One', 25, 2000)], [boy('Ready', 20, 50)]);
   const r3 = await ageYouth(pool, 'eng', 5103);
-  const s7 = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=7`)).rows[0].squad;
-  assert.equal(s7.length, 2, 'with room, even a poor boy comes up');
+  const c7 = (await pool.query(`SELECT squad, youth FROM clubs WHERE country_id='eng' AND slot=7`)).rows[0];
+  assert.equal(c7.squad.length, 1, 'an empty staff is no reason to hand out a shirt');
+  assert.equal(c7.youth.length, 0, 'he reached twenty-one and was gone');
   assert.equal(r3.madeWay, 0);
-  assert.equal(r3.released, 0);
+  assert.ok(r3.released >= 1);
 
   // AND A ROLLOVER ALREADY WORKED IS NEVER WORKED AGAIN
   const again = await ageYouth(pool, 'eng', 5103);
   assert.equal(again.skipped, true);
   const s7b = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=7`)).rows[0].squad;
-  assert.deepEqual(s7b.map(p => p.age), s7.map(p => p.age), 'nobody aged twice');
+  assert.deepEqual(s7b.map(p => p.age), c7.squad.map(p => p.age), 'nobody aged twice');
 
   // THE WHOLE POINT: season after season, a squad does not run away
   await seat(8, [man('A', 24, 2000), man('B', 25, 2100)], []);

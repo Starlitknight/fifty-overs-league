@@ -28,6 +28,15 @@ curve is the one that is already shipped and already fixed: younger men gain
 faster. A sixteen-year-old improves quickly from a low base; a twenty-year-old
 improves slowly from a higher one.
 
+**And that curve is slow on purpose.** Measured against the shipped law
+(`pts = 24 × ageFactor × potFactor × freshness × academyRate`, against a
+threshold that rises with the skill), four seasons of nets move a cricketer by
+roughly a tenth of his rating. So the nets **confirm** a signing rather than
+transform it: a boy who arrives forty per cent short of your first XI is still
+short of it when he turns twenty-one. That is not a limitation being worked
+around — it is what makes a dud readable at the moment you sign him, which is
+the whole game the academy plays.
+
 So a manager judges a boy the only way there is: **by his starting skills and
 his starting rating, against his age.** A 17-year-old at OVR 44 is a serious
 prospect. A 20-year-old at OVR 44 is a man who has already had his gains. That
@@ -44,20 +53,47 @@ The quality of what turns up is a lottery weighted by academy level:
 
 A higher academy level shifts that distribution toward the top. It does not
 change the training curve, the wage law, or anything else — it changes only
-what walks through the door.
+what walks through the door. The headline rates above are what a **level three**
+academy turns out; the ladder is:
+
+| level | jewel | good | average | never useful |
+|-------|-------|------|---------|--------------|
+| 1 | 0.2% | 2.0% | 38% | 59.8% |
+| 2 | 0.5% | 3.5% | 43% | 53.0% |
+| 3 | 0.9% | 5.0% | 47% | 47.1% |
+| 4 | 1.5% | 7.0% | 51% | 40.5% |
+| 5 | 2.5% | 10.0% | 55% | 32.5% |
+
+**What a tier is worth**, measured against a real generated senior squad whose
+median man rates about 41,000:
+
+| tier | at 16 | at 18 | at 20 |
+|------|-------|-------|-------|
+| jewel | ~99% of the senior median | ~111% | ~122% |
+| good | ~86% | ~96% | ~108% |
+| average | ~71% | ~80% | ~88% |
+| never useful | ~55% | ~62% | ~68% |
+
+Read down a column and the tiers separate; read across a row and age does. A
+sixteen-year-old jewel rates about the same as an eighteen-year-old good boy
+and **better than a twenty-year-old average one** — which is why the card in
+front of you only means something read against his age.
 
 ## 2. Scouting
 
 **A button, pressed by a manager.** Nothing is scouted automatically for a club
 that has a human in charge.
 
-- **Once every rest day.** A rest day is a day-in-season on which the club has
-  no fixture of any kind. The season has roughly a dozen.
-- **The manager chooses the nation.** All nineteen are open from the first day.
+- **Once every rest day.** A rest day is a day-in-season on which the world
+  stages no club cricket at all. There are exactly **eleven** — di
+  {2,5,9,12,16,19,23,26,27,30,33} — and `isRestDay()` derives them from the
+  calendar rather than listing them, so the cadence cannot drift from the
+  season it is counted in.
+- **The manager chooses the nation.** All sixteen are open from the first day.
 - **A nation tilts what turns up, never how good it is.** South Africa is
   markedly more likely to produce a quick, India a spinner or a wristy batsman,
   England a seamer who bats. The tilt is strong enough to travel for. The odds
-  of a jewel are identical in all nineteen. You go abroad for a *type*, never
+  of a jewel are identical in all sixteen. You go abroad for a *type*, never
   for a better shop — so every nation stays worth visiting forever.
 - **Home is free; abroad costs a scouting fee**, paid whether or not you sign
   him. Nothing else follows from a boy's nationality: no overseas limit, no bar
@@ -88,8 +124,10 @@ senior contract **leaves the club and the world**. He is not listed, not sold,
 not placed elsewhere. He is simply gone, and the wages you paid him were the
 price of finding out.
 
-**A week before he goes, the manager is told.** The warning fires on the seventh
-day before the turning of the year, naming every boy who will walk.
+**The manager is warned before he goes.** In practice the academy carries a
+standing notice naming every boy who will walk at the next turning of the year —
+shown from the day he turns twenty, not for a week at the end. A warning on a
+page a manager may not open that week is not a warning at all.
 
 This makes his age at signing part of the bet: a 16-year-old gives you five
 seasons of academy, a 20-year-old gives you one.
@@ -106,6 +144,24 @@ Five. Bought outright from the Books with a single large payment per step, and
 the steps get steeper. Once bought it is yours forever; the round-by-round
 upkeep rises with it, so a club that overbuilds and is then relegated carries a
 stone.
+
+| level | to build | upkeep, a round |
+|-------|----------|-----------------|
+| 1 | — | 6,000 |
+| 2 | 400,000 | 14,000 |
+| 3 | 900,000 | 26,000 |
+| 4 | 1,800,000 | 44,000 |
+| 5 | 3,200,000 | 70,000 |
+
+A club is founded at level two. Note that the books **recompute from genesis**:
+buying a level does not only cost the lump, it re-charges every round already
+played at the dearer rate. Building late in a season is dearer than building
+early, and the statement shows it.
+
+**The other two prices.** A scouting trip abroad costs **45,000**, paid whether
+or not you sign him; scouting at home is free. A senior contract costs a flat
+**250,000** for any boy, whatever he has become. A club in the red does none of
+the three — the same floor that already stops it building a stand.
 
 A level does two things and no more:
 

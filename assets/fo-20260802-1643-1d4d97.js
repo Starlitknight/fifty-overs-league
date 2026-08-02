@@ -10150,7 +10150,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260802-1427-19a28b";
+  var FO_BUILD = "20260802-1643-1d4d97";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -42291,9 +42291,20 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           : n >= 1000 ? Math.round(n / 1000) + "k" : String(Math.round(n));
     return (neg ? "-$" : "$") + s;
   }
-  // the umpire's own rules, mirrored so the page can say them out loud
-  function cap(lv) { return 2 + Math.max(1, Math.min(5, lv || 2)); }
-  function stepCost(lv) { return lv * 60000; }
+  // THE UMPIRE'S OWN RULES, mirrored so the page can say them out loud before
+  // the manager spends anything. docs/ACADEMY.md is the authority and
+  // server/economy.mjs is the arithmetic; these must not drift from either.
+  var UPKEEP = [0, 6000, 14000, 26000, 44000, 70000];   // by level, a round
+  var BUILD = [0, 400000, 900000, 1800000, 3200000];    // from level n to n+1
+  var LEAVE_AT = 21;
+
+  // A WAGE IS PRINTED IN FULL. money() rounds to the nearest thousand, which is
+  // right for a transfer fee and wrong here: a boy at 1,310 a round and a boy
+  // at 1,490 are a different decision, and both read "$1k".
+  function wage(v) {
+    var n = Math.round(Number(v) || 0);
+    return "$" + String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  }
 
   function ovrOf(p) {
     try { if (typeof window.foPkOvr === "function") return window.foPkOvr(p); } catch (e) {}
@@ -42308,12 +42319,44 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (/finish|middle|anchor|bat/.test(r)) return "Batter";
     return r ? r.charAt(0).toUpperCase() + r.slice(1) : "Cricketer";
   }
-  // how far along a boy is, in words a chairman would use
-  function promiseWord(n) {
-    return n >= 78 ? "ready" : n >= 70 ? "close" : n >= 62 ? "coming" : "raw";
+  // HOW LONG YOU HAVE HIM. This is the read the whole academy turns on: a boy
+  // walks at twenty-one, so his age is not decoration - it is the number of
+  // seasons of nets you are buying, and it is why a sixteen-year-old rated
+  // lower than a twenty-year-old is very often the better signing.
+  function yearsLeft(age) { return Math.max(0, LEAVE_AT - (+age || 18)); }
+  function yearsWord(age) {
+    var n = yearsLeft(age);
+    return n <= 0 ? "leaves at the turn of the year"
+         : n === 1 ? "one season left in the academy"
+         : n + " seasons left in the academy";
   }
-  function ageWord(a) {
-    return a <= 17 ? "still at school" : a === 18 ? "first year" : a === 19 ? "second year" : "final year";
+
+  // the fifteen skills, grouped the way a coach would read them out
+  var SKILLS = [
+    ["Batting", ["vsPace", "vsSpin", "rotation", "power", "temperament"]],
+    ["Bowling", ["wicket", "economy", "discipline", "moveTurn", "variation", "stamina"]],
+    ["In the field", ["fielding", "catching", "keeping", "stumping"]]
+  ];
+  var SKILL_NM = {
+    vsPace: "against pace", vsSpin: "against spin", rotation: "strike rotation",
+    power: "power", temperament: "temperament", wicket: "wicket-taking",
+    economy: "economy", discipline: "discipline", moveTurn: "movement", variation: "variation",
+    stamina: "stamina", fielding: "ground fielding", catching: "catching",
+    keeping: "keeping", stumping: "stumping"
+  };
+  function skillGrid(p) {
+    var sk = (p && p.skills) || {}, out = "";
+    for (var g = 0; g < SKILLS.length; g++) {
+      var rows = "";
+      for (var i = 0; i < SKILLS[g][1].length; i++) {
+        var k = SKILLS[g][1][i], v = +sk[k];
+        if (!isFinite(v)) continue;
+        rows += "<div class='fo-ac-sk'><i>" + E(SKILL_NM[k] || k) + "</i>" +
+          "<s><u style='width:" + Math.max(2, Math.min(100, v)) + "%'></u></s><b>" + Math.round(v) + "</b></div>";
+      }
+      if (rows) out += "<div class='fo-ac-skg'><h5>" + E(SKILLS[g][0]) + "</h5>" + rows + "</div>";
+    }
+    return out ? "<div class='fo-ac-skills'>" + out + "</div>" : "";
   }
 
   // --------------------------------------------------------------------------
@@ -42324,25 +42367,25 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (!jwt()) {
       page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>" +
         (window.__foAuthPending
-          ? "Reaching your club&hellip; the colts will be here in a moment."
-          : "Your academy belongs to your club in the served world. Sign in to the account that holds it and the colts will be here waiting.") +
+          ? "Reaching your club&hellip; the boys will be here in a moment."
+          : "Your academy belongs to your club in the served world. Sign in to the account that holds it and the boys will be here waiting.") +
         "</p></div>");
       return;
     }
-    rpc("world_my_status").then(function (st) {
-      if (!st || st.signedIn === false) {
-        page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>Sign in first - the academy is your club's, and the world keeps it.</p></div>");
+    rpc("world_my_academy").then(function (ac) {
+      if (!ac || ac.signedIn === false) {
+        page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>Sign in first - the academy is your club&rsquo;s, and the world keeps it.</p></div>");
         return;
       }
-      if (!st.claim) {
+      if (!ac.country) {
         page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>You don&rsquo;t hold a club in the served world yet. One is claimed for you on the next load, and its academy comes with it, boys and all.</p></div>");
         return;
       }
-      render(page, st);
+      render(page, ac);
       // the Colts Cup arrives a beat later; the room does not wait for it
-      snapshot("colts/" + st.claim.country).then(function (cup) {
+      snapshot("colts/" + ac.country).then(function (cup) {
         var box = document.getElementById("fo-ac-cup");
-        if (box) box.innerHTML = cupHTML(cup, st.claim.club);
+        if (box) box.innerHTML = cupHTML(cup, ac.club);
       });
     }).catch(function (e) {
       page.innerHTML = shell("<div class='fo-ac-note'>The world could not be reached (" + E(String(e.message).slice(0, 90)) +
@@ -42361,56 +42404,146 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "</div></div>";
   }
 
-  function render(page, st) {
-    var lv = Math.max(1, Math.min(5, +st.academy || 2));
-    var colts = st.youth || [];
-    var room = cap(lv), spare = Math.max(0, room - colts.length);
-    var bank = Number(st.bank || 0);
+  // THE SCOUTING TRIP. One a rest day, a nation of your choosing, and the boy
+  // is shown in full before you decide - because the decision IS the reading.
+  function scoutHTML(ac) {
+    var pend = ac.pending;
+    if (pend && pend.recruit) return recruitHTML(pend, ac);
+
+    var nations = ac.nations || [];
+    var opts = nations.map(function (n) {
+      return "<option value='" + E(n.id) + "'" + (n.id === ac.country ? " selected" : "") + ">" +
+        E(n.name) + (Number(n.fee) ? " · " + money(n.fee) : " · home, free") + "</option>";
+    }).join("");
+
+    if (!ac.restDay) {
+      return "<div class='fo-ac-note'><b>There is cricket on today.</b> The scout travels on rest days &mdash; " +
+        (ac.restDays || []).length + " of them a season &mdash; and comes back with one boy each time.</div>";
+    }
+    if (ac.scoutedToday) {
+      return "<div class='fo-ac-note'><b>Today&rsquo;s trip is made.</b> The scout is out again on the next rest day.</div>";
+    }
+    return "<div class='fo-ac-scout'>" +
+      "<div class='fo-ac-srow'><select id='fo-ac-nat' class='fo-ac-sel'>" + opts + "</select>" +
+      "<button type='button' class='fo-ac-btn' id='fo-ac-go'>Scout a recruit</button></div>" +
+      "<div class='fo-ac-note thin'>A nation leans toward what it is known for &mdash; South Africa turns out quicks, India spinners and wristy batsmen &mdash; but every nation makes every kind of cricketer, and a gem is no likelier in one than another. You are buying a type, not a better shop.</div>" +
+      "</div>";
+  }
+
+  // THE BOY ON THE TABLE. Everything about him, and two buttons.
+  function recruitHTML(pend, ac) {
+    var p = pend.recruit, o = ovrOf(p);
+    var nat = (ac.nations || []).filter(function (n) { return n.id === pend.nation; })[0];
+    return "<div class='fo-ac-offer'>" +
+      "<div class='fo-ac-oh'><div><b>" + E(p.name) + "</b>" +
+        "<i>" + E(roleOf(p)) + " &middot; " + E(p.age) + " years old &middot; found in " + E((nat && nat.name) || pend.nation) + "</i></div>" +
+        (o == null ? "" : "<u>" + o + "</u>") + "</div>" +
+      "<div class='fo-ac-orow'>" +
+        "<span><i>Wage if signed</i><b>" + wage(p.wage) + "</b><u>a round, every round</u></span>" +
+        "<span><i>He is yours for</i><b>" + yearsLeft(p.age) + "</b><u>" + (yearsLeft(p.age) === 1 ? "season" : "seasons") + "</u></span>" +
+      "</div>" +
+      skillGrid(p) +
+      "<div class='fo-ac-note thin'>What you see is what there is. Nothing is hidden and nothing is promised: the nets work on these numbers at the ordinary rate, faster because he is young, and four seasons of them move a cricketer by about a tenth. Judge him on what he already is, against how old he is.</div>" +
+      "<div class='fo-ac-obtns'>" +
+        "<button type='button' class='fo-ac-btn' data-fo-rec='sign'>Sign him to the academy</button>" +
+        "<button type='button' class='fo-ac-btn ghost' data-fo-rec='release'>Let him go</button>" +
+      "</div></div>";
+  }
+
+  function render(page, ac) {
+    var lv = Math.max(1, Math.min(5, +ac.level || 2));
+    var boys = ac.youth || [];
+    var bank = Number(ac.bank || 0);
+    var floor = +ac.floor || 15;
     var pips = "";
     for (var i = 1; i <= 5; i++) pips += "<s class='fo-ac-pip" + (i <= lv ? " on" : "") + "'></s>";
 
     var up = lv >= 5
       ? "<div class='fo-ac-note'>Level five. There is nowhere further to go; the county sends people to look at yours now.</div>"
       : (function () {
-          var cost = stepCost(lv), can = bank >= cost;
+          var cost = Number(ac.nextCost || BUILD[lv]), can = bank >= cost && bank >= 0;
           return "<div class='fo-ac-uprow'>" +
-            "<div><b>Level " + (lv + 1) + "</b><i>Room for " + cap(lv + 1) + " boys &middot; better cricketers through the door &middot; " +
-              money((lv + 1) * UPKEEP) + " a round to run</i></div>" +
+            "<div><b>Level " + (lv + 1) + "</b><i>Better cricketers through the door, more often &middot; " +
+              money(ac.nextUpkeep || UPKEEP[lv + 1]) + " a round to run</i></div>" +
             "<button type='button' class='fo-ac-btn" + (can ? "" : " off") + "' data-fo-acup='" + (lv + 1) + "'" + (can ? "" : " disabled") + ">" +
               (can ? "Build it &middot; " + money(cost) : "Needs " + money(cost)) + "</button></div>";
         })();
 
-    var list = colts.length
-      ? "<div class='fo-ac-grid'>" + colts.map(coltCard).join("") + "</div>"
-      : "<div class='fo-ac-note'>Nobody on the books this minute.</div>";
+    // WHO IS ABOUT TO WALK. The warning the design promised, a week out - except
+    // it is shown every day he is twenty, because a page a manager may not open
+    // is not a warning at all.
+    var leaving = boys.filter(function (y) { return yearsLeft(y.age) <= 1; });
+    var warn = leaving.length
+      ? "<div class='fo-ac-warn'><b>" + leaving.length + (leaving.length === 1 ? " boy leaves" : " boys leave") +
+        " at the turning of the year.</b> " + E(leaving.map(function (y) { return y.name; }).join(", ")) +
+        " &mdash; twenty-one, and gone from the world unless you hand " +
+        (leaving.length === 1 ? "him a senior contract" : "them senior contracts") + " first.</div>"
+      : "";
+
+    var shortBy = Math.max(0, floor - boys.length);
+    var bar = shortBy
+      ? "<div class='fo-ac-warn cup'><b>You cannot field a Colts Cup side.</b> The competition asks for " + floor +
+        " men under twenty-one and you have " + boys.length + ". " + shortBy +
+        (shortBy === 1 ? " more boy" : " more boys") + " and the tie is yours to play; short of it, it is forfeited in public.</div>"
+      : "";
+
+    var list = boys.length
+      ? "<div class='fo-ac-grid'>" + boys.slice().sort(function (a, b) {
+          return (a.age || 0) - (b.age || 0) || ((ovrOf(b) || 0) - (ovrOf(a) || 0));
+        }).map(function (p) { return coltCard(p, ac); }).join("") + "</div>"
+      : "<div class='fo-ac-note'>Nobody on the books. Scout a recruit on the next rest day.</div>";
 
     page.innerHTML = shell(
-      "<div class='fo-ac-card'><h3>" + E(st.claim.club || "Your club") + "<span>" + E(st.claim.country || "") + "</span></h3>" +
+      warn + bar +
+      "<div class='fo-ac-card'><h3>The scout<span>" + ((ac.restDays || []).length) + " rest days a season</span></h3>" +
+        scoutHTML(ac) + "</div>" +
+      "<div class='fo-ac-card'><h3>" + E(ac.club || "Your club") + "<span>Level " + lv + "</span></h3>" +
         "<div class='fo-ac-lvl'><div class='fo-ac-pips'>" + pips + "</div>" +
-          "<div class='fo-ac-lvt'><b>Level " + lv + "</b><i>" + colts.length + " of " + room + " beds taken" +
-          (spare ? " &middot; " + spare + " free" : " &middot; full") + "</i></div></div>" +
+          "<div class='fo-ac-lvt'><b>Level " + lv + "</b><i>" + boys.length + " on the books &middot; " +
+          (shortBy ? shortBy + " short of a Colts Cup side" : "a Colts Cup side and " + (boys.length - floor) + " to spare") +
+          "</i></div></div>" +
         "<div class='fo-ac-money'>" +
-          "<div><i>Upkeep</i><b>" + money(lv * UPKEEP) + "</b><u>a round</u></div>" +
+          "<div><i>Upkeep</i><b>" + money(ac.upkeep || UPKEEP[lv]) + "</b><u>a round</u></div>" +
+          "<div><i>Their wages</i><b>" + wage(boys.reduce(function (t, y) { return t + (+y.wage || 0); }, 0)) + "</b><u>a round</u></div>" +
           "<div><i>Treasury</i><b>" + money(bank) + "</b><u>at the bank</u></div>" +
         "</div>" + up +
       "</div>" +
-      "<div class='fo-ac-card'><h3>On the books<span>" + colts.length + "</span></h3>" + list + "</div>" +
+      "<div class='fo-ac-card'><h3>On the books<span>" + boys.length + " of " + floor + "</span></h3>" + list + "</div>" +
       "<div class='fo-ac-card' id='fo-ac-cup'><h3>The Colts Cup</h3>" +
         "<div class='fo-ac-note'>Reading the boys&rsquo; table&hellip;</div></div>" +
       "");
 
+    var go = document.getElementById("fo-ac-go");
+    if (go) go.addEventListener("click", function () {
+      var sel2 = document.getElementById("fo-ac-nat");
+      go.disabled = true; go.textContent = "Travelling…";
+      rpc("world_scout", { p_nation: sel2 ? sel2.value : ac.country })
+        .then(function () { window.foRenderAcademyPage(); })
+        .catch(function (e) { go.disabled = false; go.textContent = "Scout a recruit"; alert(String(e.message).slice(0, 200)); });
+    });
+    page.querySelectorAll("[data-fo-rec]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var act = b.getAttribute("data-fo-rec");
+        if (act === "release" && !confirm("Let him go? He walks away and you will not see him again.")) return;
+        b.disabled = true; b.textContent = act === "sign" ? "Signing…" : "Letting him go…";
+        rpc("world_recruit", { p_action: act })
+          .then(function () { window.foRenderAcademyPage(); })
+          .catch(function (e) { b.disabled = false; window.foRenderAcademyPage(); alert(String(e.message).slice(0, 200)); });
+      });
+    });
     var upBtn = page.querySelector("[data-fo-acup]");
     if (upBtn) upBtn.addEventListener("click", function () {
       if (upBtn.disabled) return;
       upBtn.disabled = true; upBtn.textContent = "Building…";
       rpc("world_set_academy", { p_level: +upBtn.getAttribute("data-fo-acup") })
         .then(function () { window.foRenderAcademyPage(); })
-        .catch(function (e) { upBtn.disabled = false; upBtn.textContent = "Try again"; alert(String(e.message).slice(0, 160)); });
+        .catch(function (e) { upBtn.disabled = false; upBtn.textContent = "Try again"; alert(String(e.message).slice(0, 200)); });
     });
     page.querySelectorAll("[data-fo-colt]").forEach(function (b) {
       b.addEventListener("click", function () {
         var nm = b.getAttribute("data-fo-colt"), act = b.getAttribute("data-fo-act");
         if (act === "release" && !confirm("Let " + nm + " go? He leaves the club for good.")) return;
+        if (act === "promote" && !confirm("Hand " + nm + " a senior contract for " + money(ac.promoteFee) + "?")) return;
         b.disabled = true; b.textContent = act === "promote" ? "Signing…" : "Releasing…";
         rpc("world_colt", { p_name: nm, p_action: act })
           .then(function () {
@@ -42419,17 +42552,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             try { if (window.__foWorldRefreshPlan) window.__foWorldRefreshPlan(); } catch (e2) {}
             window.foRenderAcademyPage();
           })
-          .catch(function (e) { b.disabled = false; b.textContent = act === "promote" ? "Bring up" : "Release"; alert(String(e.message).slice(0, 160)); });
+          .catch(function (e) { b.disabled = false; b.textContent = act === "promote" ? "Senior shirt" : "Release"; alert(String(e.message).slice(0, 200)); });
       });
     });
   }
 
-  // THE COLTS CUP: nine fixtures, one on every second league round, played by
-  // the umpire from a side nobody picks. Nothing to submit, nothing to miss.
+  // THE COLTS CUP: the boys' own competition, played in its own week.
   function cupHTML(cup, myClub) {
     var head = "<h3>The Colts Cup<span>" + (cup && cup.roundsPlayed ? cup.roundsPlayed + " of " + cup.rounds : "not started") + "</span></h3>";
     if (!cup || !cup.results || !cup.results.length) {
-      return head + "<div class='fo-ac-note'>The boys' first fixture comes on the second round of the league season. Nine matches, one every other round, and the whole country's academies in it.</div>";
+      return head + "<div class='fo-ac-note'>Week four of the season belongs to the academies: the league stands down and every club in the country goes into one hat. You must be able to name fifteen men under twenty-one, or the tie is forfeited.</div>";
     }
     var rows = cup.table.map(function (t, i) {
       return "<tr" + (t.name === myClub ? " class='me'" : "") + "><td>" + (i + 1) + "</td><td class='nm'>" + E(t.name) + "</td>" +
@@ -42450,24 +42582,23 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return head +
       "<div class='fo-ac-tw'><table class='fo-ac-tbl'><thead><tr><th></th><th class='nm'>Club</th><th>P</th><th>W</th><th>L</th><th class='pt'>Pts</th><th class='nrr'>NRR</th></tr></thead><tbody>" +
         rows + "</tbody></table></div>" +
-      (card ? "<div class='fo-ac-sub'>Your boys, lately</div>" + card : "") + lead +
-      "<div class='fo-ac-note'>The side picks itself &mdash; your colts and the youngest men on the staff &mdash; so there is no teamsheet to file and nothing to lose by being asleep.</div>";
+      (card ? "<div class='fo-ac-sub'>Your boys, lately</div>" + card : "") + lead;
   }
 
-  function coltCard(p) {
-    var pr = Math.max(0, Math.min(100, Math.round(+p.promise || 0)));
-    var o = ovrOf(p);
-    return "<div class='fo-ac-colt'>" +
+  function coltCard(p, ac) {
+    var o = ovrOf(p), left = yearsLeft(p.age);
+    return "<div class='fo-ac-colt" + (left <= 1 ? " going" : "") + "'>" +
       "<div class='fo-ac-ch'><b>" + E(p.name) + "</b>" + (o == null ? "" : "<u>" + o + "</u>") + "</div>" +
-      "<div class='fo-ac-cm'>" + E(roleOf(p)) + " &middot; " + E(p.age || 18) + ", " + E(ageWord(+p.age || 18)) + "</div>" +
-      "<div class='fo-ac-bar'><s style='width:" + pr + "%'></s></div>" +
-      "<div class='fo-ac-cm'><em>" + E(promiseWord(pr)) + "</em> &middot; " + pr + "% of the cricketer he'll be</div>" +
+      "<div class='fo-ac-cm'>" + E(roleOf(p)) + " &middot; " + E(p.age || 18) +
+        (p.from ? " &middot; " + E(p.from) : "") + "</div>" +
+      "<div class='fo-ac-cm" + (left <= 1 ? " going" : "") + "'>" + E(yearsWord(p.age)) +
+        " &middot; " + wage(p.wage) + " a round</div>" +
       // what he has actually done in the Colts Cup, if he has done anything
       (p.colts && p.colts.m ? "<div class='fo-ac-cm cup'>" + p.colts.m + (p.colts.m === 1 ? " cap" : " caps") +
         " &middot; " + p.colts.runs + " runs" + (p.colts.hs ? " (" + p.colts.hs + " best)" : "") +
         (p.colts.wkts ? " &middot; " + p.colts.wkts + " wkts" : "") + "</div>" : "") +
       "<div class='fo-ac-cbtns'>" +
-        "<button type='button' class='fo-ac-mini' data-fo-colt='" + E(p.name) + "' data-fo-act='promote'>Bring up</button>" +
+        "<button type='button' class='fo-ac-mini' data-fo-colt='" + E(p.name) + "' data-fo-act='promote'>Senior shirt</button>" +
         "<button type='button' class='fo-ac-mini ghost' data-fo-colt='" + E(p.name) + "' data-fo-act='release'>Release</button>" +
       "</div></div>";
   }
@@ -42518,6 +42649,37 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-ac-bar{height:6px;border-radius:999px;background:rgba(20,28,40,.09);margin:8px 0 5px;overflow:hidden}",
       "html body #page .fo-ac-bar s{display:block;height:100%;text-decoration:none;background:linear-gradient(90deg,#E8B96A,#C8542F)}",
       "html body #page .fo-ac-cbtns{display:flex;gap:6px;margin-top:9px}",
+      // THE SCOUT, THE OFFER AND THE WARNINGS
+      "html body #page .fo-ac-srow{display:flex;gap:8px;align-items:stretch;flex-wrap:wrap}",
+      "html body #page .fo-ac-sel{flex:1 1 190px;min-width:0;font:500 13px/1.2 Inter,sans-serif;color:#141C28;background:#FFFEFC;border:1px solid rgba(20,28,40,.2);border-radius:10px;padding:10px 11px;cursor:pointer}",
+      "html body #page .fo-ac-note.thin{font-size:11.5px;line-height:1.55;color:rgba(20,28,40,.55);margin-top:9px}",
+      "html body #page .fo-ac-warn{background:#FFF6DA;border:1px solid rgba(200,84,47,.28);border-left:3px solid #C8542F;border-radius:11px;padding:11px 13px;margin:0 0 12px;font:500 12.5px/1.55 Inter,sans-serif;color:#5A3410}",
+      "html body #page .fo-ac-warn b{display:block;font:700 13px/1.4 Inter,sans-serif;color:#141C28;margin-bottom:2px}",
+      "html body #page .fo-ac-warn.cup{background:#F3F6FA;border-left-color:#2F5FC8;color:#20304A}",
+      "html body #page .fo-ac-offer{background:#FFFEFC;border:1px solid rgba(20,28,40,.14);border-radius:13px;padding:13px 14px}",
+      "html body #page .fo-ac-oh{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}",
+      "html body #page .fo-ac-oh b{display:block;font:600 19px/1.15 Fraunces,Georgia,serif;color:#141C28}",
+      "html body #page .fo-ac-oh i{display:block;margin-top:3px;font:500 11.5px/1.4 Inter,sans-serif;font-style:normal;color:rgba(20,28,40,.55)}",
+      "html body #page .fo-ac-oh u{flex:0 0 auto;text-decoration:none;font:700 20px/1 Oswald,sans-serif;color:#C8542F;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-ac-orow{display:flex;gap:10px;margin:12px 0 4px}",
+      "html body #page .fo-ac-orow span{flex:1;background:rgba(250,246,238,.9);border-radius:10px;padding:9px 10px}",
+      "html body #page .fo-ac-orow i{display:block;font:700 8.5px/1 Oswald,sans-serif;font-style:normal;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.42)}",
+      "html body #page .fo-ac-orow b{display:block;margin-top:4px;font:700 17px/1 Oswald,sans-serif;color:#141C28;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-ac-orow u{display:block;margin-top:2px;text-decoration:none;font:500 10.5px/1.3 Inter,sans-serif;color:rgba(20,28,40,.5)}",
+      "html body #page .fo-ac-skills{display:grid;grid-template-columns:1fr 1fr;gap:10px 16px;margin:12px 0 2px}",
+      "html body #page .fo-ac-skg h5{margin:0 0 5px;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.42)}",
+      "html body #page .fo-ac-sk{display:flex;align-items:center;gap:7px;margin:0 0 3px}",
+      "html body #page .fo-ac-sk i{flex:0 0 86px;font:500 10.5px/1.3 Inter,sans-serif;font-style:normal;color:rgba(20,28,40,.6)}",
+      "html body #page .fo-ac-sk s{flex:1;height:5px;border-radius:999px;background:rgba(20,28,40,.09);text-decoration:none;overflow:hidden}",
+      "html body #page .fo-ac-sk s u{display:block;height:100%;text-decoration:none;background:linear-gradient(90deg,#E8B96A,#C8542F)}",
+      "html body #page .fo-ac-sk b{flex:0 0 20px;text-align:right;font:600 10.5px/1 Inter,sans-serif;color:#141C28;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-ac-obtns{display:flex;gap:8px;margin-top:13px;flex-wrap:wrap}",
+      "html body #page .fo-ac-obtns .fo-ac-btn{flex:1 1 150px}",
+      "html body #page .fo-ac-btn.ghost{background:transparent !important;border:1px solid rgba(20,28,40,.22) !important;color:rgba(20,28,40,.62) !important}",
+      "html body #page .fo-ac-colt.going{border-color:rgba(200,84,47,.35);background:#FFF9EC}",
+      "html body #page .fo-ac-cm.going{color:#C8542F;font-weight:600}",
+      "@media(max-width:480px){html body #page .fo-ac-skills{grid-template-columns:1fr}html body #page .fo-ac-sk i{flex-basis:78px}" +
+        "html body #page .fo-ac-cbtns{flex-direction:column}html body #page .fo-ac-mini{padding:8px 4px !important}}",
       "html body #page .fo-ac-mini{flex:1;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;color:#FFFEFC !important;background:#141C28 !important;border:0 !important;border-radius:999px !important;padding:9px 4px !important;cursor:pointer}",
       "html body #page .fo-ac-mini.ghost{background:transparent !important;border:1px solid rgba(20,28,40,.22) !important;color:rgba(20,28,40,.6) !important}",
       "html body #page .fo-ac-cm.cup{color:#8A6A1F;font-weight:600;margin-top:5px}",

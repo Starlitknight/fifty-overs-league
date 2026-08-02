@@ -1,31 +1,41 @@
-// youth.mjs — THE ACADEMY
+// youth.mjs — THE YOUTH ACADEMY
 //
-// Every club runs one. It holds a few colts, it costs money to keep and more
-// to improve, and once a season it produces a cricketer. The rules are the
-// umpire's, not the manager's, so a club nobody logs into still brings boys
-// through:
+// docs/ACADEMY.md is the authority. In short: a manager scouts one boy per
+// rest day from a nation of his choosing, sees everything about him, and
+// either signs him onto the wage bill or lets him go. He trains in the
+// ordinary nets on the ordinary curve. He leaves at twenty-one whether or not
+// anyone gave him a senior shirt.
 //
-//   - the academy holds up to 2 + level colts (four at the default level two)
-//   - a new boy arrives whenever there is room, one per intake window
-//   - at the rollover every colt ages a year, and a colt who reaches 21 is
-//     handed a senior shirt whether anyone was watching or not
-//   - what a boy IS comes from the shipped generator seeded on
-//     'youth|country|slot|season|index' - so re-running any tick produces the
-//     same young cricketers, and nothing here can drift
+// THERE IS NO POTENTIAL ATTRIBUTE. Nothing here stores what a boy will become,
+// because nothing knows: what he becomes is what the shipped training law does
+// to the skills he already has, and that law is not ours to touch. A tier only
+// decides WHERE HE STARTS. Everything the manager needs in order to judge him
+// is therefore on the card in front of him - his skills, his rating, his age -
+// which is the whole of the game the academy plays.
 //
-// A better academy makes better boys: the level scales how much of a grown
-// cricketer's skill a seventeen-year-old already has, and how close to ready
-// he arrives.
+// The consequence is worth stating plainly, because it is the design and not
+// an accident: the nets move a boy about a tenth of his rating over four
+// seasons, so they CONFIRM a signing rather than transform it. A boy who
+// arrives forty per cent short of your first XI will still be short of it when
+// he turns twenty-one. That is why a dud is readable at the moment you sign
+// him, and why age is half the read - a sixteen-year-old rates lower than a
+// twenty-year-old of the same tier and is the better prospect, because he has
+// five seasons of academy in front of him rather than one.
 import { countryConfigs } from './init-world.mjs';
 
-export const CAP = lv => 2 + Math.max(1, Math.min(5, lv || 2));
-const PROMOTE_AT = 21;
+// a boy is sixteen to twenty when he is found, and he is gone at twenty-one
+export const RECRUIT_MIN_AGE = 16;
+export const RECRUIT_AGES = 5;                // 16, 17, 18, 19, 20
+export const LEAVE_AT = 21;
+// the Colts Cup bar, and so also what the world founds an academy with and
+// what the umpire keeps an UNMANAGED club topped up to
+export const ACADEMY_FLOOR = 15;
 // a senior staff is twenty men, the same number world_colt refuses to exceed
 export const SQUAD_CAP = 20;
 // and a cricketer does not go on forever
 export const RETIRE_AT = 38;
-// what a level costs a round is the books' business, not the academy's
-export { ACADEMY_UPKEEP } from './economy.mjs';
+// what a level costs is the books' business, not the academy's
+export { academyUpkeep, ACADEMY_BUILD, SCOUT_FEE_ABROAD, PROMOTE_FEE } from './economy.mjs';
 
 // the same 32-bit hash the client and the world generator use
 function h32(s) {
@@ -34,98 +44,184 @@ function h32(s) {
   for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
   return h >>> 0;
 }
+const rnd01 = s => h32(s) / 4294967296;
 
-// A COLT IS A GROWN CRICKETER, NOT YET GROWN. The generator makes the man he
-// will be; the academy decides how much of that man has arrived. Everything is
-// a pure function of the seed, so the same boy appears on every re-run.
-export function makeColt(host, country, arch, seed, level) {
-  const src = host.genSquad(seed, country, arch || 'balanced', 'general') || [];
-  if (!src.length) return null;
-  const h = h32(seed);
-  const p = JSON.parse(JSON.stringify(src[h % src.length]));
-  const age = 17 + (h32(seed + '|age') % 4);            // 17-20
-  // raw: a colt has between half and four-fifths of the man in him, and a
-  // stronger academy turns them out closer to finished
-  const share = 0.50 + 0.045 * Math.max(1, Math.min(5, level || 2)) + 0.035 * (age - 17);
-  const scale = v => (typeof v === 'number' ? Math.max(1, Math.round(v * share)) : v);
-  p.age = age;
-  p.colt = true;
-  p.promise = Math.round(share * 100);                   // how far along he is
-  if (p.skills) { const s = {}; for (const k in p.skills) s[k] = scale(p.skills[k]); p.skills = s; }
-  if (typeof p.exp === 'number') p.exp = scale(p.exp);    // a boy has seen nothing yet
-  // the fifteen skills are the man; everything else on the card - his batting,
-  // his threat, his rating, his price - is the ENGINE'S function of them, so
-  // let the engine work it out rather than scaling the answers by hand
-  // - the wage included: a boy is cheap because a boy is small, not because
-  // anyone discounted him, and the club pays the academy's upkeep for him
-  // until the day he is handed a senior shirt
-  const colt = host.derive([p])[0] || p;
-  // the cricketer he was made IS the boy, not the man he was cut down from -
-  // so when he graduates the nets build on the colt, and nothing he does in
-  // the academy is ever mistaken for training he has not done
-  colt.baseSkills = JSON.parse(JSON.stringify(colt.skills || {}));
-  colt.baseExp = colt.exp;
-  delete colt.career; delete colt.formIx; delete colt.formWord;
-  delete colt.fatN; delete colt.fatWord; delete colt.trainProgress;
-  return colt;
+// ---------------------------------------------------------------------------
+// THE LOTTERY
+//
+// Four tiers. The headline rates - a jewel under one in a hundred, a good boy
+// under one in twenty, average about forty-five per cent and the rest never
+// worth a shirt - are the rates a LEVEL THREE academy turns out. A level one
+// academy is meaner and a level five kinder, which is the whole of what a
+// level buys you besides the bill.
+// ---------------------------------------------------------------------------
+export const TIERS = ['jewel', 'good', 'average', 'poor'];
+const TIER_ODDS = {
+  1: [0.002, 0.020, 0.380],
+  2: [0.005, 0.035, 0.430],
+  3: [0.009, 0.050, 0.470],
+  4: [0.015, 0.070, 0.510],
+  5: [0.025, 0.100, 0.550]
+};
+export function tierOdds(level) { return TIER_ODDS[Math.max(1, Math.min(5, +level || 2))]; }
+export function tierOf(level, seed) {
+  const [jewel, good, average] = tierOdds(level);
+  const r = rnd01(seed + '|tier');
+  if (r < jewel) return 'jewel';
+  if (r < jewel + good) return 'good';
+  if (r < jewel + good + average) return 'average';
+  return 'poor';
 }
 
-// the same nation config the world was founded from, so an England colt is an
-// England cricketer and a Kandahar colt is an Afghan one
+// WHAT A TIER IS WORTH, in the only currency there is: how much of a grown
+// cricketer the boy already is. `pools` is how many generated squads he is
+// picked out of - three squads to find a jewel, one to find anybody - `rank`
+// is where in that field he stands, and `share` is how much of that man has
+// arrived. Measured against a real generated squad, this puts a jewel at
+// roughly the median senior and a poor boy below the worst of them, which is
+// exactly the read the manager is being asked to make.
+const TIER_CUT = {
+  jewel:   { pools: 3, rank: 'best',  share: 0.97 },
+  good:    { pools: 1, rank: 'best',  share: 0.86 },
+  average: { pools: 1, rank: 'mid',   share: 0.88 },
+  poor:    { pools: 1, rank: 'worst', share: 0.85 }
+};
+// and a year of growing is worth five per cent of the man, so a sixteen-year-
+// old of any tier reads lower than a twenty-year-old of the same one
+const ageShare = age => 0.80 + 0.05 * (age - RECRUIT_MIN_AGE);
+
+// A RECRUIT. A pure function of (nation, archetype, tier, seed), so the same
+// boy appears on every re-run and the umpire and the manager never disagree
+// about who walked through the door.
+export function makeRecruit(host, nat, arch, tier, seed) {
+  const cut = TIER_CUT[tier] || TIER_CUT.poor;
+  let men = [];
+  for (let i = 0; i < cut.pools; i++) {
+    const got = host.genSquad(seed + '|pool' + i, nat, arch || 'balanced', 'general');
+    if (got && got.length) men = men.concat(got);
+  }
+  if (!men.length) return null;
+  men.sort((a, b) => (b.rating || 0) - (a.rating || 0) || (a.name < b.name ? -1 : 1));
+  const man = cut.rank === 'best' ? men[0]
+            : cut.rank === 'mid' ? men[men.length >> 1]
+            : men[men.length - 1];
+  const age = RECRUIT_MIN_AGE + h32(seed + '|age') % RECRUIT_AGES;
+  const share = cut.share * ageShare(age);
+
+  const p = JSON.parse(JSON.stringify(man));
+  const sk = {};
+  for (const k in (p.skills || {})) sk[k] = Math.max(1, Math.round(p.skills[k] * share));
+  p.skills = sk;
+  p.age = age;
+  p.colt = true;
+  p.nat = nat;
+  p.from = nat;                                   // where he was found, for his card
+  if (typeof p.exp === 'number') p.exp = Math.max(1, Math.round(p.exp * share));
+  // the fifteen skills are the man; his batting, his threat, his rating and
+  // his WAGE are the engine's function of them, so let the engine work them
+  // out rather than scaling the answers by hand. A boy is cheap because a boy
+  // is small, not because anybody discounted him.
+  const boy = host.derive([p])[0] || p;
+  // the cricketer he was made IS the boy, not the man he was cut down from -
+  // so the nets build on the boy, and nothing he does in the academy is ever
+  // mistaken for training he has not done
+  boy.baseSkills = JSON.parse(JSON.stringify(boy.skills || {}));
+  boy.baseExp = boy.exp;
+  delete boy.career; delete boy.formIx; delete boy.formWord;
+  delete boy.fatN; delete boy.fatWord; delete boy.trainProgress;
+  return boy;
+}
+
+// the nation config the world was founded from: an England boy is an England
+// cricketer, and a nation's ARCHETYPE is its flavour - rsa turns out express
+// bowlers, sub and slk turn out wizards. Every nation still produces every
+// kind of cricketer; it only leans.
+export function nationsOf(host) {
+  return countryConfigs(host).map(r => ({ id: r.id, name: r.name, nat: r.nat, arch: r.arch }));
+}
 function archOf(host, country) {
   const r = countryConfigs(host).filter(x => x.id === country)[0];
   return r ? { nat: r.nat, arch: r.arch } : { nat: 'England', arch: 'balanced' };
 }
 
-// Fill every academy to its capacity, one boy per call per club: a season's
-// intake arrives over the season, not all on day one. Idempotent by name.
-export async function ensureYouth(pool, host, country, { seasonNo, round }) {
+// THE SEED A SCOUTING TRIP RUNS ON. One boy per club per world day per nation,
+// and the academy level is in it - so a club that builds a better academy is
+// not handed the same boys it would have been handed anyway.
+export function scoutSeed(country, slot, worldDay, nation, level) {
+  return 'scout|' + country + '|' + slot + '|d' + worldDay + '|' + nation + '|L' + level;
+}
+export function scoutRecruit(host, { country, slot, worldDay, nation, level }) {
+  const cfg = archOf(host, nation);
+  const seed = scoutSeed(country, slot, worldDay, nation, level);
+  const tier = tierOf(level, seed);
+  const boy = makeRecruit(host, cfg.nat, cfg.arch, tier, seed);
+  return boy ? { tier, nation, recruit: boy } : null;
+}
+
+// ---------------------------------------------------------------------------
+// FOUNDING AND KEEPING THE WORLD'S ACADEMIES STOCKED
+//
+// Every club in the world is founded with fifteen boys, so the first Colts Cup
+// is a real competition rather than sixteen walkovers. After that the umpire
+// keeps UNMANAGED clubs topped up to fifteen - they are the world's furniture
+// and have to keep turning up - and never touches a club with a human in
+// charge. A manager scouts, signs, pays, and forfeits if he lets the list slip.
+// ---------------------------------------------------------------------------
+export function foundAcademy(host, country, slot, level, tag) {
+  const cfg = archOf(host, country);
+  const out = [];
+  // KEEP GOING UNTIL THERE ARE FIFTEEN. The name banks are finite, so two of
+  // the first fifteen seeds sometimes turn out the same lad - and a club that
+  // was founded with fourteen boys would forfeit its first Colts Cup tie
+  // through no decision of anybody's. Walk on past the collision instead.
+  for (let i = 0; out.length < ACADEMY_FLOOR && i < ACADEMY_FLOOR * 6; i++) {
+    const seed = 'academy|' + country + '|' + slot + '|' + (tag || 'found') + '|' + i;
+    const boy = makeRecruit(host, cfg.nat, cfg.arch, tierOf(level, seed), seed);
+    if (boy && !out.some(y => y.name === boy.name)) out.push(boy);
+  }
+  return out;
+}
+
+// Fill every UNMANAGED academy back to the floor. Idempotent by name, and
+// keyed on the world day so a re-run of the same tick makes the same boys.
+export async function stockAcademies(pool, host, country, { worldDay }) {
   const clubs = (await pool.query(
-    'SELECT slot, academy, youth FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
+    `SELECT c.slot, c.academy, c.youth, (cl.user_id IS NOT NULL) AS managed
+       FROM clubs c LEFT JOIN claims cl ON cl.country_id = c.country_id AND cl.slot = c.slot
+      WHERE c.country_id = $1 ORDER BY c.slot`, [country])).rows;
   const cfg = archOf(host, country);
   let added = 0;
   for (const c of clubs) {
+    if (c.managed) continue;                      // his academy is his own affair
     const youth = Array.isArray(c.youth) ? c.youth : [];
-    if (youth.length >= CAP(c.academy)) continue;
-    const seed = 'youth|' + country + '|' + c.slot + '|s' + seasonNo + '|r' + round;
-    const colt = makeColt(host, cfg.nat, cfg.arch, seed, c.academy);
-    if (!colt) continue;
-    // a name already on the books (a re-run) is never doubled
-    if (youth.some(y => y && y.name === colt.name)) continue;
-    youth.push(colt);
+    if (youth.length >= ACADEMY_FLOOR) continue;
+    let n = 0;
+    while (youth.length < ACADEMY_FLOOR && n < ACADEMY_FLOOR * 3) {
+      const seed = 'stock|' + country + '|' + c.slot + '|d' + worldDay + '|' + (n++);
+      const boy = makeRecruit(host, cfg.nat, cfg.arch, tierOf(c.academy, seed), seed);
+      if (boy && !youth.some(y => y && y.name === boy.name)) { youth.push(boy); added++; }
+    }
     await pool.query('UPDATE clubs SET youth=$3::jsonb WHERE country_id=$1 AND slot=$2',
       [country, c.slot, JSON.stringify(youth)]);
-    added++;
   }
   return added;
 }
 
-// A SENIOR SHIRT, and a note of the round he first wore it. A man only ever
-// works the rounds in the nets he was actually at the club for, so a boy who
-// comes up in season three is not handed three seasons of other men's training.
-function graduate(colt, seasonNo, round) {
-  const q = Object.assign({}, colt, { joined: { s: seasonNo, r: round } });
-  delete q.colt; delete q.promise;
-  return q;
-}
-
-// THE ROLLOVER. A year on EVERYBODY - the colts and the professionals both -
-// and then the three things a year does to a staff:
+// ---------------------------------------------------------------------------
+// THE ROLLOVER. A year on everybody, and then the two things a year does:
 //
-//   1. a man who has reached thirty-eight hangs them up. Without this nobody
-//      ever leaves and a squad only ever grows.
-//   2. a colt who has reached twenty-one is handed a senior shirt, with
-//      nobody watching, exactly as before.
-//   3. but a staff is twenty men. If there is no room, the boy comes up only
-//      if he is better than the weakest professional on the books - who makes
-//      way for him. If he is not, the club lets him go. That is the same
-//      ceiling world_colt has always enforced on a manager doing it by hand;
-//      it was the umpire doing it automatically that had no ceiling at all,
-//      and squads grew without bound.
+//   1. a man who has reached thirty-eight hangs them up.
+//   2. a boy who has reached twenty-one LEAVES. Not promoted, not listed, not
+//      placed elsewhere - gone, and the wages his club paid him were the price
+//      of finding out. A week before the turning of the year the manager is
+//      told which boys are about to walk, which is the whole of the warning he
+//      gets and the whole of the warning he needs.
+//
+// Nothing is promoted automatically any more. A senior shirt costs a flat fee
+// and is a decision, so the umpire has no business handing them out.
 //
 // Keyed by season, so a re-run never ages anybody twice.
-const byStrength = (a, b) => (b.rating || 0) - (a.rating || 0) || (a.name < b.name ? -1 : 1);
-
+// ---------------------------------------------------------------------------
 export async function ageYouth(pool, country, seasonNo) {
   const key = country + ':youth:s' + seasonNo;
   const claim = await pool.query(
@@ -136,36 +232,79 @@ export async function ageYouth(pool, country, seasonNo) {
   }
   const clubs = (await pool.query(
     'SELECT slot, squad, youth FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
-  let promoted = 0, retired = 0, released = 0, madeWay = 0;
+  let retired = 0, released = 0;
   for (const c of clubs) {
     // 1. a year on the professionals, and the oldest hang them up
     const aged = (c.squad || []).map(p => Object.assign({}, p, { age: (p.age || 27) + 1 }));
-    let squad = aged.filter(p => (p.age || 0) < RETIRE_AT);
+    const squad = aged.filter(p => (p.age || 0) < RETIRE_AT);
     retired += aged.length - squad.length;
 
-    // 2. a year on the boys, and the twenty-one-year-olds come of age
-    const youth = (Array.isArray(c.youth) ? c.youth : []).map(y => Object.assign({}, y, { age: (y.age || 18) + 1 }));
-    const up = youth.filter(y => y.age >= PROMOTE_AT).slice().sort(byStrength);
-    const stay = youth.filter(y => y.age < PROMOTE_AT);
+    // 2. a year on the boys, and the twenty-one-year-olds walk out of the world
+    const youth = (Array.isArray(c.youth) ? c.youth : [])
+      .map(y => Object.assign({}, y, { age: (y.age || 18) + 1 }));
+    const stay = youth.filter(y => y.age < LEAVE_AT);
+    released += youth.length - stay.length;
 
-    // 3. and room has to be found for them, or made, or not
-    for (const boy of up) {
-      if (squad.length < SQUAD_CAP) { squad.push(graduate(boy, seasonNo + 1, 1)); promoted++; continue; }
-      const order = squad.slice().sort(byStrength);
-      const weakest = order[order.length - 1];
-      if (weakest && (boy.rating || 0) > (weakest.rating || 0)) {
-        squad = squad.filter(p => p.name !== weakest.name);
-        squad.push(graduate(boy, seasonNo + 1, 1));
-        promoted++; madeWay++;
-      } else {
-        released++;                       // no room, and not yet worth making any
-      }
-    }
     await pool.query('UPDATE clubs SET youth=$3::jsonb, squad=$4::jsonb WHERE country_id=$1 AND slot=$2',
       [country, c.slot, JSON.stringify(stay), JSON.stringify(squad)]);
   }
   await pool.query(`UPDATE ticks SET status='done', finished_at=now() WHERE key=$1`, [key]);
-  return { skipped: false, promoted, retired, released, madeWay };
+  return { skipped: false, promoted: 0, retired, released, madeWay: 0 };
+}
+
+// who walks at the next turning of the year - the list the warning is built
+// from. A pure read of the boys on the books.
+export function leavingAt(youth) {
+  return (Array.isArray(youth) ? youth : []).filter(y => y && (y.age || 0) + 1 >= LEAVE_AT);
+}
+
+// ---------------------------------------------------------------------------
+// LAYING OUT THE CANDIDATES
+//
+// The scout button has to answer instantly, and a recruit can only be made by
+// the cricket engine, which the database cannot run. So the umpire lays out
+// every boy a manager could possibly be shown - one per nation, for each rest
+// day within reach - and world_scout only reveals the one he paid to see.
+//
+// Only CLAIMED clubs get candidates: nobody else presses the button, and
+// laying them for two hundred and fifty bot clubs would be work for nothing.
+// Everything is a pure function of (club, day, nation, level), so a re-run of
+// any tick lays out exactly the same boys.
+// ---------------------------------------------------------------------------
+export async function layCandidates(pool, host, country, { worldDay, restDays, startDay, ahead = 2 }) {
+  const clubs = (await pool.query(
+    `SELECT c.slot, c.academy FROM clubs c
+       JOIN claims cl ON cl.country_id = c.country_id AND cl.slot = c.slot
+      WHERE c.country_id = $1 ORDER BY c.slot`, [country])).rows;
+  if (!clubs.length) return 0;
+  const nations = nationsOf(host);
+  // the rest days from here on, today included, and only the next few
+  const days = (restDays || [])
+    .map(di => startDay + di)
+    .filter(d => d >= worldDay)
+    .slice(0, ahead);
+  if (!days.length) return 0;
+  let laid = 0;
+  for (const c of clubs) {
+    for (const day of days) {
+      for (const n of nations) {
+        const seed = scoutSeed(country, c.slot, day, n.id, c.academy);
+        const tier = tierOf(c.academy, seed);
+        const boy = makeRecruit(host, n.nat, n.arch, tier, seed);
+        if (!boy) continue;
+        const r = await pool.query(
+          `INSERT INTO academy_candidates(country_id, slot, world_day, nation, tier, recruit)
+                VALUES ($1,$2,$3,$4,$5,$6::jsonb)
+           ON CONFLICT (country_id, slot, world_day, nation) DO NOTHING`,
+          [country, c.slot, day, n.id, tier, JSON.stringify(boy)]);
+        laid += r.rowCount;
+      }
+    }
+  }
+  // a boy nobody was ever going to be shown is not worth keeping
+  await pool.query('DELETE FROM academy_candidates WHERE country_id=$1 AND world_day < $2',
+    [country, worldDay - 1]);
+  return laid;
 }
 
 // ===========================================================================

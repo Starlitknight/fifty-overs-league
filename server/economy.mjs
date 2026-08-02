@@ -33,7 +33,37 @@ export const DEBT_ROUND = 0.03;              // what an overdraft costs a round
 // floor with a price, not a forgiveness.
 export const DEBT_LIMIT = 2500000;
 export const ADMIN_SPONSOR = 0.5;
-export const ACADEMY_UPKEEP = 900;           // a level, a round
+// ---------------------------------------------------------------------------
+// THE ACADEMY'S BILL (docs/ACADEMY.md)
+//
+// An academy is meant to be a real rival to the transfer market for the same
+// money, so it costs like one. Three separate charges, all of them knowable a
+// season in advance:
+//
+//   upkeep   - by the round, steeply by level. A level five academy costs
+//              about a season's gate to run; a level one is a rounding error.
+//   building - a lump per step, and the steps get steeper, so a club that
+//              overbuilds and is then relegated carries a stone.
+//   the boys - their wages, every round, exactly as a professional's. Fifteen
+//              of them is about what a senior staff costs, which is the brake
+//              on signing everybody.
+// ---------------------------------------------------------------------------
+const UPKEEP_BY_LEVEL = [0, 6000, 14000, 26000, 44000, 70000];
+export function academyUpkeep(level) {
+  return UPKEEP_BY_LEVEL[Math.max(1, Math.min(5, +level || 2))];
+}
+// what it costs to go from level n to level n+1
+export const ACADEMY_BUILD = [0, 400000, 900000, 1800000, 3200000];
+export function academyBuild(from, to) {
+  let sum = 0;
+  for (let lv = Math.max(1, from); lv < Math.min(5, to); lv++) sum += ACADEMY_BUILD[lv];
+  return sum;
+}
+// a trip abroad is paid for whether or not you sign the boy; scouting at home
+// costs nothing, so a club with no money can still run an academy
+export const SCOUT_FEE_ABROAD = 45000;
+// and a senior shirt is the same flat price for every boy in the world
+export const PROMOTE_FEE = 250000;
 export const MOOD_WORD = ['mutinous', 'restless', 'patient', 'settled', 'pleased', 'delighted', 'ecstatic'];
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
@@ -117,7 +147,7 @@ export async function computeFinance(pool, country, opts = {}) {
     });
   };
   const clubs = (await pool.query(
-    `SELECT slot, name, is_boss, squad, academy, academy_paid, seats, seats_paid
+    `SELECT slot, name, is_boss, squad, youth, academy, academy_paid, seats, seats_paid
        FROM clubs WHERE country_id=$1 ORDER BY slot`, [country])).rows;
   if (!clubs.length) return [];
   // EXTRACT IN THE DATABASE: a season of result blobs is tens of megabytes and
@@ -156,7 +186,7 @@ export async function computeFinance(pool, country, opts = {}) {
   const dayMoney = {};                            // 'day:slot' -> { in, out, scout, sold, bought }
   const atDay = (d, slot) => {
     const k = d + ':' + slot;
-    return dayMoney[k] = dayMoney[k] || { in: 0, out: 0, scout: 0, sold: 0, bought: 0 };
+    return dayMoney[k] = dayMoney[k] || { in: 0, out: 0, scout: 0, sold: 0, bought: 0, acad: [] };
   };
   for (const d of deals) {
     if (d.settled_day == null) continue;
@@ -164,6 +194,20 @@ export async function computeFinance(pool, country, opts = {}) {
     if (d.b_country === country) { const e = atDay(d.settled_day, d.b_slot); e.out += +d.fee || 0; e.bought++; }
   }
   for (const s2 of scouts) atDay(s2.day, s2.slot).scout += +s2.paid || 0;
+  // WHAT THE ACADEMY SPENT, AND WHEN. A scouting trip and a senior contract
+  // are dated decisions, not standing capital, so they walk with the market
+  // rather than being lumped into the founding line the way building is.
+  let acad = [];
+  try {
+    acad = (await pool.query(
+      `SELECT world_day AS day, slot, kind, sum(amount)::bigint AS amount
+         FROM academy_spend WHERE country_id=$1 GROUP BY world_day, slot, kind`,
+      [country])).rows;
+  } catch (eA) { acad = []; }                     // pre-040 database: no academy yet
+  const ACAD_LABEL = { scouting: 'Scouting trips', contract: 'Senior contracts out of the academy' };
+  for (const a of acad) {
+    atDay(a.day, a.slot).acad.push({ kind: a.kind, amount: +a.amount || 0 });
+  }
 
   // a transfer settles on a WORLD DAY; the books walk in ROUNDS. The season
   // table is what turns one into the other.
@@ -181,7 +225,11 @@ export async function computeFinance(pool, country, opts = {}) {
   const N = clubs.length;
   const S = {};
   for (const c of clubs) {
-    const wages = (c.squad || []).reduce((s, p) => s + (p.wage || 0), 0);
+    // A BOY IS ON THE WAGE BILL FROM THE DAY HE IS SIGNED. He cannot be picked
+    // and he may never be worth a shirt, and he is paid every round regardless -
+    // which is the only thing stopping a manager signing every boy he is shown.
+    const wages = (c.squad || []).reduce((s, p) => s + (p.wage || 0), 0)
+                + (Array.isArray(c.youth) ? c.youth : []).reduce((s, p) => s + ((p && p.wage) || 0), 0);
     S[c.slot] = {
       slot: c.slot, name: c.name, is_boss: c.is_boss, wages,
       academy: c.academy || 2, seats: c.seats || FOUNDING_SEATS,
@@ -191,7 +239,7 @@ export async function computeFinance(pool, country, opts = {}) {
       sup: FOUNDING_SUPPORT, mood: 3, pts: 0, played: 0, form: [],
       gate: 0, awayCut: 0, sponsor: 0, wagesPaid: 0, upkeep: 0, interest: 0,
       compensation: 0, capsAway: 0,
-      feesIn: 0, feesOut: 0, scouting: 0, soldN: 0, boughtN: 0,
+      feesIn: 0, feesOut: 0, scouting: 0, soldN: 0, boughtN: 0, academySpend: 0,
       writtenOff: 0, admin: false, adminRounds: 0,
       atts: [], rounds: 0
     };
@@ -230,6 +278,12 @@ export async function computeFinance(pool, country, opts = {}) {
       if (m.in) { c.bank += m.in; line(m.slot, at, 'player-sale', 'Player sales \u00b7 ' + (m.sold === 1 ? 'one man out' : m.sold + ' men out'), m.in, c.bank); }
       if (m.out) { c.bank -= m.out; line(m.slot, at, 'player-buy', 'Player purchases \u00b7 ' + (m.bought === 1 ? 'one man in' : m.bought + ' men in'), -m.out, c.bank); }
       if (m.scout) { c.bank -= m.scout; line(m.slot, at, 'scouting', 'Scouting reports', -m.scout, c.bank); }
+      for (const a of (m.acad || [])) {
+        if (!a.amount) continue;
+        c.academySpend += -a.amount;              // held positive: it is a cost
+        c.bank += a.amount;                       // the rows are already signed
+        line(m.slot, at, a.kind, ACAD_LABEL[a.kind] || 'The academy', a.amount, c.bank);
+      }
       if (c.bank < -DEBT_LIMIT) {
         const off = (-DEBT_LIMIT) - c.bank; c.writtenOff += off; c.bank = -DEBT_LIMIT;
         line(m.slot, at, 'written-off', 'Written off at the floor', off, c.bank);
@@ -271,7 +325,7 @@ export async function computeFinance(pool, country, opts = {}) {
       // a club already under administration signs a distressed deal: the
       // sponsor stays, but for half of what he would otherwise pay
       const sp = Math.round(sponsorOf(pos[slot], c.mood, N) * (c.admin ? ADMIN_SPONSOR : 1));
-      const up = c.academy * ACADEMY_UPKEEP;
+      const up = academyUpkeep(c.academy);
       const f = feeAt[R.ms[0].season_no + ':' + R.ms[0].round + ':' + slot];
       const comp = f ? f.paid : 0;
       c.sponsor += sp; c.wagesPaid += c.wages; c.upkeep += up; c.rounds++;
@@ -332,7 +386,7 @@ export async function computeFinance(pool, country, opts = {}) {
         avgAttendance: avg, ticket: TICKET,
         gate: s.gate, awayCut: s.awayCut, sponsor: s.sponsor,
         compensation: s.compensation, capsAway: s.capsAway,
-        feesIn: s.feesIn, feesOut: s.feesOut, scouting: s.scouting,
+        feesIn: s.feesIn, feesOut: s.feesOut, scouting: s.scouting, academySpend: s.academySpend,
         sold: s.soldN, bought: s.boughtN,
         wages: s.wagesPaid, wageBill: s.wages, upkeep: s.upkeep, interest: s.interest,
         academyPaid: +c.academy_paid || 0, seatsPaid: +c.seats_paid || 0,

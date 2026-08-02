@@ -57,7 +57,11 @@ const PLAY_TABLES = [
   // the club statement. Every line in it is rewritten from the finance walk
   // each time the money settles, so it is play, not world: wipe it with the
   // season and the next settle writes it back from the matches that remain.
-  'ledger'
+  'ledger',
+  // the academy. The candidates are laid out fresh every tick and the trips
+  // and the spending belong to the season that was played, so all three go
+  // with it - a redealt world has never scouted anybody.
+  'academy_candidates', 'academy_scouts', 'academy_spend'
 ];
 // the world itself: its countries, its clubs, who has claimed them, the
 // calendar, and the migration ledger. These are not play and are left alone.

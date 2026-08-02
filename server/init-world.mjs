@@ -8,6 +8,10 @@
 import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
 import { EPOCH, CYCLE, ROUNDS, dayIx, scheduleOf, seasonSchedules, natHour } from './clock.mjs';
+// youth.mjs reads countryConfigs from here, so this is a cycle - safe, because
+// both sides export function DECLARATIONS and neither is called while the
+// modules are still evaluating.
+import { foundAcademy } from './youth.mjs';
 
 // EVERY LEAGUE IS ANCHORED BY A REAL CLUB. Slot 0 is the country's most
 // storied side - the name a supporter there would give you first - with its
@@ -223,10 +227,16 @@ async function foundCountry(c, cfg, host, startDay, gen = 1) {
     // squad seeds are position-stable WITHIN A GENERATION: the same world, the
     // same eleven, until somebody deliberately redeals the world
     const players = squadFor(host, cfg, club, gen);
+    // AND FIFTEEN BOYS. The Colts Cup asks a club for fifteen men under
+    // twenty-one, so a world founded with empty academies would play its first
+    // youth competition as sixteen walkovers. Every club starts able to field a
+    // side; keeping it that way is the manager's problem from here.
+    const boys = foundAcademy(host, cfg.id, club.slot, 2, 'found|' + gen);
     // default_name is the club's birth name - a human rename never loses it
     await c.query(
-      'INSERT INTO clubs(country_id, slot, name, default_name, ground, is_boss, squad) VALUES ($1,$2,$3,$3,$4,$5,$6)',
-      [cfg.id, club.slot, club.name, club.ground, !!club.boss, JSON.stringify(players)]);
+      'INSERT INTO clubs(country_id, slot, name, default_name, ground, is_boss, squad, youth) VALUES ($1,$2,$3,$3,$4,$5,$6,$7)',
+      [cfg.id, club.slot, club.name, club.ground, !!club.boss,
+       JSON.stringify(players), JSON.stringify(boys)]);
   }
   // the seasons row carries the season's OWN division map and both divisions'
   // schedules - membership is seasonal, so the record of who played where

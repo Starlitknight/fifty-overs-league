@@ -17,10 +17,10 @@ import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
 import { EPOCH, dayIx, daySettled, seedOf, cupDraw, natHour, scheduleOf, seasonSchedules, ROUNDS, isWindowRound,
          CYCLE, LEAGUE_DAYS, roundOfDay, CUP_DAYS, PLAYOFF_DAYS, FA_DAYS, TRANSITION_DAY,
-         WINDOW_DAYS, isWorldCupSeason } from './clock.mjs';
+         WINDOW_DAYS, isWorldCupSeason, REST_DAYS } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
 import { calibrate, countryConfigs, BASE_XI, NAT_STR, HUMAN_STR } from './init-world.mjs';
-import { ensureYouth, ageYouth, playColtsRound, computeColts, coltRecords } from './youth.mjs';
+import { stockAcademies, layCandidates, ageYouth, playColtsRound, computeColts, coltRecords } from './youth.mjs';
 import { settleMoney } from './economy.mjs';
 import { runComps } from './comps.mjs';
 import { ensureCallups, absentBySlot, coverSheet, runWindows, rebuildNations, seasonSquad,
@@ -661,10 +661,17 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
     try { await ensureNatSquad(pool, country, season.season_no, round + 1); }
     catch (eN2) { console.error('selectors failed for ' + country + ' round ' + (round + 1) + ':', eN2.message); }
   }
-  // the academy brings a boy in when there is room - the same boy on every
-  // re-run, because his seed is the club, the season and the round
-  try { await ensureYouth(pool, host, country, { seasonNo: season.season_no, round }); }
-  catch (eY) { console.error('academy intake failed for ' + country + ' day ' + day + ':', eY.message); }
+  // THE ACADEMIES. Two jobs, and they are deliberately different jobs: the
+  // umpire keeps an UNMANAGED club stocked to fifteen boys so the Colts Cup
+  // always has a field, and it lays out the candidates a MANAGED club's scout
+  // could be sent to see. It never signs anybody for a human.
+  try { await stockAcademies(pool, host, country, { worldDay: day }); }
+  catch (eY) { console.error('academy stocking failed for ' + country + ' day ' + day + ':', eY.message); }
+  try {
+    await layCandidates(pool, host, country, {
+      worldDay: day, startDay: season.start_day, restDays: REST_DAYS
+    });
+  } catch (eC) { console.error('scouting candidates failed for ' + country + ' day ' + day + ':', eC.message); }
   await settleMoney(pool, country);
   await rebuildSnapshots(pool, country, now, { world: world });
   await pool.query(`UPDATE ticks SET status='done', finished_at=now(), detail=$2 WHERE key=$1`,
