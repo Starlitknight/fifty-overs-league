@@ -10292,7 +10292,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-1236-9febb0";
+  var FO_BUILD = "20260803-1307-c44ee2";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -44002,23 +44002,37 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return "<img class='" + cls + (lg ? " natlogo" : "") + "' src='" + (lg || flagOf(rid)) +
       "' alt='' onerror=\"this.style.display='none'\">";
   }
-  // EVERY NATION HAS ONE HOME. A single painted ground per country serves as
-  // the national side's main ground - the hero plays under its sky. A nation
-  // with no painting yet gets the generic summer-noon ground and no named
-  // ground fact.
-  var NAT_GROUNDS = {
-    eng: "marylebone", aus: "melbourne", ind: "mumbai", pak: "lahore",
-    saf: "cape-town", nz: "auckland", sri: "colombo", wi: "bridgetown",
-    ire: "dublin", ned: "amsterdam", zim: "harare", afg: "kabul",
-    ban: "sylhet", nep: "kathmandu", sco: "edinburgh", wal: "cardiff",
-    ken: "nairobi", usa: "grand-prairie", can: "king-city"
+  // EVERY NATION HAS ONE HOME - and a gallery. The first painting in each
+  // pool is the national side's main ground; the rest illustrate its story
+  // cards. A nation with no paintings yet gets the generic summer-noon
+  // ground and no named ground fact.
+  var NAT_ART = {
+    eng: ["marylebone", "leeds", "london", "canterbury", "manchester", "nottingham"],
+    aus: ["melbourne", "sydney", "adelaide", "brisbane", "perth"],
+    ind: ["mumbai", "chennai", "kolkata", "nagpur", "dharamshala"],
+    pak: ["lahore", "sharjah"],
+    saf: ["cape-town", "durban", "johannesburg"],
+    nz: ["auckland", "christchurch", "wellington"],
+    sri: ["colombo", "galle", "kandy"],
+    wi: ["bridgetown", "kingston", "port-of-spain"],
+    ire: ["dublin", "belfast", "cork"],
+    ned: ["amsterdam", "rotterdam", "utrecht"],
+    zim: ["harare", "bulawayo", "victoria-falls"],
+    afg: ["kabul"], ban: ["sylhet"], nep: ["kathmandu"],
+    sco: ["edinburgh"], wal: ["cardiff"], ken: ["nairobi"],
+    usa: ["grand-prairie"], can: ["king-city"]
   };
+  function artBase() { return (typeof FO_ART !== "undefined") ? FO_ART : "client/art/"; }
+  function natArt(rid, i) {
+    var pool = NAT_ART[rid];
+    if (!pool) return artBase() + "home/arches-summer-noon.webp";
+    return artBase() + "cities/" + pool[(i | 0) % pool.length] + "-ground.webp";
+  }
   function natGround(rid) {
-    var base = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
-    var slug = NAT_GROUNDS[rid];
-    if (!slug) return { art: base + "home/arches-summer-noon.webp", name: "" };
-    var nm = slug.split("-").map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(" ") + " Ground";
-    return { art: base + "cities/" + slug + "-ground.webp", name: nm };
+    var pool = NAT_ART[rid];
+    if (!pool) return { art: artBase() + "home/arches-summer-noon.webp", name: "" };
+    var nm = pool[0].split("-").map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(" ") + " Ground";
+    return { art: natArt(rid, 0), name: nm };
   }
   function money(v) {
     var n = Number(v) || 0;
@@ -44041,7 +44055,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       .then(function (rows) { return rows && rows[0] && rows[0].body; });
   }
 
-  var ST = { nation: null };
+  var ST = { nation: null, tab: "overview" };
 
   function css() {
     try { if (window.__foRoomCss) window.__foRoomCss(); } catch (e) {}
@@ -44090,28 +44104,62 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-nat-pay span.mine{background:rgba(232,185,106,.32);color:#6B520F;font-weight:700}",
       "html body #page .fo-nat-when{margin:2px 0 8px;padding:11px 13px;background:rgba(11,29,58,.05);border:1px solid rgba(11,29,58,.18);border-left:3px solid #0B1D3A;border-radius:12px;font:500 12px/1.55 Inter,sans-serif;color:rgba(20,28,40,.75)}",
       "html body #page .fo-nat-when b{color:#0B1D3A}",
-      // ---- THE NATIONAL SIDE'S HERO: its own ground, under its own sky ------
-      "html body #page .fo-nt-hero{position:relative;background:linear-gradient(158deg,#152C4E,#0C1E36);border:1px solid rgba(14,35,63,.5);border-radius:16px;margin-bottom:12px;overflow:hidden;box-shadow:0 10px 26px rgba(11,20,35,.22)}",
-      "html body #page .fo-nt-hero .bgart{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 62%}",
-      "html body #page .fo-nt-hero .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,22,40,.18) 0%,rgba(11,22,40,.52) 55%,rgba(9,18,33,.9) 100%)}",
-      "html body #page .fo-nt-hero .hin{position:relative}",
-      "html body #page .fo-nt-hero .hb{display:flex;align-items:center;gap:14px;padding:clamp(26px,6vw,60px) 16px 0}",
-      "html body #page .fo-nt-hero .shield{flex:none;width:74px;height:88px;background:#FFFEFC;clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(0,0,0,.4)}",
-      "html body #page .fo-nt-hero .shield img{width:38px;height:27px;object-fit:cover;border-radius:2px}",
-      "html body #page .fo-nt-hero h2{font:700 30px/1 Oswald,sans-serif;text-transform:uppercase;color:#FFFEFC;margin:0;display:flex;align-items:center;gap:10px;text-shadow:0 2px 8px rgba(0,0,0,.45)}",
-      "html body #page .fo-nt-hero h2 .hfl{width:26px;height:18px;object-fit:cover;border-radius:3px;box-shadow:0 0 0 1px rgba(255,255,255,.35)}",
-      "html body #page .fo-nt-hero .sub{font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:rgba(244,239,228,.78);margin-top:8px;text-shadow:0 1px 6px rgba(0,0,0,.5)}",
-      "html body #page .fo-nt-hero .hf{display:flex;flex-wrap:wrap;margin-top:16px;border-top:1px solid rgba(244,239,228,.22);background:rgba(9,18,33,.4);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}",
-      "html body #page .fo-nt-hero .hf span{flex:1 1 auto;padding:11px 13px;border-left:1px solid rgba(244,239,228,.12);font:600 7.5px/1.4 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(244,239,228,.6)}",
-      "html body #page .fo-nt-hero .hf span:first-child{border-left:0}",
-      "html body #page .fo-nt-hero .hf b{display:block;font:600 12.5px/1.35 Inter,sans-serif;color:#FFFEFC;margin-top:4px;text-transform:none;letter-spacing:0;white-space:nowrap}",
-      // ---- the world rankings, underlined in the accent ---------------------
-      "html body #page .fo-nt-rk{display:flex}",
-      "html body #page .fo-nt-rk span{flex:1;text-align:center;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;color:rgba(20,28,40,.5);text-transform:uppercase}",
-      "html body #page .fo-nt-rk b{display:inline-block;font:700 24px/1.1 Inter,sans-serif;color:#14243A;margin:8px auto 0;padding:0 3px 7px;border-bottom:3px solid #C9571F;min-width:40px;font-variant-numeric:tabular-nums}",
-      // ---- two columns on a desk, one on a phone ----------------------------
-      "html body #page .fo-nt-c{min-width:0}",
-      "@media(min-width:860px){html body #page .fo-nt-grid{display:grid;grid-template-columns:1.35fr .9fr;gap:0 14px;align-items:start}}",
+      // ---- THE HUB: the whole viewport is the page --------------------------
+      "html body #page .fo-nt-bleed{width:100vw;margin-left:calc(50% - 50vw)}",
+      "html body #page .fo-nt-in{max-width:1680px;margin:0 auto;padding:0 clamp(14px,3vw,44px)}",
+      // ---- the hero: the nation's own ground, edge to edge ------------------
+      "html body #page .fo-nt-hero{position:relative;background:linear-gradient(158deg,#152C4E,#0C1E36);overflow:hidden;min-height:250px}",
+      "html body #page .fo-nt-hero .bgart{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 60%}",
+      "html body #page .fo-nt-hero .veil{position:absolute;inset:0;background:linear-gradient(90deg,rgba(9,18,33,.92) 0%,rgba(9,18,33,.55) 44%,rgba(9,18,33,.12) 78%)}",
+      "html body #page .fo-nt-hero .hin{position:relative;display:flex;align-items:center;gap:clamp(14px,2.4vw,28px);padding-top:clamp(26px,4vw,56px);padding-bottom:clamp(26px,4vw,56px)}",
+      "html body #page .fo-nt-hero .shield{flex:none;width:clamp(72px,8vw,110px);height:clamp(84px,9.5vw,128px);background:#FFFEFC;clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(0,0,0,.4)}",
+      "html body #page .fo-nt-hero .shield img{width:60%;height:44%;object-fit:cover;border-radius:2px}",
+      "html body #page .fo-nt-hero .shield.logo{background:none;clip-path:none;box-shadow:none}",
+      "html body #page .fo-nt-hero .shield.logo img.natlogo{width:100%;height:100%;object-fit:contain;border-radius:0;filter:drop-shadow(0 0 1.5px rgba(255,255,255,.9)) drop-shadow(0 0 14px rgba(255,255,255,.55)) drop-shadow(0 4px 10px rgba(0,0,0,.45))}",
+      "html body #page .fo-nt-hero .kick{font:600 10.5px/1 Oswald,sans-serif;letter-spacing:.28em;text-transform:uppercase;color:#E8B96A;margin-bottom:10px}",
+      "html body #page .fo-nt-hero h2{font:700 clamp(34px,4.5vw,62px)/1 Oswald,sans-serif;text-transform:uppercase;color:#FFFEFC;margin:0;display:flex;align-items:center;gap:14px;text-shadow:0 2px 10px rgba(0,0,0,.45)}",
+      "html body #page .fo-nt-hero h2 .hfl{width:clamp(26px,2.5vw,38px);height:auto;aspect-ratio:38/26;object-fit:cover;border-radius:3px;box-shadow:0 0 0 1px rgba(255,255,255,.35)}",
+      "html body #page .fo-nt-hero .hf{display:flex;flex-wrap:wrap;gap:6px clamp(14px,2vw,26px);margin-top:16px}",
+      "html body #page .fo-nt-hero .hf span{font:600 8.5px/1.5 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,239,228,.6)}",
+      "html body #page .fo-nt-hero .hf b{display:block;font:600 15px/1.3 Inter,sans-serif;color:#FFFEFC;text-transform:none;letter-spacing:0;white-space:nowrap;text-shadow:0 1px 6px rgba(0,0,0,.5)}",
+      // ---- the navy tab band ------------------------------------------------
+      "html body #page .fo-nt-tabs{background:#0E1E36;border-top:1px solid rgba(232,185,106,.3);box-shadow:0 3px 10px rgba(11,20,35,.25)}",
+      "html body #page .fo-nt-tabs .fo-nt-in{display:flex;gap:clamp(18px,2.4vw,34px);overflow-x:auto;-webkit-overflow-scrolling:touch}",
+      "html body #page .fo-nt-tabs button{flex:none;font:600 12px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#EFE8D8 !important;opacity:.8;padding:16px 2px 13px !important;border:none !important;border-bottom:3px solid transparent !important;border-radius:0 !important;box-shadow:none !important;background:transparent !important;cursor:pointer}",
+      "html body #page .fo-nt-tabs button.on{color:#E8B96A !important;opacity:1;border-bottom-color:#C9571F !important}",
+      // ---- the front page ---------------------------------------------------
+      "html body #page .fo-nt-wrap{display:grid;grid-template-columns:minmax(0,1fr);gap:22px;margin-top:24px;align-items:start}",
+      "@media(min-width:1020px){html body #page .fo-nt-wrap{grid-template-columns:minmax(0,1fr) 350px;gap:0 32px}}",
+      "html body #page .fo-nt-main{min-width:0}",
+      "html body #page .fo-nt-lead{display:grid;grid-template-columns:1fr;background:linear-gradient(0deg,#FBF6EA,#FDFAF2);border:1px solid rgba(20,28,40,.12);border-radius:14px;overflow:hidden;margin-bottom:22px}",
+      "@media(min-width:760px){html body #page .fo-nt-lead{grid-template-columns:1.5fr 1fr}}",
+      "html body #page .fo-nt-lead img{width:100%;height:100%;min-height:220px;object-fit:cover;display:block}",
+      "html body #page .fo-nt-lead .tx{padding:clamp(18px,2.4vw,32px);display:flex;flex-direction:column;justify-content:center}",
+      "html body #page .fo-nt-cat{font:600 10px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#B44A22;margin-bottom:12px}",
+      "html body #page .fo-nt-lead h3{font:600 clamp(22px,2.2vw,32px)/1.18 Fraunces,Georgia,serif;margin:0 0 12px;letter-spacing:-.01em;color:#14243A}",
+      "html body #page .fo-nt-dek{font:400 14px/1.65 Inter,sans-serif;color:rgba(20,28,40,.62);margin:0}",
+      "html body #page .fo-nt-when{font:500 11px/1 Inter,sans-serif;color:rgba(20,28,40,.4);margin-top:16px}",
+      "html body #page .fo-nt-g3{display:grid;grid-template-columns:1fr;gap:20px}",
+      "@media(min-width:640px){html body #page .fo-nt-g3{grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}}",
+      "html body #page .fo-nt-story{background:linear-gradient(0deg,#FBF6EA,#FDFAF2);border:1px solid rgba(20,28,40,.12);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}",
+      "html body #page .fo-nt-story img{width:100%;height:150px;object-fit:cover;display:block}",
+      "html body #page .fo-nt-story .tx{padding:17px 19px 19px;display:flex;flex-direction:column;flex:1}",
+      "html body #page .fo-nt-story h4{font:600 18px/1.32 Fraunces,Georgia,serif;margin:0 0 9px;color:#14243A}",
+      "html body #page .fo-nt-story .fo-nt-dek{font-size:12.5px;flex:1}",
+      // ---- the rail ----------------------------------------------------------
+      "html body #page .fo-nt-rail{min-width:0}",
+      "html body #page .fo-nt-tile{background:linear-gradient(0deg,#FBF6EA,#FDFAF2);border:1px solid rgba(20,28,40,.12);border-radius:12px;padding:17px 19px;margin-bottom:20px}",
+      "html body #page .fo-nt-tile h3{font:600 11px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#8a5219;margin:0 0 14px}",
+      "html body #page .fo-nt-big{font:700 44px/1 Fraunces,Georgia,serif;color:#14243A}",
+      "html body #page .fo-nt-big:after{content:'';display:block;width:40px;height:4px;background:#C9571F;margin-top:9px}",
+      "html body #page .fo-nt-lab{font:600 9px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.45);margin-top:13px}",
+      "html body #page .fo-nt-lab b{display:block;font:700 21px/1.2 Inter,sans-serif;color:#14243A;margin-top:5px;letter-spacing:0}",
+      "html body #page a.fo-nt-mini,html body #page .fo-nt-mini{display:flex;gap:13px;padding:11px 0 !important;margin:0;border:none !important;border-top:1px solid rgba(20,28,40,.09) !important;border-radius:0 !important;box-shadow:none !important;text-decoration:none;align-items:center;cursor:pointer;background:transparent !important;width:100%;text-align:left}",
+      "html body #page .fo-nt-mini:first-of-type{border-top:0 !important}",
+      "html body #page .fo-nt-mini:first-of-type{border-top:0;padding-top:0}",
+      "html body #page .fo-nt-mini img{width:62px;height:46px;object-fit:cover;border-radius:8px;flex:none}",
+      "html body #page .fo-nt-mini b{font:600 13px/1.35 Inter,sans-serif;color:#14243A !important}",
+      "html body #page .fo-nt-foot{display:flex;justify-content:space-between;margin:26px 0 8px}",
       "html body #page .fo-nt-form{display:flex;gap:7px;margin:2px 0 10px}",
       "html body #page .fo-nt-form i{width:28px;height:28px;border-radius:50%;font-style:normal;display:flex;align-items:center;justify-content:center;font:700 10.5px/1 Inter,sans-serif;color:#fff}",
       "html body #page .fo-nt-form i.w{background:#1F7A50}html body #page .fo-nt-form i.l{background:#C22823}html body #page .fo-nt-form i.t{background:#8a93a2}"
@@ -44251,46 +44299,142 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return "<i class='" + k9 + "'>" + k9.toUpperCase() + "</i>";
     }).join("");
     var ga = natGround(ST.nation);
+    var windows9 = (snap.windows || [5, 9, 13]);
+    var hour9 = (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC";
+    var fmtR = function (v) { return Number(v || 0).toLocaleString("en-US"); };
     // a real board logo stands on the art unframed; only a flag still needs
     // the white shield behind it to read
     var hasLogo = false;
     try { hasLogo = !!(window.foNatLogo && window.foNatLogo(ST.nation)); } catch (eHL) {}
-    var hero = "<div class='fo-nt-hero'>" +
+    var hero = "<div class='fo-nt-bleed fo-nt-hero'>" +
       "<img class='bgart' src='" + ga.art + "' alt='' onerror=\"this.style.display='none'\"><span class='veil'></span>" +
-      "<div class='hin'>" +
-      "<div class='hb'><span class='shield" + (hasLogo ? " logo" : "") + "'>" + natCrest(ST.nation, "") + "</span>" +
-      "<div><h2>" + E(n.name || ST.nation) +
-      " <img class='hfl' src='" + flagOf(ST.nation) + "' alt='' onerror=\"this.style.display='none'\">" +
-      "</h2><div class='sub'>The national side</div></div></div>" +
+      "<div class='fo-nt-in hin'>" +
+      "<span class='shield" + (hasLogo ? " logo" : "") + "'>" + natCrest(ST.nation, "") + "</span>" +
+      "<div><div class='kick'>The International Game</div>" +
+      "<h2>" + E(n.name || ST.nation) +
+      " <img class='hfl' src='" + flagOf(ST.nation) + "' alt='' onerror=\"this.style.display='none'\"></h2>" +
       "<div class='hf'>" +
       (natRank ? "<span>World rank<b>#" + natRank.rank + "</b></span>" : "") +
       (ga.name ? "<span>Home ground<b>" + E(ga.name) + "</b></span>" : "") +
       "<span>Squad<b>" + ((n.squad || []).length || "&mdash;") + " men</b></span>" +
-      "<span>" + (n.window ? "Named for<b>Round " + n.window + "</b>" : "Windows<b>Rounds " + (snap.windows || [5, 9, 13]).join(", ") + "</b>") + "</span>" +
-      "<span>Tours play<b>" + (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC</b></span>" +
-      "</div></div></div>";
-    // the ladder's own numbers, spoken in the accent
-    var rankCard = "";
-    if (natRank) {
-      var fmtR = function (v) { return Number(v || 0).toLocaleString("en-US"); };
-      rankCard = "<div class='fo-ac-card'><h3>World rankings</h3><div class='fo-nt-rk'>" +
-        "<span>Rank<b>#" + natRank.rank + "</b></span>" +
-        (natRank.natRating ? "<span>National XI<b>" + fmtR(natRank.natRating) + "</b></span>" : "") +
-        (natRank.clubRating ? "<span>Club game<b>" + fmtR(natRank.clubRating) + "</b></span>" : "") +
-        "</div></div>";
+      "<span>" + (n.window ? "Named for<b>Round " + n.window + "</b>" : "Windows<b>Rounds " + windows9.join(", ") + "</b>") + "</span>" +
+      "<span>Tours play<b>" + hour9 + "</b></span>" +
+      "</div></div></div></div>";
+
+    // ---- the tab band -------------------------------------------------------
+    var TABS = [["overview", "Overview"], ["squad", "Squad"], ["tours", "Tours"],
+      ["caps", "Caps Book"], ["window", "The Window"]];
+    if (TABS.filter(function (t) { return t[0] === ST.tab; }).length === 0) ST.tab = "overview";
+    var tabBar = "<div class='fo-nt-bleed fo-nt-tabs'><div class='fo-nt-in'>" +
+      TABS.map(function (t) {
+        return "<button type='button' class='" + (ST.tab === t[0] ? "on" : "") + "' data-nt-tab='" + t[0] + "'>" + t[1] + "</button>";
+      }).join("") + "</div></div>";
+
+    // ---- THE FRONT PAGE: stories the world actually wrote -------------------
+    // Every headline traces to served state: a tour that was played, a squad
+    // that was named, a rank the ladder holds, a cheque the window wrote.
+    var stories = [];
+    var lastTour = (n.tours || [])[ (n.tours || []).length - 1 ] || null;
+    if (lastTour) {
+      stories.push({ cat: "The Tours", h: lastTour.text || (E(lastTour.a) + " v " + E(lastTour.b)),
+        dek: E(lastTour.a) + " " + E(lastTour.as_ || "") + " v " + E(lastTour.b) + " " + E(lastTour.bs_ || "") +
+          ". The next tour follows the round-" + (windows9.filter(function (w) { return w > (n.window || 0); })[0] || windows9[0]) + " window at " + hour9 + "." });
     }
+    if (n.window && (n.squad || []).length) {
+      var clubs9 = {}; (n.squad || []).forEach(function (m9) { if (m9.club) clubs9[m9.club] = 1; });
+      var nClubs = Object.keys(clubs9).length;
+      var capped = (n.squad || []).filter(function (m9) { return m9.caps > 0; }).length;
+      stories.push({ cat: "Selection &middot; Round " + n.window,
+        h: E(n.name) + " name " + (n.squad || []).length + " for the round-" + n.window + " window",
+        dek: "The selectors have gone to " + (nClubs > 1 ? nClubs + " clubs" : "one club") + " for the squad" +
+          (capped ? "; " + capped + " of the men have been capped before." : " &mdash; none of the men has yet been capped.") +
+          " The tour is bowled at " + hour9 + "." });
+    }
+    if (mine && myMen.length) {
+      stories.push({ cat: "The Window",
+        h: E(myMen[0].name) + (myMen.length > 1 ? " and " + (myMen.length - 1) + " more" : "") +
+          (myMen.length > 1 ? " pay " : "'s call-up pays ") + E(myClub) + " " + money(myMen.reduce(function (a, m) { return a + (m.fee || 0); }, 0)),
+        dek: (myMen.length > 1 ? "Your men miss" : "Your man misses") + " the round on national duty &mdash; and the board writes the cheque the same morning." });
+    }
+    if (natRank) {
+      stories.push({ cat: "The Ladder",
+        h: E(n.name) + (natRank.natP ? " stand" : " start") + " #" + natRank.rank + " in the world",
+        dek: natRank.natP
+          ? "The national XI is rated " + fmtR(natRank.natRating) + "; the nation's club game " + fmtR(natRank.clubRating) + "."
+          : "Every nation opens level at 3,500. The ladder first moves the night the tours begin &mdash; the XI is still unproven." });
+    }
+    if ((n.caps || []).length) {
+      var cl0 = n.caps[0];
+      stories.push({ cat: "The Caps Book",
+        h: E(cl0.name) + " leads the caps book on " + cl0.caps + " cap" + (cl0.caps === 1 ? "" : "s"),
+        dek: (cl0.runs ? cl0.runs + " runs" + (cl0.hs ? " (best " + cl0.hs + ")" : "") : "") +
+          (cl0.runs && cl0.wkts ? " and " : "") +
+          (cl0.wkts ? cl0.wkts + " wickets" + (cl0.bb ? " (best " + cl0.bb.w + "-" + cl0.bb.r + ")" : "") : "") +
+          (cl0.runs || cl0.wkts ? " in the country's colours." : "The first performances are still to be written.") });
+    }
+    if (pay) {
+      var tot9 = (n.compensation || []).reduce(function (a, c9) { return a + (c9.paid || 0); }, 0);
+      stories.push({ cat: "The Window",
+        h: "The window pays the league " + money(tot9),
+        dek: "$50,000 a senior, $20,000 a man under twenty-one &mdash; paid to the club each man was taken from." });
+    }
+    if (!stories.length) {
+      stories.push({ cat: "Selection",
+        h: "The selectors first meet at round " + windows9[0],
+        dek: "Squads are named that morning; the tours are played at " + hour9 + " the same evening." });
+    }
+    var lead9 = stories.shift();
+    var cardStories = stories.slice(0, 3);
+    var leadHTML = "<div class='fo-nt-lead'>" +
+      "<img src='" + natArt(ST.nation, 1) + "' alt='' onerror=\"this.style.display='none'\">" +
+      "<div class='tx'><div class='fo-nt-cat'>" + lead9.cat + "</div><h3>" + lead9.h + "</h3>" +
+      "<p class='fo-nt-dek'>" + lead9.dek + "</p>" +
+      "<div class='fo-nt-when'>Season " + (n.seasonNo || 1) + "</div></div></div>";
+    var cardsHTML = cardStories.length
+      ? "<div class='fo-nt-g3'>" + cardStories.map(function (s9, i9) {
+          return "<div class='fo-nt-story'><img src='" + natArt(ST.nation, i9 + 2) + "' alt='' onerror=\"this.style.display='none'\">" +
+            "<div class='tx'><div class='fo-nt-cat'>" + s9.cat + "</div><h4>" + s9.h + "</h4>" +
+            "<p class='fo-nt-dek'>" + s9.dek + "</p></div></div>";
+        }).join("") + "</div>"
+      : "";
+
+    // ---- the rail -----------------------------------------------------------
+    var rankTile = natRank
+      ? "<div class='fo-nt-tile'><h3>World rankings</h3><div class='fo-nt-big'>#" + natRank.rank + "</div>" +
+        (natRank.natRating ? "<div class='fo-nt-lab'>National XI<b>" + fmtR(natRank.natRating) + "</b></div>" : "") +
+        (natRank.clubRating ? "<div class='fo-nt-lab'>Club game<b>" + fmtR(natRank.clubRating) + "</b></div>" : "") + "</div>"
+      : "";
+    var windowTile = "<div class='fo-nt-tile'><h3>The window</h3>" +
+      (n.window ? "<div class='fo-nt-lab' style='margin-top:0'>Named for<b>Round " + n.window + "</b></div>" : "") +
+      "<div class='fo-nt-lab'" + (n.window ? "" : " style='margin-top:0'") + ">Windows<b>" + windows9.join(", ") + "</b></div>" +
+      "<div class='fo-nt-lab'>Tours play<b>" + hour9 + "</b></div></div>";
+    // the other nations' front pages, one honest line each
+    var aroundRows = ids.filter(function (r2) { return r2 !== ST.nation; }).slice(0, 4).map(function (r2) {
+      var n2 = snap.nations[r2] || {}, nm2 = n2.name || r2;
+      var t2 = (n2.tours || [])[ (n2.tours || []).length - 1 ] || null;
+      var line = t2 ? (t2.text || nm2 + "'s last tour")
+        : (n2.window && (n2.squad || []).length) ? nm2 + " name " + n2.squad.length + " for round " + n2.window
+        : nm2 + ": squads named at rounds " + windows9.join(", ");
+      return "<button type='button' class='fo-nt-mini' data-nat='" + E(r2) + "'>" +
+        "<img src='" + natArt(r2, 0) + "' alt='' onerror=\"this.style.display='none'\"><b>" + E(line) + "</b></button>";
+    }).join("");
+    var aroundTile = aroundRows ? "<div class='fo-nt-tile'><h3>Around the nations</h3>" + aroundRows + "</div>" : "";
+    var rail = "<div class='fo-nt-rail'>" + rankTile + windowTile + (ST.tab === "overview" ? aroundTile : "") + "</div>";
 
     var squadCard = "<div class='fo-ac-card'><h3>" + natFlag + "The national squad" +
         "<span>" + (n.window ? "named for round " + n.window : "no squad yet") + "</span></h3>" +
         (squad || "<div class='fo-ac-note'>No squad has been named for this nation yet. Squads are named at rounds " +
-          (snap.windows || [5, 9, 13]).join(", ") + ".</div>") +
+          windows9.join(", ") + ".</div>") +
       "</div>";
-    var capsCard = caps ? "<div class='fo-ac-card'><h3>The caps book<span>" + natFlag + E(n.name || "") + "</span></h3>" + caps + "</div>" : "";
-    var payCard = pay ? "<div class='fo-ac-card'><h3>What the window paid<span>season " + (n.seasonNo || 1) + "</span></h3>" +
-        "<div class='fo-nat-pay'>" + pay + "</div>" +
-        "<div class='fo-ac-note'>$50,000 a senior, $20,000 a man under twenty-one &mdash; paid to the club he was taken from, every window.</div></div>" : "";
-    var toursCard = tours ? "<div class='fo-ac-card'><h3>The tours" + (formChips ? "<span>recent form</span>" : "") + "</h3>" +
-        (formChips ? "<div class='fo-nt-form'>" + formChips + "</div>" : "") + tours + "</div>" : "";
+    var capsCard = "<div class='fo-ac-card'><h3>The caps book<span>" + natFlag + E(n.name || "") + "</span></h3>" +
+      (caps || "<div class='fo-ac-note'>No man has yet taken the field for " + E(n.name || "this nation") + ". The first cap is waiting to be won.</div>") + "</div>";
+    var payCard = "<div class='fo-ac-card'><h3>What the window paid<span>season " + (n.seasonNo || 1) + "</span></h3>" +
+        (pay ? "<div class='fo-nat-pay'>" + pay + "</div>" : "<div class='fo-ac-note'>No window has paid out yet.</div>") +
+        "<div class='fo-ac-note'>$50,000 a senior, $20,000 a man under twenty-one &mdash; paid to the club he was taken from, every window.</div></div>";
+    var toursCard = "<div class='fo-ac-card'><h3>The tours" + (formChips ? "<span>recent form</span>" : "") + "</h3>" +
+        (formChips ? "<div class='fo-nt-form'>" + formChips + "</div>" : "") +
+        (tours || "<div class='fo-ac-note'>No tour has been played yet &mdash; the first is bowled after the round-" +
+          windows9[0] + " window at " + hour9 + ".</div>") + "</div>";
     var mineCard = mine ? "<div class='fo-ac-card'><h3>Your men</h3>" +
         (myMen.length
           ? "<p class='fo-ac-p'>" + E(n.name) + " have taken <b>" + myMen.length + "</b> of " + E(myClub) + "'s cricketers for the latest window: " +
@@ -44298,23 +44442,36 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             money(myMen.reduce(function (a, m) { return a + (m.fee || 0); }, 0)) + " for the week.</p>"
           : "<p class='fo-ac-p'>Nobody from " + E(myClub) + " is in the latest " + E(n.name) + " squad. Form is what the selectors read &mdash; win a few and they will look again.</p>") +
         "</div>" : "";
-    var whenNote = "<div class='fo-nat-when'>Windows fall on rounds <b>" + (snap.windows || [5, 9, 13]).join(", ") +
-      "</b>. Squads are named that morning; the tours are played at <b>" +
-      (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC</b> the same evening.</div>";
+    var whenNote = "<div class='fo-nat-when'>Windows fall on rounds <b>" + windows9.join(", ") +
+      "</b>. Squads are named that morning; the tours are played at <b>" + hour9 + "</b> the same evening.</div>";
 
-    page.innerHTML = shell(
-      flags + hero +
-      "<div class='fo-nt-grid'>" +
-      "<div class='fo-nt-c'>" + squadCard + capsCard + payCard + "</div>" +
-      "<div class='fo-nt-c'>" + rankCard + toursCard + mineCard + whenNote + "</div>" +
-      "</div>" +
-      howItWorks());
+    var mainCol =
+      ST.tab === "squad" ? squadCard :
+      ST.tab === "tours" ? toursCard :
+      ST.tab === "caps" ? capsCard :
+      ST.tab === "window" ? (payCard + mineCard + whenNote) :
+      (leadHTML + cardsHTML);
+
+    page.innerHTML = "<div class='fo-nt-bleed' data-fo-owntable><div class='fo-nt-in' style='padding-top:10px;padding-bottom:10px'>" +
+      flags + "</div></div>" +
+      hero + tabBar +
+      "<div class='fo-nt-bleed'><div class='fo-nt-in'>" +
+      "<div class='fo-nt-wrap'><div class='fo-nt-main'>" + mainCol + "</div>" + rail + "</div>" +
+      "<div class='fo-nt-foot fo-ac-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/rankings'>The world rankings &rsaquo;</a></div>" +
+      "</div></div>" +
+      howItWorks();
 
     page.querySelectorAll("[data-nat]").forEach(function (b) {
       b.addEventListener("click", function () {
         ST.nation = b.getAttribute("data-nat");
         render(page, snap, st);
         try { page.scrollIntoView({ block: "start" }); } catch (e) {}
+      });
+    });
+    page.querySelectorAll("[data-nt-tab]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        ST.tab = b.getAttribute("data-nt-tab");
+        render(page, snap, st);
       });
     });
   }
