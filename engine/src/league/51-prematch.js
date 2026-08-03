@@ -351,6 +351,10 @@
           "<b>" + foPmE(nm) + " <i>" + posOrd(st.pos) +
           (st.p ? " &middot; " + st.pts + " pts" : "") + "</i></b>" +
           "<span class='fo-pm-beads'>" + beads(st) + "</span>" +
+          "<span class='fo-pm-slst'>" +
+          "<u>P<b>" + st.p + "</b></u><u>W<b>" + st.w + "</b></u><u>L<b>" + st.l + "</b></u>" +
+          "<u>PTS<b>" + st.pts + "</b></u><u>NRR<b>" + (st.p ? (st.nrr >= 0 ? "+" : "") + st.nrr.toFixed(2) : "&mdash;") + "</b></u>" +
+          "</span>" +
           "<s class='fo-pm-chev'>&#8250;</s></a>";
       };
 
@@ -363,6 +367,38 @@
               "<span>" + foPmE(r.text || "") + "</span><s>&#8250;</s></a>";
           }).join("")
         : "<p class='fo-pm-dim'>They have not met yet this season. This is the first time of asking.</p>";
+
+      // THE CONDITIONS: the strip the groundsman prepared and the sky the
+      // season deals, both pure functions of the world - the same weather the
+      // umpire will play this fixture under.
+      var PITCH_W = { balanced: "Balanced", flat: "Flat", green: "Green", dry: "Crumbling",
+        slow: "Slow", cracked: "Sticky", twoPaced: "Two-paced" };
+      var PITCH_N = {
+        balanced: "A fair contest; nobody gets favours.",
+        green: "Seam and swing; the new-ball spell is brutal.",
+        dry: "Turns square as it wears on; spinners own the middle.",
+        flat: "A batter's road: boundaries flow, totals balloon.",
+        slow: "Low and grippy; sixes are dear, rotation pays.",
+        cracked: "Unpredictable bounce, wickets for everyone.",
+        twoPaced: "Some balls hurry, some hold; timing is never safe."
+      };
+      var condHTML = "";
+      try {
+        if (!stage && window.__foPlanet && window.__foPlanet.condOf) {
+          var cond = window.__foPlanet.condOf(natId, hSlot, g.seasonNo, round);
+          if (cond) {
+            var pk = String(cond.pitch || "balanced");
+            condHTML = "<div class='fo-pm-duo'>" +
+              "<div class='fo-pm-box'><div class='fo-pm-cap'>The weather</div>" +
+              "<div class='fo-pm-wx'><b>" + foPmE(String(cond.weather || "Sunny")) + "</b>" +
+              "<i>as the world will deal it</i></div></div>" +
+              "<div class='fo-pm-box'><div class='fo-pm-cap'>Pitch report</div>" +
+              "<div class='fo-pm-prr'><span>Surface</span><b>" + foPmE(PITCH_W[pk] || pk) + "</b></div>" +
+              "<p class='fo-pm-prn'>" + foPmE(PITCH_N[pk] || "") + "</p></div>" +
+              "</div>";
+          }
+        }
+      } catch (eCd) {}
 
       var ACT = {
         sheet: "<svg viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='9' cy='8' r='3'/><path d='M3 20a6 6 0 0 1 12 0'/><path d='M17 11h4M19 9v4'/></svg>",
@@ -445,6 +481,11 @@
         "<div class='fo-pm-cap'>Team status</div>" +
         "<div class='fo-pm-two'>" + sideLine(hSlot, hN, hBoss, hSt) + sideLine(aSlot, aN, aBoss, aSt) + "</div>" +
 
+        "<div class='fo-pm-cap'>Head to head</div>" +
+        "<div class='fo-pm-h2hs'>" + h2hHTML + "</div>" +
+
+        condHTML +
+
         "<div class='fo-pm-foot'>" + actions.join("") + "</div>" +
         "</div></div></div>";
 
@@ -511,133 +552,115 @@
   function foPmCss() {
     if (document.getElementById("fo-pm-css")) return;
     var css = [
-      "#page .fo-pm{--gold:#E6B15E;--paper:#F4EFE4;--steel:#8ea3c4;--edge:rgba(150,180,225,.16);position:relative;min-height:100vh;background:#070c16;color:#e9eefa;overflow-x:clip;padding:clamp(10px,2vw,20px) 0 clamp(30px,5vw,56px)}",
+      // THE DAYLIGHT PREVIEW: the same room, with the lights on. Cream page,
+      // white card, navy ink, the club-dashboard's orange - the night skin
+      // retired with the rest of the dark pages.
+      "#page .fo-pm{--acc:#C9571F;--navy:#14243A;--ink:#1B2432;--mut:#67748a;--edge:rgba(27,36,50,.09);--grn:#1F6F4A;position:relative;min-height:60vh;background:#F1EEE6;color:var(--ink);overflow-x:clip;padding:clamp(10px,2vw,20px) 0 clamp(30px,5vw,56px)}",
       "#page .fo-pm *{box-sizing:border-box}",
       "body.fo-pm-on #page{padding:0;max-width:none}",
-      // the page owns its night: no cream frame peeking around the card's
-      // edges. The daylight skin asserts its cream with !important at
-      // html body.ftpskin strength, so this must out-rank it, not just tie.
-      "html body.ftpskin.fo-pm-on,html body.fo-pm-on{background:#070c16 !important}",
-      "body.fo-pm-on #page{background:#070c16}",
+      "html body.ftpskin.fo-pm-on,html body.fo-pm-on{background:#F1EEE6 !important}",
+      "body.fo-pm-on #page{background:#F1EEE6}",
       ".fo-pm-in{width:min(720px,100%);margin:0 auto;padding:0 clamp(10px,2.6vw,16px)}",
-      // ONE CARD. This was a full-bleed plate with a body hanging off the
-      // bottom of it, so nothing shared an edge with anything and the eye had
-      // no column to run down. Everything sits on one rounded sheet now, at
-      // one indent, with the sections spaced by a single gap.
-      ".fo-pm-card{background:#0C1524;border:1px solid var(--edge);border-radius:18px;padding:clamp(12px,2.4vw,17px);display:flex;flex-direction:column;gap:clamp(11px,1.8vw,14px)}",
-      // the folio: a chip with its flag, not small caps adrift on a rule
-      ".fo-pm-folio{display:inline-flex;align-items:center;gap:9px;align-self:flex-start;background:rgba(150,180,225,.1);border:1px solid var(--edge);border-radius:999px;padding:6px 14px 6px 7px}",
+      ".fo-pm-card{background:#FFFEFC;border:1px solid var(--edge);border-radius:16px;padding:clamp(12px,2.4vw,17px);display:flex;flex-direction:column;gap:clamp(11px,1.8vw,14px);box-shadow:0 1px 3px rgba(14,35,63,.05)}",
+      ".fo-pm-folio{display:inline-flex;align-items:center;gap:9px;align-self:flex-start;background:rgba(20,36,58,.05);border:1px solid var(--edge);border-radius:999px;padding:6px 14px 6px 7px}",
       ".fo-pm-folio img{width:20px;height:14px;object-fit:cover;border-radius:3px;flex:0 0 auto}",
-      ".fo-pm-folio span{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.18em;font-size:9.5px;color:#cddcf2}",
+      ".fo-pm-folio span{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.18em;font-size:9.5px;color:var(--navy)}",
       ".fo-pm-bill{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:clamp(7px,2vw,14px)}",
       ".fo-pm-billside{display:flex;align-items:center;gap:10px;min-width:0}",
       ".fo-pm-billside.a{flex-direction:row-reverse;text-align:right}",
       ".fo-pm-billside>div{min-width:0}",
-      ".fo-pm-billside b{display:block;font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;line-height:1.04;letter-spacing:.005em;font-size:clamp(14px,3.9vw,21px);color:var(--paper);overflow-wrap:anywhere}",
-      ".fo-pm-billside i{display:block;margin-top:3px;font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.22em;font-size:8px;color:var(--steel)}",
-      ".fo-pm-v{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1px solid rgba(230,177,94,.42);flex:0 0 auto}",
-      ".fo-pm-v span{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);line-height:1}",
+      ".fo-pm-billside b{display:block;font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;line-height:1.04;letter-spacing:.005em;font-size:clamp(14px,3.9vw,21px);color:var(--navy);overflow-wrap:anywhere}",
+      ".fo-pm-billside i{display:block;margin-top:3px;font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.22em;font-size:8px;color:#8a93a2}",
+      ".fo-pm-v{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(201,87,31,.55);flex:0 0 auto}",
+      ".fo-pm-v span{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);line-height:1}",
       ".fo-pm-sh{display:grid;place-items:center;width:29px;height:29px;border-radius:7px;background:var(--sc,#1D3F6E);color:#fff;font:700 11px/1 Oswald,sans-serif;letter-spacing:.04em;flex:0 0 auto}",
       ".fo-pm-sh.big{width:clamp(36px,9.5vw,44px);height:clamp(36px,9.5vw,44px);border-radius:9px;font-size:clamp(12px,3.2vw,15px)}",
       ".fo-pm-sh.crest{background:none;object-fit:contain}",
-      // the ground, bounded and untouched, between the billing and the facts
-      ".fo-pm-plate{margin:0;line-height:0;background:#0b1424;border-radius:12px;overflow:hidden}",
-      ".fo-pm-plate img{display:block;width:100%;height:auto;aspect-ratio:32/11;object-fit:cover;object-position:center 45%}",
-      "@media(max-width:760px){.fo-pm-plate img{aspect-ratio:16/7}}",
-      ".fo-pm-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:rgba(150,180,225,.055);border:1px solid var(--edge);border-radius:12px}",
+      ".fo-pm-plate{margin:0;line-height:0;background:#EBE6DA;border-radius:12px;overflow:hidden}",
+      ".fo-pm-plate img{display:block;width:100%;height:auto;aspect-ratio:32/12.5;object-fit:cover;object-position:center 45%}",
+      "@media(max-width:760px){.fo-pm-plate img{aspect-ratio:16/8}}",
+      ".fo-pm-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:linear-gradient(0deg,#FBF6EA,#FDFAF2);border:1px solid var(--edge);border-radius:12px}",
       ".fo-pm-fact{display:flex;align-items:center;gap:9px;padding:11px 11px;min-width:0;border-left:1px solid var(--edge)}",
       ".fo-pm-fact:first-child{border-left:0}",
       ".fo-pm-fact>div{min-width:0}",
-      ".fo-pm-ic{flex:0 0 auto;color:var(--steel);opacity:.9}",
-      ".fo-pm-fact b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(11.5px,3vw,15px);line-height:1.2;color:var(--paper);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}",
-      ".fo-pm-fact i{display:block;margin-top:3px;font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.14em;font-size:7.5px;color:var(--steel);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      "#page .fo-pm-fact[data-k=live] b{color:#fff}",
-      "#page .fo-pm-fact[data-k=live] .fo-pm-ic{color:#FF3355;opacity:1}",
+      ".fo-pm-ic{flex:0 0 auto;color:#8a93a2;opacity:.9}",
+      ".fo-pm-fact b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(11.5px,3vw,15px);line-height:1.2;color:var(--navy);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}",
+      ".fo-pm-fact i{display:block;margin-top:3px;font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.14em;font-size:7.5px;color:#8a93a2;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      "#page .fo-pm-fact[data-k=live] b{color:#B23230}",
+      "#page .fo-pm-fact[data-k=live] .fo-pm-ic{color:#D8342B;opacity:1}",
       "@media(max-width:430px){.fo-pm-fact{flex-direction:column;align-items:flex-start;gap:6px;padding:10px 8px}}",
-      // a section says what it is before it shows you anything
-      ".fo-pm-cap{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:9px;color:var(--steel)}",
-      ".fo-pm-wp{padding:13px 14px;border-radius:12px;background:rgba(150,180,225,.055);border:1px solid var(--edge);display:flex;flex-direction:column;gap:9px}",
+      ".fo-pm-cap{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.14em;font-size:10px;color:var(--navy);font-weight:600}",
+      ".fo-pm-cap:before{content:'';display:inline-block;width:7px;height:7px;background:var(--acc);border-radius:2px;margin-right:8px;vertical-align:1px}",
+      ".fo-pm-wp{padding:13px 14px;border-radius:12px;background:linear-gradient(0deg,#FBF6EA,#FDFAF2);border:1px solid var(--edge);display:flex;flex-direction:column;gap:9px}",
+      ".fo-pm-wp .fo-pm-cap{text-align:center}",
       ".fo-pm-wptop{display:flex;align-items:center;justify-content:space-between;gap:10px}",
       ".fo-pm-wph,.fo-pm-wpa{display:flex;align-items:center;gap:8px;min-width:0}",
-      ".fo-pm-wph u,.fo-pm-wpa u{text-decoration:none;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.08em;font-size:9.5px;color:var(--steel);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
-      ".fo-pm-wph b,.fo-pm-wpa b{font-family:Oswald,sans-serif;font-weight:700;font-size:clamp(19px,5vw,26px);line-height:1;font-variant-numeric:tabular-nums;color:var(--paper)}",
-      ".fo-pm-wph b{color:var(--gold)}",
-      ".fo-pm-wpa b{color:#9fc0ee}",
-      ".fo-pm-wpbar{display:flex;height:10px;border-radius:999px;overflow:hidden;background:rgba(150,180,225,.12)}",
+      ".fo-pm-wph u,.fo-pm-wpa u{text-decoration:none;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.08em;font-size:9.5px;color:var(--ink);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-weight:600}",
+      ".fo-pm-wph b,.fo-pm-wpa b{font-family:Inter,sans-serif;font-weight:700;font-size:clamp(20px,5vw,26px);line-height:1;font-variant-numeric:tabular-nums}",
+      ".fo-pm-wph b{color:var(--grn)}",
+      ".fo-pm-wpa b{color:var(--acc)}",
+      ".fo-pm-wpbar{display:flex;height:12px;border-radius:999px;overflow:hidden;background:#EBE6DA}",
       ".fo-pm-wpbar span{display:block;height:100%;width:0;transition:width .5s cubic-bezier(.2,.7,.2,1)}",
-      ".fo-pm-wpbar .h{background:linear-gradient(90deg,#C98A2A,var(--gold))}",
-      ".fo-pm-wpbar .t{background:rgba(150,180,225,.4)}",
-      ".fo-pm-wpbar .a{background:linear-gradient(90deg,#5C86C4,#9fc0ee)}",
+      ".fo-pm-wpbar .h{background:linear-gradient(90deg,#1F6F4A,#2A9367)}",
+      ".fo-pm-wpbar .t{background:rgba(27,36,50,.18)}",
+      ".fo-pm-wpbar .a{background:linear-gradient(90deg,#D06035,#C9571F)}",
       "@media(prefers-reduced-motion:reduce){.fo-pm-wpbar span{transition:none}}",
-      // TEAM STATUS: two rows that look like rows you can open, because they
-      // are. Crest, club and where it stands, how it is going underneath, and
-      // the chevron that says there is a page behind this.
       ".fo-pm-two{display:flex;flex-direction:column;gap:7px}",
-      "#page a.fo-pm-sl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto;column-gap:11px;row-gap:2px;align-items:center;padding:10px 12px;border-radius:11px;background:rgba(150,180,225,.055);border:1px solid var(--edge);text-decoration:none}",
-      "#page a.fo-pm-sl:hover{border-color:rgba(230,177,94,.5)}",
-      "#page a.fo-pm-sl.mine{border-color:rgba(230,177,94,.42);background:rgba(230,177,94,.07)}",
-      "#page a.fo-pm-sl .fo-pm-sh{grid-row:span 2}",
-      "#page a.fo-pm-sl b{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.02em;font-size:14px;color:var(--paper);overflow-wrap:anywhere}",
+      "#page a.fo-pm-sl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto auto;column-gap:11px;row-gap:4px;align-items:center;padding:11px 12px;border-radius:11px;background:#FFFEFC;border:1px solid var(--edge);text-decoration:none}",
+      "#page a.fo-pm-sl:hover{border-color:rgba(201,87,31,.5)}",
+      "#page a.fo-pm-sl.mine{border-color:rgba(201,87,31,.45);background:#FBF6EA}",
+      "#page a.fo-pm-sl .fo-pm-sh{grid-row:span 3}",
+      "#page a.fo-pm-sl b{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.02em;font-size:14px;color:var(--navy);overflow-wrap:anywhere}",
       "#page a.fo-pm-sl b{grid-column:2;grid-row:1}",
-      "#page a.fo-pm-sl b i{font-family:Oswald,sans-serif;font-style:normal;font-weight:400;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);margin-left:5px}",
+      "#page a.fo-pm-sl b i{font-family:Oswald,sans-serif;font-style:normal;font-weight:600;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);margin-left:5px}",
       "#page a.fo-pm-sl b i u{text-decoration:none;font-size:8px}",
       "#page a.fo-pm-sl .fo-pm-beads{grid-column:2;grid-row:2}",
-      "#page a.fo-pm-sl .fo-pm-chev{grid-column:3;grid-row:span 2;text-decoration:none;font:400 20px/1 Georgia,serif;color:rgba(150,180,225,.55)}",
-      ".fo-pm-clubtop{display:flex;align-items:center;gap:11px;margin-bottom:13px}",
-      ".fo-pm-clubtop>div{display:flex;flex-direction:column;gap:3px;min-width:0}",
-      ".fo-pm-clubnm{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.02em;font-size:16px;color:var(--paper);text-decoration:none}",
-      ".fo-pm-clubnm:hover{color:var(--gold)}",
-      ".fo-pm-clubsub{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:8.5px;color:var(--steel)}",
-      ".fo-pm-form>span{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:8.5px;color:var(--steel)}",
+      "#page a.fo-pm-sl .fo-pm-slst{grid-column:2;grid-row:3;display:flex;gap:14px}",
+      "#page a.fo-pm-sl .fo-pm-slst u{text-decoration:none;font:600 8px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8a93a2}",
+      "#page a.fo-pm-sl .fo-pm-slst u b{display:block;grid-column:auto;grid-row:auto;font:600 12.5px/1.5 Inter,sans-serif;color:var(--ink);letter-spacing:0;margin:0;font-variant-numeric:tabular-nums}",
+      "#page a.fo-pm-sl .fo-pm-chev{grid-column:3;grid-row:span 3;text-decoration:none;font:400 20px/1 Georgia,serif;color:rgba(27,36,50,.4)}",
       ".fo-pm-beads{display:flex;gap:4px}",
-      ".fo-pm-beads i{display:grid;place-items:center;width:19px;height:19px;border-radius:4px;font:700 9.5px/1 Oswald,sans-serif;font-style:normal;color:#08101f}",
-      ".fo-pm-beads i.w{background:#5FBF7E}.fo-pm-beads i.l{background:#C2566A}.fo-pm-beads i.t{background:#8ea3c4}",
-      ".fo-pm-none{font-family:Georgia,serif;font-style:italic;font-size:12px;color:var(--steel)}",
-      ".fo-pm-manrole svg{width:15px;height:15px;display:block}",
-      ".fo-pm-mannm{display:flex;flex-direction:column;gap:2px;min-width:0}",
-      ".fo-pm-mannm b{font-family:Georgia,'Times New Roman',serif;font-size:14px;color:var(--paper);overflow-wrap:anywhere}",
-      ".fo-pm-mannm i{font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.14em;font-size:8px;color:var(--steel)}",
-      ".fo-pm-dim{margin:0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:13.5px;line-height:1.5;color:#c3d0e6}",
-      ".fo-pm-lost{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(24px,3.4vw,40px);color:var(--paper);margin:14px 0 8px}",
-      // THE ACTIONS. Pills of whatever width their words happened to need, in
-      // a ragged row. They are a grid now: two to a line, the one that matters
-      // filled, each carrying the glyph of what it opens.
+      ".fo-pm-beads i{display:grid;place-items:center;width:19px;height:19px;border-radius:4px;font:700 9.5px/1 Inter,sans-serif;font-style:normal;color:#fff}",
+      ".fo-pm-beads i.w{background:#1F7A50}.fo-pm-beads i.l{background:#C22823}.fo-pm-beads i.t{background:#8a93a2}",
+      ".fo-pm-none{font-family:Georgia,serif;font-style:italic;font-size:12px;color:var(--mut)}",
+      ".fo-pm-h2hs{display:flex;flex-direction:column;gap:6px}",
+      "#page a.fo-pm-h2h{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:2px 10px;align-items:center;padding:9px 12px;border-radius:10px;background:#FFFEFC;border:1px solid var(--edge);text-decoration:none;color:var(--ink)}",
+      "#page a.fo-pm-h2h:hover{border-color:rgba(201,87,31,.5)}",
+      "#page a.fo-pm-h2h i{grid-row:span 2;font:700 10px/1 Oswald,sans-serif;font-style:normal;color:#8a93a2}",
+      "#page a.fo-pm-h2h b{font:600 12.5px/1.3 Inter,sans-serif;color:var(--navy)}",
+      "#page a.fo-pm-h2h span{grid-column:2;font:italic 400 11.5px/1.4 Georgia,serif;color:var(--mut)}",
+      "#page a.fo-pm-h2h s{grid-column:3;grid-row:span 2;text-decoration:none;font:400 18px/1 Georgia,serif;color:rgba(27,36,50,.4)}",
+      ".fo-pm-duo{display:grid;grid-template-columns:1fr;gap:9px}",
+      "@media(min-width:560px){.fo-pm-duo{grid-template-columns:1fr 1.2fr}}",
+      ".fo-pm-box{padding:12px 14px;border-radius:12px;background:linear-gradient(0deg,#FBF6EA,#FDFAF2);border:1px solid var(--edge);display:flex;flex-direction:column;gap:9px}",
+      ".fo-pm-wx b{font:700 24px/1 Inter,sans-serif;color:var(--navy)}",
+      ".fo-pm-wx i{display:block;font:italic 400 11px/1.4 Georgia,serif;color:var(--mut);margin-top:5px}",
+      ".fo-pm-prr{display:flex;justify-content:space-between;font:400 12px/1.3 Inter,sans-serif;color:var(--mut)}",
+      ".fo-pm-prr b{color:var(--navy);font-weight:600}",
+      ".fo-pm-prn{margin:0;font:400 11.5px/1.55 Inter,sans-serif;color:#3c4757}",
+      ".fo-pm-dim{margin:0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:13px;line-height:1.5;color:var(--mut)}",
+      ".fo-pm-lost{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(24px,3.4vw,40px);color:var(--navy);margin:14px 0 8px}",
+      ".fo-pm-mast{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:10px;color:var(--acc)}",
       ".fo-pm-foot{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:9px;padding-top:clamp(12px,2vw,16px);border-top:1px solid var(--edge)}",
       "#page .fo-pm-cta,#page .fo-pm-back{display:inline-flex;align-items:center;justify-content:center;gap:9px;min-height:48px;padding:10px 14px;border-radius:12px;text-decoration:none;font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.14em;font-size:10.5px;font-weight:600;text-align:center;transition:transform .16s ease,background .16s ease,border-color .16s ease}",
       "#page .fo-pm-cta svg,#page .fo-pm-back svg{flex:0 0 auto}",
       "@media(max-width:430px){.fo-pm-foot{grid-template-columns:1fr}}",
-      "#page .fo-pm-cta{background:var(--gold);color:#08101f}",
-      ".fo-pm-cta:hover{transform:translateY(-1px);background:#F0C075}",
-      // live wears the page's own gold, not a siren: the pulsing red dot
-      // carries the LIVE signal while the button stays in the family
-      "#page .fo-pm-cta.live{background:var(--gold);color:#08101f}",
-      ".fo-pm-cta.live:hover{background:#F0C075}",
-      ".fo-pm-cta.live:before{content:'';width:8px;height:8px;border-radius:50%;background:#D8342B;flex:0 0 auto;animation:foPmLiveDot 1.2s ease-in-out infinite}",
+      "html body #page .fo-pm-cta{background:linear-gradient(180deg,#D06035,#B84E28);color:#FFF6EE !important;box-shadow:0 2px 8px rgba(184,78,40,.28);text-decoration:none !important}",
+      ".fo-pm-cta:hover{transform:translateY(-1px)}",
+      "html body #page .fo-pm-cta.live{background:linear-gradient(180deg,#D06035,#B84E28);color:#FFF6EE !important}",
+      ".fo-pm-cta.live:before{content:'';width:8px;height:8px;border-radius:50%;background:#FFE9E0;flex:0 0 auto;animation:foPmLiveDot 1.2s ease-in-out infinite}",
       "@keyframes foPmLiveDot{0%,100%{opacity:1}50%{opacity:.3}}",
       "@media(prefers-reduced-motion:reduce){.fo-pm-cta.live:before{animation:none}}",
-      "#page .fo-pm-back{border:1px solid rgba(150,180,225,.28);color:#cddaf0}",
-      ".fo-pm-back:hover{border-color:var(--gold);color:var(--gold)}",
-      "@media(max-width:700px){.fo-pm-when{grid-template-columns:1fr}.fo-pm-where{grid-template-columns:repeat(3,minmax(0,1fr))}}",
-      // A POSTER STACKS ON A PHONE. Side by side, a long club name had a
-      // column barely wider than itself and broke in half - WARWICKSHI/RE.
-      // Given the whole width one at a time, every name in the world fits.
+      "html body #page .fo-pm-back{border:1.5px solid rgba(20,36,58,.3);color:#14243A !important;background:#FFFEFC;text-decoration:none !important}",
+      ".fo-pm-back:hover{border-color:var(--acc);color:var(--acc)}",
       "@media(max-width:560px){.fo-pm-bill{grid-template-columns:1fr;justify-items:center;gap:8px;text-align:center}",
       ".fo-pm-billside,.fo-pm-billside.a{align-items:center;text-align:center}",
       ".fo-pm-billside b{font-size:clamp(24px,7.4vw,36px);word-break:normal;overflow-wrap:anywhere}",
       ".fo-pm-v{width:38px;height:38px}.fo-pm-v span{font-size:17px}}",
       "@media(prefers-reduced-motion:reduce){.fo-pm-h2h,.fo-pm-cta,.fo-pm-back{transition:none}}",
-
-      // ---- THE PHONE ---------------------------------------------------------
-      // This card used to be squeezed until the whole preview fitted one
-      // screen without scrolling, and the ground photograph was the thing cut
-      // to buy the room. That was the right answer to a page carrying four
-      // panels of noughts; it is the wrong answer to this one. The card is
-      // short enough now to be read in a single flick, and the photograph is
-      // the reason a fixture feels like a place - so it stays, and the sizes
-      // come down instead.
       "@media(max-width:760px){",
       "#page .fo-pm{min-height:0}",
-      ".fo-pm-card{padding:11px;gap:10px;border-radius:15px}",
+      ".fo-pm-card{padding:11px;gap:10px;border-radius:14px}",
       ".fo-pm-folio{padding:5px 12px 5px 6px}",
       ".fo-pm-folio span{font-size:9px;letter-spacing:.15em}",
       ".fo-pm-bill{gap:6px}",
@@ -653,6 +676,7 @@
       "#page a.fo-pm-sl{padding:9px 10px;column-gap:9px}",
       "#page a.fo-pm-sl b{font-size:12.5px}",
       ".fo-pm-beads i{width:16px;height:16px;border-radius:3px;font-size:8px}",
+      "#page a.fo-pm-sl .fo-pm-slst{gap:10px}",
       "#page .fo-pm-cta,#page .fo-pm-back{min-height:44px;font-size:9.5px;letter-spacing:.1em;gap:7px}",
       "}"
     ].join("\n");

@@ -91,7 +91,21 @@
       "html body #page .fo-nat-pay span{font:500 10.5px/1 Inter,sans-serif;color:rgba(20,28,40,.62);background:rgba(20,28,40,.06);border-radius:999px;padding:6px 10px}",
       "html body #page .fo-nat-pay span.mine{background:rgba(232,185,106,.32);color:#6B520F;font-weight:700}",
       "html body #page .fo-nat-when{margin:2px 0 8px;padding:11px 13px;background:rgba(11,29,58,.05);border:1px solid rgba(11,29,58,.18);border-left:3px solid #0B1D3A;border-radius:12px;font:500 12px/1.55 Inter,sans-serif;color:rgba(20,28,40,.75)}",
-      "html body #page .fo-nat-when b{color:#0B1D3A}"
+      "html body #page .fo-nat-when b{color:#0B1D3A}",
+      // ---- THE NATIONAL SIDE'S HERO, in the dashboard's navy ----------------
+      "html body #page .fo-nt-hero{position:relative;background:linear-gradient(158deg,#152C4E,#0C1E36);border:1px solid rgba(14,35,63,.5);border-radius:14px;padding:18px 16px 15px;margin-bottom:12px;overflow:hidden}",
+      "html body #page .fo-nt-hero .hb{display:flex;align-items:center;gap:14px}",
+      "html body #page .fo-nt-hero .shield{flex:none;width:58px;height:68px;background:#FFFEFC;clip-path:polygon(0 0,100% 0,100% 70%,50% 100%,0 70%);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.35)}",
+      "html body #page .fo-nt-hero .shield img{width:30px;height:21px;object-fit:cover;border-radius:2px}",
+      "html body #page .fo-nt-hero h2{font:700 26px/1 Oswald,sans-serif;text-transform:uppercase;color:#FFFEFC;margin:0}",
+      "html body #page .fo-nt-hero .sub{font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(244,239,228,.66);margin-top:7px}",
+      "html body #page .fo-nt-hero .hf{display:flex;margin-top:15px;border-top:1px solid rgba(244,239,228,.18);padding-top:12px}",
+      "html body #page .fo-nt-hero .hf span{flex:1;padding:0 10px;border-left:1px solid rgba(244,239,228,.12);font:600 7.5px/1.4 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(244,239,228,.55)}",
+      "html body #page .fo-nt-hero .hf span:first-child{border-left:0;padding-left:0}",
+      "html body #page .fo-nt-hero .hf b{display:block;font:600 12px/1.35 Inter,sans-serif;color:#FFFEFC;margin-top:3px;text-transform:none;letter-spacing:0}",
+      "html body #page .fo-nt-form{display:flex;gap:7px;margin:2px 0 10px}",
+      "html body #page .fo-nt-form i{width:28px;height:28px;border-radius:50%;font-style:normal;display:flex;align-items:center;justify-content:center;font:700 10.5px/1 Inter,sans-serif;color:#fff}",
+      "html body #page .fo-nt-form i.w{background:#1F7A50}html body #page .fo-nt-form i.l{background:#C22823}html body #page .fo-nt-form i.t{background:#8a93a2}"
     ].join("\n");
     document.head.appendChild(s);
   }
@@ -212,7 +226,33 @@
 
     var myMen = mine ? (n.squad || []).filter(function (m) { return m.club === myClub; }) : [];
 
+    // THE NATION'S BILLING: shield, name, and the window's facts - with its
+    // world rank where the rankings snapshot has spoken.
+    var natRank = null;
+    try {
+      var rk9 = JSON.parse(localStorage.getItem("fo_world_rk") || "null");
+      var nr9 = rk9 && rk9.nations ? rk9.nations.filter(function (x) { return x.id === ST.nation || x.country === ST.nation; })[0] : null;
+      if (nr9 && nr9.rank) natRank = nr9;
+    } catch (eRk) {}
+    // the tours read newest-last: the nation's own results become its form
+    var formChips = (n.tours || []).map(function (t9) {
+      var us = n.name;
+      if (t9.a !== us && t9.b !== us) return "";
+      var k9 = !t9.winner ? "t" : t9.winner === us ? "w" : "l";
+      return "<i class='" + k9 + "'>" + k9.toUpperCase() + "</i>";
+    }).join("");
+    var hero = "<div class='fo-nt-hero'>" +
+      "<div class='hb'><span class='shield'><img src='" + flagOf(ST.nation) + "' alt=''></span>" +
+      "<div><h2>" + E(n.name || ST.nation) + "</h2><div class='sub'>The national side</div></div></div>" +
+      "<div class='hf'>" +
+      (natRank ? "<span>World rank<b>#" + natRank.rank + "</b></span>" : "") +
+      "<span>Squad<b>" + ((n.squad || []).length || "&mdash;") + " men</b></span>" +
+      "<span>" + (n.window ? "Named for<b>Round " + n.window + "</b>" : "Windows<b>Rounds " + (snap.windows || [5, 9, 13]).join(", ") + "</b>") + "</span>" +
+      "<span>Tours play<b>" + (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC</b></span>" +
+      "</div></div>";
+
     page.innerHTML = shell(
+      flags + hero +
       (mine ? "<div class='fo-ac-card'><h3>Your men</h3>" +
         (myMen.length
           ? "<p class='fo-ac-p'>" + E(n.name) + " have taken <b>" + myMen.length + "</b> of " + E(myClub) + "'s cricketers for the latest window: " +
@@ -220,20 +260,20 @@
             money(myMen.reduce(function (a, m) { return a + (m.fee || 0); }, 0)) + " for the week.</p>"
           : "<p class='fo-ac-p'>Nobody from " + E(myClub) + " is in the latest " + E(n.name) + " squad. Form is what the selectors read &mdash; win a few and they will look again.</p>") +
         "</div>" : "") +
-      "<div class='fo-ac-card'><h3>The nations</h3>" + flags +
-        "<div class='fo-nat-when'>Windows fall on rounds <b>" + (snap.windows || [5, 9, 13]).join(", ") +
-        "</b>. Squads are named that morning; the tours are played at <b>" +
-        (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC</b> the same evening.</div>" +
-      "</div>" +
-      "<div class='fo-ac-card'><h3>" + natFlag + E(n.name || ST.nation) +
+      "<div class='fo-ac-card'><h3>" + natFlag + "The national squad" +
         "<span>" + (n.window ? "named for round " + n.window : "no squad yet") + "</span></h3>" +
-        (squad || "<div class='fo-ac-note'>No squad has been named for this nation yet.</div>") +
+        (squad || "<div class='fo-ac-note'>No squad has been named for this nation yet. Squads are named at rounds " +
+          (snap.windows || [5, 9, 13]).join(", ") + ".</div>") +
       "</div>" +
+      (tours ? "<div class='fo-ac-card'><h3>The tours" + (formChips ? "<span>recent form</span>" : "") + "</h3>" +
+        (formChips ? "<div class='fo-nt-form'>" + formChips + "</div>" : "") + tours + "</div>" : "") +
       (pay ? "<div class='fo-ac-card'><h3>What the window paid<span>season " + (n.seasonNo || 1) + "</span></h3>" +
         "<div class='fo-nat-pay'>" + pay + "</div>" +
         "<div class='fo-ac-note'>$50,000 a senior, $20,000 a man under twenty-one &mdash; paid to the club he was taken from, every window.</div></div>" : "") +
-      (tours ? "<div class='fo-ac-card'><h3>The tours</h3>" + tours + "</div>" : "") +
       (caps ? "<div class='fo-ac-card'><h3>The caps book<span>" + natFlag + E(n.name || "") + "</span></h3>" + caps + "</div>" : "") +
+      "<div class='fo-nat-when'>Windows fall on rounds <b>" + (snap.windows || [5, 9, 13]).join(", ") +
+      "</b>. Squads are named that morning; the tours are played at <b>" +
+      (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC</b> the same evening.</div>" +
       howItWorks());
 
     page.querySelectorAll("[data-nat]").forEach(function (b) {
