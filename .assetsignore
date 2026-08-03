@@ -32,3 +32,4 @@ package.json
 package-lock.json
 wrangler.jsonc
 .assetsignore
+edge/

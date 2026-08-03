@@ -15,8 +15,14 @@
 {
   "name": "fifty-overs-league",
   "compatibility_date": "2026-07-28",
+  // the edge worker fronts the assets with ONE extra route: /sb/* is a
+  // caching proxy for anonymous Supabase reads, so the world's snapshots are
+  // paid for once per minute at the edge instead of once per open tab.
+  // Everything else falls through to the same static assets as before.
+  "main": "edge/worker.mjs",
   "assets": {
     "directory": "./",
+    "binding": "ASSETS",
     // an unknown path is a mistake, not a route: hand back the 404 rather than
     // silently serving the game page under a wrong URL
     "not_found_handling": "none"
