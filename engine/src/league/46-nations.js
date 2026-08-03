@@ -37,6 +37,24 @@
     return "<img class='" + cls + (lg ? " natlogo" : "") + "' src='" + (lg || flagOf(rid)) +
       "' alt='' onerror=\"this.style.display='none'\">";
   }
+  // EVERY NATION HAS ONE HOME. A single painted ground per country serves as
+  // the national side's main ground - the hero plays under its sky. A nation
+  // with no painting yet gets the generic summer-noon ground and no named
+  // ground fact.
+  var NAT_GROUNDS = {
+    eng: "marylebone", aus: "melbourne", ind: "mumbai", pak: "lahore",
+    saf: "cape-town", nz: "auckland", sri: "colombo", wi: "bridgetown",
+    ire: "dublin", ned: "amsterdam", zim: "harare", afg: "kabul",
+    ban: "sylhet", nep: "kathmandu", sco: "edinburgh", wal: "cardiff",
+    ken: "nairobi", usa: "grand-prairie", can: "king-city"
+  };
+  function natGround(rid) {
+    var base = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
+    var slug = NAT_GROUNDS[rid];
+    if (!slug) return { art: base + "home/arches-summer-noon.webp", name: "" };
+    var nm = slug.split("-").map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(" ") + " Ground";
+    return { art: base + "cities/" + slug + "-ground.webp", name: nm };
+  }
   function money(v) {
     var n = Number(v) || 0;
     return "$" + (n >= 1000000 ? (n / 1000000).toFixed(n >= 10000000 ? 0 : 1) + "m"
@@ -74,7 +92,7 @@
       "html body #page .fo-nat-flag.natlogo{object-fit:contain;box-shadow:none;border-radius:0;width:17px;height:17px}",
       "html body #page .fo-ac-card h3 .fo-nat-flag.natlogo{width:21px;height:21px;vertical-align:-5px}",
       "html body #page .fo-ac-card h3 span .fo-nat-flag.natlogo{width:16px;height:16px;vertical-align:-4px}",
-      "html body #page .fo-nt-hero .shield img.natlogo{width:42px;height:52px;object-fit:contain;border-radius:0}",
+      "html body #page .fo-nt-hero .shield img.natlogo{width:48px;height:58px;object-fit:contain;border-radius:0}",
       "html body #page .fo-nat-man{display:flex;align-items:baseline;gap:9px;padding:9px 2px;border-top:1px solid rgba(20,28,40,.07);font:500 13px/1.3 Inter,sans-serif}",
       "html body #page .fo-nat-flag{width:19px;height:13px;flex:0 0 auto;object-fit:cover;border-radius:2px;align-self:center;box-shadow:0 0 0 1px rgba(20,28,40,.12)}",
       "html body #page .fo-ac-card h3 .fo-nat-flag{width:22px;height:15px;margin-right:8px;vertical-align:-2px}",
@@ -83,7 +101,7 @@
       "html body #page .fo-nat-man i{font-style:normal;font:700 10px/1 Oswald,sans-serif;color:rgba(20,28,40,.35);width:16px}",
       "html body #page .fo-nat-man b{font-weight:600;color:#141C28}",
       "html body #page .fo-nat-man span{flex:1;font-size:11px;color:rgba(20,28,40,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      "html body #page .fo-nat-man u{text-decoration:none;font:700 9px/1 Oswald,sans-serif;letter-spacing:.1em;color:rgba(20,28,40,.4);white-space:nowrap}",
+      "html body #page .fo-nat-man u{text-decoration:none;font:600 10.5px/1 Inter,sans-serif;color:#1F6F4A;background:rgba(31,111,74,.1);padding:5px 9px;border-radius:999px;white-space:nowrap;align-self:center}",
       "html body #page .fo-nat-man.mine{background:rgba(232,185,106,.2);border-radius:9px;padding-left:8px;padding-right:8px}",
       // a row that opens a player page looks and behaves like one: it takes
       // the pointer, lifts on hover and carries a chevron. A row with no page
@@ -105,17 +123,28 @@
       "html body #page .fo-nat-pay span.mine{background:rgba(232,185,106,.32);color:#6B520F;font-weight:700}",
       "html body #page .fo-nat-when{margin:2px 0 8px;padding:11px 13px;background:rgba(11,29,58,.05);border:1px solid rgba(11,29,58,.18);border-left:3px solid #0B1D3A;border-radius:12px;font:500 12px/1.55 Inter,sans-serif;color:rgba(20,28,40,.75)}",
       "html body #page .fo-nat-when b{color:#0B1D3A}",
-      // ---- THE NATIONAL SIDE'S HERO, in the dashboard's navy ----------------
-      "html body #page .fo-nt-hero{position:relative;background:linear-gradient(158deg,#152C4E,#0C1E36);border:1px solid rgba(14,35,63,.5);border-radius:14px;padding:18px 16px 15px;margin-bottom:12px;overflow:hidden}",
-      "html body #page .fo-nt-hero .hb{display:flex;align-items:center;gap:14px}",
-      "html body #page .fo-nt-hero .shield{flex:none;width:58px;height:68px;background:#FFFEFC;clip-path:polygon(0 0,100% 0,100% 70%,50% 100%,0 70%);display:flex;align-items:center;justify-content:center;box-shadow:0 4px 14px rgba(0,0,0,.35)}",
-      "html body #page .fo-nt-hero .shield img{width:30px;height:21px;object-fit:cover;border-radius:2px}",
-      "html body #page .fo-nt-hero h2{font:700 26px/1 Oswald,sans-serif;text-transform:uppercase;color:#FFFEFC;margin:0}",
-      "html body #page .fo-nt-hero .sub{font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(244,239,228,.66);margin-top:7px}",
-      "html body #page .fo-nt-hero .hf{display:flex;margin-top:15px;border-top:1px solid rgba(244,239,228,.18);padding-top:12px}",
-      "html body #page .fo-nt-hero .hf span{flex:1;padding:0 10px;border-left:1px solid rgba(244,239,228,.12);font:600 7.5px/1.4 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(244,239,228,.55)}",
-      "html body #page .fo-nt-hero .hf span:first-child{border-left:0;padding-left:0}",
-      "html body #page .fo-nt-hero .hf b{display:block;font:600 12px/1.35 Inter,sans-serif;color:#FFFEFC;margin-top:3px;text-transform:none;letter-spacing:0}",
+      // ---- THE NATIONAL SIDE'S HERO: its own ground, under its own sky ------
+      "html body #page .fo-nt-hero{position:relative;background:linear-gradient(158deg,#152C4E,#0C1E36);border:1px solid rgba(14,35,63,.5);border-radius:16px;margin-bottom:12px;overflow:hidden;box-shadow:0 10px 26px rgba(11,20,35,.22)}",
+      "html body #page .fo-nt-hero .bgart{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 62%}",
+      "html body #page .fo-nt-hero .veil{position:absolute;inset:0;background:linear-gradient(180deg,rgba(11,22,40,.18) 0%,rgba(11,22,40,.52) 55%,rgba(9,18,33,.9) 100%)}",
+      "html body #page .fo-nt-hero .hin{position:relative}",
+      "html body #page .fo-nt-hero .hb{display:flex;align-items:center;gap:14px;padding:clamp(26px,6vw,60px) 16px 0}",
+      "html body #page .fo-nt-hero .shield{flex:none;width:74px;height:88px;background:#FFFEFC;clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(0,0,0,.4)}",
+      "html body #page .fo-nt-hero .shield img{width:38px;height:27px;object-fit:cover;border-radius:2px}",
+      "html body #page .fo-nt-hero h2{font:700 30px/1 Oswald,sans-serif;text-transform:uppercase;color:#FFFEFC;margin:0;display:flex;align-items:center;gap:10px;text-shadow:0 2px 8px rgba(0,0,0,.45)}",
+      "html body #page .fo-nt-hero h2 .hfl{width:26px;height:18px;object-fit:cover;border-radius:3px;box-shadow:0 0 0 1px rgba(255,255,255,.35)}",
+      "html body #page .fo-nt-hero .sub{font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:rgba(244,239,228,.78);margin-top:8px;text-shadow:0 1px 6px rgba(0,0,0,.5)}",
+      "html body #page .fo-nt-hero .hf{display:flex;flex-wrap:wrap;margin-top:16px;border-top:1px solid rgba(244,239,228,.22);background:rgba(9,18,33,.4);-webkit-backdrop-filter:blur(2px);backdrop-filter:blur(2px)}",
+      "html body #page .fo-nt-hero .hf span{flex:1 1 auto;padding:11px 13px;border-left:1px solid rgba(244,239,228,.12);font:600 7.5px/1.4 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(244,239,228,.6)}",
+      "html body #page .fo-nt-hero .hf span:first-child{border-left:0}",
+      "html body #page .fo-nt-hero .hf b{display:block;font:600 12.5px/1.35 Inter,sans-serif;color:#FFFEFC;margin-top:4px;text-transform:none;letter-spacing:0;white-space:nowrap}",
+      // ---- the world rankings, underlined in the accent ---------------------
+      "html body #page .fo-nt-rk{display:flex}",
+      "html body #page .fo-nt-rk span{flex:1;text-align:center;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;color:rgba(20,28,40,.5);text-transform:uppercase}",
+      "html body #page .fo-nt-rk b{display:inline-block;font:700 24px/1.1 Inter,sans-serif;color:#14243A;margin:8px auto 0;padding:0 3px 7px;border-bottom:3px solid #C9571F;min-width:40px;font-variant-numeric:tabular-nums}",
+      // ---- two columns on a desk, one on a phone ----------------------------
+      "html body #page .fo-nt-c{min-width:0}",
+      "@media(min-width:860px){html body #page .fo-nt-grid{display:grid;grid-template-columns:1.35fr .9fr;gap:0 14px;align-items:start}}",
       "html body #page .fo-nt-form{display:flex;gap:7px;margin:2px 0 10px}",
       "html body #page .fo-nt-form i{width:28px;height:28px;border-radius:50%;font-style:normal;display:flex;align-items:center;justify-content:center;font:700 10.5px/1 Inter,sans-serif;color:#fff}",
       "html body #page .fo-nt-form i.w{background:#1F7A50}html body #page .fo-nt-form i.l{background:#C22823}html body #page .fo-nt-form i.t{background:#8a93a2}"
@@ -243,7 +272,8 @@
     var natRank = null;
     try {
       var rk9 = JSON.parse(localStorage.getItem("fo_world_rk") || "null");
-      var nr9 = rk9 && rk9.nations ? rk9.nations.filter(function (x) { return x.id === ST.nation || x.country === ST.nation; })[0] : null;
+      var list9 = (rk9 && (rk9.countries || rk9.nations)) || [];
+      var nr9 = list9.filter(function (x) { return x.id === ST.nation || x.country === ST.nation; })[0];
       if (nr9 && nr9.rank) natRank = nr9;
     } catch (eRk) {}
     // the tours read newest-last: the nation's own results become its form
@@ -253,39 +283,60 @@
       var k9 = !t9.winner ? "t" : t9.winner === us ? "w" : "l";
       return "<i class='" + k9 + "'>" + k9.toUpperCase() + "</i>";
     }).join("");
+    var ga = natGround(ST.nation);
     var hero = "<div class='fo-nt-hero'>" +
+      "<img class='bgart' src='" + ga.art + "' alt='' onerror=\"this.style.display='none'\"><span class='veil'></span>" +
+      "<div class='hin'>" +
       "<div class='hb'><span class='shield'>" + natCrest(ST.nation, "") + "</span>" +
-      "<div><h2>" + E(n.name || ST.nation) + "</h2><div class='sub'>The national side</div></div></div>" +
+      "<div><h2>" + E(n.name || ST.nation) +
+      " <img class='hfl' src='" + flagOf(ST.nation) + "' alt='' onerror=\"this.style.display='none'\">" +
+      "</h2><div class='sub'>The national side</div></div></div>" +
       "<div class='hf'>" +
       (natRank ? "<span>World rank<b>#" + natRank.rank + "</b></span>" : "") +
+      (ga.name ? "<span>Home ground<b>" + E(ga.name) + "</b></span>" : "") +
       "<span>Squad<b>" + ((n.squad || []).length || "&mdash;") + " men</b></span>" +
       "<span>" + (n.window ? "Named for<b>Round " + n.window + "</b>" : "Windows<b>Rounds " + (snap.windows || [5, 9, 13]).join(", ") + "</b>") + "</span>" +
       "<span>Tours play<b>" + (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC</b></span>" +
-      "</div></div>";
+      "</div></div></div>";
+    // the ladder's own numbers, spoken in the accent
+    var rankCard = "";
+    if (natRank) {
+      var fmtR = function (v) { return Number(v || 0).toLocaleString("en-US"); };
+      rankCard = "<div class='fo-ac-card'><h3>World rankings</h3><div class='fo-nt-rk'>" +
+        "<span>Rank<b>#" + natRank.rank + "</b></span>" +
+        (natRank.natRating ? "<span>National XI<b>" + fmtR(natRank.natRating) + "</b></span>" : "") +
+        (natRank.clubRating ? "<span>Club game<b>" + fmtR(natRank.clubRating) + "</b></span>" : "") +
+        "</div></div>";
+    }
 
-    page.innerHTML = shell(
-      flags + hero +
-      (mine ? "<div class='fo-ac-card'><h3>Your men</h3>" +
+    var squadCard = "<div class='fo-ac-card'><h3>" + natFlag + "The national squad" +
+        "<span>" + (n.window ? "named for round " + n.window : "no squad yet") + "</span></h3>" +
+        (squad || "<div class='fo-ac-note'>No squad has been named for this nation yet. Squads are named at rounds " +
+          (snap.windows || [5, 9, 13]).join(", ") + ".</div>") +
+      "</div>";
+    var capsCard = caps ? "<div class='fo-ac-card'><h3>The caps book<span>" + natFlag + E(n.name || "") + "</span></h3>" + caps + "</div>" : "";
+    var payCard = pay ? "<div class='fo-ac-card'><h3>What the window paid<span>season " + (n.seasonNo || 1) + "</span></h3>" +
+        "<div class='fo-nat-pay'>" + pay + "</div>" +
+        "<div class='fo-ac-note'>$50,000 a senior, $20,000 a man under twenty-one &mdash; paid to the club he was taken from, every window.</div></div>" : "";
+    var toursCard = tours ? "<div class='fo-ac-card'><h3>The tours" + (formChips ? "<span>recent form</span>" : "") + "</h3>" +
+        (formChips ? "<div class='fo-nt-form'>" + formChips + "</div>" : "") + tours + "</div>" : "";
+    var mineCard = mine ? "<div class='fo-ac-card'><h3>Your men</h3>" +
         (myMen.length
           ? "<p class='fo-ac-p'>" + E(n.name) + " have taken <b>" + myMen.length + "</b> of " + E(myClub) + "'s cricketers for the latest window: " +
             E(myMen.map(function (m) { return m.name; }).join(", ")) + ". They miss the round, and the board pays you " +
             money(myMen.reduce(function (a, m) { return a + (m.fee || 0); }, 0)) + " for the week.</p>"
           : "<p class='fo-ac-p'>Nobody from " + E(myClub) + " is in the latest " + E(n.name) + " squad. Form is what the selectors read &mdash; win a few and they will look again.</p>") +
-        "</div>" : "") +
-      "<div class='fo-ac-card'><h3>" + natFlag + "The national squad" +
-        "<span>" + (n.window ? "named for round " + n.window : "no squad yet") + "</span></h3>" +
-        (squad || "<div class='fo-ac-note'>No squad has been named for this nation yet. Squads are named at rounds " +
-          (snap.windows || [5, 9, 13]).join(", ") + ".</div>") +
-      "</div>" +
-      (tours ? "<div class='fo-ac-card'><h3>The tours" + (formChips ? "<span>recent form</span>" : "") + "</h3>" +
-        (formChips ? "<div class='fo-nt-form'>" + formChips + "</div>" : "") + tours + "</div>" : "") +
-      (pay ? "<div class='fo-ac-card'><h3>What the window paid<span>season " + (n.seasonNo || 1) + "</span></h3>" +
-        "<div class='fo-nat-pay'>" + pay + "</div>" +
-        "<div class='fo-ac-note'>$50,000 a senior, $20,000 a man under twenty-one &mdash; paid to the club he was taken from, every window.</div></div>" : "") +
-      (caps ? "<div class='fo-ac-card'><h3>The caps book<span>" + natFlag + E(n.name || "") + "</span></h3>" + caps + "</div>" : "") +
-      "<div class='fo-nat-when'>Windows fall on rounds <b>" + (snap.windows || [5, 9, 13]).join(", ") +
+        "</div>" : "";
+    var whenNote = "<div class='fo-nat-when'>Windows fall on rounds <b>" + (snap.windows || [5, 9, 13]).join(", ") +
       "</b>. Squads are named that morning; the tours are played at <b>" +
-      (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC</b> the same evening.</div>" +
+      (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC</b> the same evening.</div>";
+
+    page.innerHTML = shell(
+      flags + hero +
+      "<div class='fo-nt-grid'>" +
+      "<div class='fo-nt-c'>" + squadCard + capsCard + payCard + "</div>" +
+      "<div class='fo-nt-c'>" + rankCard + toursCard + mineCard + whenNote + "</div>" +
+      "</div>" +
       howItWorks());
 
     page.querySelectorAll("[data-nat]").forEach(function (b) {
