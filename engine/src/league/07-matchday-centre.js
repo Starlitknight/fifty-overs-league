@@ -2283,7 +2283,7 @@
       "<div class='sc'><b>" + inn.runs + "/" + inn.wkts + "</b><span class='k or'>" + oversTx + " overs</span></div>" +
       (M.target
         ? "<div class='st'><span class='k'>Target</span><b>" + M.target + "</b></div><div class='st'><span class='k'>Req. rate</span><b>" + (req || "&ndash;") + "</b></div>"
-        : "<div class='st'><span class='k'>Run rate</span><b>" + crr + "</b></div><div class='st'><span class='k'>Toss</span><b class='sm'>" + (o.tossTx || "&ndash;") + "</b></div>") +
+        : "<div class='st'><span class='k'>Run rate</span><b>" + crr + "</b></div><div class='st tst'><span class='k'>Toss</span><b class='sm'>" + (o.tossTx || "&ndash;") + "</b></div>") +
       "<div class='st'><span class='k'>Recent balls</span><span class='bb9'>" + beads + "</span></div>" +
       "<div class='tm rt'><b>" + E(opp) + "</b><span>Bowling</span></div>" +
       "<span class='cr'>" + crest(opp) + "</span>" +
@@ -2401,7 +2401,7 @@
       // layout: centred wrap, band, grid with the rail - a fifth smaller all
       // through, so the whole innings reads on one screen
       "body.fo-dash .fo-db-wrap{max-width:1220px;margin:0 auto;padding:62px 22px 66px}" +
-      "body.fo-dash .fo-db-bug{height:72px;display:flex;align-items:center;gap:22px;padding:0 18px}" +
+      "body.fo-dash .fo-db-bug{min-height:64px;display:flex;align-items:center;gap:20px;row-gap:8px;padding:9px 18px;flex-wrap:wrap}" +
       "body.fo-dash .fo-db-bug .cr svg{display:block;width:44px;height:48px}" +
       "body.fo-dash .fo-db-bug .tm b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:15px;letter-spacing:1.3px;text-transform:uppercase}" +
       "body.fo-dash .fo-db-bug .tm b .dot{color:#C9571F;font-size:9px;font-style:normal}" +
@@ -2413,13 +2413,18 @@
       "body.fo-dash .fo-db-bug .st b.sm{font-size:11px;font-family:Inter,sans-serif;font-weight:500;max-width:150px}" +
       "body.fo-dash .fo-db-bug .bb9{display:flex;gap:4px;margin-top:5px}" +
       "body.fo-dash .fo-db-bug .db-b{min-width:22px;height:22px;font-size:11px}" +
-      "body.fo-dash .fo-db-grid{display:grid;grid-template-columns:1fr 350px;gap:14px;margin-top:12px}" +
-      "body.fo-dash .fo-db-left{display:flex;flex-direction:column;gap:12px}" +
+      "body.fo-dash .fo-db-grid{display:grid;grid-template-columns:minmax(0,1fr) clamp(268px,26vw,350px);gap:14px;margin-top:12px}" +
+      // grid tracks must be allowed to SHRINK - the default min-width:auto is
+      // how a fixed rail gets shoved off a laptop screen
+      "body.fo-dash .fo-db-grid>*,body.fo-dash .fo-db-players>*,body.fo-dash .fo-db-info>*,body.fo-dash .fo-db-charts>*{min-width:0}" +
+      "body.fo-dash .fo-db-left{display:flex;flex-direction:column;gap:12px;min-width:0}" +
       "body.fo-dash .fo-db-art{height:238px;border-radius:14px}" +
       "body.fo-dash .fo-db-players{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}" +
-      "body.fo-dash .db-p{display:flex;align-items:center;gap:11px;padding:10px 13px;height:74px}" +
+      "body.fo-dash .db-p{display:flex;align-items:center;gap:10px;padding:10px 12px;height:74px;overflow:hidden}" +
       "body.fo-dash .db-p img{width:48px;height:48px;border-radius:50%;object-fit:cover;object-position:50% 12%;border:2px solid #E8B96A;flex:0 0 48px}" +
-      "body.fo-dash .db-p .nm{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:14px;line-height:1.1;margin-top:1px}" +
+      // when the row runs tight the NAME gives way, never the numbers
+      "body.fo-dash .db-p .pt{flex:1;min-width:0;overflow:hidden}" +
+      "body.fo-dash .db-p .nm{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:14px;line-height:1.1;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       "body.fo-dash .db-p .rw{display:flex;gap:7px;align-items:center;margin-top:3px;overflow:hidden}" +
       "body.fo-dash .db-p .rw .k{white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;font-size:8.5px}" +
       "body.fo-dash .db-p .stars{font-size:12.5px;color:#E8B96A;letter-spacing:.5px;white-space:nowrap}" +
@@ -2497,6 +2502,39 @@
       "#fo-commpage .cp-band.inn{background:#C9571F;color:#fff}" +
       "#fo-commpage .cp-mile{background:#FBF3E4;border:1px solid #E8B96A;border-radius:9px;padding:9px 16px;margin:8px 0;font:600 12.5px Inter;color:#7a5a17}" +
       "#fo-commpage .k{font-family:Oswald,sans-serif;font-weight:500;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#8a7f6e}" +
+      // laptops: the same page, a size down again - nothing may ever clip
+      "@media(max-width:1420px){" +
+      "body.fo-dash .fo-db-wrap{padding:58px 16px 62px}" +
+      "body.fo-dash .fo-db-bug{gap:15px;padding:8px 14px}" +
+      "body.fo-dash .fo-db-bug .cr svg{width:36px;height:40px}" +
+      "body.fo-dash .fo-db-bug .tm b{font-size:13px;letter-spacing:1px}" +
+      "body.fo-dash .fo-db-bug .tm span{font-size:10px}" +
+      "body.fo-dash .fo-db-bug .sc b{font-size:23px}" +
+      "body.fo-dash .fo-db-bug .st{padding-left:14px}" +
+      "body.fo-dash .fo-db-bug .st b{font-size:16px}" +
+      "body.fo-dash .fo-db-bug .st b.sm{font-size:10px;max-width:120px}" +
+      "body.fo-dash .fo-db-bug .bb9 .db-b{min-width:19px;height:19px;font-size:10px}" +
+      "body.fo-dash .fo-db-art{height:200px}" +
+      "body.fo-dash .db-p{height:64px;gap:9px;padding:8px 11px}" +
+      "body.fo-dash .db-p img{width:40px;height:40px;flex-basis:40px}" +
+      "body.fo-dash .db-p .nm{font-size:12.5px}" +
+      "body.fo-dash .db-p .stars{font-size:11px}" +
+      "body.fo-dash .db-p .pr b{font-size:13px}" +
+      "body.fo-dash .db-p .pr b.fig{font-size:12px}" +
+      "body.fo-dash .fo-db-info>div{min-height:238px}" +
+      "body.fo-dash .db-cg{gap:8px 12px;padding:9px 13px 0}" +
+      "body.fo-dash .db-c .v{font-size:11px}" +
+      "body.fo-dash .db-cr{padding:7px 12px;gap:7px;grid-template-columns:34px 26px 1fr}" +
+      "body.fo-dash .db-cr p{font-size:11.5px}" +
+      "body.fo-dash .db-cr .db-b{min-width:21px;height:21px;font-size:10px}" +
+      "body.fo-dash .fo-db-charts .db-card{min-height:112px}" +
+      "body.fo-dash .db-fw{font-size:11px;padding:5px 13px}" +
+      "}" +
+      "@media(max-width:1230px){" +
+      "body.fo-dash .fo-db-bug .tst{display:none}" +
+      "body.fo-dash .db-p .pr u{display:none}" +
+      "body.fo-dash .db-p .rw .k{max-width:40px}" +
+      "}" +
       "@media(max-width:1180px){body.fo-dash .fo-db-players{grid-template-columns:1fr 1fr}body.fo-dash .fo-db-info{grid-template-columns:1fr 1fr}}";
     document.head.appendChild(s);
   }
