@@ -2211,8 +2211,13 @@
       var Lg = M.log[i]; if (Lg.inn !== M.inns || Lg.mile) continue;
       if (recent.length < 6) recent.unshift(Lg);
       if (nRows < 11) {
-        rows += "<div class='db-cr" + (first ? " latest" : "") + "'><b>" + E(Lg.no || "") + "</b>" + foDashBall(Lg.out) +
-          "<p>" + E(Lg.txt || "") + (first && o.kphTx ? " <span class='kph'>" + o.kphTx + "</span>" : "") + "</p></div>";
+        var wkF = (typeof isWkt === "function" && isWkt(Lg.out));
+        var txF = String(Lg.txt || ""), whoF = "", mF = /^(.{2,40}? to .{2,30}?)\s*:\s*(.*)$/.exec(txF);
+        if (mF) { whoF = mF[1]; txF = mF[2]; }
+        rows += "<div class='db-cr" + (first ? " latest" : "") + (wkF ? " wk" : Lg.out === "4" ? " r4" : Lg.out === "6" ? " r6" : "") + "'>" +
+          "<b>" + E(Lg.no || "") + "</b>" + foDashBall(Lg.out) +
+          "<p>" + (whoF ? "<b class='who'>" + E(whoF) + "</b> " : "") + E(txF) +
+          (first && o.kphTx ? " <span class='kph'>" + o.kphTx + "</span>" : "") + "</p></div>";
         nRows++; first = false;
       }
     }
@@ -2275,14 +2280,18 @@
       : "<div class='hd'><span class='k nv'>Fall of wickets</span><span class='k'>first innings</span></div>";
     var barLeft = M.done
       ? "<span class='bt'>" + E((M.result && M.result.text) || "Match complete") + "</span>"
-      : "<span class='bt'>" + Math.floor(ballsLeft / 6) + "." + (ballsLeft % 6) + " overs remaining</span>";
+      : M.target
+        ? "<span class='bt'>" + E(String(batTeam).toUpperCase()) + " NEED <i>" + need + "</i> FROM " + Math.floor(ballsLeft / 6) + "." + (ballsLeft % 6) + " OVERS</span>"
+        : "<span class='bt'>" + Math.floor(ballsLeft / 6) + "." + (ballsLeft % 6) + " overs remaining</span>";
     return "<div class='fo-db-wrap'>" +
       "<div class='db-card fo-db-bug'>" +
       "<span class='cr'>" + crest(batTeam) + "</span>" +
       "<div class='tm'><b>" + E(batTeam) + " <i class='dot'>&#9679;</i></b><span>Batting</span></div>" +
       "<div class='sc'><b>" + inn.runs + "/" + inn.wkts + "</b><span class='k or'>" + oversTx + " overs</span></div>" +
       (M.target
-        ? "<div class='st'><span class='k'>Target</span><b>" + M.target + "</b></div><div class='st'><span class='k'>Req. rate</span><b>" + (req || "&ndash;") + "</b></div>"
+        ? "<div class='st tst'><span class='k'>Target</span><b>" + M.target + "</b></div>" +
+          "<div class='st'><span class='k'>Remaining</span><b class='or'>" + need + "</b><span class='k'>off " + Math.floor(ballsLeft / 6) + "." + (ballsLeft % 6) + " ov</span></div>" +
+          "<div class='st'><span class='k'>Req. rate</span><b>" + (req || "&ndash;") + "</b></div>"
         : "<div class='st'><span class='k'>Run rate</span><b>" + crr + "</b></div><div class='st tst'><span class='k'>Toss</span><b class='sm'>" + (o.tossTx || "&ndash;") + "</b></div>") +
       "<div class='st'><span class='k'>Recent balls</span><span class='bb9'>" + beads + "</span></div>" +
       "<div class='tm rt'><b>" + E(opp) + "</b><span>Bowling</span></div>" +
@@ -2345,19 +2354,35 @@
         prevInn = Lg.inn;
         if (!pass(Lg)) continue;
         shown++;
-        rows += Lg.mile
-          ? "<div class='cp-mile'>" + E(Lg.txt || "") + "</div>"
-          : "<div class='db-cr'><b>" + E(Lg.no || "") + "</b>" + foDashBall(Lg.out) + "<p>" + E(Lg.txt || "") + "</p></div>";
+        if (Lg.mile) {
+          // over summaries read as navy score strips; the human moments keep gold
+          rows += /^End of over/i.test(Lg.txt || "")
+            ? "<div class='cp-band'>" + E(Lg.txt || "") + "</div>"
+            : "<div class='cp-mile'>&#9733; " + E(Lg.txt || "") + "</div>";
+        } else {
+          var wkR = isW(Lg.out), cls9 = wkR ? " wk" : Lg.out === "4" ? " r4" : Lg.out === "6" ? " r6" : "";
+          // "Bowler to Batter :" leads every line - set it like a byline
+          var tx9 = String(Lg.txt || ""), who9 = "", m9 = /^(.{2,40}? to .{2,30}?)\s*:\s*(.*)$/.exec(tx9);
+          if (m9) { who9 = m9[1]; tx9 = m9[2]; }
+          rows += "<div class='db-cr" + cls9 + "'><b>" + E(Lg.no || "") + "</b>" + foDashBall(Lg.out) +
+            "<p>" + (who9 ? "<b class='who'>" + E(who9) + "</b> &nbsp;" : "") + E(tx9) + "</p></div>";
+        }
       }
       if (!shown) rows += "<div class='db-cr'><p class='k'>Nothing under this filter yet.</p></div>";
       var inn9 = M.innings[M.inns];
-      var head = "<div class='cp-head'><button type='button' id='fo-cp-back'>&#8592; Back to the match</button>" +
-        "<b>" + E(M.meta.home) + " v " + E(M.meta.away) + "</b>" +
-        "<span class='k'>" + E(inn9.batTeam) + " " + inn9.runs + "/" + inn9.wkts + " &middot; " +
-        Math.floor(inn9.legal / 6) + "." + (inn9.legal % 6) + " ov</span>" +
+      // the header wears the venue painting under a navy veil, broadcast-style
+      var hArt = "";
+      try { hArt = (document.querySelector("#fo-mstage .fo-mst-bg img") || {}).src || ""; } catch (eHa) {}
+      var head = "<div class='cp-head'>" +
+        (hArt ? "<img class='cp-art' src='" + hArt + "' alt=''>" : "") + "<span class='cp-veil'></span>" +
+        "<div class='cp-hin'><button type='button' id='fo-cp-back'>&#8592; Back to the match</button>" +
+        "<div class='cp-title'><b>" + E(M.meta.home) + " v " + E(M.meta.away) + "</b>" +
+        "<span>" + E(inn9.batTeam) + " <i>" + inn9.runs + "/" + inn9.wkts + "</i> &middot; " +
+        Math.floor(inn9.legal / 6) + "." + (inn9.legal % 6) + " ov" +
+        (M.target ? " &middot; need " + Math.max(0, M.target - inn9.runs) : "") + "</span></div>" +
         "<span class='cp-filts'>" + FO_DASH_CFILT.map(function (f9) {
           return "<button type='button' data-cf='" + f9[0] + "' class='" + (filt === f9[0] ? "on" : "") + "'>" + f9[1] + "</button>";
-        }).join("") + "</span></div>";
+        }).join("") + "</span></div></div>";
       var d = old;
       if (!d) { d = document.createElement("div"); d.id = "fo-commpage"; document.body.appendChild(d); }
       d.setAttribute("data-filt", filt);
@@ -2379,6 +2404,10 @@
       "html body.fo-dash,html body.ftpskin.fo-dash{background:#F6F3EB !important}" +
       "html body.fo-dash #topbar,html body.ftpskin.fo-dash #topbar{background:#14243A !important;position:fixed;top:0;left:0;right:0;z-index:60}" +
       "body.fo-dash .fo-mst-ui{position:relative;z-index:5;min-height:100%}" +
+      // the ui paints ABOVE the docked oval (so the bottom bar always wins),
+      // but only its real controls catch the pointer - the oval stays live
+      "body.fo-dash .fo-mst-ui{pointer-events:none}" +
+      "body.fo-dash .fo-mst-ui .db-card,body.fo-dash .fo-mst-ui .fo-db-bar,body.fo-dash .fo-mst-ui button,body.fo-dash .fo-mst-ui a{pointer-events:auto}" +
       // the painting, contained: same scene layer, clipped to the art panel.
       // Geometry is measured off the grid slot after each paint, not guessed.
       "body.fo-dash .fo-mst-scene{position:absolute;inset:auto;border-radius:14px;overflow:hidden;border:1px solid #e3dccb;z-index:1}" +
@@ -2392,6 +2421,9 @@
       "body.fo-dash .fo-db-wrap .k.or,body.fo-dash .fo-db-wrap .or{color:#C9571F}" +
       "body.fo-dash .fo-db-wrap .k.nv{color:#14243A;font-weight:600}" +
       "body.fo-dash .db-card .hd{display:flex;justify-content:space-between;align-items:baseline;padding:13px 16px 0}" +
+      // section voices: burnt-orange card headers, warm gold labels inside
+      "body.fo-dash .db-card .hd .k.nv,body.fo-dash #fo-ovhd b{color:#C9571F}" +
+      "body.fo-dash .db-cg .k,body.fo-dash .db-p .k,body.fo-dash .fo-db-bug .st .k,body.fo-dash .fo-db-bug .k{color:#b3803f}" +
       "body.fo-dash .db-b{display:inline-flex;min-width:26px;height:26px;padding:0 4px;border-radius:50%;align-items:center;justify-content:center;font:700 12px Inter,sans-serif;background:#EFE9DB;color:#6b6154;border:1px solid #e0d8c8;font-style:normal}" +
       "body.fo-dash .db-b.r1{background:#FFFEFC;color:#4c4437}" +
       "body.fo-dash .db-b.r4{background:#C9571F;color:#fff;border-color:#C9571F}" +
@@ -2427,7 +2459,13 @@
       "body.fo-dash .db-p .nm{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:14px;line-height:1.1;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       "body.fo-dash .db-p .rw{display:flex;gap:7px;align-items:center;margin-top:3px;overflow:hidden}" +
       "body.fo-dash .db-p .rw .k{white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;font-size:8.5px}" +
-      "body.fo-dash .db-p .stars{font-size:12.5px;color:#E8B96A;letter-spacing:.5px;white-space:nowrap}" +
+      // the ten stars read exactly as the scorecard reads them: filled gold,
+      // half faded, the rest parchment - never all-gold
+      "body.fo-dash .db-p .stars{font-size:12.5px;letter-spacing:.5px;white-space:nowrap}" +
+      "body.fo-dash .db-p .stars s{text-decoration:none}" +
+      "body.fo-dash .db-p .stars em{font-style:normal;color:#ddd5c4}" +
+      "body.fo-dash .db-p .stars em.f{color:#E8B96A}" +
+      "body.fo-dash .db-p .stars em.h{color:#E8B96A;opacity:.55}" +
       "body.fo-dash .db-p .pr{margin-left:auto;text-align:right;flex:0 0 auto}" +
       "body.fo-dash .db-p .pr b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:15px;white-space:nowrap}" +
       "body.fo-dash .db-p .pr b.fig{font-size:13.5px}" +
@@ -2453,6 +2491,9 @@
       "body.fo-dash .db-cr b{font-family:Oswald,sans-serif;font-weight:600;font-size:11.5px;color:#8a7f6e}" +
       "body.fo-dash .db-cr p{margin:0;font-size:12px;line-height:1.45;color:#3a3427}" +
       "body.fo-dash .db-cr .kph{font-family:Oswald,sans-serif;font-weight:600;font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:#C9571F}" +
+      "body.fo-dash .db-cr p .who{font-family:Oswald,sans-serif;font-weight:500;font-size:10.5px;letter-spacing:.5px;color:#14243A;text-transform:uppercase}" +
+      "body.fo-dash .db-cr.r4{background:#FDF4E7}body.fo-dash .db-cr.r4 b{color:#C9571F}" +
+      "body.fo-dash .db-cr.wk{background:#FBEFEA}body.fo-dash .db-cr.wk b,body.fo-dash .db-cr.wk p .who{color:#8E1F13}" +
       "body.fo-dash .db-cr.latest{background:#FBF3E4;border-left:3px solid #C9571F;padding-left:11px;border-top:none}" +
       "body.fo-dash .db-cr.latest b{color:#14243A}" +
       "html body.fo-dash #fo-db-comm-more{margin:10px 16px 14px;padding:10px 0;font-family:Oswald,sans-serif;font-weight:500;font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:#4c4437 !important;background:#FFFEFC !important;border:1px solid #d9d0bc !important;border-radius:9px;cursor:pointer;box-shadow:none !important}" +
@@ -2466,8 +2507,10 @@
       "html body.fo-dash .fo-db-bar .fo-mst-next{position:static !important;width:auto !important;min-height:0 !important;padding:12px 26px !important;font-size:12px !important;letter-spacing:1.8px !important}" +
       // the LIVE BALL oval docks into the field-map card; its geometry is
       // measured off the grid slot after each paint
-      "html body.fo-dash #fo-oval{position:absolute !important;right:auto !important;bottom:auto !important;transform:none !important;max-width:none !important;min-width:0 !important;margin:0 !important;z-index:6;background:#FFFEFC !important;border:1px solid #e3dccb !important;border-radius:14px !important;backdrop-filter:none;box-shadow:0 2px 10px rgba(20,36,58,.05) !important;overflow:hidden;display:flex;flex-direction:column}" +
-      "body.fo-dash #fo-oval .ov-svg{flex:1;min-height:0}" +
+      "html body.fo-dash #fo-oval{position:absolute !important;right:auto !important;bottom:auto !important;transform:none !important;max-width:none !important;min-width:0 !important;margin:0 !important;z-index:3;background:#FFFEFC !important;border:1px solid #e3dccb !important;border-radius:14px !important;backdrop-filter:none;box-shadow:0 2px 10px rgba(20,36,58,.05) !important;overflow:hidden;display:flex;flex-direction:column}" +
+      // the green is the point: the pitch map fills the card, the chrome yields
+      "body.fo-dash #fo-oval .ov-svg{flex:1;min-height:0;transform:scale(1.13);transform-origin:50% 46%}" +
+      "body.fo-dash #fo-oval .ov-ctl,body.fo-dash #fo-oval .ov-note{display:none !important}" +
       "body.fo-dash.fo-thd #fo-oval{display:block !important}" +
       "body.fo-dash #fo-ovhd{color:#14243A;padding:13px 16px 4px}" +
       "body.fo-dash #fo-ovhd b{color:#14243A;letter-spacing:1.6px}" +
@@ -2476,31 +2519,46 @@
       "body.fo-dash #fo-oval .ov-note{color:#8a7f6e}" +
       "body.fo-dash #fo-oval .ov-snd{border-color:#d9d0bc;color:#8a7f6e}" +
       "body.fo-dash #fo-mst-talk{background:transparent;border-top:1px solid #eee7d9}" +
-      // the scorecard drawer wears daylight and takes the whole page
-      "html body.fo-dash.fo-thd #page .ftp-match-shell{background:#FFFEFC !important;border:1px solid #e3dccb !important;box-shadow:0 24px 70px rgba(20,36,58,.25) !important;left:max(24px,calc(50vw - 610px));right:max(24px,calc(50vw - 610px));top:64px;bottom:60px;width:auto}" +
+      // the scorecard drawer wears daylight and takes the WHOLE page
+      "html body.fo-dash.fo-thd #page .ftp-match-shell{background:#F6F3EB !important;border:none !important;border-radius:0 !important;box-shadow:none !important;left:0;right:0;top:52px;bottom:0;width:auto;padding:16px max(24px,calc(50vw - 610px)) 40px}" +
+      "html body.fo-dash.fo-thd #page .ftp-match-shell .panel{border:1px solid #e3dccb;box-shadow:0 2px 10px rgba(20,36,58,.05)}" +
       "html body.fo-dash.fo-thd #page .ftp-match-links a{background:#F1EEE6 !important;color:#4c4437 !important}" +
       "html body.fo-dash.fo-thd #page .ftp-match-links a.on{background:#C9571F !important;color:#fff !important}" +
       "#fo-thd-x{z-index:59}body.fo-dash.fo-thd #fo-thd-x{top:78px;right:38px;background:#FFFEFC;border-color:#d9d0bc;color:#14243A}" +
       // moment cut-ins keep their drama over the cream
       "body.fo-dash #fo-th-cut{z-index:70}" +
-      // the full commentary page: the whole book, filtered like a scorer would
+      // the full commentary page: broadcast header over the venue painting,
+      // then the whole book - boundaries glow, wickets bleed, overs bar navy
       "#fo-commpage{position:fixed;inset:0;z-index:900;background:#F6F3EB;display:flex;flex-direction:column;font-family:Inter,system-ui,sans-serif;color:#14243A}" +
-      "#fo-commpage .cp-head{display:flex;align-items:center;gap:16px;padding:14px max(24px,calc(50vw - 560px));background:#FFFEFC;border-bottom:1px solid #e3dccb;flex-wrap:wrap}" +
-      "#fo-commpage .cp-head b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:17px}" +
-      "html body #fo-cp-back{font-family:Oswald,sans-serif;font-weight:500;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:#4c4437 !important;background:#F6F3EB !important;border:1px solid #d9d0bc !important;border-radius:9px;padding:9px 14px;cursor:pointer;box-shadow:none !important}" +
-      "html body #fo-cp-back:hover{border-color:#C9571F !important;color:#C9571F !important}" +
+      "#fo-commpage .cp-head{position:relative;overflow:hidden;background:#14243A;flex:0 0 auto}" +
+      "#fo-commpage .cp-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 38%}" +
+      "#fo-commpage .cp-veil{position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,36,58,.94) 0%,rgba(20,36,58,.82) 46%,rgba(20,36,58,.5) 100%)}" +
+      "#fo-commpage .cp-hin{position:relative;display:flex;align-items:center;gap:18px;padding:16px max(24px,calc(50vw - 560px));flex-wrap:wrap}" +
+      "#fo-commpage .cp-title b{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:20px;color:#FFFEFC}" +
+      "#fo-commpage .cp-title span{font:500 11px Oswald,sans-serif;letter-spacing:1.8px;text-transform:uppercase;color:#c9d0da}" +
+      "#fo-commpage .cp-title span i{font-style:normal;color:#E8B96A;font-size:13px}" +
+      "html body #fo-cp-back{font-family:Oswald,sans-serif;font-weight:500;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:#FFFEFC !important;background:rgba(255,255,255,.1) !important;border:1px solid rgba(255,255,255,.35) !important;border-radius:9px;padding:9px 14px;cursor:pointer;box-shadow:none !important}" +
+      "html body #fo-cp-back:hover{border-color:#E8B96A !important;color:#E8B96A !important}" +
       "#fo-commpage .cp-filts{margin-left:auto;display:flex;gap:6px}" +
-      "html body #fo-commpage .cp-filts button{font-family:Oswald,sans-serif;font-weight:500;font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:#5d5546 !important;background:#F6F3EB !important;border:1px solid #d9d0bc !important;border-radius:999px;padding:7px 14px;cursor:pointer;box-shadow:none !important}" +
+      "html body #fo-commpage .cp-filts button{font-family:Oswald,sans-serif;font-weight:500;font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:#e6e0d2 !important;background:rgba(255,255,255,.08) !important;border:1px solid rgba(255,255,255,.3) !important;border-radius:999px;padding:7px 14px;cursor:pointer;box-shadow:none !important}" +
       "html body #fo-commpage .cp-filts button.on{background:#C9571F !important;border-color:#C9571F !important;color:#fff !important}" +
       "#fo-commpage .cp-list{flex:1;overflow:auto}" +
-      "#fo-commpage .cp-in{max-width:1120px;margin:0 auto;padding:14px 24px 40px}" +
+      "#fo-commpage .cp-in{max-width:1120px;margin:0 auto;padding:16px 24px 40px}" +
       "#fo-commpage .db-cr{display:grid;grid-template-columns:46px 30px 1fr;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid #eee7d9;background:#FFFEFC}" +
       "#fo-commpage .db-cr:first-child{border-top:none}" +
       "#fo-commpage .db-cr b{font-family:Oswald,sans-serif;font-weight:600;font-size:12px;color:#8a7f6e}" +
       "#fo-commpage .db-cr p{margin:0;font-size:13.5px;line-height:1.55;color:#3a3427}" +
-      "#fo-commpage .cp-band{display:flex;align-items:center;gap:12px;background:#14243A;color:#c9d0da;border-radius:9px;padding:8px 16px;margin:10px 0;font:500 11px Oswald;letter-spacing:1.8px;text-transform:uppercase}" +
-      "#fo-commpage .cp-band.inn{background:#C9571F;color:#fff}" +
-      "#fo-commpage .cp-mile{background:#FBF3E4;border:1px solid #E8B96A;border-radius:9px;padding:9px 16px;margin:8px 0;font:600 12.5px Inter;color:#7a5a17}" +
+      "#fo-commpage .db-cr p .who{font-family:Oswald,sans-serif;font-weight:500;font-size:12px;letter-spacing:.6px;color:#14243A;text-transform:uppercase}" +
+      "#fo-commpage .db-cr.r4{background:#FDF4E7;border-left:3px solid #C9571F;padding-left:11px}" +
+      "#fo-commpage .db-cr.r4 b{color:#C9571F}" +
+      "#fo-commpage .db-cr.r6{background:#F1EFE7;border-left:3px solid #14243A;padding-left:11px}" +
+      "#fo-commpage .db-cr.r6 p .who{color:#8a6a1f}" +
+      "#fo-commpage .db-cr.wk{background:#FBEFEA;border-left:3px solid #8E1F13;padding-left:11px}" +
+      "#fo-commpage .db-cr.wk b,#fo-commpage .db-cr.wk p .who{color:#8E1F13}" +
+      "#fo-commpage .db-cr.wk p{font-weight:500}" +
+      "#fo-commpage .cp-band{display:flex;align-items:center;gap:12px;background:#14243A;color:#E8B96A;border-radius:9px;padding:9px 16px;margin:10px 0;font:500 11.5px Oswald;letter-spacing:1.6px;text-transform:uppercase}" +
+      "#fo-commpage .cp-band.inn{background:#C9571F;color:#fff;font-size:13px}" +
+      "#fo-commpage .cp-mile{background:linear-gradient(90deg,#FBF3E4,#FDFAF2);border:1px solid #E8B96A;border-radius:9px;padding:10px 16px;margin:8px 0;font:600 13px Inter;color:#7a5a17}" +
       "#fo-commpage .k{font-family:Oswald,sans-serif;font-weight:500;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#8a7f6e}" +
       // laptops: the same page, a size down again - nothing may ever clip
       "@media(max-width:1420px){" +
@@ -3224,6 +3282,12 @@
           var vf9 = el.querySelector("#fo-db-comm-more");
           if (vf9) vf9.addEventListener("click", function () { foDashCommFull(); });
           foDashCommFull(true);   // a commentary page left open follows the live ball
+          // the drawer keeps only the pages that matter here - the dashboard
+          // already IS the commentary, the worm and the charts
+          var KEEP9 = { details: 1, orders: 1, scorecard: 1, "match ratings": 1 };
+          document.querySelectorAll(".ftp-match-links a").forEach(function (a9) {
+            a9.style.display = KEEP9[(a9.textContent || "").trim().toLowerCase()] ? "" : "none";
+          });
         } catch (eDp) {}
       }
       var nb = el.querySelector("#fo-mst-next");
