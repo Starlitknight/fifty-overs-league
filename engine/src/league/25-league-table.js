@@ -96,6 +96,7 @@
     }
     var ini = String(name || "?").replace(/[^A-Za-z ]/g, "").split(/\s+/).filter(Boolean)
       .map(function (w) { return w.charAt(0).toUpperCase(); }).slice(0, 2).join("");
+    if (window.foClubCrest) return window.foClubCrest(name, 24);
     var col = SH_COL[h32(name || "") % SH_COL.length];
     return "<span class='fo-lgx-sh' style='--sc:" + col + "'>" + E(ini || "?") + "</span>";
   }

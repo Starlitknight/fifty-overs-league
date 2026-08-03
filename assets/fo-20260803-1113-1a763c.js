@@ -4325,6 +4325,74 @@ pgCal=function(){};
 
 route();
 
+// ---- THE COUNTY ARMS -------------------------------------------------------
+// Every club in the world wears the same grand crest, drawn from nothing but
+// its name: a quartered shield under a coronet of stumps and bails, laurel
+// sprigs at the flanks and the club ribbon beneath. The colours come off a
+// hash of the name, so a club's arms are the same on every device, forever.
+// Below 34px the laurels and ribbon come off - a coronet and a quartered
+// shield are all a table row has room to honour.
+window.foClubCrest = (function () {
+  var PAL = ["#8C2B2B", "#1D3F6E", "#1F6F4A", "#6B3E8F", "#A8571C", "#2B6E7A", "#7A2E52", "#3E5C1E", "#3D3A6B", "#8A6A1F"];
+  var GOLD = "#E8C170", GOLD2 = "#B8933F", GOLD3 = "#8A6A24", NAVY = "#14243A", CREAM = "#FFFEFC";
+  function h32c(s) {
+    var h = 2166136261 >>> 0; s = String(s || "");
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return h >>> 0;
+  }
+  function dark(hex, f) {
+    var n = parseInt(hex.slice(1), 16);
+    var r = Math.round(((n >> 16) & 255) * f), g = Math.round(((n >> 8) & 255) * f), b = Math.round((n & 255) * f);
+    return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+  function esc(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
+  return function (name, px, opts) {
+    opts = opts || {};
+    px = Math.max(14, Math.round(+px || 40));
+    var ini = String(name || "?").replace(/[^A-Za-z ]/g, "").split(/\s+/).filter(Boolean)
+      .map(function (w) { return w.charAt(0).toUpperCase(); }).slice(0, 2).join("") || "?";
+    var h = h32c(name), c1 = PAL[h % PAL.length], c2 = dark(c1, 0.55);
+    var id = "fc" + (h % 100000) + "x";
+    var full = px >= 34 && !opts.compact;
+    var defs = "<defs>" +
+      "<linearGradient id='" + id + "a' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='" + c1 + "'/><stop offset='1' stop-color='" + c2 + "'/></linearGradient>" +
+      "<linearGradient id='" + id + "g' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#F2D28A'/><stop offset='1' stop-color='" + GOLD2 + "'/></linearGradient>" +
+      "<clipPath id='" + id + "c'><path d='M60 128 C34 114 18 96 18 68 L18 26 L102 26 L102 68 C102 96 86 114 60 128 Z'/></clipPath>" +
+      "</defs>";
+    var coronet = "<g fill='url(#" + id + "g)' stroke='" + GOLD3 + "' stroke-width='.8'>" +
+      "<rect x='47' y='6' width='4.6' height='15' rx='2'/><rect x='57.7' y='4' width='4.6' height='17' rx='2'/><rect x='68.4' y='6' width='4.6' height='15' rx='2'/>" +
+      "<rect x='47.6' y='3.4' width='11' height='3' rx='1.5'/><rect x='61.4' y='3.4' width='11' height='3' rx='1.5'/></g>";
+    var shieldD = "<path d='M60 130 C32 115 15 97 15 68 L15 23 L105 23 L105 68 C105 97 88 115 60 130 Z' fill='url(#" + id + "g)'/>" +
+      "<path d='M60 128 C34 114 18 96 18 68 L18 26 L102 26 L102 68 C102 96 86 114 60 128 Z' fill='url(#" + id + "a)'/>" +
+      "<g clip-path='url(#" + id + "c)'>" +
+      "<path d='M60 26 L60 128 M18 70 L102 70' stroke='url(#" + id + "g)' stroke-width='2.6' fill='none'/>" +
+      "<path d='M18 26 L60 26 L60 70 L18 70 Z M60 70 L102 70 L102 128 L60 128 Z' fill='" + NAVY + "' opacity='.45'/></g>" +
+      "<path d='M60 123.5 C37 110 22.5 94 22.5 68 L22.5 30.5 L97.5 30.5 L97.5 68 C97.5 94 83 110 60 123.5 Z' fill='none' stroke='" + GOLD + "' stroke-width='1.2' opacity='.85'/>";
+    var mono = "<text x='60' y='90' text-anchor='middle' font-family='Fraunces,Georgia,serif' font-weight='600'" +
+      " font-size='" + (ini.length > 1 ? 40 : 48) + "' fill='" + CREAM + "' letter-spacing='1'" +
+      " stroke='" + c2 + "' stroke-width='3' paint-order='stroke'>" + esc(ini) + "</text>";
+    if (!full) {
+      return "<svg class='fo-arms' width='" + px + "' height='" + Math.round(px * 1.18) + "' viewBox='4 0 112 132'" +
+        " role='img' aria-label='" + esc(name || "club") + " crest'>" + defs + coronet + shieldD + mono + "</svg>";
+    }
+    var laurel = "<g fill='none' stroke='url(#" + id + "g)' stroke-width='2.4' stroke-linecap='round'>" +
+      "<path d='M14 46 C4 70 6 96 24 116'/><path d='M106 46 C116 70 114 96 96 116'/></g><g fill='url(#" + id + "g)'>";
+    for (var i = 0; i < 5; i++) {
+      var t = 46 + i * 16, lx = 11 + i * 2.6, rx = 109 - i * 2.6;
+      laurel += "<ellipse cx='" + lx + "' cy='" + t + "' rx='6.5' ry='2.6' transform='rotate(" + (-52 + i * 7) + " " + lx + " " + t + ")'/>" +
+        "<ellipse cx='" + rx + "' cy='" + t + "' rx='6.5' ry='2.6' transform='rotate(" + (52 - i * 7) + " " + rx + " " + t + ")'/>";
+    }
+    laurel += "</g>";
+    var ribbon = "<g>" +
+      "<path d='M12 130 L30 124 L30 142 L12 148 L18 139 Z' fill='" + GOLD2 + "'/>" +
+      "<path d='M108 130 L90 124 L90 142 L108 148 L102 139 Z' fill='" + GOLD2 + "'/>" +
+      "<path d='M28 124 C44 130 76 130 92 124 L92 140 C76 146 44 146 28 140 Z' fill='url(#" + id + "g)' stroke='" + GOLD3 + "' stroke-width='.9'/>" +
+      "<text x='60' y='137.5' text-anchor='middle' font-family='Oswald,sans-serif' font-weight='600' font-size='7.4' fill='#5C4514' letter-spacing='1.6'>CRICKET CLUB</text></g>";
+    return "<svg class='fo-arms' width='" + px + "' height='" + Math.round(px * 1.32) + "' viewBox='0 0 120 158'" +
+      " role='img' aria-label='" + esc(name || "club") + " crest'>" + defs + coronet + laurel + shieldD + mono + ribbon + "</svg>";
+  };
+})();
+
 // Engine patch 2026-balanced: pace/spin balance, real Rocket Arm/Lightning Hands hooks, stronger fatigue, contextual chase pressure, death power, and ground-fielding run impact.
 pgEditor=function(){};
 pgCommentary=function(){};
@@ -10212,7 +10280,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0740-3d54d4";
+  var FO_BUILD = "20260803-1113-1a763c";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -34211,6 +34279,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     }
     var ini = String(name || "?").replace(/[^A-Za-z ]/g, "").split(/\s+/).filter(Boolean)
       .map(function (w) { return w.charAt(0).toUpperCase(); }).slice(0, 2).join("");
+    if (window.foClubCrest) return window.foClubCrest(name, 24);
     var col = SH_COL[h32(name || "") % SH_COL.length];
     return "<span class='fo-lgx-sh' style='--sc:" + col + "'>" + E(ini || "?") + "</span>";
   }
@@ -40327,9 +40396,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var initials = (idWords.length > 1
         ? idWords.map(function (w) { return (w[0] || ""); }).join("")
         : String(idWords[0] || "")).replace(/[^A-Za-z]/g, "").slice(0, 2).toUpperCase() || "FC";
-      var crestHTML = crest
-        ? "<img class='fo-cd-crimg' src='" + crest + "' alt='" + E(name) + " crest' onerror=\"this.style.display='none'\">"
-        : "<span class='fo-cd-crest' aria-hidden='true'><b>" + E(initials) + "</b></span>";
+      var crestOf = function (px) {
+        if (crest) return "<img class='fo-cd-crimg' src='" + crest + "' alt='" + E(name) + " crest' onerror=\"this.style.display='none'\">";
+        if (window.foClubCrest) return "<span class='fo-cd-arms'>" + window.foClubCrest(name, px) + "</span>";
+        return "<span class='fo-cd-crest' aria-hidden='true'><b>" + E(initials) + "</b></span>";
+      };
+      var crestHTML = crestOf(64);
       var inDiv2 = ((lg && lg.table2) || []).some(function (r) { return (r.slot | 0) === slot; });
       var divLabel = inDiv2 ? "Division Two" : (((lg && lg.table2) || []).length ? "Division One" : "The league");
       var myName = null;
@@ -40540,7 +40612,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           nfBody =
             (vsUser ? "<div class='tag'>Your next meeting</div>" : "") +
             "<a class='who' href='#/team?c=" + encodeURIComponent(cid) + "&s=" + nx.foeSlot + "'>" +
-            "<span class='mn'><b>" + E(foeIni) + "</b></span>" +
+            (window.foClubCrest
+              ? "<span class='mn arms'>" + window.foClubCrest(nx.foe, 38) + "</span>"
+              : "<span class='mn'><b>" + E(foeIni) + "</b></span>") +
             "<h3>" + E(nx.foe) + "<u>Round " + nx.round + " &middot; " + E(natName(cid)) + " " + E(divLabel) + "</u></h3></a>" +
             "<div class='det'>" +
             "<span>When<b>" + (nxWhen ? E(nxWhen) : "Round " + nx.round) + "</b></span>" +
@@ -40827,7 +40901,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // the slim billing every non-overview tab wears above its panel
       var slimHead = "";
       if (tab !== "overview") {
-        slimHead = "<div class='fo-cd-slim'>" + crestHTML +
+        slimHead = "<div class='fo-cd-slim'>" + crestOf(40) +
           "<div class='sb'><h1>" + E(name) + "</h1><i>" + E(natName(cid)) + " &middot; " + E(divLabel) +
           (pos ? " &middot; " + ordn(pos) : "") + "</i></div>" +
           (isMine ? "<div id='fo-cp-mine'></div>" : "") + "</div>";
@@ -40928,6 +41002,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-cd-crest:before{content:'';position:absolute;inset:3px;clip-path:polygon(0 0,100% 0,100% 69%,50% 100%,0 69%);outline:1.5px solid rgba(200,84,47,.85);outline-offset:-5px}",
       ".fo-cd-crest b{font:700 20px/1 Oswald,sans-serif;color:#F1EEE6;letter-spacing:.04em;padding-bottom:8px}",
       ".fo-cd-crimg{flex:none;width:64px;height:74px;object-fit:contain}",
+      ".fo-cd-arms{flex:none;display:inline-flex;align-items:center}",
+      ".fo-cd-arms svg{display:block}",
+      ".fo-cd-nf .mn.arms{background:none;clip-path:none;width:auto;height:auto}",
       ".fo-cd-id h1{font:700 22px/1.1 Oswald,sans-serif;text-transform:uppercase;letter-spacing:.02em;color:var(--navy);margin:0}",
       ".fo-cd-id .loc{display:flex;align-items:center;gap:7px;margin-top:6px;font:600 10px/1.3 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}",
       ".fo-cd-id .loc img{width:18px;height:12px;object-fit:cover;border-radius:2px}",
@@ -44919,6 +44996,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var c = ""; try { c = window.__foCxAPI.crest(natId) || ""; } catch (e) {}
       if (c) return "<img class='" + cls + " crest' src='" + c + "' alt='' onerror=\"this.style.display='none'\">";
     }
+    if (window.foClubCrest) return "<span class='" + cls + " arms'>" + window.foClubCrest(name, big ? 44 : 25) + "</span>";
     var ini = String(name || "?").replace(/[^A-Za-z ]/g, "").split(/\s+/).filter(Boolean)
       .map(function (w) { return w.charAt(0).toUpperCase(); }).slice(0, 2).join("");
     var col = FO_PM_SH[foPmH32(name || "") % FO_PM_SH.length];
@@ -45438,6 +45516,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-pm-sh{display:grid;place-items:center;width:29px;height:29px;border-radius:7px;background:var(--sc,#1D3F6E);color:#fff;font:700 11px/1 Oswald,sans-serif;letter-spacing:.04em;flex:0 0 auto}",
       ".fo-pm-sh.big{width:clamp(36px,9.5vw,44px);height:clamp(36px,9.5vw,44px);border-radius:9px;font-size:clamp(12px,3.2vw,15px)}",
       ".fo-pm-sh.crest{background:none;object-fit:contain}",
+      ".fo-pm-sh.arms,.fo-pm-sh.arms.big{background:none;width:auto;height:auto;border-radius:0;display:inline-flex;align-items:center}",
+      ".fo-pm-sh.arms svg{display:block}",
       ".fo-pm-plate{margin:0;line-height:0;background:#EBE6DA;border-radius:12px;overflow:hidden}",
       ".fo-pm-plate img{display:block;width:100%;height:auto;aspect-ratio:32/12.5;object-fit:cover;object-position:center 45%}",
       "@media(max-width:760px){.fo-pm-plate img{aspect-ratio:16/8}}",

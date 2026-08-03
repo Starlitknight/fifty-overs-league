@@ -531,9 +531,12 @@
       var initials = (idWords.length > 1
         ? idWords.map(function (w) { return (w[0] || ""); }).join("")
         : String(idWords[0] || "")).replace(/[^A-Za-z]/g, "").slice(0, 2).toUpperCase() || "FC";
-      var crestHTML = crest
-        ? "<img class='fo-cd-crimg' src='" + crest + "' alt='" + E(name) + " crest' onerror=\"this.style.display='none'\">"
-        : "<span class='fo-cd-crest' aria-hidden='true'><b>" + E(initials) + "</b></span>";
+      var crestOf = function (px) {
+        if (crest) return "<img class='fo-cd-crimg' src='" + crest + "' alt='" + E(name) + " crest' onerror=\"this.style.display='none'\">";
+        if (window.foClubCrest) return "<span class='fo-cd-arms'>" + window.foClubCrest(name, px) + "</span>";
+        return "<span class='fo-cd-crest' aria-hidden='true'><b>" + E(initials) + "</b></span>";
+      };
+      var crestHTML = crestOf(64);
       var inDiv2 = ((lg && lg.table2) || []).some(function (r) { return (r.slot | 0) === slot; });
       var divLabel = inDiv2 ? "Division Two" : (((lg && lg.table2) || []).length ? "Division One" : "The league");
       var myName = null;
@@ -744,7 +747,9 @@
           nfBody =
             (vsUser ? "<div class='tag'>Your next meeting</div>" : "") +
             "<a class='who' href='#/team?c=" + encodeURIComponent(cid) + "&s=" + nx.foeSlot + "'>" +
-            "<span class='mn'><b>" + E(foeIni) + "</b></span>" +
+            (window.foClubCrest
+              ? "<span class='mn arms'>" + window.foClubCrest(nx.foe, 38) + "</span>"
+              : "<span class='mn'><b>" + E(foeIni) + "</b></span>") +
             "<h3>" + E(nx.foe) + "<u>Round " + nx.round + " &middot; " + E(natName(cid)) + " " + E(divLabel) + "</u></h3></a>" +
             "<div class='det'>" +
             "<span>When<b>" + (nxWhen ? E(nxWhen) : "Round " + nx.round) + "</b></span>" +
@@ -1031,7 +1036,7 @@
       // the slim billing every non-overview tab wears above its panel
       var slimHead = "";
       if (tab !== "overview") {
-        slimHead = "<div class='fo-cd-slim'>" + crestHTML +
+        slimHead = "<div class='fo-cd-slim'>" + crestOf(40) +
           "<div class='sb'><h1>" + E(name) + "</h1><i>" + E(natName(cid)) + " &middot; " + E(divLabel) +
           (pos ? " &middot; " + ordn(pos) : "") + "</i></div>" +
           (isMine ? "<div id='fo-cp-mine'></div>" : "") + "</div>";
@@ -1132,6 +1137,9 @@
       ".fo-cd-crest:before{content:'';position:absolute;inset:3px;clip-path:polygon(0 0,100% 0,100% 69%,50% 100%,0 69%);outline:1.5px solid rgba(200,84,47,.85);outline-offset:-5px}",
       ".fo-cd-crest b{font:700 20px/1 Oswald,sans-serif;color:#F1EEE6;letter-spacing:.04em;padding-bottom:8px}",
       ".fo-cd-crimg{flex:none;width:64px;height:74px;object-fit:contain}",
+      ".fo-cd-arms{flex:none;display:inline-flex;align-items:center}",
+      ".fo-cd-arms svg{display:block}",
+      ".fo-cd-nf .mn.arms{background:none;clip-path:none;width:auto;height:auto}",
       ".fo-cd-id h1{font:700 22px/1.1 Oswald,sans-serif;text-transform:uppercase;letter-spacing:.02em;color:var(--navy);margin:0}",
       ".fo-cd-id .loc{display:flex;align-items:center;gap:7px;margin-top:6px;font:600 10px/1.3 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}",
       ".fo-cd-id .loc img{width:18px;height:12px;object-fit:cover;border-radius:2px}",
