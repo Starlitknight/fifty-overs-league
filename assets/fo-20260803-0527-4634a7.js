@@ -10212,7 +10212,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0509-efb5ab";
+  var FO_BUILD = "20260803-0527-4634a7";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -20870,6 +20870,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-ros-id b{display:block;font:600 14.5px/1.25 Inter,sans-serif;color:#141C28;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-ros-id>span{display:block;font:400 11px/1.35 Inter,sans-serif;color:rgba(20,28,40,.5);margin-top:2px}",
       ".fo-ros-c{display:inline-block;font:700 9px/15px Oswald,sans-serif;width:15px;height:15px;border-radius:50%;background:#C89A2E;color:#2E2410;text-align:center;font-style:normal;vertical-align:2px;margin-left:4px}",
+      ".fo-ros-tal{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}",
+      ".fo-ros-tal u{text-decoration:none;font:700 8px/1 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8a6d3b;background:rgba(176,132,9,.1);border:1px solid rgba(176,132,9,.28);border-radius:5px;padding:2.5px 6px;white-space:nowrap}",
+      ".fo-ros-tal u.m{color:rgba(20,28,40,.45);background:rgba(20,28,40,.05);border-color:rgba(20,28,40,.15)}",
       ".fo-ros-ovr{font-family:Oswald,sans-serif;font-weight:700;font-size:23px;font-variant-numeric:tabular-nums;min-width:30px;text-align:right;padding-left:12px;border-left:1px solid rgba(20,28,40,.15)}",
       ".fo-ros-go{display:none}",
       ".fo-ros .fo-sqt-frm .w{display:none}",
@@ -21186,11 +21189,18 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         try { flg = FO_ART + "flags/" + ((typeof FO_FLAG_FILE !== "undefined" && FO_FLAG_FILE[foSqNatId(p.nat)]) || foSqNatId(p.nat)) + ".svg"; } catch (eFg) {}
         var roleNm = { bat: "Batsman", ar: "All-rounder", wk: "Wicketkeeper", bowl: "Bowler" }[rCls] || "Player";
         var det = p.bowlType ? prettyType(p.bowlType) : ({ R: "RHB", L: "LHB" }[String(p.hand || "").toUpperCase().charAt(0)] || "");
+        // his talents, worn as small gold pins: the sheet says at a glance who
+        // the finishers and the misers are, without a tap through to his page
+        var tals = p.talents || [];
+        var tal = tals.slice(0, 3).map(function (t) {
+          return "<u>" + E((typeof TALN !== "undefined" && TALN[t]) || prettyType(t)) + "</u>";
+        }).join("") + (tals.length > 3 ? "<u class='m'>+" + (tals.length - 3) + "</u>" : "");
         return "<a class='fo-ros-row' href='#/player?n=" + encodeURIComponent(p.name) + "'>" +
           "<span class='fo-ros-pic'><img src='" + FO_ART + foPkArt(p) + "' alt='' loading='lazy' decoding='async'>" +
           (flg && p.nat ? "<em class='fo-ros-flag'><img src='" + flg + "' alt='" + E(p.nat) + "' onerror=\"this.parentNode.style.display='none'\"></em>" : "") + "</span>" +
           "<span class='fo-ros-id'><b>" + E(p.name) + foSqStar(p) + (capt === p.name ? " <i class='fo-ros-c'>C</i>" : "") + "</b>" +
-          "<span>" + roleNm + (det ? " &middot; " + E(det) : "") + (p.age ? " &middot; " + E(foAgeText(p)) : "") + "</span></span>" +
+          "<span>" + roleNm + (det ? " &middot; " + E(det) : "") + (p.age ? " &middot; " + E(foAgeText(p)) : "") + "</span>" +
+          (tals.length ? "<span class='fo-ros-tal'>" + tal + "</span>" : "") + "</span>" +
           foSqFormGlyph(p) +
           "<b class='fo-ros-ovr' style='color:" + foSqQCol(ovr) + "'>" + ovr + "</b>" +
           "<span class='fo-ros-go'>&#8250;</span></a>";
