@@ -106,12 +106,12 @@
   // bounded by its own box and the writing begins under it.
   // Only about a quarter of the world's grounds are painted. A club whose
   // city has no painting must not leave a bare hero, so the plate falls back
-  // to the room every side waits in before it walks out - once, and then gives
-  // up rather than looping.
+  // to a generic ground under a summer-noon sky - once, and then gives up
+  // rather than looping.
   function foPmGroundArt(g, slot) {
     var s = g.bySlot[slot], base = foPmArt();
     var city = (s && s.city) || "";
-    var alt = base + "home/hgm-dressing-room.webp";
+    var alt = base + "home/arches-summer-noon.webp";
     return { src: city ? base + "cities/" + foPmSlug(city) + "-ground.webp" : alt, alt: alt };
   }
   // where a club stands, and the last five it has played
