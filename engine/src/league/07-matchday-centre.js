@@ -2046,7 +2046,7 @@
   function foThChrome(on) {
     var rail = document.getElementById("fo-th-rail");
     if (!on) {
-      ["fo-th", "fo-thd", "fo-th-ov0", "fo-th-gfon", "fo-th-pin"].forEach(function (c) { document.body.classList.remove(c); });
+      ["fo-th", "fo-dash", "fo-thd", "fo-th-ov0", "fo-th-gfon", "fo-th-pin"].forEach(function (c) { document.body.classList.remove(c); });
       document.body.removeAttribute("data-thtab");
       ["fo-th-rail", "fo-thd-x", "fo-th-gf", "fo-th-cut", "fo-th-gauge", "fo-mob-sheet", "fo-mob-nav", "fo-mob-spdchip", "fo-mstage"].forEach(function (id) { var e9 = document.getElementById(id); if (e9) e9.remove(); });
       document.body.removeAttribute("data-mobsheet");
@@ -2055,6 +2055,8 @@
     }
     foThCss();
     document.body.classList.add("fo-th");
+    if (foDashOn()) { foDashCss(); document.body.classList.add("fo-dash"); }
+    else document.body.classList.remove("fo-dash");
     document.body.setAttribute("data-thtab", (typeof UI !== "undefined" && UI.matchTab) || "Scorecard");
     if (!rail) {
       rail = document.createElement("div"); rail.id = "fo-th-rail";
@@ -2173,6 +2175,267 @@
         hd9.querySelector("#fo-ovpin").addEventListener("click", function () { document.body.classList.toggle("fo-th-pin"); this.classList.toggle("on", document.body.classList.contains("fo-th-pin")); });
       }
     } catch (eOv) {}
+  }
+  // ===========================================================================
+  //  THE MATCH CENTRE DASHBOARD - the approved desktop look: cream page, white
+  //  cards, the venue painting contained instead of full-bleed, a commentary
+  //  rail, and every number read straight from the umpire's own state. The
+  //  phone portrait broadcast is untouched; this replaces only the desktop
+  //  stage skin. Purely presentational - outcomes are never touched here.
+  // ===========================================================================
+  function foDashOn() {
+    try { return !foMobIsOn() && window.matchMedia("(min-width:900px)").matches; } catch (e) { return false; }
+  }
+  // one ball as a badge: dot grey, singles white, FOUR orange, SIX navy-gold,
+  // W claret - the same coding on the scorebug, the feed and the rail
+  function foDashBall(oo) {
+    var wk = (typeof isWkt === "function" && isWkt(oo));
+    var cls = oo === "4" ? "r4" : oo === "6" ? "r6" : wk ? "wk" : oo === "dot" ? "" : "r1";
+    var sym = oo === "dot" ? "&middot;" : wk ? "W" : oo === "wide" ? "wd" : oo === "noball" ? "nb" : oo === "bye" || oo === "legbye" ? "b" : E(oo);
+    return "<i class='db-b " + cls + "'>" + sym + "</i>";
+  }
+  function foDashUI(o) {
+    var inn = o.inn, s1 = o.s1, bw = o.bw, brec = o.brec, art = o.art;
+    var cap = (typeof foBallCap === "function" ? foBallCap() : 300);
+    var ballsLeft = Math.max(0, cap - inn.legal);
+    var oversTx = Math.floor(inn.legal / 6) + "." + (inn.legal % 6);
+    var batTeam = inn.batTeam || "";
+    var opp = (M.meta.home === batTeam ? M.meta.away : M.meta.home) || "";
+    var crest = function (nm) { try { return window.foClubCrest ? window.foClubCrest(nm, 52) : ""; } catch (e) { return ""; } };
+    var crr = inn.legal ? (inn.runs / (inn.legal / 6)).toFixed(2) : "0.00";
+    var need = M.target ? Math.max(0, M.target - inn.runs) : 0;
+    var req = M.target && ballsLeft ? (need / (ballsLeft / 6)).toFixed(2) : null;
+    // the last six deliveries and the feed, straight from the umpire's log
+    var recent = [], rows = "", nRows = 0, first = true;
+    for (var i = 0; i < M.log.length; i++) {
+      var Lg = M.log[i]; if (Lg.inn !== M.inns || Lg.mile) continue;
+      if (recent.length < 6) recent.unshift(Lg);
+      if (nRows < 11) {
+        rows += "<div class='db-cr" + (first ? " latest" : "") + "'><b>" + E(Lg.no || "") + "</b>" + foDashBall(Lg.out) +
+          "<p>" + E(Lg.txt || "") + (first && o.kphTx ? " <span class='kph'>" + o.kphTx + "</span>" : "") + "</p></div>";
+        nRows++; first = false;
+      }
+    }
+    var beads = recent.map(function (b) { return foDashBall(b.out); }).join("") || "<i class='db-b'>&ndash;</i>";
+    // the three in the middle of it: striker, non-striker, the bowler
+    var pArt = function (p) { try { return FO_ART + foPkArt(p); } catch (e) { return ""; } };
+    var FS = window.foStarsFor;
+    var stars = function (v) { try { return FS ? "<span class='stars'>" + FS.html(FS.stars(v)) + "</span>" : ""; } catch (e) { return ""; } };
+    var s2 = inn.bat && inn.bat[inn.nonstriker];
+    var sr = function (b9) { return b9 && b9.b ? (b9.r / b9.b * 100).toFixed(1) : "&ndash;"; };
+    var pcard = function (id, kick, p, right, sub, starHtml) {
+      return "<div class='db-card db-p' id='" + id + "'><img src='" + pArt(p) + "' alt=''><div class='pt'>" +
+        "<div class='k'>" + kick + "</div><div class='nm'>" + E(p.name) + "</div>" +
+        "<div class='rw'><span class='k'>" + sub + "</span>" + (starHtml || "") + "</div></div>" +
+        "<div class='pr'>" + right + "</div></div>";
+    };
+    var batCard = s1 && s1.p ? pcard("fo-db-pbat", "Striker", s1.p,
+      "<b>" + s1.r + "<i>*</i></b><span>(" + s1.b + ")</span><u>SR <b class='or'>" + sr(s1) + "</b></u>",
+      (s1.p.hand === "L" ? "LHB" : "RHB"), stars(FS && FS.bat(s1.p))) : "";
+    var nsCard = s2 && s2.p && !s2.out ? pcard("fo-db-pns", "Non-striker", s2.p,
+      "<b>" + s2.r + "<i>*</i></b><span>(" + s2.b + ")</span><u>SR <b class='or'>" + sr(s2) + "</b></u>",
+      (s2.p.hand === "L" ? "LHB" : "RHB"), stars(FS && FS.bat(s2.p))) : "";
+    var econ = brec && brec.b ? (brec.r / (brec.b / 6)).toFixed(2) : null;
+    var bwCard = bw ? pcard("fo-db-pbowl", "Bowler", bw,
+      "<b class='fig'>" + (brec ? Math.floor(brec.b / 6) + "." + (brec.b % 6) + "&ndash;" + brec.r + "&ndash;" + brec.w : "new spell") + "</b>" +
+      (econ ? "<u>Econ <b class='or'>" + econ + "</b></u>" : ""),
+      E(bw.btLabel || "bowling"), stars(FS && FS.bowl(bw))) : "";
+    // score progression, from the worm the umpire banks every ball
+    var w9 = (M.worm && M.worm[M.inns]) || [];
+    var maxY = Math.max(M.target || 0, inn.runs * 1.15, 60);
+    var px = function (ov) { return (12 + ov / 50 * 268).toFixed(1); };
+    var py = function (r9) { return (96 - r9 / maxY * 86).toFixed(1); };
+    var pts = "", wDots = "", lastW = 0;
+    for (var k = 0; k < w9.length; k++) {
+      pts += (k ? " " : "") + px(w9[k][0]) + "," + py(w9[k][1]);
+      if (w9[k][2] > lastW) { lastW = w9[k][2]; wDots += "<circle cx='" + px(w9[k][0]) + "' cy='" + py(w9[k][1]) + "' r='3' fill='#C9571F'/>"; }
+    }
+    var progSvg = "<svg viewBox='0 0 292 108' class='db-svg'>" +
+      "<line x1='12' y1='96' x2='284' y2='96' stroke='#d9cfba'/>" +
+      "<line x1='12' y1='53' x2='284' y2='53' stroke='#f0ead9'/>" +
+      (M.target ? "<line x1='12' y1='" + py(M.target) + "' x2='284' y2='" + py(M.target) + "' stroke='#E8B96A' stroke-dasharray='4 4'/>" : "") +
+      (pts ? "<polyline points='" + pts + "' fill='none' stroke='#C9571F' stroke-width='2.2'/>" : "") + wDots +
+      "<g font-size='8' fill='#8a7f6e'><text x='2' y='99'>0</text><text x='140' y='106'>25</text><text x='276' y='106'>50</text></g></svg>";
+    // runs per over from the same worm; the over a wicket fell in is dotted
+    var rpo = [], wOv = {}, lastR = 0; lastW = 0;
+    for (var k2 = 0; k2 < w9.length; k2++) {
+      var ovK = Math.min(49, Math.floor(w9[k2][0] - 0.001 < 0 ? 0 : w9[k2][0] - 0.001));
+      while (rpo.length <= ovK) rpo.push(0);
+      rpo[ovK] += w9[k2][1] - lastR; lastR = w9[k2][1];
+      if (w9[k2][2] > lastW) { lastW = w9[k2][2]; wOv[ovK] = 1; }
+    }
+    var show = rpo.slice(-17), off = rpo.length - show.length;
+    var maxR = Math.max(10, Math.max.apply(null, show.length ? show : [0]));
+    var bars = show.map(function (r9, ix) {
+      var h9 = Math.max(2, r9 / maxR * 62), x9 = 24 + ix * 30;
+      var curB = (off + ix === rpo.length - 1);
+      return "<rect x='" + x9 + "' y='" + (78 - h9).toFixed(1) + "' width='20' height='" + h9.toFixed(1) + "' rx='2' fill='" + (curB ? "#C9571F" : "#d9cfba") + "'/>" +
+        (wOv[off + ix] ? "<circle cx='" + (x9 + 10) + "' cy='" + (72 - h9).toFixed(1) + "' r='2.6' fill='#8E1F13'/>" : "") +
+        (ix % 4 === 0 ? "<text x='" + x9 + "' y='90' font-size='8' fill='#a89c88'>" + (off + ix + 1) + "</text>" : "");
+    }).join("");
+    var rpoSvg = "<svg viewBox='0 0 560 92' class='db-svg'><line x1='20' y1='78' x2='540' y2='78' stroke='#d9cfba'/>" + bars + "</svg>";
+    var fow = (inn.fow || []).slice(-4).map(function (f9) {
+      return "<div class='db-fw'><span><b>" + f9.w + "&ndash;" + f9.sc + "</b> &nbsp;" + E(f9.who) + "</span><span class='k'>" + (f9.ov != null ? f9.ov.toFixed(1) + " ov" : "") + "</span></div>";
+    }).join("") || "<div class='db-fw'><span class='k'>No wicket has fallen.</span></div>";
+    // the conditions the umpire actually plays with
+    var wx = M.meta.weather || "Sunny", pt = M.pitch || "balanced";
+    var wxT = ""; var ptT = "";
+    try { wxT = (typeof wxTip === "function" ? wxTip(wx) : "").split(" - ").pop().split(";")[0]; } catch (e1) {}
+    try { ptT = (typeof pitchTip === "function" ? pitchTip(pt) : "").split(" - ").pop().split(";")[0]; } catch (e2) {}
+    var cond = function (lab, val) { return "<div class='db-c'><div class='k'>" + lab + "</div><div class='v'>" + val + "</div></div>"; };
+    var chase = M.target
+      ? "<div class='hd'><span class='k nv'>Fall of wickets</span><span class='k or'>" + need + " needed from " + ballsLeft + "</span></div>"
+      : "<div class='hd'><span class='k nv'>Fall of wickets</span><span class='k'>first innings</span></div>";
+    var barLeft = M.done
+      ? "<span class='bt'>" + E((M.result && M.result.text) || "Match complete") + "</span>"
+      : "<span class='bt'>" + Math.floor(ballsLeft / 6) + "." + (ballsLeft % 6) + " overs remaining</span>";
+    return "<div class='fo-db-wrap'>" +
+      "<div class='db-card fo-db-bug'>" +
+      "<span class='cr'>" + crest(batTeam) + "</span>" +
+      "<div class='tm'><b>" + E(batTeam) + " <i class='dot'>&#9679;</i></b><span>Batting</span></div>" +
+      "<div class='sc'><b>" + inn.runs + "/" + inn.wkts + "</b><span class='k or'>" + oversTx + " overs</span></div>" +
+      (M.target
+        ? "<div class='st'><span class='k'>Target</span><b>" + M.target + "</b></div><div class='st'><span class='k'>Req. rate</span><b>" + (req || "&ndash;") + "</b></div>"
+        : "<div class='st'><span class='k'>Run rate</span><b>" + crr + "</b></div><div class='st'><span class='k'>Toss</span><b class='sm'>" + (o.tossTx || "&ndash;") + "</b></div>") +
+      "<div class='st'><span class='k'>Recent balls</span><span class='bb9'>" + beads + "</span></div>" +
+      "<div class='tm rt'><b>" + E(opp) + "</b><span>Bowling</span></div>" +
+      "<span class='cr'>" + crest(opp) + "</span>" +
+      "</div>" +
+      "<div class='fo-db-grid'>" +
+      "<div class='fo-db-left'>" +
+      "<div class='fo-db-art'></div>" +
+      "<div class='fo-db-players'>" + batCard + nsCard + bwCard + "</div>" +
+      "<div class='fo-db-info'>" +
+      "<div class='fo-db-field'></div>" +
+      "<div class='db-card'><div class='hd'><span class='k nv'>Partnership</span></div>" +
+      "<div class='db-pship'><b>" + (inn.pshipR || 0) + "</b><span>(" + (inn.pshipB || 0) + ")</span><i class='k'>" + (inn.wkts + 1) + (["st", "nd", "rd"][inn.wkts] || "th") + " wicket</i></div>" +
+      "<div class='k' style='text-align:center;margin-top:4px'>Score progression</div>" + progSvg + "</div>" +
+      "<div class='db-card db-cond'><div class='hd'><span class='k nv'>Match conditions</span></div><div class='db-cg'>" +
+      cond("Weather", E(wx)) + cond("Its effect", E(wxT || "&ndash;")) +
+      cond("Pitch", E(pt)) + cond("Its effect", E(ptT || "&ndash;")) +
+      cond("Field set", E(String(o.fld || "Standard").replace(/^field:\s*/i, ""))) + cond("Toss", o.tossTx || "&ndash;") +
+      "</div><div class='db-gnd k'>" + E(art.gnm) + (art.city ? ", " + E(art.city) : "") + " &nbsp;&#8982;</div></div>" +
+      "</div>" +
+      "<div class='fo-db-charts'>" +
+      "<div class='db-card'><div class='hd'><span class='k nv'>Runs per over</span><span class='k'>wicket overs marked &middot; this over in orange</span></div>" + rpoSvg + "</div>" +
+      "<div class='db-card'>" + chase + fow + "</div>" +
+      "</div></div>" +
+      "<div class='db-card fo-db-comm'><div class='hd'><span class='k nv'>Commentary</span></div><div class='db-feed'>" +
+      (rows || "<div class='db-cr'><p class='k'>The first ball is coming.</p></div>") + "</div>" +
+      "<button type='button' id='fo-db-comm-more'>View full commentary &#8594;</button></div>" +
+      "</div>" +
+      "<div class='fo-db-bar'><svg viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='#E8B96A' stroke-width='1.6'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 3'/></svg>" +
+      barLeft + "<span class='sp'></span>" + (o.ctlBtns || "") +
+      "<button type='button' id='fo-db-act'>Match actions &#8964;</button></div>";
+  }
+  function foDashCss() {
+    if (document.getElementById("fo-dash-css")) return;
+    var s = document.createElement("style"); s.id = "fo-dash-css";
+    s.textContent =
+      // the shell: cream page under the real topbar, scrolling as one document
+      "html body.fo-dash #fo-mstage{position:fixed !important;inset:0 !important;height:100vh !important;min-height:0 !important;width:100vw;max-width:none !important;border-radius:0 !important;margin:0;z-index:2;background:#F6F3EB;overflow:auto !important}" +
+      "html:has(body.fo-dash){background:#F6F3EB}" +
+      "html body.fo-dash,html body.ftpskin.fo-dash{background:#F6F3EB !important}" +
+      "html body.fo-dash #topbar,html body.ftpskin.fo-dash #topbar{background:#14243A !important;position:fixed;top:0;left:0;right:0;z-index:60}" +
+      "body.fo-dash .fo-mst-ui{position:relative;z-index:5;min-height:100%}" +
+      // the painting, contained: same scene layer, clipped to the art panel
+      "body.fo-dash .fo-mst-scene{position:absolute;inset:auto;top:176px;left:max(24px,calc(50vw - 696px));width:calc(min(100vw,1440px) - 494px);height:296px;border-radius:14px;overflow:hidden;border:1px solid #e3dccb;z-index:1}" +
+      "body.fo-dash .fo-mst-veil{background:linear-gradient(180deg,rgba(3,15,31,.18),transparent 22%,transparent 82%,rgba(3,15,31,.2)) !important}" +
+      // retired chrome in dashboard mode
+      "body.fo-dash #fo-th-rail,body.fo-dash #fo-th-gauge,body.fo-dash #fo-mst-spd{display:none !important}" +
+      "body.fo-dash .fo-mst-moment,body.fo-dash .fo-mst-top,body.fo-dash .fo-mst-score,body.fo-dash .fo-mst-p.pbat:not(.db-p),body.fo-dash .fo-mst-p.pbowl:not(.db-p){display:none !important}" +
+      // shared card + type language
+      "body.fo-dash .db-card{background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);color:#14243A}" +
+      "body.fo-dash .fo-db-wrap .k{font-family:Oswald,sans-serif;font-weight:500;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#8a7f6e}" +
+      "body.fo-dash .fo-db-wrap .k.or,body.fo-dash .fo-db-wrap .or{color:#C9571F}" +
+      "body.fo-dash .fo-db-wrap .k.nv{color:#14243A;font-weight:600}" +
+      "body.fo-dash .db-card .hd{display:flex;justify-content:space-between;align-items:baseline;padding:13px 16px 0}" +
+      "body.fo-dash .db-b{display:inline-flex;min-width:26px;height:26px;padding:0 4px;border-radius:50%;align-items:center;justify-content:center;font:700 12px Inter,sans-serif;background:#EFE9DB;color:#6b6154;border:1px solid #e0d8c8;font-style:normal}" +
+      "body.fo-dash .db-b.r1{background:#FFFEFC;color:#4c4437}" +
+      "body.fo-dash .db-b.r4{background:#C9571F;color:#fff;border-color:#C9571F}" +
+      "body.fo-dash .db-b.r6{background:#14243A;color:#E8B96A;border-color:#14243A}" +
+      "body.fo-dash .db-b.wk{background:#8E1F13;color:#fff;border-color:#8E1F13}" +
+      "body.fo-dash .db-svg{display:block;width:calc(100% - 24px);margin:6px auto 10px}" +
+      // layout: centred wrap, band, grid with the rail
+      "body.fo-dash .fo-db-wrap{max-width:1440px;margin:0 auto;padding:66px 24px 78px}" +
+      "body.fo-dash .fo-db-bug{height:92px;display:flex;align-items:center;gap:26px;padding:0 22px}" +
+      "body.fo-dash .fo-db-bug .cr svg{display:block}" +
+      "body.fo-dash .fo-db-bug .tm b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:18px;letter-spacing:1.4px;text-transform:uppercase}" +
+      "body.fo-dash .fo-db-bug .tm b .dot{color:#C9571F;font-size:11px;font-style:normal}" +
+      "body.fo-dash .fo-db-bug .tm span{font-size:12.5px;color:#8a7f6e}" +
+      "body.fo-dash .fo-db-bug .tm.rt{margin-left:auto;text-align:right}" +
+      "body.fo-dash .fo-db-bug .sc b{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:36px;line-height:1}" +
+      "body.fo-dash .fo-db-bug .st{text-align:center;border-left:1px solid #eee7d9;padding-left:24px}" +
+      "body.fo-dash .fo-db-bug .st b{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:24px;margin-top:2px}" +
+      "body.fo-dash .fo-db-bug .st b.sm{font-size:13px;font-family:Inter,sans-serif;font-weight:500;max-width:170px}" +
+      "body.fo-dash .fo-db-bug .bb9{display:flex;gap:4px;margin-top:6px}" +
+      "body.fo-dash .fo-db-grid{display:grid;grid-template-columns:1fr 430px;gap:16px;margin-top:14px}" +
+      "body.fo-dash .fo-db-left{display:flex;flex-direction:column;gap:14px}" +
+      "body.fo-dash .fo-db-art{height:296px;border-radius:14px}" +
+      "body.fo-dash .fo-db-players{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}" +
+      "body.fo-dash .db-p{display:flex;align-items:center;gap:13px;padding:12px 16px;height:92px}" +
+      "body.fo-dash .db-p img{width:60px;height:60px;border-radius:50%;object-fit:cover;object-position:50% 12%;border:2px solid #E8B96A;flex:0 0 60px}" +
+      "body.fo-dash .db-p .nm{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:16px;line-height:1.15;margin-top:1px}" +
+      "body.fo-dash .db-p .rw{display:flex;gap:8px;align-items:center;margin-top:2px;overflow:hidden}" +
+      "body.fo-dash .db-p .rw .k{white-space:nowrap;max-width:86px;overflow:hidden;text-overflow:ellipsis}" +
+      "body.fo-dash .db-p .stars{font-size:9px;color:#E8B96A;letter-spacing:0;white-space:nowrap}" +
+      "body.fo-dash .db-p .pr{margin-left:auto;text-align:right;flex:0 0 auto}" +
+      "body.fo-dash .db-p .pr b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:20px;white-space:nowrap}" +
+      "body.fo-dash .db-p .pr b.fig{font-size:17px}" +
+      "body.fo-dash .db-p .pr b i{color:#C9571F;font-style:normal}" +
+      "body.fo-dash .db-p .pr span{font-size:12px;color:#8a7f6e;margin-left:3px}" +
+      "body.fo-dash .db-p .pr u{display:block;text-decoration:none;font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;color:#8a7f6e;margin-top:2px}" +
+      "body.fo-dash .fo-db-info{display:grid;grid-template-columns:1fr 1.05fr 1.05fr;gap:14px}" +
+      "body.fo-dash .fo-db-info>div{min-height:300px}" +
+      "body.fo-dash .fo-db-field{border-radius:14px}" +
+      "body.fo-dash .db-pship{display:flex;align-items:baseline;justify-content:center;gap:7px;margin-top:6px}" +
+      "body.fo-dash .db-pship b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:30px}" +
+      "body.fo-dash .db-pship span{font-family:Fraunces,Georgia,serif;font-size:16px;color:#8a7f6e}" +
+      "body.fo-dash .db-pship i{font-style:normal;margin-left:4px}" +
+      "body.fo-dash .db-cg{display:grid;grid-template-columns:1fr 1fr;gap:11px 16px;padding:12px 16px 0}" +
+      "body.fo-dash .db-c .v{font-size:13px;font-weight:500;margin-top:1px}" +
+      "body.fo-dash .db-gnd{border-top:1px solid #eee7d9;margin:12px 16px 0;padding:10px 0 12px;text-align:center;color:#14243A !important}" +
+      "body.fo-dash .fo-db-charts{display:grid;grid-template-columns:1.85fr 1.1fr;gap:14px}" +
+      "body.fo-dash .fo-db-charts .db-card{min-height:150px}" +
+      "body.fo-dash .db-fw{display:flex;justify-content:space-between;align-items:baseline;padding:7px 16px;border-bottom:1px solid #f0ead9;font-size:13px}" +
+      "body.fo-dash .db-fw:last-child{border-bottom:none}" +
+      // the commentary rail
+      "body.fo-dash .fo-db-comm{display:flex;flex-direction:column;overflow:hidden}" +
+      "body.fo-dash .db-feed{flex:1;overflow:hidden;margin-top:6px}" +
+      "body.fo-dash .db-cr{display:grid;grid-template-columns:46px 32px 1fr;gap:10px;align-items:center;padding:10px 16px;border-top:1px solid #f0ead9}" +
+      "body.fo-dash .db-cr b{font-family:Oswald,sans-serif;font-weight:600;font-size:12.5px;color:#8a7f6e}" +
+      "body.fo-dash .db-cr p{margin:0;font-size:13px;line-height:1.5;color:#3a3427}" +
+      "body.fo-dash .db-cr .kph{font-family:Oswald,sans-serif;font-weight:600;font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:#C9571F}" +
+      "body.fo-dash .db-cr.latest{background:#FBF3E4;border-left:3px solid #C9571F;padding-left:13px;border-top:none}" +
+      "body.fo-dash .db-cr.latest b{color:#14243A}" +
+      "html body.fo-dash #fo-db-comm-more{margin:10px 16px 14px;padding:10px 0;font-family:Oswald,sans-serif;font-weight:500;font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:#4c4437 !important;background:#FFFEFC !important;border:1px solid #d9d0bc !important;border-radius:9px;cursor:pointer;box-shadow:none !important}" +
+      "html body.fo-dash #fo-db-comm-more:hover{border-color:#C9571F !important;color:#C9571F !important}" +
+      // the bottom bar: overs remaining + match actions
+      "body.fo-dash .fo-db-bar{position:fixed;left:0;right:0;bottom:0;z-index:58;background:#14243A;display:flex;align-items:center;gap:14px;padding:11px max(24px,calc(50vw - 696px))}" +
+      "body.fo-dash .fo-db-bar .bt{font-family:Oswald,sans-serif;font-weight:500;font-size:12px;letter-spacing:2px;text-transform:uppercase;color:#FFFEFC}" +
+      "body.fo-dash .fo-db-bar .sp{flex:1}" +
+      "html body.fo-dash #fo-db-act{background:#C9571F !important;color:#fff !important;font-family:Oswald,sans-serif;font-weight:600;font-size:12px;letter-spacing:1.8px;text-transform:uppercase;border:none !important;border-radius:9px;padding:12px 26px;cursor:pointer;box-shadow:none !important}" +
+      "html body.fo-dash #fo-db-act:hover{filter:brightness(1.08)}" +
+      "html body.fo-dash .fo-db-bar .fo-mst-next{position:static !important;width:auto !important;min-height:0 !important;padding:12px 26px !important;font-size:12px !important;letter-spacing:1.8px !important}" +
+      // the LIVE BALL oval docks into the field-map card, in flow with the page
+      "html body.fo-dash #fo-oval{position:absolute !important;left:max(24px,calc(50vw - 696px)) !important;right:auto !important;top:592px !important;bottom:auto !important;transform:none !important;width:calc((min(100vw,1440px) - 522px)/3) !important;max-width:none !important;min-width:0 !important;margin:0 !important;z-index:6;background:#FFFEFC !important;border:1px solid #e3dccb !important;border-radius:14px !important;backdrop-filter:none;box-shadow:0 2px 10px rgba(20,36,58,.05) !important;overflow:hidden}" +
+      "body.fo-dash.fo-thd #fo-oval{display:block !important}" +
+      "body.fo-dash #fo-ovhd{color:#14243A;padding:13px 16px 4px}" +
+      "body.fo-dash #fo-ovhd b{color:#14243A;letter-spacing:1.6px}" +
+      "body.fo-dash #fo-ovhd span{color:#8a7f6e}" +
+      "body.fo-dash #fo-ovhd button{display:none}" +
+      "body.fo-dash #fo-oval .ov-note{color:#8a7f6e}" +
+      "body.fo-dash #fo-oval .ov-snd{border-color:#d9d0bc;color:#8a7f6e}" +
+      "body.fo-dash #fo-mst-talk{background:transparent;border-top:1px solid #eee7d9}" +
+      // the analysis drawer wears daylight here
+      "html body.fo-dash.fo-thd #page .ftp-match-shell{background:#FFFEFC !important;border:1px solid #e3dccb !important;box-shadow:0 24px 70px rgba(20,36,58,.25) !important;right:24px;top:66px;bottom:74px}" +
+      "html body.fo-dash.fo-thd #page .ftp-match-links a{background:#F1EEE6 !important;color:#4c4437 !important}" +
+      "html body.fo-dash.fo-thd #page .ftp-match-links a.on{background:#C9571F !important;color:#fff !important}" +
+      "#fo-thd-x{z-index:59}body.fo-dash.fo-thd #fo-thd-x{top:78px;right:38px;background:#FFFEFC;border-color:#d9d0bc;color:#14243A}" +
+      // moment cut-ins keep their drama over the cream
+      "body.fo-dash #fo-th-cut{z-index:70}" +
+      "@media(max-width:1180px){body.fo-dash .fo-db-players,body.fo-dash .fo-db-info{grid-template-columns:1fr 1fr}body.fo-dash .fo-db-field{display:none}html body.fo-dash #fo-oval{display:none !important}}";
+    document.head.appendChild(s);
   }
   function foThCss() {
     if (document.getElementById("fo-th-css")) return;
@@ -2563,9 +2826,11 @@
       // frame so the theatre never flickers between balls
       if (!document.getElementById("fo-oval")) { try { if (typeof FOC !== "undefined" && FOC.oval && FOC.oval.tick) FOC.oval.tick(); } catch (eOt) {} }
       var oval = document.getElementById("fo-oval");
-      // re-home the pane on <body>: the engine's per-ball #page re-render can
-      // never destroy it there, so the LIVE BALL animation never flickers
-      if (oval && oval.parentNode !== document.body) document.body.appendChild(oval);
+      // re-home the pane off #page: the engine's per-ball re-render can never
+      // destroy it there, so the LIVE BALL animation never flickers. In the
+      // dashboard the pane's home is the stage itself - its field-map slot.
+      var ovHome = (foDashOn() && document.getElementById("fo-mstage")) || document.body;
+      if (oval && oval.parentNode !== ovHome) ovHome.appendChild(oval);
       if (!mcTop && !oval) { document.body.classList.remove("fo-stage-on"); foThChrome(false); return; }
       var inn = M.innings[M.inns]; if (!inn) return;
       // the broadcast runs itself: every match auto-plays at the measured pace,
@@ -2734,6 +2999,14 @@
         "<div class='rib'>" + (L && !M.done ? "<span class='chip'>" + E(L.no || "") + "</span>" : "") +
         (kphTx ? "<span class='kph'>" + kphTx + "</span>" : "") +
         (copy ? "<p>" + E(copy) + "</p>" : "") + "</div></div>";
+      // the desktop dashboard replaces the overlay skin wholesale: same state,
+      // read once, laid out as the approved match centre
+      if (foDashOn()) {
+        try {
+          uiHTML = foDashUI({ inn: inn, s1: s1, bw: bw, brec: brec, art: art,
+            fld: fld, tossTx: tossTx, kphTx: kphTx, ctlBtns: ctlBtns });
+        } catch (eDU) { try { console.warn("foDashUI", eDU); } catch (e0) {} }
+      }
       var el;
       if (old && old.__foArtKey === artKey) {
         el = old;
@@ -2813,11 +3086,37 @@
         if (!big) { big = document.createElement("div"); big.id = "fo-mst-bigcard"; document.body.appendChild(big); }
         var showBig = function (pp) { if (!pp) return; try { big.innerHTML = foPkCard(pp); big.classList.add("show"); } catch (eBc) {} };
         var hideBig = function () { big.classList.remove("show"); };
-        var pbEl = el.querySelector(".fo-mst-p.pbat");
+        var pbEl = el.querySelector(".fo-mst-p.pbat") || el.querySelector("#fo-db-pbat");
         if (pbEl && s1 && s1.p) { pbEl.addEventListener("mouseenter", function () { showBig(s1.p); }); pbEl.addEventListener("mouseleave", hideBig); }
-        var pwEl = el.querySelector(".fo-mst-p.pbowl");
+        var pwEl = el.querySelector(".fo-mst-p.pbowl") || el.querySelector("#fo-db-pbowl");
         if (pwEl && bw) { pwEl.addEventListener("mouseenter", function () { showBig(bw); }); pwEl.addEventListener("mouseleave", hideBig); }
+        var pnEl = el.querySelector("#fo-db-pns"), s2h = inn.bat && inn.bat[inn.nonstriker];
+        if (pnEl && s2h && s2h.p) { pnEl.addEventListener("mouseenter", function () { showBig(s2h.p); }); pnEl.addEventListener("mouseleave", hideBig); }
       } catch (eHB) {}
+      // dashboard wiring: the oval docks into its card slot, the bar buttons
+      // open the drawer, the rail's footer jumps to the full commentary
+      if (foDashOn()) {
+        try {
+          var ovD = document.getElementById("fo-oval");
+          if (ovD && ovD.parentNode !== el) el.appendChild(ovD);
+          var act9 = el.querySelector("#fo-db-act");
+          if (act9) act9.addEventListener("click", function () {
+            try {
+              if (document.body.classList.contains("fo-thd")) { foThDrawer(false); return; }
+              if (typeof UI !== "undefined") { UI.matchTab = UI.matchTab === "Commentary" ? "Scorecard" : (UI.matchTab || "Scorecard"); document.body.setAttribute("data-thtab", UI.matchTab); }
+              foThDrawer(true); renderMatch();
+            } catch (e9) {}
+          });
+          var vf9 = el.querySelector("#fo-db-comm-more");
+          if (vf9) vf9.addEventListener("click", function () {
+            try {
+              if (typeof UI !== "undefined") UI.matchTab = "Commentary";
+              document.body.setAttribute("data-thtab", "Commentary");
+              foThDrawer(true); renderMatch();
+            } catch (e8) {}
+          });
+        } catch (eDp) {}
+      }
       var nb = el.querySelector("#fo-mst-next");
       if (nb) nb.addEventListener("click", function () {
         try { if (window.__foMstHold && !document.getElementById("fo-mst-ask") && !window.__foMstAskT) window.__foMstHold = false; } catch (eH) {}
@@ -2958,6 +3257,24 @@
   try { foMatchRenderHooks.push(foMatchStage); } catch (eMS) {}
   setInterval(foMatchStage, 1000);
   window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] !== "#/match") { document.body.classList.remove("fo-stage-on"); foThChrome(false); } });
+  // crossing the dashboard/theatre width re-skins the same broadcast
+  window.addEventListener("resize", function () {
+    try {
+      if ((location.hash || "").split("?")[0] !== "#/match" || !document.body.classList.contains("fo-th")) return;
+      var want = foDashOn();
+      if (want !== document.body.classList.contains("fo-dash")) {
+        clearTimeout(window.__foDashRz);
+        window.__foDashRz = setTimeout(function () {
+          try {
+            var st9 = document.getElementById("fo-mstage");
+            if (st9) st9.__foSig = null;   // force the skin to repaint in the new shape
+            foThChrome(true);
+            if (typeof renderMatch === "function") renderMatch();
+          } catch (e9) {}
+        }, 180);
+      }
+    } catch (e) {}
+  });
   try {
     var msCss = document.createElement("style"); msCss.id = "fo-mst-css";
     msCss.textContent =
