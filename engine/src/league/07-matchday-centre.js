@@ -2510,7 +2510,9 @@
       "body.fo-dash .fo-db-bar .sp{flex:1}" +
       "html body.fo-dash #fo-db-act{background:#C9571F !important;color:#fff !important;font-family:Oswald,sans-serif;font-weight:600;font-size:12px;letter-spacing:1.8px;text-transform:uppercase;border:none !important;border-radius:9px;padding:12px 26px;cursor:pointer;box-shadow:none !important}" +
       "html body.fo-dash #fo-db-act:hover{filter:brightness(1.08)}" +
-      "html body.fo-dash .fo-db-bar .fo-mst-next{position:static !important;width:auto !important;min-height:0 !important;padding:12px 26px !important;font-size:12px !important;letter-spacing:1.8px !important}" +
+      "html body.fo-dash .fo-db-bar .fo-mst-next{position:static !important;width:auto !important;min-height:0 !important;padding:12px 26px !important;font-size:12px !important;letter-spacing:1.8px !important;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:9px !important;box-shadow:none !important;transform:none !important}" +
+      // the retired phone sheet's backdrop must never shade the dashboard
+      "body.fo-dash #fo-mstage::after{content:none !important}" +
       // the LIVE BALL oval docks into the field-map card; its geometry is
       // measured off the grid slot after each paint
       "html body.fo-dash #fo-oval{position:absolute !important;right:auto !important;bottom:auto !important;transform:none !important;max-width:none !important;min-width:0 !important;margin:0 !important;z-index:3;background:#FFFEFC !important;border:1px solid #e3dccb !important;border-radius:14px !important;backdrop-filter:none;box-shadow:0 2px 10px rgba(20,36,58,.05) !important;overflow:hidden;display:flex;flex-direction:column}" +
@@ -2624,7 +2626,8 @@
       "body.fo-dash .db-p .pr u{display:block}" +
       "body.fo-dash .fo-db-info{grid-template-columns:1fr;gap:10px}" +
       "body.fo-dash .fo-db-info>div{min-height:0}" +
-      "body.fo-dash .fo-db-info>.fo-db-field{min-height:320px}" +
+      "body.fo-dash .fo-db-info>.fo-db-field{min-height:300px}" +
+      "body.fo-dash #fo-oval .ov-svg{transform:scale(1.02)}" +
       "body.fo-dash .fo-db-charts{grid-template-columns:1fr;gap:10px}" +
       "body.fo-dash .fo-db-comm .db-feed{overflow:visible}" +
       "body.fo-dash .db-card .hd .k.hint{display:none}" +
@@ -3164,7 +3167,7 @@
       var spdNow = window.__foThMult || 1;
       // tempo control now lives inside the LIVE BALL pane (#ov-ctl); the top
       // chrome only carries the end-of-match Continue button
-      var ctlBtns = (M.done ? "<button type='button' class='fo-mst-next' id='fo-mst-done'>Continue &#9654;</button>" : "");
+      var ctlBtns = (M.done ? "<button type='button' class='fo-mst-next' id='fo-mst-done'>Continue &#9654;&#xFE0E;</button>" : "");
       var pArt = function (p) { try { return FO_ART + foPkArt(p); } catch (e) { return ""; } };
       // the who-card stars now live HERE - same math as the theatre's
       var FS = window.foStarsFor, batStars = "", bowlStars = "";
@@ -3303,6 +3306,7 @@
         try {
           var ovD = document.getElementById("fo-oval");
           if (ovD && ovD.parentNode !== el) el.appendChild(ovD);
+          if (ovD) ovD.removeAttribute("title");   // a tap on the green must not toast the tooltip
           // the painting and the oval take their card slots' exact geometry -
           // measured, not guessed, so any width and any zoom line up
           var place9 = function (node, slot) {
