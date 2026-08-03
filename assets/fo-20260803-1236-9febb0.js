@@ -10292,7 +10292,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-1227-d2d00f";
+  var FO_BUILD = "20260803-1236-9febb0";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -44058,6 +44058,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-ac-card h3 .fo-nat-flag.natlogo{width:21px;height:21px;vertical-align:-5px}",
       "html body #page .fo-ac-card h3 span .fo-nat-flag.natlogo{width:16px;height:16px;vertical-align:-4px}",
       "html body #page .fo-nt-hero .shield img.natlogo{width:48px;height:58px;object-fit:contain;border-radius:0}",
+      "html body #page .fo-nt-hero .shield.logo{background:none;clip-path:none;box-shadow:none;width:auto;height:auto}",
+      "html body #page .fo-nt-hero .shield.logo img.natlogo{width:80px;height:92px;filter:drop-shadow(0 0 1.5px rgba(255,255,255,.9)) drop-shadow(0 0 14px rgba(255,255,255,.55)) drop-shadow(0 4px 10px rgba(0,0,0,.45))}",
       "html body #page .fo-nat-man{display:flex;align-items:baseline;gap:9px;padding:9px 2px;border-top:1px solid rgba(20,28,40,.07);font:500 13px/1.3 Inter,sans-serif}",
       "html body #page .fo-nat-flag{width:19px;height:13px;flex:0 0 auto;object-fit:cover;border-radius:2px;align-self:center;box-shadow:0 0 0 1px rgba(20,28,40,.12)}",
       "html body #page .fo-ac-card h3 .fo-nat-flag{width:22px;height:15px;margin-right:8px;vertical-align:-2px}",
@@ -44249,10 +44251,14 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return "<i class='" + k9 + "'>" + k9.toUpperCase() + "</i>";
     }).join("");
     var ga = natGround(ST.nation);
+    // a real board logo stands on the art unframed; only a flag still needs
+    // the white shield behind it to read
+    var hasLogo = false;
+    try { hasLogo = !!(window.foNatLogo && window.foNatLogo(ST.nation)); } catch (eHL) {}
     var hero = "<div class='fo-nt-hero'>" +
       "<img class='bgart' src='" + ga.art + "' alt='' onerror=\"this.style.display='none'\"><span class='veil'></span>" +
       "<div class='hin'>" +
-      "<div class='hb'><span class='shield'>" + natCrest(ST.nation, "") + "</span>" +
+      "<div class='hb'><span class='shield" + (hasLogo ? " logo" : "") + "'>" + natCrest(ST.nation, "") + "</span>" +
       "<div><h2>" + E(n.name || ST.nation) +
       " <img class='hfl' src='" + flagOf(ST.nation) + "' alt='' onerror=\"this.style.display='none'\">" +
       "</h2><div class='sub'>The national side</div></div></div>" +
