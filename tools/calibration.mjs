@@ -103,7 +103,7 @@ function aggregate(rows) {
 }
 
 const golden = {
-  engineVersion: 'v1',
+  engineVersion: 'v2',
   note: 'Frozen behavioural record of the shipped engine. Descriptive, not aspirational. The engine has NO T20 mode (newMatch is 50-over only); T20 calibration is intentionally absent, not omitted by error.',
   config: { pitch: 'balanced', weather: 'Sunny', tuned: true, weakFactor: 0.70, eliteFactor: 1.30, perCell: PER_CELL, seedBase: { weak_vs_weak: 11000, weak_vs_elite: 22000, elite_vs_elite: 33000 }, seedStep: 7 },
   formats: { fiftyOver: true, t20: 'unsupported-by-engine-v1' },
