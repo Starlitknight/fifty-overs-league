@@ -10294,7 +10294,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-1312-9e059a";
+  var FO_BUILD = "20260803-1320-874371";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -44798,6 +44798,18 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // and when it DOES overflow, the last item fades out rather than being
       // guillotined, so the strip reads as something you can push
       "@media(max-width:720px){#fo-menubar .fo-mb-in{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent)}}",
+      // ONE HEADER, NOT TWO. On a desk wide enough that the masthead's empty
+      // middle can hold the menus, the bar stops being its own row and rides
+      // INSIDE the masthead - fixed, centred, the full height of the band -
+      // and the page's art gains the row the bar used to occupy. The masthead
+      // is sticky at top:0, so a fixed bar at top:0 tracks it exactly.
+      "@media(min-width:1300px){",
+      // the masthead itself sits at z 320, so the merged bar must clear it
+      "#fo-menubar{position:fixed;top:0;left:50%;transform:translateX(-50%);height:var(--fo-tbh,52px);background:transparent;border-bottom:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;z-index:321;display:flex;align-items:stretch}",
+      "#fo-menubar .fo-mb-in{height:100%;align-items:stretch;padding:0;overflow:visible;max-width:none;margin:0}",
+      "html body #fo-menubar button.fo-mb-t{padding:0 14px !important;border-bottom:2px solid transparent !important}",
+      "html body #fo-menubar button.fo-mb-out{margin-left:8px}",
+      "}",
       // TWO NAVIGATIONS IS ONE TOO MANY. The masthead's pill row listed the
       // same rooms the bar now lists, one row above it. The pills stay in the
       // DOM - the overlay's foot still proxies Admin and Log out off them, and
