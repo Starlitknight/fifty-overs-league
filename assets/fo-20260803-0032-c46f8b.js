@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0030-34579e";
+  var FO_BUILD = "20260803-0032-c46f8b";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18808,7 +18808,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var mgrid = "<div class='fo-ord-mgrid'>" +
         "<div class='mg-hint'>Pick a bowler, then tap overs to hand them to him &middot; tap his over again to clear it. The list runs over 1 to over 50. Tap a bowler's badge to set his field: attacking, balanced or defensive.</div>" +
         "<div class='fo-ord-clearrow'>" +
-        "<button type='button' class='fo-ord-autop' data-fo-act='autobowl'>The Gaffer picks the overs</button>" +
+        "<button type='button' class='fo-ord-autop' data-fo-act='autobowl'>Auto pick</button>" +
         "<button type='button' class='fo-ord-clearp' data-fo-clearplan>&#8709; Clear the bowling plan</button></div>" +
         "<div class='mg-chips'>" + bowlNames.map(function (n9) {
           // one small card per bowler, two to a row: name and OVR, his type
@@ -19410,7 +19410,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".mg-chips .mgb .r3 .fo-ord-tp{font-size:7.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#8a93a3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:none;border:0;padding:0}" +
       ".mg-chips .mgb s{text-decoration:none;font-size:9.5px;font-weight:700;letter-spacing:.03em;color:#8a93a3;border:1px solid rgba(28,36,51,.16);border-radius:6px;padding:2px 6px}" +
       ".mg-chips .mgb s.on{color:#FFFEFC;background:#0E233F;border-color:#0E233F}" +
-      ".fo-ord-clearrow{display:flex;justify-content:flex-end;gap:7px;flex-wrap:wrap;margin:9px 0 2px}" +
+      ".fo-ord-clearrow{display:flex;justify-content:flex-start;align-items:center;gap:7px;flex-wrap:wrap;margin:9px 0 2px}" +
       "html body.ftpskin #page button.fo-ord-autop,html body #page button.fo-ord-autop{border:1px solid #0E233F!important;background:#0E233F!important;color:#FFFEFC!important;border-radius:999px;padding:7px 14px;font-size:11px;font-weight:800;letter-spacing:.02em;cursor:pointer}" +
       "html body #page button.fo-ord-autop:hover{background:#1d3a63!important;border-color:#1d3a63!important}" +
       "html body.ftpskin #page button.fo-ord-clearp,html body #page button.fo-ord-clearp{border:1px solid rgba(28,36,51,.16)!important;background:#FFFEFC!important;color:#5a6472!important;border-radius:999px;padding:7px 13px;font-size:11px;font-weight:700;letter-spacing:.02em;cursor:pointer}" +
