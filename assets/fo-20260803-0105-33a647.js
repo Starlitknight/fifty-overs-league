@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0055-4279c6";
+  var FO_BUILD = "20260803-0105-33a647";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18560,6 +18560,36 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return "<div class='fo-ord-read small'><b>The read:</b> " + (P[pitch] || P.balanced) + (W[wx] ? "; " + W[wx] : "") + "." + suitTxt + danger + "</div>";
     } catch (e) { return ""; }
   }
+  // The Gaffer reads the same conditions the engine will use, in his own
+  // voice: one line on the pitch, one clause on the sky, then the plan.
+  // Deterministic - keyed purely off the served pitch and weather, so the
+  // same fixture says the same thing on every device.
+  function foOrdGafferSays(opp) {
+    var pitch = String((opp && opp.pitch) || "balanced").toLowerCase();
+    var wx = String((opp && opp.weather) || "").toLowerCase();
+    var P = {
+      green: "There's grass on this one, boss - it'll seam about all morning",
+      dry: "It's a dry crumbler, boss - it'll turn more every over",
+      cracked: "A sticky pitch, boss - the bounce will misbehave",
+      flat: "Flat as a road, boss - a batting day if ever I saw one",
+      slow: "A slow old deck, boss - timing won't come easy",
+      twoPaced: "It's two-paced, boss - some skid on, some hold up",
+      balanced: "A fair pitch, boss - skill will decide it"
+    };
+    var W = {
+      overcast: "and this cloud will keep the seamers interested",
+      humid: "and the air's heavy - swing early, tired legs late",
+      drizzle: "and there's drizzle about - keep one eye on the rain",
+      hot: "and it's hot out - spells will tire quickly",
+      scorching: "and it's scorching - fatigue will bite hard",
+      "dew later": "and dew's due later - gripping the ball gets harder",
+      windy: "and it's blowy - big hits carry risk",
+      chilly: "and it's chilly - lively for the quicks early",
+      misty: "and it's misty - the new ball will do a bit",
+      sunny: "and the sun's out - good batting weather"
+    };
+    return (P[pitch] || P.balanced) + (W[wx] ? ", " + W[wx] : "") + ". My plan's below - move anything you like.";
+  }
   // ---- simple mode: the whole sheet is a lot for a new manager. Until
   // they've played a handful of matches (or ask for the full editor), the
   // orders page is one readable Gaffer plan and one button.
@@ -18798,13 +18828,14 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // against the club's other bowlers), stamina, and his talents
       // bowler cards mirror the batting cards: name row with OVR right,
       // stars beneath (navy = with the ball), talents last
-      // two groups, and a line may only break BETWEEN them - never between
-      // Bat first and Bowl first, which are one choice
+      // ONE line, both groups: the whole toss - call AND decision - reads as
+      // a single sentence, so the buttons are cut small enough to share a
+      // 393px phone row and the row itself never wraps
       var toss = "<div class='pv-toss'><div class='fo-ord-vzh' style='margin-top:2px'>Toss</div><div class='fo-ord-toss'>" +
         "<span class='tg'><span class='tl'>Call</span>" +
         "<button type='button' data-fo-toss='call:H' class='" + ((App.orders.tossCall || "H") === "H" ? "on" : "") + "'>Heads</button>" +
         "<button type='button' data-fo-toss='call:T' class='" + (App.orders.tossCall === "T" ? "on" : "") + "'>Tails</button></span>" +
-        "<span class='tg'><span class='tl'>If we win it</span>" +
+        "<span class='tg'><span class='tl'>If we win</span>" +
         "<button type='button' data-fo-toss='dec:bat' class='" + (App.orders.tossDecision !== "bowl" ? "on" : "") + "'>Bat first</button>" +
         "<button type='button' data-fo-toss='dec:bowl' class='" + (App.orders.tossDecision === "bowl" ? "on" : "") + "'>Bowl first</button></span>" +
         "</div></div>";
@@ -19017,7 +19048,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         foOrdTabBar(tabS) +
         "<div class='panel fo-keep'><h4>The Gaffer's plan &middot; " + (tabS === "bowl" ? "Bowling" : "Batting") + "</h4><div class='pad'>" +
         (tabS === "bat" ? "<div class='fo-j-gbox' style='max-width:none;margin:2px 0 10px'><img class='gf' src='" + FO_ART + "gaffer.png' alt=''>" +
-        "<span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;My plan for these conditions, boss. Move anything you like - it's all live.&rdquo;</span></span></div>" : "") +
+        "<span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;" + foOrdGafferSays(opp) + "&rdquo;</span></span></div>" : "") +
         foOrdPlanVisual(tabS) +
         "<div class='fo-ord-acts' style='margin-top:12px'>" +
         "<button class='primary fo-ord-save'>" + (App.pending ? "Play with this plan &#9654;" : "Save this plan") + "</button>" +
@@ -19588,11 +19619,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-ord-xis .xc .r3,.fo-ord-bws .bw .r3{display:flex;flex-wrap:wrap;gap:3px;width:100%;min-height:11px;align-items:center}" +
       ".fo-ord-bws{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:6px;margin-top:8px}" +
       "html body.ftpskin #page .fo-ord-bws button.bw,html body #page .fo-ord-bws button.bw{display:flex;flex-direction:column;gap:3px;background:#FFFEFC !important;border:1px solid rgba(28,36,51,.12) !important;border-radius:9px;padding:5px 10px;cursor:pointer;text-align:left;min-width:0}" +
-      ".fo-ord-toss{display:flex;align-items:center;gap:7px 16px;flex-wrap:wrap}" +
-      ".fo-ord-toss .tg{display:flex;align-items:center;gap:7px;flex-wrap:nowrap}" +
-      ".fo-ord-toss .tl{font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:800;color:#8a93a3}" +
-      "html body.ftpskin #page .fo-ord-toss button,html body #page .fo-ord-toss button{border:1px solid rgba(28,36,51,.16) !important;background:#FFFEFC !important;color:#3a4353 !important;border-radius:99px;padding:4px 13px;font-size:11.5px;font-weight:700;cursor:pointer}" +
+      ".fo-ord-toss{display:flex;align-items:center;gap:5px 12px;flex-wrap:nowrap}" +
+      ".fo-ord-toss .tg{display:flex;align-items:center;gap:5px;flex-wrap:nowrap}" +
+      ".fo-ord-toss .tl{font-size:9.5px;letter-spacing:.05em;text-transform:uppercase;font-weight:800;color:#8a93a3;white-space:nowrap}" +
+      // the ftpskin base sheet sets 'font:bold 11.5px ... !important' and its
+      // own padding on every button - the toss row's cuts must out-shout it
+      "html body.ftpskin #page .fo-ord-toss button,html body #page .fo-ord-toss button{border:1px solid rgba(28,36,51,.16) !important;background:#FFFEFC !important;color:#3a4353 !important;border-radius:99px;padding:4px 9px !important;font-size:10.5px !important;font-weight:700;cursor:pointer;white-space:nowrap;min-height:0}" +
       "html body.ftpskin #page .fo-ord-toss button.on,html body #page .fo-ord-toss button.on{background:#0E233F !important;color:#FFFEFC !important;border-color:#0E233F !important}" +
+      // the narrowest phones: shave gaps, padding and type until all four
+      // choices still share the one line
+      "@media(max-width:400px){.fo-ord-toss{gap:4px 8px}.fo-ord-toss .tg{gap:4px}.fo-ord-toss .tl{font-size:8.5px}" +
+      "html body.ftpskin #page .fo-ord-toss button,html body #page .fo-ord-toss button{padding:3px 7px !important;font-size:9.5px !important}}" +
       "html body #page .fo-ord-bws button.bw:hover{border-color:#B04A2C !important}" +
       ".fo-ord-bws .bw-h{display:flex;align-items:center;gap:6px;width:100%;min-width:0}" +
       ".fo-ord-bws .bw-h i{width:10px;height:10px;border-radius:3px;flex:0 0 auto}" +
