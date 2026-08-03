@@ -61,6 +61,7 @@
       ["squad", "people", "The squad"],
       ["training", "net", "The nets"],
       ["academy", "star", "Youth Academy"],
+      ["market", "coin", "The transfer market"],
       ["finance", "coin", "The books"],
       ["fixtures", "cal", "The fixture list"],
       ["matchday", "pitch", "Matchday"],

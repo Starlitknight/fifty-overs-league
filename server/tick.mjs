@@ -621,16 +621,6 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
        SELECT country_id, slot, $2, $3, coalesce(training, '{}'::jsonb), academy FROM clubs WHERE country_id=$1
        ON CONFLICT (country_id, slot, season_no, round) DO NOTHING`,
       [country, season.season_no, round]);
-    // THE MARKET runs on league rounds only - the playoffs are the seniors'
-    // nights, and the boys' cup has a week of its own (runColtsCup)
-    if (round <= ROUNDS) {
-      // THE BOARD. A bot club sheds a man it does not need now and then, so
-      // the market is never empty in a world where most clubs have nobody
-      // behind them. Seeded on the club and the round: the same world puts up
-      // the same cricketer however often the day is settled.
-      try { await runMarket(pool, country, season.season_no, round, { now }); }
-      catch (eM) { console.error('market listings failed for ' + country + ':', eM.message); }
-    }
     // THE ALMANACK SLIMS. Only the current round is ever replayed by a
     // broadcast (the spectator contract test 015 proves), so match rows more
     // than two rounds behind lose their replay blob and living patch - the
@@ -644,6 +634,12 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
         [country, season.season_no, round]);
     } catch (eSl) { console.error('almanack slimming failed for ' + country + ':', eSl.message); }
   }
+  // THE MARKET. Bot clubs shed men on league rounds; the free-agent trickle
+  // walks on EVERY day the world turns, rest days included - which is why
+  // this stands outside the round gate. Both seeded, so the same world puts
+  // up the same cricketers however often the day is settled.
+  try { await runMarket(pool, country, season.season_no, round || 0, { now, host }); }
+  catch (eM) { console.error('market listings failed for ' + country + ':', eM.message); }
   // the day's cricket changes the men who played it: careers, form, tired
   // legs, and the work they did in the nets. A pure function of the record,
   // so re-running settles the same.

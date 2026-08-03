@@ -23,15 +23,19 @@
 // facts, so a re-run produces the same market; the money is walked out of the
 // deals by the books like every other line; and a settled transfer is a fact
 // in a table, never a number quietly written onto a club.
-import { dayIx, seedOf, nextRoundAfterDay } from './clock.mjs';
+import { dayIx, seedOf, nextRoundAfterDay, ROUNDS } from './clock.mjs';
+import { countryConfigs } from './init-world.mjs';
 
 export const WINDOW_DAYS = 3;              // a listing stands this many world days
 export const MIN_BID_PCT = 0.55;           // an offer below this is not an offer
+export const BID_STEP = 500;               // the open board moves in steps of this
 export const BOT_SELL_CHANCE = 0.22;       // how often a bot club sheds somebody
 export const SQUAD_FLOOR = 13;             // nobody sells themselves short of a side
 export const SQUAD_CEILING = 18;           // and nobody hoards beyond this
 export const SCOUT_PCT = 0.012;            // a proper look costs this much of his value
 export const SCOUT_MIN = 4000;
+export const FREE_AGENT_SLOT = -1;         // the umpire's own listings: men of no club
+export const FREE_AGENTS_MAX = 6;          // the shelf never crowds out the clubs' business
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const rnd = key => seedOf(key) / 4294967296;
@@ -152,6 +156,46 @@ export async function openBotListings(pool, country, seasonNo, round, now = Date
 }
 
 // ---------------------------------------------------------------------------
+// THE DAILY TRICKLE. One or two men of no club walk onto the board every
+// world day - journeymen between contracts, priced by the same valuation as
+// everyone else. Seeded on the league and the day: the same world offers the
+// same men however often the day is settled, and a manager reading the
+// calendar knows exactly when fresh names arrive.
+// ---------------------------------------------------------------------------
+export async function openFreeAgents(pool, host, country, seasonNo, day) {
+  if (!host || !host.genSquad) return [];
+  const cfg = countryConfigs(host).find(c => c.id === country);
+  if (!cfg) return [];
+  const live = (await pool.query(
+    `SELECT count(*)::int AS n FROM listings
+      WHERE country_id=$1 AND slot=$2 AND status='open'`, [country, FREE_AGENT_SLOT])).rows[0].n;
+  if (live >= FREE_AGENTS_MAX) return [];
+  const key = 'fa|' + country + '|s' + seasonNo + '|d' + day;
+  const n = Math.min(1 + (seedOf(key) % 2), FREE_AGENTS_MAX - live);
+  const opened = [];
+  for (let i = 0; i < n; i++) {
+    const seed = key + '|' + i;
+    let men = [];
+    try { men = host.genSquad(seed, cfg.nat, cfg.arch || 'balanced', 'general') || []; } catch (e) { continue; }
+    if (!men.length) continue;
+    men.sort((a, b) => (+b.rating || 0) - (+a.rating || 0) || (a.name < b.name ? -1 : 1));
+    // a free agent is a useful cricketer, not a star: mid-order of the sample
+    const man = JSON.parse(JSON.stringify(men[Math.min(men.length - 1, 3 + seedOf(seed + '|pick') % 6)]));
+    man.nat = man.nat || cfg.nat;
+    const ask = valueOf(man);
+    const r = await pool.query(
+      `INSERT INTO listings(country_id, slot, player, player_json, asking, reserve,
+                            opened_day, closes_day, status, by_user)
+       VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,'open',NULL)
+       ON CONFLICT DO NOTHING RETURNING id`,
+      [country, FREE_AGENT_SLOT, man.name, JSON.stringify(man), ask,
+       Math.round(ask * 0.7), day, day + WINDOW_DAYS]);
+    if (r.rowCount) opened.push({ id: r.rows[0].id, country, player: man.name, asking: ask });
+  }
+  return opened;
+}
+
+// ---------------------------------------------------------------------------
 // AND BOT CLUBS BID. A club with a hole in its shape and money in the bank
 // will go after a man who fills it - which is what stops a human simply
 // hoovering up every listing on earth unopposed. Seeded on the listing and
@@ -183,30 +227,39 @@ export async function placeBotBids(pool, now = Date.now()) {
     `SELECT * FROM listings WHERE status='open' AND closes_day > $1 ORDER BY id`, [today])).rows;
   const placed = [];
   for (const L of open) {
-    // a bot decides once, on the day the listing opens: no sniping, because
-    // there is nothing to snipe
+    // OPEN OUTCRY. botBid() is the club's CAP, seeded once and forever. On
+    // the board it opens low - the floor, or one step over the standing high
+    // - and each settle it raises one step past whoever has outbid it, up to
+    // its cap and never further. Deterministic given the board's state, so a
+    // re-settled day places the same money.
+    const board = (await pool.query(
+      'SELECT country_id, slot, amount FROM bids WHERE listing_id=$1', [L.id])).rows;
+    let high = 0; board.forEach(b => { if (+b.amount > high) high = +b.amount; });
     const clubs = (await pool.query(
       `SELECT cl.country_id, cl.slot, cl.squad, cl.bank, (c.user_id IS NOT NULL) AS managed
          FROM clubs cl LEFT JOIN claims c ON c.country_id=cl.country_id AND c.slot=cl.slot
-        WHERE NOT (cl.country_id=$1 AND cl.slot=$2) ORDER BY cl.country_id, cl.slot`,
+        WHERE cl.country_id=$1 AND NOT (cl.country_id=$1 AND cl.slot=$2)
+        ORDER BY cl.slot`,
       [L.country_id, L.slot])).rows;
     for (const cl of clubs) {
-      if (cl.managed) continue;
-      const have = await pool.query(
-        'SELECT 1 FROM bids WHERE listing_id=$1 AND country_id=$2 AND slot=$3',
-        [L.id, cl.country_id, cl.slot]);
-      if (have.rowCount) continue;
-      // a bot club only shops in its own nation: the world's bot sides do not
-      // run scouting networks abroad, and a global bot free-for-all would eat
-      // every listing before a manager saw it
-      if (cl.country_id !== L.country_id) continue;
-      const amount = botBid({ ...L, buyerKey: cl.country_id + ':' + cl.slot }, cl.squad || [], Number(cl.bank || 0), L.player_json);
-      if (!amount) continue;
+      if (cl.managed) continue;                   // a manager bids for himself
+      const cap = botBid({ ...L, buyerKey: cl.country_id + ':' + cl.slot }, cl.squad || [], Number(cl.bank || 0), L.player_json);
+      if (!cap) continue;
+      const mine = board.find(b => b.country_id === cl.country_id && b.slot === cl.slot);
+      const floor = Math.round((+L.asking || 0) * MIN_BID_PCT);
+      let offer = 0;
+      if (!mine) offer = Math.min(cap, Math.max(floor, high ? high + BID_STEP : floor));
+      else if (+mine.amount < high && +mine.amount < cap) offer = Math.min(cap, high + BID_STEP);
+      if (!offer || offer <= (+((mine || {}).amount) || 0) || offer < floor) continue;
       await pool.query(
         `INSERT INTO bids(listing_id, country_id, slot, amount, user_id)
-         VALUES ($1,$2,$3,$4,NULL) ON CONFLICT DO NOTHING`,
-        [L.id, cl.country_id, cl.slot, amount]);
-      placed.push({ id: L.id, by: cl.country_id + ':' + cl.slot, amount });
+         VALUES ($1,$2,$3,$4,NULL)
+         ON CONFLICT (listing_id, country_id, slot)
+         DO UPDATE SET amount = EXCLUDED.amount, placed_at = now()
+         WHERE bids.amount < EXCLUDED.amount`,
+        [L.id, cl.country_id, cl.slot, offer]);
+      if (offer > high) high = offer;
+      placed.push({ id: L.id, by: cl.country_id + ':' + cl.slot, amount: offer });
     }
   }
   return placed;
@@ -267,16 +320,17 @@ export async function closeListings(pool, { now = Date.now() } = {}) {
 // He also carries the round he arrived, so the nets never work him through
 // weeks he was not there for.
 async function moveMan(pool, L, win, today) {
-  const seller = (await pool.query(
+  const freeAgent = L.slot === FREE_AGENT_SLOT;   // the umpire's man: nobody to leave
+  const seller = freeAgent ? null : (await pool.query(
     'SELECT slot, squad FROM clubs WHERE country_id=$1 AND slot=$2', [L.country_id, L.slot])).rows[0];
   const buyer = (await pool.query(
     'SELECT slot, squad FROM clubs WHERE country_id=$1 AND slot=$2', [win.country_id, win.slot])).rows[0];
-  if (!seller || !buyer) return false;
-  const squad = seller.squad || [];
-  const ix = squad.findIndex(p => p && p.name === L.player);
-  if (ix < 0) return false;                       // he has already gone somewhere
-  if (squad.length <= SQUAD_FLOOR) return false;  // and no club is stripped below a side
-  const man = JSON.parse(JSON.stringify(squad[ix]));
+  if ((!freeAgent && !seller) || !buyer) return false;
+  const squad = freeAgent ? [] : (seller.squad || []);
+  const ix = freeAgent ? -1 : squad.findIndex(p => p && p.name === L.player);
+  if (!freeAgent && ix < 0) return false;         // he has already gone somewhere
+  if (!freeAgent && squad.length <= SQUAD_FLOOR) return false;  // and no club is stripped below a side
+  const man = JSON.parse(JSON.stringify(freeAgent ? L.player_json : squad[ix]));
   const season = (await pool.query(
     'SELECT season_no, start_day FROM seasons WHERE country_id=$1 ORDER BY season_no DESC LIMIT 1',
     [win.country_id])).rows[0];
@@ -292,9 +346,11 @@ async function moveMan(pool, L, win, today) {
   man.baseSkills = JSON.parse(JSON.stringify(man.skills || man.baseSkills || {}));
   delete man.trainProgress;
 
-  const left = squad.slice(0, ix).concat(squad.slice(ix + 1));
-  await pool.query('UPDATE clubs SET squad=$3::jsonb WHERE country_id=$1 AND slot=$2',
-    [L.country_id, L.slot, JSON.stringify(left)]);
+  if (!freeAgent) {
+    const left = squad.slice(0, ix).concat(squad.slice(ix + 1));
+    await pool.query('UPDATE clubs SET squad=$3::jsonb WHERE country_id=$1 AND slot=$2',
+      [L.country_id, L.slot, JSON.stringify(left)]);
+  }
   const bs = (buyer.squad || []).filter(p => p && p.name !== man.name).concat([man]);
   await pool.query('UPDATE clubs SET squad=$3::jsonb WHERE country_id=$1 AND slot=$2',
     [win.country_id, win.slot, JSON.stringify(bs)]);
@@ -375,14 +431,20 @@ export async function computeMarket(pool, now = Date.now()) {
        LEFT JOIN clubs b ON b.country_id=l.buyer_country AND b.slot=l.buyer_slot
       WHERE l.status='sold' ORDER BY l.settled_day DESC, l.id DESC LIMIT 40`)).rows;
   return {
-    day: dayIx(now), windowDays: WINDOW_DAYS,
+    day: dayIx(now), windowDays: WINDOW_DAYS, step: BID_STEP,
     listings: open.map(L => ({
-      id: L.id, country: L.country_id, slot: L.slot, club: L.club,
-      asking: L.asking, opened: L.opened_day, closes: L.closes_day,
-      bids: 0, scout: scoutReport(L.player_json, false), fee: scoutFee(L.player_json)
+      id: L.id, country: L.country_id, slot: L.slot,
+      club: L.slot === FREE_AGENT_SLOT ? 'Free agent' : L.club,
+      free: L.slot === FREE_AGENT_SLOT || undefined,
+      asking: L.asking, reserve: L.reserve, opened: L.opened_day, closes: L.closes_day,
+      bids: 0, high: 0, highClub: null,
+      scout: scoutReport(L.player_json, false), fee: scoutFee(L.player_json)
     })),
     deals: done.map(d => ({
-      id: d.id, player: d.player, from: d.from_club, to: d.to_club,
+      id: d.id, player: d.player,
+      from: d.slot === FREE_AGENT_SLOT ? 'Free agent' : d.from_club,
+      to: d.buyer_country === 'bank' ? 'the bank'
+        : d.buyer_country === 'released' ? 'released' : d.to_club,
       fromCountry: d.country_id, toCountry: d.buyer_country, fee: d.fee, day: d.settled_day
     })),
     generatedAtDay: dayIx(now)
@@ -391,20 +453,32 @@ export async function computeMarket(pool, now = Date.now()) {
 
 export async function rebuildMarket(pool, now = Date.now()) {
   const body = await computeMarket(pool, now);
-  // how many offers a listing has drawn is public - the NUMBERS never are
-  const counts = (await pool.query(
-    `SELECT listing_id, count(*)::int AS n FROM bids GROUP BY listing_id`)).rows;
-  const byId = Object.fromEntries(counts.map(c => [c.listing_id, c.n]));
-  body.listings.forEach(L => { L.bids = byId[L.id] || 0; });
+  // THE OPEN BOARD: how many offers, how high the board stands, and who
+  // holds it - public by decree. Skills stay the scout's trade.
+  const tops = (await pool.query(
+    `SELECT DISTINCT ON (b.listing_id) b.listing_id, b.amount, b.country_id, b.slot,
+            coalesce(cl.name, 'a club') AS club,
+            (SELECT count(*)::int FROM bids b3 WHERE b3.listing_id = b.listing_id) AS n
+       FROM bids b LEFT JOIN clubs cl ON cl.country_id=b.country_id AND cl.slot=b.slot
+      ORDER BY b.listing_id, b.amount DESC, b.placed_at ASC`)).rows;
+  const byId = Object.fromEntries(tops.map(t => [t.listing_id, t]));
+  body.listings.forEach(L => {
+    const t = byId[L.id];
+    if (t) { L.bids = t.n; L.high = +t.amount; L.highClub = t.club; }
+  });
   await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ('market',$1,now())
     ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`, [JSON.stringify(body)]);
   return body;
 }
 
-// one call for the umpire: put men up, let the bots shop, settle what is due
-export async function runMarket(pool, country, seasonNo, round, { now = Date.now() } = {}) {
-  const opened = await openBotListings(pool, country, seasonNo, round, now);
-  return { opened };
+// one call for the umpire: put men up, settle nothing. Bot clubs shed men on
+// league rounds only; the free-agent trickle walks on every day the world
+// turns, rest days included - fresh names are the market's pulse.
+export async function runMarket(pool, country, seasonNo, round, { now = Date.now(), host = null } = {}) {
+  const opened = (round >= 1 && round <= ROUNDS)
+    ? await openBotListings(pool, country, seasonNo, round, now) : [];
+  const agents = await openFreeAgents(pool, host, country, seasonNo, dayIx(now));
+  return { opened, agents };
 }
 export async function settleMarket(pool, { now = Date.now() } = {}) {
   const bids = await placeBotBids(pool, now);

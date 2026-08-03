@@ -29,7 +29,8 @@ import { evolveCountry, withCarry } from '../living.mjs';
 import {
   WINDOW_DAYS, MIN_BID_PCT, SQUAD_FLOOR, valueOf, ageCurve, roleOf,
   surplusRank, needRank, botBid, pickWinner, scoutReport, scoutFee, classOf,
-  openBotListings, placeBotBids, closeListings, computeMarket, rebuildMarket
+  openBotListings, placeBotBids, closeListings, computeMarket, rebuildMarket,
+  openFreeAgents, FREE_AGENT_SLOT, BID_STEP
 } from '../market.mjs';
 import { EPOCH, DAY } from '../clock.mjs';
 
@@ -169,7 +170,7 @@ test('the umpire puts bot clubs spare men up, and does it the same way twice', a
   for (const L of open) assert.equal(L.closes_day, L.opened_day + WINDOW_DAYS);
 });
 
-test('the sealed bid: the floor, the bank, and one offer a club', async () => {
+test('the open bid: the floor, the bank, and the board must be beaten', async () => {
   // seated directly at a first-division county: the claim DOORS only open
   // onto Division Two now (proved in world-conditions), and the market's laws
   // must hold for any managed club.
@@ -179,23 +180,31 @@ test('the sealed bid: the floor, the bank, and one offer a club', async () => {
   const low = Math.round(L.asking * MIN_BID_PCT) - 1000;
   await assert.rejects(
     as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, low], atDay(START + 2, 10)),
-    /will not be read/);
+    /offer at least/);
   await assert.rejects(
     as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, 900000000], atDay(START + 2, 10)),
     /bank will not cover/);
   const ok = await as(U1, `SELECT public.world_market_bid($1, $2) AS r`,
     [L.id, L.asking + 5000], atDay(START + 2, 10));
   assert.equal(ok.rows[0].r.ok, true);
+  // the board stands: an offer that does not beat it by the step is refused
+  await assert.rejects(
+    as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, L.asking + 5000], atDay(START + 2, 11)),
+    /offer at least/);
   // raising replaces rather than stacks
   await as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, L.asking + 9000], atDay(START + 2, 11));
   const mine = (await pool.query('SELECT * FROM bids WHERE listing_id=$1', [L.id])).rows;
   assert.equal(mine.length, 1);
   assert.equal(mine[0].amount, L.asking + 9000);
-  // and the public board never carries a number anybody offered
+  // and the board is OPEN by decree: the standing high, its holder, and the
+  // reserve are all public - only skills stay the scout's trade
   const board = (await pool.query('SELECT * FROM world_listings WHERE id=$1', [L.id])).rows[0];
   assert.equal(board.offers, 1);
-  assert.equal(board.reserve, undefined, 'the reserve is the seller\'s business');
-  assert.equal(JSON.stringify(board).indexOf(String(L.asking + 9000)), -1, 'and the offer is nobody\'s');
+  assert.equal(Number(board.high), L.asking + 9000, 'the high bid is on the board');
+  assert.ok(board.high_club, 'and so is who holds it');
+  assert.equal(Number(board.reserve), L.reserve, 'and the reserve');
+  // an offer made in the open stands
+  await assert.rejects(as(U1, `SELECT public.world_market_unbid($1)`, [L.id]), /stands/);
 });
 
 test('a manager lists his own man, and cannot gut his own club', async () => {
@@ -298,25 +307,106 @@ test('a scout is paid for, and the report is only for the club that paid', async
   assert.ok(onBoard && onBoard.scout && onBoard.scout.paid === false, 'the board shows the free impression only');
 });
 
-test('bot clubs shop, so a manager is not the only buyer on earth', async () => {
+test('bot clubs shop in the open, and the bidding war ends at the caps', async () => {
   await openBotListings(pool, 'eng', 1, 6, atDay(START + 5, 6));
   const placed = await placeBotBids(pool, atDay(START + 5, 7));
   assert.ok(placed.length >= 1, 'somebody in the league fancied somebody');
   for (const b of placed) assert.ok(b.amount > 0);
-  // and they do not bid twice
-  const again = await placeBotBids(pool, atDay(START + 5, 8));
-  assert.equal(again.length, 0);
+  // open outcry: rivals leapfrog by the step, each capped by his seeded
+  // appetite, so repeated settles CONVERGE rather than repeat
+  let rounds = 0, more = placed.length;
+  while (more && rounds < 60) { more = (await placeBotBids(pool, atDay(START + 5, 8))).length; rounds++; }
+  assert.ok(rounds < 60, 'the war ends: every club reaches its cap');
+  const again = await placeBotBids(pool, atDay(START + 5, 9));
+  assert.equal(again.length, 0, 'and a settled board re-settles to itself');
 });
 
-test('the board is publishable, and carries no reserve and no offer', async () => {
+test('the board is publishable: open prices, private skills', async () => {
   const body = await rebuildMarket(pool);
   assert.ok(body.listings.length >= 0 && Array.isArray(body.deals));
   assert.equal(body.windowDays, WINDOW_DAYS);
+  assert.equal(body.step, BID_STEP);
   const j = JSON.stringify(body);
-  assert.ok(!/"reserve"/.test(j), 'the reserve never leaves the database');
-  assert.ok(!/"skills"/.test(j), 'and neither do a rival\'s skills');
+  assert.ok(/"reserve"/.test(j), 'the open board carries the reserve');
+  assert.ok(!/"skills"/.test(j), 'but a rival\'s skills still never leave the database');
+  const bidOn = body.listings.find(x => x.bids > 0);
+  if (bidOn) {
+    assert.ok(bidOn.high > 0, 'the standing high is on the board');
+    assert.ok(bidOn.highClub, 'with the club that holds it');
+  }
   const snap = (await pool.query(`SELECT body FROM snapshots WHERE key='market'`)).rows[0];
   assert.ok(snap && snap.body.listings);
+});
+
+test('the free-agent trickle: men of no club, daily, seeded, and signable', async () => {
+  const d = START + 6;
+  const first = await openFreeAgents(pool, host, 'eng', 1, d);
+  assert.ok(first.length >= 1 && first.length <= 2, 'one or two men walk onto the board');
+  const again = await openFreeAgents(pool, host, 'eng', 1, d);
+  assert.equal(again.length, 0, 'the same day trickles the same men, which is to say none more');
+  const rows = (await pool.query(
+    `SELECT * FROM listings WHERE slot=$1 AND status='open'`, [FREE_AGENT_SLOT])).rows;
+  assert.ok(rows.length >= first.length);
+  for (const L of rows) {
+    assert.equal(L.closes_day, L.opened_day + WINDOW_DAYS);
+    assert.ok(L.asking >= 5000 && L.reserve <= L.asking, 'priced like anybody else');
+  }
+  // and the board names him honestly
+  const board = (await pool.query('SELECT * FROM world_listings WHERE id=$1', [rows[0].id])).rows[0];
+  assert.equal(board.club, 'Free agent');
+  // a manager signs him: the hammer moves him in from nowhere
+  const L = rows[0];
+  const before = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  await as(U1, `SELECT public.world_market_bid($1,$2)`, [L.id, L.asking + 2000], atDay(d, 10));
+  const out = await closeListings(pool, { now: atDay(L.closes_day, 6) });
+  const mine = out.find(x => x.id === L.id);
+  assert.ok(mine && mine.sold, 'sold to the manager');
+  const after = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  assert.equal(after.length, before.length + 1, 'in from nowhere: no club lost him');
+  const him = after.find(p => p.name === L.player);
+  assert.ok(him && him.from && him.from.slot === FREE_AGENT_SLOT, 'stamped as a free-agent signing');
+});
+
+test('quick-sell and release: a manager\'s own two doors out', async () => {
+  const sq0 = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  const nmQ = sq0[sq0.length - 1].name;
+  const r = await as(U1, `SELECT public.world_market_quicksell($1) AS r`, [nmQ], atDay(START + 7, 6));
+  assert.equal(r.rows[0].r.ok, true);
+  assert.ok(r.rows[0].r.fee >= 3000, 'the bank pays real money');
+  const sq1 = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  assert.equal(sq1.length, sq0.length - 1, 'and he is gone');
+  const row = (await pool.query(
+    `SELECT * FROM listings WHERE player=$1 AND buyer_country='bank'`, [nmQ])).rows[0];
+  assert.ok(row && row.status === 'sold' && Number(row.fee) === r.rows[0].r.fee,
+    'recorded as a settled sale to the bank');
+  // the books walk the quick-sell like any deal, and the identity closes
+  const fin = await computeFinance(pool, 'eng');
+  for (const f of fin) {
+    const x = f.finance;
+    const expect = x.founded + x.gate + x.awayCut + x.sponsor + (x.compensation || 0)
+      + (x.feesIn || 0) + x.writtenOff
+      - x.wages - x.upkeep - x.interest - x.academyPaid - x.seatsPaid
+      - (x.feesOut || 0) - (x.scouting || 0);
+    assert.equal(Number(f.bank), Math.round(expect), 'club ' + f.slot + ': the books add up');
+  }
+  // release: gone for nothing, remembered as let go
+  const nmR = sq1[sq1.length - 1].name;
+  const r2 = await as(U1, `SELECT public.world_market_release($1) AS r`, [nmR], atDay(START + 7, 7));
+  assert.equal(r2.rows[0].r.ok, true);
+  const sq2 = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  assert.equal(sq2.length, sq1.length - 1);
+  const rel = (await pool.query(
+    `SELECT * FROM listings WHERE player=$1 AND buyer_country='released'`, [nmR])).rows[0];
+  assert.ok(rel && Number(rel.fee) === 0, 'a release is a fee of nothing');
+  // and neither door opens onto another club's man
+  await assert.rejects(
+    as(U1, `SELECT public.world_market_quicksell($1)`, ['Nobody At All'], atDay(START + 7, 8)),
+    /does not play for you/);
 });
 
 test('a career carried is a career added, not replaced', () => {
