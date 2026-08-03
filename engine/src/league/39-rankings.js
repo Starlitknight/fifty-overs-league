@@ -39,7 +39,7 @@
     try { return window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (e) { return null; }
   }
 
-  var RK = null, RK_TS = null, BUSY = false;
+  var RK = null, RK_TS = null, BUSY = false, RK_NAT = "";
   // A ladder cached before the rankings became match ratings is an Elo body -
   // no marks behind the figure - and would paint a rating that means nothing on
   // this page for a second before the fetch landed. A body that cannot name its
@@ -115,10 +115,18 @@
           "<span class='rec'>" + c.w + "-" + c.l + (c.t ? "-" + c.t : "") + "</span>" +
           "<span class='pts'>" + fmt(c.rating) + "</span></a>";
       };
-      var top = RK.clubs.slice(0, 30).map(rowOf).join("");
-      var mineExtra = (mine && mine.rank > 30)
+      // one nation at a time when asked: the same world ranks, one league's
+      // clubs - the dropdown narrows the ladder, it never re-ranks it
+      var natPick = RK_NAT && RK.clubs.some(function (c) { return c.country === RK_NAT; }) ? RK_NAT : "";
+      var shown = natPick ? RK.clubs.filter(function (c) { return c.country === natPick; }) : RK.clubs.slice(0, 30);
+      var top = shown.map(rowOf).join("");
+      var mineExtra = (!natPick && mine && mine.rank > 30)
         ? "<div class='fo-rk-gap'>&middot;&middot;&middot;</div>" + rowOf(mine)
         : "";
+      var natOpts = "<option value=''>All the world</option>" + (RK.countries || []).map(function (n) {
+        return "<option value='" + E(n.id) + "'" + (natPick === n.id ? " selected" : "") + ">" + E(n.name) + "</option>";
+      }).join("");
+      var natSel = "<label class='fo-rk-natf'>League <select id='fo-rk-nat'>" + natOpts + "</select></label>";
       var natRows = (RK.countries || []).map(function (n) {
         var isMineN = !!(cl && cl.country === n.id);
         return "<a class='fo-rk-row nat" + (isMineN ? " mine" : "") + "' href='#/nation?n=" + encodeURIComponent(n.id) + "'>" +
@@ -130,7 +138,9 @@
       }).join("");
       body = mineChip +
         (moved ? "" : "<div class='fo-rk-card'><p class='fo-rk-note'>Every club on earth stands level on <b>3,500</b>. The ladder first moves the night the world plays its opening round.</p></div>") +
-        "<div class='fo-rk-card'><h3>The club ladder <span>top 30 of " + RK.clubs.length + " &middot; last three match ratings</span></h3>" + top + mineExtra + "</div>" +
+        "<div class='fo-rk-card'><h3>The club ladder <span>" +
+        (natPick ? E(natName(natPick)) + " &middot; all " + shown.length + " clubs &middot; world ranks" : "top 30 of " + RK.clubs.length + " &middot; last three match ratings") +
+        "</span>" + natSel + "</h3>" + top + mineExtra + "</div>" +
         "<div class='fo-rk-card'><h3>The nations <span>league strength &middot; national XI</span></h3>" +
         natRows + "</div>";
     }
@@ -141,6 +151,11 @@
       body +
       "<div class='fo-rk-foot'><a href='#/planet'>&lsaquo; World cricket</a><a href='#/almanack'>The world almanack &rsaquo;</a></div>" +
       "</div></div>";
+    var sel = page.querySelector("#fo-rk-nat");
+    if (sel) sel.addEventListener("change", function () {
+      RK_NAT = sel.value || "";
+      window.foRenderRankingsPage();
+    });
   };
 
   function foRkCss() {
@@ -156,7 +171,9 @@
       ".fo-rk-mine{background:#FFFEFC;border:1px solid rgba(217,85,42,.4);border-left:3px solid #C8542F;border-radius:14px;padding:13px 15px;margin-bottom:12px;font:500 13.5px/1.5 Inter,sans-serif;color:#141C28}",
       ".fo-rk-mine u{text-decoration:none;font-family:Oswald,sans-serif;font-weight:700;color:#B44A22}",
       ".fo-rk-card{background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:16px;padding:14px 14px 10px;margin-bottom:14px;box-shadow:0 6px 18px rgba(30,38,52,.06)}",
-      ".fo-rk-card h3{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:16px;color:#141C28;margin:0 0 10px}",
+      ".fo-rk-card h3{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:16px;color:#141C28;margin:0 0 10px;display:flex;align-items:center;flex-wrap:wrap;gap:8px}",
+      ".fo-rk-natf{margin-left:auto;font:600 11px Inter,sans-serif;color:#6d6455;display:flex;align-items:center;gap:6px}",
+      ".fo-rk-natf select{font:600 12px Inter,sans-serif;color:#14243A;border:1px solid #d9d0bc;border-radius:8px;background:#FFFEFC;padding:6px 8px;max-width:170px}",
       ".fo-rk-card h3 span{display:block;font:600 9.5px/1.6 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.45)}",
       ".fo-rk-note{font:italic 400 13px/1.6 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);margin:2px 0 6px}",
       "html body #page .fo-rk-row{display:flex;align-items:center;gap:9px;padding:8px 6px;border-top:1px solid rgba(20,28,40,.07);text-decoration:none !important;color:#141C28 !important}",
