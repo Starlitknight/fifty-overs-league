@@ -121,9 +121,10 @@
         : "";
       var natRows = (RK.countries || []).map(function (n) {
         var isMineN = !!(cl && cl.country === n.id);
+        var lg = ""; try { lg = window.foNatLogo ? window.foNatLogo(n.id) : ""; } catch (eLg) {}
         return "<a class='fo-rk-row nat" + (isMineN ? " mine" : "") + "' href='#/nation?n=" + encodeURIComponent(n.id) + "'>" +
           "<i>" + n.rank + "</i>" +
-          "<img src='" + flagOf(n.id) + "' alt='' onerror=\"this.style.display='none'\">" +
+          "<img" + (lg ? " class='natlogo'" : "") + " src='" + (lg || flagOf(n.id)) + "' alt='' onerror=\"this.style.display='none'\">" +
           "<b>" + E(n.name) + "</b>" +
           "<u>XI " + fmt(n.natRating) + (n.natP ? "" : " &middot; unproven") + "</u>" +
           "<span class='pts'>" + fmt(n.clubRating) + "</span></a>";
@@ -163,6 +164,7 @@
       ".fo-rk-row:first-of-type{border-top:none}",
       ".fo-rk-row i{font:700 11px/1 Oswald,sans-serif;font-style:normal;color:rgba(20,28,40,.4);width:24px;text-align:right;flex:none}",
       ".fo-rk-row img{width:22px;height:15px;object-fit:cover;border-radius:2px;flex:none}",
+      ".fo-rk-row img.natlogo{width:22px;height:20px;object-fit:contain;border-radius:0}",
       ".fo-rk-row b{font:600 13px/1.25 Inter,sans-serif;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       ".fo-rk-row b em{font-style:normal;font:700 8px/1 Oswald,sans-serif;letter-spacing:.12em;color:#C8542F;border:1px solid rgba(200,84,47,.45);border-radius:999px;padding:2px 6px;vertical-align:1px}",
       ".fo-rk-row b em.bs{color:#8a6d3b;border-color:rgba(138,109,59,.4)}",

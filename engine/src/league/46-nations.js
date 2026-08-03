@@ -29,6 +29,14 @@
     var base = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
     try { return base + "flags/" + cx().flagFile(rid) + ".svg"; } catch (e) { return ""; }
   }
+  // The national side wears its board's real logo where one exists, the
+  // flag where one does not. The 'natlogo' class flips the img from a
+  // cropped flag ribbon to a contained badge.
+  function natCrest(rid, cls) {
+    var lg = ""; try { lg = window.foNatLogo ? window.foNatLogo(rid) : ""; } catch (e) {}
+    return "<img class='" + cls + (lg ? " natlogo" : "") + "' src='" + (lg || flagOf(rid)) +
+      "' alt='' onerror=\"this.style.display='none'\">";
+  }
   function money(v) {
     var n = Number(v) || 0;
     return "$" + (n >= 1000000 ? (n / 1000000).toFixed(n >= 10000000 ? 0 : 1) + "m"
@@ -62,6 +70,11 @@
       "html body #page .fo-nat-fl img{width:32px;height:22px;object-fit:cover;border-radius:4px;border:2px solid transparent}",
       "html body #page .fo-nat-fl.on img{border-color:#0B1D3A;box-shadow:0 0 0 3px rgba(11,29,58,.18)}",
       "html body #page .fo-nat-fl span{font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.05em;color:rgba(20,28,40,.55);text-transform:uppercase}",
+      "html body #page .fo-nat-fl img.natlogo{object-fit:contain;border-radius:0;width:26px;height:22px}",
+      "html body #page .fo-nat-flag.natlogo{object-fit:contain;box-shadow:none;border-radius:0;width:17px;height:17px}",
+      "html body #page .fo-ac-card h3 .fo-nat-flag.natlogo{width:21px;height:21px;vertical-align:-5px}",
+      "html body #page .fo-ac-card h3 span .fo-nat-flag.natlogo{width:16px;height:16px;vertical-align:-4px}",
+      "html body #page .fo-nt-hero .shield img.natlogo{width:42px;height:52px;object-fit:contain;border-radius:0}",
       "html body #page .fo-nat-man{display:flex;align-items:baseline;gap:9px;padding:9px 2px;border-top:1px solid rgba(20,28,40,.07);font:500 13px/1.3 Inter,sans-serif}",
       "html body #page .fo-nat-flag{width:19px;height:13px;flex:0 0 auto;object-fit:cover;border-radius:2px;align-self:center;box-shadow:0 0 0 1px rgba(20,28,40,.12)}",
       "html body #page .fo-ac-card h3 .fo-nat-flag{width:22px;height:15px;margin-right:8px;vertical-align:-2px}",
@@ -151,7 +164,7 @@
 
     var flags = "<div class='fo-nat-flags'>" + ids.map(function (rid) {
       return "<button type='button' class='fo-nat-fl" + (rid === ST.nation ? " on" : "") + "' data-nat='" + rid + "'>" +
-        "<img src='" + flagOf(rid) + "' alt=''><span>" + E(rid) + "</span></button>";
+        natCrest(rid, "") + "<span>" + E(rid) + "</span></button>";
     }).join("") + "</div>";
 
     // A NAME IS A DOOR WHERE THERE IS A ROOM BEHIND IT. The player page is
@@ -196,8 +209,7 @@
         });
       }
     } catch (eW) {}
-    var natFlag = "<img class='fo-nat-flag' src='" + flagOf(ST.nation) + "' alt='" + E(n.name || ST.nation) +
-      "' onerror=\"this.style.display='none'\">";
+    var natFlag = natCrest(ST.nation, "fo-nat-flag");
     var squad = (n.squad || []).map(function (m, i) {
       var isMine = myClub && m.club === myClub;
       return manRow("fo-nat-man" + (isMine ? " mine" : ""),
@@ -242,7 +254,7 @@
       return "<i class='" + k9 + "'>" + k9.toUpperCase() + "</i>";
     }).join("");
     var hero = "<div class='fo-nt-hero'>" +
-      "<div class='hb'><span class='shield'><img src='" + flagOf(ST.nation) + "' alt=''></span>" +
+      "<div class='hb'><span class='shield'>" + natCrest(ST.nation, "") + "</span>" +
       "<div><h2>" + E(n.name || ST.nation) + "</h2><div class='sub'>The national side</div></div></div>" +
       "<div class='hf'>" +
       (natRank ? "<span>World rank<b>#" + natRank.rank + "</b></span>" : "") +

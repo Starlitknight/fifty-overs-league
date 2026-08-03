@@ -861,10 +861,14 @@
               // a finished tie opens its own match page
               var tag = done ? "a" : "div";
               var href = done ? " href='#/wcmatch?s=" + p.season + "&st=" + sg.stage + "&g=" + gi2 + "'" : "";
+              var crestIm = function (rid9) {
+                var lg9 = ""; try { lg9 = window.foNatLogo ? window.foNatLogo(rid9) : ""; } catch (eL9) {}
+                return "<img" + (lg9 ? " class='natlogo'" : "") + " src='" + (lg9 || flagOf(rid9)) + "' alt=''>";
+              };
               return "<" + tag + " class='fo-pl-cm" + (mineM ? " mine" : "") + "'" + href + ">" +
-                "<img src='" + flagOf(m.a.rid) + "' alt=''><span class='" + (done && m.winner === m.a ? "w" : "") + "'>" + E(m.a.nm) + "</span>" +
+                crestIm(m.a.rid) + "<span class='" + (done && m.winner === m.a ? "w" : "") + "'>" + E(m.a.nm) + "</span>" +
                 "<u>v</u>" +
-                "<span class='" + (done && m.winner === m.b ? "w" : "") + "'>" + E(m.b.nm) + "</span><img src='" + flagOf(m.b.rid) + "' alt=''>" +
+                "<span class='" + (done && m.winner === m.b ? "w" : "") + "'>" + E(m.b.nm) + "</span>" + crestIm(m.b.rid) +
                 (done ? "<em>" + E(m.winner.nm) + " through &middot; " + m.hs + " v " + m.as + "</em>" : "") +
                 "</" + tag + ">";
             }).join("") + "</div>";
@@ -1025,6 +1029,7 @@
     "html body #page a.fo-pl-cm:hover span{color:#B44A22}",
     "html body #page .fo-pl-cm.mine{background:rgba(217,85,42,.06);border-radius:8px;padding:6px 8px}",
     "html body #page .fo-pl-cm img{width:20px;height:14px;object-fit:cover;border-radius:2px}",
+    "html body #page .fo-pl-cm img.natlogo{width:20px;height:18px;object-fit:contain;border-radius:0}",
     "html body #page .fo-pl-cm span.w{font-weight:700}",
     "html body #page .fo-pl-cm u{text-decoration:none;color:rgba(20,28,40,.4);font-size:10.5px}",
     "html body #page .fo-pl-cm em{flex-basis:100%;font:400 10.5px/1.3 Inter,sans-serif;font-style:normal;color:rgba(20,28,40,.55)}",
