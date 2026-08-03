@@ -182,7 +182,7 @@
           html += "</div></div>";
       }
       html += "<div class='fo-cc-foot'><a href='#/academy'>&lsaquo; Your academy</a>" +
-        "<a href='#/facup'>The FA Cup &rsaquo;</a></div></div>";
+        "<a href='#/facup'>The National Cup &rsaquo;</a></div></div>";
       page.innerHTML = html;
       css();
       // the knockout board's stylesheet lives with the FA Cup page; both cups wear it

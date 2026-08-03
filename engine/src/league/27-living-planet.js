@@ -749,7 +749,7 @@
     if (p.kind === "playoff") return p.stage === "final"
       ? "THE LEAGUE FINALS - champions crowned tonight"
       : "League playoff semi-finals - 1v4 and 2v3, both divisions";
-    if (p.kind === "facup") return "FA Cup " + roundName(p.stage);
+    if (p.kind === "facup") return "National Cup " + roundName(p.stage);
     if (p.kind === "cup") return "Champions Cup - " + roundName(p.stage);
     if (p.kind === "transition") return "The turning of the year - a season older, and the ladders redrawn";
     if (p.window) return "Tour day - the internationals are away, and miss round " + p.window;

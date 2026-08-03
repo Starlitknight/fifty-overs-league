@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0250-40d6ff";
+  var FO_BUILD = "20260803-0252-75192e";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -26435,7 +26435,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (lgH === "#/nation" || lgH === "#/atlas") lg.classList.add("on");
       var pl = mkPill("fo-planet-nav", "World", "#/planet");
       // the national knockout sits beside the league it cuts across
-      var fa = mkPill("fo-fa-nav", "FA Cup", "#/facup");
+      var fa = mkPill("fo-fa-nav", "National Cup", "#/facup");
       var cp = mkPill("fo-cup-nav", "Cup", "#/cup");
       var jn = mkPill("fo-lore-nav", "Journal", "#/lore");
       var anchor = wrap.querySelector("a[data-nav='club'], a[data-nav='home']");
@@ -35673,7 +35673,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (p.kind === "playoff") return p.stage === "final"
       ? "THE LEAGUE FINALS - champions crowned tonight"
       : "League playoff semi-finals - 1v4 and 2v3, both divisions";
-    if (p.kind === "facup") return "FA Cup " + roundName(p.stage);
+    if (p.kind === "facup") return "National Cup " + roundName(p.stage);
     if (p.kind === "cup") return "Champions Cup - " + roundName(p.stage);
     if (p.kind === "transition") return "The turning of the year - a season older, and the ladders redrawn";
     if (p.window) return "Tour day - the internationals are away, and miss round " + p.window;
@@ -43429,7 +43429,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     ] },
     { k: "Tournaments", rooms: [
       ["colts", "star", "The Colts Cup"],
-      ["facup", "shield", "The FA Cup"],
+      ["facup", "shield", "The National Cup"],
       ["champions", "crown", "The Champions Cup"]
     ] },
     { k: "The world", rooms: [
@@ -45715,7 +45715,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           html += "</div></div>";
       }
       html += "<div class='fo-cc-foot'><a href='#/academy'>&lsaquo; Your academy</a>" +
-        "<a href='#/facup'>The FA Cup &rsaquo;</a></div></div>";
+        "<a href='#/facup'>The National Cup &rsaquo;</a></div></div>";
       page.innerHTML = html;
       css();
       // the knockout board's stylesheet lives with the FA Cup page; both cups wear it

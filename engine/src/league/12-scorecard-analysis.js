@@ -2931,7 +2931,7 @@
       if (lgH === "#/nation" || lgH === "#/atlas") lg.classList.add("on");
       var pl = mkPill("fo-planet-nav", "World", "#/planet");
       // the national knockout sits beside the league it cuts across
-      var fa = mkPill("fo-fa-nav", "FA Cup", "#/facup");
+      var fa = mkPill("fo-fa-nav", "National Cup", "#/facup");
       var cp = mkPill("fo-cup-nav", "Cup", "#/cup");
       var jn = mkPill("fo-lore-nav", "Journal", "#/lore");
       var anchor = wrap.querySelector("a[data-nav='club'], a[data-nav='home']");

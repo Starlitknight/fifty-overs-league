@@ -68,7 +68,7 @@
     ] },
     { k: "Tournaments", rooms: [
       ["colts", "star", "The Colts Cup"],
-      ["facup", "shield", "The FA Cup"],
+      ["facup", "shield", "The National Cup"],
       ["champions", "crown", "The Champions Cup"]
     ] },
     { k: "The world", rooms: [
