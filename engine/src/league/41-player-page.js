@@ -1041,7 +1041,7 @@
     "html body #page .fo-pp-slot .fo-pop-devln b{color:#141C28}",
     "html body #page .fo-pp-slot .fo-pop-devln span{color:rgba(20,28,40,.45)}",
     "html body #page .fo-pp-slot .fo-pop-devln.fresh i,html body #page .fo-pp-slot .fo-pop-devln.fresh b{color:#177A57}",
-    "html body #page .fo-pp-slot .fo-pop-devnote,html body #page .fo-pp-slot .fo-cp-fld{font:italic 420 11.5px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.55)}",
+    "html body #page .fo-pp-slot .fo-cp-fld{font:italic 420 11.5px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.55)}",
     // ---- the desk: rooms read two columns ----------------------------------
     "@media(min-width:960px){html body #page .fo-pp-body{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}",
     "html body #page .fo-pp-rail{margin-top:0}}",

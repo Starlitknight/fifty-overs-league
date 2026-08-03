@@ -132,9 +132,7 @@
     }).join("");
     var panel = document.createElement("div");
     panel.className = "panel fo-pop-dev";
-    panel.innerHTML = "<h4>Development</h4><div class='pad'>" +
-      "<div class='fo-pop-devnote'>Every jump the training ground has put on this man, newest first. Green means it happened this week.</div>" +
-      rows + "</div>";
+    panel.innerHTML = "<h4>Development</h4><div class='pad'>" + rows + "</div>";
     var anchor = page.querySelector(".fo-skills-panel");
     if (anchor && anchor.nextSibling) anchor.parentNode.insertBefore(panel, anchor.nextSibling);
     else page.appendChild(panel);
@@ -169,7 +167,6 @@
       ".fo-pop-up{display:inline-block;font-style:normal;font-size:10px;font-weight:700;color:#1F9E72;background:rgba(31,158,114,.12);border:1px solid rgba(31,158,114,.35);border-radius:6px;padding:0 4px;margin-left:4px;vertical-align:1px;line-height:1.5;animation:foPopIn .38s cubic-bezier(.34,1.56,.64,1) both}",
       // the player-page development panel: the dossier below the hero is a
       // dark surface, so the ink here is chalk on a blackboard
-      ".fo-pop-devnote{font-family:Georgia,serif;font-style:italic;font-size:11.5px;color:rgba(232,228,216,.55);margin:0 0 9px}",
       ".fo-pop-devln{display:flex;align-items:baseline;gap:7px;margin:0 0 6px;font-size:12.5px;color:rgba(232,228,216,.75)}",
       ".fo-pop-devln i{font-style:normal;font-size:10px;color:rgba(232,228,216,.35)}",
       ".fo-pop-devln b{font-weight:600;color:rgba(240,237,228,.92)}",

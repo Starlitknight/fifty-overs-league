@@ -163,8 +163,7 @@
       // was averaged over - because "four of six" is why a figure looks odd
       var mark = tm ? "<div class='fo-rat-tm'><span>Match rating</span><b class='" +
         (tm.rating >= 4200 ? "hot" : tm.rating >= 3700 ? "good" : tm.rating >= 3100 ? "ok" : "poor") + "'>" +
-        Math.round(tm.rating).toLocaleString() + "</b><i>club rating scale, across the " + tm.counted.length +
-        " unit" + (tm.counted.length === 1 ? "" : "s") + " both sides used &middot; this is what the ladder reads</i></div>" : "";
+        Math.round(tm.rating).toLocaleString() + "</b></div>" : "";
       return "<div class='fo-rat-side'><div class='fo-rat-h'><b>" + E(nm) + "</b>" +
         (x.overall != null ? "<em class='" + band(x.overall) + "'>" + x.overall.toFixed(1) + "</em>" : "") + "</div>" +
         mark + rows + (x.overall != null ? "<div class='fo-rat-w'>" + word(x.overall) + " all round</div>" : "") + "</div>";
@@ -176,10 +175,6 @@
     return "<div class='panel fo-rat'><h4>Match ratings</h4><div class='pad'>" +
       "<div class='fo-rat-grid'>" + names.map(side).join("") + "</div>" +
       (best ? "<div class='fo-rat-sub'>The day&rsquo;s points</div>" + best : "") +
-      "<div class='fo-rat-note'>" +
-      (Object.keys(team).length
-        ? " The match rating above each side is the game&rsquo;s own, averaged across the units both sides used, and it is what the <a href='#/rankings'>world rankings</a> stand on: a club&rsquo;s place on earth is the mean of its last three."
-        : "") + "</div>" +
       "</div></div>";
   };
 
@@ -193,7 +188,6 @@
       "html body #page .fo-rat-tm{border:1px solid rgba(12,27,51,.14);border-radius:10px;padding:7px 10px;margin-bottom:8px;background:rgba(12,27,51,.03)}",
       "html body #page .fo-rat-tm span{display:block;font:600 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(12,27,51,.5)}",
       "html body #page .fo-rat-tm b{font:700 22px/1.1 Oswald,sans-serif;font-variant-numeric:tabular-nums;display:block;margin-top:3px}",
-      "html body #page .fo-rat-tm i{display:block;font:italic 400 10.5px/1.45 'Fraunces',Georgia,serif;color:rgba(12,27,51,.55);margin-top:2px}",
       ".fo-rat-h{display:flex;align-items:baseline;gap:8px;padding-bottom:7px;border-bottom:1px solid rgba(12,27,51,.12);margin-bottom:7px}",
       ".fo-rat-h b{flex:1;min-width:0;font:600 13.5px/1.2 Inter,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-rat-h em{font-style:normal;font:700 19px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums}",
@@ -211,8 +205,7 @@
       ".fo-rat-p i{font-style:normal;font:700 10px/1 Oswald,sans-serif;color:rgba(12,27,51,.35);width:12px}",
       ".fo-rat-p b{font-weight:600}",
       ".fo-rat-p span{flex:1;min-width:0;font-size:10.5px;color:rgba(12,27,51,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      ".fo-rat-p u{text-decoration:none;font:700 13px/1 Oswald,sans-serif;color:#0C1B33;font-variant-numeric:tabular-nums}",
-      ".fo-rat-note{margin-top:12px;font:italic 400 11.5px/1.5 'Fraunces',Georgia,serif;color:rgba(12,27,51,.5)}"
+      ".fo-rat-p u{text-decoration:none;font:700 13px/1 Oswald,sans-serif;color:#0C1B33;font-variant-numeric:tabular-nums}"
     ].join("\n");
     document.head.appendChild(s);
   }

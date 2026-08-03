@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0157-a19d67";
+  var FO_BUILD = "20260803-0203-fa5e18";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -29340,7 +29340,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         : "Top 4 reach the Champions Cup";
       var ntSecTable = "<div class='fo-ov-sec'><h2>Table</h2><p class='fo-ov-sublabel'>" + ntTableNote + "</p>" +
         "<div class='fo-lg-tablewrap'><div class='fo-lg-thead'><span class='rk'>#</span><span class='av'></span><span class='nm'>Club</span><span class='c'>P</span><span class='c'>W</span><span class='c'>L</span><span class='c'>NRR</span><span class='c'>Pts</span></div>" +
-        tableRows + "<div class='fo-lg-qnote'>" + ntTableNote + "</div></div></div>";
+        tableRows + "</div></div>";
       var ntSecMatch = "<div class='fo-ov-sec'><h2>" + sec2Title + "</h2><div class='" + (own ? "fo-fx-wrap" : "fo-lg-side") + "'>" + fixturesPanel + "</div></div>";
       // your place in the one world. A seat is claimed for you automatically on
       // the first load, so there is nothing to click to take one - the bar just
@@ -29771,7 +29771,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // accent-tinted table + panels so each nation feels its own
       ".fo-lg-tablewrap,.fo-lg-panel{background:color-mix(in srgb,var(--lac) 10%,rgba(12,19,33,.75)) !important;border-color:color-mix(in srgb,var(--lac) 30%,rgba(150,180,225,.16)) !important}",
       ".fo-lg-row.me{background:color-mix(in srgb,var(--lac) 22%,transparent);border-left:3px solid var(--lac)}",
-      ".fo-lg-qnote{color:color-mix(in srgb,var(--lac) 40%,#8ea3c4)}",
       // rival wire
       ".fo-lg-wire{font-size:12.5px;color:#cdd9ee;line-height:1.4;padding:8px 0;border-top:1px solid rgba(150,180,225,.1)}",
       ".fo-lg-wire:first-of-type{border-top:0}",
@@ -29812,7 +29811,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-lg-row .c.nrr{font-size:11px;color:#8ea3c4}",
       ".fo-lg-row.me{background:rgba(235,194,113,.1);border-left:3px solid #EBC271}",
       ".fo-lg-row.q .rk{color:#5fd39a}",
-      ".fo-lg-qnote{padding:9px 14px;font-size:11px;color:#7f90ac;border-top:1px solid rgba(150,180,225,.12);font-style:italic}",
       ".fo-lg-side{display:flex;flex-direction:column;gap:14px}",
       ".fo-lg-panel{background:rgba(14,21,36,.72);border:1px solid rgba(150,180,225,.16);border-radius:14px;padding:14px 16px}",
       ".fo-lg-panel h3{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;font-size:12px;color:#cdd9ee;margin:0 0 10px}",
@@ -37668,9 +37666,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     }).join("");
     var panel = document.createElement("div");
     panel.className = "panel fo-pop-dev";
-    panel.innerHTML = "<h4>Development</h4><div class='pad'>" +
-      "<div class='fo-pop-devnote'>Every jump the training ground has put on this man, newest first. Green means it happened this week.</div>" +
-      rows + "</div>";
+    panel.innerHTML = "<h4>Development</h4><div class='pad'>" + rows + "</div>";
     var anchor = page.querySelector(".fo-skills-panel");
     if (anchor && anchor.nextSibling) anchor.parentNode.insertBefore(panel, anchor.nextSibling);
     else page.appendChild(panel);
@@ -37705,7 +37701,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-pop-up{display:inline-block;font-style:normal;font-size:10px;font-weight:700;color:#1F9E72;background:rgba(31,158,114,.12);border:1px solid rgba(31,158,114,.35);border-radius:6px;padding:0 4px;margin-left:4px;vertical-align:1px;line-height:1.5;animation:foPopIn .38s cubic-bezier(.34,1.56,.64,1) both}",
       // the player-page development panel: the dossier below the hero is a
       // dark surface, so the ink here is chalk on a blackboard
-      ".fo-pop-devnote{font-family:Georgia,serif;font-style:italic;font-size:11.5px;color:rgba(232,228,216,.55);margin:0 0 9px}",
       ".fo-pop-devln{display:flex;align-items:baseline;gap:7px;margin:0 0 6px;font-size:12.5px;color:rgba(232,228,216,.75)}",
       ".fo-pop-devln i{font-style:normal;font-size:10px;color:rgba(232,228,216,.35)}",
       ".fo-pop-devln b{font-weight:600;color:rgba(240,237,228,.92)}",
@@ -41602,7 +41597,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body #page .fo-pp-slot .fo-pop-devln b{color:#141C28}",
     "html body #page .fo-pp-slot .fo-pop-devln span{color:rgba(20,28,40,.45)}",
     "html body #page .fo-pp-slot .fo-pop-devln.fresh i,html body #page .fo-pp-slot .fo-pop-devln.fresh b{color:#177A57}",
-    "html body #page .fo-pp-slot .fo-pop-devnote,html body #page .fo-pp-slot .fo-cp-fld{font:italic 420 11.5px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.55)}",
+    "html body #page .fo-pp-slot .fo-cp-fld{font:italic 420 11.5px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.55)}",
     // ---- the desk: rooms read two columns ----------------------------------
     "@media(min-width:960px){html body #page .fo-pp-body{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}",
     "html body #page .fo-pp-rail{margin-top:0}}",
@@ -42968,8 +42963,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // was averaged over - because "four of six" is why a figure looks odd
       var mark = tm ? "<div class='fo-rat-tm'><span>Match rating</span><b class='" +
         (tm.rating >= 4200 ? "hot" : tm.rating >= 3700 ? "good" : tm.rating >= 3100 ? "ok" : "poor") + "'>" +
-        Math.round(tm.rating).toLocaleString() + "</b><i>club rating scale, across the " + tm.counted.length +
-        " unit" + (tm.counted.length === 1 ? "" : "s") + " both sides used &middot; this is what the ladder reads</i></div>" : "";
+        Math.round(tm.rating).toLocaleString() + "</b></div>" : "";
       return "<div class='fo-rat-side'><div class='fo-rat-h'><b>" + E(nm) + "</b>" +
         (x.overall != null ? "<em class='" + band(x.overall) + "'>" + x.overall.toFixed(1) + "</em>" : "") + "</div>" +
         mark + rows + (x.overall != null ? "<div class='fo-rat-w'>" + word(x.overall) + " all round</div>" : "") + "</div>";
@@ -42981,10 +42975,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return "<div class='panel fo-rat'><h4>Match ratings</h4><div class='pad'>" +
       "<div class='fo-rat-grid'>" + names.map(side).join("") + "</div>" +
       (best ? "<div class='fo-rat-sub'>The day&rsquo;s points</div>" + best : "") +
-      "<div class='fo-rat-note'>" +
-      (Object.keys(team).length
-        ? " The match rating above each side is the game&rsquo;s own, averaged across the units both sides used, and it is what the <a href='#/rankings'>world rankings</a> stand on: a club&rsquo;s place on earth is the mean of its last three."
-        : "") + "</div>" +
       "</div></div>";
   };
 
@@ -42998,7 +42988,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-rat-tm{border:1px solid rgba(12,27,51,.14);border-radius:10px;padding:7px 10px;margin-bottom:8px;background:rgba(12,27,51,.03)}",
       "html body #page .fo-rat-tm span{display:block;font:600 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(12,27,51,.5)}",
       "html body #page .fo-rat-tm b{font:700 22px/1.1 Oswald,sans-serif;font-variant-numeric:tabular-nums;display:block;margin-top:3px}",
-      "html body #page .fo-rat-tm i{display:block;font:italic 400 10.5px/1.45 'Fraunces',Georgia,serif;color:rgba(12,27,51,.55);margin-top:2px}",
       ".fo-rat-h{display:flex;align-items:baseline;gap:8px;padding-bottom:7px;border-bottom:1px solid rgba(12,27,51,.12);margin-bottom:7px}",
       ".fo-rat-h b{flex:1;min-width:0;font:600 13.5px/1.2 Inter,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-rat-h em{font-style:normal;font:700 19px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums}",
@@ -43016,8 +43005,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-rat-p i{font-style:normal;font:700 10px/1 Oswald,sans-serif;color:rgba(12,27,51,.35);width:12px}",
       ".fo-rat-p b{font-weight:600}",
       ".fo-rat-p span{flex:1;min-width:0;font-size:10.5px;color:rgba(12,27,51,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      ".fo-rat-p u{text-decoration:none;font:700 13px/1 Oswald,sans-serif;color:#0C1B33;font-variant-numeric:tabular-nums}",
-      ".fo-rat-note{margin-top:12px;font:italic 400 11.5px/1.5 'Fraunces',Georgia,serif;color:rgba(12,27,51,.5)}"
+      ".fo-rat-p u{text-decoration:none;font:700 13px/1 Oswald,sans-serif;color:#0C1B33;font-variant-numeric:tabular-nums}"
     ].join("\n");
     document.head.appendChild(s);
   }
@@ -44483,7 +44471,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<span class='fo-pm-wpa'><b>&mdash;</b><u>" + foPmE(aN) + "</u>" + foPmShield(aN, aBoss, natId) + "</span>" +
         "</div>" +
         "<div class='fo-pm-wpbar'><span class='h'></span><span class='t'></span><span class='a'></span></div>" +
-        "<p class='fo-pm-wpnote'>Played out from both squads, their form and the conditions.</p>" +
+        "<p class='fo-pm-wpnote'></p>" +
         "</div>" +
 
         "<div class='fo-pm-cap'>Team status</div>" +

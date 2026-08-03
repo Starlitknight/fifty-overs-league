@@ -5862,7 +5862,7 @@
         : "Top 4 reach the Champions Cup";
       var ntSecTable = "<div class='fo-ov-sec'><h2>Table</h2><p class='fo-ov-sublabel'>" + ntTableNote + "</p>" +
         "<div class='fo-lg-tablewrap'><div class='fo-lg-thead'><span class='rk'>#</span><span class='av'></span><span class='nm'>Club</span><span class='c'>P</span><span class='c'>W</span><span class='c'>L</span><span class='c'>NRR</span><span class='c'>Pts</span></div>" +
-        tableRows + "<div class='fo-lg-qnote'>" + ntTableNote + "</div></div></div>";
+        tableRows + "</div></div>";
       var ntSecMatch = "<div class='fo-ov-sec'><h2>" + sec2Title + "</h2><div class='" + (own ? "fo-fx-wrap" : "fo-lg-side") + "'>" + fixturesPanel + "</div></div>";
       // your place in the one world. A seat is claimed for you automatically on
       // the first load, so there is nothing to click to take one - the bar just
@@ -6293,7 +6293,6 @@
       // accent-tinted table + panels so each nation feels its own
       ".fo-lg-tablewrap,.fo-lg-panel{background:color-mix(in srgb,var(--lac) 10%,rgba(12,19,33,.75)) !important;border-color:color-mix(in srgb,var(--lac) 30%,rgba(150,180,225,.16)) !important}",
       ".fo-lg-row.me{background:color-mix(in srgb,var(--lac) 22%,transparent);border-left:3px solid var(--lac)}",
-      ".fo-lg-qnote{color:color-mix(in srgb,var(--lac) 40%,#8ea3c4)}",
       // rival wire
       ".fo-lg-wire{font-size:12.5px;color:#cdd9ee;line-height:1.4;padding:8px 0;border-top:1px solid rgba(150,180,225,.1)}",
       ".fo-lg-wire:first-of-type{border-top:0}",
@@ -6334,7 +6333,6 @@
       ".fo-lg-row .c.nrr{font-size:11px;color:#8ea3c4}",
       ".fo-lg-row.me{background:rgba(235,194,113,.1);border-left:3px solid #EBC271}",
       ".fo-lg-row.q .rk{color:#5fd39a}",
-      ".fo-lg-qnote{padding:9px 14px;font-size:11px;color:#7f90ac;border-top:1px solid rgba(150,180,225,.12);font-style:italic}",
       ".fo-lg-side{display:flex;flex-direction:column;gap:14px}",
       ".fo-lg-panel{background:rgba(14,21,36,.72);border:1px solid rgba(150,180,225,.16);border-radius:14px;padding:14px 16px}",
       ".fo-lg-panel h3{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.5px;text-transform:uppercase;font-size:12px;color:#cdd9ee;margin:0 0 10px}",

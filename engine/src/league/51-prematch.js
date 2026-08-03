@@ -448,7 +448,7 @@
         "<span class='fo-pm-wpa'><b>&mdash;</b><u>" + foPmE(aN) + "</u>" + foPmShield(aN, aBoss, natId) + "</span>" +
         "</div>" +
         "<div class='fo-pm-wpbar'><span class='h'></span><span class='t'></span><span class='a'></span></div>" +
-        "<p class='fo-pm-wpnote'>Played out from both squads, their form and the conditions.</p>" +
+        "<p class='fo-pm-wpnote'></p>" +
         "</div>" +
 
         "<div class='fo-pm-cap'>Team status</div>" +
