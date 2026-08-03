@@ -206,6 +206,9 @@
       var b = ev.target.closest ? ev.target.closest("[data-fo-bench]") : null;
       if (!b || b.disabled) return;
       var inNm = b.getAttribute("data-fo-bench");
+      // a swap pins the XI: if none was pinned yet, the current order's
+      // eleven becomes it, so the engine fields the side the manager built
+      if (!App.orders.xi || !App.orders.xi.length) App.orders.xi = (App.orders.batOrder || []).slice(0, 11);
       var ix = App.orders.xi.indexOf(outNm);
       if (ix >= 0) App.orders.xi[ix] = inNm;
       var bix = App.orders.batOrder.indexOf(outNm);
@@ -218,7 +221,7 @@
       if (App.orders.captain === outNm) App.orders.captain = xi2.slice().sort(function (a, b2) { return (b2.capt || 0) - (a.capt || 0); })[0].name;
       if (App.orders.keeper === outNm) App.orders.keeper = (xi2.filter(function (p) { return p.keeper; })[0] || xi2[0]).name;
       m.remove();
-      foOrdRepaint();
+      if (document.getElementById("fo-ord-xi-list")) foOrdersUI(); else foOrdRepaint();
     });
   }
   function foOrdRepaint(which) {
@@ -513,6 +516,8 @@
               "' title='Move up' aria-label='Move " + E(dispNm(nm)) + " up the order'>&#x25B2;</button>" +
             "<button type='button' class='mvb" + (i >= xiNames.length - 1 ? " off" : "") + "' data-fo-mv='dn:" + E(nm) +
               "' title='Move down' aria-label='Move " + E(dispNm(nm)) + " down the order'>&#x25BC;</button>" +
+            "<button type='button' class='mvb mvs' data-fo-swap='" + E(nm) +
+              "' title='Swap him out' aria-label='Replace " + E(dispNm(nm)) + " from the bench'>&#x21C4;</button>" +
           "</span>";
         var card = "<button type='button' class='xc xc-" + role + (dim ? " xc-dim" : "") + "' data-fo-pc='" + E(nm) + "'>" +
           (i == null ? "<span class='dh' title='Drag to move' aria-hidden='true'>&#x2261;</span>" : "") +
@@ -818,7 +823,13 @@
           if ((el = q("[data-fo-up]"))) { var i1 = +el.getAttribute("data-fo-up"); var a1 = App.orders.batOrder; var tmp1 = a1[i1 - 1]; a1[i1 - 1] = a1[i1]; a1[i1] = tmp1; foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-dn]"))) { var i2 = +el.getAttribute("data-fo-dn"); var a2 = App.orders.batOrder; var tmp2 = a2[i2 + 1]; a2[i2 + 1] = a2[i2]; a2[i2] = tmp2; foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-swap]"))) { foOrdBenchSheet(el.getAttribute("data-fo-swap")); return; }
-          if ((el = q("[data-fo-mb]"))) { foMbCycle(el.getAttribute("data-fo-mb")); foOrdRepaint("bat"); return; }
+          if ((el = q("[data-fo-mb]"))) {
+            foMbCycle(el.getAttribute("data-fo-mb"));
+            // the letter must change where the eye is: the plan view has no
+            // fo-bat-rows, so repainting only that left it reading N forever
+            if (document.getElementById("fo-ord-xi-list")) foOrdersUI(); else foOrdRepaint("bat");
+            return;
+          }
           if ((el = q("[data-fo-mf]"))) { foMfSet(el.getAttribute("data-fo-mf"), el.getAttribute("data-fo-mfv") || ""); foOrdRepaint("bowl"); return; }
           if ((el = q("[data-fo-capt]"))) { App.orders.captain = el.getAttribute("data-fo-capt"); foOrdRepaint("bat"); return; }
           if ((el = q("[data-fo-wk]"))) { App.orders.keeper = el.getAttribute("data-fo-wk"); foOrdRepaint("bat"); return; }
@@ -1211,6 +1222,7 @@
       "html body #page .fo-ord-xis button.mvb:hover{background:#DCE5F0!important;border-color:#B04A2C!important;color:#B04A2C!important}" +
       "html body #page .fo-ord-xis button.mvb:active{background:#B04A2C!important;color:#FFFEFC!important}" +
       "html body #page .fo-ord-xis button.mvb.off{opacity:.25;pointer-events:none}" +
+      "html body #page .fo-ord-xis button.mvb.mvs{font-size:13px;color:#B04A2C!important}" +
       // the player-card modal is narrow: slim the v2 art panel so the name
       // never truncates beside the OVR
       "#fo-ord-pc .pkm{padding-left:84px}" +
