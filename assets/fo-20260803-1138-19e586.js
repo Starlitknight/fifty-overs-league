@@ -10280,7 +10280,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-1134-d344b3";
+  var FO_BUILD = "20260803-1138-19e586";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -45330,8 +45330,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             var pk = String(cond.pitch || "balanced");
             condHTML = "<div class='fo-pm-duo'>" +
               "<div class='fo-pm-box'><div class='fo-pm-cap'>The weather</div>" +
-              "<div class='fo-pm-wx'><b>" + foPmE(String(cond.weather || "Sunny")) + "</b>" +
-              "<i>as the world will deal it</i></div></div>" +
+              "<div class='fo-pm-prr'><span>Sky</span><b>" + foPmE(String(cond.weather || "Sunny")) + "</b></div>" +
+              "<p class='fo-pm-prn'>The same sky the umpire will play it under.</p></div>" +
               "<div class='fo-pm-box'><div class='fo-pm-cap'>Pitch report</div>" +
               "<div class='fo-pm-prr'><span>Surface</span><b>" + foPmE(PITCH_W[pk] || pk) + "</b></div>" +
               "<p class='fo-pm-prn'>" + foPmE(PITCH_N[pk] || "") + "</p></div>" +
@@ -45516,9 +45516,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-pm-in{width:min(1150px,100%)}",
       ".fo-pm-card{display:grid;grid-template-columns:1.3fr .95fr;gap:15px 18px;padding:20px 22px;align-items:start}",
       ".fo-pm-folio,.fo-pm-bill,.fo-pm-foot{grid-column:1/-1}",
-      ".fo-pm-main{grid-column:1}",
+      ".fo-pm-main{grid-column:1;align-self:stretch}",
       ".fo-pm-rail{grid-column:2}",
-      ".fo-pm-main .fo-pm-plate img{aspect-ratio:16/10.5;max-height:470px}",
+      // the painting absorbs whatever height the rail sets: absolutely
+      // positioned inside its plate, it contributes no height of its own, so
+      // the row is the rail's and the left column is all art down to the facts
+      ".fo-pm-main .fo-pm-plate{position:relative;flex:1;min-height:320px}",
+      ".fo-pm-main .fo-pm-plate img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;aspect-ratio:auto;max-height:none}",
       ".fo-pm-rail .fo-pm-duo{grid-template-columns:1fr 1fr}",
       ".fo-pm-foot{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}",
       "}",
