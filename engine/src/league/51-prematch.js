@@ -383,18 +383,33 @@
         cracked: "Unpredictable bounce, wickets for everyone.",
         twoPaced: "Some balls hurry, some hold; timing is never safe."
       };
+      // What each sky actually does in the engine (00-core ballDist weather
+      // block): stated as effects, not scenery.
+      var WEATHER_N = {
+        Sunny: "Nothing in it for anyone: true conditions, an honest fight.",
+        Overcast: "Cloud keeps the seamers interested all day; boundaries come harder.",
+        Humid: "Heavy air swings the new ball; survive the opening spell and it eases.",
+        Hot: "Bowlers wilt in the heat; wickets are dearer and runs flow freer.",
+        Scorching: "Brutal on bowlers: scoring surges and wickets are hard-won.",
+        Drizzle: "A damp ball is hard to time; boundaries dry up and scoring crawls.",
+        Windy: "Sixes die in the crosswind; the runs come in hard-run twos instead.",
+        Chilly: "Cold cramps the strokeplay; boundaries are scarce and dots pile up.",
+        Misty: "The new ball stays a menace in the murk; early wickets for the seamers.",
+        "Dew later": "Evening dew blunts the spinners; the chasing side bats the easier half."
+      };
       var condHTML = "";
       try {
         if (!stage && window.__foPlanet && window.__foPlanet.condOf) {
           var cond = window.__foPlanet.condOf(natId, hSlot, g.seasonNo, round);
           if (cond) {
             var pk = String(cond.pitch || "balanced");
+            var wk = String(cond.weather || "Sunny");
             condHTML = "<div class='fo-pm-duo'>" +
               "<div class='fo-pm-box'><div class='fo-pm-cap'>The weather</div>" +
-              "<div class='fo-pm-prr'><span>Sky</span><b>" + foPmE(String(cond.weather || "Sunny")) + "</b></div>" +
-              "<p class='fo-pm-prn'>The same sky the umpire will play it under.</p></div>" +
+              "<div class='fo-pm-big'>" + foPmE(wk) + "</div>" +
+              "<p class='fo-pm-prn'>" + foPmE(WEATHER_N[wk] || "Match-day conditions.") + "</p></div>" +
               "<div class='fo-pm-box'><div class='fo-pm-cap'>Pitch report</div>" +
-              "<div class='fo-pm-prr'><span>Surface</span><b>" + foPmE(PITCH_W[pk] || pk) + "</b></div>" +
+              "<div class='fo-pm-big'>" + foPmE(PITCH_W[pk] || pk) + "</div>" +
               "<p class='fo-pm-prn'>" + foPmE(PITCH_N[pk] || "") + "</p></div>" +
               "</div>";
           }
@@ -660,10 +675,7 @@
       ".fo-pm-duo{display:grid;grid-template-columns:1fr;gap:9px}",
       "@media(min-width:560px){.fo-pm-duo{grid-template-columns:1fr 1.2fr}}",
       ".fo-pm-box{padding:12px 14px;border-radius:12px;background:linear-gradient(0deg,#FBF6EA,#FDFAF2);border:1px solid var(--edge);display:flex;flex-direction:column;gap:9px}",
-      ".fo-pm-wx b{font:700 24px/1 Inter,sans-serif;color:var(--navy)}",
-      ".fo-pm-wx i{display:block;font:italic 400 11px/1.4 Georgia,serif;color:var(--mut);margin-top:5px}",
-      ".fo-pm-prr{display:flex;justify-content:space-between;font:400 12px/1.3 Inter,sans-serif;color:var(--mut)}",
-      ".fo-pm-prr b{color:var(--navy);font-weight:600}",
+      ".fo-pm-big{font:700 24px/1.05 Inter,sans-serif;color:var(--navy);letter-spacing:-.3px}",
       ".fo-pm-prn{margin:0;font:400 11.5px/1.55 Inter,sans-serif;color:#3c4757}",
       ".fo-pm-dim{margin:0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:13px;line-height:1.5;color:var(--mut)}",
       ".fo-pm-lost{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(24px,3.4vw,40px);color:var(--navy);margin:14px 0 8px}",
