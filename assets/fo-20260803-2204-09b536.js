@@ -10285,7 +10285,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-2203-3e0efb";
+  var FO_BUILD = "20260803-2204-09b536";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -17446,6 +17446,20 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var batTeam = inn.batTeam || "";
     var opp = (M.meta.home === batTeam ? M.meta.away : M.meta.home) || "";
     var crest = function (nm) { try { return window.foClubCrest ? window.foClubCrest(nm, 52) : ""; } catch (e) { return ""; } };
+    // a club named on the scorebug is a door: resolve its seat off the served
+    // league body and link to its team page. Same markup every ball, so the
+    // smooth-render never sees a change it did not make.
+    var tmLink = function (nm, inner) {
+      try {
+        var c9 = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+        var lg9 = c9 && c9.country && window.__foWorldLg && window.__foWorldLg.get(c9.country);
+        if (!lg9) return inner;
+        var s9 = null;
+        ((lg9.table || []).concat(lg9.table2 || [])).forEach(function (r9) { if (r9.name === nm) s9 = r9.slot; });
+        if (s9 == null) return inner;
+        return "<a class='fo-db-tml' href='#/team?c=" + encodeURIComponent(c9.country) + "&s=" + (s9 | 0) + "'>" + inner + "</a>";
+      } catch (e9) { return inner; }
+    };
     var crr = inn.legal ? (inn.runs / (inn.legal / 6)).toFixed(2) : "0.00";
     var need = M.target ? Math.max(0, M.target - inn.runs) : 0;
     var req = M.target && ballsLeft ? (need / (ballsLeft / 6)).toFixed(2) : null;
@@ -17530,7 +17544,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return "<div class='fo-db-wrap'>" +
       "<div class='db-card fo-db-bug'>" +
       "<span class='cr'>" + crest(batTeam) + "</span>" +
-      "<div class='tm'><b>" + E(batTeam) + " <i class='dot'>&#9679;</i></b><span>Batting</span></div>" +
+      "<div class='tm'><b>" + tmLink(batTeam, E(batTeam)) + " <i class='dot'>&#9679;</i></b><span>Batting</span></div>" +
       "<div class='sc'><b>" + inn.runs + "/" + inn.wkts + "</b><span class='k or'>" + oversTx + " overs</span></div>" +
       (M.target
         ? "<div class='st tst'><span class='k'>Target</span><b>" + M.target + "</b></div>" +
@@ -17682,6 +17696,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "body.fo-dash .fo-db-bug .tm b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:15px;letter-spacing:1.3px;text-transform:uppercase}" +
       "body.fo-dash .fo-db-bug .tm b .dot{color:#C9571F;font-size:9px;font-style:normal}" +
       "body.fo-dash .fo-db-bug .tm span{font-size:11px;color:#8a7f6e}" +
+      "body.fo-dash a.fo-db-tml{color:inherit !important;text-decoration:none}" +
+      "body.fo-dash a.fo-db-tml:hover{color:#C9571F !important;text-decoration:underline}" +
       "body.fo-dash .fo-db-bug .tm.rt{margin-left:auto;text-align:right}" +
       "body.fo-dash .fo-db-bug .sc b{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:28px;line-height:1}" +
       "body.fo-dash .fo-db-bug .st{text-align:center;border-left:1px solid #eee7d9;padding-left:20px}" +
