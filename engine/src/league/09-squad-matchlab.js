@@ -493,6 +493,8 @@
       v: function (p) { try { return Math.round((p.skills || {}).power || 0); } catch (e) { return 0; } } },
     { k: "field", l: "Field", s: "Fld", tip: "Fielding: ground work and catching", num: 1,
       v: function (p) { return Math.round(aggField(p)); } },
+    { k: "keep", l: "WK", s: "WK", tip: "Wicketkeeping: glovework, stumping and catching", num: 1, nil: "Does not keep",
+      v: function (p) { return (p.keeper || aggKeep(p) >= 20) ? Math.round(aggKeep(p)) : -1; } },
     { k: "exp", l: "Exp", s: "Exp", tip: "Experience - steadies him in the death overs and tight chases", num: 1,
       v: function (p) { return Math.round(p.exp || 0); } },
     { k: "form", l: "Form", s: "Form", tip: "Current form: abysmal to excellent, worth up to 6% either way", num: 1,
@@ -560,7 +562,7 @@
       if (c.k === "age") return "<td class='n c-age' title='" + E(foAgeLong(p)) + "'>" + E(foAgeText(p)) + "</td>";
       if (c.k === "wage") return "<td class='n c-wage'>" + (typeof money === "function" ? money(p.wage || 0) : "$" + (p.wage | 0)) + "</td>";
       if (c.k === "form") return "<td class='n c-form'>" + foSqFormGlyph(p) + "</td>";
-      if (v < 0) return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "'><span class='fo-sqg-nil' title='Does not bowl'>&ndash;</span></td>";
+      if (v < 0) return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "'><span class='fo-sqg-nil' title='" + E(c.nil || "Does not bowl") + "'>&ndash;</span></td>";
       // the number is the reading; the ladder word it sits on is the tooltip
       return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "' title='" + E(c.l + ": " + foSqLad(v, c.k) + " (" + v + ")") + "'>" +
         "<span class='fo-sqg-v' style='color:" + foSqQCol(v) + "'>" + v + "</span></td>";
