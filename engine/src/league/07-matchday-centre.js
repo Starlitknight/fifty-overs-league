@@ -3224,7 +3224,20 @@
       if (old && old.__foArtKey === artKey) {
         el = old;
         var ui0 = el.querySelector(".fo-mst-ui");
-        if (ui0) { ui0.className = "fo-mst-ui k-" + kind; ui0.innerHTML = uiHTML; }
+        if (ui0) {
+          ui0.className = "fo-mst-ui k-" + kind;
+          // the portraits survive the repaint as LIVE nodes: a re-created <img>
+          // re-decodes on phones and the faces blink - a moved one never does
+          var keepImg = {};
+          ui0.querySelectorAll("img").forEach(function (i9) {
+            var s9 = i9.getAttribute("src"); if (s9 && !keepImg[s9]) keepImg[s9] = i9;
+          });
+          ui0.innerHTML = uiHTML;
+          ui0.querySelectorAll("img").forEach(function (i9) {
+            var o9 = keepImg[i9.getAttribute("src")];
+            if (o9) { o9.className = i9.className; i9.replaceWith(o9); }
+          });
+        }
       } else {
         el = document.createElement("section");
         el.id = "fo-mstage";

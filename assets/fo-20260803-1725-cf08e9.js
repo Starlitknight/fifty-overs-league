@@ -10280,7 +10280,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-1714-923716";
+  var FO_BUILD = "20260803-1725-cf08e9";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18457,7 +18457,20 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (old && old.__foArtKey === artKey) {
         el = old;
         var ui0 = el.querySelector(".fo-mst-ui");
-        if (ui0) { ui0.className = "fo-mst-ui k-" + kind; ui0.innerHTML = uiHTML; }
+        if (ui0) {
+          ui0.className = "fo-mst-ui k-" + kind;
+          // the portraits survive the repaint as LIVE nodes: a re-created <img>
+          // re-decodes on phones and the faces blink - a moved one never does
+          var keepImg = {};
+          ui0.querySelectorAll("img").forEach(function (i9) {
+            var s9 = i9.getAttribute("src"); if (s9 && !keepImg[s9]) keepImg[s9] = i9;
+          });
+          ui0.innerHTML = uiHTML;
+          ui0.querySelectorAll("img").forEach(function (i9) {
+            var o9 = keepImg[i9.getAttribute("src")];
+            if (o9) { o9.className = i9.className; i9.replaceWith(o9); }
+          });
+        }
       } else {
         el = document.createElement("section");
         el.id = "fo-mstage";
