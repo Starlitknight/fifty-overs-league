@@ -10285,7 +10285,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-1919-c02b09";
+  var FO_BUILD = "20260803-1932-89a95c";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21673,9 +21673,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-s2-club .cr{width:52px;height:52px}",
       ".fo-s2-club b{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:21px;color:#14243A}",
       ".fo-s2-club span{font:500 11.5px Inter,sans-serif;color:#8a8272}",
-      // ---- the stat band ----
-      ".fo-s2-band{display:flex;align-items:stretch;background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);margin-bottom:14px;overflow:hidden}",
-      ".fo-s2-vsw{display:flex;align-items:center;gap:4px;padding:12px 16px;border-right:1px solid #eee7d9;background:#F6F3EB;border-radius:14px 0 0 14px}",
+      // ---- the stat band (view switch attached at its left on desktop) ----
+      ".fo-s2-bandwrap{display:flex;align-items:stretch;margin-bottom:14px}",
+      ".fo-s2-band{display:flex;flex:1;align-items:stretch;background:#FFFEFC;border:1px solid #e3dccb;border-radius:0 14px 14px 0;border-left:none;box-shadow:0 2px 10px rgba(20,36,58,.05);overflow:hidden;min-width:0}",
+      ".fo-s2-vsw{display:flex;align-items:center;gap:4px;padding:12px 16px;background:#F6F3EB;border:1px solid #e3dccb;border-radius:14px 0 0 14px}",
       ".fo-s2-vb{font:700 10.5px Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;border:1px solid #d9d0bc;background:#FFFEFC;color:#6d6455;border-radius:999px;padding:8px 14px;cursor:pointer}",
       ".fo-s2-vb.on{background:#C9571F;border-color:#C9571F;color:#fff}",
       "html body.ftpskin button.fo-s2-vb{background:#FFFEFC !important;color:#6d6455 !important;border-color:#d9d0bc !important}",
@@ -21704,7 +21705,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-s2-seck{display:flex;align-items:center;justify-content:space-between;background:#14243A;color:#F6F3EB;border-radius:9px 9px 0 0;padding:7px 14px;font:700 10.5px Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase}",
       ".fo-s2-seck em{font-style:normal;color:#E8B96A}",
       // ---- rows ----
-      ".fo-s2-row{display:grid;grid-template-columns:44px minmax(150px,1.4fr) 92px 62px minmax(96px,.9fr) 128px 44px 26px;gap:10px;align-items:center;background:#FFFEFC;border:1px solid #eee7d9;border-top:none;padding:8px 14px;cursor:pointer}",
+      ".fo-s2-row{display:grid;grid-template-columns:44px minmax(150px,1.4fr) 92px 62px minmax(96px,.9fr) 128px 44px 58px 26px;gap:10px;align-items:center;background:#FFFEFC;border:1px solid #eee7d9;border-top:none;padding:8px 14px;cursor:pointer}",
+      ".fo-s2-xibtn{font:800 10px Inter,sans-serif;letter-spacing:.06em;border:1px solid #d9d0bc;background:#FFFEFC;color:#177A57;border-radius:999px;padding:6px 0;cursor:pointer;white-space:nowrap;text-align:center}",
+      ".fo-s2-xibtn:hover{border-color:#177A57}",
+      ".fo-s2-xibtn.out{color:#B23230}",
+      ".fo-s2-xibtn.out:hover{border-color:#B23230}",
+      "html body.ftpskin button.fo-s2-xibtn{background:#FFFEFC !important;color:#177A57 !important;border-color:#d9d0bc !important}",
+      "html body.ftpskin button.fo-s2-xibtn.out{color:#B23230 !important}",
       ".fo-s2-row:hover{background:#FBF8F0}",
       ".fo-s2-row.open{background:#FBF6EA}",
       ".fo-s2-sec .fo-s2-row:last-of-type{border-radius:0 0 9px 9px}",
@@ -21742,20 +21749,26 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-s2-ck{display:flex;align-items:center;justify-content:space-between;padding:11px 15px 9px;font:700 11px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#14243A;border-bottom:1px solid #eee7d9}",
       ".fo-s2-ck em{font-style:normal;color:#177A57;font-variant-numeric:tabular-nums}",
       ".fo-s2-ck a{font:600 10px Inter,sans-serif;letter-spacing:0;text-transform:none;color:#C9571F !important;text-decoration:none;cursor:pointer}",
-      ".fo-s2-xirow{display:grid;grid-template-columns:16px 22px minmax(0,1fr) 40px 30px 22px;gap:7px;align-items:center;padding:6px 12px;border-bottom:1px solid #f3eee1;font:600 12.5px Inter,sans-serif;color:#14243A}",
+      ".fo-s2-xirow{display:grid;grid-template-columns:16px 22px minmax(0,1fr) 40px 30px 22px 18px;gap:7px;align-items:center;padding:6px 12px;border-bottom:1px solid #f3eee1;font:600 12.5px Inter,sans-serif;color:#14243A}",
+      ".fo-s2-xirow .xrm{border:none;background:none;color:#c9c1ae;font-size:11px;cursor:pointer;padding:2px}",
+      ".fo-s2-xirow .xrm:hover{color:#B23230}",
+      "html body.ftpskin .fo-s2-xirow .xrm{background:none !important;color:#c9c1ae !important;border:none !important;box-shadow:none !important;padding:2px !important}",
+      ".fo-s2-xislot{padding:10px 14px;font:italic 500 11.5px Georgia,serif;color:#B23230;border-top:1px dashed #e8d5a8;background:#FDF8EE}",
       ".fo-s2-xirow:last-of-type{border-bottom:none}",
       ".fo-s2-xirow.dragover{background:#FBF0D8}",
       ".fo-s2-xirow .grip{color:#c9c1ae;cursor:grab;font-size:11px;letter-spacing:-1px}",
       ".fo-s2-xirow .no{font:700 11.5px Inter,sans-serif;color:#8a8272;text-align:right;font-variant-numeric:tabular-nums}",
       ".fo-s2-xirow .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-s2-xirow .nm u{font-style:normal;text-decoration:none}",
+      ".fo-s2-xirow .nm .sh{display:none}",
       ".fo-s2-xirow .ab{font:600 10.5px Inter,sans-serif;color:#8a8272;text-align:right}",
       ".fo-s2-xirow .bdg{text-align:center}",
       ".fo-s2-xirow .bdg .crown{color:#D9A21B;font-size:13px}",
       ".fo-s2-xirow .bdg .wk{display:inline-block;font:800 8.5px Inter,sans-serif;background:#E4EEF6;color:#1f4e6b;border:1px solid #bcd3e4;border-radius:5px;padding:2px 4px}",
       ".fo-s2-xirow .mv{display:flex;flex-direction:column;gap:0}",
-      ".fo-s2-xirow .mv button{border:none;background:none;color:#b0a794;font-size:8.5px;line-height:1.1;cursor:pointer;padding:0 3px}",
+      ".fo-s2-xirow .mv button{border:none;background:none;color:#b0a794;font-size:8.5px;line-height:1;height:11px;min-height:0;cursor:pointer;padding:0 3px}",
       ".fo-s2-xirow .mv button:hover{color:#C9571F}",
-      "html body.ftpskin .fo-s2-xirow .mv button{background:none !important;color:#b0a794 !important;border:none !important;box-shadow:none !important;padding:0 3px !important}",
+      "html body.ftpskin .fo-s2-xirow .mv button{background:none !important;color:#b0a794 !important;border:none !important;box-shadow:none !important;padding:0 3px !important;height:11px !important;min-height:0 !important;line-height:1 !important}",
       // role balance
       ".fo-s2-rb{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:11px 15px 13px}",
       ".fo-s2-rb>div{text-align:left}",
@@ -21779,20 +21792,55 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // buttons
       ".fo-s2-save{width:100%;font:700 13px Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;background:#C9571F;color:#fff;border:none;border-radius:11px;padding:14px;cursor:pointer}",
       ".fo-s2-save:hover{background:#A64426}",
+      ".fo-s2-save.dirty{box-shadow:0 0 0 3px rgba(201,87,31,.25);animation:foS2Pulse 1.6s ease infinite}",
+      "@keyframes foS2Pulse{0%,100%{box-shadow:0 0 0 3px rgba(201,87,31,.22)}50%{box-shadow:0 0 0 6px rgba(201,87,31,.10)}}",
       ".fo-s2-sugg{width:100%;font:700 11.5px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;background:#FFFEFC;color:#14243A;border:1px solid #d9d0bc;border-radius:11px;padding:12px;cursor:pointer}",
       ".fo-s2-sugg:hover{border-color:#C9571F;color:#C9571F}",
       "html body.ftpskin button.fo-s2-save{background:#C9571F !important;color:#fff !important;border:none !important}",
       "html body.ftpskin button.fo-s2-sugg{background:#FFFEFC !important;color:#14243A !important;border-color:#d9d0bc !important}",
       // ---- responsive ----
       "@media(max-width:1100px){.fo-s2-main{grid-template-columns:1fr}.fo-s2-rail{position:static}}",
+      // THE PHONE SHEET (user mockup): everything the desktop row carries, in
+      // miniature - hand, age, trait, the ten stars and the number all stay;
+      // the view chips float on the cream; the five stat cells hold one row;
+      // the First XI compresses to a three-column card, four names a column.
       "@media(max-width:820px){",
-      ".fo-s2-in{padding:66px 10px 30px}",
-      ".fo-s2-band{flex-wrap:wrap}.fo-s2-vsw{width:100%;border-right:none;border-bottom:1px solid #eee7d9;border-radius:14px 14px 0 0}",
-      ".fo-s2-cell{flex:1 1 33%;padding:9px 12px}.fo-s2-cell b{font-size:16px}",
-      ".fo-s2-row{grid-template-columns:40px minmax(110px,1.6fr) 46px 90px 22px;gap:8px;padding:8px 10px}",
-      ".fo-s2-hand,.fo-s2-trait,.fo-s2-ovr{display:none}",
-      ".fo-s2-stars{font-size:11px}",
-      ".fo-s2-st10 .st{font-size:8.5px;letter-spacing:.2px}",
+      ".fo-s2-in{padding:66px 8px 30px}",
+      ".fo-s2-hd{align-items:flex-start;flex-direction:column;gap:10px;margin-bottom:10px}",
+      ".fo-s2-club .cr{width:42px;height:42px}.fo-s2-club b{font-size:17px}.fo-s2-club span{font-size:10px}",
+      ".fo-s2-bandwrap{flex-direction:column;gap:8px;margin-bottom:10px}",
+      ".fo-s2-vsw{background:transparent;border:none;border-radius:0;padding:0}",
+      ".fo-s2-band{border-left:1px solid #e3dccb;border-radius:14px}",
+      ".fo-s2-cell{flex:1 1 0;padding:8px 8px;border-right:1px solid #eee7d9}",
+      ".fo-s2-cell span{font-size:7px;letter-spacing:.1em;margin-bottom:2px}",
+      ".fo-s2-cell b{font-size:14px}.fo-s2-cell b i{display:none}",
+      ".fo-s2-tools{padding:8px 10px;gap:6px}.fo-s2-q{flex:1 1 100%}",
+      ".fo-s2-chip{font-size:10px;padding:6px 10px}.fo-s2-sortw{font-size:11px}",
+      ".fo-s2-row{grid-template-columns:30px minmax(74px,1.25fr) 40px 34px minmax(42px,.7fr) auto 24px 10px;gap:4px;padding:7px 6px}",
+      ".fo-s2-xibtn{display:none}",
+      ".fo-s2-pic{width:30px;height:30px}.fo-s2-pic img.face{width:30px;height:30px}",
+      ".fo-s2-flag{width:13px;height:9px;left:-4px;bottom:-2px}",
+      ".fo-s2-id b{font-size:11.5px}.fo-s2-id span{font-size:9px}",
+      ".fo-s2-hand,.fo-s2-age{font-size:8.5px}.fo-s2-age{padding-left:3px}.fo-s2-age i{font-size:8.5px}",
+      ".fo-s2-trait{font-size:7px;letter-spacing:.06em;padding:3px 5px}",
+      ".fo-s2-st10 .st{font-size:7px;letter-spacing:0}",
+      ".fo-s2-ovr{font-size:15px}",
+      ".fo-s2-car{font-size:9px}",
+      ".fo-s2-seck{font-size:9px;letter-spacing:.14em;padding:6px 10px}",
+      // the First XI: three columns, batting order running down each
+      ".fo-s2-xilist{display:grid;grid-auto-flow:column;grid-template-rows:repeat(4,auto);grid-template-columns:repeat(3,1fr);gap:0 4px;padding:4px 6px}",
+      ".fo-s2-xirow{grid-template-columns:6px 12px minmax(0,1fr) 22px 12px 10px;gap:3px;padding:5px 1px;font-size:9px}",
+      ".fo-s2-xirow .nm .full{display:none}",
+      ".fo-s2-xirow .nm .sh{display:inline}",
+      ".fo-s2-xirow .grip{font-size:8px}",
+      ".fo-s2-xirow .no{font-size:9.5px}",
+      ".fo-s2-xirow .ab{font-size:8.5px}",
+      ".fo-s2-xirow .bdg .crown{font-size:10px}",
+      ".fo-s2-xirow .bdg .wk{font-size:7px;padding:1px 2px}",
+      ".fo-s2-xirow .mv button{font-size:7px;padding:0 2px}",
+      ".fo-s2-xirow .xrm{display:none}",
+      ".fo-s2-xislot{grid-column:1/-1;font-size:10.5px;padding:8px 10px}",
+      ".fo-s2-duo{grid-template-columns:1fr 1fr;gap:8px}",
       "}"
     ].join("\n");
     document.head.appendChild(s);
@@ -21891,15 +21939,27 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var youths = (t.youth || []).map(function (p) { return Object.assign({ __y: true }, p); });
       var byName = {}; seniors.concat(youths).forEach(function (p) { byName[p.name] = p; });
 
-      // the XI: whatever the orders already say, otherwise the side the engine
-      // would pick itself, so the park never opens on a lineup nobody chose
-      if (!sv.xi || sv.xi.length !== 11 || sv.xi.some(function (n) { return !byName[n] || byName[n].__y; })) {
+      // THE FIRST XI, IN BATTING ORDER. Seeded from the saved orders - the
+      // eleven from App.orders.xi arranged by App.orders.batOrder, so this
+      // list and the match orders page always open on the same card. Only
+      // rebuilt when it is missing or names a man who has left; a list mid-
+      // edit (ten men while a change is made) is a legitimate state.
+      if (!sv.xi || sv.xi.some(function (n) { return !byName[n] || byName[n].__y; })) {
         var base = null;
         try { if (typeof App !== "undefined" && App.orders && App.orders.xi && App.orders.xi.length === 11) base = App.orders.xi.slice(); } catch (eO) {}
         if (!base || base.some(function (n) { return !byName[n] || byName[n].__y; })) {
           try { base = pickXI(t).map(function (p) { return p.name; }); } catch (eP) { base = null; }
         }
-        sv.xi = (base && base.length === 11) ? base : seniors.slice(0, 11).map(function (p) { return p.name; });
+        if (!base || base.length !== 11) base = seniors.slice(0, 11).map(function (p) { return p.name; });
+        try {
+          var bo = (App.orders && App.orders.batOrder) || [];
+          if (bo.length) base = base.slice().sort(function (a, b) {
+            var ia = bo.indexOf(a), ib = bo.indexOf(b);
+            return (ia < 0 ? 99 : ia) - (ib < 0 ? 99 : ib);
+          });
+        } catch (eBo) {}
+        sv.xi = base;
+        sv.xiDirty = 0;
       }
       var xiSet = {}; sv.xi.forEach(function (n) { xiSet[n] = 1; });
       var xi = sv.xi.map(function (n) { return byName[n]; }).filter(Boolean);
@@ -22091,16 +22151,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var overseas = seniors.filter(function (p) { return p.nat && homeNat && p.nat !== homeNat; });
 
       var band =
-        "<div class='fo-s2-band'>" +
+        "<div class='fo-s2-bandwrap'>" +
         "<div class='fo-s2-vsw'>" + [["roster", "Roster"], ["grid", "Grid"]].map(function (v) {
           return "<button type='button' class='fo-s2-vb" + (sv.view === v[0] ? " on" : "") + "' data-view='" + v[0] + "'>" + v[1] + "</button>";
         }).join("") + "</div>" +
+        "<div class='fo-s2-band'>" +
         "<div class='fo-s2-cell'><span>Total players</span><b>" + seniors.length + (youths.length ? "<i> +" + youths.length + " youth</i>" : "") + "</b></div>" +
         "<div class='fo-s2-cell'><span>Avg age</span><b>" + ageAvg.toFixed(1) + "</b></div>" +
         "<div class='fo-s2-cell'><span>Overseas</span><b>" + overseas.length + "</b></div>" +
         "<div class='fo-s2-cell wage'><span>Weekly wages</span><b>" + foS2Money(wageSum) + "</b></div>" +
-        "<div class='fo-s2-cell xi'><span>Selected XI</span><b>" + xi.length + " / 11</b></div>" +
-        "</div>";
+        "<div class='fo-s2-cell xi'><span>First XI</span><b" + (xi.length < 11 ? " style='color:#C0392E'" : "") + ">" + xi.length + " / 11</b></div>" +
+        "</div></div>";
 
       var header =
         "<header class='fo-s2-hd'>" +
@@ -22142,15 +22203,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         var roleNm = { bat: "Batsman", ar: "All-rounder", wk: "Wicketkeeper", bowl: "Bowler" }[rCls] || "Player";
         var det = p.bowlType ? prettyType(p.bowlType) : (p.hand === "L" ? "LHB" : "RHB");
         var open = sv.open === p.name;
+        var inXi = xiSet[p.name];
         var xd = "";
         if (open) {
-          var inXi = xiSet[p.name];
           xd = "<div class='fo-s2-xd'>" + foSqDetail(p, !!p.__y) +
             "<div class='fo-s2-acts'>" +
             "<button type='button' class='fo-s2-act' data-goman='" + E(p.name) + "'>Full profile &rsaquo;</button>" +
             (inXi && p.name !== capt ? "<button type='button' class='fo-s2-act' data-mkc='" + E(p.name) + "'>Make captain</button>" : "") +
             (inXi && p.keeper && p.name !== kpr ? "<button type='button' class='fo-s2-act' data-mkk='" + E(p.name) + "'>Give the gloves</button>" : "") +
-            (!inXi && !p.__y ? "<button type='button' class='fo-s2-act solid' data-addxi='" + E(p.name) + "'>" + (sv.dropArm ? "Replace " + E(foSqShortName(sv.dropArm)) : "Add to XI") + "</button>" : "") +
+            (!p.__y ? "<button type='button' class='fo-s2-act" + (inXi ? "" : " solid") + "' data-xit='" + E(p.name) + "'>" + (inXi ? "Remove from XI" : "Add to XI") + "</button>" : "") +
             "</div></div>";
         }
         return "<div class='fo-s2-row" + (open ? " open" : "") + "' data-open='" + E(p.name) + "'>" +
@@ -22162,6 +22223,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           "<span class='fo-s2-trait'>" + E(foS2Trait(p)) + "</span>" +
           foS2RoleStars(p, rCls, ovr) +
           "<b class='fo-s2-ovr' style='color:" + foSqQCol(ovr) + "'>" + ovr + "</b>" +
+          (p.__y ? "<span></span>" : "<button type='button' class='fo-s2-xibtn" + (inXi ? " out" : "") + "' data-xit='" + E(p.name) + "'>" + (inXi ? "&#10005; XI" : "+ XI") + "</button>") +
           "<span class='fo-s2-car'>&#9660;</span>" +
           "</div>" + xd;
       };
@@ -22175,18 +22237,20 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           men.map(s2Row).join("") + "</div>";
       }).join("") || "<div class='fo-s2-sec'><div class='fo-s2-row' style='border-top:1px solid #eee7d9;border-radius:9px;cursor:default'>Nobody matches that search.</div></div>";
 
-      // ---- the rail: the Selected XI managed in place ----
+      // ---- the rail: the First XI, in batting order, managed in place ----
       var xiRows = sv.xi.map(function (n, i) {
         var p = byName[n]; if (!p) return "";
         return "<div class='fo-s2-xirow' draggable='true' data-xi='" + i + "'>" +
           "<span class='grip' title='Drag to reorder'>&#8942;&#8942;</span>" +
           "<span class='no'>" + (i + 1) + "</span>" +
-          "<span class='nm'>" + E(p.name) + "</span>" +
+          "<span class='nm'><u class='full'>" + E(p.name) + "</u><u class='sh'>" + E(foSqShortName(p.name)) + "</u></span>" +
           "<span class='ab'>" + foS2Abbr(p) + "</span>" +
           "<span class='bdg'>" + (n === capt ? "<span class='crown' title='Captain'>&#9812;&#xFE0E;</span>" : n === kpr ? "<span class='wk' title='Keeper'>WK</span>" : "") + "</span>" +
           "<span class='mv'><button type='button' data-up='" + i + "' title='Up'>&#9650;</button><button type='button' data-dn='" + i + "' title='Down'>&#9660;</button></span>" +
+          "<button type='button' class='xrm' data-xrm='" + i + "' title='Remove from the XI'>&#10005;</button>" +
           "</div>";
       }).join("");
+      if (xi.length < 11) xiRows += "<div class='fo-s2-xislot'>" + (11 - xi.length) + " place" + (xi.length === 10 ? "" : "s") + " open &middot; add from the roster</div>";
       var rbCols = [["bat", "Batters", "#D9A21B", bal.bat || 0], ["ar", "All-rounders", "#177A57", bal.ar || 0], ["bowl", "Bowlers", "#C0392E", bal.bowl || 0], ["wk", "WK", "#3f6f96", bal.wk || 0]];
       var roleBal = "<div class='fo-s2-rb'>" + rbCols.map(function (c) {
         return "<div><span>" + c[1] + "</span><b>" + c[3] + "</b><i style='background:" + c[2] + ";width:" + Math.min(100, c[3] * 18) + "%'></i></div>";
@@ -22221,7 +22285,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
       var rail =
         "<aside class='fo-s2-rail'>" +
-        "<div class='fo-s2-card'><div class='fo-s2-ck'><span>Selected XI</span><em>" + xi.length + "/11</em></div>" + xiRows + "</div>" +
+        "<div class='fo-s2-card'><div class='fo-s2-ck'><span>First XI</span><em" + (xi.length < 11 ? " style='color:#C0392E'" : "") + ">" + xi.length + "/11</em></div><div class='fo-s2-xilist'>" + xiRows + "</div></div>" +
         "<div class='fo-s2-card'><div class='fo-s2-ck'><span>Role balance</span><a id='fo-s2-fullstats'>View full stats</a></div>" + roleBal + "</div>" +
         "<div class='fo-s2-card'><div class='fo-s2-ck'><span>Squad composition</span></div>" +
         "<div class='fo-s2-kv'><span>" + natFlag + E(homeNat || "Home") + "</span><b>" + (seniors.length - overseas.length) + "</b></div>" +
@@ -22233,7 +22297,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-s2-card'><div class='fo-s2-ck'><span>Team balance</span></div><div class='fo-s2-gauge'>" + foS2Donut(balScore, balCol) + "<span>" + balWord + "</span></div></div>" +
         "<div class='fo-s2-card'><div class='fo-s2-ck'><span>Chem &amp; form</span></div><div class='fo-s2-gauge'><div class='fo-s2-spark'>" + spark + "</div><span><b style='font-size:15px'>" + formPct + "</b><br>" + formWord + "</span></div></div>" +
         "</div>" +
-        "<button type='button' class='fo-s2-save' id='fo-s2-save'>Save XI</button>" +
+        "<button type='button' class='fo-s2-save" + (sv.xiDirty ? " dirty" : "") + "' id='fo-s2-save'>Save First XI" + (sv.xiDirty ? " &middot; unsaved" : "") + "</button>" +
         "<button type='button' class='fo-s2-sugg' id='fo-s2-sugg'>&#10022; Suggest best XI</button>" +
         "</aside>";
 
@@ -22380,25 +22444,30 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           s2Repaint();
         });
       });
-      // Add to XI: replace the armed man if one was chosen from the rail,
-      // otherwise the weakest man of the same class makes way
-      page.querySelectorAll("[data-addxi]").forEach(function (b) {
+      // Add / remove: one tap either way. The list may sit at ten while a
+      // change is made; nothing reaches the orders until Save First XI.
+      page.querySelectorAll("[data-xit]").forEach(function (b) {
         b.addEventListener("click", function () {
-          var inN = b.getAttribute("data-addxi"), outN = null;
-          if (sv.dropArm && xiSet[sv.dropArm]) outN = sv.dropArm;
-          else {
-            var cls = foSqClass(byName[inN]);
-            var cand = sv.xi.map(function (n) { return byName[n]; }).filter(function (p) { return p && foSqClass(p) === cls; });
-            if (!cand.length) cand = sv.xi.map(function (n) { return byName[n]; }).filter(function (p) { return p && foSqClass(p) !== "wk"; });
-            cand.sort(function (a, b2) { return foPkOvr(a) - foPkOvr(b2); });
-            outN = cand[0] && cand[0].name;
+          var n = b.getAttribute("data-xit");
+          var at2 = sv.xi.indexOf(n);
+          if (at2 >= 0) {
+            sv.xi.splice(at2, 1);
+            sv.xiDirty = 1;
+          } else {
+            if (sv.xi.length >= 11) {
+              try { toast("The XI is full - remove a man first (the ✕ beside his name)."); } catch (eT4) {}
+              return;
+            }
+            sv.xi.push(n);
+            sv.xiDirty = 1;
           }
-          if (!outN) return;
-          var at2 = sv.xi.indexOf(outN);
-          if (at2 >= 0) { sv.xi[at2] = inN; foSqCommitXI(sv.xi, outN); }
-          sv.dropArm = null; sv.open = inN;
-          try { toast(inN + " comes into the XI for " + outN + "."); } catch (eT4) {}
           s2Repaint();
+        });
+      });
+      page.querySelectorAll("[data-xrm]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          var i4 = parseInt(b.getAttribute("data-xrm"), 10);
+          if (i4 >= 0 && i4 < sv.xi.length) { sv.xi.splice(i4, 1); sv.xiDirty = 1; s2Repaint(); }
         });
       });
       // the rail: reorder by drag on desktop, by the little arrows anywhere
@@ -22406,7 +22475,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         if (from === to || from < 0 || to < 0 || from >= sv.xi.length || to >= sv.xi.length) return;
         var m2 = sv.xi.splice(from, 1)[0];
         sv.xi.splice(to, 0, m2);
-        foSqCommitXI(sv.xi);
+        sv.xiDirty = 1;
         s2Repaint();
       };
       page.querySelectorAll(".fo-s2-xirow").forEach(function (r) {
@@ -22432,9 +22501,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (fs2) fs2.addEventListener("click", function () { sv.view = "grid"; try { localStorage.setItem("fo_sq_view", "grid"); } catch (eV4) {} pgSquad(); });
       var sv2 = page.querySelector("#fo-s2-save");
       if (sv2) sv2.addEventListener("click", function () {
+        if (sv.xi.length !== 11) {
+          try { toast("Name eleven first - " + (11 - sv.xi.length) + " more from the roster."); } catch (eT7) {}
+          return;
+        }
         try {
           foSqCommitXI(sv.xi);
           App.orders = App.orders || {};
+          // THE SAVED ORDER IS THE BATTING ORDER. This list is what the match
+          // orders page opens on: batOrder is written from it verbatim, so the
+          // card a manager arranged here is the card the orders room shows.
+          App.orders.batOrder = sv.xi.slice();
           // the sheet the engine reads always names a captain and a keeper
           if (!App.orders.captain || sv.xi.indexOf(App.orders.captain) < 0)
             App.orders.captain = xi.slice().sort(function (a, b2) { return (b2.capt || 0) - (a.capt || 0); })[0].name;
@@ -22442,7 +22519,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             App.orders.keeper = (xi.filter(function (p) { return p.keeper; })[0] || xi[0]).name;
           if (typeof saveGame === "function") saveGame();
         } catch (eS2) {}
-        try { toast("XI saved. This is the side the umpire fields."); } catch (eT5) {}
+        sv.xiDirty = 0;
+        try { toast("First XI saved. This batting order now opens the match orders page."); } catch (eT5) {}
         s2Repaint();
       });
       var sg2 = page.querySelector("#fo-s2-sugg");
@@ -22451,8 +22529,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           var best = pickXI(t).map(function (p) { return p.name; });
           if (best && best.length === 11) {
             sv.xi = best;
-            foSqCommitXI(sv.xi);
-            try { toast("The coaches name their strongest available XI."); } catch (eT6) {}
+            sv.xiDirty = 1;
+            try { toast("The coaches name their strongest available XI - save it to make it stick."); } catch (eT6) {}
           }
         } catch (eSg) {}
         s2Repaint();
