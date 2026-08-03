@@ -61,6 +61,50 @@
     if (v == null) return "&mdash;";
     return typeof v === "number" && v >= 10000 ? v.toLocaleString("en-US") : String(v);
   }
+  // the number a column SORTS by - best bowling ranks by wickets then runs
+  function valOf(x, k) {
+    if (k === "bb") return x.bb ? x.bb.w * 10000 - x.bb.r : -1;
+    var v = x[k];
+    if (typeof v === "number" && isFinite(v)) return v;
+    return v != null && isFinite(+v) ? +v : -1;
+  }
+  // EVERY COLUMN IS A HANDLE. One delegated listener; a click sorts the book
+  // by that column, a second click reverses it. The rows are REORDERED IN
+  // PLACE - the existing <tr> nodes move, nothing is rebuilt - so the table
+  // never snaps, and the lit rows ride with their men.
+  if (!window.__foLgxSort) {
+    window.__foLgxSort = 1;
+    document.addEventListener("click", function (ev) {
+      var th = ev.target && ev.target.closest && ev.target.closest("table.fo-lgx-stat thead th");
+      if (!th || th.classList.contains("rk")) return;
+      var table = th.closest("table"), tb = table && table.tBodies[0]; if (!tb) return;
+      var ths = [].slice.call(th.parentNode.children), ci = ths.indexOf(th);
+      var isTxt = th.classList.contains("nm") || th.classList.contains("cl");
+      var dir = th.getAttribute("data-dir")
+        ? (th.getAttribute("data-dir") === "desc" ? "asc" : "desc")
+        : (isTxt ? "asc" : "desc");
+      ths.forEach(function (h) { h.removeAttribute("data-dir"); });
+      th.setAttribute("data-dir", dir);
+      var key = function (tr) {
+        var td = tr.cells[ci];
+        if (!td) return isTxt ? "" : -Infinity;
+        if (isTxt) return (td.textContent || "").trim().toLowerCase();
+        var v = parseFloat(td.getAttribute("data-v"));
+        return isFinite(v) ? v : -Infinity;
+      };
+      var rows = [].slice.call(tb.rows);
+      rows.sort(function (a, b) {
+        var ka = key(a), kb = key(b);
+        var c = isTxt ? (ka < kb ? -1 : ka > kb ? 1 : 0) : ka - kb;
+        return dir === "desc" ? -c : c;
+      });
+      rows.forEach(function (r) { tb.appendChild(r); });
+      rows.forEach(function (r, i) {
+        var rk = r.cells[0];
+        if (rk && rk.classList.contains("rk")) rk.textContent = i + 1;
+      });
+    });
+  }
 
   function qparam(k) {
     var m = new RegExp("[?&]" + k + "=([^&]*)").exec(location.hash || "");
@@ -507,7 +551,7 @@
                   "&n=" + encodeURIComponent(x.name) + "'>" + E(say(x.name)) + "</a></td>" +
                 "<td class='cl'><a href='#/team?c=" + encodeURIComponent(natId) + "&s=" + x.slot + "'>" +
                   E(say(x.club)) + "</a></td>" +
-                BK.cols.map(function (c) { return "<td>" + cellOf(x, c[0]) + "</td>"; }).join("") +
+                BK.cols.map(function (c) { return "<td data-v='" + valOf(x, c[0]) + "'>" + cellOf(x, c[0]) + "</td>"; }).join("") +
                 "</tr>";
             }).join("");
             body9 = "<div class='fo-lgx-scroll'><table class='fo-lgx-stat'>" +
@@ -814,10 +858,19 @@
     "html body #page table.fo-lgx-stat td.nm a{color:#141C28 !important;text-decoration:none !important}",
     "html body #page table.fo-lgx-stat td.cl a{color:rgba(20,28,40,.55) !important;text-decoration:none !important}",
     "html body #page table.fo-lgx-stat tbody tr:nth-child(even){background:rgba(20,28,40,.022)}",
-    // your own men, lit the way a scorebook underlines the home side
-    "html body #page table.fo-lgx-stat tbody tr.mine{background:#FFF6DA}",
-    "html body #page table.fo-lgx-stat tbody tr.mine td{border-bottom-color:rgba(190,150,40,.3)}",
-    "html body #page table.fo-lgx-stat tbody tr.mine td.nm a,html body #page table.fo-lgx-stat tbody tr.mine td.cl a{color:#7A5B12 !important;font-weight:700}",
+    // every column head is a handle: sortable both ways, the arrow says which
+    "html body #page table.fo-lgx-stat th{cursor:pointer;-webkit-user-select:none;user-select:none}",
+    "html body #page table.fo-lgx-stat th.rk{cursor:default}",
+    "html body #page table.fo-lgx-stat th:hover{background:#173461}",
+    "html body #page table.fo-lgx-stat th[data-dir]{color:#E8B96A}",
+    "html body #page table.fo-lgx-stat th[data-dir='desc']:after{content:' \\25BE'}",
+    "html body #page table.fo-lgx-stat th[data-dir='asc']:after{content:' \\25B4'}",
+    // your own men, lit in the club's burnt orange - broadcast-graphic warm
+    "html body #page table.fo-lgx-stat tbody tr.mine{background:linear-gradient(90deg,rgba(201,87,31,.17),rgba(232,185,106,.09) 62%,rgba(232,185,106,.04))}",
+    "html body #page table.fo-lgx-stat tbody tr.mine td{border-bottom-color:rgba(201,87,31,.28)}",
+    "html body #page table.fo-lgx-stat tbody tr.mine td:first-child{box-shadow:inset 3px 0 0 #C9571F}",
+    "html body #page table.fo-lgx-stat tbody tr.mine td.nm a{color:#B44A22 !important;font-weight:800}",
+    "html body #page table.fo-lgx-stat tbody tr.mine td.cl a{color:#C9571F !important;font-weight:700}",
     "html body #page .fo-lgx-cols5,html body #page .fo-lgx-statrow{display:grid;grid-template-columns:20px minmax(0,1.15fr) minmax(0,1fr) 70px 42px;gap:8px;align-items:center}",
     "html body #page .fo-lgx-cols5{padding:4px 8px;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.4)}",
     "html body #page .fo-lgx-cols5 span:nth-child(4),html body #page .fo-lgx-cols5 span:nth-child(5){text-align:right}",
