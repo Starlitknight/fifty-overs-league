@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0053-88da22";
+  var FO_BUILD = "20260803-0055-4279c6";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18438,8 +18438,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (p.bowlType) bits.push(E(shortBT(p)) + " " + Math.round(aggBowl(p) || 0));
       if (p.keeper) bits.push("keeper");
       var tals = (p.talents || []).map(function (t2) { return (typeof ptal === "function" ? ptal(t2) : t2); }).join(", ");
+      // his stars, the same language as the cards he'd be joining: gold with
+      // the bat for every man, teal with the ball where he bowls
+      var sts = "<span class='osh-sts'><span class='osh-st bat'>" + foOrdStarHTML(foOrdStars(foOrdBatComp(p))) + "</span>" +
+        (p.bowlType && p.bowlType !== "none" ? "<span class='osh-st bwl'>" + foOrdStarHTML(foOrdStars(foOrdBowlComp(p))) + "</span>" : "") + "</span>";
       return "<button class='fo-osh-row' data-fo-bench='" + E(p.name) + "' " + (ok ? "" : "disabled") + ">" +
-        "<div><b>" + E(p.name) + "</b><span class='small'>" + bits.join(" · ") + (tals ? " · " + E(tals) : "") + "</span></div>" +
+        "<div><b>" + E(p.name) + "</b>" + sts + "<span class='small'>" + bits.join(" · ") + (tals ? " · " + E(tals) : "") + "</span></div>" +
         (ok ? "" : "<span class='fo-osh-note bad'>would leave fewer than five bowlers</span>") + "</button>";
     }).join("") || "<div class='small' style='padding:8px 2px'>No one on the bench - the whole squad is in the XI.</div>";
     var m = document.createElement("div"); m.id = "fo-osheet";
@@ -19529,6 +19533,14 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-ord-xis .xc .st em,.fo-ord-bws .bw .st em,.mg-chips .mgb .st em{font-style:normal;color:#d8d3c6}.fo-ord-xis .xc .st em.f{color:#D9A441}.fo-ord-bws .bw .st em.f,.mg-chips .mgb .st em.f{color:#0FB4C4}" +
       ".fo-ord-xis .xc .st em.h{background:linear-gradient(90deg,#D9A441 50%,#d8d3c6 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       ".mg-chips .mgb .st em.h{background:linear-gradient(90deg,#0FB4C4 50%,#d8d3c6 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      // the bench sheet's stars: gold batting, teal bowling, side by side
+      ".fo-osh-row .osh-sts{display:flex;gap:10px;margin:2px 0 1px;flex-wrap:wrap}" +
+      ".fo-osh-row .osh-st .st{text-decoration:none;font-size:11px;letter-spacing:.6px;line-height:1;white-space:nowrap}" +
+      ".fo-osh-row .osh-st .st em{font-style:normal;color:#d8d3c6}" +
+      ".fo-osh-row .osh-st.bat .st em.f{color:#D9A441}" +
+      ".fo-osh-row .osh-st.bat .st em.h{background:linear-gradient(90deg,#D9A441 50%,#d8d3c6 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".fo-osh-row .osh-st.bwl .st em.f{color:#0FB4C4}" +
+      ".fo-osh-row .osh-st.bwl .st em.h{background:linear-gradient(90deg,#0FB4C4 50%,#d8d3c6 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       ".fo-scst{white-space:nowrap;margin-left:7px;display:inline-block;vertical-align:1px}" +
       ".fo-scst .st{text-decoration:none;font-size:12px;letter-spacing:.9px;line-height:1;white-space:nowrap}" +
       ".fo-scst .st em{font-style:normal;color:#e2ddd2}" +
