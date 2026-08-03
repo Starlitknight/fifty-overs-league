@@ -10212,7 +10212,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0736-e1f3ec";
+  var FO_BUILD = "20260803-0740-3d54d4";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -40146,6 +40146,37 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   var SORTS = [["ovr", "Strongest first"], ["age", "Youngest first"], ["wage", "Best paid"], ["name", "By name"]];
 
+  // ---- A GROUND FOR EVERY CLUB ----------------------------------------------
+  // Only a quarter of the world's grounds are painted. A club whose own city
+  // has no painting borrows one from its own country's gallery - picked off a
+  // hash of the club's name, so the same club shows the same ground on every
+  // device, forever. The navy panel stays as the last resort only.
+  var FB_GROUNDS = {
+    eng: ["leeds", "london", "canterbury", "manchester", "nottingham", "marylebone"],
+    aus: ["sydney", "melbourne", "adelaide", "brisbane", "perth"],
+    sub: ["mumbai", "chennai", "kolkata", "nagpur", "dharamshala"],
+    pak: ["lahore", "sharjah"],
+    rsa: ["cape-town", "durban", "johannesburg"],
+    nzl: ["auckland", "christchurch", "wellington"],
+    slk: ["colombo", "galle", "kandy"],
+    win: ["bridgetown", "kingston", "port-of-spain"],
+    ire: ["dublin", "belfast", "cork"],
+    ned: ["amsterdam", "rotterdam", "utrecht"],
+    zim: ["harare", "bulawayo", "victoria-falls"],
+    afg: ["kabul"], bgd: ["sylhet"], nep: ["kathmandu"],
+    sco: ["edinburgh"], wal: ["cardiff"], ken: ["nairobi"],
+    usa: ["grand-prairie"], can: ["king-city"]
+  };
+  function h32(s) {
+    var h = 2166136261 >>> 0; s = String(s || "");
+    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    return h >>> 0;
+  }
+  function fbGroundOf(cid, name) {
+    var list = FB_GROUNDS[cid] || FB_GROUNDS.eng;
+    return ART() + "cities/" + list[h32(name) % list.length] + "-ground.webp";
+  }
+
   // ---- your own men, in the shape the public view uses ----------------------
   // The world's squad is already the game's squad (league/37 adopts it), so for
   // your own club the local side IS the served side - read it here and the two
@@ -40463,7 +40494,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         var gCard = "<div class='fo-cd-card fo-cd-gr'>" +
           "<div class='gwrap'>" +
           "<img src='" + ART() + "cities/" + gSlug + "-ground.webp' alt='" + E(gname) + "'" +
-          " onerror=\"var g=this.closest('.fo-cd-gr');if(g)g.classList.add('noart');this.parentNode.removeChild(this)\">" +
+          " data-fb='" + fbGroundOf(cid, name) + "'" +
+          " onerror=\"if(this.dataset.fb&&this.src.indexOf(this.dataset.fb)<0){this.src=this.dataset.fb}" +
+          "else{var g=this.closest('.fo-cd-gr');if(g)g.classList.add('noart');this.parentNode.removeChild(this)}\">" +
           "<div class='gov'><div class='gt'>" + E(gname) + (gNote ? "<u>" + gNote + "</u>" : "") + "</div>" +
           "<a class='gd' href='" + hrefT("ground") + "'>Ground details &rsaquo;</a></div>" +
           "</div>" +
