@@ -10280,7 +10280,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-1353-1566d2";
+  var FO_BUILD = "20260803-1504-d784ac";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -44272,6 +44272,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var ga = natGround(ST.nation);
     var windows9 = (snap.windows || [5, 9, 13]);
     var hour9 = (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC";
+    // THE SERIES THE CALENDAR DEALT - best of three, one game a window, over
+    // three rest days. An older cached snapshot carried a single round; read
+    // either so a stale localStorage copy still paints.
+    var sLen9 = snap.seriesLen || 3;
+    var tourRounds = n.tour ? (n.tour.rounds || (n.tour.round ? [n.tour.round] : [])) : [];
+    var ser9 = (n.tour && n.tour.series) || null;
     var fmtR = function (v) { return Number(v || 0).toLocaleString("en-US"); };
     var hero = "<div class='fo-nt-bleed fo-nt-hero'>" +
       "<img class='bgart' src='" + ga.art + "' alt='' onerror=\"this.style.display='none'\"><span class='veil'></span>" +
@@ -44284,8 +44290,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       (ga.name ? "<span>Home ground<b>" + E(ga.name) + "</b></span>" : "") +
       "<span>Squad<b>" + ((n.squad || []).length || "&mdash;") + " men</b></span>" +
       (n.worldCup ? "<span>This season<b>The World Cup</b></span>"
-        : n.tour ? "<span>The tour<b>Round " + n.tour.round + " &middot; " +
-            (n.tour.kind === "tri" ? E(n.tour.title) : (n.tour.hosting ? "v " + E(n.tour.opp) + " at home" : "away to " + E(n.tour.opp))) + "</b></span>"
+        : n.tour ? "<span>The series<b>Rounds " + tourRounds.join(", ") + " &middot; " +
+            (n.tour.hosting ? "v " + E(n.tour.opp) + " at home" : "away to " + E(n.tour.opp)) + "</b></span>"
+        : n.nextTour ? "<span>Next tour<b>Season " + n.nextTour.seasonNo + " &middot; " + E(n.nextTour.title || "") + "</b></span>"
         : "<span>Windows<b>Rounds " + windows9.join(", ") + "</b></span>") +
       "<span>Tours play<b>" + hour9 + "</b></span>" +
       "</div></div></div></div>";
@@ -44304,20 +44311,33 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     // that was named, a rank the ladder holds, a cheque the window wrote.
     var stories = [];
     var lastTour = (n.tours || [])[ (n.tours || []).length - 1 ] || null;
-    if (lastTour) {
+    // THE SERIES AS IT STANDS - the server's own verdict on the banked games,
+    // leading the page while a series is alive or just decided.
+    if (ser9 && ser9.verdict) {
+      var nextR9 = tourRounds[ser9.played];
+      stories.push({ cat: "The Series &middot; " + E(n.tour.title), h: E(ser9.verdict),
+        dek: "Game " + ser9.played + " of " + ser9.of + " has been bowled" +
+          (ser9.done ? " and the rubber is settled &mdash; all three games are played, dead or alive."
+            : nextR9 ? "; the next is played after the round-" + nextR9 + " window at " + hour9 + "." : ".") });
+    } else if (lastTour) {
       stories.push({ cat: "The Tours", h: lastTour.text || (E(lastTour.a) + " v " + E(lastTour.b)),
         dek: E(lastTour.a) + " " + E(lastTour.as_ || "") + " v " + E(lastTour.b) + " " + E(lastTour.bs_ || "") +
           (n.tour && n.tour.title ? ". The tie the calendar dealt: " + E(n.tour.title) + "." : ".") });
     }
-    // THE TOUR TO COME - the calendar's own fixture, printed before it is
-    // played. Once the tie is in n.tours the result story above replaces it.
-    if (n.tour && !lastTour && !n.worldCup) {
-      stories.push({ cat: "Fixtures &middot; Round " + n.tour.round, h: E(n.tour.title),
-        dek: (n.tour.kind === "tri"
-            ? E((n.tour.names || []).join(", ")) + " meet in a tri-series"
-            : n.tour.hosting ? E(n.name) + " host " + E(n.tour.opp) : E(n.name) + " travel to " + E(n.tour.opp)) +
-          " after the round-" + n.tour.round + " window &mdash; the one tour the calendar deals " +
-          E(n.name) + " this season. The cricket is bowled at " + hour9 + "." });
+    // THE SERIES TO COME - the calendar's own fixture, printed before a ball
+    // is bowled. Once games are banked the verdict story above replaces it.
+    if (n.tour && !(ser9 && ser9.played) && !lastTour && !n.worldCup) {
+      stories.push({ cat: "Fixtures &middot; Rounds " + tourRounds.join(", "), h: E(n.tour.title),
+        dek: (n.tour.hosting ? E(n.name) + " host " + E(n.tour.opp) : E(n.name) + " travel to " + E(n.tour.opp)) +
+          " for a best-of-three &mdash; one game after each of rounds " + tourRounds.join(", ") +
+          ", the one series the calendar deals " + E(n.name) + " this season. The cricket is bowled at " + hour9 + "." });
+    }
+    // THE REST YEAR - half the world tours each season; the other half is
+    // told, honestly, when its cricket comes back.
+    if (!n.tour && !n.worldCup && n.nextTour) {
+      stories.push({ cat: "The Calendar", h: E(n.name) + " rest this season",
+        dek: "Half the world tours each season and " + E(n.name) + " are in the resting half. Their cricket returns in season " +
+          n.nextTour.seasonNo + ": " + E(n.nextTour.title || "") + "." });
     }
     if (n.window && (n.squad || []).length) {
       var clubs9 = {}; (n.squad || []).forEach(function (m9) { if (m9.club) clubs9[m9.club] = 1; });
@@ -44385,20 +44405,26 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         (natRank.natRating ? "<div class='fo-nt-lab'>National XI<b>" + fmtR(natRank.natRating) + "</b></div>" : "") +
         (natRank.clubRating ? "<div class='fo-nt-lab'>Club game<b>" + fmtR(natRank.clubRating) + "</b></div>" : "") + "</div>"
       : "";
-    var windowTile = "<div class='fo-nt-tile'><h3>" + (n.tour ? "The tour" : "The window") + "</h3>" +
+    var windowTile = "<div class='fo-nt-tile'><h3>" + (n.tour ? "The series" : "The window") + "</h3>" +
       (n.worldCup ? "<div class='fo-nt-lab' style='margin-top:0'>This season<b>The World Cup</b></div>"
         : n.tour ? "<div class='fo-nt-lab' style='margin-top:0'>This season<b>" + E(n.tour.title) + "</b></div>" +
-          "<div class='fo-nt-lab'>Played after<b>Round " + n.tour.round + "</b></div>" +
-          (n.tour.kind === "tour" ? "<div class='fo-nt-lab'>" + (n.tour.hosting ? "Hosting<b>" + E(n.tour.opp) + "</b>" : "Travelling to<b>" + E(n.tour.opp) + "</b>") + "</div>" : "")
+          "<div class='fo-nt-lab'>Games after<b>Round" + (tourRounds.length === 1 ? " " : "s ") + tourRounds.join(", ") + "</b></div>" +
+          "<div class='fo-nt-lab'>" + (n.tour.hosting ? "Hosting<b>" + E(n.tour.opp) + "</b>" : "Travelling to<b>" + E(n.tour.opp) + "</b>") + "</div>" +
+          (ser9 && ser9.verdict ? "<div class='fo-nt-lab'>As it stands<b>" + E(ser9.verdict) + "</b></div>" : "")
+        : n.nextTour ? "<div class='fo-nt-lab' style='margin-top:0'>Resting<b>until season " + n.nextTour.seasonNo + "</b></div>" +
+          "<div class='fo-nt-lab'>Next<b>" + E(n.nextTour.title || "") + "</b></div>"
         : "") +
-      (n.window ? "<div class='fo-nt-lab'" + (n.tour || n.worldCup ? "" : " style='margin-top:0'") + ">Squad named for<b>Round " + n.window + "</b></div>" : "") +
+      (n.window ? "<div class='fo-nt-lab'" + (n.tour || n.worldCup || n.nextTour ? "" : " style='margin-top:0'") + ">Squad named for<b>Round " + n.window + "</b></div>" : "") +
       "<div class='fo-nt-lab'>Tours play<b>" + hour9 + "</b></div></div>";
     // the other nations' front pages, one honest line each
     var aroundRows = ids.filter(function (r2) { return r2 !== ST.nation; }).slice(0, 4).map(function (r2) {
       var n2 = snap.nations[r2] || {}, nm2 = n2.name || r2;
       var t2 = (n2.tours || [])[ (n2.tours || []).length - 1 ] || null;
-      var line = t2 ? (t2.text || nm2 + "'s last tour")
-        : (n2.tour && n2.tour.title) ? n2.tour.title + " · round " + n2.tour.round
+      var s2 = (n2.tour && n2.tour.series) || null;
+      var line = (s2 && s2.verdict) ? s2.verdict
+        : t2 ? (t2.text || nm2 + "'s last tour")
+        : (n2.tour && n2.tour.title) ? n2.tour.title + " · rounds " + (n2.tour.rounds || [n2.tour.round]).join(", ")
+        : n2.nextTour ? nm2 + " rest until season " + n2.nextTour.seasonNo
         : (n2.window && (n2.squad || []).length) ? nm2 + " name " + n2.squad.length + " for round " + n2.window
         : nm2 + ": squads named at rounds " + windows9.join(", ");
       return "<button type='button' class='fo-nt-mini' data-nat='" + E(r2) + "'>" +
@@ -44419,8 +44445,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-ac-note'>$50,000 a senior, $20,000 a man under twenty-one &mdash; paid to the club he was taken from, every window.</div></div>";
     var toursCard = "<div class='fo-ac-card'><h3>The tours" + (formChips ? "<span>recent form</span>" : "") + "</h3>" +
         (formChips ? "<div class='fo-nt-form'>" + formChips + "</div>" : "") +
-        (tours || "<div class='fo-ac-note'>No tour has been played yet &mdash; the first is bowled after the round-" +
-          windows9[0] + " window at " + hour9 + ".</div>") + "</div>";
+        (tours || "<div class='fo-ac-note'>" +
+          (n.tour ? "No game of the series has been bowled yet &mdash; the first is played after the round-" +
+              (tourRounds[0] || windows9[0]) + " window at " + hour9 + "."
+            : n.nextTour ? E(n.name || "This nation") + " rest this season &mdash; their next series is season " +
+              n.nextTour.seasonNo + ": " + E(n.nextTour.title || "") + "."
+            : "No tour has been played yet &mdash; the first is bowled after the round-" +
+              windows9[0] + " window at " + hour9 + ".") + "</div>") + "</div>";
     var mineCard = mine ? "<div class='fo-ac-card'><h3>Your men</h3>" +
         (myMen.length
           ? "<p class='fo-ac-p'>" + E(n.name) + " have taken <b>" + myMen.length + "</b> of " + E(myClub) + "'s cricketers for the latest window: " +
@@ -44431,10 +44462,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var whenNote = "<div class='fo-nat-when'>" +
       (n.worldCup
         ? "The <b>World Cup</b> owns the tour days this season - no bilateral tours are played."
-        : "The tour days fall on rounds <b>" + windows9.join(", ") + "</b>, and each nation makes <b>one tour a season</b> - " +
-          "so a club never loses its internationals more than once a year." +
-          (n.tour ? " The calendar deals " + E(n.name || "") + " <b>round " + n.tour.round + "</b>: " + E(n.tour.title) + "." : "") +
-          " Squads are named that morning; the cricket is bowled at <b>" + hour9 + "</b> the same evening.") +
+        : "The tour days fall on rounds <b>" + windows9.join(", ") + "</b>. <b>Half the world tours each season</b> - " +
+          "a touring nation plays <b>one best-of-" + sLen9 + " series</b> over three of those days, the other half rests " +
+          "and tours the following season, so a club never loses its internationals more than one series a year." +
+          (n.tour ? " The calendar deals " + E(n.name || "") + " <b>rounds " + tourRounds.join(", ") + "</b>: " + E(n.tour.title) + "." :
+           n.nextTour ? " " + E(n.name || "") + " rest this season; their next series is <b>season " + n.nextTour.seasonNo + "</b>: " + E(n.nextTour.title || "") + "." : "") +
+          " Squads are named for the series' first game and stand for all three; the cricket is bowled at <b>" + hour9 + "</b>.") +
       "</div>";
 
     var mainCol =

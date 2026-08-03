@@ -27,6 +27,7 @@ import { fantasyPoints, unitRatings, matchRatings, teamRatings, matchRating,
 import { roundRobin, bracket, roundsOf, closeEnrolment, playComps, computeComp, rebuildComps } from '../comps.mjs';
 import { academyUpkeep, academyBuild, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, DEBT_LIMIT, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance } from '../economy.mjs';
 import { EPOCH, DAY, seedOf, dayOfRound } from '../clock.mjs';
+import { seasonTourPlan } from '../nations.mjs';
 
 const DBNAME = 'foworld_p3_test';
 let pool, host;
@@ -1276,8 +1277,16 @@ test('020: the books are a ledger, and they recompute from the record', async ()
       - (f.feesOut || 0) - (f.scouting || 0) - (f.academySpend || 0);
     assert.equal(Number(r.bank), Math.round(expect), 'club ' + r.slot + ': the books add up');
   }
-  assert.ok(rows.reduce((s, r) => s + (r.finance.capsAway || 0), 0) > 0,
-    'a season of international windows reached this league');
+  // The tour draw sends half the world abroad each season, and England may be
+  // in the resting half - so the windows' money is looked for where the
+  // calendar actually sent a side, and England's books must agree either way.
+  const allIds = (await pool.query(`SELECT id FROM countries ORDER BY id`)).rows.map(r => r.id);
+  const touring = seasonTourPlan(1, allIds).series[0].away;
+  await settleMoney(pool, touring);
+  const tourRows = (await pool.query(
+    `SELECT finance FROM clubs WHERE country_id=$1`, [touring])).rows;
+  assert.ok(tourRows.reduce((s, r) => s + (r.finance.capsAway || 0), 0) > 0,
+    'a season of international windows reached the touring nation ' + touring);
   // and settling twice settles the same figure
   const before = rows.map(r => Number(r.bank));
   await settleMoney(pool, 'eng');

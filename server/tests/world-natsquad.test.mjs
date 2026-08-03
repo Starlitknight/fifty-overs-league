@@ -27,7 +27,7 @@ import { makeHost } from '../enginehost.mjs';
 import { runDue, computeLeague } from '../tick.mjs';
 import {
   SQUAD_SIZE, CLUB_LIMIT, ensureNatSquad, natSquadNow, computeNations,
-  squadPlayers, seasonSquad, isBowler
+  squadPlayers, seasonSquad, isBowler, seasonTourPlan
 } from '../nations.mjs';
 import { EPOCH, DAY, WINDOWS, dayOfRound } from '../clock.mjs';
 
@@ -116,14 +116,18 @@ test('a naming is banked: healing a day cannot re-pick it', async () => {
     'the fifteen that stood before round two is still that fifteen');
 });
 
-test('the touring fifteen IS that round\'s standing fifteen', async () => {
+test('the touring fifteen IS the fifteen that stood before the series began', async () => {
+  // the calendar says who tours in season one's first half; that nation's
+  // touring party is the standing squad of the SERIES' first round
+  const ids = (await pool.query('SELECT id FROM countries ORDER BY id')).rows.map(r => r.id);
+  const tc = seasonTourPlan(1, ids).series.find(t => t.hIx === 0).away;
   const win = WINDOWS[0];
-  await runDue(pool, host, 'eng', { now: atDay(dayOf(win), 23) });
-  const standing = await ensureNatSquad(pool, 'eng', 1, win);
+  await runDue(pool, host, tc, { now: atDay(dayOf(win), 23) });
+  const standing = await ensureNatSquad(pool, tc, 1, win);
   const toured = (await pool.query(
-    `SELECT player FROM callups WHERE country_id='eng' AND season_no=1 AND round=$1 ORDER BY pick`,
-    [win])).rows.map(r => r.player);
-  assert.equal(toured.length, SQUAD_SIZE, 'England toured that window');
+    `SELECT player FROM callups WHERE country_id=$1 AND season_no=1 AND round=$2 ORDER BY pick`,
+    [tc, win])).rows.map(r => r.player);
+  assert.equal(toured.length, SQUAD_SIZE, tc + ' toured that window');
   assert.deepEqual(toured, namesOf(standing),
     'one selection, in one order - the squad page and the teamsheet agree');
 });
@@ -158,20 +162,26 @@ test('the nations page shows the standing side, with the tour squad beside it', 
   assert.ok(e.squad.every(m => m.club && m.fee > 0));
 
   // THE TOUR SQUAD IS A DIFFERENT FACT and keeps its own place: the men who
-  // actually flew at the last window, whose clubs were paid and who won caps.
-  // Weeks of cricket later the standing side may have moved on from it, which
-  // is exactly what a living national side does.
-  // whichever window that was (earlier tests may have toured further into the
-  // season), it is one of the calendar's own and the squad is the one that flew
-  assert.ok(WINDOWS.includes(e.window), 'the last window England toured in is a real window');
-  assert.deepEqual(namesOf(e.tourSquad),
-    namesOf(await ensureNatSquad(pool, 'eng', 1, e.window)),
-    'and it is the side that stood before THAT round');
+  // actually flew, whose clubs were paid and who won caps. It belongs to the
+  // nation the calendar sent on the road - the touring party is the fifteen
+  // that stood before the SERIES' first game.
+  const ids = (await pool.query('SELECT id FROM countries ORDER BY id')).rows.map(r => r.id);
+  const tie = seasonTourPlan(1, ids).series.find(t => t.hIx === 0);
+  const tn = na.nations[tie.away];
+  assert.ok(WINDOWS.includes(tn.window), 'the touring nation\'s window is a real window');
+  assert.deepEqual(namesOf(tn.tourSquad),
+    namesOf(await ensureNatSquad(pool, tie.away, 1, WINDOWS[tie.windows[0]])),
+    'and its tour squad is the side that stood before game one');
+  assert.ok(tn.tour && tn.tour.title.indexOf(' tour of ') > 0, 'the page knows the tie by name');
+  assert.deepEqual(tn.tour.rounds, tie.windows.map(w => WINDOWS[w]), 'and its three game rounds');
 
-  // a nation that had the window off still has a side - the whole point
-  const off = Object.values(na.nations).find(n => !n.tourSquad.length);
-  if (off) assert.equal(off.squad.length, SQUAD_SIZE,
-    'a nation with no fixture still has a named fifteen');
+  // ENGLAND REST THIS SEASON - and still have a side, which is the whole
+  // point of the standing squad; and the page tells them when their cricket
+  // comes rather than leaving a blank
+  assert.equal(e.tourSquad.length, 0, 'a resting nation flew nobody');
+  assert.equal(e.tour, null);
+  assert.ok(e.nextTour && e.nextTour.seasonNo === 2 && e.nextTour.title.indexOf('England') > 0,
+    'a resting nation is told its next tour');
 });
 
 test('the World Cup side is the side as it stands', async () => {

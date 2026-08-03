@@ -150,16 +150,25 @@ selectors name a fifteen per round, call-ups on window rounds rob the next
 league round, tours play at 18:00 UTC, caps and results feed the nations
 ladder. WINDOW_DAYS/WINDOWS remap to the six days above.
 
-THE TOUR CALENDAR (nations.mjs seasonTourPlan): real cricket plays TOURS,
-not all-nations-every-window. Sixteen nations make eight bilateral ties a
-season — every nation tours exactly ONCE, so a club loses its
-internationals for one round a year, not six. The ties spread over the
-windows 1/2/0/2/2/1 (window three is the league's own); the second nation
+THE TOUR CALENDAR (nations.mjs seasonTourPlan): real cricket plays SERIES,
+not all-nations-every-window. Half the world tours each season: eight
+nations pair into FOUR best-of-three series, the other eight rest and tour
+the following playable season. A series is played over three tour days, one
+game per window — two series in the season's first half (windows before
+rounds 3, 5, 7) and two in the second (rounds 9, 11, 13). The second nation
 of each pair hosts ("A tour of B"). The draw is one Fisher-Yates over the
-field on `intltours|s<seasonNo>` — different matchups every season,
-knowable a season ahead, offline. An odd-sized world folds its three spare
-nations into a tri-series in window three. The whole calendar is served in
-the nations snapshot (`calendar` + per-nation `tour`).
+field on `intltours|c<cycle>`, where a cycle is two playable seasons — the
+shuffle fixes both the pairings and which half of the world tours first;
+the halves swap in the cycle's second season, so every nation tours exactly
+once per cycle and its clubs lose their internationals for three rounds
+every OTHER year, not six every year. World Cup seasons suspend the
+rotation (they don't consume a playable slot). Squads are named once, for
+the series' first game, and stand for all three; clubs are compensated per
+man per robbed round. All three games are played, dead rubbers included,
+and the server says the verdict ("X win the series 2-1"). The whole
+calendar is served in the nations snapshot (`calendar`, `seriesLen`,
+per-nation `tour` with `series`, and `nextTour` for a resting nation). An
+odd-sized world simply leaves its odd nation resting.
 
 THE WORLD CUP: every 4th season (season_no % 4 === 0), the tour days become
 the World Cup — groups of 4 (same snake seeding off the nations ladder) on

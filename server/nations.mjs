@@ -98,56 +98,80 @@ export function selectSquad(men, { size = SQUAD_SIZE, clubLimit = CLUB_LIMIT, mi
 
 // ---------------------------------------------------------------------------
 // THE TOUR CALENDAR. Real cricket does not send every nation on the road
-// every rest day - it plays TOURS: India tour of Australia, one series at a
-// time, and the rest of the world gets on with its league. So does this one.
+// every rest day - it plays TOURS: India tour of Australia, a SERIES, and
+// the rest of the world gets on with its league. So does this one.
 //
-// A season has six tour windows and sixteen nations. Every nation makes ONE
-// tour a season - so a club with half its side in the national team loses
-// them for one round, not six. The eight ties spread across the windows the
-// way a real calendar breathes:
+// A tour is a THREE-MATCH SERIES played over three tour days - Wednesday,
+// Saturday, Wednesday, the way a real ODI series breathes. A season carries
+// FOUR tours: two in the first half (games on the rest days before rounds
+// 3, 5 and 7) and two in the second (before rounds 9, 11 and 13). So eight
+// nations tour a season and eight rest entirely - and next season they swap.
 //
-//   window   1    2    3    4    5    6      (rounds 3, 5, 7, 9, 11, 13)
-//   tours    1    2    -    2    2    1
+// The rotation is a two-season CYCLE over the playable (non-World-Cup)
+// seasons: one Fisher-Yates over the whole field per cycle, first half of
+// the shuffle tours in the cycle's first season, second half in its second.
+// Every nation tours exactly once every two playable seasons; a World Cup
+// year suspends the rotation rather than costing anybody their turn. The
+// SECOND nation of each pair hosts: the tie is "A tour of B". All of it is
+// pure arithmetic on the season number - knowable seasons ahead, offline.
 //
-// The middle window is the league's own: no international cricket at all.
-// The matchups are redrawn every season - one Fisher-Yates over the whole
-// field on the season's seed, the same law as the cup draw - so who tours
-// whom is different every year, and knowable a season in advance, offline.
-// The SECOND nation of each pair is the host: the tie is "A tour of B".
-// A world with an odd number of nations folds its three spare into a
-// tri-series in that middle window, so nobody sits a season out.
+// ONE SQUAD PER TOUR: the fifteen named before game one flies for the whole
+// series, and its clubs are paid the board rate per man per robbed round -
+// three times. A resting nation loses nobody and earns nothing.
 // ---------------------------------------------------------------------------
-export const TOUR_SHAPE = [0, 1, 1, 3, 3, 4, 4, 5];    // window of the nth tour
-export const TRI_WINDOW = 2;                            // the odd world's tri-series
+export const SERIES_LEN = 3;
+export const HALF_WINDOWS = [[0, 1, 2], [3, 4, 5]];    // window indices of each half's games
+
+// how many playable (non-World-Cup) seasons preceded this one
+export function playableIx(seasonNo) {
+  let t = 0;
+  for (let s = 1; s < seasonNo; s++) if (!isWorldCupSeason(s)) t++;
+  return t;
+}
+
 export function seasonTourPlan(seasonNo, ids) {
-  const order = cupDraw('intltours|s' + seasonNo, (ids || []).slice().sort());
-  const plan = { seasonNo, windows: {}, byCountry: {} };
-  const put = tie => {
-    (plan.windows[tie.wIx] = plan.windows[tie.wIx] || []).push(tie);
-    tie.teams.forEach(id => { plan.byCountry[id] = tie; });
-  };
-  let rest = order;
-  if (order.length % 2 === 1 && order.length >= 3) {
-    const teams = order.slice(0, 3);
-    put({ kind: 'tri', wIx: TRI_WINDOW, teams, host: teams[0] });
-    rest = order.slice(3);
+  const plan = { seasonNo, series: [], byCountry: {}, resting: [] };
+  if (isWorldCupSeason(seasonNo)) { plan.resting = (ids || []).slice().sort(); return plan; }
+  const field = (ids || []).slice().sort();
+  const t = playableIx(seasonNo), cycle = t >> 1, pod = t & 1;
+  const order = cupDraw('intltours|c' + cycle, field);
+  const half = Math.floor(order.length / 2);
+  const eight = pod ? order.slice(half) : order.slice(0, half);
+  const rest = (pod ? order.slice(0, half) : order.slice(half)).slice();
+  const nSeries = Math.floor(eight.length / 2);
+  for (let i = 0; i + 1 < eight.length; i += 2) {
+    const hIx = (i / 2) < Math.ceil(nSeries / 2) ? 0 : 1;
+    const tie = { kind: 'series', hIx, windows: HALF_WINDOWS[hIx].slice(),
+      away: eight[i], home: eight[i + 1], teams: [eight[i], eight[i + 1]], host: eight[i + 1] };
+    plan.series.push(tie);
+    plan.byCountry[eight[i]] = tie; plan.byCountry[eight[i + 1]] = tie;
   }
-  for (let i = 0; i + 1 < rest.length; i += 2) {
-    put({ kind: 'tour', wIx: TOUR_SHAPE[(i / 2) % TOUR_SHAPE.length],
-      away: rest[i], home: rest[i + 1], teams: [rest[i], rest[i + 1]], host: rest[i + 1] });
-  }
+  // the odd man of an odd-sized pod rests with the other half
+  if (eight.length % 2) rest.push(eight[eight.length - 1]);
+  plan.resting = rest.sort();
   return plan;
 }
 
-// whether this round's window is the one the calendar dealt this nation.
-// Pure calendar arithmetic - a manager can read his country's tour a season
-// ahead, offline, which is the standing law of this world.
+// a nation's NEXT tour at or after a season - for the page that has to tell
+// a resting nation when its cricket comes
+export function nextTourOf(country, seasonNo, ids) {
+  for (let s = seasonNo; s < seasonNo + 8; s++) {
+    if (isWorldCupSeason(s)) continue;
+    const tie = seasonTourPlan(s, ids).byCountry[country];
+    if (tie) return { seasonNo: s, tie };
+  }
+  return null;
+}
+
+// whether this round's window is one of the three the calendar dealt this
+// nation's series. Pure calendar arithmetic - a manager can read his
+// country's tour seasons ahead, offline, which is the standing law here.
 export async function touringOn(pool, country, seasonNo, round) {
   const wIx = WINDOWS.indexOf(round);
   if (wIx < 0 || isWorldCupSeason(seasonNo)) return false;
   const ids = (await pool.query('SELECT id FROM countries')).rows.map(r => r.id);
   const mine = seasonTourPlan(seasonNo, ids).byCountry[country];
-  return !!mine && mine.wIx === wIx;
+  return !!mine && mine.windows.indexOf(wIx) >= 0;
 }
 
 // every senior cricketer in a nation, with the club he belongs to
@@ -232,11 +256,15 @@ export async function ensureCallups(pool, country, seasonNo, round) {
   // the world day, so the selectors and the umpire that plays the tours that
   // evening always agree about who is playing.
   if (!(await touringOn(pool, country, seasonNo, round))) return [];
-  // THE TOURING FIFTEEN IS THE STANDING FIFTEEN. The selectors named this
-  // round's squad before the round began; calling them up is not a second
-  // selection, it is the same one taking its flights. Deriving it twice is how
-  // a nation's squad page and its teamsheet come to disagree about who is away.
-  const squad = await ensureNatSquad(pool, country, seasonNo, round);
+  // ONE SQUAD PER TOUR. A real series takes one touring party: the fifteen
+  // that flies is the standing squad as it stood before the series' FIRST
+  // game, and games two and three are played by the same men - however the
+  // selectors' standing side moves on at home in the meantime. Deriving it
+  // fresh per game is how a tour comes home with three different squads.
+  const ids0 = (await pool.query('SELECT id FROM countries')).rows.map(r => r.id);
+  const tie0 = seasonTourPlan(seasonNo, ids0).byCountry[country];
+  const firstRound = tie0 ? WINDOWS[tie0.windows[0]] : round;
+  const squad = await ensureNatSquad(pool, country, seasonNo, firstRound);
   for (let i = 0; i < squad.length; i++) {
     const p = squad[i];
     await pool.query(
@@ -306,22 +334,25 @@ export function coverSheet(orders, present, gone) {
   return o;
 }
 
-// the ties the calendar has dealt to a given world day: every scheduled tie
-// whose members are all in a window that day at that tie's own window index.
-// Sorted for stable match ids across re-runs.
+// the series games the calendar has dealt to a given world day: every
+// scheduled tie whose members are all in a window that day at one of that
+// tie's own window indices, with WHICH game of the series it is. Sorted for
+// stable match ids across re-runs.
 export function tiesOnDay(plan, inWindow) {
   const wIxOf = {};
   inWindow.forEach(w => { wIxOf[w.country] = WINDOWS.indexOf(w.round); });
   const out = [], seen = new Set();
   for (const w of inWindow) {
     const tie = plan.byCountry[w.country];
-    if (!tie || tie.wIx !== wIxOf[w.country]) continue;
-    const key = tie.kind + '|' + tie.teams.join('|');
+    if (!tie) continue;
+    const game = tie.windows.indexOf(wIxOf[w.country]);
+    if (game < 0) continue;
+    const key = tie.teams.join('|');
     if (seen.has(key)) continue;
-    if (!tie.teams.every(id => wIxOf[id] === tie.wIx)) continue;
-    seen.add(key); out.push(tie);
+    if (!tie.teams.every(id => wIxOf[id] === wIxOf[w.country])) continue;
+    seen.add(key); out.push({ tie, game });
   }
-  return out.sort((a, b) => (a.teams[0] < b.teams[0] ? -1 : 1));
+  return out.sort((a, b) => (a.tie.teams[0] < b.tie.teams[0] ? -1 : 1));
 }
 
 // a banked list of {slot, player} as MEN, looked up in the squads they came
@@ -420,22 +451,19 @@ export async function runWindows(pool, host, engineVersion, { now = Date.now(), 
       const men = await squadPlayers(pool, w.country, w.seasonNo, w.round);
       if (men.length >= 11) ready.push({ ...w, men });
     }
-    // THE DAY'S TIES COME OFF THE CALENDAR, not out of a hat: the season plan
-    // says who tours whom and in which window; today plays the ties whose
-    // whole cast is in window and fit to field a side. A tri-series is three
-    // matches in the evening; a tour is one.
+    // THE DAY'S GAMES COME OFF THE CALENDAR, not out of a hat: the season
+    // plan says who tours whom, and each tour day plays ONE game of every
+    // series whose cast is in window and fit to field a side - game one,
+    // two or three of the tie, over its three days.
     const idsAll = (await pool.query('SELECT id FROM countries ORDER BY id')).rows.map(r => r.id);
     const menOf = Object.fromEntries(ready.map(r => [r.country, r]));
     const bySeason = {};
     ready.forEach(r => { bySeason[r.seasonNo] = bySeason[r.seasonNo] || seasonTourPlan(r.seasonNo, idsAll); });
     const games = [];
     for (const sn of Object.keys(bySeason)) {
-      for (const tie of tiesOnDay(bySeason[sn], ready.filter(r => String(r.seasonNo) === sn))) {
-        if (!tie.teams.every(id => menOf[id])) continue;
-        if (tie.kind === 'tri') {
-          const [x, y, z] = tie.teams;
-          games.push([x, y], [x, z], [y, z]);
-        } else games.push([tie.away, tie.home]);
+      for (const g of tiesOnDay(bySeason[sn], ready.filter(r => String(r.seasonNo) === sn))) {
+        if (!g.tie.teams.every(id => menOf[id])) continue;
+        games.push([g.tie.away, g.tie.home]);
       }
     }
     for (let gi = 0; gi < games.length; gi++) {
@@ -557,14 +585,34 @@ export async function computeNations(pool, now = Date.now()) {
   const nameOf = Object.fromEntries(countries.map(c => [c.id, c.name]));
   const planCache = {};
   const planFor = sn => planCache[sn] || (planCache[sn] = seasonTourPlan(sn, idsAll));
-  const tieView = t => t.kind === 'tri'
-    ? { kind: 'tri', window: t.wIx + 1, round: WINDOWS[t.wIx], teams: t.teams, host: t.host,
-        names: t.teams.map(id => nameOf[id] || id),
-        title: 'The ' + (nameOf[t.host] || t.host) + ' Tri-Series' }
-    : { kind: 'tour', window: t.wIx + 1, round: WINDOWS[t.wIx], teams: t.teams,
-        away: t.away, home: t.home, host: t.home,
-        names: [nameOf[t.away] || t.away, nameOf[t.home] || t.home],
-        title: (nameOf[t.away] || t.away) + ' tour of ' + (nameOf[t.home] || t.home) };
+  const tieView = t => ({ kind: 'series', half: t.hIx + 1,
+    rounds: t.windows.map(w => WINDOWS[w]), teams: t.teams,
+    away: t.away, home: t.home, host: t.home,
+    names: [nameOf[t.away] || t.away, nameOf[t.home] || t.home],
+    title: (nameOf[t.away] || t.away) + ' tour of ' + (nameOf[t.home] || t.home) });
+  // THE SERIES AS IT STANDS, from the banked games alone: won 2-1, leads
+  // 1-0, shared - said by the server so no page has to do arithmetic. The
+  // banked winner is the SIDE NAME ("England XI"), so wins are counted by
+  // matching it back to the country that side belonged to in that game.
+  const seriesState = (t, sn) => {
+    const pair = t.teams.slice().sort().join('|');
+    const games = tours.filter(g => g.seasonNo === sn &&
+      [g.aCountry, g.bCountry].sort().join('|') === pair)
+      .sort((a, b) => a.round - b.round);
+    const winsOf = id => games.filter(g =>
+      (g.winner === g.a && g.aCountry === id) || (g.winner === g.b && g.bCountry === id)).length;
+    const wA = winsOf(t.away), wH = winsOf(t.home);
+    const done = games.length >= SERIES_LEN;
+    const lead = wA > wH ? t.away : wH > wA ? t.home : null;
+    const score = Math.max(wA, wH) + '-' + Math.min(wA, wH);
+    const verdict = !games.length ? null
+      : done ? (lead ? (nameOf[lead] || lead) + ' win the series ' + score
+                     : 'The series is shared ' + wA + '-' + wH)
+      : lead ? (nameOf[lead] || lead) + ' lead the series ' + score
+             : 'The series stands level at ' + wA + '-' + wH;
+    return { played: games.length, of: SERIES_LEN, winsAway: wA, winsHome: wH, done, verdict,
+      games: games.map(g => ({ id: g.id, round: g.round, text: g.text, winner: g.winner })) };
+  };
 
   const ties = (await pool.query(
     `SELECT id, world_day, season_no, round, a_country, b_country, a_name, b_name, result
@@ -622,17 +670,26 @@ export async function computeNations(pool, now = Date.now()) {
     const here = onBooks.get(c.id) || new Set();
     const record = {};
     mine.forEach(x => { if (here.has(x.name)) record[x.name] = slim(x); });
-    // the tour the calendar dealt this nation this season - or the World Cup,
-    // which owns the tour days every fourth year
+    // the series the calendar dealt this nation this season - or its rest
+    // year with the NEXT tour named, or the World Cup, which owns the tour
+    // days every fourth year
     const wc9 = isWorldCupSeason(s.season_no);
     const mine9 = wc9 ? null : planFor(s.season_no).byCountry[c.id];
+    let next9 = null;
+    if (!mine9) {
+      const nt = nextTourOf(c.id, s.season_no + 1, idsAll);
+      if (nt) next9 = { seasonNo: nt.seasonNo, ...tieView(nt.tie), hosting: nt.tie.host === c.id,
+        opp: nt.tie.teams.filter(id => id !== c.id).map(id => nameOf[id] || id).join(' and ') };
+    }
     nations[c.id] = {
       id: c.id, name: c.name, seasonNo: s.season_no, window: latest, squad, caps, record,
       // when the selectors last met, and what they did when they met
       namedBefore: now.round, changes: { in: now.in, out: now.out }, tourSquad,
       worldCup: wc9,
       tour: mine9 ? { ...tieView(mine9), hosting: mine9.host === c.id,
-        opp: mine9.teams.filter(id => id !== c.id).map(id => nameOf[id] || id).join(' and ') } : null,
+        opp: mine9.teams.filter(id => id !== c.id).map(id => nameOf[id] || id).join(' and '),
+        series: seriesState(mine9, s.season_no) } : null,
+      nextTour: next9,
       compensation: Object.keys(paid).map(slot => ({ slot: +slot, club: clubName[c.id + ':' + slot], paid: paid[slot] }))
         .sort((a, b) => b.paid - a.paid),
       tours: tours.filter(t => t.aCountry === c.id || t.bCountry === c.id).slice(0, 8)
@@ -643,14 +700,15 @@ export async function computeNations(pool, now = Date.now()) {
   const snAll = seasons.map(s => s.season_no);
   const snTop = snAll.length ? snAll.sort((a, b) =>
     snAll.filter(x => x === a).length - snAll.filter(x => x === b).length || a - b).pop() : 1;
-  const calendar = isWorldCupSeason(snTop)
-    ? { seasonNo: snTop, worldCup: true, windows: [] }
-    : { seasonNo: snTop, worldCup: false,
-        windows: WINDOWS.map((round, wIx) => ({ round,
-          ties: (planFor(snTop).windows[wIx] || []).map(tieView) })) };
+  const planTop = planFor(snTop);
+  const calendar = {
+    seasonNo: snTop, worldCup: isWorldCupSeason(snTop),
+    series: planTop.series.map(t => ({ ...tieView(t), series: seriesState(t, snTop) })),
+    resting: planTop.resting.map(id => nameOf[id] || id)
+  };
   return {
     day: dayIx(now), windows: WINDOWS, windowDays: WINDOW_DAYS, hourUtc: INTL_HOUR, rounds: ROUNDS,
-    nations, tours: tours.slice(0, 40), calendar, generatedAtDay: dayIx(now)
+    seriesLen: SERIES_LEN, nations, tours: tours.slice(0, 40), calendar, generatedAtDay: dayIx(now)
   };
 }
 
