@@ -10280,7 +10280,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-1113-1a763c";
+  var FO_BUILD = "20260803-1134-d344b3";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -45391,6 +45391,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         billSide(aN, aBoss, "Away", true) +
         "</div>" +
 
+        "<div class='fo-pm-main'>" +
         "<figure class='fo-pm-plate'><img src='" + art.src + "' alt='' data-alt='" + art.alt + "' " +
         "onerror=\"if(this.src.indexOf(this.dataset.alt)<0){this.src=this.dataset.alt}else{this.parentNode.style.display=&#39;none&#39;}\"></figure>" +
 
@@ -45408,7 +45409,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         ic("<circle cx='12' cy='12' r='9'/><path d='M5.4 8.2c4 1.6 9.2 1.6 13.2 0M5.4 15.8c4-1.6 9.2-1.6 13.2 0'/>") +
         "<div><b>" + foPmHH(g.hour) + " UTC</b><i>First ball</i></div></div>" +
         "</div>" +
+        "</div>" +
 
+        "<div class='fo-pm-rail'>" +
         "<div id='fo-pm-wp' class='fo-pm-wp'>" +
         "<div class='fo-pm-cap'>Win probability &middot; projected</div>" +
         "<div class='fo-pm-wptop'>" +
@@ -45425,6 +45428,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-pm-h2hs'>" + h2hHTML + "</div>" +
 
         condHTML +
+        "</div>" +
 
         "<div class='fo-pm-foot'>" + actions.join("") + "</div>" +
         "</div></div></div>";
@@ -45502,6 +45506,22 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "body.fo-pm-on #page{background:#F1EEE6}",
       ".fo-pm-in{width:min(720px,100%);margin:0 auto;padding:0 clamp(10px,2.6vw,16px)}",
       ".fo-pm-card{background:#FFFEFC;border:1px solid var(--edge);border-radius:16px;padding:clamp(12px,2.4vw,17px);display:flex;flex-direction:column;gap:clamp(11px,1.8vw,14px);box-shadow:0 1px 3px rgba(14,35,63,.05)}",
+      ".fo-pm-main,.fo-pm-rail{display:flex;flex-direction:column;gap:clamp(11px,1.8vw,14px);min-width:0}",
+      // THE DESKTOP SPREAD. A 720px card on a wide monitor was a column of
+      // cream either side of it. Past 980px the card takes the width: billing
+      // across the top, the ground and its facts filling the left, the
+      // probability, status, head-to-head and conditions as a right rail, the
+      // actions across the bottom.
+      "@media(min-width:980px){",
+      ".fo-pm-in{width:min(1150px,100%)}",
+      ".fo-pm-card{display:grid;grid-template-columns:1.3fr .95fr;gap:15px 18px;padding:20px 22px;align-items:start}",
+      ".fo-pm-folio,.fo-pm-bill,.fo-pm-foot{grid-column:1/-1}",
+      ".fo-pm-main{grid-column:1}",
+      ".fo-pm-rail{grid-column:2}",
+      ".fo-pm-main .fo-pm-plate img{aspect-ratio:16/10.5;max-height:470px}",
+      ".fo-pm-rail .fo-pm-duo{grid-template-columns:1fr 1fr}",
+      ".fo-pm-foot{grid-template-columns:repeat(auto-fit,minmax(190px,1fr))}",
+      "}",
       ".fo-pm-folio{display:inline-flex;align-items:center;gap:9px;align-self:flex-start;background:rgba(20,36,58,.05);border:1px solid var(--edge);border-radius:999px;padding:6px 14px 6px 7px}",
       ".fo-pm-folio img{width:20px;height:14px;object-fit:cover;border-radius:3px;flex:0 0 auto}",
       ".fo-pm-folio span{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.18em;font-size:9.5px;color:var(--navy)}",
