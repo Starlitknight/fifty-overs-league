@@ -6186,6 +6186,12 @@
       try { foCxNav(); } catch (eN) {}
       if ((location.hash || "").split("?")[0] !== "#/cup") return;
       var page = document.getElementById("page"); if (!page) return;
+      // THE SERVED CUP OWNS THE PAGE. The knockout-board module paints the
+      // banked record when the umpire has it and an honest preview when he
+      // does not; the synthetic bracket below only survives as a fallback
+      // for a client where that module never parsed. Without this hand-off
+      // the 1.2s repaint here stomped the served board flat.
+      if (window.__foFaCup && window.__foFaCup.renderCC) { window.__foFaCup.renderCC(); return; }
       var w = null; try { w = window.FO_WORLD_SNAPSHOT; } catch (e) {}
       var cup = (w && w.cup) || null;
       var sig = "cup|" + (cup ? cup.champion : "none");

@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0241-24f8f3";
+  var FO_BUILD = "20260803-0245-ef98c9";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -29690,6 +29690,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       try { foCxNav(); } catch (eN) {}
       if ((location.hash || "").split("?")[0] !== "#/cup") return;
       var page = document.getElementById("page"); if (!page) return;
+      // THE SERVED CUP OWNS THE PAGE. The knockout-board module paints the
+      // banked record when the umpire has it and an honest preview when he
+      // does not; the synthetic bracket below only survives as a fallback
+      // for a client where that module never parsed. Without this hand-off
+      // the 1.2s repaint here stomped the served board flat.
+      if (window.__foFaCup && window.__foFaCup.renderCC) { window.__foFaCup.renderCC(); return; }
       var w = null; try { w = window.FO_WORLD_SNAPSHOT; } catch (e) {}
       var cup = (w && w.cup) || null;
       var sig = "cup|" + (cup ? cup.champion : "none");
@@ -45354,6 +45360,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-kb-tie.tbd{border-style:dashed;background:transparent;box-shadow:none}",
       "html body #page .fo-kb-tie.tbd span{display:block;padding:13px 10px;font:600 10px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(20,32,47,.35);text-align:center}",
       "html body #page .fo-kb-note{font:400 12px/1.55 Inter,sans-serif;color:rgba(20,32,47,.55);margin:10px 2px 0;max-width:70ch}",
+      // the Champions Cup: four group cards above a three-column knockout
+      "html body #page .fo-kb-groups{display:grid;grid-template-columns:repeat(auto-fit,minmax(240px,1fr));gap:12px;margin:2px 0 16px}",
+      "html body #page .fo-kb-gcard{background:#fff;border:1px solid rgba(14,35,63,.14);border-radius:12px;padding:10px 12px 12px;box-shadow:0 2px 6px rgba(14,35,63,.05)}",
+      "html body #page .fo-kb-gcard h4{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px;font:700 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#14202F;border-bottom:2px solid #0E233F;padding-bottom:7px}",
+      "html body #page .fo-kb-gcard h4 span{font:600 9px/1.3 Oswald,sans-serif;letter-spacing:.06em;color:#8a6d3b;text-align:right}",
+      "html body #page .fo-kb-gcard .fo-kb-tie{margin-top:7px}",
+      "html body #page .fo-kb-in.kb-short .fo-kb-ties{height:330px}",
       // the connector plumbing (only boards that opt in wear it: the Colts
       // bracket is fixed; the FA Cup redraws each round and stays unlinked)
       "html body #page .fo-kb-in.linked .fo-kb-col:not(:last-child) .fo-kb-tw:after{content:'';position:absolute;right:-15px;width:14px;border-color:rgba(14,35,63,.28);border-style:solid;border-width:0}",
@@ -45408,51 +45421,71 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var seasonNo = 1;
       try { var cal = P() && P().phaseOf ? P().phaseOf(Date.now()) : null; if (cal && cal.season >= 1) seasonNo = cal.season; } catch (e) {}
       var key = "s" + seasonNo, body = CC[key] ? CC[key].body : undefined;
-      if (body === undefined) { wantCC(seasonNo, function () { renderCC(); }); return; }
-      if (!body || !body.stages || !body.stages.g1) return;   // nothing served: synthetic page stands
+      if (body === undefined) { wantCC(seasonNo, function () { renderCC(); }); body = null; }
+      var banked = !!(body && body.stages && body.stages.g1);
+
       var html = "<div class='fo-fa-page'>" +
-        "<div class='fo-fa-hero'><span class='fo-fa-eyebrow'>The sixteen champions &middot; season " + seasonNo + "</span>" +
+        "<div class='fo-kb-hero'><div><span class='eb'>The sixteen champions &middot; season&nbsp;" + seasonNo + "</span>" +
         "<h1>The Champions Cup</h1>" +
-        "</div>";
-      if (body.champion) {
+        "<p>The champions of the national leagues meet in the closing week: three group days, then a straight knockout.</p></div>" +
+        "<span class='tro' aria-hidden='true'>&#127942;</span></div>";
+      if (banked && body.champion) {
         html += "<div class='fo-fa-champ'><span>&#127942;</span><div><i>Champions of the world, season " + seasonNo +
           "</i><b>" + E(body.champion) + "</b></div></div>";
       }
-      // the groups: ties gi 0..7 per group day, floor(gi/2) is the group
+
+      // ---- the groups: four cards, Mon-Wed of the closing week --------------
+      var GN = ["Group A", "Group B", "Group C", "Group D"];
       var groups = [[], [], [], []];
-      ["g1", "g2", "g3"].forEach(function (st) {
+      if (banked) ["g1", "g2", "g3"].forEach(function (st) {
         (body.stages[st] || []).forEach(function (t) { groups[Math.floor((t.gi | 0) / 2)].push(t); });
       });
-      var GN = ["Group A", "Group B", "Group C", "Group D"];
-      groups.forEach(function (ties, gx) {
-        if (!ties.length) return;
-        html += "<div class='fo-fa-card'><h3>" + GN[gx] + "<span>Mon&ndash;Wed, closing week</span></h3>";
-        ties.forEach(function (t) {
-          var aWin = t.winner === (t.a && t.a.name), bWin = t.winner === (t.b && t.b.name);
-          html += "<div class='fo-fa-tie'>" +
-            "<span class='side" + (aWin ? " w" : "") + "'>" + E(t.a && t.a.name) + "<u>" + E(t.as_ || "") + "</u></span>" +
-            "<span class='vs'>v</span>" +
-            "<span class='side" + (bWin ? " w" : "") + "'>" + E(t.b && t.b.name) + "<u>" + E(t.bs_ || "") + "</u></span></div>";
-        });
-        html += "</div>";
-      });
-      [["qf", "Quarter-finals", "Friday"], ["sf", "Semi-finals", "Saturday"], ["final", "THE FINAL", "Sunday"]].forEach(function (sd) {
-        var ties = body.stages[sd[0]];
-        if (!ties || !ties.length) return;
-        html += "<div class='fo-fa-card'><h3>" + sd[1] + "<span>" + sd[2] + ", closing week</span></h3>";
-        ties.forEach(function (t) {
-          var aWin = t.winner === (t.a && t.a.name), bWin = t.winner === (t.b && t.b.name);
-          html += "<div class='fo-fa-tie'>" +
-            "<span class='side" + (aWin ? " w" : "") + "'>" + E(t.a && t.a.name) + "<u>" + E(t.as_ || "") + "</u></span>" +
-            "<span class='vs'>v</span>" +
-            "<span class='side" + (bWin ? " w" : "") + "'>" + E(t.b && t.b.name) + "<u>" + E(t.bs_ || "") + "</u></span></div>" +
-            (t.text ? "<p class='fo-fa-line'>" + E(t.text) + "</p>" : "");
-        });
-        html += "</div>";
-      });
+      html += "<div class='fo-kb-groups'>" + GN.map(function (gn, gx) {
+        var inner = "";
+        if (banked && groups[gx].length) {
+          inner = groups[gx].map(function (t) {
+            var aWin = t.winner === (t.a && t.a.name), bWin = t.winner === (t.b && t.b.name);
+            var done = !!t.winner;
+            return "<div class='fo-kb-tie'>" +
+              "<span class='t" + (aWin ? " w" : done ? " d" : "") + "'><b>" + E(t.a && t.a.name) + "</b><u>" + E(t.as_ || "") + "</u></span>" +
+              "<span class='t" + (bWin ? " w" : done ? " d" : "") + "'><b>" + E(t.b && t.b.name) + "</b><u>" + E(t.bs_ || "") + "</u></span></div>";
+          }).join("");
+        } else {
+          for (var i = 0; i < 4; i++) inner += "<div class='fo-kb-tie tbd'><span>League champion</span></div>";
+        }
+        return "<div class='fo-kb-gcard'><h4>" + gn + "<span>Mon&ndash;Wed, closing week</span></h4>" + inner + "</div>";
+      }).join("") + "</div>";
+
+      // ---- the knockout: quarters Friday, semis Saturday, the final Sunday --
+      var KO = [["qf", "Quarter-finals", "Friday, closing week", 4], ["sf", "Semi-finals", "Saturday, closing week", 2], ["final", "THE FINAL", "Sunday, closing week", 1]];
+      html += "<div class='fo-kb'><div class='fo-kb-in linked kb-short'>" + KO.map(function (sd) {
+        var ties = banked ? body.stages[sd[0]] : null, inner = "", i;
+        if (ties && ties.length) {
+          inner = ties.map(function (t) {
+            var aWin = t.winner === (t.a && t.a.name), bWin = t.winner === (t.b && t.b.name);
+            var done = !!t.winner;
+            return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
+              "<span class='t" + (aWin ? " w" : done ? " d" : "") + "'><b>" + E(t.a && t.a.name) + "</b><u>" + E(t.as_ || "") + "</u></span>" +
+              "<span class='t" + (bWin ? " w" : done ? " d" : "") + "'><b>" + E(t.b && t.b.name) + "</b><u>" + E(t.bs_ || "") + "</u></span>" +
+              (t.text ? "<i class='ln'>" + E(t.text) + "</i>" : "") + "</div></div>";
+          }).join("");
+        } else {
+          for (i = 0; i < sd[3]; i++)
+            inner += "<div class='fo-kb-tw'><div class='fo-kb-tie tbd'><span>&mdash;</span></div></div>";
+        }
+        return "<div class='fo-kb-col'><h4>" + sd[1] + "<span>" + sd[2] + "</span></h4><div class='fo-kb-ties'>" + inner + "</div></div>";
+      }).join("") + "</div></div>" +
+        "<p class='fo-kb-note'>Sixteen champions, four groups of four; the top two in each group go through. " +
+        "Every match of it is banked by the umpire and replayable in the theatre.</p>";
       html += "</div>";
+
+      // the old synthetic cup repaints on a timer; a cheap identity check
+      // keeps this board from blinking every 1.2 seconds under it
+      if (page.__foCupHtml === html && page.querySelector(".fo-fa-page")) return;
+      page.__foCupHtml = html;
       page.innerHTML = html;
       css();
+      try { document.body.classList.remove("fo-boss-on"); } catch (eBc) {}
     } catch (e) { /* never take the shell down */ }
   }
 
