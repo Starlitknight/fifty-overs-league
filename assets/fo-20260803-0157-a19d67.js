@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0120-d3546f";
+  var FO_BUILD = "20260803-0157-a19d67";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -39182,7 +39182,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (i2 === fi) return "";
       return "<a class='fo-wt-other' href='#/watch?n=" + rid + "&f=" + i2 + "'>" +
         "<b>" + E(m2.home.name) + " v " + E(m2.away.name) + "</b>" +
-        "<span>" + (state === "live" ? "&#9679; in play" : state === "fin" ? "played" : "later today") + "</span></a>";
+        "<span" + (state === "live" ? " class='lv'" : "") + ">" + (state === "live" ? "&#9679; in play" : state === "fin" ? "played" : "later today") + "</span></a>";
     }).join("");
 
     page.innerHTML = "<div class='fo-wt'>" +
@@ -39201,13 +39201,14 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         (state === "live" ? "Enter the broadcast theatre &rsaquo;" : "Watch it back in the theatre &rsaquo;") + "</button>" : "") +
       "</div></div>" +
       (others ? "<div class='fo-wt-rail'><i>Also in this round</i>" + others + "</div>" : "") +
+      "<div class='fo-wt-natsw'><i>Other leagues today &middot; first ball UTC</i>" +
       "<div class='fo-wt-nats'>" + regions.filter(function (r) { return r.id !== my; }).sort(function (a, b) { return pl.natHour(a.id) - pl.natHour(b.id); }).map(function (r) {
         var hh2 = pl.natHour(r.id);
         var hNow2 = (now - (pl.EPOCH + pl.dayIx(now) * 86400000)) / 3600000;
         var on = p.kind === "league" && hNow2 >= hh2 && hNow2 < hh2 + (pl.LIVE_LEN || 3);
         return "<a class='fo-wt-nat" + (r.id === rid ? " sel" : "") + (on ? " on" : "") + "' href='#/watch?n=" + r.id + "'>" +
-          "<img src='" + flagOf(r.id) + "' alt=''><i>" + (hh2 < 10 ? "0" : "") + hh2 + "</i></a>";
-      }).join("") + "</div>" +
+          "<img src='" + flagOf(r.id) + "' alt=''><i>" + (on ? "live" : (hh2 < 10 ? "0" : "") + hh2 + ":00") + "</i></a>";
+      }).join("") + "</div></div>" +
       "</div></div>";
 
     mountGround(document.getElementById("fo-wt-bg"), groundChain(m.home.city, rid), 0);
@@ -39283,18 +39284,28 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-wt-teamsin .c span{display:flex;align-items:baseline;gap:6px;font:400 11.5px/1.55 Inter,sans-serif;color:rgba(255,254,252,.85)}",
       ".fo-wt-teamsin .c span i{font-style:normal;font:700 9px/1 Oswald,sans-serif;color:rgba(255,254,252,.4);width:12px;text-align:right}",
       "@media(max-width:430px){.fo-wt-teamsin .cols{grid-template-columns:1fr}}",
-      ".fo-wt-rail{margin-top:14px}",
-      ".fo-wt-rail>i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,254,252,.5);font-style:normal;margin-bottom:7px}",
-      ".fo-wt-other{display:flex;justify-content:space-between;gap:10px;align-items:baseline;background:rgba(6,13,26,.6);border:1px solid rgba(255,254,252,.1);border-radius:11px;padding:9px 13px;margin-bottom:7px;text-decoration:none;color:#FFFEFC}",
-      ".fo-wt-other b{font:600 12px/1.3 Inter,sans-serif}",
+      // THE NIGHT PAGE KEEPS ITS OWN INK. The daylight theme paints every
+      // anchor in #page terracotta - handsome on paper, mud on a dark
+      // broadcast card - so every link inside this room is pinned back to
+      // white at higher specificity, in every state.
+      "html body #page .fo-wt a,html body.ftpskin #page .fo-wt a,html body #page .fo-wt a:visited,html body #page .fo-wt a:hover,html body #page .fo-wt a:active{color:#FFFEFC !important;text-decoration:none !important}",
+      ".fo-wt-rail{margin-top:16px}",
+      ".fo-wt-rail>i{display:block;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,254,252,.75);font-style:normal;margin-bottom:8px;text-shadow:0 1px 6px rgba(0,0,0,.7)}",
+      ".fo-wt-other{display:flex;justify-content:space-between;gap:10px;align-items:baseline;background:rgba(6,13,26,.78);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,254,252,.12);border-radius:11px;padding:11px 14px;margin-bottom:7px;text-decoration:none;color:#FFFEFC}",
+      ".fo-wt-other b{font:600 12.5px/1.35 Inter,sans-serif}",
       ".fo-wt-other span{font:400 11px/1.3 Inter,sans-serif;color:rgba(255,254,252,.6);white-space:nowrap}",
-      ".fo-wt-nats{display:flex;gap:7px;overflow-x:auto;margin-top:14px;padding-bottom:4px}",
-      ".fo-wt-nat{flex:none;display:flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;opacity:.75}",
-      ".fo-wt-nat img{width:28px;height:20px;object-fit:cover;border-radius:4px;border:2px solid transparent}",
+      ".fo-wt-other span.lv{color:#FF8A7A;font-weight:600}",
+      ".fo-wt-natsw{margin-top:18px;background:rgba(6,13,26,.66);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,254,252,.1);border-radius:13px;padding:10px 12px 7px}",
+      ".fo-wt-natsw>i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,254,252,.6);font-style:normal;margin-bottom:8px}",
+      ".fo-wt-nats{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;mask-image:linear-gradient(90deg,#000 92%,transparent);-webkit-mask-image:linear-gradient(90deg,#000 92%,transparent)}",
+      ".fo-wt-nats::-webkit-scrollbar{display:none}",
+      ".fo-wt-nat{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;opacity:.75}",
+      ".fo-wt-nat img{width:30px;height:21px;object-fit:cover;border-radius:4px;border:2px solid transparent}",
       ".fo-wt-nat.sel img{border-color:#C95532}",
       ".fo-wt-nat.on img{border-color:#FF6B5E;box-shadow:0 0 0 3px rgba(255,107,94,.25)}",
       ".fo-wt-nat.on{opacity:1}",
-      ".fo-wt-nat i{font:700 8.5px/1 Oswald,sans-serif;color:rgba(255,254,252,.6);font-style:normal}"
+      ".fo-wt-nat i{font:700 8.5px/1 Oswald,sans-serif;color:rgba(255,254,252,.65);font-style:normal;letter-spacing:.04em}",
+      ".fo-wt-nat.on i{color:#FF8A7A}"
     ].join("\n");
     document.head.appendChild(s);
   }
