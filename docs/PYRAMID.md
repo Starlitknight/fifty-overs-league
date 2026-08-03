@@ -150,6 +150,17 @@ selectors name a fifteen per round, call-ups on window rounds rob the next
 league round, tours play at 18:00 UTC, caps and results feed the nations
 ladder. WINDOW_DAYS/WINDOWS remap to the six days above.
 
+THE TOUR CALENDAR (nations.mjs seasonTourPlan): real cricket plays TOURS,
+not all-nations-every-window. Sixteen nations make eight bilateral ties a
+season — every nation tours exactly ONCE, so a club loses its
+internationals for one round a year, not six. The ties spread over the
+windows 1/2/0/2/2/1 (window three is the league's own); the second nation
+of each pair hosts ("A tour of B"). The draw is one Fisher-Yates over the
+field on `intltours|s<seasonNo>` — different matchups every season,
+knowable a season ahead, offline. An odd-sized world folds its three spare
+nations into a tri-series in window three. The whole calendar is served in
+the nations snapshot (`calendar` + per-nation `tour`).
+
 THE WORLD CUP: every 4th season (season_no % 4 === 0), the tour days become
 the World Cup — groups of 4 (same snake seeding off the nations ladder) on
 di 2/5/9, QF di 12, SF di 16, Final di 19. `comp='wc'`. Non-WC seasons play

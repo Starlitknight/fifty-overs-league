@@ -30,8 +30,8 @@
 // stands when the window is settled. Settle a window on the day and that is
 // exactly his form that morning; heal a window days late and the selectors
 // have seen a little cricket the players had not. Once named, it is fixed.
-import { dayIx, seedOf, isWindowRound, WINDOWS, WINDOW_DAYS, windowRoundOfDay, windowDayOfRound,
-         INTL_HOUR, hourSettled, ROUNDS, isWorldCupSeason } from './clock.mjs';
+import { dayIx, seedOf, isWindowRound, WINDOWS, WINDOW_DAYS, windowRoundOfDay,
+         INTL_HOUR, hourSettled, ROUNDS, isWorldCupSeason, cupDraw } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
 
 export const SQUAD_SIZE = 15;
@@ -96,19 +96,58 @@ export function selectSquad(men, { size = SQUAD_SIZE, clubLimit = CLUB_LIMIT, mi
   return picked;
 }
 
-// the world day the tour that robs this round is played on, and whether that
-// day's draw gave the nation a fixture at all. The window day is the REST DAY
-// before the round - no club cricket clashes with a tour any more.
+// ---------------------------------------------------------------------------
+// THE TOUR CALENDAR. Real cricket does not send every nation on the road
+// every rest day - it plays TOURS: India tour of Australia, one series at a
+// time, and the rest of the world gets on with its league. So does this one.
+//
+// A season has six tour windows and sixteen nations. Every nation makes ONE
+// tour a season - so a club with half its side in the national team loses
+// them for one round, not six. The eight ties spread across the windows the
+// way a real calendar breathes:
+//
+//   window   1    2    3    4    5    6      (rounds 3, 5, 7, 9, 11, 13)
+//   tours    1    2    -    2    2    1
+//
+// The middle window is the league's own: no international cricket at all.
+// The matchups are redrawn every season - one Fisher-Yates over the whole
+// field on the season's seed, the same law as the cup draw - so who tours
+// whom is different every year, and knowable a season in advance, offline.
+// The SECOND nation of each pair is the host: the tie is "A tour of B".
+// A world with an odd number of nations folds its three spare into a
+// tri-series in that middle window, so nobody sits a season out.
+// ---------------------------------------------------------------------------
+export const TOUR_SHAPE = [0, 1, 1, 3, 3, 4, 4, 5];    // window of the nth tour
+export const TRI_WINDOW = 2;                            // the odd world's tri-series
+export function seasonTourPlan(seasonNo, ids) {
+  const order = cupDraw('intltours|s' + seasonNo, (ids || []).slice().sort());
+  const plan = { seasonNo, windows: {}, byCountry: {} };
+  const put = tie => {
+    (plan.windows[tie.wIx] = plan.windows[tie.wIx] || []).push(tie);
+    tie.teams.forEach(id => { plan.byCountry[id] = tie; });
+  };
+  let rest = order;
+  if (order.length % 2 === 1 && order.length >= 3) {
+    const teams = order.slice(0, 3);
+    put({ kind: 'tri', wIx: TRI_WINDOW, teams, host: teams[0] });
+    rest = order.slice(3);
+  }
+  for (let i = 0; i + 1 < rest.length; i += 2) {
+    put({ kind: 'tour', wIx: TOUR_SHAPE[(i / 2) % TOUR_SHAPE.length],
+      away: rest[i], home: rest[i + 1], teams: [rest[i], rest[i + 1]], host: rest[i + 1] });
+  }
+  return plan;
+}
+
+// whether this round's window is the one the calendar dealt this nation.
+// Pure calendar arithmetic - a manager can read his country's tour a season
+// ahead, offline, which is the standing law of this world.
 export async function touringOn(pool, country, seasonNo, round) {
-  const wd = windowDayOfRound(round);
-  if (wd == null) return false;
-  const s = (await pool.query(
-    'SELECT start_day FROM seasons WHERE country_id=$1 AND season_no=$2', [country, seasonNo])).rows[0];
-  if (!s) return false;
-  const day = s.start_day + wd;
-  const inWindow = await windowsOn(pool, day);
-  if (inWindow.length < 2) return false;
-  return tourPairs(day, inWindow.map(w => w.country)).some(p => p[0] === country || p[1] === country);
+  const wIx = WINDOWS.indexOf(round);
+  if (wIx < 0 || isWorldCupSeason(seasonNo)) return false;
+  const ids = (await pool.query('SELECT id FROM countries')).rows.map(r => r.id);
+  const mine = seasonTourPlan(seasonNo, ids).byCountry[country];
+  return !!mine && mine.wIx === wIx;
 }
 
 // every senior cricketer in a nation, with the club he belongs to
@@ -267,20 +306,22 @@ export function coverSheet(orders, present, gone) {
   return o;
 }
 
-// ---------------------------------------------------------------------------
-// THE TOURS. Whoever is in a window on the same world day plays somebody else
-// who is: shuffled on the day's own seed, so the fixtures are stable across
-// re-runs and different every window. An odd nation out has the window off.
-// ---------------------------------------------------------------------------
-export function tourPairs(day, ids) {
-  const key = 'tour|d' + day;
-  const ranked = (ids || []).slice().sort((a, b) => (a < b ? -1 : a > b ? 1 : 0))
-    .map(id => ({ id, k: seedOf(key + '|' + id) }))
-    .sort((a, b) => a.k - b.k || (a.id < b.id ? -1 : 1))
-    .map(x => x.id);
-  const pairs = [];
-  for (let i = 0; i + 1 < ranked.length; i += 2) pairs.push([ranked[i], ranked[i + 1]]);
-  return pairs;
+// the ties the calendar has dealt to a given world day: every scheduled tie
+// whose members are all in a window that day at that tie's own window index.
+// Sorted for stable match ids across re-runs.
+export function tiesOnDay(plan, inWindow) {
+  const wIxOf = {};
+  inWindow.forEach(w => { wIxOf[w.country] = WINDOWS.indexOf(w.round); });
+  const out = [], seen = new Set();
+  for (const w of inWindow) {
+    const tie = plan.byCountry[w.country];
+    if (!tie || tie.wIx !== wIxOf[w.country]) continue;
+    const key = tie.kind + '|' + tie.teams.join('|');
+    if (seen.has(key)) continue;
+    if (!tie.teams.every(id => wIxOf[id] === tie.wIx)) continue;
+    seen.add(key); out.push(tie);
+  }
+  return out.sort((a, b) => (a.teams[0] < b.teams[0] ? -1 : 1));
 }
 
 // a banked list of {slot, player} as MEN, looked up in the squads they came
@@ -379,10 +420,26 @@ export async function runWindows(pool, host, engineVersion, { now = Date.now(), 
       const men = await squadPlayers(pool, w.country, w.seasonNo, w.round);
       if (men.length >= 11) ready.push({ ...w, men });
     }
-    const pairs = tourPairs(day, ready.map(r => r.country));
+    // THE DAY'S TIES COME OFF THE CALENDAR, not out of a hat: the season plan
+    // says who tours whom and in which window; today plays the ties whose
+    // whole cast is in window and fit to field a side. A tri-series is three
+    // matches in the evening; a tour is one.
+    const idsAll = (await pool.query('SELECT id FROM countries ORDER BY id')).rows.map(r => r.id);
     const menOf = Object.fromEntries(ready.map(r => [r.country, r]));
-    for (let gi = 0; gi < pairs.length; gi++) {
-      const [aId, bId] = pairs[gi];
+    const bySeason = {};
+    ready.forEach(r => { bySeason[r.seasonNo] = bySeason[r.seasonNo] || seasonTourPlan(r.seasonNo, idsAll); });
+    const games = [];
+    for (const sn of Object.keys(bySeason)) {
+      for (const tie of tiesOnDay(bySeason[sn], ready.filter(r => String(r.seasonNo) === sn))) {
+        if (!tie.teams.every(id => menOf[id])) continue;
+        if (tie.kind === 'tri') {
+          const [x, y, z] = tie.teams;
+          games.push([x, y], [x, z], [y, z]);
+        } else games.push([tie.away, tie.home]);
+      }
+    }
+    for (let gi = 0; gi < games.length; gi++) {
+      const [aId, bId] = games[gi];
       const A = menOf[aId], B = menOf[bId];
       if (!A || !B) continue;
       const id = natMatchId(day, gi);
@@ -405,12 +462,14 @@ export async function runWindows(pool, host, engineVersion, { now = Date.now(), 
     // a cap tires the legs and moves the form, so the men who toured are
     // re-derived tonight rather than at their club's next round - what the
     // manager reads tomorrow is what the selectors did to his squad
+    const playedIds = new Set(games.flat());
     for (const r of ready) {
+      if (!playedIds.has(r.country)) continue;
       try { await evolveCountry(pool, r.country, now, host); }
       catch (eE) { console.error('evolve after the window failed for ' + r.country + ':', eE.message); }
     }
     await pool.query(`UPDATE ticks SET status='done', finished_at=now(), detail=$2 WHERE key=$1`,
-      [key, JSON.stringify({ day, ties: pairs.length })]);
+      [key, JSON.stringify({ day, ties: games.length })]);
   }
   return played;
 }
@@ -492,6 +551,21 @@ export async function computeNations(pool, now = Date.now()) {
   clubs.forEach(c => { clubName[c.country_id + ':' + c.slot] = c.name; });
   const book = await intlBook(pool);
 
+  // THE SEASON'S TOUR CALENDAR, resolved to names a page can print. One plan
+  // per season number in play (in practice one for the whole world).
+  const idsAll = countries.map(c => c.id);
+  const nameOf = Object.fromEntries(countries.map(c => [c.id, c.name]));
+  const planCache = {};
+  const planFor = sn => planCache[sn] || (planCache[sn] = seasonTourPlan(sn, idsAll));
+  const tieView = t => t.kind === 'tri'
+    ? { kind: 'tri', window: t.wIx + 1, round: WINDOWS[t.wIx], teams: t.teams, host: t.host,
+        names: t.teams.map(id => nameOf[id] || id),
+        title: 'The ' + (nameOf[t.host] || t.host) + ' Tri-Series' }
+    : { kind: 'tour', window: t.wIx + 1, round: WINDOWS[t.wIx], teams: t.teams,
+        away: t.away, home: t.home, host: t.home,
+        names: [nameOf[t.away] || t.away, nameOf[t.home] || t.home],
+        title: (nameOf[t.away] || t.away) + ' tour of ' + (nameOf[t.home] || t.home) };
+
   const ties = (await pool.query(
     `SELECT id, world_day, season_no, round, a_country, b_country, a_name, b_name, result
        FROM nat_matches ORDER BY season_no DESC, round DESC, id`)).rows;
@@ -548,18 +622,35 @@ export async function computeNations(pool, now = Date.now()) {
     const here = onBooks.get(c.id) || new Set();
     const record = {};
     mine.forEach(x => { if (here.has(x.name)) record[x.name] = slim(x); });
+    // the tour the calendar dealt this nation this season - or the World Cup,
+    // which owns the tour days every fourth year
+    const wc9 = isWorldCupSeason(s.season_no);
+    const mine9 = wc9 ? null : planFor(s.season_no).byCountry[c.id];
     nations[c.id] = {
       id: c.id, name: c.name, seasonNo: s.season_no, window: latest, squad, caps, record,
       // when the selectors last met, and what they did when they met
       namedBefore: now.round, changes: { in: now.in, out: now.out }, tourSquad,
+      worldCup: wc9,
+      tour: mine9 ? { ...tieView(mine9), hosting: mine9.host === c.id,
+        opp: mine9.teams.filter(id => id !== c.id).map(id => nameOf[id] || id).join(' and ') } : null,
       compensation: Object.keys(paid).map(slot => ({ slot: +slot, club: clubName[c.id + ':' + slot], paid: paid[slot] }))
         .sort((a, b) => b.paid - a.paid),
       tours: tours.filter(t => t.aCountry === c.id || t.bCountry === c.id).slice(0, 8)
     };
   }
+  // the whole season's calendar, once, for the pages that print it. The modal
+  // season number across the world - in practice the only one.
+  const snAll = seasons.map(s => s.season_no);
+  const snTop = snAll.length ? snAll.sort((a, b) =>
+    snAll.filter(x => x === a).length - snAll.filter(x => x === b).length || a - b).pop() : 1;
+  const calendar = isWorldCupSeason(snTop)
+    ? { seasonNo: snTop, worldCup: true, windows: [] }
+    : { seasonNo: snTop, worldCup: false,
+        windows: WINDOWS.map((round, wIx) => ({ round,
+          ties: (planFor(snTop).windows[wIx] || []).map(tieView) })) };
   return {
     day: dayIx(now), windows: WINDOWS, windowDays: WINDOW_DAYS, hourUtc: INTL_HOUR, rounds: ROUNDS,
-    nations, tours: tours.slice(0, 40), generatedAtDay: dayIx(now)
+    nations, tours: tours.slice(0, 40), calendar, generatedAtDay: dayIx(now)
   };
 }
 

@@ -339,7 +339,10 @@
       (natRank ? "<span>World rank<b>#" + natRank.rank + "</b></span>" : "") +
       (ga.name ? "<span>Home ground<b>" + E(ga.name) + "</b></span>" : "") +
       "<span>Squad<b>" + ((n.squad || []).length || "&mdash;") + " men</b></span>" +
-      "<span>" + (n.window ? "Named for<b>Round " + n.window + "</b>" : "Windows<b>Rounds " + windows9.join(", ") + "</b>") + "</span>" +
+      (n.worldCup ? "<span>This season<b>The World Cup</b></span>"
+        : n.tour ? "<span>The tour<b>Round " + n.tour.round + " &middot; " +
+            (n.tour.kind === "tri" ? E(n.tour.title) : (n.tour.hosting ? "v " + E(n.tour.opp) + " at home" : "away to " + E(n.tour.opp))) + "</b></span>"
+        : "<span>Windows<b>Rounds " + windows9.join(", ") + "</b></span>") +
       "<span>Tours play<b>" + hour9 + "</b></span>" +
       "</div></div></div></div>";
 
@@ -360,7 +363,17 @@
     if (lastTour) {
       stories.push({ cat: "The Tours", h: lastTour.text || (E(lastTour.a) + " v " + E(lastTour.b)),
         dek: E(lastTour.a) + " " + E(lastTour.as_ || "") + " v " + E(lastTour.b) + " " + E(lastTour.bs_ || "") +
-          ". The next tour follows the round-" + (windows9.filter(function (w) { return w > (n.window || 0); })[0] || windows9[0]) + " window at " + hour9 + "." });
+          (n.tour && n.tour.title ? ". The tie the calendar dealt: " + E(n.tour.title) + "." : ".") });
+    }
+    // THE TOUR TO COME - the calendar's own fixture, printed before it is
+    // played. Once the tie is in n.tours the result story above replaces it.
+    if (n.tour && !lastTour && !n.worldCup) {
+      stories.push({ cat: "Fixtures &middot; Round " + n.tour.round, h: E(n.tour.title),
+        dek: (n.tour.kind === "tri"
+            ? E((n.tour.names || []).join(", ")) + " meet in a tri-series"
+            : n.tour.hosting ? E(n.name) + " host " + E(n.tour.opp) : E(n.name) + " travel to " + E(n.tour.opp)) +
+          " after the round-" + n.tour.round + " window &mdash; the one tour the calendar deals " +
+          E(n.name) + " this season. The cricket is bowled at " + hour9 + "." });
     }
     if (n.window && (n.squad || []).length) {
       var clubs9 = {}; (n.squad || []).forEach(function (m9) { if (m9.club) clubs9[m9.club] = 1; });
@@ -402,8 +415,10 @@
     }
     if (!stories.length) {
       stories.push({ cat: "Selection",
-        h: "The selectors first meet at round " + windows9[0],
-        dek: "Squads are named that morning; the tours are played at " + hour9 + " the same evening." });
+        h: n.worldCup ? "The World Cup owns the tour days this season"
+          : "The selectors first meet at round " + windows9[0],
+        dek: n.worldCup ? "No bilateral tours are played in a World Cup year - the bracket takes the six windows instead."
+          : "Squads are named that morning; the tours are played at " + hour9 + " the same evening." });
     }
     var lead9 = stories.shift();
     var cardStories = stories.slice(0, 3);
@@ -426,15 +441,20 @@
         (natRank.natRating ? "<div class='fo-nt-lab'>National XI<b>" + fmtR(natRank.natRating) + "</b></div>" : "") +
         (natRank.clubRating ? "<div class='fo-nt-lab'>Club game<b>" + fmtR(natRank.clubRating) + "</b></div>" : "") + "</div>"
       : "";
-    var windowTile = "<div class='fo-nt-tile'><h3>The window</h3>" +
-      (n.window ? "<div class='fo-nt-lab' style='margin-top:0'>Named for<b>Round " + n.window + "</b></div>" : "") +
-      "<div class='fo-nt-lab'" + (n.window ? "" : " style='margin-top:0'") + ">Windows<b>" + windows9.join(", ") + "</b></div>" +
+    var windowTile = "<div class='fo-nt-tile'><h3>" + (n.tour ? "The tour" : "The window") + "</h3>" +
+      (n.worldCup ? "<div class='fo-nt-lab' style='margin-top:0'>This season<b>The World Cup</b></div>"
+        : n.tour ? "<div class='fo-nt-lab' style='margin-top:0'>This season<b>" + E(n.tour.title) + "</b></div>" +
+          "<div class='fo-nt-lab'>Played after<b>Round " + n.tour.round + "</b></div>" +
+          (n.tour.kind === "tour" ? "<div class='fo-nt-lab'>" + (n.tour.hosting ? "Hosting<b>" + E(n.tour.opp) + "</b>" : "Travelling to<b>" + E(n.tour.opp) + "</b>") + "</div>" : "")
+        : "") +
+      (n.window ? "<div class='fo-nt-lab'" + (n.tour || n.worldCup ? "" : " style='margin-top:0'") + ">Squad named for<b>Round " + n.window + "</b></div>" : "") +
       "<div class='fo-nt-lab'>Tours play<b>" + hour9 + "</b></div></div>";
     // the other nations' front pages, one honest line each
     var aroundRows = ids.filter(function (r2) { return r2 !== ST.nation; }).slice(0, 4).map(function (r2) {
       var n2 = snap.nations[r2] || {}, nm2 = n2.name || r2;
       var t2 = (n2.tours || [])[ (n2.tours || []).length - 1 ] || null;
       var line = t2 ? (t2.text || nm2 + "'s last tour")
+        : (n2.tour && n2.tour.title) ? n2.tour.title + " · round " + n2.tour.round
         : (n2.window && (n2.squad || []).length) ? nm2 + " name " + n2.squad.length + " for round " + n2.window
         : nm2 + ": squads named at rounds " + windows9.join(", ");
       return "<button type='button' class='fo-nt-mini' data-nat='" + E(r2) + "'>" +
@@ -464,8 +484,14 @@
             money(myMen.reduce(function (a, m) { return a + (m.fee || 0); }, 0)) + " for the week.</p>"
           : "<p class='fo-ac-p'>Nobody from " + E(myClub) + " is in the latest " + E(n.name) + " squad. Form is what the selectors read &mdash; win a few and they will look again.</p>") +
         "</div>" : "";
-    var whenNote = "<div class='fo-nat-when'>Windows fall on rounds <b>" + windows9.join(", ") +
-      "</b>. Squads are named that morning; the tours are played at <b>" + hour9 + "</b> the same evening.</div>";
+    var whenNote = "<div class='fo-nat-when'>" +
+      (n.worldCup
+        ? "The <b>World Cup</b> owns the tour days this season - no bilateral tours are played."
+        : "The tour days fall on rounds <b>" + windows9.join(", ") + "</b>, and each nation makes <b>one tour a season</b> - " +
+          "so a club never loses its internationals more than once a year." +
+          (n.tour ? " The calendar deals " + E(n.name || "") + " <b>round " + n.tour.round + "</b>: " + E(n.tour.title) + "." : "") +
+          " Squads are named that morning; the cricket is bowled at <b>" + hour9 + "</b> the same evening.") +
+      "</div>";
 
     var mainCol =
       ST.tab === "squad" ? squadCard :
