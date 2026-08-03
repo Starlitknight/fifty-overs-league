@@ -222,7 +222,7 @@
       var sc = homeGame ? r.hs : r.as, oc = homeGame ? r.as : r.hs;
       var line = sc && oc ? (sc.r + "/" + sc.w + " v " + oc.r + "/" + oc.w) : (r.text || "");
       resItems.push({ ts: tsOfDay(dayOf(r.round)), lt: won ? "W" : tie ? "T" : "L",
-        html: rowHtml({ href: "#/league?t=results&r=" + r.round, dt: dayTxt(r.round),
+        html: rowHtml({ href: r.id ? "#/report?n=" + encodeURIComponent(claim.country) + "&w=" + encodeURIComponent(r.id) : "#/league?t=results&r=" + r.round, dt: dayTxt(r.round),
           cmp: "R" + r.round, cmpCls: "lg", chip: won ? "W" : tie ? "T" : "L", chipCls: won ? "w" : tie ? "t" : "l",
           name: (homeGame ? "v " : "at ") + E(opp), sub: E(line),
           right: E((r.text || "").replace(/\s*\(.*\)$/, "")) }) });
