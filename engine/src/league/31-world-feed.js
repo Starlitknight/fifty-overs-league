@@ -137,6 +137,13 @@
         LG_BODY[rid] = body;
         anchorTo(rid, body);
         try { localStorage.setItem("fo_world_lg_" + rid, JSON.stringify(body)); } catch (e) {}
+        // THE PAGE HEARS THE UMPIRE. A fresh body only reaches here when
+        // updated_at moved - the umpire genuinely wrote something new - and
+        // most surfaces ask with a no-op callback, so without this the page a
+        // manager is LOOKING AT kept its stale round until they navigated.
+        // One event, announced after the flush settles, and the open league
+        // surface repaints itself (listener below).
+        try { window.dispatchEvent(new CustomEvent("fo-world-fresh", { detail: { rid: rid } })); } catch (eEv) {}
       }
       done();
     };
@@ -277,7 +284,38 @@
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(mount, 0); setTimeout(refresh, 600); });
   else { setTimeout(mount, 0); setTimeout(refresh, 600); }
-  setInterval(refresh, 300000);   // rounds land once a day; five minutes is plenty
+  // AN OPEN PAGE MUST LEARN THE ROUND WAS PLAYED. Every league surface asks
+  // via want() when it paints - but a page left sitting open paints nothing,
+  // so nobody asked, and the club home said "next match v Glamorgan" for hours
+  // after Glamorgan had been and gone. The idle heartbeat asks for MY nation's
+  // snapshot too (a tiny updated_at probe; the body only downloads when the
+  // umpire wrote), and asks again the moment the tab is brought back.
+  function nudgeMine() {
+    try { if (document.hidden) return; } catch (eH) {}
+    try { lgFetch(anchorNation()); } catch (e) {}
+  }
+  setInterval(function () { refresh(); nudgeMine(); }, 300000);   // rounds land a few times a day; five minutes is plenty
+  window.addEventListener("focus", nudgeMine);
+  document.addEventListener("visibilitychange", function () { try { if (!document.hidden) nudgeMine(); } catch (e) {} });
   window.addEventListener("hashchange", function () { setTimeout(paint, 200); });
   window.__foWorldFeedRefresh = refresh;
+
+  // ---- repaint the open surface when fresh truth lands ----------------------
+  // The surfaces that speak league facts re-render whole from state, so the
+  // correct reaction to a fresh snapshot is simply "paint this page again".
+  // Scoped to the pages that read the served world, debounced so a burst of
+  // nations landing together paints once - and never during a live broadcast,
+  // whose own renderer owns the screen.
+  var FRESH_PAGES = { "#/home": 1, "": 1, "#/": 1, "#/fixtures": 1, "#/league": 1, "#/matches": 1, "#/planet": 1, "#/facup": 1, "#/champions": 1, "#/records": 1 };
+  var FRESH_T = null;
+  window.addEventListener("fo-world-fresh", function () {
+    clearTimeout(FRESH_T);
+    FRESH_T = setTimeout(function () {
+      try {
+        var h = (location.hash || "").split("?")[0];
+        if (!FRESH_PAGES[h]) return;
+        if (typeof window.route === "function") window.route();
+      } catch (e) {}
+    }, 350);
+  });
 })();

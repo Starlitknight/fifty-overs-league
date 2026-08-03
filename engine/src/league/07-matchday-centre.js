@@ -2532,6 +2532,16 @@
       "html body.fo-dash.fo-thd #page .ftp-match-shell .panel{border:1px solid #e3dccb;box-shadow:0 2px 10px rgba(20,36,58,.05)}" +
       "html body.fo-dash.fo-thd #page .ftp-match-links a{background:#F1EEE6 !important;color:#4c4437 !important}" +
       "html body.fo-dash.fo-thd #page .ftp-match-links a.on{background:#C9571F !important;color:#fff !important}" +
+      // the drawer keeps only the pages that matter here - the dashboard already
+      // IS the commentary, the worm and the charts. Hidden by STYLESHEET, not by
+      // per-render JS: the smooth-render morph re-syncs every link's inline
+      // attributes each ball, so an inline display:none flapped off and the
+      // whole tab row popped open for up to a second on every delivery.
+      "html body.fo-dash #page .ftp-match-links a{display:none !important}" +
+      "html body.fo-dash #page .ftp-match-links a[onclick*=\"'Details'\"]," +
+      "html body.fo-dash #page .ftp-match-links a[onclick*=\"'Orders'\"]," +
+      "html body.fo-dash #page .ftp-match-links a[onclick*=\"'Scorecard'\"]," +
+      "html body.fo-dash #page .ftp-match-links a[onclick*=\"'Match Ratings'\"]{display:inline-block !important}" +
       "#fo-thd-x{z-index:59}body.fo-dash.fo-thd #fo-thd-x{top:78px;right:38px;background:#FFFEFC;border-color:#d9d0bc;color:#14243A}" +
       // moment cut-ins keep their drama over the cream
       "body.fo-dash #fo-th-cut{z-index:70}" +
@@ -2658,6 +2668,13 @@
       "html:has(body.fo-th){overflow:hidden;background:#071527}" +
       "html body.fo-th,html body.ftpskin.fo-th{overflow:hidden;height:100vh;background:#071527 !important}" +
       "html body.fo-th .wrap,html body.fo-th #page,html body.ftpskin.fo-th .wrap,html body.ftpskin.fo-th #page{background:transparent !important}" +
+      // NO ROUTE-IN ANIMATION DURING A BROADCAST. The brand sheet plays
+      // foPageIn (a small translateY + fade) whenever #page matches afresh -
+      // and the smooth-render wrapper re-ids #page on EVERY BALL, so the
+      // animation replayed per delivery. Its transform makes #page the
+      // containing block for fixed descendants, so the open scorecard drawer
+      // collapsed to a sliver and the page dimmed on every ball.
+      "html body.fo-th #page{animation:none !important}" +
       // two stage layers: the painting never repaints between balls
       ".fo-mst-scene{position:absolute;inset:0;z-index:0}" +
       ".fo-mst-ui{position:absolute;inset:0;z-index:5}" +
@@ -3350,12 +3367,6 @@
           var vf9 = el.querySelector("#fo-db-comm-more");
           if (vf9) vf9.addEventListener("click", function () { foDashCommFull(); });
           foDashCommFull(true);   // a commentary page left open follows the live ball
-          // the drawer keeps only the pages that matter here - the dashboard
-          // already IS the commentary, the worm and the charts
-          var KEEP9 = { details: 1, orders: 1, scorecard: 1, "match ratings": 1 };
-          document.querySelectorAll(".ftp-match-links a").forEach(function (a9) {
-            a9.style.display = KEEP9[(a9.textContent || "").trim().toLowerCase()] ? "" : "none";
-          });
         } catch (eDp) {}
       }
       var nb = el.querySelector("#fo-mst-next");

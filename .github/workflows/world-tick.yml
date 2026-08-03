@@ -8,8 +8,13 @@ name: world-tick
 # headless via test/engine-vm.mjs; a full planet-day is ~95 matches (~15s).
 on:
   schedule:
-    # off-peak minute: GitHub delays/drops popular quarter-hour marks
+    # off-peak minutes: GitHub delays/drops popular quarter-hour marks, and in
+    # practice skips whole hourly firings too - observed gaps of 3-4 hours,
+    # which left England's 17:00 UTC settle unbanked into the evening. Two
+    # staggered lines double the chances each hour; every run is idempotent,
+    # so the extra firings cost nothing when there is nothing due.
     - cron: '23 * * * *'
+    - cron: '51 * * * *'
   workflow_dispatch:
     inputs:
       reset_world:

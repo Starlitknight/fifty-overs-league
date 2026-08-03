@@ -505,7 +505,7 @@
           gapLine = gap0 <= 0 ? "Level on points with " + E(above0.nm) + " above you" : gap0 + " pt" + (gap0 === 1 ? "" : "s") + " behind " + E(above0.nm);
         }
       }
-      var standings = "<div class='fo-card fo-o-stand'><div class='fo-card-h2row'><div class='fo-card-h2'>League standings</div><a href='#/matches' class='fo-morelink'>Results &rsaquo;</a></div><div class='fo-card-b'><table class='fo-tbl fo-chtable'><thead><tr><th class='fo-rk'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th><th class='r'>NRR</th><th class='r'>Pts</th></tr></thead><tbody>" + standRows + "</tbody></table>" +
+      var standings = "<div class='fo-card fo-o-stand'><div class='fo-card-h2row'><div class='fo-card-h2'>League standings</div><a href='#/fixtures' class='fo-morelink'>Results &amp; fixtures &rsaquo;</a></div><div class='fo-card-b'><table class='fo-tbl fo-chtable'><thead><tr><th class='fo-rk'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th><th class='r'>NRR</th><th class='r'>Pts</th></tr></thead><tbody>" + standRows + "</tbody></table>" +
         (gapLine ? "<div class='fo-stand-gap'>" + gapLine + "</div>" : "") + "</div></div>";
 
       // Finances: one line · the net, and where the season lands. All figures
@@ -684,7 +684,7 @@
         "<div class='fo-cs-right'><span class='fo-cs-chip'>Form <span class='fo-c2-fs'>" + fchips + "</span></span>" +
         "<span class='fo-cs-chip'>" + moodArrow + "<b>" + E(String(mood).toUpperCase()) + "</b>" + (t.supporters ? " <u>&middot; " + (+t.supporters).toLocaleString() + "</u>" : "") + "</span></div></div>";
       // the league, packaged as ONE mode card: progress, the next tie, lineup CTA
-      var mpCard = "<div class='fo-card fo-mp-card'><div class='fo-card-h2row'><div class='fo-card-h2'>The League <span class='fo-mp-badge'>MULTIPLAYER</span></div><a class='fo-morelink' href='#/matches'>Fixtures &rsaquo;</a></div><div class='fo-card-b'>" +
+      var mpCard = "<div class='fo-card fo-mp-card'><div class='fo-card-h2row'><div class='fo-card-h2'>The League <span class='fo-mp-badge'>MULTIPLAYER</span></div><a class='fo-morelink' href='#/fixtures'>Results &amp; fixtures &rsaquo;</a></div><div class='fo-card-b'>" +
         "<div class='fo-mp-prog'><span>Round " + Math.min(played + 1, totalRounds) + " of " + totalRounds + (posLineTop ? " &middot; <b class='fo-c2-gold'>" + posLineTop + "</b>" : "") + "</span><div class='fo-progress-bar'><u style='width:" + pct + "%'></u></div></div>" +
         (nextCard || "<div class='small'>No fixtures scheduled.</div>") + "</div></div>";
       // ---- today's to-do: unfinished business pulls you back tomorrow ----
@@ -817,7 +817,7 @@
       });
       fxItems.sort(function (a9, b9) { return (a9.at || 0) - (b9.at || 0); });   // soonest first; each row remembers its hour
       var fxH = fxItems.slice(0, 6).map(function (x) { return x.html; });
-      var fxCard = "<div class='fo-card fo-o-fx'><div class='fo-card-h2row'><div class='fo-card-h2'>Upcoming fixtures</div><a href='#/matches' class='fo-morelink'>View all &rsaquo;</a></div><div class='fo-card-b'>" +
+      var fxCard = "<div class='fo-card fo-o-fx'><div class='fo-card-h2row'><div class='fo-card-h2'>Upcoming fixtures</div><a href='#/fixtures' class='fo-morelink'>Results &amp; fixtures &rsaquo;</a></div><div class='fo-card-b'>" +
         (fxH.length ? fxH.slice(0, 3).join("") + (fxH.length > 3 ? "<div class='fo-fx-more'>" + fxH.slice(3).join("") + "</div>" : "") : "<div class='small'>Season complete.</div>") +
         "<a class='fo-c2-wmore' href='#/matches'>View full fixture list &rsaquo;</a></div></div>";
       var trainCard = "";

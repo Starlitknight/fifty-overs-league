@@ -7936,7 +7936,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           gapLine = gap0 <= 0 ? "Level on points with " + E(above0.nm) + " above you" : gap0 + " pt" + (gap0 === 1 ? "" : "s") + " behind " + E(above0.nm);
         }
       }
-      var standings = "<div class='fo-card fo-o-stand'><div class='fo-card-h2row'><div class='fo-card-h2'>League standings</div><a href='#/matches' class='fo-morelink'>Results &rsaquo;</a></div><div class='fo-card-b'><table class='fo-tbl fo-chtable'><thead><tr><th class='fo-rk'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th><th class='r'>NRR</th><th class='r'>Pts</th></tr></thead><tbody>" + standRows + "</tbody></table>" +
+      var standings = "<div class='fo-card fo-o-stand'><div class='fo-card-h2row'><div class='fo-card-h2'>League standings</div><a href='#/fixtures' class='fo-morelink'>Results &amp; fixtures &rsaquo;</a></div><div class='fo-card-b'><table class='fo-tbl fo-chtable'><thead><tr><th class='fo-rk'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th><th class='r'>NRR</th><th class='r'>Pts</th></tr></thead><tbody>" + standRows + "</tbody></table>" +
         (gapLine ? "<div class='fo-stand-gap'>" + gapLine + "</div>" : "") + "</div></div>";
 
       // Finances: one line · the net, and where the season lands. All figures
@@ -8115,7 +8115,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-cs-right'><span class='fo-cs-chip'>Form <span class='fo-c2-fs'>" + fchips + "</span></span>" +
         "<span class='fo-cs-chip'>" + moodArrow + "<b>" + E(String(mood).toUpperCase()) + "</b>" + (t.supporters ? " <u>&middot; " + (+t.supporters).toLocaleString() + "</u>" : "") + "</span></div></div>";
       // the league, packaged as ONE mode card: progress, the next tie, lineup CTA
-      var mpCard = "<div class='fo-card fo-mp-card'><div class='fo-card-h2row'><div class='fo-card-h2'>The League <span class='fo-mp-badge'>MULTIPLAYER</span></div><a class='fo-morelink' href='#/matches'>Fixtures &rsaquo;</a></div><div class='fo-card-b'>" +
+      var mpCard = "<div class='fo-card fo-mp-card'><div class='fo-card-h2row'><div class='fo-card-h2'>The League <span class='fo-mp-badge'>MULTIPLAYER</span></div><a class='fo-morelink' href='#/fixtures'>Results &amp; fixtures &rsaquo;</a></div><div class='fo-card-b'>" +
         "<div class='fo-mp-prog'><span>Round " + Math.min(played + 1, totalRounds) + " of " + totalRounds + (posLineTop ? " &middot; <b class='fo-c2-gold'>" + posLineTop + "</b>" : "") + "</span><div class='fo-progress-bar'><u style='width:" + pct + "%'></u></div></div>" +
         (nextCard || "<div class='small'>No fixtures scheduled.</div>") + "</div></div>";
       // ---- today's to-do: unfinished business pulls you back tomorrow ----
@@ -8248,7 +8248,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       });
       fxItems.sort(function (a9, b9) { return (a9.at || 0) - (b9.at || 0); });   // soonest first; each row remembers its hour
       var fxH = fxItems.slice(0, 6).map(function (x) { return x.html; });
-      var fxCard = "<div class='fo-card fo-o-fx'><div class='fo-card-h2row'><div class='fo-card-h2'>Upcoming fixtures</div><a href='#/matches' class='fo-morelink'>View all &rsaquo;</a></div><div class='fo-card-b'>" +
+      var fxCard = "<div class='fo-card fo-o-fx'><div class='fo-card-h2row'><div class='fo-card-h2'>Upcoming fixtures</div><a href='#/fixtures' class='fo-morelink'>Results &amp; fixtures &rsaquo;</a></div><div class='fo-card-b'>" +
         (fxH.length ? fxH.slice(0, 3).join("") + (fxH.length > 3 ? "<div class='fo-fx-more'>" + fxH.slice(3).join("") + "</div>" : "") : "<div class='small'>Season complete.</div>") +
         "<a class='fo-c2-wmore' href='#/matches'>View full fixture list &rsaquo;</a></div></div>";
       var trainCard = "";
@@ -10280,7 +10280,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-1725-cf08e9";
+  var FO_BUILD = "20260803-1816-8a6f07";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -17765,6 +17765,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body.fo-dash.fo-thd #page .ftp-match-shell .panel{border:1px solid #e3dccb;box-shadow:0 2px 10px rgba(20,36,58,.05)}" +
       "html body.fo-dash.fo-thd #page .ftp-match-links a{background:#F1EEE6 !important;color:#4c4437 !important}" +
       "html body.fo-dash.fo-thd #page .ftp-match-links a.on{background:#C9571F !important;color:#fff !important}" +
+      // the drawer keeps only the pages that matter here - the dashboard already
+      // IS the commentary, the worm and the charts. Hidden by STYLESHEET, not by
+      // per-render JS: the smooth-render morph re-syncs every link's inline
+      // attributes each ball, so an inline display:none flapped off and the
+      // whole tab row popped open for up to a second on every delivery.
+      "html body.fo-dash #page .ftp-match-links a{display:none !important}" +
+      "html body.fo-dash #page .ftp-match-links a[onclick*=\"'Details'\"]," +
+      "html body.fo-dash #page .ftp-match-links a[onclick*=\"'Orders'\"]," +
+      "html body.fo-dash #page .ftp-match-links a[onclick*=\"'Scorecard'\"]," +
+      "html body.fo-dash #page .ftp-match-links a[onclick*=\"'Match Ratings'\"]{display:inline-block !important}" +
       "#fo-thd-x{z-index:59}body.fo-dash.fo-thd #fo-thd-x{top:78px;right:38px;background:#FFFEFC;border-color:#d9d0bc;color:#14243A}" +
       // moment cut-ins keep their drama over the cream
       "body.fo-dash #fo-th-cut{z-index:70}" +
@@ -17891,6 +17901,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html:has(body.fo-th){overflow:hidden;background:#071527}" +
       "html body.fo-th,html body.ftpskin.fo-th{overflow:hidden;height:100vh;background:#071527 !important}" +
       "html body.fo-th .wrap,html body.fo-th #page,html body.ftpskin.fo-th .wrap,html body.ftpskin.fo-th #page{background:transparent !important}" +
+      // NO ROUTE-IN ANIMATION DURING A BROADCAST. The brand sheet plays
+      // foPageIn (a small translateY + fade) whenever #page matches afresh -
+      // and the smooth-render wrapper re-ids #page on EVERY BALL, so the
+      // animation replayed per delivery. Its transform makes #page the
+      // containing block for fixed descendants, so the open scorecard drawer
+      // collapsed to a sliver and the page dimmed on every ball.
+      "html body.fo-th #page{animation:none !important}" +
       // two stage layers: the painting never repaints between balls
       ".fo-mst-scene{position:absolute;inset:0;z-index:0}" +
       ".fo-mst-ui{position:absolute;inset:0;z-index:5}" +
@@ -18583,12 +18600,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           var vf9 = el.querySelector("#fo-db-comm-more");
           if (vf9) vf9.addEventListener("click", function () { foDashCommFull(); });
           foDashCommFull(true);   // a commentary page left open follows the live ball
-          // the drawer keeps only the pages that matter here - the dashboard
-          // already IS the commentary, the worm and the charts
-          var KEEP9 = { details: 1, orders: 1, scorecard: 1, "match ratings": 1 };
-          document.querySelectorAll(".ftp-match-links a").forEach(function (a9) {
-            a9.style.display = KEEP9[(a9.textContent || "").trim().toLowerCase()] ? "" : "none";
-          });
         } catch (eDp) {}
       }
       var nb = el.querySelector("#fo-mst-next");
@@ -38022,6 +38033,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         LG_BODY[rid] = body;
         anchorTo(rid, body);
         try { localStorage.setItem("fo_world_lg_" + rid, JSON.stringify(body)); } catch (e) {}
+        // THE PAGE HEARS THE UMPIRE. A fresh body only reaches here when
+        // updated_at moved - the umpire genuinely wrote something new - and
+        // most surfaces ask with a no-op callback, so without this the page a
+        // manager is LOOKING AT kept its stale round until they navigated.
+        // One event, announced after the flush settles, and the open league
+        // surface repaints itself (listener below).
+        try { window.dispatchEvent(new CustomEvent("fo-world-fresh", { detail: { rid: rid } })); } catch (eEv) {}
       }
       done();
     };
@@ -38162,9 +38180,40 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", function () { setTimeout(mount, 0); setTimeout(refresh, 600); });
   else { setTimeout(mount, 0); setTimeout(refresh, 600); }
-  setInterval(refresh, 300000);   // rounds land once a day; five minutes is plenty
+  // AN OPEN PAGE MUST LEARN THE ROUND WAS PLAYED. Every league surface asks
+  // via want() when it paints - but a page left sitting open paints nothing,
+  // so nobody asked, and the club home said "next match v Glamorgan" for hours
+  // after Glamorgan had been and gone. The idle heartbeat asks for MY nation's
+  // snapshot too (a tiny updated_at probe; the body only downloads when the
+  // umpire wrote), and asks again the moment the tab is brought back.
+  function nudgeMine() {
+    try { if (document.hidden) return; } catch (eH) {}
+    try { lgFetch(anchorNation()); } catch (e) {}
+  }
+  setInterval(function () { refresh(); nudgeMine(); }, 300000);   // rounds land a few times a day; five minutes is plenty
+  window.addEventListener("focus", nudgeMine);
+  document.addEventListener("visibilitychange", function () { try { if (!document.hidden) nudgeMine(); } catch (e) {} });
   window.addEventListener("hashchange", function () { setTimeout(paint, 200); });
   window.__foWorldFeedRefresh = refresh;
+
+  // ---- repaint the open surface when fresh truth lands ----------------------
+  // The surfaces that speak league facts re-render whole from state, so the
+  // correct reaction to a fresh snapshot is simply "paint this page again".
+  // Scoped to the pages that read the served world, debounced so a burst of
+  // nations landing together paints once - and never during a live broadcast,
+  // whose own renderer owns the screen.
+  var FRESH_PAGES = { "#/home": 1, "": 1, "#/": 1, "#/fixtures": 1, "#/league": 1, "#/matches": 1, "#/planet": 1, "#/facup": 1, "#/champions": 1, "#/records": 1 };
+  var FRESH_T = null;
+  window.addEventListener("fo-world-fresh", function () {
+    clearTimeout(FRESH_T);
+    FRESH_T = setTimeout(function () {
+      try {
+        var h = (location.hash || "").split("?")[0];
+        if (!FRESH_PAGES[h]) return;
+        if (typeof window.route === "function") window.route();
+      } catch (e) {}
+    }, 350);
+  });
 })();
 // ---- 32-matchday.js — MATCHDAY: the pre-match ritual --------------------------
 // The owner's named weakest link, now a room of its own. One page per
