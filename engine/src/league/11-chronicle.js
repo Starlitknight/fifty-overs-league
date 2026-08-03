@@ -774,6 +774,27 @@
           fldLine;
       };
       var lgHtml = tabBody(h, true, "No league innings yet - the record starts on the next matchday.");
+      // A CLAIMED CLUB'S ROUNDS ARE PLAYED ON THE SERVER and never land in the
+      // local history - but the adopted man carries the umpire's own book.
+      // When that book has matches and the local record has none, read his:
+      // only the figures the umpire keeps, nothing invented to fill columns.
+      try {
+        var svB = p.career && p.career.m ? p.career : null;
+        if (svB && !h.length) {
+          var srV = svB.balls ? (100 * (svB.runs || 0) / svB.balls).toFixed(1) : "&ndash;";
+          var erV = svB.ovb ? ((svB.conc || 0) / (svB.ovb / 6)).toFixed(2) : "&ndash;";
+          lgHtml = mh("Batting") + "<div class='fo-cp-scroll'><table>" +
+            "<tr><th></th><th class='n'>Mat</th><th class='n'>Runs</th><th class='n'>HS</th><th class='n'>SR</th></tr>" +
+            "<tr class='fo-cp-tot'><td>Career</td><td class='n'>" + svB.m + "</td><td class='n'>" + (svB.runs || 0) +
+            "</td><td class='n'>" + (svB.hs || 0) + "</td><td class='n'>" + srV + "</td></tr></table></div>" +
+            (svB.ovb ? mh("Bowling") + "<div class='fo-cp-scroll'><table>" +
+              "<tr><th></th><th class='n'>Wkts</th><th class='n'>Best</th><th class='n'>ER</th><th class='n'>Overs</th></tr>" +
+              "<tr class='fo-cp-tot'><td>Career</td><td class='n'>" + (svB.wkts || 0) +
+              "</td><td class='n'>" + (svB.bb ? svB.bb.w + "/" + svB.bb.r : "&ndash;") +
+              "</td><td class='n'>" + erV + "</td><td class='n'>" + Math.floor(svB.ovb / 6) + "</td></tr></table></div>" : "") +
+            "<div class='small' style='margin-top:7px;color:#8a93a3'>The umpire's book &middot; updated after every round.</div>";
+        }
+      } catch (eSvB) {}
       var frHtml = tabBody(frE, false, "No friendlies or practice games yet.");
       card.innerHTML = "<h4>Career &middot; " + E(foDisplayName(p)) + "</h4><div class='pad'>" +
         "<div class='fo-cp-prov'>" + E(provTxt) + "</div>" +
