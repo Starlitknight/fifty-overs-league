@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0026-fbb879";
+  var FO_BUILD = "20260803-0030-34579e";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18825,7 +18825,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             "<span class='bw-h'><b>" + E(dispNm(n9)) + "</b><span class='ov' title='Overall rating'><b>" + foPkOvr(p9c) + "</b></span></span>" +
             "<span class='bw-m'><span class='bt'>" + E(foOrdBType(p9c)) + " &middot; " + (tot[n9] || 0) + " ov</span>" +
             "<s class='fbd" + (foMfVal(n9) ? " on" : "") + "' data-fo-mfc='" + E(n9) + "' title='" + E(foMfTitle(n9)) + "'>" + foMfShort(n9) + "</s></span>" +
-            "<span class='r2'>" + st9 + "</span></button>";
+            "<span class='r2'>" + st9 + "</span>" +
+            "<span class='r3'>" + foOrdTalPills(p9c, 2) + "</span></button>";
         }).join("") + "</div>" +
         "<div class='mg-grid'>" + (function () {
           // THE TWO ENDS OF THE GROUND. Overs alternate ends the way an
@@ -19404,6 +19405,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".mg-chips .mgb .ov{margin-left:auto;flex:0 0 auto}" +
       ".mg-chips .mgb .ov b{font-size:13.5px;font-weight:800;color:#B04A2C}" +
       ".mg-chips .mgb .r2{line-height:1}" +
+      ".mg-chips .mgb .r3{display:flex;gap:4px;min-width:0;overflow:hidden}" +
+      ".mg-chips .mgb .r3:empty{display:none}" +
+      ".mg-chips .mgb .r3 .fo-ord-tp{font-size:7.5px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;color:#8a93a3;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;background:none;border:0;padding:0}" +
       ".mg-chips .mgb s{text-decoration:none;font-size:9.5px;font-weight:700;letter-spacing:.03em;color:#8a93a3;border:1px solid rgba(28,36,51,.16);border-radius:6px;padding:2px 6px}" +
       ".mg-chips .mgb s.on{color:#FFFEFC;background:#0E233F;border-color:#0E233F}" +
       ".fo-ord-clearrow{display:flex;justify-content:flex-end;gap:7px;flex-wrap:wrap;margin:9px 0 2px}" +
