@@ -2607,7 +2607,7 @@
       // the old bottom-sheet chrome stands down - the dashboard is the phone now
       "body.fo-dash #fo-mob-nav,body.fo-dash #fo-mob-sheet,body.fo-dash #fo-mob-spdchip,body.fo-dash #fo-mob-flash,body.fo-dash #fo-th-gf{display:none !important}" +
       "html body.fo-dash.fo-th.fo-th-ov0 #fo-oval,html body.fo-dash.fo-th[data-mobsheet] #fo-oval{display:flex !important}" +
-      "body.fo-dash .fo-db-wrap{padding:calc(var(--fo-tbh,52px) + 52px) 10px 96px}" +
+      "body.fo-dash .fo-db-wrap{padding:calc(var(--fo-tbh,52px) + 52px) 10px 96px;display:flex;flex-direction:column;gap:10px}" +
       "body.fo-dash .fo-db-bug{gap:10px 14px;padding:9px 12px;min-height:0}" +
       "body.fo-dash .fo-db-bug .cr svg{width:30px;height:33px}" +
       "body.fo-dash .fo-db-bug .tm b{font-size:12px;letter-spacing:.8px}" +
@@ -2616,8 +2616,14 @@
       "body.fo-dash .fo-db-bug .st{padding-left:12px}" +
       "body.fo-dash .fo-db-bug .st b{font-size:15px}" +
       "body.fo-dash .fo-db-bug .bb9 .db-b{min-width:17px;height:17px;font-size:9px}" +
-      "body.fo-dash .fo-db-grid{display:flex;flex-direction:column;gap:10px;margin-top:10px}" +
-      "body.fo-dash .fo-db-left{gap:10px}" +
+      // the column tells the story in reading order: art, the men, the words,
+      // THEN the field and the numbers - the wrappers dissolve so CSS can sort
+      "body.fo-dash .fo-db-grid,body.fo-dash .fo-db-left{display:contents}" +
+      "body.fo-dash .fo-db-art{order:1}" +
+      "body.fo-dash .fo-db-players{order:2}" +
+      "body.fo-dash .fo-db-comm{order:3}" +
+      "body.fo-dash .fo-db-info{order:4}" +
+      "body.fo-dash .fo-db-charts{order:5}" +
       "body.fo-dash .fo-db-art{height:132px}" +
       "body.fo-dash .fo-db-players{grid-template-columns:1fr;gap:8px}" +
       "body.fo-dash .db-p{height:58px;gap:10px;padding:7px 12px}" +
