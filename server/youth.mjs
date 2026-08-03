@@ -207,6 +207,37 @@ export async function stockAcademies(pool, host, country, { worldDay }) {
   return added;
 }
 
+// THE FOUNDING DEAL. Sixteen boys to EVERY club - managed and unmanaged both -
+// so the first Colts Week is played rather than forfeited wall to wall. This
+// is a one-time gift by decree, not the standing rule: after it, a manager's
+// academy is his own affair again. Idempotent by ticks row, and the boys come
+// out of the seeded hat - a different sixteen at every club, the same sixteen
+// if the deal is ever re-run.
+export async function dealYouthToAll(pool, host, country, { count = 16 } = {}) {
+  const key = country + ':youth:deal16:v1';
+  const claim = await pool.query(
+    `INSERT INTO ticks(key, status) VALUES ($1,'running')
+     ON CONFLICT (key) DO UPDATE SET key=EXCLUDED.key RETURNING status`, [key]);
+  if (claim.rows[0].status === 'done') return 0;
+  const clubs = (await pool.query(
+    'SELECT slot, academy, youth FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
+  const cfg = archOf(host, country);
+  let added = 0;
+  for (const c of clubs) {
+    const youth = Array.isArray(c.youth) ? c.youth : [];
+    let n = 0;
+    while (youth.length < count && n < count * 4) {
+      const seed = 'deal16|' + country + '|' + c.slot + '|' + (n++);
+      const boy = makeRecruit(host, cfg.nat, cfg.arch, tierOf(c.academy, seed), seed);
+      if (boy && !youth.some(y => y && y.name === boy.name)) { youth.push(boy); added++; }
+    }
+    await pool.query('UPDATE clubs SET youth=$3::jsonb WHERE country_id=$1 AND slot=$2',
+      [country, c.slot, JSON.stringify(youth)]);
+  }
+  await pool.query(`UPDATE ticks SET status='done', finished_at=now() WHERE key=$1`, [key]);
+  return added;
+}
+
 // ---------------------------------------------------------------------------
 // THE ROLLOVER. A year on everybody, and then the two things a year does:
 //

@@ -21,7 +21,7 @@ import { EPOCH, dayIx, daySettled, seedOf, cupDraw, natHour, scheduleOf, seasonS
 import { livingPatch, evolveCountry } from './living.mjs';
 import { calibrate, countryConfigs, BASE_XI, NAT_STR, HUMAN_STR } from './init-world.mjs';
 import { stockAcademies, layCandidates, ageYouth, playColtsStage, computeColts, coltRecords,
-         COLTS_STAGES } from './youth.mjs';
+         COLTS_STAGES, dealYouthToAll } from './youth.mjs';
 import { settleMoney } from './economy.mjs';
 import { runComps } from './comps.mjs';
 import { ensureCallups, absentBySlot, coverSheet, runWindows, rebuildNations, seasonSquad,
@@ -663,6 +663,10 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
   // umpire keeps an UNMANAGED club stocked to fifteen boys so the Colts Cup
   // always has a field, and it lays out the candidates a MANAGED club's scout
   // could be sent to see. It never signs anybody for a human.
+  // the founding deal first, so the sixteen are in place before the floor
+  // check ever runs; it is a no-op forever after its one firing
+  try { await dealYouthToAll(pool, host, country); }
+  catch (eDl) { console.error('founding youth deal failed for ' + country + ':', eDl.message); }
   try { await stockAcademies(pool, host, country, { worldDay: day }); }
   catch (eY) { console.error('academy stocking failed for ' + country + ' day ' + day + ':', eY.message); }
   try {
