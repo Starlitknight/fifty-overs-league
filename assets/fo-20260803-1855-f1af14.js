@@ -6378,7 +6378,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           if (u.indexOf(PREFIX) === 0 && m === "GET" && !hasAuth(input, init)) {
             var prox = "/sb/rest/v1/" + u.slice(PREFIX.length);
             var pin = typeof input === "string" ? prox : new Request(prox, input);
-            return direct(pin, init).then(function (r) {
+            // no-store: the worker used to answer with max-age=86400, so the
+            // BROWSER cached the world's snapshots for a day - a manager could
+            // reload all he liked and still be shown the morning's league.
+            // The edge cache is the cache; the browser must always ask it.
+            var i2 = Object.assign({}, init || {}, { cache: "no-store" });
+            return direct(pin, i2).then(function (r) {
               return (r && (r.status === 404 || r.status === 405)) ? direct(input, init) : r;
             }, function () { return direct(input, init); });
           }
@@ -10280,7 +10285,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-1816-8a6f07";
+  var FO_BUILD = "20260803-1855-f1af14";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");

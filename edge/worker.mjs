@@ -46,7 +46,7 @@ async function sbRead(request, url, ctx) {
   const hit = await cache.match(cacheKey);
   if (hit) {
     const at = Number(hit.headers.get("x-fo-cached-at") || 0);
-    if (Date.now() - at < FRESH_MS) return hit;
+    if (Date.now() - at < FRESH_MS) return toBrowser(hit);
   }
 
   let res = null;
@@ -65,10 +65,22 @@ async function sbRead(request, url, ctx) {
       }
     });
     ctx.waitUntil(cache.put(cacheKey, out.clone()));
-    return out;
+    return toBrowser(out);
   }
-  if (hit) return hit;                  // stale beats an outage
+  if (hit) return toBrowser(hit);       // stale beats an outage
   return res || new Response("upstream unreachable", { status: 502 });
+}
+
+// THE LONG max-age IS FOR THE EDGE, NEVER FOR THE BROWSER. The header above
+// keeps the Cache API copy storable for the stale-on-outage fallback - but it
+// used to ride back to the client verbatim, so every BROWSER also cached each
+// snapshot for a day. A manager could hard-refresh forever and still be shown
+// the morning's league out of his own disk cache. The browser must always ask
+// the edge; the edge is the cache.
+function toBrowser(res) {
+  const h = new Headers(res.headers);
+  h.set("cache-control", "no-store");
+  return new Response(res.body, { status: res.status, headers: h });
 }
 
 function pickHeaders(h) {

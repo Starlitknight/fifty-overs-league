@@ -46,7 +46,12 @@
           if (u.indexOf(PREFIX) === 0 && m === "GET" && !hasAuth(input, init)) {
             var prox = "/sb/rest/v1/" + u.slice(PREFIX.length);
             var pin = typeof input === "string" ? prox : new Request(prox, input);
-            return direct(pin, init).then(function (r) {
+            // no-store: the worker used to answer with max-age=86400, so the
+            // BROWSER cached the world's snapshots for a day - a manager could
+            // reload all he liked and still be shown the morning's league.
+            // The edge cache is the cache; the browser must always ask it.
+            var i2 = Object.assign({}, init || {}, { cache: "no-store" });
+            return direct(pin, i2).then(function (r) {
               return (r && (r.status === 404 || r.status === 405)) ? direct(input, init) : r;
             }, function () { return direct(input, init); });
           }
