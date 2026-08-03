@@ -326,10 +326,10 @@
 
       page.innerHTML =
         "<div class='fo-al'>" +
-        "<div class='fo-al-mast'>" +
-        "<div class='fo-al-kick'>The book of record &middot; Season " + p.season + "</div>" +
+        "<header class='fo-nvmast'>" +
+        "<div class='k'>The book of record &middot; Season " + p.season + "</div>" +
         "<h1>The World Almanack</h1>" +
-          "</div>" +
+        "</header>" +
         "<div class='fo-al-sec'><h2>All-time records</h2>" + recHTML + "</div>" +
         "<div class='fo-al-sec cols'><div><h2>Most runs this season</h2>" + ldr(v.runs, "", p.season) + "</div>" +
         "<div><h2>Most wickets</h2>" + ldr(v.wkts, "", p.season) + "</div></div>" +

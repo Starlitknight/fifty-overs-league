@@ -216,15 +216,6 @@
     var hp = host.querySelector(".fo-pm-wph b"), ap = host.querySelector(".fo-pm-wpa b");
     if (hp) hp.textContent = ph + "%";
     if (ap) ap.textContent = pa + "%";
-    var note = host.querySelector(".fo-pm-wpnote");
-    if (note) {
-      // A CAPTION SAYS WHAT A NUMBER IS. "2 ended level" is a footnote about
-      // the sample, not an answer to "where does 63% come from" - which is the
-      // only question a bar like this raises.
-      note.textContent = done
-        ? ("Played out " + n + " times" + (v.t ? " \u00b7 " + v.t + " ended level." : "."))
-        : ("Playing it out\u2026 " + n + " of " + FO_PM_WP_N + " done.");
-    }
     host.classList.toggle("settled", !!done);
   }
   function foPmWpRun(host, sig, key, natId, hSlot, aSlot, hN, aN, ground) {
@@ -273,10 +264,11 @@
       var host = document.getElementById("fo-pm-count"); if (!host) return;
       var g = host.__g; if (!g) return;
       var c = foPmCountText(g, Date.now());
-      var b = host.querySelector(".big"), s = host.querySelector(".sub");
+      var b = host.querySelector("b"), s = host.querySelector("i");
       if (b && b.textContent !== c.big) b.textContent = c.big;
       if (s && s.textContent !== c.sub) s.textContent = c.sub;
-      host.className = "fo-pm-count " + c.k;
+      // keep the fact styling: this element IS a fact card, the k class rides along
+      host.className = "fo-pm-fact " + c.k;
     } catch (e) {}
   }
 
@@ -448,7 +440,6 @@
         "<span class='fo-pm-wpa'><b>&mdash;</b><u>" + foPmE(aN) + "</u>" + foPmShield(aN, aBoss, natId) + "</span>" +
         "</div>" +
         "<div class='fo-pm-wpbar'><span class='h'></span><span class='t'></span><span class='a'></span></div>" +
-        "<p class='fo-pm-wpnote'></p>" +
         "</div>" +
 
         "<div class='fo-pm-cap'>Team status</div>" +
@@ -523,6 +514,11 @@
       "#page .fo-pm{--gold:#E6B15E;--paper:#F4EFE4;--steel:#8ea3c4;--edge:rgba(150,180,225,.16);position:relative;min-height:100vh;background:#070c16;color:#e9eefa;overflow-x:clip;padding:clamp(10px,2vw,20px) 0 clamp(30px,5vw,56px)}",
       "#page .fo-pm *{box-sizing:border-box}",
       "body.fo-pm-on #page{padding:0;max-width:none}",
+      // the page owns its night: no cream frame peeking around the card's
+      // edges. The daylight skin asserts its cream with !important at
+      // html body.ftpskin strength, so this must out-rank it, not just tie.
+      "html body.ftpskin.fo-pm-on,html body.fo-pm-on{background:#070c16 !important}",
+      "body.fo-pm-on #page{background:#070c16}",
       ".fo-pm-in{width:min(720px,100%);margin:0 auto;padding:0 clamp(10px,2.6vw,16px)}",
       // ONE CARD. This was a full-bleed plate with a body hanging off the
       // bottom of it, so nothing shared an edge with anything and the eye had
@@ -572,8 +568,6 @@
       ".fo-pm-wpbar .h{background:linear-gradient(90deg,#C98A2A,var(--gold))}",
       ".fo-pm-wpbar .t{background:rgba(150,180,225,.4)}",
       ".fo-pm-wpbar .a{background:linear-gradient(90deg,#5C86C4,#9fc0ee)}",
-      ".fo-pm-wpnote{margin:0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:11.5px;line-height:1.5;color:var(--steel)}",
-      ".fo-pm-wp.settled .fo-pm-wpnote{color:#c3d0e6}",
       "@media(prefers-reduced-motion:reduce){.fo-pm-wpbar span{transition:none}}",
       // TEAM STATUS: two rows that look like rows you can open, because they
       // are. Crest, club and where it stands, how it is going underneath, and
@@ -651,8 +645,6 @@
       ".fo-pm-wph b,.fo-pm-wpa b{font-size:20px}",
       ".fo-pm-wph u,.fo-pm-wpa u{font-size:8.5px}",
       ".fo-pm-sh{width:24px;height:24px;border-radius:6px;font-size:9.5px}",
-      ".fo-pm-wpnote{font-size:10.5px;line-height:1.4}",
-      ".fo-pm-wpnote:empty{display:none}",
       "#page a.fo-pm-sl{padding:9px 10px;column-gap:9px}",
       "#page a.fo-pm-sl b{font-size:12.5px}",
       ".fo-pm-beads i{width:16px;height:16px;border-radius:3px;font-size:8px}",

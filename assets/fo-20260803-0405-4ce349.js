@@ -10212,7 +10212,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0356-4a391f";
+  var FO_BUILD = "20260803-0405-4ce349";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -15081,7 +15081,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       }).join("");
       page.innerHTML =
         "<div class='crumb'>" + E(t.name) + " &raquo; Transfers</div>" +
-        "<div class='page-head'><div><div class='eyebrow'>Free agents</div><h1>Transfer market</h1><p>One shared pool &middot; signed players are gone for everyone &middot; fresh names every " + FO_MARKET_REFRESH + " matchdays.</p></div></div>" +
+        "<header class='fo-nvmast'><div class='k'>Free agents</div><h1>Transfer market</h1><p>One shared pool &middot; signed players are gone for everyone &middot; fresh names every " + FO_MARKET_REFRESH + " matchdays.</p></header>" +
         "<div class='panel'><h4>On the market &middot; restocks in " + foMarketRefreshIn() + " matchday" + (foMarketRefreshIn() === 1 ? "" : "s") + (SYNC && SYNC.started && !SYNC.practice ? " &middot; <span id='fo-mk-cd'></span>" : "") + "</h4><div class='pad'>" +
         "<div class='fo-yc-note'>Bank <b>" + FO$(bank) + "</b> &middot; Squad <b>" + t.players.length + "/18</b> &middot; signings join after the next matchday</div>" +
         "<div class='pkm-grid'>" + cards + "</div></div></div>";
@@ -28871,7 +28871,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var shell = page.querySelector(".fo-hg2.fo-home2");
       if (shell && shell.getAttribute("data-hgv") === v) {
         shell.style.setProperty("--lac", region.ac || "#EBC271");
-        var wxEl = shell.querySelector(".hg-wx"); if (wxEl) wxEl.innerHTML = wxHtml;
+        // the weather caption chip is gone by decree: the painting says it all
+        var wxEl = shell.querySelector(".hg-wx"); if (wxEl) wxEl.remove();
         var idEl = shell.querySelector(".hg-id"); if (idEl) idEl.innerHTML = idHtml;
         var barEl = shell.querySelector(".hg-bar"); if (barEl) barEl.innerHTML = barHtml;
       } else {
@@ -28879,7 +28880,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           "<div class='fo-hg2 fo-home2' data-hgv='" + E(v) + "' style='--lac:" + (region.ac || "#EBC271") + "'>" +
           "<img class='hg-bg' src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
           "<div class='hg-grain'></div><div class='hg-scrim'></div><div class='hg-bloom'></div>" +
-          "<div class='hg-wx'>" + wxHtml + "</div>" +
           "<div class='hg-id'>" + idHtml + "</div>" +
           "<div class='hg-bar'>" + barHtml + "</div></div>";
       }
@@ -32557,8 +32557,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     }).join("");
     page.innerHTML = "<div class='fo-ns'>" +
       "<div class='fo-ns-in'>" +
-      "<div class='fo-cer-eyebrow'>" + E(me.name) + " &middot; the training ground</div>" +
-      "<h1 class='fo-ns-h1'>The Nets</h1>" +
+      "<header class='fo-nvmast'><div class='k'>" + E(me.name) + " &middot; the training ground</div>" +
+      "<h1>The Nets</h1></header>" +
       "<div class='fo-ns-grid'>" +
       planPanel +
       "<div class='fo-ns-panel'><h3>Development report</h3>" + (rows || "<p class='fo-ns-note'>No gains recorded yet.</p>") + "</div>" +
@@ -33342,11 +33342,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body.fo-hbx-on{background:#2E2418 !important;isolation:isolate}",
     ".fo-hb-bg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 45%;z-index:-2}",
     ".fo-hb-veil{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(24,18,10,.30),rgba(24,18,10,.12) 32%,rgba(24,18,10,.18) 64%,rgba(18,13,7,.46))}",
-    "body.fo-hbx-on #page .fo-hb-mast{background:transparent !important;border:none !important;box-shadow:none !important;padding:10px 4px 16px}",
+    // the pavilion wall wears the shared navy masthead: same band as the
+    // fixture list and the cup boards, gold eyebrow, white headline
+    "body.fo-hbx-on #page .fo-hb-mast{background:linear-gradient(132deg,#0B1D33,#122C4B 55%,#1B3A5F) !important;border:none !important;border-radius:20px;padding:24px 26px 22px;box-shadow:0 18px 44px rgba(11,29,51,.3) !important}",
     "body.fo-hbx-on #page .fo-hb-mast:after{display:none}",
-    "body.fo-hbx-on #page .fo-hb-mast h1{color:#141C28 !important;text-shadow:none}",
-    "body.fo-hbx-on #page .fo-hb-kick{color:#B44A22 !important;text-shadow:none}",
-    "body.fo-hbx-on #page .fo-hb-mast p{color:rgba(20,28,40,.65) !important;text-shadow:none}",
+    "body.fo-hbx-on #page .fo-hb-mast h1{color:#FFFEFC !important;text-shadow:none}",
+    "body.fo-hbx-on #page .fo-hb-kick{color:#EBC271 !important;text-shadow:none}",
+    "body.fo-hbx-on #page .fo-hb-mast p{color:rgba(244,239,228,.72) !important;text-shadow:none}",
     "body.fo-hbx-on #page .fo-hb-tally{box-shadow:0 8px 20px rgba(0,0,0,.35)}",
     // section headings floating on the pavilion air
     "html body #page .fo-hb-shead{margin:18px 2px 8px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}",
@@ -36592,10 +36594,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
       page.innerHTML =
         "<div class='fo-al'>" +
-        "<div class='fo-al-mast'>" +
-        "<div class='fo-al-kick'>The book of record &middot; Season " + p.season + "</div>" +
+        "<header class='fo-nvmast'>" +
+        "<div class='k'>The book of record &middot; Season " + p.season + "</div>" +
         "<h1>The World Almanack</h1>" +
-          "</div>" +
+        "</header>" +
         "<div class='fo-al-sec'><h2>All-time records</h2>" + recHTML + "</div>" +
         "<div class='fo-al-sec cols'><div><h2>Most runs this season</h2>" + ldr(v.runs, "", p.season) + "</div>" +
         "<div><h2>Most wickets</h2>" + ldr(v.wkts, "", p.season) + "</div></div>" +
@@ -42654,9 +42656,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return "<div class='fo-fin'>" + body + "</div>";
   }
   function head(clubNm, sub) {
-    return "<div class='fo-fin-k'>The books</div>" +
+    return "<header class='fo-nvmast'><div class='k'>The books</div>" +
       "<h1>" + E(clubNm || "Your club") + "</h1>" +
-      (sub ? "<p class='fo-fin-sub'>" + sub + "</p>" : "");
+      (sub ? "<p>" + sub + "</p>" : "") + "</header>";
   }
 
   function render(page, st) {
@@ -42916,7 +42918,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       return SM.filter === "all" || (SM.filter === "in" ? l.amount > 0 : l.amount < 0);
     }).length;
     page.innerHTML = shell(
-      "<div class='fo-fin-k'>The statement</div><h1>" + E(SM.club || "Your club") + "</h1>" +
+      "<header class='fo-nvmast'><div class='k'>The statement</div><h1>" + E(SM.club || "Your club") + "</h1></header>" +
       "<div class='fo-fin-bank'><div class='lb'>In the treasury</div><b>" + M(SM.bank) + "</b>" +
       "<div class='fo-fin-walk'><div><span>Entries on file</span><i>" + SM.entries + "</i></div>" +
       "<div><span>Showing</span><i>" + shown + "</i></div></div></div>" +
@@ -44078,10 +44080,25 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // room can be given its light back with one line.
   var ROOM = {};
 
+  // ---- the navy masthead ----------------------------------------------------
+  // The rooms lost their paintings; this is what they wear instead. One shared
+  // band in the broadcast language the cup boards and the fixture list set:
+  // navy gradient, gold Oswald eyebrow, Fraunces headline, a breath of warm
+  // light in the corner. Any page can put one on:
+  //   <header class='fo-nvmast'><div class='k'>eyebrow</div><h1>Title</h1>
+  //     <p>optional standfirst</p></header>
+  var MAST_CSS = [
+    "html body #page .fo-nvmast{position:relative;overflow:hidden;background:linear-gradient(132deg,#0B1D33,#122C4B 55%,#1B3A5F);border-radius:20px;padding:24px 26px 22px;margin:0 0 18px;box-shadow:0 18px 44px rgba(11,29,51,.3)}",
+    "html body #page .fo-nvmast:before{content:'';position:absolute;inset:0;background:radial-gradient(120% 90% at 85% -10%,rgba(235,194,113,.14),transparent 55%);pointer-events:none}",
+    "html body #page .fo-nvmast .k{position:relative;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:#EBC271}",
+    "html body #page .fo-nvmast h1{position:relative;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(28px,4.4vw,38px);letter-spacing:-.015em;margin:7px 0 0;color:#FFFEFC;line-height:1.04}",
+    "html body #page .fo-nvmast p{position:relative;margin:9px 0 0;font:400 13px/1.55 Inter,sans-serif;color:rgba(244,239,228,.72);max-width:58ch}",
+    "html body #page .fo-nvmast p a{color:#EBC271}"
+  ].join("\n");
   function css() {
     if (document.getElementById("fo-roomart-css")) return;
     var s = document.createElement("style"); s.id = "fo-roomart-css";
-    s.textContent = [
+    s.textContent = MAST_CSS + "\n" + [
       "#fo-roomart{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity .5s ease}",
       "#fo-roomart.on{opacity:1}",
       "#fo-roomart i{position:absolute;inset:0;background-position:center;background-size:cover;filter:saturate(.82)}",
@@ -44464,15 +44481,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var hp = host.querySelector(".fo-pm-wph b"), ap = host.querySelector(".fo-pm-wpa b");
     if (hp) hp.textContent = ph + "%";
     if (ap) ap.textContent = pa + "%";
-    var note = host.querySelector(".fo-pm-wpnote");
-    if (note) {
-      // A CAPTION SAYS WHAT A NUMBER IS. "2 ended level" is a footnote about
-      // the sample, not an answer to "where does 63% come from" - which is the
-      // only question a bar like this raises.
-      note.textContent = done
-        ? ("Played out " + n + " times" + (v.t ? " \u00b7 " + v.t + " ended level." : "."))
-        : ("Playing it out\u2026 " + n + " of " + FO_PM_WP_N + " done.");
-    }
     host.classList.toggle("settled", !!done);
   }
   function foPmWpRun(host, sig, key, natId, hSlot, aSlot, hN, aN, ground) {
@@ -44521,10 +44529,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var host = document.getElementById("fo-pm-count"); if (!host) return;
       var g = host.__g; if (!g) return;
       var c = foPmCountText(g, Date.now());
-      var b = host.querySelector(".big"), s = host.querySelector(".sub");
+      var b = host.querySelector("b"), s = host.querySelector("i");
       if (b && b.textContent !== c.big) b.textContent = c.big;
       if (s && s.textContent !== c.sub) s.textContent = c.sub;
-      host.className = "fo-pm-count " + c.k;
+      // keep the fact styling: this element IS a fact card, the k class rides along
+      host.className = "fo-pm-fact " + c.k;
     } catch (e) {}
   }
 
@@ -44696,7 +44705,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<span class='fo-pm-wpa'><b>&mdash;</b><u>" + foPmE(aN) + "</u>" + foPmShield(aN, aBoss, natId) + "</span>" +
         "</div>" +
         "<div class='fo-pm-wpbar'><span class='h'></span><span class='t'></span><span class='a'></span></div>" +
-        "<p class='fo-pm-wpnote'></p>" +
         "</div>" +
 
         "<div class='fo-pm-cap'>Team status</div>" +
@@ -44771,6 +44779,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "#page .fo-pm{--gold:#E6B15E;--paper:#F4EFE4;--steel:#8ea3c4;--edge:rgba(150,180,225,.16);position:relative;min-height:100vh;background:#070c16;color:#e9eefa;overflow-x:clip;padding:clamp(10px,2vw,20px) 0 clamp(30px,5vw,56px)}",
       "#page .fo-pm *{box-sizing:border-box}",
       "body.fo-pm-on #page{padding:0;max-width:none}",
+      // the page owns its night: no cream frame peeking around the card's
+      // edges. The daylight skin asserts its cream with !important at
+      // html body.ftpskin strength, so this must out-rank it, not just tie.
+      "html body.ftpskin.fo-pm-on,html body.fo-pm-on{background:#070c16 !important}",
+      "body.fo-pm-on #page{background:#070c16}",
       ".fo-pm-in{width:min(720px,100%);margin:0 auto;padding:0 clamp(10px,2.6vw,16px)}",
       // ONE CARD. This was a full-bleed plate with a body hanging off the
       // bottom of it, so nothing shared an edge with anything and the eye had
@@ -44820,8 +44833,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-pm-wpbar .h{background:linear-gradient(90deg,#C98A2A,var(--gold))}",
       ".fo-pm-wpbar .t{background:rgba(150,180,225,.4)}",
       ".fo-pm-wpbar .a{background:linear-gradient(90deg,#5C86C4,#9fc0ee)}",
-      ".fo-pm-wpnote{margin:0;font-family:Georgia,'Times New Roman',serif;font-style:italic;font-size:11.5px;line-height:1.5;color:var(--steel)}",
-      ".fo-pm-wp.settled .fo-pm-wpnote{color:#c3d0e6}",
       "@media(prefers-reduced-motion:reduce){.fo-pm-wpbar span{transition:none}}",
       // TEAM STATUS: two rows that look like rows you can open, because they
       // are. Crest, club and where it stands, how it is going underneath, and
@@ -44899,8 +44910,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-pm-wph b,.fo-pm-wpa b{font-size:20px}",
       ".fo-pm-wph u,.fo-pm-wpa u{font-size:8.5px}",
       ".fo-pm-sh{width:24px;height:24px;border-radius:6px;font-size:9.5px}",
-      ".fo-pm-wpnote{font-size:10.5px;line-height:1.4}",
-      ".fo-pm-wpnote:empty{display:none}",
       "#page a.fo-pm-sl{padding:9px 10px;column-gap:9px}",
       "#page a.fo-pm-sl b{font-size:12.5px}",
       ".fo-pm-beads i{width:16px;height:16px;border-radius:3px;font-size:8px}",

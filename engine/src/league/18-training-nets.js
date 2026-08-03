@@ -318,8 +318,8 @@
     }).join("");
     page.innerHTML = "<div class='fo-ns'>" +
       "<div class='fo-ns-in'>" +
-      "<div class='fo-cer-eyebrow'>" + E(me.name) + " &middot; the training ground</div>" +
-      "<h1 class='fo-ns-h1'>The Nets</h1>" +
+      "<header class='fo-nvmast'><div class='k'>" + E(me.name) + " &middot; the training ground</div>" +
+      "<h1>The Nets</h1></header>" +
       "<div class='fo-ns-grid'>" +
       planPanel +
       "<div class='fo-ns-panel'><h3>Development report</h3>" + (rows || "<p class='fo-ns-note'>No gains recorded yet.</p>") + "</div>" +

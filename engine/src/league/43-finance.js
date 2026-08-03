@@ -188,9 +188,9 @@
     return "<div class='fo-fin'>" + body + "</div>";
   }
   function head(clubNm, sub) {
-    return "<div class='fo-fin-k'>The books</div>" +
+    return "<header class='fo-nvmast'><div class='k'>The books</div>" +
       "<h1>" + E(clubNm || "Your club") + "</h1>" +
-      (sub ? "<p class='fo-fin-sub'>" + sub + "</p>" : "");
+      (sub ? "<p>" + sub + "</p>" : "") + "</header>";
   }
 
   function render(page, st) {
@@ -450,7 +450,7 @@
       return SM.filter === "all" || (SM.filter === "in" ? l.amount > 0 : l.amount < 0);
     }).length;
     page.innerHTML = shell(
-      "<div class='fo-fin-k'>The statement</div><h1>" + E(SM.club || "Your club") + "</h1>" +
+      "<header class='fo-nvmast'><div class='k'>The statement</div><h1>" + E(SM.club || "Your club") + "</h1></header>" +
       "<div class='fo-fin-bank'><div class='lb'>In the treasury</div><b>" + M(SM.bank) + "</b>" +
       "<div class='fo-fin-walk'><div><span>Entries on file</span><i>" + SM.entries + "</i></div>" +
       "<div><span>Showing</span><i>" + shown + "</i></div></div></div>" +

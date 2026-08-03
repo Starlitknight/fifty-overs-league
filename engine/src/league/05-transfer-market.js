@@ -114,7 +114,7 @@
       }).join("");
       page.innerHTML =
         "<div class='crumb'>" + E(t.name) + " &raquo; Transfers</div>" +
-        "<div class='page-head'><div><div class='eyebrow'>Free agents</div><h1>Transfer market</h1><p>One shared pool &middot; signed players are gone for everyone &middot; fresh names every " + FO_MARKET_REFRESH + " matchdays.</p></div></div>" +
+        "<header class='fo-nvmast'><div class='k'>Free agents</div><h1>Transfer market</h1><p>One shared pool &middot; signed players are gone for everyone &middot; fresh names every " + FO_MARKET_REFRESH + " matchdays.</p></header>" +
         "<div class='panel'><h4>On the market &middot; restocks in " + foMarketRefreshIn() + " matchday" + (foMarketRefreshIn() === 1 ? "" : "s") + (SYNC && SYNC.started && !SYNC.practice ? " &middot; <span id='fo-mk-cd'></span>" : "") + "</h4><div class='pad'>" +
         "<div class='fo-yc-note'>Bank <b>" + FO$(bank) + "</b> &middot; Squad <b>" + t.players.length + "/18</b> &middot; signings join after the next matchday</div>" +
         "<div class='pkm-grid'>" + cards + "</div></div></div>";

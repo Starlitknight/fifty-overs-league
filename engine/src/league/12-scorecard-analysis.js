@@ -5339,7 +5339,8 @@
       var shell = page.querySelector(".fo-hg2.fo-home2");
       if (shell && shell.getAttribute("data-hgv") === v) {
         shell.style.setProperty("--lac", region.ac || "#EBC271");
-        var wxEl = shell.querySelector(".hg-wx"); if (wxEl) wxEl.innerHTML = wxHtml;
+        // the weather caption chip is gone by decree: the painting says it all
+        var wxEl = shell.querySelector(".hg-wx"); if (wxEl) wxEl.remove();
         var idEl = shell.querySelector(".hg-id"); if (idEl) idEl.innerHTML = idHtml;
         var barEl = shell.querySelector(".hg-bar"); if (barEl) barEl.innerHTML = barHtml;
       } else {
@@ -5347,7 +5348,6 @@
           "<div class='fo-hg2 fo-home2' data-hgv='" + E(v) + "' style='--lac:" + (region.ac || "#EBC271") + "'>" +
           "<img class='hg-bg' src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
           "<div class='hg-grain'></div><div class='hg-scrim'></div><div class='hg-bloom'></div>" +
-          "<div class='hg-wx'>" + wxHtml + "</div>" +
           "<div class='hg-id'>" + idHtml + "</div>" +
           "<div class='hg-bar'>" + barHtml + "</div></div>";
       }

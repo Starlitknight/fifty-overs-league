@@ -335,11 +335,13 @@
     "html body.fo-hbx-on{background:#2E2418 !important;isolation:isolate}",
     ".fo-hb-bg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 45%;z-index:-2}",
     ".fo-hb-veil{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(24,18,10,.30),rgba(24,18,10,.12) 32%,rgba(24,18,10,.18) 64%,rgba(18,13,7,.46))}",
-    "body.fo-hbx-on #page .fo-hb-mast{background:transparent !important;border:none !important;box-shadow:none !important;padding:10px 4px 16px}",
+    // the pavilion wall wears the shared navy masthead: same band as the
+    // fixture list and the cup boards, gold eyebrow, white headline
+    "body.fo-hbx-on #page .fo-hb-mast{background:linear-gradient(132deg,#0B1D33,#122C4B 55%,#1B3A5F) !important;border:none !important;border-radius:20px;padding:24px 26px 22px;box-shadow:0 18px 44px rgba(11,29,51,.3) !important}",
     "body.fo-hbx-on #page .fo-hb-mast:after{display:none}",
-    "body.fo-hbx-on #page .fo-hb-mast h1{color:#141C28 !important;text-shadow:none}",
-    "body.fo-hbx-on #page .fo-hb-kick{color:#B44A22 !important;text-shadow:none}",
-    "body.fo-hbx-on #page .fo-hb-mast p{color:rgba(20,28,40,.65) !important;text-shadow:none}",
+    "body.fo-hbx-on #page .fo-hb-mast h1{color:#FFFEFC !important;text-shadow:none}",
+    "body.fo-hbx-on #page .fo-hb-kick{color:#EBC271 !important;text-shadow:none}",
+    "body.fo-hbx-on #page .fo-hb-mast p{color:rgba(244,239,228,.72) !important;text-shadow:none}",
     "body.fo-hbx-on #page .fo-hb-tally{box-shadow:0 8px 20px rgba(0,0,0,.35)}",
     // section headings floating on the pavilion air
     "html body #page .fo-hb-shead{margin:18px 2px 8px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}",
