@@ -10212,7 +10212,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0405-4ce349";
+  var FO_BUILD = "20260803-0408-0d6d18";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -19525,7 +19525,23 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // one uniform navy for every bowler's cells - the initials tell them
       // apart, the colour stays calm
       ".mg-chips .mgb i{display:none}" +
-      ".mg-grid .mgc-c0 b,.mg-grid .mgc-c1 b,.mg-grid .mgc-c2 b,.mg-grid .mgc-c3 b,.mg-grid .mgc-c4 b,.mg-grid .mgc-c5 b{background:#41577a}" +
+      // each bowler wears his own colour - on the initials tab alone, never
+      // the name. Six muted tones of one lightness, all from the theme's
+      // family, so a full card reads as a plan rather than a paint box.
+      ".mg-grid .mgc-c0 b{background:#41577A}" +      // slate navy
+      ".mg-grid .mgc-c1 b{background:#2E7D5B}" +      // pine green
+      ".mg-grid .mgc-c2 b{background:#C05A38}" +      // terracotta
+      ".mg-grid .mgc-c3 b{background:#A8802B}" +      // bronze
+      ".mg-grid .mgc-c4 b{background:#7A5480}" +      // plum
+      ".mg-grid .mgc-c5 b{background:#3E7C8A}" +      // teal
+      // the picker cards carry the same colour as a quiet left edge, so the
+      // eye can pair a chip with its overs at a glance
+      ".mg-chips .mgb-c0{border-left:4px solid #41577A!important}" +
+      ".mg-chips .mgb-c1{border-left:4px solid #2E7D5B!important}" +
+      ".mg-chips .mgb-c2{border-left:4px solid #C05A38!important}" +
+      ".mg-chips .mgb-c3{border-left:4px solid #A8802B!important}" +
+      ".mg-chips .mgb-c4{border-left:4px solid #7A5480!important}" +
+      ".mg-chips .mgb-c5{border-left:4px solid #3E7C8A!important}" +
       // ---- the ≡ drag handle: hidden for mouse users (drag-anywhere covers
       // them), a fat instant-drag target on touch screens
       ".fo-ord-xis .xc .dh{display:none}" +
@@ -44873,8 +44889,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "@media(max-width:430px){.fo-pm-foot{grid-template-columns:1fr}}",
       "#page .fo-pm-cta{background:var(--gold);color:#08101f}",
       ".fo-pm-cta:hover{transform:translateY(-1px);background:#F0C075}",
-      "#page .fo-pm-cta.live{background:#FF0033;color:#fff}",
-      ".fo-pm-cta.live:hover{background:#E4002B}",
+      // live wears the page's own gold, not a siren: the pulsing red dot
+      // carries the LIVE signal while the button stays in the family
+      "#page .fo-pm-cta.live{background:var(--gold);color:#08101f}",
+      ".fo-pm-cta.live:hover{background:#F0C075}",
+      ".fo-pm-cta.live:before{content:'';width:8px;height:8px;border-radius:50%;background:#D8342B;flex:0 0 auto;animation:foPmLiveDot 1.2s ease-in-out infinite}",
+      "@keyframes foPmLiveDot{0%,100%{opacity:1}50%{opacity:.3}}",
+      "@media(prefers-reduced-motion:reduce){.fo-pm-cta.live:before{animation:none}}",
       "#page .fo-pm-back{border:1px solid rgba(150,180,225,.28);color:#cddaf0}",
       ".fo-pm-back:hover{border-color:var(--gold);color:var(--gold)}",
       "@media(max-width:700px){.fo-pm-when{grid-template-columns:1fr}.fo-pm-where{grid-template-columns:repeat(3,minmax(0,1fr))}}",

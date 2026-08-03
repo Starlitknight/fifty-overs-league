@@ -1240,7 +1240,23 @@
       // one uniform navy for every bowler's cells - the initials tell them
       // apart, the colour stays calm
       ".mg-chips .mgb i{display:none}" +
-      ".mg-grid .mgc-c0 b,.mg-grid .mgc-c1 b,.mg-grid .mgc-c2 b,.mg-grid .mgc-c3 b,.mg-grid .mgc-c4 b,.mg-grid .mgc-c5 b{background:#41577a}" +
+      // each bowler wears his own colour - on the initials tab alone, never
+      // the name. Six muted tones of one lightness, all from the theme's
+      // family, so a full card reads as a plan rather than a paint box.
+      ".mg-grid .mgc-c0 b{background:#41577A}" +      // slate navy
+      ".mg-grid .mgc-c1 b{background:#2E7D5B}" +      // pine green
+      ".mg-grid .mgc-c2 b{background:#C05A38}" +      // terracotta
+      ".mg-grid .mgc-c3 b{background:#A8802B}" +      // bronze
+      ".mg-grid .mgc-c4 b{background:#7A5480}" +      // plum
+      ".mg-grid .mgc-c5 b{background:#3E7C8A}" +      // teal
+      // the picker cards carry the same colour as a quiet left edge, so the
+      // eye can pair a chip with its overs at a glance
+      ".mg-chips .mgb-c0{border-left:4px solid #41577A!important}" +
+      ".mg-chips .mgb-c1{border-left:4px solid #2E7D5B!important}" +
+      ".mg-chips .mgb-c2{border-left:4px solid #C05A38!important}" +
+      ".mg-chips .mgb-c3{border-left:4px solid #A8802B!important}" +
+      ".mg-chips .mgb-c4{border-left:4px solid #7A5480!important}" +
+      ".mg-chips .mgb-c5{border-left:4px solid #3E7C8A!important}" +
       // ---- the ≡ drag handle: hidden for mouse users (drag-anywhere covers
       // them), a fat instant-drag target on touch screens
       ".fo-ord-xis .xc .dh{display:none}" +

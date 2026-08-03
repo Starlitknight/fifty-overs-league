@@ -608,8 +608,13 @@
       "@media(max-width:430px){.fo-pm-foot{grid-template-columns:1fr}}",
       "#page .fo-pm-cta{background:var(--gold);color:#08101f}",
       ".fo-pm-cta:hover{transform:translateY(-1px);background:#F0C075}",
-      "#page .fo-pm-cta.live{background:#FF0033;color:#fff}",
-      ".fo-pm-cta.live:hover{background:#E4002B}",
+      // live wears the page's own gold, not a siren: the pulsing red dot
+      // carries the LIVE signal while the button stays in the family
+      "#page .fo-pm-cta.live{background:var(--gold);color:#08101f}",
+      ".fo-pm-cta.live:hover{background:#F0C075}",
+      ".fo-pm-cta.live:before{content:'';width:8px;height:8px;border-radius:50%;background:#D8342B;flex:0 0 auto;animation:foPmLiveDot 1.2s ease-in-out infinite}",
+      "@keyframes foPmLiveDot{0%,100%{opacity:1}50%{opacity:.3}}",
+      "@media(prefers-reduced-motion:reduce){.fo-pm-cta.live:before{animation:none}}",
       "#page .fo-pm-back{border:1px solid rgba(150,180,225,.28);color:#cddaf0}",
       ".fo-pm-back:hover{border-color:var(--gold);color:var(--gold)}",
       "@media(max-width:700px){.fo-pm-when{grid-template-columns:1fr}.fo-pm-where{grid-template-columns:repeat(3,minmax(0,1fr))}}",
