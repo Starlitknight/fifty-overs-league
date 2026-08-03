@@ -10285,7 +10285,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-2121-78d4c3";
+  var FO_BUILD = "20260803-2126-abdc0d";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -30115,9 +30115,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<b>" + E(heroName) + "</b>" +
         "<span class='hg-sub'>" + posLine + "</span>" +
         "<span class='hg-form'><u>FORM</u>" + beads + "</span>";
-      // one door on the wallpaper: the next match. Everything else lives in
-      // the menu bar, and repeating it here was two navigations again.
-      var barHtml = btn("fo-hm-nx", "NEXT MATCH \u25B8", "PLAY \u25B8");
+      // the next match is the door that matters; Squad and League ride beside
+      // it as quiet shortcuts so the two everyday rooms are one tap away
+      var barHtml = btn("fo-hm-nx", "NEXT MATCH \u25B8", "PLAY \u25B8") +
+        btn("fo-hm-sq", "SQUAD", "SQUAD") +
+        btn("fo-hm-lg", "LEAGUE", "LEAGUE");
       // THE PAINTING HANGS ONCE. Boot answers arrive one by one - the world's
       // club names, then its table, then the served snapshot - and each used
       // to rebuild this whole page, tearing down and re-decoding the same
@@ -30167,6 +30169,14 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           }
         }
       } catch (eNx) {}
+      try {
+        [["fo-hm-sq", "#/squad"], ["fo-hm-lg", "#/league"]].forEach(function (d) {
+          var b2 = page.querySelector("#" + d[0]);
+          if (b2) b2.addEventListener("click", function () {
+            try { location.hash = d[1]; if (typeof window.route === "function") window.route(); } catch (eGo2) {}
+          });
+        });
+      } catch (eSl) {}
       try { if (window.__foLive) window.__foLive.mask(); } catch (eM) {}
     } catch (e) { try { console.warn("foRenderHome", e); } catch (e2) {} }
   }
