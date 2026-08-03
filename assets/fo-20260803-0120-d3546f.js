@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0105-33a647";
+  var FO_BUILD = "20260803-0120-d3546f";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -28803,23 +28803,37 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (page.__foHomeSig === sig && page.querySelector(".fo-home2")) return;
       page.__foHomeSig = sig;
       var btn = function (id, lf, ls) { return "<button type='button' id='" + id + "'><span class='hg-lf'>" + lf + "</span><span class='hg-ls'>" + ls + "</span></button>"; };
-      page.innerHTML =
-        "<div class='fo-hg2 fo-home2' style='--lac:" + (region.ac || "#EBC271") + "'>" +
-        "<img class='hg-bg' src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
-        "<div class='hg-grain'></div><div class='hg-scrim'></div><div class='hg-bloom'></div>" +
-        "<div class='hg-wx'><b>HOME GROUND</b><span>" + (FO_HG_WX[v] || "") + (window.__foHgWx ? " &middot; forecast: " + E(window.__foHgWx) : "") + "</span></div>" +
-        "<div class='hg-id'><i>YOUR CLUB &middot; THE ELEVEN ARCHES</i>" +
+      var wxHtml = "<b>HOME GROUND</b><span>" + (FO_HG_WX[v] || "") + (window.__foHgWx ? " &middot; forecast: " + E(window.__foHgWx) : "") + "</span>";
+      var idHtml = "<i>YOUR CLUB &middot; THE ELEVEN ARCHES</i>" +
         "<b>" + E(heroName) + "</b>" +
         "<span class='hg-sub'>" + posLine + "</span>" +
-        "<span class='hg-form'><u>FORM</u>" + beads + "</span>" +
-        "</div>" +
-        "<div class='hg-bar'>" +
-        btn("fo-hm-nx", "NEXT MATCH \u25B8", "PLAY \u25B8") +
+        "<span class='hg-form'><u>FORM</u>" + beads + "</span>";
+      var barHtml = btn("fo-hm-nx", "NEXT MATCH \u25B8", "PLAY \u25B8") +
         btn("fo-hm-lg", "YOUR LEAGUE", "LEAGUE") +
         btn("fo-hm-sq", "THE SQUAD", "SQUAD") +
         btn("fo-hm-wd", "WORLD MAP", "WORLD") +
-        btn("fo-hm-cp", "CHAMPIONS CUP", "CUP") +
-        "</div></div>";
+        btn("fo-hm-cp", "CHAMPIONS CUP", "CUP");
+      // THE PAINTING HANGS ONCE. Boot answers arrive one by one - the world's
+      // club names, then its table, then the served snapshot - and each used
+      // to rebuild this whole page, tearing down and re-decoding the same
+      // full-screen artwork: the home page "blinked" on every answer. Now the
+      // shell and its art stay on the wall while only the words change; the
+      // page is torn down solely when the painting itself must change.
+      var shell = page.querySelector(".fo-hg2.fo-home2");
+      if (shell && shell.getAttribute("data-hgv") === v) {
+        shell.style.setProperty("--lac", region.ac || "#EBC271");
+        var wxEl = shell.querySelector(".hg-wx"); if (wxEl) wxEl.innerHTML = wxHtml;
+        var idEl = shell.querySelector(".hg-id"); if (idEl) idEl.innerHTML = idHtml;
+        var barEl = shell.querySelector(".hg-bar"); if (barEl) barEl.innerHTML = barHtml;
+      } else {
+        page.innerHTML =
+          "<div class='fo-hg2 fo-home2' data-hgv='" + E(v) + "' style='--lac:" + (region.ac || "#EBC271") + "'>" +
+          "<img class='hg-bg' src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
+          "<div class='hg-grain'></div><div class='hg-scrim'></div><div class='hg-bloom'></div>" +
+          "<div class='hg-wx'>" + wxHtml + "</div>" +
+          "<div class='hg-id'>" + idHtml + "</div>" +
+          "<div class='hg-bar'>" + barHtml + "</div></div>";
+      }
       try { document.body.classList.add("fo-home-on"); document.body.classList.remove("fo-boss-on"); document.body.classList.remove("fo-ov-on"); } catch (eBc) {}
       try { foHgFit(page.querySelector(".fo-hg2")); } catch (eF) {}
       var go = function (id, hash) { var b = page.querySelector("#" + id); if (b) b.addEventListener("click", function () { location.hash = hash; if (typeof window.route === "function") window.route(); }); };
