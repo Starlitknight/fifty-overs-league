@@ -10285,7 +10285,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-2120-a5c002";
+  var FO_BUILD = "20260803-2121-78d4c3";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21724,6 +21724,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-s2-st10 .st em{font-style:normal;color:#e3dccb}",
       ".fo-s2-st10 .st em.f{color:#E8B96A}",
       ".fo-s2-st10 .st em.h{background:linear-gradient(90deg,#E8B96A 50%,#e3dccb 50%);-webkit-background-clip:text;background-clip:text;color:transparent}",
+      // bowling stars in the orders room's teal - same craft, same colour
+      ".fo-s2-st10.bwl .st em.f{color:#0FB4C4}",
+      ".fo-s2-st10.bwl .st em.h{background:linear-gradient(90deg,#0FB4C4 50%,#e3dccb 50%);-webkit-background-clip:text;background-clip:text;color:transparent}",
       ".fo-s2-ovr{font:800 19px Inter,sans-serif;text-align:right;font-variant-numeric:tabular-nums}",
       ".fo-s2-car{color:#b0a794;font-size:11px;text-align:center;transition:transform .15s ease}",
       ".fo-s2-row.open .fo-s2-car{transform:rotate(180deg)}",
@@ -21874,9 +21877,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (sf) {
         var cb = sf.bat(p);
         var cw = p.bowlType ? sf.bowl(p) : null;
-        var comp = cls === "bowl" ? (cw != null ? cw : cb)
-          : (cls === "ar" && cw != null) ? Math.max(cb, cw) : cb;
-        return "<span class='fo-s2-st10'>" + sf.html(sf.stars(comp)) + "</span>";
+        // when the stars shown are his BOWLING, they wear the orders room's
+        // bowling teal, so one glance says which craft is being rated
+        var useBowl = (cls === "bowl" && cw != null) || (cls === "ar" && cw != null && cw > cb);
+        var comp = useBowl ? cw : cb;
+        return "<span class='fo-s2-st10" + (useBowl ? " bwl" : "") + "'>" + sf.html(sf.stars(comp)) + "</span>";
       }
     } catch (eSt) {}
     return foS2Stars(ovr);
