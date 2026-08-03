@@ -562,7 +562,9 @@
       var inits = function (nm9) { var a9 = String(nm9).split(" "); return (a9[0].charAt(0) + (a9.length > 1 ? a9[a9.length - 1].charAt(0) : "")).toUpperCase(); };
       var mgrid = "<div class='fo-ord-mgrid'>" +
         "<div class='mg-hint'>Pick a bowler, then tap overs to hand them to him &middot; tap his over again to clear it. The list runs over 1 to over 50. Tap a bowler's badge to set his field: attacking, balanced or defensive.</div>" +
-        "<div class='fo-ord-clearrow'><button type='button' class='fo-ord-clearp' data-fo-clearplan>&#8709; Clear the bowling plan</button></div>" +
+        "<div class='fo-ord-clearrow'>" +
+        "<button type='button' class='fo-ord-autop' data-fo-act='autobowl'>The Gaffer picks the overs</button>" +
+        "<button type='button' class='fo-ord-clearp' data-fo-clearplan>&#8709; Clear the bowling plan</button></div>" +
         "<div class='mg-chips'>" + bowlNames.map(function (n9) {
           // one small card per bowler, two to a row: name and OVR, his type
           // and overs, his field badge, and only the stars he HAS - the ten
@@ -718,6 +720,9 @@
     var opp = App.pending || wOpp;
     if (!opp) { try { if (App.season && App.season.schedule) opp = foFixtureMeta(App.season.round); } catch (eFm) {} }
     if (!opp) opp = { home: t.name, away: "(practice)", ground: t.ground, pitch: "balanced", weather: "-" };
+    // the auto-planner reads App.pending for pitch and weather; on a claimed
+    // device the real conditions live in this banner instead, so hand them over
+    try { window.__foOrdCond = { pitch: opp.pitch, weather: opp.weather }; } catch (eOc) {}
     var cond = "<div class='fo-ord-cond'><b>" + E(opp.home) + " v " + E(opp.away) + "</b> · " + E(foPitchName(opp.pitch)) + " pitch · " + E(opp.weather || "") + " · " + E(opp.ground || "") + "</div>" + foCondRead(opp);
     var sel2 = function (id, opts, cur) {
       return "<select data-fo-sel='" + id + "'>" + opts.map(function (o2) { return "<option value='" + o2[0] + "'" + (String(cur) === String(o2[0]) ? " selected" : "") + ">" + o2[1] + "</option>"; }).join("") + "</select>";
@@ -951,6 +956,23 @@
           if ((el = q("[data-fo-pc]"))) { foOrdPlayerCard(el.getAttribute("data-fo-pc")); return; }
           if ((el = q("[data-fo-act]"))) {
             var act = el.getAttribute("data-fo-act");
+            if (act === "autobowl") {
+              try {
+                var keepB0 = (App.orders.batOrder || []).slice(), keepC0 = App.orders.captain, keepK0 = App.orders.keeper;
+                var tmpP0 = null;
+                if (!App.pending && window.__foOrdCond) { tmpP0 = { pitch: window.__foOrdCond.pitch, weather: window.__foOrdCond.weather }; App.pending = tmpP0; }
+                suggestOrders();
+                if (tmpP0 && App.pending === tmpP0) App.pending = null;
+                if (keepB0.length) App.orders.batOrder = keepB0;
+                if (keepC0) App.orders.captain = keepC0;
+                if (keepK0) App.orders.keeper = keepK0;
+                App.orders.grid = null; App.orders.gridBowlers = null; App.orders.noAutoPlan = 0;
+                gridState(); gridToSpells();
+              } catch (eAB) {}
+              foOrdersUI();
+              toast("The Gaffer has set the overs for these conditions - look it over, then Save.");
+              return;
+            }
             if (act === "suggest" || act === "reroll") { try { suggestOrders(); App.orders.grid = null; App.orders.gridBowlers = null; gridState(); gridToSpells(); } catch (eS) {} foOrdersUI(); if (act === "reroll") toast("Fresh plan set - same conditions, new thinking."); }
             else if (act === "prev") { try { var pv = foPreviousOrders(); if (pv) foApplyPrevOrders(pv); } catch (eP) {} foOrdersUI(); }
             else if (act === "clear") { App.orders.batOrder = []; App.orders.spells = { north: [], south: [] }; App.orders.grid = null; App.orders.gridBowlers = null; App.orders.captain = null; foOrdersUI(); }
@@ -1139,7 +1161,9 @@
       ".mg-chips .mgb .r2{line-height:1}" +
       ".mg-chips .mgb s{text-decoration:none;font-size:9.5px;font-weight:700;letter-spacing:.03em;color:#8a93a3;border:1px solid rgba(28,36,51,.16);border-radius:6px;padding:2px 6px}" +
       ".mg-chips .mgb s.on{color:#FFFEFC;background:#0E233F;border-color:#0E233F}" +
-      ".fo-ord-clearrow{display:flex;justify-content:flex-end;margin:9px 0 2px}" +
+      ".fo-ord-clearrow{display:flex;justify-content:flex-end;gap:7px;flex-wrap:wrap;margin:9px 0 2px}" +
+      "html body.ftpskin #page button.fo-ord-autop,html body #page button.fo-ord-autop{border:1px solid #0E233F!important;background:#0E233F!important;color:#FFFEFC!important;border-radius:999px;padding:7px 14px;font-size:11px;font-weight:800;letter-spacing:.02em;cursor:pointer}" +
+      "html body #page button.fo-ord-autop:hover{background:#1d3a63!important;border-color:#1d3a63!important}" +
       "html body.ftpskin #page button.fo-ord-clearp,html body #page button.fo-ord-clearp{border:1px solid rgba(28,36,51,.16)!important;background:#FFFEFC!important;color:#5a6472!important;border-radius:999px;padding:7px 13px;font-size:11px;font-weight:700;letter-spacing:.02em;cursor:pointer}" +
       "html body #page button.fo-ord-clearp:hover{border-color:#B04A2C!important;color:#B04A2C!important}" +
       // the two ends side by side, over pairs down the page: odd overs from
