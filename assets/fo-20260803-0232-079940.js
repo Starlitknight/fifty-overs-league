@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0227-4b80fd";
+  var FO_BUILD = "20260803-0232-079940";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -36049,7 +36049,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   window.__foPlanet = { roundOfDay: roundOfDay, dayOfRound: dayOfRound, dayOfSeasonRound: dayOfSeasonRound,
     anchorWorld: anchorWorld, anchorOf: anchorOf, seasonStart: seasonStart,
     dateTxt: dateTxt, hhTxt: hhTxt, whenTxt: whenTxt,
-    FA_DAYS: FA_DAYS, faDayOf: faDayOf, faDrawR16: faDrawR16,
+    FA_DAYS: FA_DAYS, faDayOf: faDayOf, faDrawR16: faDrawR16, cupDraw: cupDraw,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
     COLTS_DAYS: COLTS_DAYS, isRestDay: isRestDay, REST_DAYS: REST_DAYS, dayOfRound: dayOfRound, roundOfDay: roundOfDay,
     phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
@@ -45243,10 +45243,48 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "</div>";
 
       if (!body || !body.stages || !Object.keys(body.stages).length) {
-        html += "<div class='fo-fa-card'><h3>The draw awaits</h3><p class='dim'>" +
-          "No cup cricket has been banked for this season yet. The Round of 16 is played on the first Sunday " +
-          "of the season, the quarter-finals a week on, the semis a week after that, and the final on the last " +
-          "Sunday before the Champions Cup week.</p></div>";
+        // THE DRAW IS OUT THE MORNING THE SEASON OPENS. It comes off nothing
+        // but the nation and the season - the same pull the umpire will make -
+        // so before a ball is banked this page names the sixteen and their
+        // ties rather than telling the manager to come back on Sunday.
+        var ties0 = [], bySlot0 = {};
+        try {
+          var lg0 = window.__foWorldLg ? window.__foWorldLg.get(rid) : null;
+          if (!lg0 && window.__foWorldLg && window.__foWorldLg.want)
+            window.__foWorldLg.want(rid, function () { if (onPage()) render(); });
+          var divOf0 = {};
+          if (lg0) {
+            ((lg0.divisions || {})["1"] || []).forEach(function (x) { divOf0[x] = 1; });
+            ((lg0.divisions || {})["2"] || []).forEach(function (x) { divOf0[x] = 2; });
+            ((lg0.table || []).concat(lg0.table2 || [])).forEach(function (r) { bySlot0[r.slot] = r.name; });
+          }
+          try {
+            var nmMap0 = window.__foWorldNames && window.__foWorldNames.get(rid);
+            if (nmMap0) Object.keys(nmMap0).forEach(function (k) { bySlot0[k] = nmMap0[k]; });
+          } catch (eNm0) {}
+          if (!Object.keys(bySlot0).length && P() && P().sidesOf)
+            (P().sidesOf(rid) || []).forEach(function (s0) { bySlot0[s0.slot] = s0.name; if (s0.div) divOf0[s0.slot] = s0.div; });
+          for (var sD0 = 0; sD0 < 16; sD0++) if (!divOf0[sD0]) divOf0[sD0] = sD0 < 8 ? 1 : 2;
+          if (P() && P().faDrawR16) ties0 = P().faDrawR16(rid, seasonNo, null, divOf0);
+        } catch (eD0) {}
+        if (ties0.length && Object.keys(bySlot0).length) {
+          html += "<div class='fo-fa-card'><h3>" + STAGE_NM.r16 + "<span>" + stageDay("r16") + "</span></h3>";
+          ties0.forEach(function (t0) {
+            var meA0 = mine != null && (t0[0] | 0) === (mine | 0);
+            var meB0 = mine != null && (t0[1] | 0) === (mine | 0);
+            html += "<div class='fo-fa-tie'>" +
+              "<span class='side" + (meA0 ? " me" : "") + "'>" + E(bySlot0[t0[0]] || "Club " + t0[0]) + "</span>" +
+              "<span class='vs'>v</span>" +
+              "<span class='side" + (meB0 ? " me" : "") + "'>" + E(bySlot0[t0[1]] || "Club " + t0[1]) + "</span></div>";
+          });
+          html += "<p class='fo-fa-line'>One hat, both divisions; the lower-division club hosts. " +
+            "The quarter-final draw follows the Sunday it is earned.</p></div>";
+        } else {
+          html += "<div class='fo-fa-card'><h3>The draw awaits</h3><p class='dim'>" +
+            "No cup cricket has been banked for this season yet. The Round of 16 is played on the first Sunday " +
+            "of the season, the quarter-finals a week on, the semis a week after that, and the final on the last " +
+            "Sunday before the Champions Cup week.</p></div>";
+        }
       } else {
         var champion = body.champion;
         if (champion) {
@@ -45478,11 +45516,45 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<p>Sixteen clubs, both divisions, one hat. Name fifteen men under twenty-one or forfeit the tie.</p></div>";
 
       if (!body || !body.stages || !Object.keys(body.stages).length) {
-        html += "<div class='fo-cc-card'><h3>The draw awaits</h3><p class='dim'>" +
-          "No colts cricket has been banked for this season yet. The league stands down for week four and the boys " +
-          "play four days: the last sixteen on the Monday, the quarter-finals on the Tuesday, the semi-finals on " +
-          "the Thursday and the final on the Friday. The draw is made once and the bracket holds, so you will be " +
-          "able to see your path to the final on the Monday morning.</p></div>";
+        // THE DRAW IS MADE ONCE AND THE BRACKET HOLDS - so it is knowable from
+        // day one, not from the Monday morning of Colts Week. One pull of the
+        // same seeded hat the umpire uses names all eight ties now; the
+        // winners of neighbouring ties meet in the quarters, and so on down.
+        var ties1 = [], bySlot1 = {};
+        try {
+          var lg1 = window.__foWorldLg ? window.__foWorldLg.get(rid) : null;
+          if (!lg1 && window.__foWorldLg && window.__foWorldLg.want)
+            window.__foWorldLg.want(rid, function () { if (onPage()) render(); });
+          if (lg1) ((lg1.table || []).concat(lg1.table2 || [])).forEach(function (r) { bySlot1[r.slot] = r.name; });
+          try {
+            var nmMap1 = window.__foWorldNames && window.__foWorldNames.get(rid);
+            if (nmMap1) Object.keys(nmMap1).forEach(function (k) { bySlot1[k] = nmMap1[k]; });
+          } catch (eNm1) {}
+          if (!Object.keys(bySlot1).length && P() && P().sidesOf)
+            (P().sidesOf(rid) || []).forEach(function (s1) { bySlot1[s1.slot] = s1.name; });
+          if (P() && P().cupDraw) {
+            var drawn1 = P().cupDraw("colts|" + rid + "|s" + seasonNo,
+              [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]);
+            for (var i1 = 0; i1 + 1 < drawn1.length; i1 += 2) ties1.push([drawn1[i1], drawn1[i1 + 1]]);
+          }
+        } catch (eD1) {}
+        if (ties1.length && Object.keys(bySlot1).length) {
+          html += "<div class='fo-cc-card'><h3>" + STAGE_NM.r16 + "<span>" + WEEKDAY.r16 + "</span></h3>";
+          ties1.forEach(function (t1) {
+            var meH1 = me != null && t1[0] === me, meA1 = me != null && t1[1] === me;
+            html += "<div class='fo-cc-tie" + (meH1 || meA1 ? " mine" : "") + "'>" +
+              "<span class='side" + (meH1 ? " me" : "") + "'><b class='nm'>" + E(bySlot1[t1[0]] || "Club " + t1[0]) + "</b></span>" +
+              "<span class='vs'>v</span>" +
+              "<span class='side" + (meA1 ? " me" : "") + "'><b class='nm'>" + E(bySlot1[t1[1]] || "Club " + t1[1]) + "</b></span></div>";
+          });
+          html += "<p class='fo-cc-line'>Drawn once; the bracket holds. Winners of neighbouring ties meet in the " +
+            "quarter-finals. Name fifteen men under twenty-one on the day or forfeit.</p></div>";
+        } else {
+          html += "<div class='fo-cc-card'><h3>The draw awaits</h3><p class='dim'>" +
+            "No colts cricket has been banked for this season yet. The league stands down for week four and the boys " +
+            "play four days: the last sixteen on the Monday, the quarter-finals on the Tuesday, the semi-finals on " +
+            "the Thursday and the final on the Friday.</p></div>";
+        }
       } else {
         if (body.champion) {
           html += "<div class='fo-cc-champ'><span>&#127942;</span><div><i>Colts Cup champions, season " + seasonNo + "</i><b>" +

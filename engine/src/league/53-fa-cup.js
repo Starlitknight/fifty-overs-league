@@ -83,10 +83,48 @@
         "</div>";
 
       if (!body || !body.stages || !Object.keys(body.stages).length) {
-        html += "<div class='fo-fa-card'><h3>The draw awaits</h3><p class='dim'>" +
-          "No cup cricket has been banked for this season yet. The Round of 16 is played on the first Sunday " +
-          "of the season, the quarter-finals a week on, the semis a week after that, and the final on the last " +
-          "Sunday before the Champions Cup week.</p></div>";
+        // THE DRAW IS OUT THE MORNING THE SEASON OPENS. It comes off nothing
+        // but the nation and the season - the same pull the umpire will make -
+        // so before a ball is banked this page names the sixteen and their
+        // ties rather than telling the manager to come back on Sunday.
+        var ties0 = [], bySlot0 = {};
+        try {
+          var lg0 = window.__foWorldLg ? window.__foWorldLg.get(rid) : null;
+          if (!lg0 && window.__foWorldLg && window.__foWorldLg.want)
+            window.__foWorldLg.want(rid, function () { if (onPage()) render(); });
+          var divOf0 = {};
+          if (lg0) {
+            ((lg0.divisions || {})["1"] || []).forEach(function (x) { divOf0[x] = 1; });
+            ((lg0.divisions || {})["2"] || []).forEach(function (x) { divOf0[x] = 2; });
+            ((lg0.table || []).concat(lg0.table2 || [])).forEach(function (r) { bySlot0[r.slot] = r.name; });
+          }
+          try {
+            var nmMap0 = window.__foWorldNames && window.__foWorldNames.get(rid);
+            if (nmMap0) Object.keys(nmMap0).forEach(function (k) { bySlot0[k] = nmMap0[k]; });
+          } catch (eNm0) {}
+          if (!Object.keys(bySlot0).length && P() && P().sidesOf)
+            (P().sidesOf(rid) || []).forEach(function (s0) { bySlot0[s0.slot] = s0.name; if (s0.div) divOf0[s0.slot] = s0.div; });
+          for (var sD0 = 0; sD0 < 16; sD0++) if (!divOf0[sD0]) divOf0[sD0] = sD0 < 8 ? 1 : 2;
+          if (P() && P().faDrawR16) ties0 = P().faDrawR16(rid, seasonNo, null, divOf0);
+        } catch (eD0) {}
+        if (ties0.length && Object.keys(bySlot0).length) {
+          html += "<div class='fo-fa-card'><h3>" + STAGE_NM.r16 + "<span>" + stageDay("r16") + "</span></h3>";
+          ties0.forEach(function (t0) {
+            var meA0 = mine != null && (t0[0] | 0) === (mine | 0);
+            var meB0 = mine != null && (t0[1] | 0) === (mine | 0);
+            html += "<div class='fo-fa-tie'>" +
+              "<span class='side" + (meA0 ? " me" : "") + "'>" + E(bySlot0[t0[0]] || "Club " + t0[0]) + "</span>" +
+              "<span class='vs'>v</span>" +
+              "<span class='side" + (meB0 ? " me" : "") + "'>" + E(bySlot0[t0[1]] || "Club " + t0[1]) + "</span></div>";
+          });
+          html += "<p class='fo-fa-line'>One hat, both divisions; the lower-division club hosts. " +
+            "The quarter-final draw follows the Sunday it is earned.</p></div>";
+        } else {
+          html += "<div class='fo-fa-card'><h3>The draw awaits</h3><p class='dim'>" +
+            "No cup cricket has been banked for this season yet. The Round of 16 is played on the first Sunday " +
+            "of the season, the quarter-finals a week on, the semis a week after that, and the final on the last " +
+            "Sunday before the Champions Cup week.</p></div>";
+        }
       } else {
         var champion = body.champion;
         if (champion) {
