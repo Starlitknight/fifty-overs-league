@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0051-d77dc3";
+  var FO_BUILD = "20260803-0053-88da22";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18794,13 +18794,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // against the club's other bowlers), stamina, and his talents
       // bowler cards mirror the batting cards: name row with OVR right,
       // stars beneath (navy = with the ball), talents last
+      // two groups, and a line may only break BETWEEN them - never between
+      // Bat first and Bowl first, which are one choice
       var toss = "<div class='pv-toss'><div class='fo-ord-vzh' style='margin-top:2px'>Toss</div><div class='fo-ord-toss'>" +
-        "<span class='tl'>Call</span>" +
+        "<span class='tg'><span class='tl'>Call</span>" +
         "<button type='button' data-fo-toss='call:H' class='" + ((App.orders.tossCall || "H") === "H" ? "on" : "") + "'>Heads</button>" +
-        "<button type='button' data-fo-toss='call:T' class='" + (App.orders.tossCall === "T" ? "on" : "") + "'>Tails</button>" +
-        "<span class='tl'>If we win it</span>" +
+        "<button type='button' data-fo-toss='call:T' class='" + (App.orders.tossCall === "T" ? "on" : "") + "'>Tails</button></span>" +
+        "<span class='tg'><span class='tl'>If we win it</span>" +
         "<button type='button' data-fo-toss='dec:bat' class='" + (App.orders.tossDecision !== "bowl" ? "on" : "") + "'>Bat first</button>" +
-        "<button type='button' data-fo-toss='dec:bowl' class='" + (App.orders.tossDecision === "bowl" ? "on" : "") + "'>Bowl first</button>" +
+        "<button type='button' data-fo-toss='dec:bowl' class='" + (App.orders.tossDecision === "bowl" ? "on" : "") + "'>Bowl first</button></span>" +
         "</div></div>";
       // phones: the 50-cell lanes are unusably narrow. Instead: arm a bowler,
       // then tap big over-cells in a 10-per-row grid. Same data, same guards.
@@ -19574,7 +19576,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-ord-xis .xc .r3,.fo-ord-bws .bw .r3{display:flex;flex-wrap:wrap;gap:3px;width:100%;min-height:11px;align-items:center}" +
       ".fo-ord-bws{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:6px;margin-top:8px}" +
       "html body.ftpskin #page .fo-ord-bws button.bw,html body #page .fo-ord-bws button.bw{display:flex;flex-direction:column;gap:3px;background:#FFFEFC !important;border:1px solid rgba(28,36,51,.12) !important;border-radius:9px;padding:5px 10px;cursor:pointer;text-align:left;min-width:0}" +
-      ".fo-ord-toss{display:flex;align-items:center;gap:7px;flex-wrap:wrap}" +
+      ".fo-ord-toss{display:flex;align-items:center;gap:7px 16px;flex-wrap:wrap}" +
+      ".fo-ord-toss .tg{display:flex;align-items:center;gap:7px;flex-wrap:nowrap}" +
       ".fo-ord-toss .tl{font-size:10px;letter-spacing:.06em;text-transform:uppercase;font-weight:800;color:#8a93a3}" +
       "html body.ftpskin #page .fo-ord-toss button,html body #page .fo-ord-toss button{border:1px solid rgba(28,36,51,.16) !important;background:#FFFEFC !important;color:#3a4353 !important;border-radius:99px;padding:4px 13px;font-size:11.5px;font-weight:700;cursor:pointer}" +
       "html body.ftpskin #page .fo-ord-toss button.on,html body #page .fo-ord-toss button.on{background:#0E233F !important;color:#FFFEFC !important;border-color:#0E233F !important}" +
