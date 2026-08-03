@@ -57,11 +57,30 @@ globalThis.__svcTrain = function (playersJson, planJson, rate) {
     return FATF[Math.max(0, Math.min(10, 10 - ix))];
   };
   var thresh = function (v) { return 80 + (+v || 0) * 1.5; };
+  // TRAINING v2 RIDES UNDER "__v2" - a key no player is named. Its unit
+  // intensities scale the session: light banks less, intensive banks more.
+  // Plans banked before v2 carry no __v2 and replay exactly as they always
+  // did, so history is never re-rated.
+  var V2 = (plan && plan.__v2) || null;
+  var INT_F = { light: 0.6, normal: 1, high: 1.3, intensive: 1.6 };
+  var unitKey = function (p) {
+    if (p.keeper || p.role === 'wicketkeeper') return 'wk';
+    if (p.role === 'allRounder') return 'ar';
+    var bt = p.bowlTypeFull || p.bowlType || '';
+    if (/spin|wrist|finger/i.test(String(bt))) return 'spin';
+    if (bt && !/none/i.test(String(bt))) return 'seam';
+    return 'bat';
+  };
+  var intensityOf = function (p) {
+    if (!V2 || !V2.units) return 1;
+    var u = V2.units[unitKey(p)];
+    return (u && INT_F[u.i]) || 1;
+  };
   var gains = [];
   players.forEach(function (p) {
     var prog = plan[p.name] || defaultProg(p);
     if (prog === 'Rest' || !PROGS[prog]) return;
-    var pts = 24 * ageFactor(p.age || 27) * potFactor(p) * fresh(p) * RATE;
+    var pts = 24 * ageFactor(p.age || 27) * potFactor(p) * fresh(p) * RATE * intensityOf(p);
     if (prog === 'All-rounder') pts *= 0.85;
     var w = PROGS[prog], total = 0;
     for (var k in w) total += w[k];

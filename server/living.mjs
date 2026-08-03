@@ -226,8 +226,14 @@ export function withCarry(book, carry) {
 // EVERY MAN'S LIFE, RECOMPUTED FROM THE WHOLE RECORD OF ONE COUNTRY.
 export async function evolveCountry(pool, country, now = Date.now(), host = null) {
   const clubs = (await pool.query(
-    'SELECT slot, name, squad FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
+    'SELECT slot, name, squad, training FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
   if (!clubs.length) return 0;
+  // whose clubs are managed - the nets report is written for them alone
+  let claimedSlots = new Set();
+  try {
+    claimedSlots = new Set((await pool.query(
+      'SELECT slot FROM claims WHERE country_id=$1', [country])).rows.map(r => r.slot));
+  } catch (eCl) { claimedSlots = new Set(); }
   const seasons = (await pool.query(
     'SELECT season_no, start_day FROM seasons WHERE country_id=$1', [country])).rows;
   const startOf = Object.fromEntries(seasons.map(s => [s.season_no, s.start_day]));
@@ -409,6 +415,76 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
       if (iBook.m) q.intl = iBook; else delete q.intl;
       return q;
     });
+    // THE STANDING LOAD OF THE NETS (training v2). A unit training light
+    // freshens; high and intensive bank more work but carry load into the
+    // next morning. Recomputed from the CURRENT plan on every settle, so it
+    // is a pure function of what stands - change the plan, the load follows.
+    try {
+      const v2 = club.training && club.training.__v2;
+      if (v2 && v2.units) {
+        const INT_LOAD = { light: -6, normal: 0, high: 8, intensive: 16 };
+        const unitKey = p => {
+          if (p.keeper || p.role === 'wicketkeeper') return 'wk';
+          if (p.role === 'allRounder') return 'ar';
+          const bt = String(p.bowlTypeFull || p.bowlType || '');
+          if (/spin|wrist|finger/i.test(bt)) return 'spin';
+          if (bt && !/none/i.test(bt)) return 'seam';
+          return 'bat';
+        };
+        squad.forEach(q => {
+          const u = v2.units[unitKey(q)];
+          const d = (u && INT_LOAD[u.i]) || 0;
+          if (!d) return;
+          q.fatN = Math.round(clamp((q.fatN || 0) + d, 0, FAT_CEILING));
+          q.fatWord = fatWordOf(q.fatN); q.fatigue = q.fatWord;
+        });
+      }
+    } catch (eV2) {}
+    // TODAY AT THE NETS - the report, for a MANAGED club only. Real diffs:
+    // a line per man whose skill genuinely stepped up this settle, plus who
+    // is carrying load from intensive work. Written into the club's own
+    // training blob under __report, where world_my_status already delivers.
+    try {
+      if (claimedSlots.has(club.slot)) {
+        const before = new Map((club.squad || []).map(p => [p.name, p.skills || {}]));
+        const SKN = { vsPace: 'playing pace', vsSpin: 'playing spin', rotation: 'strike rotation',
+          temperament: 'temperament', power: 'power', stamina: 'stamina', wicket: 'wicket threat',
+          economy: 'economy', discipline: 'discipline', moveTurn: 'movement and turn',
+          variation: 'variation', keeping: 'keeping', catching: 'catching', stumping: 'stumping', fielding: 'fielding' };
+        const lines = [];
+        for (const q of squad) {
+          const was = before.get(q.name); if (!was) continue;
+          for (const k in (q.skills || {})) {
+            const a = Math.round(was[k] || 0), b = Math.round(q.skills[k] || 0);
+            if (b > a) lines.push(q.name + ' stepped up in ' + (SKN[k] || k) + ': ' + a + ' → ' + b);
+          }
+        }
+        const v2r = club.training && club.training.__v2;
+        if (v2r && v2r.units) {
+          const heavy = [], rested = [];
+          const unitKey2 = p => {
+            if (p.keeper || p.role === 'wicketkeeper') return 'wk';
+            if (p.role === 'allRounder') return 'ar';
+            const bt = String(p.bowlTypeFull || p.bowlType || '');
+            if (/spin|wrist|finger/i.test(bt)) return 'spin';
+            if (bt && !/none/i.test(bt)) return 'seam';
+            return 'bat';
+          };
+          squad.forEach(q => {
+            const u = v2r.units[unitKey2(q)];
+            if (u && u.i === 'intensive') heavy.push(q.name);
+            if (u && u.i === 'light' && (q.fatN || 0) === 0) rested.push(q.name);
+          });
+          if (heavy.length) lines.push(heavy.slice(0, 3).join(', ') + ' trained intensively and ' + (heavy.length === 1 ? 'is' : 'are') + ' carrying extra load.');
+          if (rested.length >= 2) lines.push('The light programme has ' + rested.slice(0, 3).join(', ') + ' fully freshened.');
+        }
+        if (lines.length) {
+          await pool.query(
+            `UPDATE clubs SET nets_report = $3::jsonb WHERE country_id=$1 AND slot=$2`,
+            [country, club.slot, JSON.stringify({ day: dayIx(now), lines: lines.slice(0, 6) })]);
+        }
+      }
+    } catch (eRp) {}
     await pool.query('UPDATE clubs SET squad=$3::jsonb WHERE country_id=$1 AND slot=$2',
       [country, club.slot, JSON.stringify(squad)]);
     touched++;

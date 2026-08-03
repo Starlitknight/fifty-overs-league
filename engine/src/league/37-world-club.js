@@ -277,6 +277,7 @@
       rpc("world_my_status").then(function (st) {
         if (!st || !st.claim) return;
         window.__foWorldPlan = st.training || {};
+        try { window.__foNetsReport = st.netsReport || null; } catch (eNR) {}
       foWorldFinCache(st);
         window.__foWorldClaim = st.claim;
         adoptWorldSquad(st);
@@ -315,6 +316,7 @@
           window.__foWorldClaim = st.claim;
           try { localStorage.setItem("fo_world_claim", JSON.stringify(st.claim)); } catch (eS) {}
           window.__foWorldPlan = st.training || {};
+        try { window.__foNetsReport = st.netsReport || null; } catch (eNR) {}
       foWorldFinCache(st);
           adoptWorldSquad(st);
           return;

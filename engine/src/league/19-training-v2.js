@@ -240,10 +240,23 @@
           "<i>" + E(d.prog) + " &middot; " + why + "</i><em>" + c + "%</em></div>";
       }).join("") + "</details>";
 
+    // TODAY AT THE NETS - the umpire's own report from the last settle,
+    // written server-side from real skill steps and real load. Nothing here
+    // is generated on the phone.
+    var report = "";
+    try {
+      var rp = window.__foNetsReport;
+      if (rp && rp.lines && rp.lines.length) {
+        report = "<div class='fo-t2-card fo-t2-report'><div class='fo-t2-ck'>Today at the nets</div>" +
+          rp.lines.map(function (ln) { return "<div class='fo-t2-rl'>" + E(ln) + "</div>"; }).join("") +
+          "<div class='fo-t2-note'>The umpire's report from the last world update.</div></div>";
+      }
+    } catch (eRp) {}
+
     page.innerHTML = "<div class='fo-t2'><div class='fo-t2-in'>" +
-      hero + band + focusCard + unitCards + projCard + attention + roster +
+      hero + band + focusCard + unitCards + projCard + report + attention + roster +
       "<button type='button' class='fo-t2-save" + (st.dirty ? " dirty" : "") + "' id='fo-t2-save'>Save training plan" + (st.dirty ? " &middot; unsaved" : "") + "</button>" +
-      "<p class='fo-t2-fine'>The plan is a standing order: the umpire works it at every world update until you change it. Intensity is filed with the plan.</p>" +
+      "<p class='fo-t2-fine'>The plan is a standing order: the umpire works it at every world update until you change it. Light freshens the legs; High and Intensive bank more work but carry load into the next morning.</p>" +
       "</div></div>";
 
     // ---- the hands ---------------------------------------------------------
@@ -337,6 +350,9 @@
       ".fo-t2-pb u b{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#C9571F,#E8B96A)}",
       ".fo-t2-pb em{font-style:normal;font-variant-numeric:tabular-nums;color:#14243A;font-weight:700}",
       ".fo-t2-note{font:italic 400 11.5px Georgia,serif;color:#6d6455}",
+      ".fo-t2-report{border-left:4px solid #177A57}",
+      ".fo-t2-rl{padding:6px 0;border-bottom:1px solid #f3eee1;font:500 12.5px Inter,sans-serif;color:#14243A;line-height:1.5}",
+      ".fo-t2-rl:last-of-type{border-bottom:none}",
       ".fo-t2-att{display:flex;align-items:center;gap:9px;padding:7px 0;border-bottom:1px solid #f3eee1;font:600 12.5px Inter,sans-serif}",
       ".fo-t2-att:last-child{border-bottom:none}",
       ".fo-t2-att a{color:#14243A !important;text-decoration:none;flex:0 0 auto}",
