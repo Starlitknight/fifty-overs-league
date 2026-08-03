@@ -10212,7 +10212,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0338-562aaf";
+  var FO_BUILD = "20260803-0343-4f0b61";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -44103,7 +44103,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     rankings:   ["hgm-late-afternoon", "hgd-heart-of-club"],
     records:    ["hgm-clubroom", "hgd-clubroom"],
     milestones: ["hgm-clubroom", "hgd-heart-of-club"],
-    fixtures:   ["hgm-sunlit-day", "hgd-veranda-rain"],
+    // fixtures deliberately absent: the broadcast card reads best on plain
+    // cream, and its navy masthead carries the atmosphere on its own
     team:       ["hgm-late-afternoon", "hgd-heart-of-club"],
     guide:      ["hgm-clubroom", "hgd-workshop"]
   };

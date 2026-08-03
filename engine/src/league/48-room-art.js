@@ -35,7 +35,8 @@
     rankings:   ["hgm-late-afternoon", "hgd-heart-of-club"],
     records:    ["hgm-clubroom", "hgd-clubroom"],
     milestones: ["hgm-clubroom", "hgd-heart-of-club"],
-    fixtures:   ["hgm-sunlit-day", "hgd-veranda-rain"],
+    // fixtures deliberately absent: the broadcast card reads best on plain
+    // cream, and its navy masthead carries the atmosphere on its own
     team:       ["hgm-late-afternoon", "hgd-heart-of-club"],
     guide:      ["hgm-clubroom", "hgd-workshop"]
   };
