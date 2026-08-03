@@ -82,17 +82,16 @@
         if (!body && cal && cal.season >= 1) seasonNo = cal.season;
       } catch (e) {}
 
-      var html = "<div class='fo-cc-page'>" +
-        "<div class='fo-cc-hero'><span class='fo-cc-eyebrow'>The academies&rsquo; week &middot; season " + seasonNo + "</span>" +
-        "<h1>The " + E(natNm) + " Colts Cup</h1>" +
-        "<p>Sixteen clubs, both divisions, one hat. Name fifteen men under twenty-one or forfeit the tie.</p></div>";
-
-      if (!body || !body.stages || !Object.keys(body.stages).length) {
-        // THE DRAW IS MADE ONCE AND THE BRACKET HOLDS - so it is knowable from
-        // day one, not from the Monday morning of Colts Week. One pull of the
-        // same seeded hat the umpire uses names all eight ties now; the
-        // winners of neighbouring ties meet in the quarters, and so on down.
-        var ties1 = [], bySlot1 = {};
+      // THE BRACKET BOARD. Same knockout idiom as the FA Cup page - columns
+      // left to right - but this bracket is drawn ONCE and holds, so the
+      // columns wear connector elbows: your path to the Friday final is a
+      // line you can trace with a thumb from day one.
+      var stages = { r16: null, qf: null, sf: null, final: null };
+      if (body && body.stages) STAGE_ORDER.forEach(function (st) {
+        if (body.stages[st] && body.stages[st].length) stages[st] = body.stages[st];
+      });
+      var ties1 = [], bySlot1 = {};
+      if (!stages.r16) {
         try {
           var lg1 = window.__foWorldLg ? window.__foWorldLg.get(rid) : null;
           if (!lg1 && window.__foWorldLg && window.__foWorldLg.want)
@@ -110,62 +109,67 @@
             for (var i1 = 0; i1 + 1 < drawn1.length; i1 += 2) ties1.push([drawn1[i1], drawn1[i1 + 1]]);
           }
         } catch (eD1) {}
-        if (ties1.length && Object.keys(bySlot1).length) {
-          html += "<div class='fo-cc-card'><h3>" + STAGE_NM.r16 + "<span>" + WEEKDAY.r16 + "</span></h3>";
-          ties1.forEach(function (t1) {
-            var meH1 = me != null && t1[0] === me, meA1 = me != null && t1[1] === me;
-            html += "<div class='fo-cc-tie" + (meH1 || meA1 ? " mine" : "") + "'>" +
-              "<span class='side" + (meH1 ? " me" : "") + "'><b class='nm'>" + E(bySlot1[t1[0]] || "Club " + t1[0]) + "</b></span>" +
-              "<span class='vs'>v</span>" +
-              "<span class='side" + (meA1 ? " me" : "") + "'><b class='nm'>" + E(bySlot1[t1[1]] || "Club " + t1[1]) + "</b></span></div>";
-          });
-          html += "<p class='fo-cc-line'>Drawn once; the bracket holds. Winners of neighbouring ties meet in the " +
-            "quarter-finals. Name fifteen men under twenty-one on the day or forfeit.</p></div>";
-        } else {
-          html += "<div class='fo-cc-card'><h3>The draw awaits</h3><p class='dim'>" +
-            "No colts cricket has been banked for this season yet. The league stands down for week four and the boys " +
-            "play four days: the last sixteen on the Monday, the quarter-finals on the Tuesday, the semi-finals on " +
-            "the Thursday and the final on the Friday.</p></div>";
-        }
-      } else {
-        if (body.champion) {
-          html += "<div class='fo-cc-champ'><span>&#127942;</span><div><i>Colts Cup champions, season " + seasonNo + "</i><b>" +
-            E(body.champion) + "</b></div></div>";
-        }
-        // THE PURSE. Not a footnote: it is the reason a club that cannot buy
-        // players still runs an academy.
-        if (body.purse && body.purse.length) {
-          var mineP = body.purse.filter(function (p) { return me != null && p.slot === me; })[0];
-          html += "<div class='fo-cc-purse'><h4>The purse</h4><div class='fo-cc-prow'>" +
-            body.purse.map(function (p) {
-              return "<span" + (mineP && p === mineP ? " class='me'" : "") + "><i>" + (PURSE_NM[p.kind] || p.kind) +
-                "</i><b>" + money(p.amount) + "</b></span>";
-            }).join("") + "</div></div>";
-        }
-        STAGE_ORDER.forEach(function (st) {
-          var ties = body.stages[st];
-          if (!ties || !ties.length) return;
-          html += "<div class='fo-cc-card'><h3>" + STAGE_NM[st] + "<span>" + WEEKDAY[st] + "</span></h3>";
-          ties.forEach(function (t) {
+      }
+
+      var html = "<div class='fo-cc-page'>" +
+        "<div class='fo-kb-hero'><div><span class='eb'>The academies&rsquo; week &middot; season&nbsp;" + seasonNo + "</span>" +
+        "<h1>The " + E(natNm) + " Colts Cup</h1>" +
+        "<p>Sixteen clubs, both divisions, one hat. Name fifteen men under twenty-one or forfeit the tie.</p></div>" +
+        "<span class='tro' aria-hidden='true'>&#127942;</span></div>";
+      if (body && body.champion) {
+        html += "<div class='fo-cc-champ'><span>&#127942;</span><div><i>Colts Cup champions, season " + seasonNo + "</i><b>" +
+          E(body.champion) + "</b></div></div>";
+      }
+      // THE PURSE. Not a footnote: it is the reason a club that cannot buy
+      // players still runs an academy.
+      if (body && body.purse && body.purse.length) {
+        var mineP = body.purse.filter(function (p) { return me != null && p.slot === me; })[0];
+        html += "<div class='fo-cc-purse'><h4>The purse</h4><div class='fo-cc-prow'>" +
+          body.purse.map(function (p) {
+            return "<span" + (mineP && p === mineP ? " class='me'" : "") + "><i>" + (PURSE_NM[p.kind] || p.kind) +
+              "</i><b>" + money(p.amount) + "</b></span>";
+          }).join("") + "</div></div>";
+      }
+
+      var TIE_N = { r16: 8, qf: 4, sf: 2, final: 1 };
+      var row = function (nm, tag, win, me2, dim) {
+        return "<span class='t" + (win ? " w" : "") + (me2 ? " me" : "") + (dim ? " d" : "") + "'>" +
+          "<b>" + E(nm) + "</b>" + (tag ? "<u class='ff'>" + tag + "</u>" : "") + "</span>";
+      };
+      var colOf = function (st) {
+        var inner = "", i;
+        if (stages[st]) {
+          inner = stages[st].map(function (t) {
             var hWin = t.winnerSlot === t.homeSlot, aWin = t.winnerSlot === t.awaySlot;
+            var done = t.winnerSlot != null;
             var meH = me != null && t.homeSlot === me, meA = me != null && t.awaySlot === me;
             var short = (t.forfeit && t.forfeit.short) || [];
-            // the club's name ellipsises; the SHORT tag beside it never does -
-            // it is the whole reason the tie went the way it did
-            var sideHTML = function (nm, win, mine2, isShort) {
-              return "<span class='side" + (win ? " w" : "") + (mine2 ? " me" : "") + "'>" +
-                "<b class='nm'>" + E(nm) + "</b>" + (isShort ? "<u>short</u>" : "") + "</span>";
-            };
-            html += "<div class='fo-cc-tie" + (meH || meA ? " mine" : "") + "'>" +
-              sideHTML(t.home, hWin, meH, short.indexOf(t.homeSlot) >= 0) +
-              "<span class='vs'>v</span>" +
-              sideHTML(t.away, aWin, meA, short.indexOf(t.awaySlot) >= 0) +
-              (t.forfeit ? "<em class='ff'>forfeit</em>" : "") + "</div>" +
-              (t.text ? "<p class='fo-cc-line'>" + E(t.text) + "</p>" : "");
-          });
-          html += "</div>";
-        });
-        if ((body.runs && body.runs.length) || (body.wickets && body.wickets.length)) {
+            return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
+              row(t.home, short.indexOf(t.homeSlot) >= 0 ? "short" : "", hWin, meH, done && !hWin) +
+              row(t.away, short.indexOf(t.awaySlot) >= 0 ? "short" : "", aWin, meA, done && !aWin) +
+              (t.forfeit ? "<i class='ln'>Forfeit &mdash; fifteen under twenty-one could not be named.</i>" :
+                t.text ? "<i class='ln'>" + E(t.text) + "</i>" : "") + "</div></div>";
+          }).join("");
+        } else if (st === "r16" && ties1.length && Object.keys(bySlot1).length) {
+          inner = ties1.map(function (t1) {
+            var meH1 = me != null && t1[0] === me, meA1 = me != null && t1[1] === me;
+            return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
+              row(bySlot1[t1[0]] || "Club " + t1[0], "", false, meH1) +
+              row(bySlot1[t1[1]] || "Club " + t1[1], "", false, meA1) + "</div></div>";
+          }).join("");
+        } else {
+          for (i = 0; i < TIE_N[st]; i++)
+            inner += "<div class='fo-kb-tw'><div class='fo-kb-tie tbd'><span>" +
+              (st === "r16" ? "The draw awaits" : "&mdash;") + "</span></div></div>";
+        }
+        return "<div class='fo-kb-col kb-" + st + "'><h4>" + STAGE_NM[st] + "<span>" + WEEKDAY[st] + "</span></h4>" +
+          "<div class='fo-kb-ties'>" + inner + "</div></div>";
+      };
+      html += "<div class='fo-kb'><div class='fo-kb-in linked'>" + STAGE_ORDER.map(colOf).join("") + "</div></div>" +
+        "<p class='fo-kb-note'>Drawn once; the bracket holds. Winners of neighbouring ties meet in the next round. " +
+        "Every prize in the purse is real money, paid the night the final is banked.</p>";
+
+      if (body && ((body.runs && body.runs.length) || (body.wickets && body.wickets.length))) {
           html += "<div class='fo-cc-card'><h3>The boys who did it<span>from the cards themselves</span></h3><div class='fo-cc-lead'>";
           (body.runs || []).slice(0, 5).forEach(function (p) {
             html += "<div class='fo-cc-lrow'><b>" + E(p.name) + "</b><i>" + E(p.club) + "</i><u>" + p.runs + " runs" +
@@ -175,12 +179,13 @@
             html += "<div class='fo-cc-lrow'><b>" + E(p.name) + "</b><i>" + E(p.club) + "</i><u>" + p.wkts + " wickets</u></div>";
           });
           html += "</div></div>";
-        }
       }
       html += "<div class='fo-cc-foot'><a href='#/academy'>&lsaquo; Your academy</a>" +
         "<a href='#/facup'>The FA Cup &rsaquo;</a></div></div>";
       page.innerHTML = html;
       css();
+      // the knockout board's stylesheet lives with the FA Cup page; both cups wear it
+      try { if (window.__foFaCup && window.__foFaCup.css) window.__foFaCup.css(); } catch (eCss) {}
     } catch (e) { /* never take the shell down */ }
   }
 
@@ -188,7 +193,7 @@
     if (document.getElementById("fo-cc-css")) return;
     var s = document.createElement("style"); s.id = "fo-cc-css";
     s.textContent = [
-      "html body #page .fo-cc-page{max-width:760px;margin:0 auto;padding:12px 14px 40px}",
+      "html body #page .fo-cc-page{max-width:980px;margin:0 auto;padding:12px 14px 40px}",
       "html body #page .fo-cc-hero{padding:18px 4px 10px}",
       "html body #page .fo-cc-eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a6d3b}",
       "html body #page .fo-cc-hero h1{font-family:Fraunces,serif;font-size:34px;margin:4px 0 6px}",

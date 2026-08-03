@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0232-079940";
+  var FO_BUILD = "20260803-0241-24f8f3";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -45237,17 +45237,18 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         if (c && c.country === rid) mine = c.slot;
       } catch (e3) {}
 
-      var html = "<div class='fo-fa-page'>" +
-        "<div class='fo-fa-hero'><span class='fo-fa-eyebrow'>The national knockout &middot; season " + seasonNo + "</span>" +
-        "<h1>The " + E(natNm) + " Cup</h1>" +
-        "</div>";
-
-      if (!body || !body.stages || !Object.keys(body.stages).length) {
-        // THE DRAW IS OUT THE MORNING THE SEASON OPENS. It comes off nothing
-        // but the nation and the season - the same pull the umpire will make -
-        // so before a ball is banked this page names the sixteen and their
-        // ties rather than telling the manager to come back on Sunday.
-        var ties0 = [], bySlot0 = {};
+      // THE KNOCKOUT BOARD. A real cup page reads left to right: the sixteen,
+      // the eight, the four, the final - so this one does too, as columns a
+      // phone sweeps through and a desktop takes in whole. The Round of 16 is
+      // drawn the morning the season opens (one seeded pull, knowable
+      // offline); every later round is a FRESH draw made the Sunday it is
+      // earned, so those columns hold their breath rather than pretend a path.
+      var stages = { r16: null, qf: null, sf: null, final: null };
+      if (body && body.stages) STAGE_ORDER.forEach(function (st) {
+        if (body.stages[st] && body.stages[st].length) stages[st] = body.stages[st];
+      });
+      var ties0 = [], bySlot0 = {};
+      if (!stages.r16) {
         try {
           var lg0 = window.__foWorldLg ? window.__foWorldLg.get(rid) : null;
           if (!lg0 && window.__foWorldLg && window.__foWorldLg.want)
@@ -45267,50 +45268,55 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           for (var sD0 = 0; sD0 < 16; sD0++) if (!divOf0[sD0]) divOf0[sD0] = sD0 < 8 ? 1 : 2;
           if (P() && P().faDrawR16) ties0 = P().faDrawR16(rid, seasonNo, null, divOf0);
         } catch (eD0) {}
-        if (ties0.length && Object.keys(bySlot0).length) {
-          html += "<div class='fo-fa-card'><h3>" + STAGE_NM.r16 + "<span>" + stageDay("r16") + "</span></h3>";
-          ties0.forEach(function (t0) {
-            var meA0 = mine != null && (t0[0] | 0) === (mine | 0);
-            var meB0 = mine != null && (t0[1] | 0) === (mine | 0);
-            html += "<div class='fo-fa-tie'>" +
-              "<span class='side" + (meA0 ? " me" : "") + "'>" + E(bySlot0[t0[0]] || "Club " + t0[0]) + "</span>" +
-              "<span class='vs'>v</span>" +
-              "<span class='side" + (meB0 ? " me" : "") + "'>" + E(bySlot0[t0[1]] || "Club " + t0[1]) + "</span></div>";
-          });
-          html += "<p class='fo-fa-line'>One hat, both divisions; the lower-division club hosts. " +
-            "The quarter-final draw follows the Sunday it is earned.</p></div>";
-        } else {
-          html += "<div class='fo-fa-card'><h3>The draw awaits</h3><p class='dim'>" +
-            "No cup cricket has been banked for this season yet. The Round of 16 is played on the first Sunday " +
-            "of the season, the quarter-finals a week on, the semis a week after that, and the final on the last " +
-            "Sunday before the Champions Cup week.</p></div>";
-        }
-      } else {
-        var champion = body.champion;
-        if (champion) {
-          html += "<div class='fo-fa-champ'><span>&#127942;</span><div><i>Cup winners, season " + seasonNo + "</i><b>" +
-            E(champion) + "</b></div></div>";
-        }
-        STAGE_ORDER.forEach(function (st) {
-          var ties = body.stages[st];
-          if (!ties || !ties.length) return;
-          html += "<div class='fo-fa-card'><h3>" + STAGE_NM[st] + "<span>" + stageDay(st) + "</span></h3>";
-          ties.forEach(function (t) {
+      }
+
+      var html = "<div class='fo-fa-page'>" +
+        "<div class='fo-kb-hero'><div><span class='eb'>The national knockout &middot; season&nbsp;" + seasonNo + "</span>" +
+        "<h1>The " + E(natNm) + " Cup</h1>" +
+        "<p>Sixteen clubs, four Sundays, one trophy. Every round a fresh draw.</p></div>" +
+        "<span class='tro' aria-hidden='true'>&#127942;</span></div>";
+      if (body && body.champion) {
+        html += "<div class='fo-fa-champ'><span>&#127942;</span><div><i>Cup winners, season " + seasonNo + "</i><b>" +
+          E(body.champion) + "</b></div></div>";
+      }
+
+      var TIE_N = { r16: 8, qf: 4, sf: 2, final: 1 };
+      var row = function (nm, sc, win, me2, dim) {
+        return "<span class='t" + (win ? " w" : "") + (me2 ? " me" : "") + (dim ? " d" : "") + "'>" +
+          "<b>" + E(nm) + "</b>" + (sc ? "<u>" + E(sc) + "</u>" : "") + "</span>";
+      };
+      var colOf = function (st) {
+        var inner = "", i;
+        if (stages[st]) {
+          inner = stages[st].map(function (t) {
             var aWin = t.winner === (t.a && t.a.name), bWin = t.winner === (t.b && t.b.name);
+            var done = !!t.winner;
             var meA = mine != null && t.a && (t.a.slot | 0) === (mine | 0);
             var meB = mine != null && t.b && (t.b.slot | 0) === (mine | 0);
-            html += "<div class='fo-fa-tie'>" +
-              "<span class='side" + (aWin ? " w" : "") + (meA ? " me" : "") + "'>" + E(t.a && t.a.name) +
-                "<u>" + E(t.as_ || "") + "</u></span>" +
-              "<span class='vs'>v</span>" +
-              "<span class='side" + (bWin ? " w" : "") + (meB ? " me" : "") + "'>" + E(t.b && t.b.name) +
-                "<u>" + E(t.bs_ || "") + "</u></span>" +
-              "</div>" +
-              (t.text ? "<p class='fo-fa-line'>" + E(t.text) + "</p>" : "");
-          });
-          html += "</div>";
-        });
-      }
+            return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
+              row(t.a && t.a.name, t.as_ || "", aWin, meA, done && !aWin) +
+              row(t.b && t.b.name, t.bs_ || "", bWin, meB, done && !bWin) +
+              (t.text ? "<i class='ln'>" + E(t.text) + "</i>" : "") + "</div></div>";
+          }).join("");
+        } else if (st === "r16" && ties0.length && Object.keys(bySlot0).length) {
+          inner = ties0.map(function (t0) {
+            var meA0 = mine != null && (t0[0] | 0) === (mine | 0);
+            var meB0 = mine != null && (t0[1] | 0) === (mine | 0);
+            return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
+              row(bySlot0[t0[0]] || "Club " + t0[0], "", false, meA0) +
+              row(bySlot0[t0[1]] || "Club " + t0[1], "", false, meB0) + "</div></div>";
+          }).join("");
+        } else {
+          for (i = 0; i < TIE_N[st]; i++)
+            inner += "<div class='fo-kb-tw'><div class='fo-kb-tie tbd'><span>" +
+              (st === "r16" ? "The draw awaits" : "To be drawn") + "</span></div></div>";
+        }
+        return "<div class='fo-kb-col kb-" + st + "'><h4>" + STAGE_NM[st] + "<span>" + stageDay(st) + "</span></h4>" +
+          "<div class='fo-kb-ties'>" + inner + "</div></div>";
+      };
+      html += "<div class='fo-kb'><div class='fo-kb-in'>" + STAGE_ORDER.map(colOf).join("") + "</div></div>" +
+        "<p class='fo-kb-note'>One hat, both divisions; the lower-division club hosts. Each later round is " +
+        "drawn afresh from the survivors the Sunday it is earned.</p>";
       html += "</div>";
       page.innerHTML = html;
       css();
@@ -45319,7 +45325,41 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   function css() {
     var CSS = [
-      "html body #page .fo-fa-page{max-width:760px;margin:0 auto;padding:12px 14px 40px}",
+      "html body #page .fo-fa-page{max-width:980px;margin:0 auto;padding:12px 14px 40px}",
+      // ---- the knockout board: shared by the FA Cup and the Colts Cup ------
+      "html body #page .fo-kb-hero{position:relative;overflow:hidden;display:flex;align-items:center;justify-content:space-between;gap:14px;background:linear-gradient(135deg,#0E233F,#16324f 70%,#1d3c5c);border-radius:16px;border-bottom:3px solid #C95532;padding:22px 20px;margin:6px 0 14px;color:#FFFEFC}",
+      "html body #page .fo-kb-hero .eb{font:700 10px/1 Oswald,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#EBC271}",
+      "html body #page .fo-kb-hero h1{font-family:Fraunces,serif;font-weight:600;font-size:clamp(26px,6vw,38px);margin:6px 0 4px;color:#FFFEFC}",
+      "html body #page .fo-kb-hero p{margin:0;font:italic 400 12.5px/1.5 Fraunces,serif;color:rgba(255,254,252,.7)}",
+      "html body #page .fo-kb-hero .tro{font-size:52px;line-height:1;opacity:.9;filter:drop-shadow(0 4px 10px rgba(0,0,0,.4))}",
+      "html body #page .fo-kb{overflow-x:auto;scrollbar-width:thin;margin:0 -14px;padding:2px 14px 8px;-webkit-overflow-scrolling:touch}",
+      "html body #page .fo-kb-in{display:flex;gap:28px;min-width:max-content}",
+      "html body #page .fo-kb-col{flex:none;width:216px;display:flex;flex-direction:column}",
+      "html body #page .fo-kb-col h4{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px;font:700 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#14202F;border-bottom:2px solid #0E233F;padding-bottom:7px}",
+      "html body #page .fo-kb-col h4 span{font:600 9px/1.3 Oswald,sans-serif;letter-spacing:.06em;color:#8a6d3b;text-align:right}",
+      "html body #page .fo-kb-ties{display:flex;flex-direction:column;height:596px}",
+      "html body #page .fo-kb-tw{flex:1;display:flex;align-items:center;position:relative;padding:5px 0}",
+      "html body #page .fo-kb-tie{width:100%;background:#fff;border:1px solid rgba(14,35,63,.16);border-radius:10px;overflow:hidden;box-shadow:0 2px 6px rgba(14,35,63,.06)}",
+      "html body #page .fo-kb-tie .t{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:6px 10px;font:500 12px/1.3 Inter,sans-serif;color:#14202F}",
+      "html body #page .fo-kb-tie .t+.t{border-top:1px solid rgba(14,35,63,.09)}",
+      "html body #page .fo-kb-tie .t b{font-weight:500;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      "html body #page .fo-kb-tie .t u{text-decoration:none;font:700 11px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums;color:#8a93a3;white-space:nowrap}",
+      "html body #page .fo-kb-tie .t.w{background:rgba(23,122,87,.07)}",
+      "html body #page .fo-kb-tie .t.w b{font-weight:700}",
+      "html body #page .fo-kb-tie .t.w u{color:#177A57}",
+      "html body #page .fo-kb-tie .t.d b{color:rgba(20,32,47,.45)}",
+      "html body #page .fo-kb-tie .t.me{box-shadow:inset 3px 0 0 #C95532}",
+      "html body #page .fo-kb-tie .t .ff{font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.1em;color:#B23230;text-transform:uppercase}",
+      "html body #page .fo-kb-tie .ln{display:block;padding:4px 10px 6px;font:italic 400 10.5px/1.35 Fraunces,serif;color:rgba(20,32,47,.5);border-top:1px solid rgba(14,35,63,.07)}",
+      "html body #page .fo-kb-tie.tbd{border-style:dashed;background:transparent;box-shadow:none}",
+      "html body #page .fo-kb-tie.tbd span{display:block;padding:13px 10px;font:600 10px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(20,32,47,.35);text-align:center}",
+      "html body #page .fo-kb-note{font:400 12px/1.55 Inter,sans-serif;color:rgba(20,32,47,.55);margin:10px 2px 0;max-width:70ch}",
+      // the connector plumbing (only boards that opt in wear it: the Colts
+      // bracket is fixed; the FA Cup redraws each round and stays unlinked)
+      "html body #page .fo-kb-in.linked .fo-kb-col:not(:last-child) .fo-kb-tw:after{content:'';position:absolute;right:-15px;width:14px;border-color:rgba(14,35,63,.28);border-style:solid;border-width:0}",
+      "html body #page .fo-kb-in.linked .fo-kb-col:not(:last-child) .fo-kb-tw:nth-child(odd):after{top:50%;bottom:0;border-top-width:2px;border-right-width:2px;border-top-right-radius:8px}",
+      "html body #page .fo-kb-in.linked .fo-kb-col:not(:last-child) .fo-kb-tw:nth-child(even):after{top:0;bottom:50%;border-bottom-width:2px;border-right-width:2px;border-bottom-right-radius:8px}",
+      "html body #page .fo-kb-in.linked .fo-kb-col:not(:first-child) .fo-kb-tw:before{content:'';position:absolute;left:-15px;width:15px;top:50%;border-top:2px solid rgba(14,35,63,.28)}",
       "html body #page .fo-fa-hero{padding:18px 4px 10px}",
       "html body #page .fo-fa-eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a6d3b}",
       "html body #page .fo-fa-hero h1{font-family:Fraunces,serif;font-size:34px;margin:4px 0 6px}",
@@ -45420,7 +45460,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   window.addEventListener("hashchange", function () { setTimeout(paint, 30); });
   document.addEventListener("DOMContentLoaded", function () { setTimeout(paint, 60); });
   setTimeout(paint, 120);
-  window.__foFaCup = { render: render, renderCC: renderCC };
+  // ONE export, assembled once: a second `window.__foFaCup = {...}` here used
+  // to clobber the `want` handed out at the top, so the fixture list's guarded
+  // `__foFaCup.want` silently never fired and its cup card read nothing.
+  window.__foFaCup = { want: want, render: render, renderCC: renderCC, css: css };
   // AND A DOOR THE ROUTER KNOWS. Painting on hashchange is not enough: the
   // router's own table is what decides whether #/facup survives at all, and a
   // page missing from it is bounced to the front door before it can paint.
@@ -45510,17 +45553,16 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         if (!body && cal && cal.season >= 1) seasonNo = cal.season;
       } catch (e) {}
 
-      var html = "<div class='fo-cc-page'>" +
-        "<div class='fo-cc-hero'><span class='fo-cc-eyebrow'>The academies&rsquo; week &middot; season " + seasonNo + "</span>" +
-        "<h1>The " + E(natNm) + " Colts Cup</h1>" +
-        "<p>Sixteen clubs, both divisions, one hat. Name fifteen men under twenty-one or forfeit the tie.</p></div>";
-
-      if (!body || !body.stages || !Object.keys(body.stages).length) {
-        // THE DRAW IS MADE ONCE AND THE BRACKET HOLDS - so it is knowable from
-        // day one, not from the Monday morning of Colts Week. One pull of the
-        // same seeded hat the umpire uses names all eight ties now; the
-        // winners of neighbouring ties meet in the quarters, and so on down.
-        var ties1 = [], bySlot1 = {};
+      // THE BRACKET BOARD. Same knockout idiom as the FA Cup page - columns
+      // left to right - but this bracket is drawn ONCE and holds, so the
+      // columns wear connector elbows: your path to the Friday final is a
+      // line you can trace with a thumb from day one.
+      var stages = { r16: null, qf: null, sf: null, final: null };
+      if (body && body.stages) STAGE_ORDER.forEach(function (st) {
+        if (body.stages[st] && body.stages[st].length) stages[st] = body.stages[st];
+      });
+      var ties1 = [], bySlot1 = {};
+      if (!stages.r16) {
         try {
           var lg1 = window.__foWorldLg ? window.__foWorldLg.get(rid) : null;
           if (!lg1 && window.__foWorldLg && window.__foWorldLg.want)
@@ -45538,62 +45580,67 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             for (var i1 = 0; i1 + 1 < drawn1.length; i1 += 2) ties1.push([drawn1[i1], drawn1[i1 + 1]]);
           }
         } catch (eD1) {}
-        if (ties1.length && Object.keys(bySlot1).length) {
-          html += "<div class='fo-cc-card'><h3>" + STAGE_NM.r16 + "<span>" + WEEKDAY.r16 + "</span></h3>";
-          ties1.forEach(function (t1) {
-            var meH1 = me != null && t1[0] === me, meA1 = me != null && t1[1] === me;
-            html += "<div class='fo-cc-tie" + (meH1 || meA1 ? " mine" : "") + "'>" +
-              "<span class='side" + (meH1 ? " me" : "") + "'><b class='nm'>" + E(bySlot1[t1[0]] || "Club " + t1[0]) + "</b></span>" +
-              "<span class='vs'>v</span>" +
-              "<span class='side" + (meA1 ? " me" : "") + "'><b class='nm'>" + E(bySlot1[t1[1]] || "Club " + t1[1]) + "</b></span></div>";
-          });
-          html += "<p class='fo-cc-line'>Drawn once; the bracket holds. Winners of neighbouring ties meet in the " +
-            "quarter-finals. Name fifteen men under twenty-one on the day or forfeit.</p></div>";
-        } else {
-          html += "<div class='fo-cc-card'><h3>The draw awaits</h3><p class='dim'>" +
-            "No colts cricket has been banked for this season yet. The league stands down for week four and the boys " +
-            "play four days: the last sixteen on the Monday, the quarter-finals on the Tuesday, the semi-finals on " +
-            "the Thursday and the final on the Friday.</p></div>";
-        }
-      } else {
-        if (body.champion) {
-          html += "<div class='fo-cc-champ'><span>&#127942;</span><div><i>Colts Cup champions, season " + seasonNo + "</i><b>" +
-            E(body.champion) + "</b></div></div>";
-        }
-        // THE PURSE. Not a footnote: it is the reason a club that cannot buy
-        // players still runs an academy.
-        if (body.purse && body.purse.length) {
-          var mineP = body.purse.filter(function (p) { return me != null && p.slot === me; })[0];
-          html += "<div class='fo-cc-purse'><h4>The purse</h4><div class='fo-cc-prow'>" +
-            body.purse.map(function (p) {
-              return "<span" + (mineP && p === mineP ? " class='me'" : "") + "><i>" + (PURSE_NM[p.kind] || p.kind) +
-                "</i><b>" + money(p.amount) + "</b></span>";
-            }).join("") + "</div></div>";
-        }
-        STAGE_ORDER.forEach(function (st) {
-          var ties = body.stages[st];
-          if (!ties || !ties.length) return;
-          html += "<div class='fo-cc-card'><h3>" + STAGE_NM[st] + "<span>" + WEEKDAY[st] + "</span></h3>";
-          ties.forEach(function (t) {
+      }
+
+      var html = "<div class='fo-cc-page'>" +
+        "<div class='fo-kb-hero'><div><span class='eb'>The academies&rsquo; week &middot; season&nbsp;" + seasonNo + "</span>" +
+        "<h1>The " + E(natNm) + " Colts Cup</h1>" +
+        "<p>Sixteen clubs, both divisions, one hat. Name fifteen men under twenty-one or forfeit the tie.</p></div>" +
+        "<span class='tro' aria-hidden='true'>&#127942;</span></div>";
+      if (body && body.champion) {
+        html += "<div class='fo-cc-champ'><span>&#127942;</span><div><i>Colts Cup champions, season " + seasonNo + "</i><b>" +
+          E(body.champion) + "</b></div></div>";
+      }
+      // THE PURSE. Not a footnote: it is the reason a club that cannot buy
+      // players still runs an academy.
+      if (body && body.purse && body.purse.length) {
+        var mineP = body.purse.filter(function (p) { return me != null && p.slot === me; })[0];
+        html += "<div class='fo-cc-purse'><h4>The purse</h4><div class='fo-cc-prow'>" +
+          body.purse.map(function (p) {
+            return "<span" + (mineP && p === mineP ? " class='me'" : "") + "><i>" + (PURSE_NM[p.kind] || p.kind) +
+              "</i><b>" + money(p.amount) + "</b></span>";
+          }).join("") + "</div></div>";
+      }
+
+      var TIE_N = { r16: 8, qf: 4, sf: 2, final: 1 };
+      var row = function (nm, tag, win, me2, dim) {
+        return "<span class='t" + (win ? " w" : "") + (me2 ? " me" : "") + (dim ? " d" : "") + "'>" +
+          "<b>" + E(nm) + "</b>" + (tag ? "<u class='ff'>" + tag + "</u>" : "") + "</span>";
+      };
+      var colOf = function (st) {
+        var inner = "", i;
+        if (stages[st]) {
+          inner = stages[st].map(function (t) {
             var hWin = t.winnerSlot === t.homeSlot, aWin = t.winnerSlot === t.awaySlot;
+            var done = t.winnerSlot != null;
             var meH = me != null && t.homeSlot === me, meA = me != null && t.awaySlot === me;
             var short = (t.forfeit && t.forfeit.short) || [];
-            // the club's name ellipsises; the SHORT tag beside it never does -
-            // it is the whole reason the tie went the way it did
-            var sideHTML = function (nm, win, mine2, isShort) {
-              return "<span class='side" + (win ? " w" : "") + (mine2 ? " me" : "") + "'>" +
-                "<b class='nm'>" + E(nm) + "</b>" + (isShort ? "<u>short</u>" : "") + "</span>";
-            };
-            html += "<div class='fo-cc-tie" + (meH || meA ? " mine" : "") + "'>" +
-              sideHTML(t.home, hWin, meH, short.indexOf(t.homeSlot) >= 0) +
-              "<span class='vs'>v</span>" +
-              sideHTML(t.away, aWin, meA, short.indexOf(t.awaySlot) >= 0) +
-              (t.forfeit ? "<em class='ff'>forfeit</em>" : "") + "</div>" +
-              (t.text ? "<p class='fo-cc-line'>" + E(t.text) + "</p>" : "");
-          });
-          html += "</div>";
-        });
-        if ((body.runs && body.runs.length) || (body.wickets && body.wickets.length)) {
+            return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
+              row(t.home, short.indexOf(t.homeSlot) >= 0 ? "short" : "", hWin, meH, done && !hWin) +
+              row(t.away, short.indexOf(t.awaySlot) >= 0 ? "short" : "", aWin, meA, done && !aWin) +
+              (t.forfeit ? "<i class='ln'>Forfeit &mdash; fifteen under twenty-one could not be named.</i>" :
+                t.text ? "<i class='ln'>" + E(t.text) + "</i>" : "") + "</div></div>";
+          }).join("");
+        } else if (st === "r16" && ties1.length && Object.keys(bySlot1).length) {
+          inner = ties1.map(function (t1) {
+            var meH1 = me != null && t1[0] === me, meA1 = me != null && t1[1] === me;
+            return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
+              row(bySlot1[t1[0]] || "Club " + t1[0], "", false, meH1) +
+              row(bySlot1[t1[1]] || "Club " + t1[1], "", false, meA1) + "</div></div>";
+          }).join("");
+        } else {
+          for (i = 0; i < TIE_N[st]; i++)
+            inner += "<div class='fo-kb-tw'><div class='fo-kb-tie tbd'><span>" +
+              (st === "r16" ? "The draw awaits" : "&mdash;") + "</span></div></div>";
+        }
+        return "<div class='fo-kb-col kb-" + st + "'><h4>" + STAGE_NM[st] + "<span>" + WEEKDAY[st] + "</span></h4>" +
+          "<div class='fo-kb-ties'>" + inner + "</div></div>";
+      };
+      html += "<div class='fo-kb'><div class='fo-kb-in linked'>" + STAGE_ORDER.map(colOf).join("") + "</div></div>" +
+        "<p class='fo-kb-note'>Drawn once; the bracket holds. Winners of neighbouring ties meet in the next round. " +
+        "Every prize in the purse is real money, paid the night the final is banked.</p>";
+
+      if (body && ((body.runs && body.runs.length) || (body.wickets && body.wickets.length))) {
           html += "<div class='fo-cc-card'><h3>The boys who did it<span>from the cards themselves</span></h3><div class='fo-cc-lead'>";
           (body.runs || []).slice(0, 5).forEach(function (p) {
             html += "<div class='fo-cc-lrow'><b>" + E(p.name) + "</b><i>" + E(p.club) + "</i><u>" + p.runs + " runs" +
@@ -45603,12 +45650,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             html += "<div class='fo-cc-lrow'><b>" + E(p.name) + "</b><i>" + E(p.club) + "</i><u>" + p.wkts + " wickets</u></div>";
           });
           html += "</div></div>";
-        }
       }
       html += "<div class='fo-cc-foot'><a href='#/academy'>&lsaquo; Your academy</a>" +
         "<a href='#/facup'>The FA Cup &rsaquo;</a></div></div>";
       page.innerHTML = html;
       css();
+      // the knockout board's stylesheet lives with the FA Cup page; both cups wear it
+      try { if (window.__foFaCup && window.__foFaCup.css) window.__foFaCup.css(); } catch (eCss) {}
     } catch (e) { /* never take the shell down */ }
   }
 
@@ -45616,7 +45664,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (document.getElementById("fo-cc-css")) return;
     var s = document.createElement("style"); s.id = "fo-cc-css";
     s.textContent = [
-      "html body #page .fo-cc-page{max-width:760px;margin:0 auto;padding:12px 14px 40px}",
+      "html body #page .fo-cc-page{max-width:980px;margin:0 auto;padding:12px 14px 40px}",
       "html body #page .fo-cc-hero{padding:18px 4px 10px}",
       "html body #page .fo-cc-eyebrow{font-size:11px;letter-spacing:.14em;text-transform:uppercase;color:#8a6d3b}",
       "html body #page .fo-cc-hero h1{font-family:Fraunces,serif;font-size:34px;margin:4px 0 6px}",
