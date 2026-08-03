@@ -10285,7 +10285,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-2126-abdc0d";
+  var FO_BUILD = "20260803-2137-edacf5";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -33703,6 +33703,35 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // dropped — the page observer re-ensures the panel instead.
   // ---------------------------------------------------------------------------
   function careerHTML(nm) {
+    // THE UMPIRE'S BOOK OUTRANKS THE LOCAL RECORD. A claimed club's rounds
+    // are played on the server and never land in App.results - but the
+    // adopted squad carries each man's served career, refreshed after every
+    // round. When the world has written a book for this man, read his.
+    try {
+      var sp = null, t9 = userTeam();
+      ((t9 && t9.players) || []).concat((t9 && t9.youth) || []).forEach(function (p9) {
+        if (p9 && p9.name === nm && p9.career && p9.career.m) sp = p9;
+      });
+      if (sp) {
+        var sc = sp.career;
+        var kvS = function (k, v) { return "<div class='fo-ls-ck'><span>" + k + "</span><b>" + v + "</b></div>"; };
+        var srS = sc.balls ? (100 * (sc.runs || 0) / sc.balls).toFixed(1) : "&ndash;";
+        var ecS = sc.ovb ? ((sc.conc || 0) / Math.max(1, sc.ovb / 6)).toFixed(2) : null;
+        return "<div class='panel fo-ls-career'><h4>Career record</h4><div class='pad'>" +
+          "<div class='fo-ls-crow'>" +
+          kvS("Matches", sc.m) + kvS("Runs", sc.runs || 0) +
+          kvS("Strike rate", srS) + kvS("Best", sc.hs || 0) +
+          (sc.ovb ? kvS("Wickets", sc.wkts || 0) +
+            kvS("Best bowling", sc.bb ? sc.bb.w + "/" + sc.bb.r : "&ndash;") +
+            kvS("Economy", ecS) + kvS("Overs", Math.floor(sc.ovb / 6)) : "") +
+          "</div>" +
+          (sp.intl && sp.intl.m ? "<div class='fo-ls-mile'><span class='fo-ls-mh'>For his country</span>" +
+            "<div class='fo-ls-line'><b>" + sp.intl.m + " cap" + (sp.intl.m === 1 ? "" : "s") + "</b> &mdash; " +
+            (sp.intl.runs || 0) + " runs, best " + (sp.intl.hs || 0) +
+            ((sp.intl.wkts | 0) ? ", " + sp.intl.wkts + " wickets" : "") + "</div></div>" : "") +
+          "</div></div>";
+      }
+    } catch (eSv) {}
     var bk = book(), c = bk.car[nm];
     if (!c || !c.m) return "";
     var evs = bk.events.filter(function (x) { return x.n === nm; }).slice(-8).reverse();
@@ -40088,9 +40117,18 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // ---- England's entrant: YOUR league, by construction ----------------------
   function myEntrant() {
     try {
+      var me = null; try { me = userTeam().name; } catch (e) {}
+      // the served league is the truth, and the champion is DIVISION ONE's
+      // leader - not whoever tops the division your own club plays in
+      try {
+        var sv = window.__foWorldLg && window.__foWorldLg.get(myNation());
+        if (sv && sv.table && sv.table.length) {
+          return { name: sv.table[0].name, mine: sv.table[0].name === me, slot: sv.table[0].slot,
+            settled: (sv.roundsPlayed | 0) >= (sv.rounds || 99) };
+        }
+      } catch (eSv) {}
       var rows = leagueRows(); if (!rows || !rows.length) return null;
       var done = App.season && App.season.round >= App.season.schedule.length;
-      var me = null; try { me = userTeam().name; } catch (e) {}
       return { name: rows[0].nm, mine: rows[0].nm === me, settled: !!done };
     } catch (e) { return null; }
   }
@@ -40100,7 +40138,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var pl = P(), my = myNation(), now = Date.now();
     var out = [];
     (cx().regions() || []).filter(function (r) { return !r.final; }).forEach(function (r) {
-      var nm = null, mine = false, provisional = false;
+      var nm = null, mine = false, provisional = false, slot = null;
       if (r.id === my) {
         // once the draw is made (day 19) England's entrant FREEZES into the
         // save: the bracket must never rewrite itself because the user's
@@ -40109,6 +40147,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         try { if (App.clEng && App.clEng.season === season) frozen = App.clEng; } catch (eF) {}
         var e = frozen || myEntrant();
         nm = (e && e.name) || (r.nm + " champions");
+        slot = e && e.slot != null ? e.slot : null;
         mine = !!(e && e.mine);
         provisional = frozen ? false : !(e && e.settled);
         try {
@@ -40118,15 +40157,29 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           }
         } catch (eZ) {}
       } else {
-        var rd = pl.roundsDone(now, season, r.id);
-        var t = pl.tableOf(r.id, season, rd);
-        nm = t[0] && t[0].side.name;
-        provisional = rd < pl.ROUNDS;
+        // THE WORLD'S TABLE FIRST. The umpire publishes every league's real
+        // standings; the local model is only the stand-in while the network
+        // answers. And the champion is DIVISION ONE's leader - a second
+        // flight winning its own race qualifies for promotion, not for this.
+        var sv = null;
+        try { sv = window.__foWorldLg && window.__foWorldLg.get(r.id); } catch (eSv) {}
+        if (sv && sv.table && sv.table.length && (sv.seasonNo || season) === season) {
+          nm = sv.table[0] && sv.table[0].name;
+          slot = sv.table[0] && sv.table[0].slot;
+          provisional = (sv.roundsPlayed | 0) < (sv.rounds || pl.ROUNDS);
+        } else {
+          try { if (window.__foWorldLg) window.__foWorldLg.want(r.id, function () { if ((location.hash || "").split("?")[0] === "#/champions" && window.foRenderChampionsPage) window.foRenderChampionsPage(); }); } catch (eW) {}
+          var rd = pl.roundsDone(now, season, r.id);
+          var t = pl.tableOf(r.id, season, rd);
+          nm = t[0] && t[0].side.name;
+          slot = t[0] && t[0].side && t[0].side.slot != null ? t[0].side.slot : null;
+          provisional = rd < pl.ROUNDS;
+        }
       }
       if (!nm) return;
       // seeding: a stable per-season shuffle, the same law as the World Cup draw
       var seedv = rnd01("cl|" + season + "|" + r.id);
-      out.push({ rid: r.id, nat: r.nm, name: nm, mine: mine, provisional: provisional,
+      out.push({ rid: r.id, nat: r.nm, name: nm, mine: mine, provisional: provisional, slot: slot,
         seedv: seedv, str: 0.97 + seedv * 0.1 + (mine ? 0.01 : 0) });
     });
     out.sort(function (a, b) { return b.seedv - a.seedv; });
@@ -40238,19 +40291,25 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
     // the entrants: nineteen champions, seeded, yours in gold
     var provisional = p.di < 18;
+    // every club named here is a door to its own page
+    var teamA = function (x, inner) {
+      return x.slot != null
+        ? "<a class='fo-cl-tl' href='#/team?c=" + encodeURIComponent(x.rid) + "&s=" + (x.slot | 0) + "'>" + inner + "</a>"
+        : inner;
+    };
     var entRows = e.map(function (x) {
       return "<div class='fo-cl-ent" + (x.mine ? " mine" : "") + "'>" +
         "<i>" + x.seed + "</i>" +
         "<img src='" + flagOf(x.rid) + "' alt='' onerror=\"this.style.display='none'\">" +
-        "<b>" + E(x.name) + (x.mine ? " <u>YOU</u>" : "") + "</b>" +
+        "<b>" + teamA(x, E(x.name)) + (x.mine ? " <u>YOU</u>" : "") + "</b>" +
         "<span>" + E(x.nat) + (x.provisional ? " · as it stands" : "") + "</span></div>";
     }).join("");
 
     // the bracket: only stages whose windows have CLOSED show results
     var tieHTML = function (m) {
       return "<div class='fo-cl-tie" + ((m.a.mine || m.b.mine) ? " mine" : "") + "'>" +
-        "<div class='s" + (m.winner === m.a ? " won" : "") + "'><b>" + E(m.a.name) + "</b><em>" + E(m.hs) + "</em></div>" +
-        "<div class='s" + (m.winner === m.b ? " won" : "") + "'><b>" + E(m.b.name) + "</b><em>" + E(m.as) + "</em></div>" +
+        "<div class='s" + (m.winner === m.a ? " won" : "") + "'><b>" + teamA(m.a, E(m.a.name)) + "</b><em>" + E(m.hs) + "</em></div>" +
+        "<div class='s" + (m.winner === m.b ? " won" : "") + "'><b>" + teamA(m.b, E(m.b.name)) + "</b><em>" + E(m.as) + "</em></div>" +
         "</div>";
     };
     var bracketHTML = "";
@@ -40347,6 +40406,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-cl-ent img{width:24px;height:17px;object-fit:cover;border-radius:3px}",
       "html body #page .fo-cl-ent b{font:600 13px/1.2 Inter,sans-serif;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       "html body #page .fo-cl-ent b u{text-decoration:none;font:800 8px/1 Oswald,sans-serif;color:#B44A22;letter-spacing:.14em;margin-left:5px;vertical-align:1px}",
+      "html body #page a.fo-cl-tl{color:inherit;text-decoration:none}",
+      "html body #page a.fo-cl-tl:hover{color:#B44A22;text-decoration:underline}",
       "html body #page .fo-cl-ent span{font-size:10.5px;color:rgba(20,28,40,.5);white-space:nowrap}",
       "html body #page .fo-cl-ent.mine{background:rgba(200,154,46,.07);border-radius:8px;padding-left:6px;padding-right:6px}",
       "html body #page .fo-cl-schrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid rgba(20,28,40,.05);font-size:12.5px}",
@@ -40583,12 +40644,35 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         var cal = window.__foWT && window.__foWT.serverCal ? window.__foWT.serverCal(Date.now()) : null;
         if (cal && cal.round >= 1) from = Math.min(18, cal.round);
       } catch (eC) {}
-      var chain = Promise.resolve(), sent = 0;
+      // a round the umpire has already banked can never take a sheet - on the
+      // evening of a match day the calendar still says today's round, and
+      // filing for it is a guaranteed rejection
+      try {
+        var lgB = window.__foWorldLg && window.__foWorldLg.get(window.__foWorldClaim.country);
+        var rp = (lgB && lgB.roundsPlayed) | 0;
+        if (rp >= from) from = Math.min(18, rp + 1);
+      } catch (eR) {}
+      // each round files on its own account: one locked round (inside its
+      // final hour) must not cost every round after it
+      var chain = Promise.resolve(), sent = 0, firstErr = null;
       for (var r = from; r <= 18; r++) {
-        (function (r2) { chain = chain.then(function () { sent++; return rpc("world_submit_orders", { p_round: r2, p_orders: body }); }); })(r);
+        (function (r2) {
+          chain = chain.then(function () {
+            return rpc("world_submit_orders", { p_round: r2, p_orders: body })
+              .then(function () { sent++; })
+              .catch(function (e) {
+                if (/teamsheets are in|lock/i.test(String((e && e.message) || e))) return;
+                if (!firstErr) firstErr = e;
+              });
+          });
+        })(r);
       }
-      chain.then(function () { try { if (cb) cb(null, sent); } catch (e) {} })
-        .catch(function (e) { try { if (cb) cb(e); } catch (e2) {} });
+      chain.then(function () {
+        try {
+          if (sent > 0) { if (cb) cb(null, sent); }
+          else if (cb) cb(firstErr || new Error("no round was open to take the sheet"));
+        } catch (e) {}
+      });
       return true;
     } catch (e) { return false; }
   };
@@ -43782,6 +43866,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   // ---- what the engine keeps: the career in four numbers ---------------------
   function miniCareer(p) {
+    // THE UMPIRE'S BOOK FIRST. A claimed club's matches are played on the
+    // server, so nothing lands in the local record - but the adopted squad
+    // carries each man's served career, refreshed after every round.
+    try {
+      var sc = p && p.career;
+      if (sc && sc.m) {
+        return [["Matches", sc.m], ["Runs", sc.runs || 0], ["Best", sc.hs || 0], ["Wickets", sc.wkts || 0]].map(function (x) {
+          return "<div><b>" + x[1] + "</b><i>" + x[0] + "</i></div>";
+        }).join("");
+      }
+    } catch (eSv) {}
     var h = [];
     try { h = (App.playerHist && App.playerHist[p.name]) || []; } catch (e) {}
     var lg = h.filter(function (e) { return !(e.fr || e.s == null); });

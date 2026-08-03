@@ -803,6 +803,17 @@
 
   // ---- what the engine keeps: the career in four numbers ---------------------
   function miniCareer(p) {
+    // THE UMPIRE'S BOOK FIRST. A claimed club's matches are played on the
+    // server, so nothing lands in the local record - but the adopted squad
+    // carries each man's served career, refreshed after every round.
+    try {
+      var sc = p && p.career;
+      if (sc && sc.m) {
+        return [["Matches", sc.m], ["Runs", sc.runs || 0], ["Best", sc.hs || 0], ["Wickets", sc.wkts || 0]].map(function (x) {
+          return "<div><b>" + x[1] + "</b><i>" + x[0] + "</i></div>";
+        }).join("");
+      }
+    } catch (eSv) {}
     var h = [];
     try { h = (App.playerHist && App.playerHist[p.name]) || []; } catch (e) {}
     var lg = h.filter(function (e) { return !(e.fr || e.s == null); });

@@ -219,12 +219,35 @@
         var cal = window.__foWT && window.__foWT.serverCal ? window.__foWT.serverCal(Date.now()) : null;
         if (cal && cal.round >= 1) from = Math.min(18, cal.round);
       } catch (eC) {}
-      var chain = Promise.resolve(), sent = 0;
+      // a round the umpire has already banked can never take a sheet - on the
+      // evening of a match day the calendar still says today's round, and
+      // filing for it is a guaranteed rejection
+      try {
+        var lgB = window.__foWorldLg && window.__foWorldLg.get(window.__foWorldClaim.country);
+        var rp = (lgB && lgB.roundsPlayed) | 0;
+        if (rp >= from) from = Math.min(18, rp + 1);
+      } catch (eR) {}
+      // each round files on its own account: one locked round (inside its
+      // final hour) must not cost every round after it
+      var chain = Promise.resolve(), sent = 0, firstErr = null;
       for (var r = from; r <= 18; r++) {
-        (function (r2) { chain = chain.then(function () { sent++; return rpc("world_submit_orders", { p_round: r2, p_orders: body }); }); })(r);
+        (function (r2) {
+          chain = chain.then(function () {
+            return rpc("world_submit_orders", { p_round: r2, p_orders: body })
+              .then(function () { sent++; })
+              .catch(function (e) {
+                if (/teamsheets are in|lock/i.test(String((e && e.message) || e))) return;
+                if (!firstErr) firstErr = e;
+              });
+          });
+        })(r);
       }
-      chain.then(function () { try { if (cb) cb(null, sent); } catch (e) {} })
-        .catch(function (e) { try { if (cb) cb(e); } catch (e2) {} });
+      chain.then(function () {
+        try {
+          if (sent > 0) { if (cb) cb(null, sent); }
+          else if (cb) cb(firstErr || new Error("no round was open to take the sheet"));
+        } catch (e) {}
+      });
       return true;
     } catch (e) { return false; }
   };

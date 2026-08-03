@@ -81,6 +81,35 @@
   // dropped — the page observer re-ensures the panel instead.
   // ---------------------------------------------------------------------------
   function careerHTML(nm) {
+    // THE UMPIRE'S BOOK OUTRANKS THE LOCAL RECORD. A claimed club's rounds
+    // are played on the server and never land in App.results - but the
+    // adopted squad carries each man's served career, refreshed after every
+    // round. When the world has written a book for this man, read his.
+    try {
+      var sp = null, t9 = userTeam();
+      ((t9 && t9.players) || []).concat((t9 && t9.youth) || []).forEach(function (p9) {
+        if (p9 && p9.name === nm && p9.career && p9.career.m) sp = p9;
+      });
+      if (sp) {
+        var sc = sp.career;
+        var kvS = function (k, v) { return "<div class='fo-ls-ck'><span>" + k + "</span><b>" + v + "</b></div>"; };
+        var srS = sc.balls ? (100 * (sc.runs || 0) / sc.balls).toFixed(1) : "&ndash;";
+        var ecS = sc.ovb ? ((sc.conc || 0) / Math.max(1, sc.ovb / 6)).toFixed(2) : null;
+        return "<div class='panel fo-ls-career'><h4>Career record</h4><div class='pad'>" +
+          "<div class='fo-ls-crow'>" +
+          kvS("Matches", sc.m) + kvS("Runs", sc.runs || 0) +
+          kvS("Strike rate", srS) + kvS("Best", sc.hs || 0) +
+          (sc.ovb ? kvS("Wickets", sc.wkts || 0) +
+            kvS("Best bowling", sc.bb ? sc.bb.w + "/" + sc.bb.r : "&ndash;") +
+            kvS("Economy", ecS) + kvS("Overs", Math.floor(sc.ovb / 6)) : "") +
+          "</div>" +
+          (sp.intl && sp.intl.m ? "<div class='fo-ls-mile'><span class='fo-ls-mh'>For his country</span>" +
+            "<div class='fo-ls-line'><b>" + sp.intl.m + " cap" + (sp.intl.m === 1 ? "" : "s") + "</b> &mdash; " +
+            (sp.intl.runs || 0) + " runs, best " + (sp.intl.hs || 0) +
+            ((sp.intl.wkts | 0) ? ", " + sp.intl.wkts + " wickets" : "") + "</div></div>" : "") +
+          "</div></div>";
+      }
+    } catch (eSv) {}
     var bk = book(), c = bk.car[nm];
     if (!c || !c.m) return "";
     var evs = bk.events.filter(function (x) { return x.n === nm; }).slice(-8).reverse();

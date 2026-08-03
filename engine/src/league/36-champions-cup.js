@@ -47,9 +47,18 @@
   // ---- England's entrant: YOUR league, by construction ----------------------
   function myEntrant() {
     try {
+      var me = null; try { me = userTeam().name; } catch (e) {}
+      // the served league is the truth, and the champion is DIVISION ONE's
+      // leader - not whoever tops the division your own club plays in
+      try {
+        var sv = window.__foWorldLg && window.__foWorldLg.get(myNation());
+        if (sv && sv.table && sv.table.length) {
+          return { name: sv.table[0].name, mine: sv.table[0].name === me, slot: sv.table[0].slot,
+            settled: (sv.roundsPlayed | 0) >= (sv.rounds || 99) };
+        }
+      } catch (eSv) {}
       var rows = leagueRows(); if (!rows || !rows.length) return null;
       var done = App.season && App.season.round >= App.season.schedule.length;
-      var me = null; try { me = userTeam().name; } catch (e) {}
       return { name: rows[0].nm, mine: rows[0].nm === me, settled: !!done };
     } catch (e) { return null; }
   }
@@ -59,7 +68,7 @@
     var pl = P(), my = myNation(), now = Date.now();
     var out = [];
     (cx().regions() || []).filter(function (r) { return !r.final; }).forEach(function (r) {
-      var nm = null, mine = false, provisional = false;
+      var nm = null, mine = false, provisional = false, slot = null;
       if (r.id === my) {
         // once the draw is made (day 19) England's entrant FREEZES into the
         // save: the bracket must never rewrite itself because the user's
@@ -68,6 +77,7 @@
         try { if (App.clEng && App.clEng.season === season) frozen = App.clEng; } catch (eF) {}
         var e = frozen || myEntrant();
         nm = (e && e.name) || (r.nm + " champions");
+        slot = e && e.slot != null ? e.slot : null;
         mine = !!(e && e.mine);
         provisional = frozen ? false : !(e && e.settled);
         try {
@@ -77,15 +87,29 @@
           }
         } catch (eZ) {}
       } else {
-        var rd = pl.roundsDone(now, season, r.id);
-        var t = pl.tableOf(r.id, season, rd);
-        nm = t[0] && t[0].side.name;
-        provisional = rd < pl.ROUNDS;
+        // THE WORLD'S TABLE FIRST. The umpire publishes every league's real
+        // standings; the local model is only the stand-in while the network
+        // answers. And the champion is DIVISION ONE's leader - a second
+        // flight winning its own race qualifies for promotion, not for this.
+        var sv = null;
+        try { sv = window.__foWorldLg && window.__foWorldLg.get(r.id); } catch (eSv) {}
+        if (sv && sv.table && sv.table.length && (sv.seasonNo || season) === season) {
+          nm = sv.table[0] && sv.table[0].name;
+          slot = sv.table[0] && sv.table[0].slot;
+          provisional = (sv.roundsPlayed | 0) < (sv.rounds || pl.ROUNDS);
+        } else {
+          try { if (window.__foWorldLg) window.__foWorldLg.want(r.id, function () { if ((location.hash || "").split("?")[0] === "#/champions" && window.foRenderChampionsPage) window.foRenderChampionsPage(); }); } catch (eW) {}
+          var rd = pl.roundsDone(now, season, r.id);
+          var t = pl.tableOf(r.id, season, rd);
+          nm = t[0] && t[0].side.name;
+          slot = t[0] && t[0].side && t[0].side.slot != null ? t[0].side.slot : null;
+          provisional = rd < pl.ROUNDS;
+        }
       }
       if (!nm) return;
       // seeding: a stable per-season shuffle, the same law as the World Cup draw
       var seedv = rnd01("cl|" + season + "|" + r.id);
-      out.push({ rid: r.id, nat: r.nm, name: nm, mine: mine, provisional: provisional,
+      out.push({ rid: r.id, nat: r.nm, name: nm, mine: mine, provisional: provisional, slot: slot,
         seedv: seedv, str: 0.97 + seedv * 0.1 + (mine ? 0.01 : 0) });
     });
     out.sort(function (a, b) { return b.seedv - a.seedv; });
@@ -197,19 +221,25 @@
 
     // the entrants: nineteen champions, seeded, yours in gold
     var provisional = p.di < 18;
+    // every club named here is a door to its own page
+    var teamA = function (x, inner) {
+      return x.slot != null
+        ? "<a class='fo-cl-tl' href='#/team?c=" + encodeURIComponent(x.rid) + "&s=" + (x.slot | 0) + "'>" + inner + "</a>"
+        : inner;
+    };
     var entRows = e.map(function (x) {
       return "<div class='fo-cl-ent" + (x.mine ? " mine" : "") + "'>" +
         "<i>" + x.seed + "</i>" +
         "<img src='" + flagOf(x.rid) + "' alt='' onerror=\"this.style.display='none'\">" +
-        "<b>" + E(x.name) + (x.mine ? " <u>YOU</u>" : "") + "</b>" +
+        "<b>" + teamA(x, E(x.name)) + (x.mine ? " <u>YOU</u>" : "") + "</b>" +
         "<span>" + E(x.nat) + (x.provisional ? " · as it stands" : "") + "</span></div>";
     }).join("");
 
     // the bracket: only stages whose windows have CLOSED show results
     var tieHTML = function (m) {
       return "<div class='fo-cl-tie" + ((m.a.mine || m.b.mine) ? " mine" : "") + "'>" +
-        "<div class='s" + (m.winner === m.a ? " won" : "") + "'><b>" + E(m.a.name) + "</b><em>" + E(m.hs) + "</em></div>" +
-        "<div class='s" + (m.winner === m.b ? " won" : "") + "'><b>" + E(m.b.name) + "</b><em>" + E(m.as) + "</em></div>" +
+        "<div class='s" + (m.winner === m.a ? " won" : "") + "'><b>" + teamA(m.a, E(m.a.name)) + "</b><em>" + E(m.hs) + "</em></div>" +
+        "<div class='s" + (m.winner === m.b ? " won" : "") + "'><b>" + teamA(m.b, E(m.b.name)) + "</b><em>" + E(m.as) + "</em></div>" +
         "</div>";
     };
     var bracketHTML = "";
@@ -306,6 +336,8 @@
       "html body #page .fo-cl-ent img{width:24px;height:17px;object-fit:cover;border-radius:3px}",
       "html body #page .fo-cl-ent b{font:600 13px/1.2 Inter,sans-serif;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       "html body #page .fo-cl-ent b u{text-decoration:none;font:800 8px/1 Oswald,sans-serif;color:#B44A22;letter-spacing:.14em;margin-left:5px;vertical-align:1px}",
+      "html body #page a.fo-cl-tl{color:inherit;text-decoration:none}",
+      "html body #page a.fo-cl-tl:hover{color:#B44A22;text-decoration:underline}",
       "html body #page .fo-cl-ent span{font-size:10.5px;color:rgba(20,28,40,.5);white-space:nowrap}",
       "html body #page .fo-cl-ent.mine{background:rgba(200,154,46,.07);border-radius:8px;padding-left:6px;padding-right:6px}",
       "html body #page .fo-cl-schrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid rgba(20,28,40,.05);font-size:12.5px}",
