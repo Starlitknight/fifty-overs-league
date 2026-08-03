@@ -1352,6 +1352,9 @@
     }
     return null;
   }
+  // other pages (the fixture list) read the same challenge ledger without
+  // owning a fetch of their own
+  window.__foFriendlies = { all: foFrAllNow };
   // live rows tick over even when nothing else repaints the page
   setInterval(function () { try { if (App.page === "matches") foFriendliesPanel(); } catch (e) {} }, 6000);
   // home: a one-line nudge when a challenge needs the manager's attention

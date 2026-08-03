@@ -1,13 +1,14 @@
 // ---- 24-fixture-list.js — The Fixture List -----------------------------------
-// The season, laid out like the card on the pavilion noticeboard: every match
-// already played (each one a door to its report) and every match still to
-// come, with venue, forecast pitch and weather - all read from the shared
-// season state, so every client prints the identical card.
+// The season, laid out the way a broadcaster lays it out: a navy masthead with
+// the club's record and running form, the next engagement up in lights, then
+// every match — league round, cup Sunday and accepted friendly alike — in one
+// dated card, each row a door to its report or its build-up.
 (function () {
   "use strict";
   function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
   function ready() { return typeof App !== "undefined" && App && typeof GD !== "undefined" && GD && GD.teams && typeof userTeam === "function"; }
   var PITCH_NM = { balanced: "True", flat: "Flat", green: "Green", dry: "Dry", slow: "Slow", cracked: "Cracked", twoPaced: "Two-paced" };
+  var FA_NM = { r16: "Round of 16", qf: "Quarter-final", sf: "Semi-final", final: "The final" };
   // older saves recorded results before seasonNo existed on the record; a
   // stampless result belongs to this season exactly when the season's own
   // played-map points at its index
@@ -21,16 +22,6 @@
     return false;
   }
 
-
-  // ---------------------------------------------------------------------------
-  // ONE WORLD. This card used to read App.season and App.results - the
-  // retired local sim - so a manager whose served season had played ONE round
-  // was shown four, against a mix of counties and another manager's club, at
-  // grounds called Neutral Park. Every one of those matches was a ghost.
-  // Where a club is held in the served world the card is built from the
-  // umpire's own record instead, and the local sim is only the fallback for a
-  // device that has never claimed anything.
-  // ---------------------------------------------------------------------------
   function worldClaim() {
     try { return window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); }
     catch (e) { return null; }
@@ -41,6 +32,98 @@
       foRenderFixturesPage();
     } catch (e) {}
   }
+
+  // ---- friendlies join the card ---------------------------------------------
+  // An accepted challenge is a fixture like any other: it has a date, a host
+  // and an hour, and after its hour it has a result. The ledger is the same
+  // one the Matches page and the bell read; this card only borrows it.
+  var FR_MIN = 60;                       // broadcast length, in minutes
+  var DOW = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+  function frDt(t) { var d = new Date(t); return DOW[d.getDay()] + " " + d.getDate() + " " + MON[d.getMonth()]; }
+  function frHH(t) { var d = new Date(t), p = function (n) { return (n < 10 ? "0" : "") + n; }; return p(d.getHours()) + ":" + p(d.getMinutes()); }
+  function frPhase(c) {
+    var t0 = c && c.play_at ? Date.parse(c.play_at) : NaN;
+    if (isNaN(t0)) return null;
+    var end = t0 + FR_MIN * 60000, now = Date.now();
+    return { t0: t0, phase: now < t0 ? "pre" : now < end ? "live" : "done" };
+  }
+  function frRows(my) {
+    var rows = window.__foFrAll;
+    if (rows === undefined) {
+      try { if (window.__foFriendlies && window.__foFriendlies.all) rows = window.__foFriendlies.all(repaint); } catch (e) {}
+    }
+    var out = { up: [], done: [] };
+    (rows || []).forEach(function (c) {
+      if (!c || (c.status !== "accepted" && c.status !== "played")) return;
+      if (c.challenger_club !== my && c.opponent_club !== my) return;
+      var st = frPhase(c); if (!st) return;
+      var atHome = c.challenger_club === my;
+      var o = { t0: st.t0, atHome: atHome, host: c.challenger_club,
+        opp: atHome ? c.opponent_club : c.challenger_club, id: c.id };
+      if (st.phase === "done" && c.result) {
+        var tx = String(c.result.result_text || "");
+        o.tie = /\btied?\b/i.test(tx) && tx.indexOf("won") < 0;
+        o.won = !o.tie && tx.lastIndexOf(my, 0) === 0;
+        o.text = tx;
+        out.done.push(o);
+      } else {
+        // pre, live, or played-out with the card still being written
+        o.live = st.phase === "live";
+        o.wait = st.phase === "done";
+        out.up.push(o);
+      }
+    });
+    return out;
+  }
+
+  // ---- the shared furniture -------------------------------------------------
+  // one row of the card; every path prints through here so league, cup and
+  // friendly all wear the same clothes
+  function rowHtml(o) {
+    var dtH = "";
+    if (o.dt != null) {
+      // the relative words wear short jackets: the cell is a date block, not a sentence
+      var dt1 = { Tomorrow: "TMRW", Yesterday: "YDAY" }[o.dt] || o.dt;
+      var m = /^(\S+)\s+(.+)$/.exec(dt1);
+      dtH = "<span class='fo-fl-dt'>" + (m ? "<b>" + E(m[1]) + "</b><i>" + E(m[2]) + "</i>" : "<b class='one'>" + E(dt1) + "</b>") + "</span>";
+    }
+    return "<a class='fo-fl-row" + (o.cls ? " " + o.cls : "") + (o.dt == null ? " nodt" : "") + "' href='" + o.href + "'>" +
+      dtH +
+      "<span class='fo-fl-cmp " + (o.cmpCls || "lg") + "'>" + o.cmp + "</span>" +
+      "<u class='" + (o.chipCls || "n") + "'>" + o.chip + "</u>" +
+      "<span class='fo-fl-who'><b>" + o.name + "</b><span>" + o.sub + "</span></span>" +
+      (o.right ? "<em class='fo-fl-" + (o.rightCls || "res") + "'>" + o.right + "</em>" : "") +
+      "<s>&#8250;</s></a>";
+  }
+  function heroHtml(kick, chips, form) {
+    return "<div class='fo-fl-hero'>" +
+      "<div class='k'>" + kick + "</div>" +
+      "<h1>Fixtures &amp; Results</h1>" +
+      "<div class='fo-fl-stats'>" + chips +
+      (form ? "<span class='fo-fl-form'>" + form + "</span>" : "") + "</div>" +
+      "</div>";
+  }
+  function statChip(n, lbl) { return "<span class='fo-fl-stat'><b>" + n + "</b>" + lbl + "</span>"; }
+  function formHtml(letters) {
+    return letters.slice(-5).map(function (x) {
+      return "<i class='" + (x === "W" ? "w" : x === "L" ? "l" : "t") + "'>" + x + "</i>";
+    }).join("");
+  }
+  function nextCard(u) {
+    return "<a class='fo-fl-next" + (u.live ? " live" : "") + "' href='" + u.href + "'>" +
+      "<span class='nb'>" +
+      "<span class='nk'>" + (u.live ? "<b class='dot'></b>" : "") + u.kick + "</span>" +
+      "<span class='nvs'>" + u.name + " <u>" + (u.isHome ? "Home" : "Away") + "</u></span>" +
+      "<span class='nw'>" + u.when + "</span></span>" +
+      "<span class='ncta'>" + (u.live ? "Watch live &rsaquo;" : "Match preview &rsaquo;") + "</span></a>";
+  }
+
+  // ---------------------------------------------------------------------------
+  // ONE WORLD. Where a club is held in the served world the card is built from
+  // the umpire's own record; the local sim is only the fallback for a device
+  // that has never claimed anything.
+  // ---------------------------------------------------------------------------
   function servedCard(page, claim) {
     var snap = null, names = null, mgr = null;
     try {
@@ -48,31 +131,26 @@
       if (window.__foWorldNames) { window.__foWorldNames.want(claim.country, repaint); names = window.__foWorldNames.get(claim.country); mgr = window.__foWorldNames.mgr(claim.country); }
     } catch (e) {}
     if (!snap || !snap.table || !snap.table.length) return false;
-    // BOTH FLIGHTS, OR NOBODY HAS A NAME. The register was read off table
-    // alone - Division One - so a Division Two club's whole card said "at a
-    // club" and "v a club": its opponents were all in table2, and every one of
-    // them came back undefined.
     var allRows = (snap.table || []).concat(snap.table2 || []);
     var bySlot = {}; allRows.forEach(function (r) { bySlot[r.slot] = (names && names[r.slot]) || r.name; });
+    var slotByName = {}; allRows.forEach(function (r) { var n2 = bySlot[r.slot]; if (n2 && slotByName[n2] == null) slotByName[n2] = r.slot; });
     var myRow = allRows.filter(function (r) { return r.slot === claim.slot; })[0];
     var my = (myRow && ((names && names[claim.slot]) || myRow.name)) || claim.club;
     var groundOf = function (slot) { return (mgr && mgr["g" + slot]) || ((bySlot[slot] || "the ground") + "'s ground"); };
-    // WHEN, NOT JUST AT WHAT HOUR. Every row on this card - played or still to
-    // come - carries the day it belongs to, off the world's own calendar.
     var pl0 = null; try { pl0 = window.__foPlanet; } catch (ePl) {}
     var seasonNo = snap.seasonNo || 1;
-    var dayTxt = function (round) {
-      try { return (pl0 && pl0.dateTxt) ? pl0.dateTxt(pl0.dayOfSeasonRound(seasonNo, round)) : ""; } catch (eD) { return ""; }
+    var EP = pl0 ? pl0.EPOCH : 0, DAYMS = pl0 ? pl0.DAY : 86400000;
+    var tsOfDay = function (d9) { return d9 == null ? 0 : EP + d9 * DAYMS; };
+    var dayOf = function (round) {
+      try { return pl0 ? pl0.dayOfSeasonRound(seasonNo, round) : null; } catch (eD) { return null; }
     };
+    var dayTxt = function (round) {
+      try { var d9 = dayOf(round); return (d9 != null && pl0.dateTxt) ? pl0.dateTxt(d9) : ""; } catch (eD) { return ""; }
+    };
+    var hour = 14; try { hour = pl0 ? pl0.natHour(claim.country) : 14; } catch (eH) {}
+    var hhT = ((hour < 10 ? "0" : "") + hour + ":00 UTC");
 
     // ---- THE CUP IS PART OF THE SUMMER --------------------------------------
-    // This card listed the league and nothing else, so four Sundays of national
-    // knockout - the ones a small club's season is really made of - appeared
-    // nowhere a manager looks. The Round of 16 is drawn the day the season
-    // opens, off nothing but the nation and the season, so the tie is knowable
-    // before a ball is bowled; the later rounds turn on results and are named
-    // as the world plays them.
-    var FA_NM = { r16: "Round of 16", qf: "Quarter-final", sf: "Semi-final", final: "The final" };
     var faBody = null;
     try {
       if (window.__foFaCup && window.__foFaCup.want) {
@@ -84,8 +162,6 @@
         faSync = false;
       }
     } catch (eFa) {}
-    // my club's tie at each stage: played ones off the served bracket, the
-    // opening round off the draw itself
     var faUps = [], faDone = [];
     try {
       var divs = (snap.divisions) || {};
@@ -125,106 +201,131 @@
       });
     } catch (eFa2) {}
 
+    // ---- the friendlies my club has agreed to -------------------------------
+    var fr = frRows(my);
+    var frGround = function (host) {
+      var s9 = slotByName[host];
+      return s9 != null ? groundOf(s9) : host + "'s ground";
+    };
+
+    // ---- everything already played, one chronology --------------------------
     var played = (snap.results || []).filter(function (r) { return r.home === my || r.away === my; })
       .sort(function (a, b) { return (a.round || 0) - (b.round || 0); });
     var w = 0, l = 0, t = 0;
     played.forEach(function (r) {
       if (r.winner === null) t++; else if (r.winner === my) w++; else l++;
     });
-    var resRows = played.map(function (r) {
+    var resItems = [];
+    played.forEach(function (r) {
       var homeGame = r.home === my, opp = homeGame ? r.away : r.home;
       var won = r.winner === my, tie = r.winner === null;
       var sc = homeGame ? r.hs : r.as, oc = homeGame ? r.as : r.hs;
       var line = sc && oc ? (sc.r + "/" + sc.w + " v " + oc.r + "/" + oc.w) : (r.text || "");
-      var on = dayTxt(r.round);
-      return "<a class='fo-fl-row' href='#/league?t=results&r=" + r.round + "'>" +
-        "<i>R" + r.round + "</i>" +
-        "<u class='" + (won ? "w" : tie ? "t" : "l") + "'>" + (won ? "W" : tie ? "T" : "L") + "</u>" +
-        "<span class='fo-fl-who'><b>" + (homeGame ? "v " : "at ") + E(opp) +
-        (on ? " <em class='fo-fl-when done'>" + E(on) + "</em>" : "") + "</b>" +
-        "<span>" + E(line) + "</span></span>" +
-        "<em class='fo-fl-res'>" + E((r.text || "").replace(/\s*\(.*\)$/, "")) + "</em><s>&#8250;</s></a>";
-    }).join("");
-    // the cup ties already played, in the same list as the league's
-    resRows += faDone.sort(function (a2, b2) { return a2.day - b2.day; }).map(function (f) {
-      var on = (pl0 && pl0.dateTxt) ? pl0.dateTxt(f.day) : "";
-      return "<a class='fo-fl-row cup' href='#/facup'>" +
-        "<i>CUP</i>" +
-        "<u class='" + (f.won ? "w" : f.tie ? "t" : "l") + "'>" + (f.won ? "W" : f.tie ? "T" : "L") + "</u>" +
-        "<span class='fo-fl-who'><b>" + (f.isHome ? "v " : "at ") + E(f.opp) +
-        (on ? " <em class='fo-fl-when done'>" + E(on) + "</em>" : "") + "</b>" +
-        "<span>" + E(FA_NM[f.st] || "The Cup") + (f.line ? " &middot; " + E(f.line) : "") + "</span></span>" +
-        "<em class='fo-fl-res'>" + E((f.text || "").replace(/\s*\(.*\)$/, "")) + "</em><s>&#8250;</s></a>";
-    }).join("");
+      resItems.push({ ts: tsOfDay(dayOf(r.round)), lt: won ? "W" : tie ? "T" : "L",
+        html: rowHtml({ href: "#/league?t=results&r=" + r.round, dt: dayTxt(r.round),
+          cmp: "R" + r.round, cmpCls: "lg", chip: won ? "W" : tie ? "T" : "L", chipCls: won ? "w" : tie ? "t" : "l",
+          name: (homeGame ? "v " : "at ") + E(opp), sub: E(line),
+          right: E((r.text || "").replace(/\s*\(.*\)$/, "")) }) });
+    });
+    faDone.forEach(function (f) {
+      resItems.push({ ts: tsOfDay(f.day), lt: f.won ? "W" : f.tie ? "T" : "L",
+        html: rowHtml({ href: "#/facup", dt: (pl0 && pl0.dateTxt) ? pl0.dateTxt(f.day) : "",
+          cmp: "CUP", cmpCls: "cup", chip: f.won ? "W" : f.tie ? "T" : "L", chipCls: f.won ? "w" : f.tie ? "t" : "l",
+          name: (f.isHome ? "v " : "at ") + E(f.opp),
+          sub: E(FA_NM[f.st] || "The Cup") + (f.line ? " &middot; " + E(f.line) : ""),
+          right: E((f.text || "").replace(/\s*\(.*\)$/, "")) }) });
+    });
+    fr.done.forEach(function (f) {
+      resItems.push({ ts: f.t0, lt: f.won ? "W" : f.tie ? "T" : "L",
+        html: rowHtml({ href: "#/friendly?id=" + f.id, dt: frDt(f.t0),
+          cmp: "FR", cmpCls: "fr", chip: f.won ? "W" : f.tie ? "T" : "L", chipCls: f.won ? "w" : f.tie ? "t" : "l",
+          name: (f.atHome ? "v " : "at ") + E(f.opp),
+          sub: "Friendly &middot; " + frHH(f.t0),
+          right: E((f.text || "").replace(/\s*\(.*\)$/, "")) }) });
+    });
+    resItems.sort(function (a, b) { return a.ts - b.ts; });
+    var resRows = resItems.map(function (x) { return x.html; }).join("");
+    var form = formHtml(resItems.map(function (x) { return x.lt; }));
 
-    // what is still to come, off the umpire's own schedule
-    var upRows = "", rounds = snap.rounds || 14;
+    // ---- what is still to come, off the umpire's own schedule ---------------
+    var upItems = [];
     try {
-      var wt = window.__foWT, pl = window.__foPlanet;
-      if (wt && wt.schedMirror && pl) {
-        var sched = wt.schedMirror(claim.country, snap.seasonNo || 1);
-        var hour = pl.natHour(claim.country);
-        var hh = function (h) { return (h < 10 ? "0" : "") + h + ":00 UTC"; };
-        var ups = [];
+      var wt = window.__foWT;
+      if (wt && wt.schedMirror && pl0) {
+        var sched = wt.schedMirror(claim.country, seasonNo);
         for (var r3 = (snap.roundsPlayed || 0); r3 < sched.length; r3++) {
           (sched[r3] || []).forEach(function (f) {
             if (f[0] !== claim.slot && f[1] !== claim.slot) return;
             var isHome = f[0] === claim.slot;
-            ups.push({ day: pl.dayOfSeasonRound(seasonNo, r3 + 1), r: r3 + 1, isHome: isHome,
-              opp: bySlot[isHome ? f[1] : f[0]] || "a club",
-              ground: groundOf(f[0]), hs: f[0], as: f[1] });
+            var d9 = pl0.dayOfSeasonRound(seasonNo, r3 + 1);
+            var opp = bySlot[isHome ? f[1] : f[0]] || "a club";
+            var pv = "#/league?t=fixtures";
+            try { pv = window.foPreviewHref(claim.country, r3 + 1, f[0], f[1]) || pv; } catch (ePv) {}
+            upItems.push({ ts: tsOfDay(d9) + hour * 3600000, href: pv, isHome: isHome,
+              kick: "Up next &middot; League &middot; Round " + (r3 + 1),
+              name: (isHome ? "v " : "at ") + E(opp),
+              when: E((pl0.dateTxt ? pl0.dateTxt(d9) : "") + " · " + hhT + " · " + groundOf(f[0])),
+              html: rowHtml({ href: pv, dt: pl0.dateTxt ? pl0.dateTxt(d9) : "",
+                cmp: "R" + (r3 + 1), cmpCls: "lg", chip: isHome ? "H" : "A", chipCls: "n", cls: "up",
+                name: (isHome ? "v " : "at ") + E(opp),
+                sub: E(hhT) + " &middot; " + E(groundOf(f[0])),
+                right: "Preview &rsaquo;", rightCls: "act" }) });
           });
         }
-        // ONE SUMMER, ONE LIST. League Thursday, cup Sunday, league Monday -
-        // the card reads in the order the matches are actually played.
-        faUps.forEach(function (f) { ups.push({ day: f.day, cup: f.st, isHome: f.isHome, opp: f.opp, ground: f.ground, hs: f.hs, as: f.as }); });
-        ups.sort(function (x, y) { return (x.day || 0) - (y.day || 0); });
-        // A COMING MATCH NOW HAS SOMEWHERE TO GO. These rows used to land on
-        // the round's fixture card - the same list, one level up, which told
-        // the reader nothing he had not just tapped. Each one opens its own
-        // match now: the ground, the hour, both sides' form, the men.
-        upRows = ups.map(function (u, i) {
-          // the day above, in the chip beside the opponent; the hour below,
-          // where the ground is - so a long date never squeezes out a name
-          var on = (pl0 && pl0.dateTxt) ? pl0.dateTxt(u.day) : "";
-          if (u.cup) {
-            // a cup tie opens its own build-up, exactly as a league match does
-            var cv = "#/facup";
-            try { cv = window.foCupPreviewHref(claim.country, u.cup, u.hs, u.as) || cv; } catch (eCv) {}
-            return "<a class='fo-fl-row up cup" + (i === 0 ? " next" : "") + "' href='" + cv + "'>" +
-              "<i>CUP</i>" +
-              "<u class='c'>" + (u.isHome ? "H" : "A") + "</u>" +
-              "<span class='fo-fl-who'><b>" + (u.isHome ? "v " : "at ") + E(u.opp) +
-              (on ? " <em class='fo-fl-when'>" + E(on) + "</em>" : "") + "</b>" +
-              "<span>" + E(hh(hour)) + " &middot; " + E(u.ground) + " &middot; " + E(FA_NM[u.cup] || "The Cup") + "</span></span>" +
-              "<em class='fo-fl-act'>Preview &rsaquo;</em></a>";
-          }
-          var pv = "#/league?t=fixtures";
-          try { pv = window.foPreviewHref(claim.country, u.r, u.hs, u.as) || pv; } catch (ePv) {}
-          return "<a class='fo-fl-row up" + (i === 0 ? " next" : "") + "' href='" + pv + "'>" +
-            "<i>R" + u.r + "</i>" +
-            "<u class='n'>" + (u.isHome ? "H" : "A") + "</u>" +
-            "<span class='fo-fl-who'><b>" + (u.isHome ? "v " : "at ") + E(u.opp) +
-            (on ? " <em class='fo-fl-when'>" + E(on) + "</em>" : "") + "</b>" +
-            "<span>" + E(hh(hour)) + " &middot; " + E(u.ground) + "</span></span>" +
-            "<em class='fo-fl-act'>Preview &rsaquo;</em></a>";
-        }).join("");
-        if (!ups.length) upRows = "<div class='fo-fl-none'>The season is played out. Awards night awaits.</div>";
       }
     } catch (eU) {}
-    if (!upRows) upRows = "<div class='fo-fl-none'>The rest of the card arrives with the world.</div>";
+    faUps.forEach(function (f) {
+      var cv = "#/facup";
+      try { cv = window.foCupPreviewHref(claim.country, f.st, f.hs, f.as) || cv; } catch (eCv) {}
+      upItems.push({ ts: tsOfDay(f.day) + hour * 3600000, href: cv, isHome: f.isHome,
+        kick: "Up next &middot; National Cup &middot; " + (FA_NM[f.st] || "The Cup"),
+        name: (f.isHome ? "v " : "at ") + E(f.opp),
+        when: E(((pl0 && pl0.dateTxt) ? pl0.dateTxt(f.day) : "") + " · " + hhT + " · " + f.ground),
+        html: rowHtml({ href: cv, dt: (pl0 && pl0.dateTxt) ? pl0.dateTxt(f.day) : "",
+          cmp: "CUP", cmpCls: "cup", chip: f.isHome ? "H" : "A", chipCls: "c", cls: "up",
+          name: (f.isHome ? "v " : "at ") + E(f.opp),
+          sub: E(hhT) + " &middot; " + E(f.ground) + " &middot; " + E(FA_NM[f.st] || "The Cup"),
+          right: "Preview &rsaquo;", rightCls: "act" }) });
+    });
+    fr.up.forEach(function (f) {
+      var href = "#/friendly?id=" + f.id;
+      var gr = frGround(f.host);
+      upItems.push({ ts: f.t0, href: href, isHome: f.atHome, live: f.live,
+        kick: f.live ? "Live now &middot; Friendly" : "Up next &middot; Friendly",
+        name: (f.atHome ? "v " : "at ") + E(f.opp),
+        when: E(frDt(f.t0) + " · " + frHH(f.t0) + " · " + gr),
+        html: rowHtml({ href: href, dt: frDt(f.t0),
+          cmp: "FR", cmpCls: "fr", chip: f.live ? "&#9679;" : f.atHome ? "H" : "A",
+          chipCls: f.live ? "lv" : "f", cls: f.live ? "up live" : "up",
+          name: (f.atHome ? "v " : "at ") + E(f.opp),
+          sub: f.live ? "LIVE &middot; ball by ball now"
+            : f.wait ? "full time &middot; waiting on the league engine"
+            : E(frHH(f.t0)) + " &middot; " + E(gr) + " &middot; Friendly",
+          right: f.live ? "Watch &rsaquo;" : "Preview &rsaquo;", rightCls: "act" }) });
+    });
+    upItems.sort(function (a, b) { return a.ts - b.ts; });
+    var upRows = upItems.map(function (x) { return x.html; }).join("");
+    if (!upItems.length) upRows = "<div class='fo-fl-none'>The season is played out. Awards night awaits.</div>";
+    var live0 = upItems.filter(function (x) { return x.live; })[0];
+    var feature = upItems.length ? nextCard(live0 || upItems[0]) : "";
+
+    var divNm = "";
+    try {
+      var dv2 = snap.divisions || {};
+      if ((dv2["1"] || []).indexOf(claim.slot) >= 0) divNm = "Division One";
+      else if ((dv2["2"] || []).indexOf(claim.slot) >= 0) divNm = "Division Two";
+    } catch (eDv) {}
+    var rounds = snap.rounds || 14;
+    var chips = statChip(played.length + "<span>/" + rounds + "</span>", "played") +
+      statChip(w, "won") + (t ? statChip(t, "tied") : "") + statChip(l, "lost");
 
     page.innerHTML =
       "<div class='fo-fl'>" +
-      "<div class='fo-fl-mast'>" +
-      "<div class='fo-fl-kick'>" + E(my) + " &middot; season " + (snap.seasonNo || 1) + "</div>" +
-      "<h1>The Fixture List</h1>" +
-      "<div class='fo-fl-rec'><b>" + w + "</b> won" + (t ? " &middot; <b>" + t + "</b> tied" : "") +
-        " &middot; <b>" + l + "</b> lost &middot; <b>" + played.length + "</b> of " + rounds + " played</div>" +
-      "</div>" +
+      heroHtml(E(my) + (divNm ? " &middot; " + divNm : "") + " &middot; Season " + seasonNo, chips, form) +
+      feature +
       (resRows ? "<div class='fo-fl-k'>Results</div><div class='fo-fl-list'>" + resRows + "</div>" : "") +
       "<div class='fo-fl-k'>Still to play</div><div class='fo-fl-list'>" + upRows + "</div>" +
-      "<div class='fo-fl-foot'><a href='#/home'>&#8592; The club</a><a href='#/league'>The table &rsaquo;</a><a href='#/planet'>World cricket &rsaquo;</a></div>" +
+      "<div class='fo-fl-foot'><a href='#/home'>&#8592; The club</a><a href='#/league'>The table &rsaquo;</a><a href='#/matches'>Friendlies &rsaquo;</a><a href='#/planet'>World cricket &rsaquo;</a></div>" +
       "</div>";
     return true;
   }
@@ -242,33 +343,42 @@
       try { if (typeof seasonInit === "function") seasonInit(); } catch (eS) {}
       var S = App.season;
       var my = me.name;
+      var fr = frRows(my);
 
       // ---- what has been played ----
       var played = (App.results || []).filter(function (r) {
         return r && r.comp === "league" && r.result && (r.home === my || r.away === my) && thisSeasonHas(r);
       }).sort(function (a, b) { return (a.round || 0) - (b.round || 0); });
-      var w = 0, l = 0, t = 0;
+      var w = 0, l = 0, t = 0, letters = [];
       played.forEach(function (r) {
         if (!r.result || r.result.winner === undefined) return;
-        if (r.result.winner === my) w++; else if (r.result.winner === null) t++; else l++;
+        if (r.result.winner === my) { w++; letters.push("W"); }
+        else if (r.result.winner === null) { t++; letters.push("T"); }
+        else { l++; letters.push("L"); }
       });
       var resRows = played.map(function (r) {
         var homeGame = r.home === my;
         var opp = homeGame ? r.away : r.home;
         var won = r.result.winner === my, tie = r.result.winner === null;
         var live = /LIVE/.test(r.result.text || "") || r.result.winner === undefined;
-        return "<a class='fo-fl-row' href='#/report?i=" + r.ix + "'>" +
-          "<i>R" + ((r.round | 0) + 1) + "</i>" +
-          "<u class='" + (live ? "lv" : won ? "w" : tie ? "t" : "l") + "'>" + (live ? "&#9679;" : won ? "W" : tie ? "T" : "L") + "</u>" +
-          "<span class='fo-fl-who'><b>" + (homeGame ? "v " : "at ") + E(opp) + "</b>" +
-          "<span>" + E(r.ground || "") + "</span></span>" +
-          "<em class='fo-fl-res'>" + E((r.result.text || "").replace(/\s*\(.*\)$/, "")) + "</em><s>&#8250;</s></a>";
+        return rowHtml({ href: "#/report?i=" + r.ix, dt: null,
+          cmp: "R" + ((r.round | 0) + 1), cmpCls: "lg",
+          chip: live ? "&#9679;" : won ? "W" : tie ? "T" : "L",
+          chipCls: live ? "lv" : won ? "w" : tie ? "t" : "l",
+          name: (homeGame ? "v " : "at ") + E(opp), sub: E(r.ground || ""),
+          right: E((r.result.text || "").replace(/\s*\(.*\)$/, "")) });
       }).join("");
+      fr.done.sort(function (a, b) { return a.t0 - b.t0; }).forEach(function (f) {
+        resRows += rowHtml({ href: "#/friendly?id=" + f.id, dt: frDt(f.t0),
+          cmp: "FR", cmpCls: "fr", chip: f.won ? "W" : f.tie ? "T" : "L", chipCls: f.won ? "w" : f.tie ? "t" : "l",
+          name: (f.atHome ? "v " : "at ") + E(f.opp),
+          sub: "Friendly &middot; " + frHH(f.t0),
+          right: E((f.text || "").replace(/\s*\(.*\)$/, "")) });
+      });
 
       // ---- what is still to come ----
-      var upRows = "";
+      var upRows = "", feature = "", ups = [];
       if (S && S.schedule) {
-        var ups = [];
         for (var r2 = S.round; r2 < S.schedule.length; r2++) {
           (S.schedule[r2] || []).forEach(function (f) {
             if (f[0] !== App.teamIx && f[1] !== App.teamIx) return;
@@ -283,30 +393,66 @@
             });
           });
         }
-        upRows = ups.map(function (u, i) {
-          // the fixture list carries real dates now: each round has its hour
-          // on the world calendar (England plays at 14:00 UTC)
-          var when = "";
-          try { if (typeof window.foRoundTimeTxt === "function") when = window.foRoundTimeTxt(u.r) || ""; } catch (eW) {}
-          return "<a class='fo-fl-row up" + (i === 0 ? " next" : "") + "' href='#/matchday?r=" + u.r + "'>" +
-            "<i>R" + (u.r + 1) + "</i>" +
-            "<u class='n'>" + (u.isHome ? "H" : "A") + "</u>" +
-            "<span class='fo-fl-who'><b>" + (u.isHome ? "v " : "at ") + E(u.opp.name) +
-            (when ? " <em class='fo-fl-when'>" + E(when) + "</em>" : "") + "</b>" +
-            "<span>" + E(u.ground) + " &middot; " + E(PITCH_NM[u.pitch] || u.pitch) + " pitch &middot; " + E(u.wx) + "</span></span>" +
-            "<em class='fo-fl-act'>Matchday &rsaquo;</em>" +
-            "</a>";
-        }).join("");
-        if (!ups.length) upRows = "<div class='fo-fl-none'>The season is played out. Awards night awaits.</div>";
+      }
+      // league rounds and friendlies share one clock: each round has its real
+      // hour on the calendar, so the two sorts of engagement interleave in the
+      // order they will actually be played
+      var upItems = ups.map(function (u) {
+        var when = "", ts = null;
+        try { if (typeof window.foRoundTimeTxt === "function") when = window.foRoundTimeTxt(u.r) || ""; } catch (eW) {}
+        try { if (typeof window.foRoundTime === "function") ts = window.foRoundTime(u.r); } catch (eT) {}
+        return { ts: ts != null ? ts : Date.now() + (u.r + 1) * 86400000,
+          html: rowHtml({ href: "#/matchday?r=" + u.r, dt: null,
+            cmp: "R" + (u.r + 1), cmpCls: "lg", chip: u.isHome ? "H" : "A", chipCls: "n", cls: "up",
+            name: (u.isHome ? "v " : "at ") + E(u.opp.name),
+            sub: (when ? E(when) + " &middot; " : "") + E(u.ground) + " &middot; " + E(PITCH_NM[u.pitch] || u.pitch) + " pitch &middot; " + E(u.wx),
+            right: "Matchday &rsaquo;", rightCls: "act" }) };
+      });
+      fr.up.forEach(function (f) {
+        upItems.push({ ts: f.t0,
+          html: rowHtml({ href: "#/friendly?id=" + f.id, dt: frDt(f.t0),
+            cmp: "FR", cmpCls: "fr", chip: f.live ? "&#9679;" : f.atHome ? "H" : "A",
+            chipCls: f.live ? "lv" : "f", cls: f.live ? "up live" : "up",
+            name: (f.atHome ? "v " : "at ") + E(f.opp),
+            sub: f.live ? "LIVE &middot; ball by ball now"
+              : f.wait ? "full time &middot; waiting on the league engine"
+              : E(frHH(f.t0)) + " &middot; Friendly",
+            right: f.live ? "Watch &rsaquo;" : "Preview &rsaquo;", rightCls: "act" }) });
+      });
+      upItems.sort(function (a, b) { return a.ts - b.ts; });
+      upRows = upItems.map(function (x) { return x.html; }).join("");
+      if (!upRows) upRows = "<div class='fo-fl-none'>The season is played out. Awards night awaits.</div>";
+      // the next engagement up in lights: a live friendly outranks everything
+      var frLive = fr.up.filter(function (f) { return f.live; })[0];
+      if (frLive) {
+        feature = nextCard({ href: "#/friendly?id=" + frLive.id, isHome: frLive.atHome, live: true,
+          kick: "Live now &middot; Friendly", name: (frLive.atHome ? "v " : "at ") + E(frLive.opp),
+          when: E(frDt(frLive.t0) + " · " + frHH(frLive.t0)) });
+      } else {
+        var u0 = ups[0], f0 = fr.up.slice().sort(function (a, b) { return a.t0 - b.t0; })[0];
+        var uTs = null;
+        try { if (u0 && typeof window.foRoundTime === "function") uTs = window.foRoundTime(u0.r); } catch (eT0) {}
+        // whichever engagement comes first on the clock gets the lights
+        if (u0 && (!f0 || (uTs != null && uTs <= f0.t0))) {
+          var when0 = "";
+          try { if (typeof window.foRoundTimeTxt === "function") when0 = window.foRoundTimeTxt(u0.r) || ""; } catch (eW0) {}
+          feature = nextCard({ href: "#/matchday?r=" + u0.r, isHome: u0.isHome,
+            kick: "Up next &middot; League &middot; Round " + (u0.r + 1),
+            name: (u0.isHome ? "v " : "at ") + E(u0.opp.name),
+            when: E((when0 ? when0 + " · " : "") + u0.ground) });
+        } else if (f0) {
+          feature = nextCard({ href: "#/friendly?id=" + f0.id, isHome: f0.atHome,
+            kick: "Up next &middot; Friendly", name: (f0.atHome ? "v " : "at ") + E(f0.opp),
+            when: E(frDt(f0.t0) + " · " + frHH(f0.t0)) });
+        }
       }
 
+      var chips = statChip(played.length + "<span>/" + (S && S.schedule ? S.schedule.length : 18) + "</span>", "played") +
+        statChip(w, "won") + (t ? statChip(t, "tied") : "") + statChip(l, "lost");
       page.innerHTML =
         "<div class='fo-fl'>" +
-        "<div class='fo-fl-mast'>" +
-        "<div class='fo-fl-kick'>" + E(my) + " &middot; season " + (App.seasonNo || 1) + "</div>" +
-        "<h1>The Fixture List</h1>" +
-          "<div class='fo-fl-rec'><b>" + w + "</b> won" + (t ? " &middot; <b>" + t + "</b> tied" : "") + " &middot; <b>" + l + "</b> lost &middot; <b>" + (played.length) + "</b> of " + (S && S.schedule ? S.schedule.length : 18) + " played</div>" +
-        "</div>" +
+        heroHtml(E(my) + " &middot; Season " + (App.seasonNo || 1), chips, formHtml(letters)) +
+        feature +
         (resRows ? "<div class='fo-fl-k'>Results</div><div class='fo-fl-list'>" + resRows + "</div>" : "") +
         "<div class='fo-fl-k'>Still to play</div><div class='fo-fl-list'>" + upRows + "</div>" +
         "<div class='fo-fl-foot'><a href='#/home'>&#8592; The club</a><a href='#/scorecard'>Match centre &rsaquo;</a><a href='#/cup'>The cup &rsaquo;</a></div>" +
@@ -331,45 +477,84 @@
   window.addEventListener("hashchange", function () { setTimeout(ensureNavLink, 90); });
 
   var CSS = [
-    "html body #page .fo-fl{max-width:720px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
-    "html body #page .fo-fl-mast{background:linear-gradient(150deg,#FFFEFB,#F6F1E4 70%,#F0E9D6) !important;border:1px solid rgba(20,28,40,.1);border-radius:22px;padding:26px 28px 22px;box-shadow:0 22px 50px rgba(30,38,52,.12)}",
-    "html body #page .fo-fl-kick{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:#B44A22}",
-    "html body #page .fo-fl-kick:after{content:'';display:block;width:34px;border-top:2px solid #C95532;margin-top:7px}",
-    "html body #page .fo-fl-mast h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:38px;letter-spacing:-.015em;margin:8px 0 8px;color:#141C28;line-height:1.02}",
-    "html body #page .fo-fl-mast p{font:italic 420 13.5px/1.6 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);margin:0;max-width:56ch}",
-    "html body #page .fo-fl-rec{margin-top:12px;font:500 12px/1 Inter,sans-serif;color:rgba(20,28,40,.7);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;display:inline-block;padding:9px 15px}",
-    "html body #page .fo-fl-rec b{color:#141C28}",
-    "html body #page .fo-fl-k{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#B44A22;margin:20px 2px 8px}",
+    "html body #page .fo-fl{max-width:760px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
+    // ---- the masthead: navy, gold eyebrow, the record worn like a scorebug --
+    "html body #page .fo-fl-hero{position:relative;overflow:hidden;background:linear-gradient(132deg,#0B1D33,#122C4B 55%,#1B3A5F);border-radius:22px;padding:26px 28px 22px;box-shadow:0 22px 50px rgba(11,29,51,.38)}",
+    "html body #page .fo-fl-hero:before{content:'';position:absolute;inset:0;background:radial-gradient(120% 90% at 85% -10%,rgba(235,194,113,.14),transparent 55%);pointer-events:none}",
+    "html body #page .fo-fl-hero .k{position:relative;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:#EBC271}",
+    "html body #page .fo-fl-hero h1{position:relative;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:40px;letter-spacing:-.015em;margin:7px 0 16px;color:#FFFEFC;line-height:1.02}",
+    "html body #page .fo-fl-stats{position:relative;display:flex;gap:8px;flex-wrap:wrap;align-items:stretch}",
+    "html body #page .fo-fl-stat{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:8px 13px 7px;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(244,239,228,.62)}",
+    "html body #page .fo-fl-stat b{display:block;font:700 17px/1 Inter,sans-serif;letter-spacing:0;color:#FFFEFC;font-variant-numeric:tabular-nums;margin-bottom:4px}",
+    "html body #page .fo-fl-stat b span{font-size:11px;font-weight:600;color:rgba(244,239,228,.55)}",
+    "html body #page .fo-fl-form{display:flex;gap:5px;margin-left:auto;align-self:center}",
+    "html body #page .fo-fl-form i{width:23px;height:23px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font:800 10.5px/1 Inter,sans-serif;font-style:normal;color:#FFFEFC}",
+    "html body #page .fo-fl-form i.w{background:#1F9E72}",
+    "html body #page .fo-fl-form i.l{background:#C0392E}",
+    "html body #page .fo-fl-form i.t{background:rgba(255,255,255,.24)}",
+    // ---- the next engagement, up in lights ----------------------------------
+    "html body #page a.fo-fl-next{display:flex;align-items:center;gap:16px;background:#FFFEFC;border:1px solid rgba(201,85,50,.42);border-left:5px solid #C95532;border-radius:16px;padding:15px 18px;margin-top:14px;text-decoration:none;color:#141C28;box-shadow:0 14px 34px rgba(201,85,50,.13);transition:transform .12s ease}",
+    "html body #page a.fo-fl-next:hover{transform:translateY(-1px);text-decoration:none}",
+    "html body #page .fo-fl-next .nb{min-width:0}",
+    "html body #page .fo-fl-next .nk{display:flex;align-items:center;gap:6px;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#B44A22}",
+    "html body #page .fo-fl-next .nk .dot{width:7px;height:7px;border-radius:50%;background:#C22823;animation:foFlPulse 1.2s infinite}",
+    "@keyframes foFlPulse{0%,100%{opacity:1}50%{opacity:.35}}",
+    "html body #page .fo-fl-next .nvs{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:24px;line-height:1.1;margin:5px 0 5px;color:#141C28;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    "html body #page .fo-fl-next .nvs u{text-decoration:none;display:inline-block;vertical-align:3px;font:700 9px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#14202F;background:rgba(20,28,40,.08);border:1px solid rgba(20,28,40,.16);border-radius:6px;padding:4px 7px;margin-left:6px}",
+    "html body #page .fo-fl-next .nw{display:block;font:400 12px/1.4 Inter,sans-serif;color:rgba(20,28,40,.55)}",
+    "html body #page .fo-fl-next .ncta{margin-left:auto;background:#C95532;color:#FFFEFC;border-radius:999px;padding:10px 16px;font:700 12px/1 Inter,sans-serif;white-space:nowrap}",
+    "html body #page a.fo-fl-next:hover .ncta{background:#A64426}",
+    "html body #page a.fo-fl-next.live{border-color:rgba(194,40,35,.5);border-left-color:#C22823;box-shadow:0 14px 34px rgba(194,40,35,.14)}",
+    "html body #page a.fo-fl-next.live .nk{color:#C22823}",
+    "html body #page a.fo-fl-next.live .ncta{background:#C22823}",
+    // ---- section kickers ----------------------------------------------------
+    "html body #page .fo-fl-k{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#B44A22;margin:22px 2px 8px}",
     "html body #page .fo-fl-k:after{content:'';display:block;width:34px;border-top:2px solid #C95532;margin-top:6px}",
+    // ---- the rows: date block, competition pill, verdict, the match ---------
     "html body #page .fo-fl-list{display:flex;flex-direction:column;gap:7px}",
-    "html body #page .fo-fl-row{display:grid;grid-template-columns:34px 26px minmax(0,1fr) auto 12px;gap:10px;align-items:center;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:14px;padding:10px 14px;text-decoration:none;color:#141C28;box-shadow:0 4px 14px rgba(30,38,52,.06);transition:border-color .15s ease,transform .12s ease}",
+    "html body #page .fo-fl-row{display:grid;grid-template-columns:50px 40px 26px minmax(0,1fr) auto 12px;gap:10px;align-items:center;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:14px;padding:10px 14px;text-decoration:none;color:#141C28;box-shadow:0 4px 14px rgba(30,38,52,.06);transition:border-color .15s ease,transform .12s ease}",
+    "html body #page .fo-fl-row.nodt{grid-template-columns:40px 26px minmax(0,1fr) auto 12px}",
     "html body #page a.fo-fl-row:hover{border-color:rgba(217,85,42,.5);transform:translateY(-1px);text-decoration:none}",
-    "html body #page .fo-fl-row.up{grid-template-columns:34px 26px minmax(0,1fr) auto}",
-    "html body #page .fo-fl-row.next{border-color:rgba(201,85,50,.55);box-shadow:0 6px 18px rgba(201,85,50,.14)}",
-    "html body #page .fo-fl-row i{font:700 11px/1 Inter,sans-serif;color:rgba(20,28,40,.45);font-style:normal;font-variant-numeric:tabular-nums}",
+    "html body #page .fo-fl-row.live{border-color:rgba(194,40,35,.45)}",
+    "html body #page .fo-fl-dt{display:flex;flex-direction:column;gap:2px;min-width:0}",
+    "html body #page .fo-fl-dt b{font:700 9px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.42)}",
+    "html body #page .fo-fl-dt i{font:600 11px/1 Inter,sans-serif;font-style:normal;color:rgba(20,28,40,.72);font-variant-numeric:tabular-nums;white-space:nowrap}",
+    "html body #page .fo-fl-dt b.one{font-size:9.5px;color:#B44A22;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    "html body #page .fo-fl-cmp{display:inline-flex;align-items:center;justify-content:center;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.08em;border-radius:7px;padding:5px 0;text-transform:uppercase}",
+    "html body #page .fo-fl-cmp.lg{background:rgba(14,35,63,.08);color:#28415F;border:1px solid rgba(14,35,63,.16)}",
+    "html body #page .fo-fl-cmp.cup{background:rgba(176,132,9,.12);color:#8A6A1F;border:1px solid rgba(176,132,9,.32)}",
+    "html body #page .fo-fl-cmp.fr{background:rgba(201,85,50,.1);color:#B44A22;border:1px solid rgba(201,85,50,.3)}",
     "html body #page .fo-fl-row u{width:24px;height:24px;border-radius:8px;display:inline-flex;align-items:center;justify-content:center;font:800 11px/1 Inter,sans-serif;text-decoration:none}",
     "html body #page .fo-fl-row u.w{background:rgba(31,158,114,.14);color:#177A57;border:1px solid rgba(31,158,114,.4)}",
     "html body #page .fo-fl-row u.l{background:rgba(200,60,58,.1);color:#B23230;border:1px solid rgba(200,60,58,.35)}",
     "html body #page .fo-fl-row u.t{background:rgba(20,28,40,.07);color:rgba(20,28,40,.6);border:1px solid rgba(20,28,40,.2)}",
     "html body #page .fo-fl-row u.lv{background:rgba(229,57,53,.1);color:#C22823;border:1px solid rgba(229,57,53,.4);font-size:8px}",
     "html body #page .fo-fl-row u.n{background:rgba(20,28,40,.05);color:rgba(20,28,40,.55);border:1px solid rgba(20,28,40,.15)}",
+    "html body #page .fo-fl-row u.c{background:rgba(176,132,9,.14);color:#8A6A1F;border:1px solid rgba(176,132,9,.4)}",
+    "html body #page .fo-fl-row u.f{background:rgba(201,85,50,.12);color:#B44A22;border:1px solid rgba(201,85,50,.35)}",
     "html body #page .fo-fl-who{min-width:0}",
     "html body #page .fo-fl-who b{display:block;font:600 13.5px/1.25 Inter,sans-serif;color:#141C28;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     "html body #page .fo-fl-who>span{display:block;font:400 11px/1.35 Inter,sans-serif;color:rgba(20,28,40,.5);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-    "html body #page .fo-fl-row em{font:italic 400 12px/1.35 Georgia,serif;color:rgba(20,28,40,.6);text-align:right;white-space:nowrap}",
-    "html body #page .fo-fl-when{display:inline-block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#B44A22;background:rgba(201,85,50,.09);border-radius:6px;padding:3px 6px;margin-left:7px;font-style:normal;vertical-align:1px}",
-    "html body #page .fo-fl-when.done{color:rgba(20,28,40,.5);background:rgba(20,28,40,.06)}",
-    "html body #page .fo-fl-row.cup{border-color:rgba(176,132,9,.34)}",
-    "html body #page .fo-fl-row.cup i{color:#8A6A1F}",
-    "html body #page .fo-fl-row u.c{background:rgba(176,132,9,.14);color:#8A6A1F;border:1px solid rgba(176,132,9,.4)}",
+    "html body #page .fo-fl-row.live .fo-fl-who>span{color:#C22823;font-weight:600}",
+    "html body #page .fo-fl-res{font:italic 400 12px/1.35 Georgia,serif;color:rgba(20,28,40,.6);text-align:right;white-space:nowrap}",
     "html body #page .fo-fl-row s{text-decoration:none;color:rgba(20,28,40,.35)}",
-    "html body #page .fo-fl-act{font:700 11px/1 Inter,sans-serif;color:#FFFEFC;background:#C95532;border-radius:999px;padding:8px 13px;text-decoration:none;white-space:nowrap}",
-    "html body #page .fo-fl-act:hover{background:#A64426;color:#FFFEFC;text-decoration:none}",
+    "html body #page .fo-fl-act{font:700 11px/1 Inter,sans-serif;font-style:normal;color:#FFFEFC;background:#C95532;border-radius:999px;padding:8px 13px;text-decoration:none;white-space:nowrap}",
+    "html body #page .fo-fl-row.live .fo-fl-act{background:#C22823}",
+    "html body #page a.fo-fl-row:hover .fo-fl-act{background:#A64426}",
     "html body #page .fo-fl-none{background:#FFFEFC;border:1px dashed rgba(20,28,40,.2);border-radius:14px;padding:22px;text-align:center;font:italic 400 13px/1.5 Georgia,serif;color:rgba(20,28,40,.55)}",
     "html body #page .fo-fl-foot{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}",
     "html body #page .fo-fl-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
     "html body #page .fo-fl-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5);text-decoration:none}",
-    "@media(max-width:520px){html body #page .fo-fl-mast h1{font-size:30px}html body #page .fo-fl-res,html body #page .fo-fl-act{display:none}html body #page .fo-fl-row{grid-template-columns:30px 24px minmax(0,1fr) 12px}html body #page .fo-fl-row.up{grid-template-columns:30px 24px minmax(0,1fr) auto}}"
+    "@media(max-width:560px){" +
+      "html body #page .fo-fl-hero{padding:20px 18px 18px}" +
+      "html body #page .fo-fl-hero h1{font-size:30px;margin-bottom:12px}" +
+      "html body #page .fo-fl-form{width:100%;margin-left:0}" +
+      "html body #page .fo-fl-next{flex-wrap:wrap;gap:10px}" +
+      "html body #page .fo-fl-next .nvs{font-size:20px;white-space:normal}" +
+      "html body #page .fo-fl-res,html body #page .fo-fl-act{display:none}" +
+      "html body #page .fo-fl-row{grid-template-columns:44px 34px 24px minmax(0,1fr) 12px;gap:8px;padding:10px 12px}" +
+      "html body #page .fo-fl-row.nodt{grid-template-columns:34px 24px minmax(0,1fr) 12px}" +
+    "}"
   ].join("\n");
 
   function mount() {
