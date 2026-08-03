@@ -35,7 +35,8 @@ export const SQUAD_CEILING = 18;           // and nobody hoards beyond this
 export const SCOUT_PCT = 0.012;            // a proper look costs this much of his value
 export const SCOUT_MIN = 4000;
 export const FREE_AGENT_SLOT = -1;         // the umpire's own listings: men of no club
-export const FREE_AGENTS_MAX = 6;          // the shelf never crowds out the clubs' business
+export const MARKET_FLOOR = 20;            // the board never stands shorter than this
+export const FREE_AGENTS_CAP = 30;         // and the umpire's own men never flood it
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 const rnd = key => seedOf(key) / 4294967296;
@@ -156,24 +157,32 @@ export async function openBotListings(pool, country, seasonNo, round, now = Date
 }
 
 // ---------------------------------------------------------------------------
-// THE DAILY TRICKLE. One or two men of no club walk onto the board every
-// world day - journeymen between contracts, priced by the same valuation as
-// everyone else. Seeded on the league and the day: the same world offers the
-// same men however often the day is settled, and a manager reading the
-// calendar knows exactly when fresh names arrive.
+// THE SHELF NEVER RUNS SHORT. The owner's law: at any point there are at
+// least twenty names on a league's board. Each daily settle counts what
+// stands open - clubs' listings and free agents together - and walks men of
+// no club on until the floor is met, plus a fresh face or two on top so the
+// board breathes even when it is full. Everything is seeded on the league
+// and the day: the same world offers the same men however often the day is
+// settled, and a manager reading the calendar knows when new names arrive.
 // ---------------------------------------------------------------------------
 export async function openFreeAgents(pool, host, country, seasonNo, day) {
   if (!host || !host.genSquad) return [];
   const cfg = countryConfigs(host).find(c => c.id === country);
   if (!cfg) return [];
-  const live = (await pool.query(
-    `SELECT count(*)::int AS n FROM listings
-      WHERE country_id=$1 AND slot=$2 AND status='open'`, [country, FREE_AGENT_SLOT])).rows[0].n;
-  if (live >= FREE_AGENTS_MAX) return [];
+  const counts = (await pool.query(
+    `SELECT count(*)::int AS all_open,
+            count(*) FILTER (WHERE slot=$2)::int AS fa_open
+       FROM listings WHERE country_id=$1 AND status='open'`,
+    [country, FREE_AGENT_SLOT])).rows[0];
   const key = 'fa|' + country + '|s' + seasonNo + '|d' + day;
-  const n = Math.min(1 + (seedOf(key) % 2), FREE_AGENTS_MAX - live);
+  const fresh = 1 + (seedOf(key) % 2);           // the daily breath: one or two
+  let n = Math.max(fresh, MARKET_FLOOR - counts.all_open);
+  n = Math.min(n, FREE_AGENTS_CAP - counts.fa_open);
+  if (n <= 0) return [];
   const opened = [];
-  for (let i = 0; i < n; i++) {
+  // a generated name can collide with a man already on the board; spare
+  // seeds cover the gap so the floor is met regardless
+  for (let i = 0; i < n + 8 && opened.length < n; i++) {
     const seed = key + '|' + i;
     let men = [];
     try { men = host.genSquad(seed, cfg.nat, cfg.arch || 'balanced', 'general') || []; } catch (e) { continue; }
@@ -182,6 +191,13 @@ export async function openFreeAgents(pool, host, country, seasonNo, day) {
     // a free agent is a useful cricketer, not a star: mid-order of the sample
     const man = JSON.parse(JSON.stringify(men[Math.min(men.length - 1, 3 + seedOf(seed + '|pick') % 6)]));
     man.nat = man.nat || cfg.nat;
+    // NO DOUBLES. The world keys a cricketer by his name, so a free agent who
+    // shares one with a man already contracted in this league would replace
+    // him on arrival. Such a man simply never walks on; a spare seed does.
+    const taken = await pool.query(
+      `SELECT 1 FROM clubs, jsonb_array_elements(squad) p
+        WHERE country_id=$1 AND p->>'name' = $2 LIMIT 1`, [country, man.name]);
+    if (taken.rowCount) continue;
     const ask = valueOf(man);
     const r = await pool.query(
       `INSERT INTO listings(country_id, slot, player, player_json, asking, reserve,

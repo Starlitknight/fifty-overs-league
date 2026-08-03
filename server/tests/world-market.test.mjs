@@ -30,7 +30,7 @@ import {
   WINDOW_DAYS, MIN_BID_PCT, SQUAD_FLOOR, valueOf, ageCurve, roleOf,
   surplusRank, needRank, botBid, pickWinner, scoutReport, scoutFee, classOf,
   openBotListings, placeBotBids, closeListings, computeMarket, rebuildMarket,
-  openFreeAgents, FREE_AGENT_SLOT, BID_STEP
+  openFreeAgents, FREE_AGENT_SLOT, BID_STEP, MARKET_FLOOR
 } from '../market.mjs';
 import { EPOCH, DAY } from '../clock.mjs';
 
@@ -338,15 +338,29 @@ test('the board is publishable: open prices, private skills', async () => {
   assert.ok(snap && snap.body.listings);
 });
 
-test('the free-agent trickle: men of no club, daily, seeded, and signable', async () => {
+test('the free-agent trickle: the board never stands shorter than twenty', async () => {
   const d = START + 6;
+  const beforeN = (await pool.query(
+    `SELECT count(*)::int AS n FROM listings WHERE country_id='eng' AND status='open'`)).rows[0].n;
   const first = await openFreeAgents(pool, host, 'eng', 1, d);
-  assert.ok(first.length >= 1 && first.length <= 2, 'one or two men walk onto the board');
+  assert.ok(first.length >= 1, 'men walk onto the board');
+  const openN = (await pool.query(
+    `SELECT count(*)::int AS n FROM listings WHERE country_id='eng' AND status='open'`)).rows[0].n;
+  assert.ok(openN >= MARKET_FLOOR, 'the owner\'s law: at least twenty names stand (' + openN + ')');
+  assert.ok(openN >= beforeN, 'and nobody was taken down to make room');
   const again = await openFreeAgents(pool, host, 'eng', 1, d);
   assert.equal(again.length, 0, 'the same day trickles the same men, which is to say none more');
   const rows = (await pool.query(
-    `SELECT * FROM listings WHERE slot=$1 AND status='open'`, [FREE_AGENT_SLOT])).rows;
+    `SELECT * FROM listings WHERE slot=$1 AND status='open' ORDER BY id`, [FREE_AGENT_SLOT])).rows;
   assert.ok(rows.length >= first.length);
+  // no double names: every free agent on the board is a name the league has
+  // never contracted, or a purchase would shadow a man already employed
+  for (const L2 of rows) {
+    const clash = await pool.query(
+      `SELECT 1 FROM clubs, jsonb_array_elements(squad) p
+        WHERE country_id='eng' AND p->>'name' = $1 LIMIT 1`, [L2.player]);
+    assert.equal(clash.rowCount, 0, L2.player + ' is nobody\'s double');
+  }
   for (const L of rows) {
     assert.equal(L.closes_day, L.opened_day + WINDOW_DAYS);
     assert.ok(L.asking >= 5000 && L.reserve <= L.asking, 'priced like anybody else');
