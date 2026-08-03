@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0207-b1b9d9";
+  var FO_BUILD = "20260803-0209-9c5e26";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21168,6 +21168,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           pgSquad();
         });
       });
+      // a repaint must not move the manager's viewport: he sorted a column he
+      // had scrolled TO, so the grid keeps its sideways scroll (and the page
+      // its height) instead of snapping back to the left edge
+      var repaintInPlace = function () {
+        var wr = page.querySelector(".fo-sqg-wrap");
+        var x = wr ? wr.scrollLeft : 0, y = window.scrollY;
+        pgSquad();
+        var wr2 = page.querySelector(".fo-sqg-wrap");
+        if (wr2 && x) wr2.scrollLeft = x;
+        try { window.scrollTo(0, y); } catch (eY) {}
+      };
       // sorting: same column flips direction, a new column starts descending
       // (best first), except the name, the position and the age, where lowest
       // first is what anyone expects
@@ -21176,11 +21187,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           var k = h.getAttribute("data-sort");
           if (k === sv.sortK) sv.sortDir = -sv.sortDir;
           else { sv.sortK = k; sv.sortDir = (k === "name" || k === "pos" || k === "age" || k === "wage") ? 1 : -1; }
-          pgSquad();
+          repaintInPlace();
         });
       });
       page.querySelectorAll("select[data-show]").forEach(function (sel2) {
-        sel2.addEventListener("change", function () { sv.who = sel2.value; pgSquad(); });
+        sel2.addEventListener("change", function () { sv.who = sel2.value; repaintInPlace(); });
       });
       // every row is a door to the man's full profile
       var openMan = function (n) { if (n) location.hash = "#/player?n=" + encodeURIComponent(n); };
