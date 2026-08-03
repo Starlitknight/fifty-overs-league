@@ -319,6 +319,31 @@
   // voice: one line on the pitch, one clause on the sky, then the plan.
   // Deterministic - keyed purely off the served pitch and weather, so the
   // same fixture says the same thing on every device.
+  // THE OPPONENT IS A DOOR. The billing names two clubs; the one that is not
+  // yours opens its public dossier, found by name off the world's own
+  // registers. A name the world does not know (a practice side, a pre-claim
+  // device) simply stays a name.
+  function foOrdHeroSide(nm, myNm) {
+    var href = "";
+    try {
+      if (nm && nm !== myNm && nm !== "(practice)") {
+        var cl9 = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+        if (cl9 && cl9.country) {
+          var slot9 = null;
+          var nm9 = null; try { nm9 = window.__foWorldNames && window.__foWorldNames.get(cl9.country); } catch (e1) {}
+          if (nm9) for (var k9 in nm9) if (nm9[k9] === nm) { slot9 = +k9; break; }
+          if (slot9 == null) {
+            var lg9 = null; try { lg9 = window.__foWorldLg && window.__foWorldLg.get(cl9.country); } catch (e2) {}
+            if (lg9) ((lg9.table || []).concat(lg9.table2 || [])).forEach(function (r9) {
+              if (slot9 == null && r9.name === nm) slot9 = r9.slot;
+            });
+          }
+          if (slot9 != null && isFinite(slot9)) href = "#/team?c=" + encodeURIComponent(cl9.country) + "&s=" + (slot9 | 0);
+        }
+      }
+    } catch (eH) {}
+    return href ? "<a class='h-t' href='" + href + "'>" + E(nm) + "</a>" : "<span class='h-t'>" + E(nm) + "</span>";
+  }
   function foOrdGafferSays(opp) {
     var pitch = String((opp && opp.pitch) || "balanced").toLowerCase();
     var wx = String((opp && opp.weather) || "").toLowerCase();
@@ -798,7 +823,7 @@
       // conditions in one quiet line beneath, and no conditions essay
       var tabS = foOrdTab();
       page.innerHTML =
-        "<div class='fo-ord-hero'><span class='h-t'>" + E(opp.home) + "</span><span class='h-v'>v</span><span class='h-t'>" + E(opp.away) + "</span></div>" +
+        "<div class='fo-ord-hero'>" + foOrdHeroSide(opp.home, t.name) + "<span class='h-v'>v</span>" + foOrdHeroSide(opp.away, t.name) + "</div>" +
         "<div class='fo-ord-herosub'>" + E(foPitchName(opp.pitch)) + " pitch &middot; " + E(opp.weather || "") + " &middot; " + E(opp.ground || "") + "</div>" +
         foOrdTabBar(tabS) +
         "<div class='panel fo-keep'><h4>The Gaffer's plan &middot; " + (tabS === "bowl" ? "Bowling" : "Batting") + "</h4><div class='pad'>" +
@@ -1380,6 +1405,8 @@
       ".fo-ord-lane .lt.lnum em{position:absolute;top:0;transform:translateX(-50%);font-style:normal;font-size:7.5px;font-weight:700;color:#8a93a3;letter-spacing:0;text-transform:none}" +
       "html body #page .fo-ord-hero,html body.ftpskin #page .fo-ord-hero{display:flex;align-items:baseline;justify-content:center;gap:14px;flex-wrap:wrap;margin:8px 0 2px;text-align:center;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +
       "html body #page .fo-ord-hero .h-t{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.6px;font-size:27px;color:#0E233F !important;line-height:1.08}" +
+      "html body #page .fo-ord-hero a.h-t{text-decoration:none !important;border-bottom:2px solid rgba(201,85,50,.4)}" +
+      "html body #page .fo-ord-hero a.h-t:hover{border-bottom-color:#C95532;color:#B04A2C !important;text-decoration:none !important}" +
       "html body #page .fo-ord-hero .h-v{font-family:Oswald,sans-serif;font-size:13px;color:#B04A2C !important;font-weight:600;text-transform:uppercase;letter-spacing:2px}" +
       "html body #page .fo-ord-herosub,html body.ftpskin #page .fo-ord-herosub{text-align:center;font-family:Oswald,sans-serif;letter-spacing:2px;text-transform:uppercase;font-size:13px;font-weight:600;color:#33415e !important;margin:0 0 10px;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +
       "@media(max-width:600px){.fo-ord-hero .h-t{font-size:21px}.fo-ord-hero{gap:9px}}" +

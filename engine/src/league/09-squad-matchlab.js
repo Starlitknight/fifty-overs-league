@@ -809,7 +809,6 @@
       ".fo-ros-id{min-width:0}",
       ".fo-ros-id b{display:block;font:600 14.5px/1.25 Inter,sans-serif;color:#141C28;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-ros-id>span{display:block;font:400 11px/1.35 Inter,sans-serif;color:rgba(20,28,40,.5);margin-top:2px}",
-      ".fo-ros-c{display:inline-block;font:700 9px/15px Oswald,sans-serif;width:15px;height:15px;border-radius:50%;background:#C89A2E;color:#2E2410;text-align:center;font-style:normal;vertical-align:2px;margin-left:4px}",
       ".fo-ros-tal{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}",
       ".fo-ros-tal u{text-decoration:none;font:700 8px/1 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8a6d3b;background:rgba(176,132,9,.1);border:1px solid rgba(176,132,9,.28);border-radius:5px;padding:2.5px 6px;white-space:nowrap}",
       ".fo-ros-tal u.m{color:rgba(20,28,40,.45);background:rgba(20,28,40,.05);border-color:rgba(20,28,40,.15)}",
@@ -1138,7 +1137,7 @@
         return "<a class='fo-ros-row' href='#/player?n=" + encodeURIComponent(p.name) + "'>" +
           "<span class='fo-ros-pic'><img src='" + FO_ART + foPkArt(p) + "' alt='' loading='lazy' decoding='async'>" +
           (flg && p.nat ? "<em class='fo-ros-flag'><img src='" + flg + "' alt='" + E(p.nat) + "' onerror=\"this.parentNode.style.display='none'\"></em>" : "") + "</span>" +
-          "<span class='fo-ros-id'><b>" + E(p.name) + foSqStar(p) + (capt === p.name ? " <i class='fo-ros-c'>C</i>" : "") + "</b>" +
+          "<span class='fo-ros-id'><b>" + E(p.name) + foSqStar(p) + "</b>" +
           "<span>" + roleNm + (det ? " &middot; " + E(det) : "") + (p.age ? " &middot; " + E(foAgeText(p)) : "") + "</span>" +
           (tals.length ? "<span class='fo-ros-tal'>" + tal + "</span>" : "") + "</span>" +
           foSqFormGlyph(p) +
