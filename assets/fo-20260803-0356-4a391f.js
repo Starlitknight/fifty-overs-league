@@ -10212,7 +10212,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0343-4f0b61";
+  var FO_BUILD = "20260803-0356-4a391f";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21138,8 +21138,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
       var page = document.getElementById("page"); if (!page) return;
       document.body.classList.add("fo-sqx-on");
-      var bg = foSqGroundArt(t);
-      var bgFallback = FO_ART + "home/hgm-dressing-room.webp";
 
       // the switch: two chips, in the masthead, on both views
       var viewSwitch = "<div class='fo-sqx-vsw'>" +
@@ -21195,7 +21193,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       page.innerHTML =
         "<div class='fo-sqx listing" + (sv.view === "grid" ? " gridding" : " rostering") + "'><div class='fo-sqx-in'>" +
         "<section class='fo-sqx-park'>" +
-        "<div class='fo-sqx-bg' style='background-image:url(" + bg + ")'></div><div class='fo-sqx-veil'></div>" +
         "<div class='fo-sqx-parkin'>" +
         "<header class='fo-sqx-hd'><h1>Squad</h1><div class='fo-sqx-tag'>Select your XI. Shape your legacy.</div>" +
         viewSwitch + "</header>" +
@@ -21204,15 +21201,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "</div></div>";
 
       // ---- wiring ----
-      // a background-image cannot report a 404, so test the ground before
-      // trusting it and fall back to the dressing room rather than a black box
-      (function () {
-        var el = page.querySelector(".fo-sqx-bg"); if (!el) return;
-        var probe = new Image();
-        probe.onerror = function () { el.style.backgroundImage = "url(" + bgFallback + ")"; };
-        probe.src = bg;
-      })();
-
       page.querySelectorAll(".fo-sqx-vb").forEach(function (b) {
         b.addEventListener("click", function () {
           sv.view = b.getAttribute("data-view"); sv.viewSet = 1;
@@ -28248,7 +28236,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var brand = bc.intel || bc.nug || r.cond || "";
       page.innerHTML =
         "<div class='fo-boss' style='--bac:" + ac + "'>" +
-        "<div class='fo-boss-bgart' style='background-image:url(" + bossArt + ")'></div>" +
         "<div class='fo-boss-scrim'></div>" +
         "<div class='fo-boss-in'>" +
         "<div class='fo-boss-nav'>" +
@@ -28435,7 +28422,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
       page.innerHTML =
         "<div class='fo-boss fo-side' style='--bac:" + ac + "'>" +
-        "<div class='fo-boss-bgart' style='background-image:url(" + bgfb + ")'></div>" +
         "<div class='fo-boss-scrim'></div>" +
         "<div class='fo-boss-in'>" +
         "<div class='fo-boss-nav'>" +
@@ -28513,7 +28499,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
       page.innerHTML =
         "<div class='fo-boss fo-thorne' style='--bac:" + ac + "'>" +
-        "<div class='fo-boss-bgart' style='background-image:url(" + art + ")'></div>" +
         "<div class='fo-boss-scrim'></div>" +
         "<div class='fo-boss-in'>" +
         "<div class='fo-boss-nav'><a href='#/world'>World map</a><a href='#/circuit'>The Circuit</a></div>" +
@@ -29392,7 +29377,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
       var shellOpen =
         "<div class='fo-lg fo-ov" + (own ? "" : " ro") + (natPage ? " fo-nt" : "") + "' data-tab='" + actTab + "' style='--lac:" + ac + "'>" +
-        "<div class='fo-lg-bg' style='background-image:url(" + mapSrc + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
+        "<div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
         // the country navigator rides flush with the top header on every door
         "<div class='fo-ov-subnav'>" +
         "<div class='fo-ov-selwrap'><span class='fo-ov-sel'>" + E(region.nm) + " &middot; " + (idx19 || 1) + "/" + FO_CX_NATIONS + " &#9662;</span><select class='fo-ov-selnat' aria-label='Jump to another nation league'>" + natOpts + "</select></div></div>";
@@ -29744,7 +29729,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var cupArt = FO_ART + "home/arches-blue-hour-cup.webp";
       page.innerHTML =
         "<div class='fo-lg fo-lg-cinemode fo-cup' style='--lac:#E0A34A'>" +
-        "<div class='fo-lg-bg' style='background-image:url(" + cupArt + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
+        "<div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
         "<section class='fo-lg-cine'>" +
         "<img class='fo-lg-cimg' src='" + cupArt + "' alt='' onerror=\"this.src='" + FO_ART + "circuit/world.webp'\">" +
         "<div class='fo-lg-csky'></div><div class='fo-lg-cbloom'></div><div class='fo-lg-cstars'></div><div class='fo-lg-cgrain'></div>" +
@@ -32494,8 +32479,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     foNsCss();
     document.body.classList.add("fo-nets-on");
     var t = TR(), me = userTeam();
-    var hour = new Date().getHours(), night = hour >= 19 || hour < 6;
-    var bg = ART() + "home/" + (window.innerWidth < 760 ? "hgm" : "hgd") + "-nets-" + (night && window.innerWidth >= 760 ? "night" : "day") + ".webp";
     var squad = (me.players || []).concat(me.youth || []);
 
     // ---- THE NETS ARE THE WORLD'S NETS --------------------------------------
@@ -32573,7 +32556,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         " <span>" + (l.r >= 0 ? E(l.why) + " &middot; R" + (l.r + 1) : "season " + l.s) + "</span></div>";
     }).join("");
     page.innerHTML = "<div class='fo-ns'>" +
-      "<img class='fo-ns-bg' src='" + bg + "' alt='' onerror=\"this.style.display='none'\"><div class='fo-ns-veil'></div>" +
       "<div class='fo-ns-in'>" +
       "<div class='fo-cer-eyebrow'>" + E(me.name) + " &middot; the training ground</div>" +
       "<h1 class='fo-ns-h1'>The Nets</h1>" +
@@ -32655,8 +32637,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-ns-bg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 45%;z-index:-2}",
       ".fo-ns-veil{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(7,10,6,.22),rgba(8,11,7,.10) 32%,rgba(7,10,6,.14) 66%,rgba(5,7,4,.34))}",
       ".fo-ns-in{max-width:1120px;margin:0 auto}",
-      ".fo-ns-h1{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(40px,6.4vw,72px);line-height:.9;margin:0 0 8px;color:#fff;text-shadow:0 3px 22px rgba(0,0,0,.6),0 1px 3px rgba(0,0,0,.5)}",
-      ".fo-ns .fo-cer-eyebrow{color:#fff !important;text-shadow:0 2px 10px rgba(0,0,0,.65)}",
+      ".fo-ns-h1{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(40px,6.4vw,72px);line-height:.9;margin:0 0 8px;color:#141C28}",
+      ".fo-ns .fo-cer-eyebrow{color:#B44A22 !important;text-shadow:none}",
       ".fo-ns-tag{font-family:Georgia,serif;font-style:italic;font-size:14.5px;color:#fff;margin:0 0 22px;max-width:60ch;text-shadow:0 2px 12px rgba(0,0,0,.65)}",
       ".fo-ns-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:22px}",
       "@media(max-width:900px){.fo-ns-grid{grid-template-columns:minmax(0,1fr)}}",
@@ -33298,8 +33280,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       document.body.classList.remove("fo-scb-on", "fo-drs-on");
       document.body.classList.add("fo-hbx-on");
       settleBonuses();
-      var artBase = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
-      var hbBg = "<img class='fo-hb-bg' src='" + artBase + "home/" + (window.innerWidth < 760 ? "hgm-clubroom" : "hgd-heart-of-club") + ".webp' alt=''><div class='fo-hb-veil'></div>";
+      // no painting behind the board: the honours read on plain cream
+      var hbBg = "";
       var club = me.name, mine = true;
       var board = boardFor(club);
       var done = board.filter(function (p) { return p.done; });
@@ -33362,14 +33344,14 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     ".fo-hb-veil{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(24,18,10,.30),rgba(24,18,10,.12) 32%,rgba(24,18,10,.18) 64%,rgba(18,13,7,.46))}",
     "body.fo-hbx-on #page .fo-hb-mast{background:transparent !important;border:none !important;box-shadow:none !important;padding:10px 4px 16px}",
     "body.fo-hbx-on #page .fo-hb-mast:after{display:none}",
-    "body.fo-hbx-on #page .fo-hb-mast h1{color:#fff !important;text-shadow:0 3px 26px rgba(0,0,0,.75),0 1px 3px rgba(0,0,0,.55)}",
-    "body.fo-hbx-on #page .fo-hb-kick{color:#F3D9A0 !important;text-shadow:0 2px 10px rgba(0,0,0,.65)}",
-    "body.fo-hbx-on #page .fo-hb-mast p{color:rgba(255,255,255,.9) !important;text-shadow:0 2px 12px rgba(0,0,0,.6)}",
+    "body.fo-hbx-on #page .fo-hb-mast h1{color:#141C28 !important;text-shadow:none}",
+    "body.fo-hbx-on #page .fo-hb-kick{color:#B44A22 !important;text-shadow:none}",
+    "body.fo-hbx-on #page .fo-hb-mast p{color:rgba(20,28,40,.65) !important;text-shadow:none}",
     "body.fo-hbx-on #page .fo-hb-tally{box-shadow:0 8px 20px rgba(0,0,0,.35)}",
     // section headings floating on the pavilion air
     "html body #page .fo-hb-shead{margin:18px 2px 8px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}",
-    "html body #page .fo-hb-shead b{font-family:'Fraunces',Georgia,serif;font-weight:600;font-style:italic;font-size:21px;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.7)}",
-    "html body #page .fo-hb-shead span{font:italic 400 12px/1.4 Georgia,serif;color:rgba(255,255,255,.75);text-shadow:0 2px 10px rgba(0,0,0,.6)}",
+    "html body #page .fo-hb-shead b{font-family:'Fraunces',Georgia,serif;font-weight:600;font-style:italic;font-size:21px;color:#141C28}",
+    "html body #page .fo-hb-shead span{font:italic 400 12px/1.4 Georgia,serif;color:rgba(20,28,40,.55)}",
     // the charter: parchment scrolls with wax seals
     "html body #page .fo-hb-chgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:10px}",
     "html body #page .fo-hb-ch{position:relative;background:linear-gradient(174deg,#FBF5E3,#F3EAD0 70%);border:1px solid rgba(140,104,20,.4);border-radius:4px 14px 4px 14px;padding:13px 15px 12px;box-shadow:0 10px 24px rgba(10,7,3,.4)}",
@@ -34343,7 +34325,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         : "";
 
       // ---- the plate ------------------------------------------------------
-      sideArt(natId);
+      // margin art retired: the table reads on plain cream
+      sideArt(null);
       // the league reads two columns wide on a desk, so its margins are narrower
       try { document.body.classList.add("fo-lgx-page"); } catch (eLp) {}
       var pips = "";
@@ -44088,26 +44071,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   if (window.__foRoomArt) return; window.__foRoomArt = 1;
 
   function ART() { return (typeof FO_ART !== "undefined") ? FO_ART : "client/art/"; }
-  // [phone cut, desktop cut] — the room's own weather
-  var ROOM = {
-    whatif:     ["hgm-nostalgic", "hgd-clubroom"],
-    academy:    ["hgm-nets-day", "hgd-nets-day"],
-    training:   ["hgm-nets-day", "hgd-nets-day"],
-    finance:    ["hgm-office", "hgd-office"],
-    ledger:     ["hgm-office", "hgd-office"],
-    comps:      ["hgm-blue-hour", "hgd-heart-of-club"],
-    nations:    ["hgm-arch-dawn", "hgd-veranda-rain"],
-    natteams:   ["hgm-arch-dawn", "hgd-veranda-rain"],
-    worldclub:  ["hgm-clubroom", "hgd-clubroom"],
-    market:     ["hgm-late-afternoon", "hgd-workshop"],
-    rankings:   ["hgm-late-afternoon", "hgd-heart-of-club"],
-    records:    ["hgm-clubroom", "hgd-clubroom"],
-    milestones: ["hgm-clubroom", "hgd-heart-of-club"],
-    // fixtures deliberately absent: the broadcast card reads best on plain
-    // cream, and its navy masthead carries the atmosphere on its own
-    team:       ["hgm-late-afternoon", "hgd-heart-of-club"],
-    guide:      ["hgm-clubroom", "hgd-workshop"]
-  };
+  // [phone cut, desktop cut] — the room's own weather.
+  // EMPTY BY DECREE: every reading room now sits on the theme's plain cream -
+  // the paintings live on at the club home and in the match theatre, where
+  // they are the content rather than the wallpaper. The machinery stays so a
+  // room can be given its light back with one line.
+  var ROOM = {};
 
   function css() {
     if (document.getElementById("fo-roomart-css")) return;

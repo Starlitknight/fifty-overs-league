@@ -1094,8 +1094,6 @@
 
       var page = document.getElementById("page"); if (!page) return;
       document.body.classList.add("fo-sqx-on");
-      var bg = foSqGroundArt(t);
-      var bgFallback = FO_ART + "home/hgm-dressing-room.webp";
 
       // the switch: two chips, in the masthead, on both views
       var viewSwitch = "<div class='fo-sqx-vsw'>" +
@@ -1151,7 +1149,6 @@
       page.innerHTML =
         "<div class='fo-sqx listing" + (sv.view === "grid" ? " gridding" : " rostering") + "'><div class='fo-sqx-in'>" +
         "<section class='fo-sqx-park'>" +
-        "<div class='fo-sqx-bg' style='background-image:url(" + bg + ")'></div><div class='fo-sqx-veil'></div>" +
         "<div class='fo-sqx-parkin'>" +
         "<header class='fo-sqx-hd'><h1>Squad</h1><div class='fo-sqx-tag'>Select your XI. Shape your legacy.</div>" +
         viewSwitch + "</header>" +
@@ -1160,15 +1157,6 @@
         "</div></div>";
 
       // ---- wiring ----
-      // a background-image cannot report a 404, so test the ground before
-      // trusting it and fall back to the dressing room rather than a black box
-      (function () {
-        var el = page.querySelector(".fo-sqx-bg"); if (!el) return;
-        var probe = new Image();
-        probe.onerror = function () { el.style.backgroundImage = "url(" + bgFallback + ")"; };
-        probe.src = bg;
-      })();
-
       page.querySelectorAll(".fo-sqx-vb").forEach(function (b) {
         b.addEventListener("click", function () {
           sv.view = b.getAttribute("data-view"); sv.viewSet = 1;

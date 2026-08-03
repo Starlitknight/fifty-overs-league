@@ -273,8 +273,8 @@
       document.body.classList.remove("fo-scb-on", "fo-drs-on");
       document.body.classList.add("fo-hbx-on");
       settleBonuses();
-      var artBase = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
-      var hbBg = "<img class='fo-hb-bg' src='" + artBase + "home/" + (window.innerWidth < 760 ? "hgm-clubroom" : "hgd-heart-of-club") + ".webp' alt=''><div class='fo-hb-veil'></div>";
+      // no painting behind the board: the honours read on plain cream
+      var hbBg = "";
       var club = me.name, mine = true;
       var board = boardFor(club);
       var done = board.filter(function (p) { return p.done; });
@@ -337,14 +337,14 @@
     ".fo-hb-veil{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(24,18,10,.30),rgba(24,18,10,.12) 32%,rgba(24,18,10,.18) 64%,rgba(18,13,7,.46))}",
     "body.fo-hbx-on #page .fo-hb-mast{background:transparent !important;border:none !important;box-shadow:none !important;padding:10px 4px 16px}",
     "body.fo-hbx-on #page .fo-hb-mast:after{display:none}",
-    "body.fo-hbx-on #page .fo-hb-mast h1{color:#fff !important;text-shadow:0 3px 26px rgba(0,0,0,.75),0 1px 3px rgba(0,0,0,.55)}",
-    "body.fo-hbx-on #page .fo-hb-kick{color:#F3D9A0 !important;text-shadow:0 2px 10px rgba(0,0,0,.65)}",
-    "body.fo-hbx-on #page .fo-hb-mast p{color:rgba(255,255,255,.9) !important;text-shadow:0 2px 12px rgba(0,0,0,.6)}",
+    "body.fo-hbx-on #page .fo-hb-mast h1{color:#141C28 !important;text-shadow:none}",
+    "body.fo-hbx-on #page .fo-hb-kick{color:#B44A22 !important;text-shadow:none}",
+    "body.fo-hbx-on #page .fo-hb-mast p{color:rgba(20,28,40,.65) !important;text-shadow:none}",
     "body.fo-hbx-on #page .fo-hb-tally{box-shadow:0 8px 20px rgba(0,0,0,.35)}",
     // section headings floating on the pavilion air
     "html body #page .fo-hb-shead{margin:18px 2px 8px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}",
-    "html body #page .fo-hb-shead b{font-family:'Fraunces',Georgia,serif;font-weight:600;font-style:italic;font-size:21px;color:#fff;text-shadow:0 2px 16px rgba(0,0,0,.7)}",
-    "html body #page .fo-hb-shead span{font:italic 400 12px/1.4 Georgia,serif;color:rgba(255,255,255,.75);text-shadow:0 2px 10px rgba(0,0,0,.6)}",
+    "html body #page .fo-hb-shead b{font-family:'Fraunces',Georgia,serif;font-weight:600;font-style:italic;font-size:21px;color:#141C28}",
+    "html body #page .fo-hb-shead span{font:italic 400 12px/1.4 Georgia,serif;color:rgba(20,28,40,.55)}",
     // the charter: parchment scrolls with wax seals
     "html body #page .fo-hb-chgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:10px}",
     "html body #page .fo-hb-ch{position:relative;background:linear-gradient(174deg,#FBF5E3,#F3EAD0 70%);border:1px solid rgba(140,104,20,.4);border-radius:4px 14px 4px 14px;padding:13px 15px 12px;box-shadow:0 10px 24px rgba(10,7,3,.4)}",

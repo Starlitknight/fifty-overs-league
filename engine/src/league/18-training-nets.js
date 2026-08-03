@@ -240,8 +240,6 @@
     foNsCss();
     document.body.classList.add("fo-nets-on");
     var t = TR(), me = userTeam();
-    var hour = new Date().getHours(), night = hour >= 19 || hour < 6;
-    var bg = ART() + "home/" + (window.innerWidth < 760 ? "hgm" : "hgd") + "-nets-" + (night && window.innerWidth >= 760 ? "night" : "day") + ".webp";
     var squad = (me.players || []).concat(me.youth || []);
 
     // ---- THE NETS ARE THE WORLD'S NETS --------------------------------------
@@ -319,7 +317,6 @@
         " <span>" + (l.r >= 0 ? E(l.why) + " &middot; R" + (l.r + 1) : "season " + l.s) + "</span></div>";
     }).join("");
     page.innerHTML = "<div class='fo-ns'>" +
-      "<img class='fo-ns-bg' src='" + bg + "' alt='' onerror=\"this.style.display='none'\"><div class='fo-ns-veil'></div>" +
       "<div class='fo-ns-in'>" +
       "<div class='fo-cer-eyebrow'>" + E(me.name) + " &middot; the training ground</div>" +
       "<h1 class='fo-ns-h1'>The Nets</h1>" +
@@ -401,8 +398,8 @@
       ".fo-ns-bg{position:fixed;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 45%;z-index:-2}",
       ".fo-ns-veil{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(7,10,6,.22),rgba(8,11,7,.10) 32%,rgba(7,10,6,.14) 66%,rgba(5,7,4,.34))}",
       ".fo-ns-in{max-width:1120px;margin:0 auto}",
-      ".fo-ns-h1{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(40px,6.4vw,72px);line-height:.9;margin:0 0 8px;color:#fff;text-shadow:0 3px 22px rgba(0,0,0,.6),0 1px 3px rgba(0,0,0,.5)}",
-      ".fo-ns .fo-cer-eyebrow{color:#fff !important;text-shadow:0 2px 10px rgba(0,0,0,.65)}",
+      ".fo-ns-h1{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(40px,6.4vw,72px);line-height:.9;margin:0 0 8px;color:#141C28}",
+      ".fo-ns .fo-cer-eyebrow{color:#B44A22 !important;text-shadow:none}",
       ".fo-ns-tag{font-family:Georgia,serif;font-style:italic;font-size:14.5px;color:#fff;margin:0 0 22px;max-width:60ch;text-shadow:0 2px 12px rgba(0,0,0,.65)}",
       ".fo-ns-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;margin-bottom:22px}",
       "@media(max-width:900px){.fo-ns-grid{grid-template-columns:minmax(0,1fr)}}",

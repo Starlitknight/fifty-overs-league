@@ -4704,7 +4704,6 @@
       var brand = bc.intel || bc.nug || r.cond || "";
       page.innerHTML =
         "<div class='fo-boss' style='--bac:" + ac + "'>" +
-        "<div class='fo-boss-bgart' style='background-image:url(" + bossArt + ")'></div>" +
         "<div class='fo-boss-scrim'></div>" +
         "<div class='fo-boss-in'>" +
         "<div class='fo-boss-nav'>" +
@@ -4891,7 +4890,6 @@
 
       page.innerHTML =
         "<div class='fo-boss fo-side' style='--bac:" + ac + "'>" +
-        "<div class='fo-boss-bgart' style='background-image:url(" + bgfb + ")'></div>" +
         "<div class='fo-boss-scrim'></div>" +
         "<div class='fo-boss-in'>" +
         "<div class='fo-boss-nav'>" +
@@ -4969,7 +4967,6 @@
 
       page.innerHTML =
         "<div class='fo-boss fo-thorne' style='--bac:" + ac + "'>" +
-        "<div class='fo-boss-bgart' style='background-image:url(" + art + ")'></div>" +
         "<div class='fo-boss-scrim'></div>" +
         "<div class='fo-boss-in'>" +
         "<div class='fo-boss-nav'><a href='#/world'>World map</a><a href='#/circuit'>The Circuit</a></div>" +
@@ -5848,7 +5845,7 @@
 
       var shellOpen =
         "<div class='fo-lg fo-ov" + (own ? "" : " ro") + (natPage ? " fo-nt" : "") + "' data-tab='" + actTab + "' style='--lac:" + ac + "'>" +
-        "<div class='fo-lg-bg' style='background-image:url(" + mapSrc + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
+        "<div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
         // the country navigator rides flush with the top header on every door
         "<div class='fo-ov-subnav'>" +
         "<div class='fo-ov-selwrap'><span class='fo-ov-sel'>" + E(region.nm) + " &middot; " + (idx19 || 1) + "/" + FO_CX_NATIONS + " &#9662;</span><select class='fo-ov-selnat' aria-label='Jump to another nation league'>" + natOpts + "</select></div></div>";
@@ -6200,7 +6197,7 @@
       var cupArt = FO_ART + "home/arches-blue-hour-cup.webp";
       page.innerHTML =
         "<div class='fo-lg fo-lg-cinemode fo-cup' style='--lac:#E0A34A'>" +
-        "<div class='fo-lg-bg' style='background-image:url(" + cupArt + ")'></div><div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
+        "<div class='fo-lg-scrim'></div><div class='fo-lg-atmo'></div>" +
         "<section class='fo-lg-cine'>" +
         "<img class='fo-lg-cimg' src='" + cupArt + "' alt='' onerror=\"this.src='" + FO_ART + "circuit/world.webp'\">" +
         "<div class='fo-lg-csky'></div><div class='fo-lg-cbloom'></div><div class='fo-lg-cstars'></div><div class='fo-lg-cgrain'></div>" +

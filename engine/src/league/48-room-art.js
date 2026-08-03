@@ -20,26 +20,12 @@
   if (window.__foRoomArt) return; window.__foRoomArt = 1;
 
   function ART() { return (typeof FO_ART !== "undefined") ? FO_ART : "client/art/"; }
-  // [phone cut, desktop cut] — the room's own weather
-  var ROOM = {
-    whatif:     ["hgm-nostalgic", "hgd-clubroom"],
-    academy:    ["hgm-nets-day", "hgd-nets-day"],
-    training:   ["hgm-nets-day", "hgd-nets-day"],
-    finance:    ["hgm-office", "hgd-office"],
-    ledger:     ["hgm-office", "hgd-office"],
-    comps:      ["hgm-blue-hour", "hgd-heart-of-club"],
-    nations:    ["hgm-arch-dawn", "hgd-veranda-rain"],
-    natteams:   ["hgm-arch-dawn", "hgd-veranda-rain"],
-    worldclub:  ["hgm-clubroom", "hgd-clubroom"],
-    market:     ["hgm-late-afternoon", "hgd-workshop"],
-    rankings:   ["hgm-late-afternoon", "hgd-heart-of-club"],
-    records:    ["hgm-clubroom", "hgd-clubroom"],
-    milestones: ["hgm-clubroom", "hgd-heart-of-club"],
-    // fixtures deliberately absent: the broadcast card reads best on plain
-    // cream, and its navy masthead carries the atmosphere on its own
-    team:       ["hgm-late-afternoon", "hgd-heart-of-club"],
-    guide:      ["hgm-clubroom", "hgd-workshop"]
-  };
+  // [phone cut, desktop cut] — the room's own weather.
+  // EMPTY BY DECREE: every reading room now sits on the theme's plain cream -
+  // the paintings live on at the club home and in the match theatre, where
+  // they are the content rather than the wallpaper. The machinery stays so a
+  // room can be given its light back with one line.
+  var ROOM = {};
 
   function css() {
     if (document.getElementById("fo-roomart-css")) return;

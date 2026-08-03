@@ -264,7 +264,8 @@
         : "";
 
       // ---- the plate ------------------------------------------------------
-      sideArt(natId);
+      // margin art retired: the table reads on plain cream
+      sideArt(null);
       // the league reads two columns wide on a desk, so its margins are narrower
       try { document.body.classList.add("fo-lgx-page"); } catch (eLp) {}
       var pips = "";
