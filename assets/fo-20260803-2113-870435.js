@@ -10285,7 +10285,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-2043-3f8fa9";
+  var FO_BUILD = "20260803-2113-870435";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21004,18 +21004,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     return "<div class='fo-sq-skill' title='" + label + ": " + word(v) + " · rank " + (wIx(v) + 1) + " of 16'><div class='fo-sq-skbar'><i style='width:" + Math.min(100, v) + "%;background:" + col + "'></i></div><div class='fo-sq-sknum'><b>" + v + "</b><span class='fo-sq-skw'> · " + word(v) + "</span></div></div>";
   }
   function foSqDetail(p, isYouth) {
-    var dbar = function (v, lbl) {
-      v = Math.round(v);
-      var col = v >= 75 ? "#16A34A" : v >= 50 ? "#4DA6A2" : v >= 30 ? "#F59E0B" : "#DC2626";
-      return "<div class='fo-sq-dline' title='" + E(word(v) || "") + "'><span>" + lbl + "</span><span class='fo-sq-dbar'><i style='width:" + Math.max(2, Math.min(100, v)) + "%;background:" + col + "'></i></span><b>" + v + "</b></div>";
-    };
-    var sk = S(p);
-    var c1 = "<div><div class='fo-sq-dh'>Batting</div>" + dbar(aggBat(p), "Overall") + dbar(sk.vsPace || 0, "vs pace") + dbar(sk.vsSpin || 0, "vs spin") + dbar(sk.rotation || 0, "Rotation") + dbar(sk.power || 0, "Power") + dbar(sk.temperament || 0, "Temperament") + "</div>";
-    var c2 = p.bowlType
-      ? "<div><div class='fo-sq-dh'>Bowling</div>" + dbar(aggBowl(p), "Overall") + dbar(sk.wicket || 0, "Wicket threat") + dbar(sk.economy || 0, "Economy") + dbar(sk.discipline || 0, "Discipline") + dbar(sk.moveTurn || 0, "Move / turn") + dbar(sk.stamina || 0, "Stamina") + "</div>"
-      : "<div><div class='fo-sq-dh'>Reserves</div>" + dbar(aggTech(p), "Technique") + dbar(sk.stamina || 0, "Stamina") + "</div>";
-    var glove = (p.keeper || aggKeep(p) >= 20) ? dbar(sk.keeping || 0, "Keeping") + dbar(sk.stumping || 0, "Stumping") : "";
-    var c3 = "<div><div class='fo-sq-dh'>In the field</div>" + dbar(sk.fielding || 0, "Fielding") + dbar(sk.catching || 0, "Catching") + glove + "</div>";
+    // the standard seven-skill read-out (the draft card's own bars), not the
+    // engine's advanced per-matchup lines - those live on the full profile
+    var bars = (typeof foSkillBars === "function") ? foSkillBars(p) : "";
     var tals = (p.talents || []).map(function (t2) { return "<span class='fo-sq-talent' title='" + E(TALTIPS[t2] || "") + "'>" + E(ptal(t2)) + "</span>"; }).join(" ");
     var season = "";
     try { if (typeof foSeasonLine === "function") { var sl = foSeasonLine(p.name); if (sl) season = "<span class='fo-sq-season'>This season: " + sl + "</span>"; } } catch (eSl) {}
@@ -21028,7 +21019,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "<span class='fo-sq-train'>Training: " + E(p.trainFocus || "none") + "</span>" +
       (isYouth ? "<button class='fo-sq-promote mini' data-n='" + E(p.name) + "'>Promote to seniors</button>" : "") +
       "</div>";
-    return "<div class='fo-sq-detail'><div class='fo-sq-dcols'>" + c1 + c2 + c3 + "</div>" + foot + "</div>";
+    return "<div class='fo-sq-detail'>" + bars + foot + "</div>";
   }
   // === Squad — the XI stood on the park, and whoever you tapped in the dossier ===
   // Batting style is not stored, so it is read off the skills the way a coach
@@ -21738,6 +21729,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-s2-row.open .fo-s2-car{transform:rotate(180deg)}",
       ".fo-s2-xd{border:1px solid #eee7d9;border-top:none;background:#FBFAF7}",
       ".fo-s2-xd .fo-sq-detail{border:none;margin:0;border-radius:0}",
+      ".fo-s2-xd .fo-dc-bars{margin-top:0;padding-top:0;border-top:none}",
       ".fo-s2-acts{display:flex;gap:8px;flex-wrap:wrap;padding:0 16px 12px}",
       ".fo-s2-act{font:700 11.5px Inter,sans-serif;border:1px solid #d9d0bc;background:#FFFEFC;color:#14243A;border-radius:999px;padding:7px 14px;cursor:pointer}",
       ".fo-s2-act.solid{background:#C9571F;border-color:#C9571F;color:#fff}",
@@ -21800,13 +21792,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body.ftpskin button.fo-s2-sugg{background:#FFFEFC !important;color:#14243A !important;border-color:#d9d0bc !important}",
       // ---- responsive ----
       "@media(max-width:1100px){.fo-s2-main{grid-template-columns:1fr}.fo-s2-rail{position:static}}",
-      // THE PHONE SHEET (user mockup): everything the desktop row carries, in
-      // miniature - hand, age, trait, the ten stars and the number all stay;
-      // the view chips float on the cream; the five stat cells hold one row;
-      // the First XI compresses to a three-column card, four names a column.
+      // THE PHONE SHEET: a reading page. The crest sits close under the title,
+      // the search/sort card and the First XI apparatus stay on the desk at
+      // the club - the phone shows the roster (bigger stars), the read-outs,
+      // and the tap-open detail. XI editing is desktop-only.
       "@media(max-width:820px){",
-      ".fo-s2-in{padding:66px 8px 30px}",
-      ".fo-s2-hd{align-items:flex-start;flex-direction:column;gap:10px;margin-bottom:10px}",
+      ".fo-s2-in{padding:60px 8px 30px}",
+      ".fo-s2-hd{align-items:flex-start;flex-direction:column;gap:3px;margin-bottom:8px}",
+      ".fo-s2-tag{margin-top:2px;font-size:13px}",
+      ".fo-s2-club{margin-top:4px}",
       ".fo-s2-club .cr{width:42px;height:42px}.fo-s2-club b{font-size:17px}.fo-s2-club span{font-size:10px}",
       ".fo-s2-bandwrap{flex-direction:column;gap:8px;margin-bottom:10px}",
       ".fo-s2-vsw{background:transparent;border:none;border-radius:0;padding:0}",
@@ -21814,32 +21808,23 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-s2-cell{flex:1 1 0;padding:8px 8px;border-right:1px solid #eee7d9}",
       ".fo-s2-cell span{font-size:7px;letter-spacing:.1em;margin-bottom:2px}",
       ".fo-s2-cell b{font-size:14px}.fo-s2-cell b i{display:none}",
-      ".fo-s2-tools{padding:8px 10px;gap:6px}.fo-s2-q{flex:1 1 100%}",
-      ".fo-s2-chip{font-size:10px;padding:6px 10px}.fo-s2-sortw{font-size:11px}",
-      ".fo-s2-row{grid-template-columns:30px minmax(74px,1.25fr) 40px 34px minmax(42px,.7fr) auto 24px 10px;gap:4px;padding:7px 6px}",
-      ".fo-s2-xibtn{display:none}",
+      ".fo-s2-tools{display:none}",
+      ".fo-s2-row{grid-template-columns:30px minmax(74px,1.25fr) 34px minmax(42px,.7fr) auto 24px 10px;gap:4px;padding:8px 6px}",
+      ".fo-s2-xibtn,.fo-s2-hand{display:none}",
       ".fo-s2-pic{width:30px;height:30px}.fo-s2-pic img.face{width:30px;height:30px}",
       ".fo-s2-flag{width:13px;height:9px;left:-4px;bottom:-2px}",
       ".fo-s2-id b{font-size:11.5px}.fo-s2-id span{font-size:9px}",
-      ".fo-s2-hand,.fo-s2-age{font-size:8.5px}.fo-s2-age{padding-left:3px}.fo-s2-age i{font-size:8.5px}",
+      ".fo-s2-age{font-size:8.5px;padding-left:3px}.fo-s2-age i{font-size:8.5px}",
       ".fo-s2-trait{font-size:7px;letter-spacing:.06em;padding:3px 5px}",
-      ".fo-s2-st10 .st{font-size:7px;letter-spacing:0}",
+      ".fo-s2-st10 .st{font-size:10px;letter-spacing:.5px}",
       ".fo-s2-ovr{font-size:15px}",
       ".fo-s2-car{font-size:9px}",
       ".fo-s2-seck{font-size:9px;letter-spacing:.14em;padding:6px 10px}",
-      // the First XI: three columns, batting order running down each
-      ".fo-s2-xilist{display:grid;grid-auto-flow:column;grid-template-rows:repeat(4,auto);grid-template-columns:repeat(3,1fr);gap:0 4px;padding:4px 6px}",
-      ".fo-s2-xirow{grid-template-columns:6px 12px minmax(0,1fr) 22px 12px 10px;gap:3px;padding:5px 1px;font-size:9px}",
-      ".fo-s2-xirow .nm .full{display:none}",
-      ".fo-s2-xirow .nm .sh{display:inline}",
-      ".fo-s2-xirow .grip{font-size:8px}",
-      ".fo-s2-xirow .no{font-size:9.5px}",
-      ".fo-s2-xirow .ab{font-size:8.5px}",
-      ".fo-s2-xirow .bdg .crown{font-size:10px}",
-      ".fo-s2-xirow .bdg .wk{font-size:7px;padding:1px 2px}",
-      ".fo-s2-xirow .mv button{font-size:7px;padding:0 2px}",
-      ".fo-s2-xirow .xrm{display:none}",
-      ".fo-s2-xislot{grid-column:1/-1;font-size:10.5px;padding:8px 10px}",
+      // detail bars stack one a line on a narrow screen
+      ".fo-s2-xd .fo-dc-bars{grid-auto-flow:row;grid-template-columns:1fr;grid-template-rows:none;gap:4px}",
+      // First XI management is a desk job - the card, its save and the
+      // add/remove taps all stay on desktop
+      ".fo-s2-xicard,.fo-s2-save,.fo-s2-sugg,.fo-s2-acts .fo-s2-act[data-xit]{display:none}",
       ".fo-s2-duo{grid-template-columns:1fr 1fr;gap:8px}",
       "}"
     ].join("\n");
@@ -22285,7 +22270,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
       var rail =
         "<aside class='fo-s2-rail'>" +
-        "<div class='fo-s2-card'><div class='fo-s2-ck'><span>First XI</span><em" + (xi.length < 11 ? " style='color:#C0392E'" : "") + ">" + xi.length + "/11</em></div><div class='fo-s2-xilist'>" + xiRows + "</div></div>" +
+        "<div class='fo-s2-card fo-s2-xicard'><div class='fo-s2-ck'><span>First XI</span><em" + (xi.length < 11 ? " style='color:#C0392E'" : "") + ">" + xi.length + "/11</em></div><div class='fo-s2-xilist'>" + xiRows + "</div></div>" +
         "<div class='fo-s2-card'><div class='fo-s2-ck'><span>Role balance</span><a id='fo-s2-fullstats'>View full stats</a></div>" + roleBal + "</div>" +
         "<div class='fo-s2-card'><div class='fo-s2-ck'><span>Squad composition</span></div>" +
         "<div class='fo-s2-kv'><span>" + natFlag + E(homeNat || "Home") + "</span><b>" + (seniors.length - overseas.length) + "</b></div>" +
