@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0203-fa5e18";
+  var FO_BUILD = "20260803-0206-83c625";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -39180,8 +39180,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<span" + (state === "live" ? " class='lv'" : "") + ">" + (state === "live" ? "&#9679; in play" : state === "fin" ? "played" : "later today") + "</span></a>";
     }).join("");
 
+    // a clean white page: the stadium painting made the reading matter fight
+    // for contrast, so the art stays in the theatre and the listings live on
+    // paper like the rest of the daylight game
     page.innerHTML = "<div class='fo-wt'>" +
-      "<div class='fo-wt-bg' id='fo-wt-bg'></div><div class='fo-wt-veil'></div>" +
       "<div class='fo-wt-in'>" +
       "<div class='fo-wt-top'><a class='fo-wt-back' href='#/planet'>&lsaquo; World</a>" +
       "<img class='fo-wt-flag' src='" + flagOf(rid) + "' alt=''>" +
@@ -39205,8 +39207,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           "<img src='" + flagOf(r.id) + "' alt=''><i>" + (on ? "live" : (hh2 < 10 ? "0" : "") + hh2 + ":00") + "</i></a>";
       }).join("") + "</div></div>" +
       "</div></div>";
-
-    mountGround(document.getElementById("fo-wt-bg"), groundChain(m.home.city, rid), 0);
 
     // the broadcast breathes: refresh while watching, stop when we leave
     try { if (window.__foWtTimer) clearInterval(window.__foWtTimer); } catch (e) {}
@@ -39240,30 +39240,31 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function foWtCss() {
     if (document.getElementById("fo-wt-css")) return;
     var s = document.createElement("style"); s.id = "fo-wt-css";
+    // A CLEAN WHITE ROOM. The listings sit on paper like every other daylight
+    // page; the only block of colour is the navy broadcast bug, which is the
+    // one thing on the page that IS a broadcast.
     s.textContent = [
-      "html body.ftpskin.fo-wt-on,html body.fo-wt-on{background:#07101E !important}",
+      "html body.ftpskin.fo-wt-on,html body.fo-wt-on{background:#FFFEFC !important}",
       "html body.fo-wt-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
       "html body.fo-wt-on #page{padding:0 !important;margin:0 !important;background:transparent !important}",
-      ".fo-wt{position:relative;min-height:100vh;color:#FFFEFC;isolation:isolate}",
-      ".fo-wt-bg{position:fixed;inset:0;background-size:cover;background-position:50% 40%;z-index:-2;transition:background-image .4s ease}",
-      ".fo-wt-veil{position:fixed;inset:0;z-index:-1;background:linear-gradient(180deg,rgba(7,16,30,.72),rgba(7,16,30,.25) 30%,rgba(7,16,30,.3) 62%,rgba(7,16,30,.88))}",
-      ".fo-wt-in{max-width:680px;margin:0 auto;padding:64px 16px 90px;display:flex;flex-direction:column;min-height:100vh}",
+      ".fo-wt{position:relative;min-height:70vh;color:#14202F}",
+      ".fo-wt-in{max-width:680px;margin:0 auto;padding:18px 16px 60px}",
       ".fo-wt-top{display:flex;align-items:center;gap:9px;flex-wrap:wrap}",
-      ".fo-wt-back{font:600 12px/1 Inter,sans-serif;color:rgba(255,254,252,.8);text-decoration:none;border:1px solid rgba(255,254,252,.25);border-radius:999px;padding:7px 13px}",
-      ".fo-wt-flag{width:26px;height:18px;object-fit:cover;border-radius:3px}",
-      ".fo-wt-league{font:700 10.5px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#E8DFCE}",
-      ".fo-wt-live{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:800 10px/1 Oswald,sans-serif;letter-spacing:.14em;color:#FF6B5E}",
-      ".fo-wt-live i{width:8px;height:8px;border-radius:50%;background:#FF6B5E;animation:foWtPulse 1.2s ease-in-out infinite}",
+      ".fo-wt-back{font:600 12px/1 Inter,sans-serif;color:#3a4353 !important;text-decoration:none !important;border:1px solid rgba(14,35,63,.22);border-radius:999px;padding:7px 13px;background:#fff}",
+      ".fo-wt-flag{width:26px;height:18px;object-fit:cover;border-radius:3px;box-shadow:0 1px 3px rgba(14,35,63,.25)}",
+      ".fo-wt-league{font:700 10.5px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#14202F}",
+      ".fo-wt-live{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:800 10px/1 Oswald,sans-serif;letter-spacing:.14em;color:#B23230}",
+      ".fo-wt-live i{width:8px;height:8px;border-radius:50%;background:#B23230;animation:foWtPulse 1.2s ease-in-out infinite}",
       "@keyframes foWtPulse{0%,100%{opacity:1}50%{opacity:.25}}",
-      ".fo-wt-soon,.fo-wt-fin{margin-left:auto;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;color:rgba(255,254,252,.65)}",
-      ".fo-wt-stage{flex:1;display:flex;flex-direction:column;justify-content:flex-end;padding:40px 0 12px}",
-      ".fo-wt-ground{font:italic 400 12.5px/1.4 'Fraunces',Georgia,serif;color:rgba(255,254,252,.75);text-shadow:0 2px 10px rgba(0,0,0,.6);margin-bottom:8px}",
-      ".fo-wt-bug{background:rgba(6,13,26,.82);-webkit-backdrop-filter:blur(12px);backdrop-filter:blur(12px);border:1px solid rgba(255,254,252,.14);border-left:3px solid #C95532;border-radius:16px;padding:15px 17px;box-shadow:0 18px 44px rgba(0,0,0,.5)}",
+      ".fo-wt-soon,.fo-wt-fin{margin-left:auto;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;color:rgba(20,32,47,.55)}",
+      ".fo-wt-stage{padding:16px 0 4px}",
+      ".fo-wt-ground{font:600 11px/1.4 Inter,sans-serif;color:rgba(20,32,47,.55);margin-bottom:7px}",
+      ".fo-wt-bug{background:#0E233F;border-left:3px solid #C95532;border-radius:16px;padding:15px 17px;color:#FFFEFC;box-shadow:0 8px 24px rgba(14,35,63,.18)}",
       ".fo-wt-teams{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}",
-      ".fo-wt-teams b{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:18px}",
+      ".fo-wt-teams b{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:18px;color:#FFFEFC}",
       ".fo-wt-teams i{font-style:italic;font-size:11px;color:rgba(255,254,252,.5)}",
       ".fo-wt-score{font:700 15px/1.3 Oswald,sans-serif;letter-spacing:.04em;color:#E8B96A;margin-top:7px}",
-      ".fo-wt-crease{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font:400 11.5px/1.5 Inter,sans-serif;color:rgba(255,254,252,.8);flex-wrap:wrap}",
+      ".fo-wt-crease{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font:400 11.5px/1.5 Inter,sans-serif;color:rgba(255,254,252,.85);flex-wrap:wrap}",
       ".fo-wt-crease u{text-decoration:none;color:#FFFEFC;font-weight:600}",
       ".fo-wt-over{display:flex;gap:6px;margin-top:10px}",
       ".fo-wt-over i{font-style:normal;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,254,252,.1);border:1px solid rgba(255,254,252,.18);font:700 11px/1 Oswald,sans-serif;color:#E8DFCE}",
@@ -39272,35 +39273,34 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-wt-comm{font:italic 400 12px/1.5 'Fraunces',Georgia,serif;color:rgba(255,254,252,.65);margin-top:9px}",
       ".fo-wt-enter{display:block;width:100%;margin-top:12px;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:#C95532 !important;border:none !important;border-radius:999px !important;padding:13px 16px !important;cursor:pointer}",
       ".fo-wt-teamsin{margin-top:12px;border-top:1px solid rgba(255,254,252,.14);padding-top:11px}",
-      ".fo-wt-teamsin .ld{font:italic 400 12px/1.4 'Fraunces',Georgia,serif;color:rgba(255,254,252,.65)}",
+      ".fo-wt-teamsin .ld{font:400 12px/1.4 Inter,sans-serif;color:rgba(255,254,252,.65)}",
       ".fo-wt-teamsin .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}",
       ".fo-wt-teamsin .c b{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:13px;margin-bottom:2px}",
       ".fo-wt-teamsin .c u{display:block;text-decoration:none;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#E8B96A;margin-bottom:6px}",
       ".fo-wt-teamsin .c span{display:flex;align-items:baseline;gap:6px;font:400 11.5px/1.55 Inter,sans-serif;color:rgba(255,254,252,.85)}",
       ".fo-wt-teamsin .c span i{font-style:normal;font:700 9px/1 Oswald,sans-serif;color:rgba(255,254,252,.4);width:12px;text-align:right}",
       "@media(max-width:430px){.fo-wt-teamsin .cols{grid-template-columns:1fr}}",
-      // THE NIGHT PAGE KEEPS ITS OWN INK. The daylight theme paints every
-      // anchor in #page terracotta - handsome on paper, mud on a dark
-      // broadcast card - so every link inside this room is pinned back to
-      // white at higher specificity, in every state.
-      "html body #page .fo-wt a,html body.ftpskin #page .fo-wt a,html body #page .fo-wt a:visited,html body #page .fo-wt a:hover,html body #page .fo-wt a:active{color:#FFFEFC !important;text-decoration:none !important}",
-      ".fo-wt-rail{margin-top:16px}",
-      ".fo-wt-rail>i{display:block;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(255,254,252,.75);font-style:normal;margin-bottom:8px;text-shadow:0 1px 6px rgba(0,0,0,.7)}",
-      ".fo-wt-other{display:flex;justify-content:space-between;gap:10px;align-items:baseline;background:rgba(6,13,26,.78);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,254,252,.12);border-radius:11px;padding:11px 14px;margin-bottom:7px;text-decoration:none;color:#FFFEFC}",
+      // the daylight anchor rule would paint the row links terracotta; on
+      // paper they read as ink instead, in every state
+      "html body #page .fo-wt a.fo-wt-other,html body.ftpskin #page .fo-wt a.fo-wt-other,html body #page .fo-wt a.fo-wt-other:visited,html body #page .fo-wt a.fo-wt-other:hover,html body #page .fo-wt a.fo-wt-other:active{color:#14202F !important;text-decoration:none !important}",
+      "html body #page .fo-wt a.fo-wt-nat,html body #page .fo-wt a.fo-wt-nat:hover,html body #page .fo-wt a.fo-wt-back:hover{text-decoration:none !important}",
+      ".fo-wt-rail{margin-top:18px}",
+      ".fo-wt-rail>i{display:block;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(20,32,47,.5);font-style:normal;margin-bottom:8px}",
+      ".fo-wt-other{display:flex;justify-content:space-between;gap:10px;align-items:baseline;background:#fff;border:1px solid rgba(14,35,63,.14);border-radius:11px;padding:11px 14px;margin-bottom:7px;text-decoration:none;color:#14202F;box-shadow:0 1px 3px rgba(14,35,63,.05)}",
       ".fo-wt-other b{font:600 12.5px/1.35 Inter,sans-serif}",
-      ".fo-wt-other span{font:400 11px/1.3 Inter,sans-serif;color:rgba(255,254,252,.6);white-space:nowrap}",
-      ".fo-wt-other span.lv{color:#FF8A7A;font-weight:600}",
-      ".fo-wt-natsw{margin-top:18px;background:rgba(6,13,26,.66);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border:1px solid rgba(255,254,252,.1);border-radius:13px;padding:10px 12px 7px}",
-      ".fo-wt-natsw>i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,254,252,.6);font-style:normal;margin-bottom:8px}",
+      ".fo-wt-other span{font:400 11px/1.3 Inter,sans-serif;color:rgba(20,32,47,.5);white-space:nowrap}",
+      ".fo-wt-other span.lv{color:#B23230;font-weight:600}",
+      ".fo-wt-natsw{margin-top:18px;background:#fff;border:1px solid rgba(14,35,63,.14);border-radius:13px;padding:10px 12px 7px}",
+      ".fo-wt-natsw>i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(20,32,47,.5);font-style:normal;margin-bottom:8px}",
       ".fo-wt-nats{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;mask-image:linear-gradient(90deg,#000 92%,transparent);-webkit-mask-image:linear-gradient(90deg,#000 92%,transparent)}",
       ".fo-wt-nats::-webkit-scrollbar{display:none}",
-      ".fo-wt-nat{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;opacity:.75}",
-      ".fo-wt-nat img{width:30px;height:21px;object-fit:cover;border-radius:4px;border:2px solid transparent}",
+      ".fo-wt-nat{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none;opacity:.8}",
+      ".fo-wt-nat img{width:30px;height:21px;object-fit:cover;border-radius:4px;border:2px solid transparent;box-shadow:0 1px 3px rgba(14,35,63,.2)}",
       ".fo-wt-nat.sel img{border-color:#C95532}",
-      ".fo-wt-nat.on img{border-color:#FF6B5E;box-shadow:0 0 0 3px rgba(255,107,94,.25)}",
+      ".fo-wt-nat.on img{border-color:#B23230;box-shadow:0 0 0 3px rgba(178,50,48,.18)}",
       ".fo-wt-nat.on{opacity:1}",
-      ".fo-wt-nat i{font:700 8.5px/1 Oswald,sans-serif;color:rgba(255,254,252,.65);font-style:normal;letter-spacing:.04em}",
-      ".fo-wt-nat.on i{color:#FF8A7A}"
+      ".fo-wt-nat i{font:700 8.5px/1 Oswald,sans-serif;color:rgba(20,32,47,.55);font-style:normal;letter-spacing:.04em}",
+      ".fo-wt-nat.on i{color:#B23230}"
     ].join("\n");
     document.head.appendChild(s);
   }
