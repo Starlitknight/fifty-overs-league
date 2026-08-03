@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0003-2244e4";
+  var FO_BUILD = "20260803-0008-bf6a0d";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18837,18 +18837,25 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             "<s class='fbd" + (foMfVal(n9) ? " on" : "") + "' data-fo-mfc='" + E(n9) + "' title='" + E(foMfTitle(n9)) + "'>" + foMfShort(n9) + "</s></button>";
         }).join("") + "</div>" +
         "<div class='mg-grid'>" + (function () {
-          // a vertical over-list, not a mosaic: over 1 at the top, over 50 at
-          // the foot, one row a tap-target, the phases named where they start
-          var h9 = "";
-          for (var o9 = 1; o9 <= 50; o9++) {
-            if (o9 === 1) h9 += "<span class='mg-ph pp'>Powerplay &middot; overs 1-10</span>";
-            if (o9 === 11) h9 += "<span class='mg-ph'>Middle &middot; overs 11-40</span>";
-            if (o9 === 41) h9 += "<span class='mg-ph dth'>Death &middot; overs 41-50</span>";
+          // a vertical over-list in TWO columns of twenty-five: overs 1-25
+          // down the left, 26-50 down the right, so the innings fits in half
+          // the scroll. One row a tap-target, the phases named where they
+          // start in each column.
+          var cell9 = function (o9) {
             var b9 = g[o9];
-            h9 += "<button type='button' class='mgc" + (b9 ? " mgc-c" + colorIx[b9] : "") + (o9 <= 10 ? " pp" : o9 >= 41 ? " dth" : "") + "' data-mo='" + o9 + "'><em>" + o9 + "</em>" +
-              (b9 ? "<b>" + inits(b9) + "</b><span class='mgn'>" + E(dispNm(b9)) + "</span>" : "<span class='mgn mgn-e'>tap to assign</span>") + "</button>";
+            return "<button type='button' class='mgc" + (b9 ? " mgc-c" + colorIx[b9] : "") + (o9 <= 10 ? " pp" : o9 >= 41 ? " dth" : "") + "' data-mo='" + o9 + "'><em>" + o9 + "</em>" +
+              (b9 ? "<b>" + inits(b9) + "</b><span class='mgn'>" + E(dispNm(b9)) + "</span>" : "<span class='mgn mgn-e'>&mdash;</span>") + "</button>";
+          };
+          var c1 = "<span class='mg-ph pp'>Powerplay 1-10</span>", c2 = "<span class='mg-ph'>Middle 26-40</span>";
+          for (var oA = 1; oA <= 25; oA++) {
+            if (oA === 11) c1 += "<span class='mg-ph'>Middle 11-25</span>";
+            c1 += cell9(oA);
           }
-          return h9;
+          for (var oB = 26; oB <= 50; oB++) {
+            if (oB === 41) c2 += "<span class='mg-ph dth'>Death 41-50</span>";
+            c2 += cell9(oB);
+          }
+          return "<div class='mg-col'>" + c1 + "</div><div class='mg-col'>" + c2 + "</div>";
         })() + "</div></div>";
       // two pages, one sheet: the tab decides which half paints
       if (tab === "bowl")
@@ -19393,13 +19400,14 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // the overs run DOWN the page: one over a row, the over number on the
       // left, the bowler's chip and name beside it, the phase named by the
       // coloured left edge - over 1 at the top, over 50 at the foot
-      ".mg-grid{display:flex;flex-direction:column;gap:3px}" +
-      "html body #page .mg-grid button.mgc{display:flex;align-items:center;gap:9px;border:1px solid rgba(28,36,51,.16)!important;border-left:4px solid #c8cfd9!important;background:#FFFEFC!important;border-radius:8px;height:42px;padding:0 10px 0 0!important;cursor:pointer;overflow:hidden}" +
+      ".mg-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 8px;align-items:start}" +
+      ".mg-col{display:flex;flex-direction:column;gap:3px;min-width:0}" +
+      "html body #page .mg-grid button.mgc{display:flex;align-items:center;gap:6px;border:1px solid rgba(28,36,51,.16)!important;border-left:4px solid #c8cfd9!important;background:#FFFEFC!important;border-radius:8px;height:40px;padding:0 6px 0 0!important;cursor:pointer;overflow:hidden}" +
       "html body #page .mg-grid button.mgc.pp{border-left-color:#4E7A4E!important}" +
       "html body #page .mg-grid button.mgc.dth{border-left-color:#B04A2C!important}" +
-      ".mg-grid .mgc em{font-style:normal;width:28px;text-align:right;font-size:11px;font-weight:700;color:#8a93a3;flex:0 0 auto;font-variant-numeric:tabular-nums}" +
-      ".mg-grid .mgc b{display:flex;align-items:center;justify-content:center;height:24px;width:34px;flex:0 0 auto;border-radius:6px;font-size:10.5px;font-weight:800;color:#fff}" +
-      ".mg-grid .mgc .mgn{font-size:13px;font-weight:700;color:#243244;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".mg-grid .mgc em{font-style:normal;width:22px;text-align:right;font-size:10.5px;font-weight:700;color:#8a93a3;flex:0 0 auto;font-variant-numeric:tabular-nums}" +
+      ".mg-grid .mgc b{display:flex;align-items:center;justify-content:center;height:22px;width:28px;flex:0 0 auto;border-radius:6px;font-size:9.5px;font-weight:800;color:#fff}" +
+      ".mg-grid .mgc .mgn{font-size:11.5px;font-weight:700;color:#243244;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}" +
       ".mg-grid .mgc .mgn-e{color:#b6bdc9;font-weight:600;font-style:italic}" +
       "}" +
       // one uniform navy for every bowler's cells - the initials tell them
