@@ -2240,23 +2240,10 @@
       "<b class='fig'>" + (brec ? Math.floor(brec.b / 6) + "." + (brec.b % 6) + "&ndash;" + brec.r + "&ndash;" + brec.w : "new spell") + "</b>" +
       (econ ? "<u>Econ <b class='or'>" + econ + "</b></u>" : ""),
       E(bw.btLabel || "bowling"), stars(FS && FS.bowl(bw))) : "";
-    // score progression, from the worm the umpire banks every ball
+    // runs per over from the worm the umpire banks every ball; the over a
+    // wicket fell in is dotted
     var w9 = (M.worm && M.worm[M.inns]) || [];
-    var maxY = Math.max(M.target || 0, inn.runs * 1.15, 60);
-    var px = function (ov) { return (12 + ov / 50 * 268).toFixed(1); };
-    var py = function (r9) { return (96 - r9 / maxY * 86).toFixed(1); };
-    var pts = "", wDots = "", lastW = 0;
-    for (var k = 0; k < w9.length; k++) {
-      pts += (k ? " " : "") + px(w9[k][0]) + "," + py(w9[k][1]);
-      if (w9[k][2] > lastW) { lastW = w9[k][2]; wDots += "<circle cx='" + px(w9[k][0]) + "' cy='" + py(w9[k][1]) + "' r='3' fill='#C9571F'/>"; }
-    }
-    var progSvg = "<svg viewBox='0 0 292 108' class='db-svg'>" +
-      "<line x1='12' y1='96' x2='284' y2='96' stroke='#d9cfba'/>" +
-      "<line x1='12' y1='53' x2='284' y2='53' stroke='#f0ead9'/>" +
-      (M.target ? "<line x1='12' y1='" + py(M.target) + "' x2='284' y2='" + py(M.target) + "' stroke='#E8B96A' stroke-dasharray='4 4'/>" : "") +
-      (pts ? "<polyline points='" + pts + "' fill='none' stroke='#C9571F' stroke-width='2.2'/>" : "") + wDots +
-      "<g font-size='8' fill='#8a7f6e'><text x='2' y='99'>0</text><text x='140' y='106'>25</text><text x='276' y='106'>50</text></g></svg>";
-    // runs per over from the same worm; the over a wicket fell in is dotted
+    var lastW = 0;
     var rpo = [], wOv = {}, lastR = 0; lastW = 0;
     for (var k2 = 0; k2 < w9.length; k2++) {
       var ovK = Math.min(49, Math.floor(w9[k2][0] - 0.001 < 0 ? 0 : w9[k2][0] - 0.001));
@@ -2307,9 +2294,6 @@
       "<div class='fo-db-players'>" + batCard + nsCard + bwCard + "</div>" +
       "<div class='fo-db-info'>" +
       "<div class='fo-db-field'></div>" +
-      "<div class='db-card'><div class='hd'><span class='k nv'>Partnership</span></div>" +
-      "<div class='db-pship'><b>" + (inn.pshipR || 0) + "</b><span>(" + (inn.pshipB || 0) + ")</span><i class='k'>" + (inn.wkts + 1) + (["st", "nd", "rd"][inn.wkts] || "th") + " wicket</i></div>" +
-      "<div class='k' style='text-align:center;margin-top:4px'>Score progression</div>" + progSvg + "</div>" +
       "<div class='db-card db-cond'><div class='hd'><span class='k nv'>Match conditions</span></div><div class='db-cg'>" +
       cond("Weather", E(wx)) + cond("Its effect", E(wxT || "&ndash;")) +
       cond("Pitch", E(pt)) + cond("Its effect", E(ptT || "&ndash;")) +
@@ -2318,7 +2302,8 @@
       "</div>" +
       "<div class='fo-db-charts'>" +
       "<div class='db-card'><div class='hd'><span class='k nv'>Runs per over</span><span class='k'>wicket overs marked &middot; this over in orange</span></div>" + rpoSvg + "</div>" +
-      "<div class='db-card'>" + chase + fow + "</div>" +
+      "<div class='db-card'>" + chase + fow +
+      "<div class='db-fw pship'><span class='k'>Partnership</span><span><b>" + (inn.pshipR || 0) + " (" + (inn.pshipB || 0) + ")</b> &nbsp;<span class='k'>" + (inn.wkts + 1) + (["st", "nd", "rd"][inn.wkts] || "th") + " wkt</span></span></div></div>" +
       "</div></div>" +
       "<div class='db-card fo-db-comm'><div class='hd'><span class='k nv'>Commentary</span></div><div class='db-feed'>" +
       (rows || "<div class='db-cr'><p class='k'>The first ball is coming.</p></div>") + "</div>" +
@@ -2326,7 +2311,63 @@
       "</div>" +
       "<div class='fo-db-bar'><svg viewBox='0 0 24 24' width='22' height='22' fill='none' stroke='#E8B96A' stroke-width='1.6'><circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 3'/></svg>" +
       barLeft + "<span class='sp'></span>" + (o.ctlBtns || "") +
-      "<button type='button' id='fo-db-act'>Match actions &#8964;</button></div>";
+      "<button type='button' id='fo-db-act'>Scorecard</button></div>";
+  }
+  // THE FULL COMMENTARY, as its own page: every ball the umpire wrote, both
+  // innings, end-of-over summaries between them, and filters to read it the
+  // way a scorer would - everything straight from M.log and the worm.
+  var FO_DASH_CFILT = [["all", "All"], ["runs", "Runs"], ["bound", "4s & 6s"], ["wkt", "Wickets"], ["mile", "Milestones"]];
+  function foDashCommFull(refresh) {
+    try {
+      var old = document.getElementById("fo-commpage");
+      if (refresh && !old) return;
+      var filt = (old && old.getAttribute("data-filt")) || "all";
+      var keepScroll = refresh && old ? old.querySelector(".cp-list").scrollTop : 0;
+      var isW = function (oo) { return typeof isWkt === "function" && isWkt(oo); };
+      var pass = function (Lg) {
+        if (Lg.mile) return filt === "all" || filt === "mile";
+        if (filt === "mile") return false;
+        if (filt === "all") return true;
+        if (filt === "wkt") return isW(Lg.out);
+        if (filt === "bound") return Lg.out === "4" || Lg.out === "6";
+        if (filt === "runs") return ["1", "2", "3", "4", "6"].indexOf(Lg.out) >= 0;
+        return true;
+      };
+      // the umpire's own milestone rows already tell the end of each over,
+      // the fifties and the falls - the page only adds the innings breaks
+      var rows = "", prevInn = null, shown = 0;
+      for (var i = 0; i < M.log.length; i++) {
+        var Lg = M.log[i];
+        // the log reads newest-first: a band announces the section BELOW it
+        if (prevInn !== null && Lg.inn !== prevInn) {
+          rows += "<div class='cp-band inn'>" + E((M.innings[Lg.inn] && M.innings[Lg.inn].batTeam) || "") + " innings</div>";
+        }
+        prevInn = Lg.inn;
+        if (!pass(Lg)) continue;
+        shown++;
+        rows += Lg.mile
+          ? "<div class='cp-mile'>" + E(Lg.txt || "") + "</div>"
+          : "<div class='db-cr'><b>" + E(Lg.no || "") + "</b>" + foDashBall(Lg.out) + "<p>" + E(Lg.txt || "") + "</p></div>";
+      }
+      if (!shown) rows += "<div class='db-cr'><p class='k'>Nothing under this filter yet.</p></div>";
+      var inn9 = M.innings[M.inns];
+      var head = "<div class='cp-head'><button type='button' id='fo-cp-back'>&#8592; Back to the match</button>" +
+        "<b>" + E(M.meta.home) + " v " + E(M.meta.away) + "</b>" +
+        "<span class='k'>" + E(inn9.batTeam) + " " + inn9.runs + "/" + inn9.wkts + " &middot; " +
+        Math.floor(inn9.legal / 6) + "." + (inn9.legal % 6) + " ov</span>" +
+        "<span class='cp-filts'>" + FO_DASH_CFILT.map(function (f9) {
+          return "<button type='button' data-cf='" + f9[0] + "' class='" + (filt === f9[0] ? "on" : "") + "'>" + f9[1] + "</button>";
+        }).join("") + "</span></div>";
+      var d = old;
+      if (!d) { d = document.createElement("div"); d.id = "fo-commpage"; document.body.appendChild(d); }
+      d.setAttribute("data-filt", filt);
+      d.innerHTML = head + "<div class='cp-list'><div class='cp-in'>" + rows + "</div></div>";
+      d.querySelector(".cp-list").scrollTop = keepScroll;
+      d.querySelector("#fo-cp-back").addEventListener("click", function () { d.remove(); });
+      d.querySelectorAll("[data-cf]").forEach(function (b9) {
+        b9.addEventListener("click", function () { d.setAttribute("data-filt", b9.getAttribute("data-cf")); foDashCommFull(true); });
+      });
+    } catch (eCf) { try { console.warn("foDashCommFull", eCf); } catch (e0) {} }
   }
   function foDashCss() {
     if (document.getElementById("fo-dash-css")) return;
@@ -2338,8 +2379,9 @@
       "html body.fo-dash,html body.ftpskin.fo-dash{background:#F6F3EB !important}" +
       "html body.fo-dash #topbar,html body.ftpskin.fo-dash #topbar{background:#14243A !important;position:fixed;top:0;left:0;right:0;z-index:60}" +
       "body.fo-dash .fo-mst-ui{position:relative;z-index:5;min-height:100%}" +
-      // the painting, contained: same scene layer, clipped to the art panel
-      "body.fo-dash .fo-mst-scene{position:absolute;inset:auto;top:176px;left:max(24px,calc(50vw - 696px));width:calc(min(100vw,1440px) - 494px);height:296px;border-radius:14px;overflow:hidden;border:1px solid #e3dccb;z-index:1}" +
+      // the painting, contained: same scene layer, clipped to the art panel.
+      // Geometry is measured off the grid slot after each paint, not guessed.
+      "body.fo-dash .fo-mst-scene{position:absolute;inset:auto;border-radius:14px;overflow:hidden;border:1px solid #e3dccb;z-index:1}" +
       "body.fo-dash .fo-mst-veil{background:linear-gradient(180deg,rgba(3,15,31,.18),transparent 22%,transparent 82%,rgba(3,15,31,.2)) !important}" +
       // retired chrome in dashboard mode
       "body.fo-dash #fo-th-rail,body.fo-dash #fo-th-gauge,body.fo-dash #fo-mst-spd{display:none !important}" +
@@ -2356,57 +2398,57 @@
       "body.fo-dash .db-b.r6{background:#14243A;color:#E8B96A;border-color:#14243A}" +
       "body.fo-dash .db-b.wk{background:#8E1F13;color:#fff;border-color:#8E1F13}" +
       "body.fo-dash .db-svg{display:block;width:calc(100% - 24px);margin:6px auto 10px}" +
-      // layout: centred wrap, band, grid with the rail
-      "body.fo-dash .fo-db-wrap{max-width:1440px;margin:0 auto;padding:66px 24px 78px}" +
-      "body.fo-dash .fo-db-bug{height:92px;display:flex;align-items:center;gap:26px;padding:0 22px}" +
-      "body.fo-dash .fo-db-bug .cr svg{display:block}" +
-      "body.fo-dash .fo-db-bug .tm b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:18px;letter-spacing:1.4px;text-transform:uppercase}" +
-      "body.fo-dash .fo-db-bug .tm b .dot{color:#C9571F;font-size:11px;font-style:normal}" +
-      "body.fo-dash .fo-db-bug .tm span{font-size:12.5px;color:#8a7f6e}" +
+      // layout: centred wrap, band, grid with the rail - a fifth smaller all
+      // through, so the whole innings reads on one screen
+      "body.fo-dash .fo-db-wrap{max-width:1220px;margin:0 auto;padding:62px 22px 66px}" +
+      "body.fo-dash .fo-db-bug{height:72px;display:flex;align-items:center;gap:22px;padding:0 18px}" +
+      "body.fo-dash .fo-db-bug .cr svg{display:block;width:44px;height:48px}" +
+      "body.fo-dash .fo-db-bug .tm b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:15px;letter-spacing:1.3px;text-transform:uppercase}" +
+      "body.fo-dash .fo-db-bug .tm b .dot{color:#C9571F;font-size:9px;font-style:normal}" +
+      "body.fo-dash .fo-db-bug .tm span{font-size:11px;color:#8a7f6e}" +
       "body.fo-dash .fo-db-bug .tm.rt{margin-left:auto;text-align:right}" +
-      "body.fo-dash .fo-db-bug .sc b{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:36px;line-height:1}" +
-      "body.fo-dash .fo-db-bug .st{text-align:center;border-left:1px solid #eee7d9;padding-left:24px}" +
-      "body.fo-dash .fo-db-bug .st b{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:24px;margin-top:2px}" +
-      "body.fo-dash .fo-db-bug .st b.sm{font-size:13px;font-family:Inter,sans-serif;font-weight:500;max-width:170px}" +
-      "body.fo-dash .fo-db-bug .bb9{display:flex;gap:4px;margin-top:6px}" +
-      "body.fo-dash .fo-db-grid{display:grid;grid-template-columns:1fr 430px;gap:16px;margin-top:14px}" +
-      "body.fo-dash .fo-db-left{display:flex;flex-direction:column;gap:14px}" +
-      "body.fo-dash .fo-db-art{height:296px;border-radius:14px}" +
-      "body.fo-dash .fo-db-players{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px}" +
-      "body.fo-dash .db-p{display:flex;align-items:center;gap:13px;padding:12px 16px;height:92px}" +
-      "body.fo-dash .db-p img{width:60px;height:60px;border-radius:50%;object-fit:cover;object-position:50% 12%;border:2px solid #E8B96A;flex:0 0 60px}" +
-      "body.fo-dash .db-p .nm{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:16px;line-height:1.15;margin-top:1px}" +
-      "body.fo-dash .db-p .rw{display:flex;gap:8px;align-items:center;margin-top:2px;overflow:hidden}" +
-      "body.fo-dash .db-p .rw .k{white-space:nowrap;max-width:86px;overflow:hidden;text-overflow:ellipsis}" +
-      "body.fo-dash .db-p .stars{font-size:9px;color:#E8B96A;letter-spacing:0;white-space:nowrap}" +
+      "body.fo-dash .fo-db-bug .sc b{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:28px;line-height:1}" +
+      "body.fo-dash .fo-db-bug .st{text-align:center;border-left:1px solid #eee7d9;padding-left:20px}" +
+      "body.fo-dash .fo-db-bug .st b{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:19px;margin-top:2px}" +
+      "body.fo-dash .fo-db-bug .st b.sm{font-size:11px;font-family:Inter,sans-serif;font-weight:500;max-width:150px}" +
+      "body.fo-dash .fo-db-bug .bb9{display:flex;gap:4px;margin-top:5px}" +
+      "body.fo-dash .fo-db-bug .db-b{min-width:22px;height:22px;font-size:11px}" +
+      "body.fo-dash .fo-db-grid{display:grid;grid-template-columns:1fr 350px;gap:14px;margin-top:12px}" +
+      "body.fo-dash .fo-db-left{display:flex;flex-direction:column;gap:12px}" +
+      "body.fo-dash .fo-db-art{height:238px;border-radius:14px}" +
+      "body.fo-dash .fo-db-players{display:grid;grid-template-columns:1fr 1fr 1fr;gap:12px}" +
+      "body.fo-dash .db-p{display:flex;align-items:center;gap:11px;padding:10px 13px;height:74px}" +
+      "body.fo-dash .db-p img{width:48px;height:48px;border-radius:50%;object-fit:cover;object-position:50% 12%;border:2px solid #E8B96A;flex:0 0 48px}" +
+      "body.fo-dash .db-p .nm{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:14px;line-height:1.1;margin-top:1px}" +
+      "body.fo-dash .db-p .rw{display:flex;gap:7px;align-items:center;margin-top:3px;overflow:hidden}" +
+      "body.fo-dash .db-p .rw .k{white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;font-size:8.5px}" +
+      "body.fo-dash .db-p .stars{font-size:12.5px;color:#E8B96A;letter-spacing:.5px;white-space:nowrap}" +
       "body.fo-dash .db-p .pr{margin-left:auto;text-align:right;flex:0 0 auto}" +
-      "body.fo-dash .db-p .pr b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:20px;white-space:nowrap}" +
-      "body.fo-dash .db-p .pr b.fig{font-size:17px}" +
+      "body.fo-dash .db-p .pr b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:15px;white-space:nowrap}" +
+      "body.fo-dash .db-p .pr b.fig{font-size:13.5px}" +
       "body.fo-dash .db-p .pr b i{color:#C9571F;font-style:normal}" +
-      "body.fo-dash .db-p .pr span{font-size:12px;color:#8a7f6e;margin-left:3px}" +
-      "body.fo-dash .db-p .pr u{display:block;text-decoration:none;font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;color:#8a7f6e;margin-top:2px}" +
-      "body.fo-dash .fo-db-info{display:grid;grid-template-columns:1fr 1.05fr 1.05fr;gap:14px}" +
-      "body.fo-dash .fo-db-info>div{min-height:300px}" +
+      "body.fo-dash .db-p .pr span{font-size:10.5px;color:#8a7f6e;margin-left:3px}" +
+      "body.fo-dash .db-p .pr u{display:block;text-decoration:none;font-family:Oswald,sans-serif;font-size:8.5px;letter-spacing:1.2px;text-transform:uppercase;color:#8a7f6e;margin-top:2px}" +
+      "body.fo-dash .fo-db-info{display:grid;grid-template-columns:1.45fr 1fr;gap:12px}" +
+      "body.fo-dash .fo-db-info>div{min-height:286px}" +
       "body.fo-dash .fo-db-field{border-radius:14px}" +
-      "body.fo-dash .db-pship{display:flex;align-items:baseline;justify-content:center;gap:7px;margin-top:6px}" +
-      "body.fo-dash .db-pship b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:30px}" +
-      "body.fo-dash .db-pship span{font-family:Fraunces,Georgia,serif;font-size:16px;color:#8a7f6e}" +
-      "body.fo-dash .db-pship i{font-style:normal;margin-left:4px}" +
-      "body.fo-dash .db-cg{display:grid;grid-template-columns:1fr 1fr;gap:11px 16px;padding:12px 16px 0}" +
-      "body.fo-dash .db-c .v{font-size:13px;font-weight:500;margin-top:1px}" +
-      "body.fo-dash .db-gnd{border-top:1px solid #eee7d9;margin:12px 16px 0;padding:10px 0 12px;text-align:center;color:#14243A !important}" +
-      "body.fo-dash .fo-db-charts{display:grid;grid-template-columns:1.85fr 1.1fr;gap:14px}" +
-      "body.fo-dash .fo-db-charts .db-card{min-height:150px}" +
-      "body.fo-dash .db-fw{display:flex;justify-content:space-between;align-items:baseline;padding:7px 16px;border-bottom:1px solid #f0ead9;font-size:13px}" +
+      "body.fo-dash .db-cg{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;padding:11px 15px 0}" +
+      "body.fo-dash .db-c .v{font-size:12px;font-weight:500;margin-top:1px}" +
+      "body.fo-dash .db-gnd{border-top:1px solid #eee7d9;margin:11px 15px 0;padding:9px 0 11px;text-align:center;color:#14243A !important}" +
+      "body.fo-dash .fo-db-charts{display:grid;grid-template-columns:1.85fr 1.1fr;gap:12px}" +
+      "body.fo-dash .fo-db-charts .db-card{min-height:130px}" +
+      "body.fo-dash .db-fw{display:flex;justify-content:space-between;align-items:baseline;padding:6px 15px;border-bottom:1px solid #f0ead9;font-size:12px}" +
       "body.fo-dash .db-fw:last-child{border-bottom:none}" +
+      "body.fo-dash .db-fw.pship{border-top:1px solid #eee7d9;border-bottom:none;margin-top:2px}" +
       // the commentary rail
       "body.fo-dash .fo-db-comm{display:flex;flex-direction:column;overflow:hidden}" +
-      "body.fo-dash .db-feed{flex:1;overflow:hidden;margin-top:6px}" +
-      "body.fo-dash .db-cr{display:grid;grid-template-columns:46px 32px 1fr;gap:10px;align-items:center;padding:10px 16px;border-top:1px solid #f0ead9}" +
-      "body.fo-dash .db-cr b{font-family:Oswald,sans-serif;font-weight:600;font-size:12.5px;color:#8a7f6e}" +
-      "body.fo-dash .db-cr p{margin:0;font-size:13px;line-height:1.5;color:#3a3427}" +
+      "body.fo-dash .db-feed{flex:1;overflow:hidden;margin-top:5px}" +
+      "body.fo-dash .db-cr{display:grid;grid-template-columns:40px 28px 1fr;gap:9px;align-items:center;padding:8px 14px;border-top:1px solid #f0ead9}" +
+      "body.fo-dash .db-cr .db-b{min-width:24px;height:24px;font-size:11px}" +
+      "body.fo-dash .db-cr b{font-family:Oswald,sans-serif;font-weight:600;font-size:11.5px;color:#8a7f6e}" +
+      "body.fo-dash .db-cr p{margin:0;font-size:12px;line-height:1.45;color:#3a3427}" +
       "body.fo-dash .db-cr .kph{font-family:Oswald,sans-serif;font-weight:600;font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:#C9571F}" +
-      "body.fo-dash .db-cr.latest{background:#FBF3E4;border-left:3px solid #C9571F;padding-left:13px;border-top:none}" +
+      "body.fo-dash .db-cr.latest{background:#FBF3E4;border-left:3px solid #C9571F;padding-left:11px;border-top:none}" +
       "body.fo-dash .db-cr.latest b{color:#14243A}" +
       "html body.fo-dash #fo-db-comm-more{margin:10px 16px 14px;padding:10px 0;font-family:Oswald,sans-serif;font-weight:500;font-size:11px;letter-spacing:1.8px;text-transform:uppercase;color:#4c4437 !important;background:#FFFEFC !important;border:1px solid #d9d0bc !important;border-radius:9px;cursor:pointer;box-shadow:none !important}" +
       "html body.fo-dash #fo-db-comm-more:hover{border-color:#C9571F !important;color:#C9571F !important}" +
@@ -2417,8 +2459,10 @@
       "html body.fo-dash #fo-db-act{background:#C9571F !important;color:#fff !important;font-family:Oswald,sans-serif;font-weight:600;font-size:12px;letter-spacing:1.8px;text-transform:uppercase;border:none !important;border-radius:9px;padding:12px 26px;cursor:pointer;box-shadow:none !important}" +
       "html body.fo-dash #fo-db-act:hover{filter:brightness(1.08)}" +
       "html body.fo-dash .fo-db-bar .fo-mst-next{position:static !important;width:auto !important;min-height:0 !important;padding:12px 26px !important;font-size:12px !important;letter-spacing:1.8px !important}" +
-      // the LIVE BALL oval docks into the field-map card, in flow with the page
-      "html body.fo-dash #fo-oval{position:absolute !important;left:max(24px,calc(50vw - 696px)) !important;right:auto !important;top:592px !important;bottom:auto !important;transform:none !important;width:calc((min(100vw,1440px) - 522px)/3) !important;max-width:none !important;min-width:0 !important;margin:0 !important;z-index:6;background:#FFFEFC !important;border:1px solid #e3dccb !important;border-radius:14px !important;backdrop-filter:none;box-shadow:0 2px 10px rgba(20,36,58,.05) !important;overflow:hidden}" +
+      // the LIVE BALL oval docks into the field-map card; its geometry is
+      // measured off the grid slot after each paint
+      "html body.fo-dash #fo-oval{position:absolute !important;right:auto !important;bottom:auto !important;transform:none !important;max-width:none !important;min-width:0 !important;margin:0 !important;z-index:6;background:#FFFEFC !important;border:1px solid #e3dccb !important;border-radius:14px !important;backdrop-filter:none;box-shadow:0 2px 10px rgba(20,36,58,.05) !important;overflow:hidden;display:flex;flex-direction:column}" +
+      "body.fo-dash #fo-oval .ov-svg{flex:1;min-height:0}" +
       "body.fo-dash.fo-thd #fo-oval{display:block !important}" +
       "body.fo-dash #fo-ovhd{color:#14243A;padding:13px 16px 4px}" +
       "body.fo-dash #fo-ovhd b{color:#14243A;letter-spacing:1.6px}" +
@@ -2427,14 +2471,33 @@
       "body.fo-dash #fo-oval .ov-note{color:#8a7f6e}" +
       "body.fo-dash #fo-oval .ov-snd{border-color:#d9d0bc;color:#8a7f6e}" +
       "body.fo-dash #fo-mst-talk{background:transparent;border-top:1px solid #eee7d9}" +
-      // the analysis drawer wears daylight here
-      "html body.fo-dash.fo-thd #page .ftp-match-shell{background:#FFFEFC !important;border:1px solid #e3dccb !important;box-shadow:0 24px 70px rgba(20,36,58,.25) !important;right:24px;top:66px;bottom:74px}" +
+      // the scorecard drawer wears daylight and takes the whole page
+      "html body.fo-dash.fo-thd #page .ftp-match-shell{background:#FFFEFC !important;border:1px solid #e3dccb !important;box-shadow:0 24px 70px rgba(20,36,58,.25) !important;left:max(24px,calc(50vw - 610px));right:max(24px,calc(50vw - 610px));top:64px;bottom:60px;width:auto}" +
       "html body.fo-dash.fo-thd #page .ftp-match-links a{background:#F1EEE6 !important;color:#4c4437 !important}" +
       "html body.fo-dash.fo-thd #page .ftp-match-links a.on{background:#C9571F !important;color:#fff !important}" +
       "#fo-thd-x{z-index:59}body.fo-dash.fo-thd #fo-thd-x{top:78px;right:38px;background:#FFFEFC;border-color:#d9d0bc;color:#14243A}" +
       // moment cut-ins keep their drama over the cream
       "body.fo-dash #fo-th-cut{z-index:70}" +
-      "@media(max-width:1180px){body.fo-dash .fo-db-players,body.fo-dash .fo-db-info{grid-template-columns:1fr 1fr}body.fo-dash .fo-db-field{display:none}html body.fo-dash #fo-oval{display:none !important}}";
+      // the full commentary page: the whole book, filtered like a scorer would
+      "#fo-commpage{position:fixed;inset:0;z-index:900;background:#F6F3EB;display:flex;flex-direction:column;font-family:Inter,system-ui,sans-serif;color:#14243A}" +
+      "#fo-commpage .cp-head{display:flex;align-items:center;gap:16px;padding:14px max(24px,calc(50vw - 560px));background:#FFFEFC;border-bottom:1px solid #e3dccb;flex-wrap:wrap}" +
+      "#fo-commpage .cp-head b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:17px}" +
+      "html body #fo-cp-back{font-family:Oswald,sans-serif;font-weight:500;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:#4c4437 !important;background:#F6F3EB !important;border:1px solid #d9d0bc !important;border-radius:9px;padding:9px 14px;cursor:pointer;box-shadow:none !important}" +
+      "html body #fo-cp-back:hover{border-color:#C9571F !important;color:#C9571F !important}" +
+      "#fo-commpage .cp-filts{margin-left:auto;display:flex;gap:6px}" +
+      "html body #fo-commpage .cp-filts button{font-family:Oswald,sans-serif;font-weight:500;font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:#5d5546 !important;background:#F6F3EB !important;border:1px solid #d9d0bc !important;border-radius:999px;padding:7px 14px;cursor:pointer;box-shadow:none !important}" +
+      "html body #fo-commpage .cp-filts button.on{background:#C9571F !important;border-color:#C9571F !important;color:#fff !important}" +
+      "#fo-commpage .cp-list{flex:1;overflow:auto}" +
+      "#fo-commpage .cp-in{max-width:1120px;margin:0 auto;padding:14px 24px 40px}" +
+      "#fo-commpage .db-cr{display:grid;grid-template-columns:46px 30px 1fr;gap:10px;align-items:center;padding:10px 14px;border-top:1px solid #eee7d9;background:#FFFEFC}" +
+      "#fo-commpage .db-cr:first-child{border-top:none}" +
+      "#fo-commpage .db-cr b{font-family:Oswald,sans-serif;font-weight:600;font-size:12px;color:#8a7f6e}" +
+      "#fo-commpage .db-cr p{margin:0;font-size:13.5px;line-height:1.55;color:#3a3427}" +
+      "#fo-commpage .cp-band{display:flex;align-items:center;gap:12px;background:#14243A;color:#c9d0da;border-radius:9px;padding:8px 16px;margin:10px 0;font:500 11px Oswald;letter-spacing:1.8px;text-transform:uppercase}" +
+      "#fo-commpage .cp-band.inn{background:#C9571F;color:#fff}" +
+      "#fo-commpage .cp-mile{background:#FBF3E4;border:1px solid #E8B96A;border-radius:9px;padding:9px 16px;margin:8px 0;font:600 12.5px Inter;color:#7a5a17}" +
+      "#fo-commpage .k{font-family:Oswald,sans-serif;font-weight:500;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#8a7f6e}" +
+      "@media(max-width:1180px){body.fo-dash .fo-db-players{grid-template-columns:1fr 1fr}body.fo-dash .fo-db-info{grid-template-columns:1fr 1fr}}";
     document.head.appendChild(s);
   }
   function foThCss() {
@@ -3099,22 +3162,30 @@
         try {
           var ovD = document.getElementById("fo-oval");
           if (ovD && ovD.parentNode !== el) el.appendChild(ovD);
+          // the painting and the oval take their card slots' exact geometry -
+          // measured, not guessed, so any width and any zoom line up
+          var place9 = function (node, slot) {
+            if (!node || !slot) return;
+            var r9 = slot.getBoundingClientRect(), b9 = el.getBoundingClientRect();
+            // inline-important: the theatre's own !important geometry must lose
+            node.style.setProperty("top", (r9.top - b9.top + el.scrollTop).toFixed(0) + "px", "important");
+            node.style.setProperty("left", (r9.left - b9.left + el.scrollLeft).toFixed(0) + "px", "important");
+            node.style.setProperty("width", r9.width.toFixed(0) + "px", "important");
+            node.style.setProperty("height", r9.height.toFixed(0) + "px", "important");
+          };
+          place9(el.querySelector(".fo-mst-scene"), el.querySelector(".fo-db-art"));
+          place9(ovD, el.querySelector(".fo-db-field"));
           var act9 = el.querySelector("#fo-db-act");
           if (act9) act9.addEventListener("click", function () {
             try {
               if (document.body.classList.contains("fo-thd")) { foThDrawer(false); return; }
-              if (typeof UI !== "undefined") { UI.matchTab = UI.matchTab === "Commentary" ? "Scorecard" : (UI.matchTab || "Scorecard"); document.body.setAttribute("data-thtab", UI.matchTab); }
+              if (typeof UI !== "undefined") { UI.matchTab = "Scorecard"; document.body.setAttribute("data-thtab", "Scorecard"); }
               foThDrawer(true); renderMatch();
             } catch (e9) {}
           });
           var vf9 = el.querySelector("#fo-db-comm-more");
-          if (vf9) vf9.addEventListener("click", function () {
-            try {
-              if (typeof UI !== "undefined") UI.matchTab = "Commentary";
-              document.body.setAttribute("data-thtab", "Commentary");
-              foThDrawer(true); renderMatch();
-            } catch (e8) {}
-          });
+          if (vf9) vf9.addEventListener("click", function () { foDashCommFull(); });
+          foDashCommFull(true);   // a commentary page left open follows the live ball
         } catch (eDp) {}
       }
       var nb = el.querySelector("#fo-mst-next");
