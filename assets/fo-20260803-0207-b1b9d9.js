@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0206-83c625";
+  var FO_BUILD = "20260803-0207-b1b9d9";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -39244,7 +39244,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     // page; the only block of colour is the navy broadcast bug, which is the
     // one thing on the page that IS a broadcast.
     s.textContent = [
-      "html body.ftpskin.fo-wt-on,html body.fo-wt-on{background:#FFFEFC !important}",
+      // the daylight theme's own cream (#F1EEE6), not clinical white - the
+      // page belongs to the same paper as every other room
+      "html body.ftpskin.fo-wt-on,html body.fo-wt-on{background:#F1EEE6 !important}",
       "html body.fo-wt-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
       "html body.fo-wt-on #page{padding:0 !important;margin:0 !important;background:transparent !important}",
       ".fo-wt{position:relative;min-height:70vh;color:#14202F}",

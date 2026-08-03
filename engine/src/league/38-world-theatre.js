@@ -593,7 +593,9 @@
     // page; the only block of colour is the navy broadcast bug, which is the
     // one thing on the page that IS a broadcast.
     s.textContent = [
-      "html body.ftpskin.fo-wt-on,html body.fo-wt-on{background:#FFFEFC !important}",
+      // the daylight theme's own cream (#F1EEE6), not clinical white - the
+      // page belongs to the same paper as every other room
+      "html body.ftpskin.fo-wt-on,html body.fo-wt-on{background:#F1EEE6 !important}",
       "html body.fo-wt-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
       "html body.fo-wt-on #page{padding:0 !important;margin:0 !important;background:transparent !important}",
       ".fo-wt{position:relative;min-height:70vh;color:#14202F}",
