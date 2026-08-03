@@ -10285,7 +10285,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-2113-870435";
+  var FO_BUILD = "20260803-2120-a5c002";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21800,8 +21800,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-s2-in{padding:60px 8px 30px}",
       ".fo-s2-hd{align-items:flex-start;flex-direction:column;gap:3px;margin-bottom:8px}",
       ".fo-s2-tag{margin-top:2px;font-size:13px}",
-      ".fo-s2-club{margin-top:4px}",
-      ".fo-s2-club .cr{width:42px;height:42px}.fo-s2-club b{font-size:17px}.fo-s2-club span{font-size:10px}",
+      ".fo-s2-club{margin-top:2px;margin-bottom:6px}",
+      // the crest SVG ships its own width/height attributes (px by 1.32 tall);
+      // pin it to the box or it overflows down into the Roster switch
+      ".fo-s2-club .cr{width:36px;height:47px;display:flex}",
+      ".fo-s2-club .cr svg{width:36px;height:47px}",
+      ".fo-s2-club b{font-size:17px}.fo-s2-club span{font-size:10px}",
       ".fo-s2-bandwrap{flex-direction:column;gap:8px;margin-bottom:10px}",
       ".fo-s2-vsw{background:transparent;border:none;border-radius:0;padding:0}",
       ".fo-s2-band{border-left:1px solid #e3dccb;border-radius:14px}",

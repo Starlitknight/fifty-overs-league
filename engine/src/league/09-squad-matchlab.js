@@ -1071,8 +1071,12 @@
       ".fo-s2-in{padding:60px 8px 30px}",
       ".fo-s2-hd{align-items:flex-start;flex-direction:column;gap:3px;margin-bottom:8px}",
       ".fo-s2-tag{margin-top:2px;font-size:13px}",
-      ".fo-s2-club{margin-top:4px}",
-      ".fo-s2-club .cr{width:42px;height:42px}.fo-s2-club b{font-size:17px}.fo-s2-club span{font-size:10px}",
+      ".fo-s2-club{margin-top:2px;margin-bottom:6px}",
+      // the crest SVG ships its own width/height attributes (px by 1.32 tall);
+      // pin it to the box or it overflows down into the Roster switch
+      ".fo-s2-club .cr{width:36px;height:47px;display:flex}",
+      ".fo-s2-club .cr svg{width:36px;height:47px}",
+      ".fo-s2-club b{font-size:17px}.fo-s2-club span{font-size:10px}",
       ".fo-s2-bandwrap{flex-direction:column;gap:8px;margin-bottom:10px}",
       ".fo-s2-vsw{background:transparent;border:none;border-radius:0;padding:0}",
       ".fo-s2-band{border-left:1px solid #e3dccb;border-radius:14px}",
