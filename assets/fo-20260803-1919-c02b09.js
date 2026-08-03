@@ -10285,7 +10285,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-1910-3bde9c";
+  var FO_BUILD = "20260803-1919-c02b09";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -21704,7 +21704,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-s2-seck{display:flex;align-items:center;justify-content:space-between;background:#14243A;color:#F6F3EB;border-radius:9px 9px 0 0;padding:7px 14px;font:700 10.5px Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase}",
       ".fo-s2-seck em{font-style:normal;color:#E8B96A}",
       // ---- rows ----
-      ".fo-s2-row{display:grid;grid-template-columns:44px minmax(150px,1.4fr) 92px 62px minmax(96px,.9fr) 108px 44px 26px;gap:10px;align-items:center;background:#FFFEFC;border:1px solid #eee7d9;border-top:none;padding:8px 14px;cursor:pointer}",
+      ".fo-s2-row{display:grid;grid-template-columns:44px minmax(150px,1.4fr) 92px 62px minmax(96px,.9fr) 128px 44px 26px;gap:10px;align-items:center;background:#FFFEFC;border:1px solid #eee7d9;border-top:none;padding:8px 14px;cursor:pointer}",
       ".fo-s2-row:hover{background:#FBF8F0}",
       ".fo-s2-row.open{background:#FBF6EA}",
       ".fo-s2-sec .fo-s2-row:last-of-type{border-radius:0 0 9px 9px}",
@@ -21720,6 +21720,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-s2-stars{white-space:nowrap;font-size:13px;letter-spacing:1px}",
       ".fo-s2-stars .f{color:#E8B96A}.fo-s2-stars .e{color:#e3dccb}",
       ".fo-s2-stars .h{background:linear-gradient(90deg,#E8B96A 50%,#e3dccb 50%);-webkit-background-clip:text;background-clip:text;color:transparent}",
+      // the engine's own ten-star markup (foOrdStarHTML), in squad clothes
+      ".fo-s2-st10{white-space:nowrap}",
+      ".fo-s2-st10 .st{text-decoration:none;font-size:11.5px;letter-spacing:.5px;white-space:nowrap}",
+      ".fo-s2-st10 .st em{font-style:normal;color:#e3dccb}",
+      ".fo-s2-st10 .st em.f{color:#E8B96A}",
+      ".fo-s2-st10 .st em.h{background:linear-gradient(90deg,#E8B96A 50%,#e3dccb 50%);-webkit-background-clip:text;background-clip:text;color:transparent}",
       ".fo-s2-ovr{font:800 19px Inter,sans-serif;text-align:right;font-variant-numeric:tabular-nums}",
       ".fo-s2-car{color:#b0a794;font-size:11px;text-align:center;transition:transform .15s ease}",
       ".fo-s2-row.open .fo-s2-car{transform:rotate(180deg)}",
@@ -21786,6 +21792,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-s2-row{grid-template-columns:40px minmax(110px,1.6fr) 46px 90px 22px;gap:8px;padding:8px 10px}",
       ".fo-s2-hand,.fo-s2-trait,.fo-s2-ovr{display:none}",
       ".fo-s2-stars{font-size:11px}",
+      ".fo-s2-st10 .st{font-size:8.5px;letter-spacing:.2px}",
       "}"
     ].join("\n");
     document.head.appendChild(s);
@@ -21818,6 +21825,24 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (cls === "bowl") return pick([["wicket", "WICKET TAKER"], ["economy", "MISER"], ["discipline", "METRONOME"], ["moveTurn", "SWING KING"], ["stamina", "WORKHORSE"]]);
       return pick([["vsPace", "PACE HUNTER"], ["vsSpin", "SPIN KILLER"], ["power", "POWER HITTER"], ["rotation", "STRIKE ROTATOR"], ["temperament", "ANCHOR"]]);
     } catch (e) { return ""; }
+  }
+  // THE STARS ARE HIS CRAFT'S STARS. The same ten-star read the scorecard,
+  // the orders room and the live theatre print (foOrdBatComp / foOrdBowlComp
+  // through foOrdStars): a batter wears his batting stars, a bowler his
+  // bowling, an all-rounder his stronger craft, a keeper his batting. One
+  // star language across the whole game - never a second scale to reconcile.
+  function foS2RoleStars(p, cls, ovr) {
+    try {
+      var sf = window.foStarsFor;
+      if (sf) {
+        var cb = sf.bat(p);
+        var cw = p.bowlType ? sf.bowl(p) : null;
+        var comp = cls === "bowl" ? (cw != null ? cw : cb)
+          : (cls === "ar" && cw != null) ? Math.max(cb, cw) : cb;
+        return "<span class='fo-s2-st10'>" + sf.html(sf.stars(comp)) + "</span>";
+      }
+    } catch (eSt) {}
+    return foS2Stars(ovr);
   }
   // the XI rail's style abbreviation: a bowler wears his arm and craft, a
   // batter his hand - RHB / LHB / RFM / LWS, straight off the man's record
@@ -22135,7 +22160,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           "<span class='fo-s2-hand'>" + (p.hand === "L" ? "Left Hand" : "Right Hand") + "</span>" +
           "<span class='fo-s2-age'><i>Age</i> " + (p.age | 0) + "</span>" +
           "<span class='fo-s2-trait'>" + E(foS2Trait(p)) + "</span>" +
-          foS2Stars(ovr) +
+          foS2RoleStars(p, rCls, ovr) +
           "<b class='fo-s2-ovr' style='color:" + foSqQCol(ovr) + "'>" + ovr + "</b>" +
           "<span class='fo-s2-car'>&#9660;</span>" +
           "</div>" + xd;
