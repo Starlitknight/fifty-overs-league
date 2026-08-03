@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0047-339ee5";
+  var FO_BUILD = "20260803-0051-d77dc3";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -19463,7 +19463,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-ord-xis .xcw{display:flex;align-items:stretch;gap:5px;min-width:0}" +
       ".fo-ord-xis .xcw>.mv{flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;gap:3px;touch-action:manipulation}" +
       "html body #page .fo-ord-xis .xcw>button.xc{flex:1 1 auto;min-width:0}" +
-      "html body.ftpskin #page .fo-ord-xis button.mvb,html body #page .fo-ord-xis button.mvb{display:flex!important;align-items:center;justify-content:center;width:36px;min-width:0;flex:1 1 auto;margin:0!important;padding:0!important;border:1px solid rgba(28,36,51,.12)!important;border-radius:8px;background:#EEF2F7!important;color:#41577a!important;font-size:10px;line-height:1;cursor:pointer;box-shadow:none!important;-webkit-user-select:none;user-select:none;transition:background .12s,color .12s}" +
+      "html body.ftpskin #page .fo-ord-xis button.mvb,html body #page .fo-ord-xis button.mvb{display:flex!important;align-items:center;justify-content:center;width:34px;min-width:0;min-height:20px!important;height:auto;flex:1 1 0;margin:0!important;padding:0!important;border:1px solid rgba(28,36,51,.12)!important;border-radius:7px;background:#EEF2F7!important;color:#41577a!important;font-size:10px;line-height:1;cursor:pointer;box-shadow:none!important;-webkit-user-select:none;user-select:none;transition:background .12s,color .12s}" +
       "html body #page .fo-ord-xis button.mvb:hover{background:#DCE5F0!important;border-color:#B04A2C!important;color:#B04A2C!important}" +
       "html body #page .fo-ord-xis button.mvb:active{background:#B04A2C!important;color:#FFFEFC!important}" +
       "html body #page .fo-ord-xis button.mvb.off{opacity:.25;pointer-events:none}" +
