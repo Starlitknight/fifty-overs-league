@@ -369,8 +369,17 @@
   // everywhere else in the world; it is the club's identity here too.
   function tieHTML(t, mySlot) {
     var mine = t.homeSlot === mySlot || t.awaySlot === mySlot;
+    // a colts side is its senior club's boys: the name is a door to the club
+    var nat9 = "";
+    try {
+      var c9 = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+      nat9 = (c9 && c9.country) || "";
+    } catch (e9) {}
     var side = function (nm, slot, isWinner) {
-      return "<b class='" + (isWinner ? "won" : "out") + (slot === mySlot ? " me" : "") + "'>" + E(nm) + "</b>";
+      var b9 = "<b class='" + (isWinner ? "won" : "out") + (slot === mySlot ? " me" : "") + "'>" + E(nm) + "</b>";
+      return nat9 && slot != null
+        ? "<a class='fo-ac-tl' href='#/team?c=" + encodeURIComponent(nat9) + "&s=" + (slot | 0) + "'>" + b9 + "</a>"
+        : b9;
     };
     var ff = t.forfeit
       ? "<i class='fo-ac-ff' title='" + E(t.text || "") + "'>forfeit</i>" : "";
@@ -505,6 +514,8 @@
       "html body #page .fo-ac-tie{background:#FBF8F2;border:1px solid rgba(20,28,40,.10);border-radius:9px;padding:7px 9px;margin:0 0 6px;font:500 12px/1.5 Inter,sans-serif;position:relative}",
       "html body #page .fo-ac-tie.mine{background:#FFF6DA;border-color:rgba(200,84,47,.32)}",
       "html body #page .fo-ac-tie b{display:block;color:#141C28}",
+      "html body #page .fo-ac-tie a.fo-ac-tl{text-decoration:none;color:inherit}",
+      "html body #page .fo-ac-tie a.fo-ac-tl:hover b{color:#C9571F}",
       "html body #page .fo-ac-tie b.out{color:#9A9187;text-decoration:line-through;text-decoration-thickness:1px}",
       "html body #page .fo-ac-tie b.won{font-weight:700}",
       "html body #page .fo-ac-tie b.me{color:#C8542F}",

@@ -918,11 +918,28 @@
   function foMrSummary(rec, f, O, tabBar) {
     var hd = foMrHeadline(f), turn = foMrTurning(f);
     var a = f.first, b = f.second;
+    // every club named on the hero is a door: the served league body knows
+    // each club's seat, so a name resolves to its team page by lookup
+    var slotOf = function (nm) {
+      try {
+        var lg9 = O.nat && window.__foWorldLg && window.__foWorldLg.get(O.nat);
+        if (!lg9) return null;
+        var hit9 = null;
+        ((lg9.table || []).concat(lg9.table2 || [])).forEach(function (r9) { if (r9.name === nm) hit9 = r9.slot; });
+        return hit9;
+      } catch (e9) { return null; }
+    };
+    var teamL = function (nm) {
+      var s9 = slotOf(nm);
+      return s9 != null
+        ? "<a class='fo-ms-tml' href='#/team?c=" + encodeURIComponent(O.nat) + "&s=" + (s9 | 0) + "'>" + E(nm) + "</a>"
+        : E(nm);
+    };
     var sideHTML = function (side, right) {
       if (!side) return "<div></div>";
       return "<div class='fo-ms-side" + (right ? " right" : "") + "'>" +
         (right ? "" : "<span class='cr'>" + foMrSumCrest(side.team) + "</span>") +
-        "<div><div class='tn'>" + E(side.team) + "</div>" +
+        "<div><div class='tn'>" + teamL(side.team) + "</div>" +
         "<div class='sc'>" + side.runs + (side.allOut ? "" : "/" + side.wkts) + "</div>" +
         "<div class='ov'>" + (side.allOut ? "ALL OUT &middot; " : "") + side.overs + " OVERS</div></div>" +
         (right ? "<span class='cr'>" + foMrSumCrest(side.team) + "</span>" : "") + "</div>";
@@ -1420,6 +1437,8 @@
       // the sibling tabs live in the same daylight: their bodies sit on white
       // cards under the navy hero, nothing routes back to the old newspaper
       ".fo-mr--sum .fo-ms-tabbody{margin-top:2px}",
+      "html body #page a.fo-ms-tml{color:inherit !important;text-decoration:none}",
+      "html body #page a.fo-ms-tml:hover{color:#E8B96A !important;text-decoration:underline}",
       ".fo-mr--sum .fo-ms-tabbody .fo-mr-panel{background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);padding:16px 18px}",
       ".fo-mr--sum .fo-ms-tabbody .fo-mr-row2{margin-bottom:14px}",
       ".fo-mr--sum .fo-ms-tabbody .fo-mr-turn,.fo-mr--sum .fo-ms-tabbody .fo-mr-mom{background:#14243A;border:none;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.12)}",

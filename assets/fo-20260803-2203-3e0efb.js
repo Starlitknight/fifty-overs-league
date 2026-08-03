@@ -10285,7 +10285,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-2147-a2edf0";
+  var FO_BUILD = "20260803-2203-3e0efb";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -32991,11 +32991,28 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function foMrSummary(rec, f, O, tabBar) {
     var hd = foMrHeadline(f), turn = foMrTurning(f);
     var a = f.first, b = f.second;
+    // every club named on the hero is a door: the served league body knows
+    // each club's seat, so a name resolves to its team page by lookup
+    var slotOf = function (nm) {
+      try {
+        var lg9 = O.nat && window.__foWorldLg && window.__foWorldLg.get(O.nat);
+        if (!lg9) return null;
+        var hit9 = null;
+        ((lg9.table || []).concat(lg9.table2 || [])).forEach(function (r9) { if (r9.name === nm) hit9 = r9.slot; });
+        return hit9;
+      } catch (e9) { return null; }
+    };
+    var teamL = function (nm) {
+      var s9 = slotOf(nm);
+      return s9 != null
+        ? "<a class='fo-ms-tml' href='#/team?c=" + encodeURIComponent(O.nat) + "&s=" + (s9 | 0) + "'>" + E(nm) + "</a>"
+        : E(nm);
+    };
     var sideHTML = function (side, right) {
       if (!side) return "<div></div>";
       return "<div class='fo-ms-side" + (right ? " right" : "") + "'>" +
         (right ? "" : "<span class='cr'>" + foMrSumCrest(side.team) + "</span>") +
-        "<div><div class='tn'>" + E(side.team) + "</div>" +
+        "<div><div class='tn'>" + teamL(side.team) + "</div>" +
         "<div class='sc'>" + side.runs + (side.allOut ? "" : "/" + side.wkts) + "</div>" +
         "<div class='ov'>" + (side.allOut ? "ALL OUT &middot; " : "") + side.overs + " OVERS</div></div>" +
         (right ? "<span class='cr'>" + foMrSumCrest(side.team) + "</span>" : "") + "</div>";
@@ -33493,6 +33510,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // the sibling tabs live in the same daylight: their bodies sit on white
       // cards under the navy hero, nothing routes back to the old newspaper
       ".fo-mr--sum .fo-ms-tabbody{margin-top:2px}",
+      "html body #page a.fo-ms-tml{color:inherit !important;text-decoration:none}",
+      "html body #page a.fo-ms-tml:hover{color:#E8B96A !important;text-decoration:underline}",
       ".fo-mr--sum .fo-ms-tabbody .fo-mr-panel{background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);padding:16px 18px}",
       ".fo-mr--sum .fo-ms-tabbody .fo-mr-row2{margin-bottom:14px}",
       ".fo-mr--sum .fo-ms-tabbody .fo-mr-turn,.fo-mr--sum .fo-ms-tabbody .fo-mr-mom{background:#14243A;border:none;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.12)}",
@@ -44572,8 +44591,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // everywhere else in the world; it is the club's identity here too.
   function tieHTML(t, mySlot) {
     var mine = t.homeSlot === mySlot || t.awaySlot === mySlot;
+    // a colts side is its senior club's boys: the name is a door to the club
+    var nat9 = "";
+    try {
+      var c9 = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+      nat9 = (c9 && c9.country) || "";
+    } catch (e9) {}
     var side = function (nm, slot, isWinner) {
-      return "<b class='" + (isWinner ? "won" : "out") + (slot === mySlot ? " me" : "") + "'>" + E(nm) + "</b>";
+      var b9 = "<b class='" + (isWinner ? "won" : "out") + (slot === mySlot ? " me" : "") + "'>" + E(nm) + "</b>";
+      return nat9 && slot != null
+        ? "<a class='fo-ac-tl' href='#/team?c=" + encodeURIComponent(nat9) + "&s=" + (slot | 0) + "'>" + b9 + "</a>"
+        : b9;
     };
     var ff = t.forfeit
       ? "<i class='fo-ac-ff' title='" + E(t.text || "") + "'>forfeit</i>" : "";
@@ -44708,6 +44736,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-ac-tie{background:#FBF8F2;border:1px solid rgba(20,28,40,.10);border-radius:9px;padding:7px 9px;margin:0 0 6px;font:500 12px/1.5 Inter,sans-serif;position:relative}",
       "html body #page .fo-ac-tie.mine{background:#FFF6DA;border-color:rgba(200,84,47,.32)}",
       "html body #page .fo-ac-tie b{display:block;color:#141C28}",
+      "html body #page .fo-ac-tie a.fo-ac-tl{text-decoration:none;color:inherit}",
+      "html body #page .fo-ac-tie a.fo-ac-tl:hover b{color:#C9571F}",
       "html body #page .fo-ac-tie b.out{color:#9A9187;text-decoration:line-through;text-decoration-thickness:1px}",
       "html body #page .fo-ac-tie b.won{font-weight:700}",
       "html body #page .fo-ac-tie b.me{color:#C8542F}",
