@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0217-c50c9f";
+  var FO_BUILD = "20260803-0220-0220df";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -20513,6 +20513,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function foSqGrid(list, sv, capt, xiIx) {
     var ctx = { xiIx: xiIx };
     var cols = FO_SQ_COLS;
+    // the role filter: a keeper (or any discipline) can be read on his own
+    var role = ["bat", "ar", "wk", "bowl"].indexOf(sv.role) >= 0 ? sv.role : "all";
+    if (role !== "all") list = list.filter(function (p) { return foSqClass(p) === role; });
     var col = foSqCol(sv.sortK) || foSqCol("ovr");
     var dir = sv.sortDir === 1 ? 1 : -1;
     var rows = list.slice().sort(function (a, b) {
@@ -20579,10 +20582,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var controls = "<div class='fo-sqg-ctl'><label class='fo-sqg-pick'><span>Show</span><select data-show>" +
       [["sen", "Seniors"], ["yth", "Youth"], ["all", "Everyone"]].map(function (o) {
         return "<option value='" + o[0] + "'" + (o[0] === who ? " selected" : "") + ">" + E(o[1]) + "</option>";
+      }).join("") + "</select></label>" +
+      "<label class='fo-sqg-pick'><span>Role</span><select data-role>" +
+      [["all", "All roles"], ["bat", "Batsmen"], ["ar", "All-rounders"], ["wk", "Wicketkeepers"], ["bowl", "Bowlers"]].map(function (o) {
+        return "<option value='" + o[0] + "'" + (o[0] === role ? " selected" : "") + ">" + E(o[1]) + "</option>";
       }).join("") + "</select></label></div>";
 
     var cap = rows.length ? ""
-      : (who === "yth" ? "No youth players at the club yet." : "Nobody to show.");
+      : (role !== "all" ? "Nobody in that role here. Try another Role or Show setting."
+        : who === "yth" ? "No youth players at the club yet." : "Nobody to show.");
 
     return "<div class='fo-sqg-outer'>" + controls +
       (cap ? "<p class='fo-sqg-cap'>" + cap + "</p>" : "") +
@@ -21194,6 +21202,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       });
       page.querySelectorAll("select[data-show]").forEach(function (sel2) {
         sel2.addEventListener("change", function () { sv.who = sel2.value; repaintInPlace(); });
+      });
+      page.querySelectorAll("select[data-role]").forEach(function (sel3) {
+        sel3.addEventListener("change", function () { sv.role = sel3.value; repaintInPlace(); });
       });
       // every row is a door to the man's full profile
       var openMan = function (n) { if (n) location.hash = "#/player?n=" + encodeURIComponent(n); };
