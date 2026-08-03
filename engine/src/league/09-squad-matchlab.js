@@ -925,9 +925,197 @@
     document.head.appendChild(s);
   }
 
+  // ==== SQUAD v2: the detailed sheet (user-supplied mockup) ==================
+  // A denser, more informative roster: club identity in the masthead, a stat
+  // band, search/sort/role tools, role-grouped rows with a trait chip, stars
+  // and the overall, and a right rail that manages the Selected XI directly.
+  // EVERY figure on the page is real game state: the players are the squad
+  // the umpire fields, the XI is App.orders.xi (the sheet the engine reads),
+  // wages/ages/nationalities come off the men themselves.
+  function foS2Css() {
+    if (document.getElementById("fo-s2-css")) return;
+    var s = document.createElement("style"); s.id = "fo-s2-css";
+    s.textContent = [
+      "#page .fo-s2-in{max-width:1560px;margin:0 auto;padding:74px 22px 40px;font-family:Inter,-apple-system,'Segoe UI',sans-serif;color:#14243A}",
+      ".fo-s2-hd{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:16px}",
+      ".fo-s2-hd h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-style:italic;font-size:clamp(38px,4.6vw,58px);line-height:.95;margin:0;color:#14243A}",
+      ".fo-s2-tag{font-family:Georgia,serif;font-style:italic;font-size:15px;color:#C9571F;margin-top:6px}",
+      ".fo-s2-club{display:flex;align-items:center;gap:12px}",
+      ".fo-s2-club .cr{width:52px;height:52px}",
+      ".fo-s2-club b{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:21px;color:#14243A}",
+      ".fo-s2-club span{font:500 11.5px Inter,sans-serif;color:#8a8272}",
+      // ---- the stat band ----
+      ".fo-s2-band{display:flex;align-items:stretch;background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);margin-bottom:14px;overflow:hidden}",
+      ".fo-s2-vsw{display:flex;align-items:center;gap:4px;padding:12px 16px;border-right:1px solid #eee7d9;background:#F6F3EB;border-radius:14px 0 0 14px}",
+      ".fo-s2-vb{font:700 10.5px Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;border:1px solid #d9d0bc;background:#FFFEFC;color:#6d6455;border-radius:999px;padding:8px 14px;cursor:pointer}",
+      ".fo-s2-vb.on{background:#C9571F;border-color:#C9571F;color:#fff}",
+      "html body.ftpskin button.fo-s2-vb{background:#FFFEFC !important;color:#6d6455 !important;border-color:#d9d0bc !important}",
+      "html body.ftpskin button.fo-s2-vb.on{background:#C9571F !important;color:#fff !important;border-color:#C9571F !important}",
+      ".fo-s2-cell{flex:1;padding:11px 18px;border-right:1px solid #eee7d9;min-width:0}",
+      ".fo-s2-cell:last-child{border-right:none}",
+      ".fo-s2-cell span{display:block;font:600 9.5px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#8a8272;margin-bottom:3px;white-space:nowrap}",
+      ".fo-s2-cell b{font:700 21px Inter,sans-serif;color:#14243A;font-variant-numeric:tabular-nums;white-space:nowrap}",
+      ".fo-s2-cell b i{font-style:normal;font-size:13px;color:#8a8272;font-weight:600}",
+      ".fo-s2-cell.wage b{color:#C9571F}",
+      ".fo-s2-cell.xi b{color:#177A57}",
+      // ---- main columns ----
+      ".fo-s2-main{display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:16px;align-items:start}",
+      // ---- tools ----
+      ".fo-s2-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#FFFEFC;border:1px solid #e3dccb;border-radius:12px;padding:10px 12px;margin-bottom:10px}",
+      ".fo-s2-q{flex:1 1 170px;min-width:150px;border:1px solid #d9d0bc;border-radius:9px;background:#FBF9F3;padding:8px 12px;font:500 12.5px Inter,sans-serif;color:#14243A}",
+      ".fo-s2-q:focus{outline:none;border-color:#C9571F}",
+      ".fo-s2-sortw{font:500 12px Inter,sans-serif;color:#6d6455;display:flex;align-items:center;gap:6px}",
+      ".fo-s2-sortw select{font:600 12px Inter,sans-serif;color:#14243A;border:1px solid #d9d0bc;border-radius:8px;background:#FFFEFC;padding:7px 8px}",
+      ".fo-s2-chip{font:700 11px Inter,sans-serif;border:1px solid #d9d0bc;background:#FFFEFC;color:#4c4437;border-radius:999px;padding:7px 13px;cursor:pointer}",
+      ".fo-s2-chip.on{background:#14243A;border-color:#14243A;color:#fff}",
+      "html body.ftpskin button.fo-s2-chip{background:#FFFEFC !important;color:#4c4437 !important;border-color:#d9d0bc !important}",
+      "html body.ftpskin button.fo-s2-chip.on{background:#14243A !important;color:#fff !important;border-color:#14243A !important}",
+      // ---- role sections ----
+      ".fo-s2-sec{margin-bottom:12px}",
+      ".fo-s2-seck{display:flex;align-items:center;justify-content:space-between;background:#14243A;color:#F6F3EB;border-radius:9px 9px 0 0;padding:7px 14px;font:700 10.5px Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase}",
+      ".fo-s2-seck em{font-style:normal;color:#E8B96A}",
+      // ---- rows ----
+      ".fo-s2-row{display:grid;grid-template-columns:44px minmax(150px,1.4fr) 92px 62px minmax(96px,.9fr) 108px 44px 26px;gap:10px;align-items:center;background:#FFFEFC;border:1px solid #eee7d9;border-top:none;padding:8px 14px;cursor:pointer}",
+      ".fo-s2-row:hover{background:#FBF8F0}",
+      ".fo-s2-row.open{background:#FBF6EA}",
+      ".fo-s2-sec .fo-s2-row:last-of-type{border-radius:0 0 9px 9px}",
+      ".fo-s2-pic{position:relative;width:38px;height:38px}",
+      ".fo-s2-pic img.face{width:38px;height:38px;border-radius:50%;object-fit:cover;object-position:top;background:#e8e2d4;border:1.5px solid #d9d0bc}",
+      ".fo-s2-flag{position:absolute;left:-5px;bottom:-3px;width:16px;height:12px;border-radius:2px;overflow:hidden;box-shadow:0 1px 3px rgba(0,0,0,.3)}",
+      ".fo-s2-flag img{width:100%;height:100%;object-fit:cover;display:block}",
+      ".fo-s2-id b{display:block;font:700 13.5px Inter,sans-serif;color:#14243A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-s2-id span{display:block;font:500 11px Inter,sans-serif;color:#8a8272;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-s2-hand,.fo-s2-age{font:500 12px Inter,sans-serif;color:#4c4437;white-space:nowrap}",
+      ".fo-s2-age i{font-style:normal;color:#8a8272}",
+      ".fo-s2-trait{justify-self:start;font:700 9px Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;background:#F8ECD4;color:#8a6a1f;border:1px solid #e8d5a8;border-radius:6px;padding:4px 8px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-s2-stars{white-space:nowrap;font-size:13px;letter-spacing:1px}",
+      ".fo-s2-stars .f{color:#E8B96A}.fo-s2-stars .e{color:#e3dccb}",
+      ".fo-s2-stars .h{background:linear-gradient(90deg,#E8B96A 50%,#e3dccb 50%);-webkit-background-clip:text;background-clip:text;color:transparent}",
+      ".fo-s2-ovr{font:800 19px Inter,sans-serif;text-align:right;font-variant-numeric:tabular-nums}",
+      ".fo-s2-car{color:#b0a794;font-size:11px;text-align:center;transition:transform .15s ease}",
+      ".fo-s2-row.open .fo-s2-car{transform:rotate(180deg)}",
+      ".fo-s2-xd{border:1px solid #eee7d9;border-top:none;background:#FBFAF7}",
+      ".fo-s2-xd .fo-sq-detail{border:none;margin:0;border-radius:0}",
+      ".fo-s2-acts{display:flex;gap:8px;flex-wrap:wrap;padding:0 16px 12px}",
+      ".fo-s2-act{font:700 11.5px Inter,sans-serif;border:1px solid #d9d0bc;background:#FFFEFC;color:#14243A;border-radius:999px;padding:7px 14px;cursor:pointer}",
+      ".fo-s2-act.solid{background:#C9571F;border-color:#C9571F;color:#fff}",
+      "html body.ftpskin button.fo-s2-act{background:#FFFEFC !important;color:#14243A !important;border-color:#d9d0bc !important}",
+      "html body.ftpskin button.fo-s2-act.solid{background:#C9571F !important;color:#fff !important;border-color:#C9571F !important}",
+      // ---- the rail ----
+      ".fo-s2-rail{display:flex;flex-direction:column;gap:12px;position:sticky;top:66px}",
+      ".fo-s2-card{background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);overflow:hidden}",
+      ".fo-s2-ck{display:flex;align-items:center;justify-content:space-between;padding:11px 15px 9px;font:700 11px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#14243A;border-bottom:1px solid #eee7d9}",
+      ".fo-s2-ck em{font-style:normal;color:#177A57;font-variant-numeric:tabular-nums}",
+      ".fo-s2-ck a{font:600 10px Inter,sans-serif;letter-spacing:0;text-transform:none;color:#C9571F !important;text-decoration:none;cursor:pointer}",
+      ".fo-s2-xirow{display:grid;grid-template-columns:16px 22px minmax(0,1fr) 40px 30px 22px;gap:7px;align-items:center;padding:6px 12px;border-bottom:1px solid #f3eee1;font:600 12.5px Inter,sans-serif;color:#14243A}",
+      ".fo-s2-xirow:last-of-type{border-bottom:none}",
+      ".fo-s2-xirow.dragover{background:#FBF0D8}",
+      ".fo-s2-xirow .grip{color:#c9c1ae;cursor:grab;font-size:11px;letter-spacing:-1px}",
+      ".fo-s2-xirow .no{font:700 11.5px Inter,sans-serif;color:#8a8272;text-align:right;font-variant-numeric:tabular-nums}",
+      ".fo-s2-xirow .nm{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-s2-xirow .ab{font:600 10.5px Inter,sans-serif;color:#8a8272;text-align:right}",
+      ".fo-s2-xirow .bdg{text-align:center}",
+      ".fo-s2-xirow .bdg .crown{color:#D9A21B;font-size:13px}",
+      ".fo-s2-xirow .bdg .wk{display:inline-block;font:800 8.5px Inter,sans-serif;background:#E4EEF6;color:#1f4e6b;border:1px solid #bcd3e4;border-radius:5px;padding:2px 4px}",
+      ".fo-s2-xirow .mv{display:flex;flex-direction:column;gap:0}",
+      ".fo-s2-xirow .mv button{border:none;background:none;color:#b0a794;font-size:8.5px;line-height:1.1;cursor:pointer;padding:0 3px}",
+      ".fo-s2-xirow .mv button:hover{color:#C9571F}",
+      "html body.ftpskin .fo-s2-xirow .mv button{background:none !important;color:#b0a794 !important;border:none !important;box-shadow:none !important;padding:0 3px !important}",
+      // role balance
+      ".fo-s2-rb{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;padding:11px 15px 13px}",
+      ".fo-s2-rb>div{text-align:left}",
+      ".fo-s2-rb span{display:block;font:700 8.5px Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8a8272;white-space:nowrap}",
+      ".fo-s2-rb b{display:block;font:800 19px Inter,sans-serif;color:#14243A;margin:2px 0 4px}",
+      ".fo-s2-rb i{display:block;height:4px;border-radius:2px}",
+      // composition + gauges
+      ".fo-s2-duo{display:grid;grid-template-columns:1fr 1fr;gap:12px}",
+      ".fo-s2-kv{display:flex;align-items:center;justify-content:space-between;padding:6px 15px;font:500 12px Inter,sans-serif;color:#4c4437;border-bottom:1px solid #f3eee1}",
+      ".fo-s2-kv:last-child{border-bottom:none}",
+      ".fo-s2-kv b{font:700 13px Inter,sans-serif;color:#14243A;font-variant-numeric:tabular-nums}",
+      ".fo-s2-kv .fl{width:17px;height:12px;border-radius:2px;overflow:hidden;display:inline-block;vertical-align:-2px;margin-right:6px}",
+      ".fo-s2-kv .fl img{width:100%;height:100%;object-fit:cover;display:block}",
+      ".fo-s2-gauge{display:flex;align-items:center;gap:11px;padding:11px 15px}",
+      ".fo-s2-donut{position:relative;width:56px;height:56px;flex:0 0 56px}",
+      ".fo-s2-donut b{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font:800 15px Inter,sans-serif;color:#14243A}",
+      ".fo-s2-gauge span{font:600 11px Inter,sans-serif;color:#4c4437;line-height:1.4}",
+      ".fo-s2-spark{display:flex;align-items:flex-end;gap:2px;height:30px;flex:0 0 auto}",
+      ".fo-s2-spark i{display:block;width:5px;border-radius:2px 2px 0 0;background:#177A57;min-height:3px}",
+      ".fo-s2-spark i.lo{background:#C0392E}.fo-s2-spark i.md{background:#D9A21B}",
+      // buttons
+      ".fo-s2-save{width:100%;font:700 13px Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;background:#C9571F;color:#fff;border:none;border-radius:11px;padding:14px;cursor:pointer}",
+      ".fo-s2-save:hover{background:#A64426}",
+      ".fo-s2-sugg{width:100%;font:700 11.5px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;background:#FFFEFC;color:#14243A;border:1px solid #d9d0bc;border-radius:11px;padding:12px;cursor:pointer}",
+      ".fo-s2-sugg:hover{border-color:#C9571F;color:#C9571F}",
+      "html body.ftpskin button.fo-s2-save{background:#C9571F !important;color:#fff !important;border:none !important}",
+      "html body.ftpskin button.fo-s2-sugg{background:#FFFEFC !important;color:#14243A !important;border-color:#d9d0bc !important}",
+      // ---- responsive ----
+      "@media(max-width:1100px){.fo-s2-main{grid-template-columns:1fr}.fo-s2-rail{position:static}}",
+      "@media(max-width:820px){",
+      ".fo-s2-in{padding:66px 10px 30px}",
+      ".fo-s2-band{flex-wrap:wrap}.fo-s2-vsw{width:100%;border-right:none;border-bottom:1px solid #eee7d9;border-radius:14px 14px 0 0}",
+      ".fo-s2-cell{flex:1 1 33%;padding:9px 12px}.fo-s2-cell b{font-size:16px}",
+      ".fo-s2-row{grid-template-columns:40px minmax(110px,1.6fr) 46px 90px 22px;gap:8px;padding:8px 10px}",
+      ".fo-s2-hand,.fo-s2-trait,.fo-s2-ovr{display:none}",
+      ".fo-s2-stars{font-size:11px}",
+      "}"
+    ].join("\n");
+    document.head.appendChild(s);
+  }
+  // half-precision stars for a 1-99 overall
+  function foS2Stars(ovr) {
+    var v = Math.max(0.5, Math.min(5, Math.round(ovr / 10) / 2)), out = "";
+    for (var i = 1; i <= 5; i++) {
+      out += i <= v ? "<span class='f'>&#9733;</span>"
+        : (i - 0.5 === v ? "<span class='h'>&#9733;</span>" : "<span class='e'>&#9733;</span>");
+    }
+    return "<span class='fo-s2-stars'>" + out + "</span>";
+  }
+  // the trait chip: his first coached talent, else the strongest thing the
+  // engine knows about him - a label derived from his real skills, not invented
+  function foS2Trait(p) {
+    try {
+      var tals = p.talents || [];
+      if (tals.length) {
+        var nm = (typeof TALN !== "undefined" && TALN[tals[0]]) || String(tals[0]).replace(/([A-Z])/g, " $1");
+        return nm.toUpperCase();
+      }
+      var sk = (p.skills || p), cls = foSqClass(p);
+      var pick = function (pairs) {
+        var best = pairs[0];
+        pairs.forEach(function (x) { if ((sk[x[0]] || 0) > (sk[best[0]] || 0)) best = x; });
+        return best[1];
+      };
+      if (cls === "wk") return "SAFE HANDS";
+      if (cls === "bowl") return pick([["wicket", "WICKET TAKER"], ["economy", "MISER"], ["discipline", "METRONOME"], ["moveTurn", "SWING KING"], ["stamina", "WORKHORSE"]]);
+      return pick([["vsPace", "PACE HUNTER"], ["vsSpin", "SPIN KILLER"], ["power", "POWER HITTER"], ["rotation", "STRIKE ROTATOR"], ["temperament", "ANCHOR"]]);
+    } catch (e) { return ""; }
+  }
+  // the XI rail's style abbreviation: a bowler wears his arm and craft, a
+  // batter his hand - RHB / LHB / RFM / LWS, straight off the man's record
+  function foS2Abbr(p) {
+    if (p.bowlType) {
+      var L = p.hand === "L";
+      // the scorebook's own abbreviations: RFM, LM, OB, SLA, LB, SLC
+      if (p.bowlType === "fingerSpin" || p.bowlType === "offSpin") return L ? "SLA" : "OB";
+      if (p.bowlType === "wristSpin") return L ? "SLC" : "LB";
+      var t = { fast: "F", fastMedium: "FM", medium: "M" }[p.bowlType] || "M";
+      return (L ? "L" : "R") + t;
+    }
+    return p.hand === "L" ? "LHB" : "RHB";
+  }
+  function foS2Money(n) { return "$" + Math.round(n || 0).toLocaleString(); }
+  function foS2Donut(pct, col) {
+    var C = 2 * Math.PI * 23;
+    return "<div class='fo-s2-donut'><svg width='56' height='56' viewBox='0 0 56 56'>" +
+      "<circle cx='28' cy='28' r='23' fill='none' stroke='#efe9da' stroke-width='7'></circle>" +
+      "<circle cx='28' cy='28' r='23' fill='none' stroke='" + col + "' stroke-width='7' stroke-linecap='round'" +
+      " stroke-dasharray='" + (C * pct / 100).toFixed(1) + " " + C.toFixed(1) + "' transform='rotate(-90 28 28)'></circle>" +
+      "</svg><b>" + pct + "</b></div>";
+  }
+
   window.pgSquad = function () {
     try {
-      foSqxCss();
+      foSqxCss(); foS2Css();
       var t = userTeam();
       (t.players || []).forEach(foEnsureTraining); (t.youth || []).forEach(foEnsureTraining);
       window.squadView = window.squadView || {};
@@ -1116,54 +1304,198 @@
                       : "<div class='fo-sqx-bempty'>Everyone at the club is in the XI.</div>") +
         "</div>";
 
-      // the roster: the club read as a clean daylight list - art chip, name,
-      // role, form and the overall number; every row a door to the man
+      // ==== SQUAD v2 roster (the user's mockup, on real state) ==============
       var prettyType = function (t) {
         if (!t) return "";
         return String(t).replace(/([A-Z])/g, " $1").toLowerCase().replace(/^./, function (c) { return c.toUpperCase(); });
       };
-      var rosterRow = function (p) {
+      sv.q = sv.q || ""; sv.roleF = sv.roleF || "all";
+      sv.s2sort = sv.s2sort || "ovr-";
+      var kpr = null;
+      try { kpr = (App.orders && App.orders.keeper) || null; } catch (eK) {}
+      if (!kpr || !xiSet[kpr]) kpr = (xi.filter(function (p) { return p.keeper; })[0] || {}).name || null;
+
+      // the identity in the masthead: crest, name, the world's own facts
+      var crest = "";
+      try { crest = "<span class='cr'>" + (window.foClubCrest ? foClubCrest(t.name, 52) : "") + "</span>"; } catch (eCr) {}
+      var estBits = [];
+      try {
+        var P9 = window.__foPlanet;
+        if (P9 && P9.EPOCH) estBits.push("Est. " + new Date(P9.EPOCH).getUTCFullYear());
+      } catch (eEs) {}
+      try {
+        var cl9 = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+        if (cl9 && cl9.country != null && cl9.slot != null)
+          estBits.push("Club ID: " + String(cl9.country).toUpperCase() + "-" + ("0" + (cl9.slot | 0)).slice(-2));
+      } catch (eCl) {}
+      estBits.push("Season " + (App.seasonNo || 1));
+
+      // the band's figures, straight off the men
+      var wageSum = seniors.reduce(function (s2, p) { return s2 + (+p.wage || 0); }, 0);
+      var ageAvg = seniors.length ? (seniors.reduce(function (s2, p) { return s2 + (p.age | 0); }, 0) / seniors.length) : 0;
+      var homeNat = t.country || (seniors[0] && seniors[0].nat) || "";
+      var overseas = seniors.filter(function (p) { return p.nat && homeNat && p.nat !== homeNat; });
+
+      var band =
+        "<div class='fo-s2-band'>" +
+        "<div class='fo-s2-vsw'>" + [["roster", "Roster"], ["grid", "Grid"]].map(function (v) {
+          return "<button type='button' class='fo-s2-vb" + (sv.view === v[0] ? " on" : "") + "' data-view='" + v[0] + "'>" + v[1] + "</button>";
+        }).join("") + "</div>" +
+        "<div class='fo-s2-cell'><span>Total players</span><b>" + seniors.length + (youths.length ? "<i> +" + youths.length + " youth</i>" : "") + "</b></div>" +
+        "<div class='fo-s2-cell'><span>Avg age</span><b>" + ageAvg.toFixed(1) + "</b></div>" +
+        "<div class='fo-s2-cell'><span>Overseas</span><b>" + overseas.length + "</b></div>" +
+        "<div class='fo-s2-cell wage'><span>Weekly wages</span><b>" + foS2Money(wageSum) + "</b></div>" +
+        "<div class='fo-s2-cell xi'><span>Selected XI</span><b>" + xi.length + " / 11</b></div>" +
+        "</div>";
+
+      var header =
+        "<header class='fo-s2-hd'>" +
+        "<div><h1>Squad</h1><div class='fo-s2-tag'>Select your XI. Shape your legacy.</div></div>" +
+        "<div class='fo-s2-club'>" + crest + "<div><b>" + E(t.name) + "</b><span>" + estBits.join(" &middot; ") + "</span></div></div>" +
+        "</header>";
+
+      // ---- tools ----
+      var SORTS = [["ovr-", "Rating: High to Low"], ["ovr+", "Rating: Low to High"], ["age+", "Age: Youngest first"], ["age-", "Age: Oldest first"], ["name+", "Name: A to Z"], ["wage-", "Wage: High to Low"]];
+      var ROLEF = [["all", "All"], ["bat", "Batters"], ["ar", "All-rounders"], ["bowl", "Bowlers"], ["wk", "Wicketkeepers"]];
+      var tools =
+        "<div class='fo-s2-tools'>" +
+        "<input class='fo-s2-q' id='fo-s2-q' type='search' placeholder='Search players...' value='" + E(sv.q) + "'>" +
+        "<label class='fo-s2-sortw'>Sort by <select id='fo-s2-sort'>" + SORTS.map(function (o) {
+          return "<option value='" + o[0] + "'" + (sv.s2sort === o[0] ? " selected" : "") + ">" + o[1] + "</option>";
+        }).join("") + "</select></label>" +
+        ROLEF.map(function (c) {
+          return "<button type='button' class='fo-s2-chip" + (sv.roleF === c[0] ? " on" : "") + "' data-rf='" + c[0] + "'>" + c[1] + "</button>";
+        }).join("") +
+        "</div>";
+
+      // ---- the list, grouped by role ----
+      var sortMen = function (arr) {
+        var k = sv.s2sort;
+        return arr.slice().sort(function (a, b) {
+          if (k === "ovr+") return foPkOvr(a) - foPkOvr(b);
+          if (k === "age+") return (a.age | 0) - (b.age | 0);
+          if (k === "age-") return (b.age | 0) - (a.age | 0);
+          if (k === "name+") return a.name < b.name ? -1 : 1;
+          if (k === "wage-") return (+b.wage || 0) - (+a.wage || 0);
+          return foPkOvr(b) - foPkOvr(a);
+        });
+      };
+      var q9 = sv.q.trim().toLowerCase();
+      var s2Row = function (p) {
         var ovr = foPkOvr(p), rCls = foSqClass(p);
         var flg = "";
         try { flg = FO_ART + "flags/" + ((typeof FO_FLAG_FILE !== "undefined" && FO_FLAG_FILE[foSqNatId(p.nat)]) || foSqNatId(p.nat)) + ".svg"; } catch (eFg) {}
         var roleNm = { bat: "Batsman", ar: "All-rounder", wk: "Wicketkeeper", bowl: "Bowler" }[rCls] || "Player";
-        var det = p.bowlType ? prettyType(p.bowlType) : ({ R: "RHB", L: "LHB" }[String(p.hand || "").toUpperCase().charAt(0)] || "");
-        // his talents, worn as small gold pins: the sheet says at a glance who
-        // the finishers and the misers are, without a tap through to his page
-        var tals = p.talents || [];
-        var tal = tals.slice(0, 3).map(function (t) {
-          return "<u>" + E((typeof TALN !== "undefined" && TALN[t]) || prettyType(t)) + "</u>";
-        }).join("") + (tals.length > 3 ? "<u class='m'>+" + (tals.length - 3) + "</u>" : "");
-        return "<a class='fo-ros-row' href='#/player?n=" + encodeURIComponent(p.name) + "'>" +
-          "<span class='fo-ros-pic'><img src='" + FO_ART + foPkArt(p) + "' alt='' loading='lazy' decoding='async'>" +
-          (flg && p.nat ? "<em class='fo-ros-flag'><img src='" + flg + "' alt='" + E(p.nat) + "' onerror=\"this.parentNode.style.display='none'\"></em>" : "") + "</span>" +
-          "<span class='fo-ros-id'><b>" + E(p.name) + foSqStar(p) + "</b>" +
-          "<span>" + roleNm + (det ? " &middot; " + E(det) : "") + (p.age ? " &middot; " + E(foAgeText(p)) : "") + "</span>" +
-          (tals.length ? "<span class='fo-ros-tal'>" + tal + "</span>" : "") + "</span>" +
-          foSqFormGlyph(p) +
-          "<b class='fo-ros-ovr' style='color:" + foSqQCol(ovr) + "'>" + ovr + "</b>" +
-          "<span class='fo-ros-go'>&#8250;</span></a>";
+        var det = p.bowlType ? prettyType(p.bowlType) : (p.hand === "L" ? "LHB" : "RHB");
+        var open = sv.open === p.name;
+        var xd = "";
+        if (open) {
+          var inXi = xiSet[p.name];
+          xd = "<div class='fo-s2-xd'>" + foSqDetail(p, !!p.__y) +
+            "<div class='fo-s2-acts'>" +
+            "<button type='button' class='fo-s2-act' data-goman='" + E(p.name) + "'>Full profile &rsaquo;</button>" +
+            (inXi && p.name !== capt ? "<button type='button' class='fo-s2-act' data-mkc='" + E(p.name) + "'>Make captain</button>" : "") +
+            (inXi && p.keeper && p.name !== kpr ? "<button type='button' class='fo-s2-act' data-mkk='" + E(p.name) + "'>Give the gloves</button>" : "") +
+            (!inXi && !p.__y ? "<button type='button' class='fo-s2-act solid' data-addxi='" + E(p.name) + "'>" + (sv.dropArm ? "Replace " + E(foSqShortName(sv.dropArm)) : "Add to XI") + "</button>" : "") +
+            "</div></div>";
+        }
+        return "<div class='fo-s2-row" + (open ? " open" : "") + "' data-open='" + E(p.name) + "'>" +
+          "<span class='fo-s2-pic'><img class='face' src='" + FO_ART + foPkArt(p) + "' alt='' loading='lazy' decoding='async'>" +
+          (flg && p.nat ? "<em class='fo-s2-flag'><img src='" + flg + "' alt='" + E(p.nat) + "' onerror=\"this.parentNode.style.display='none'\"></em>" : "") + "</span>" +
+          "<span class='fo-s2-id'><b>" + E(p.name) + foSqStar(p) + "</b><span>" + roleNm + " &middot; " + E(det) + (p.__y ? " &middot; Youth" : "") + "</span></span>" +
+          "<span class='fo-s2-hand'>" + (p.hand === "L" ? "Left Hand" : "Right Hand") + "</span>" +
+          "<span class='fo-s2-age'><i>Age</i> " + (p.age | 0) + "</span>" +
+          "<span class='fo-s2-trait'>" + E(foS2Trait(p)) + "</span>" +
+          foS2Stars(ovr) +
+          "<b class='fo-s2-ovr' style='color:" + foSqQCol(ovr) + "'>" + ovr + "</b>" +
+          "<span class='fo-s2-car'>&#9660;</span>" +
+          "</div>" + xd;
       };
-      var rosterBody = "<div class='fo-ros'>" + [["bat", "Batters"], ["ar", "All-rounders"], ["wk", "Wicketkeepers"], ["bowl", "Bowlers"]].map(function (sec) {
+      var listBody = [["bat", "Batters"], ["ar", "All-rounders"], ["bowl", "Bowlers"], ["wk", "Wicketkeepers"]].map(function (sec) {
+        if (sv.roleF !== "all" && sv.roleF !== sec[0]) return "";
         var men = everyone.filter(function (p) { return foSqClass(p) === sec[0]; });
+        if (q9) men = men.filter(function (p) { return p.name.toLowerCase().indexOf(q9) >= 0; });
         if (!men.length) return "";
-        men = men.slice().sort(function (a2, b2) { return foPkOvr(b2) - foPkOvr(a2); });
-        return "<div class='fo-ros-sec'><div class='fo-ros-k'>" + sec[1] + " <span>" + men.length + "</span></div>" +
-          men.map(rosterRow).join("") + "</div>";
+        men = sortMen(men);
+        return "<div class='fo-s2-sec'><div class='fo-s2-seck'><span>" + sec[1] + "</span><em>" + men.length + " player" + (men.length === 1 ? "" : "s") + "</em></div>" +
+          men.map(s2Row).join("") + "</div>";
+      }).join("") || "<div class='fo-s2-sec'><div class='fo-s2-row' style='border-top:1px solid #eee7d9;border-radius:9px;cursor:default'>Nobody matches that search.</div></div>";
+
+      // ---- the rail: the Selected XI managed in place ----
+      var xiRows = sv.xi.map(function (n, i) {
+        var p = byName[n]; if (!p) return "";
+        return "<div class='fo-s2-xirow' draggable='true' data-xi='" + i + "'>" +
+          "<span class='grip' title='Drag to reorder'>&#8942;&#8942;</span>" +
+          "<span class='no'>" + (i + 1) + "</span>" +
+          "<span class='nm'>" + E(p.name) + "</span>" +
+          "<span class='ab'>" + foS2Abbr(p) + "</span>" +
+          "<span class='bdg'>" + (n === capt ? "<span class='crown' title='Captain'>&#9812;&#xFE0E;</span>" : n === kpr ? "<span class='wk' title='Keeper'>WK</span>" : "") + "</span>" +
+          "<span class='mv'><button type='button' data-up='" + i + "' title='Up'>&#9650;</button><button type='button' data-dn='" + i + "' title='Down'>&#9660;</button></span>" +
+          "</div>";
+      }).join("");
+      var rbCols = [["bat", "Batters", "#D9A21B", bal.bat || 0], ["ar", "All-rounders", "#177A57", bal.ar || 0], ["bowl", "Bowlers", "#C0392E", bal.bowl || 0], ["wk", "WK", "#3f6f96", bal.wk || 0]];
+      var roleBal = "<div class='fo-s2-rb'>" + rbCols.map(function (c) {
+        return "<div><span>" + c[1] + "</span><b>" + c[3] + "</b><i style='background:" + c[2] + ";width:" + Math.min(100, c[3] * 18) + "%'></i></div>";
       }).join("") + "</div>";
+
+      // TEAM BALANCE, scored from the XI's real shape: five bowling options,
+      // one keeper, at least one all-rounder is the textbook eleven
+      var balScore = 100;
+      if (bowlOpts < 5) balScore -= (5 - bowlOpts) * 15;
+      if (!bal.wk) balScore -= 25; else if (bal.wk > 1) balScore -= (bal.wk - 1) * 8;
+      if (!bal.ar) balScore -= 8;
+      if ((bal.bat || 0) < 4) balScore -= 10;
+      balScore = Math.max(0, Math.min(100, balScore));
+      var balWord = balScore >= 75 ? "Good Balance" : balScore >= 50 ? "Fair Balance" : "Needs Work";
+      var balCol = balScore >= 75 ? "#177A57" : balScore >= 50 ? "#D9A21B" : "#C0392E";
+
+      // CHEMISTRY & FORM: the XI's real form, man by man
+      var fSum = 0, spark = "";
+      xi.forEach(function (p) {
+        var f = p.formIx == null ? 3 : p.formIx;
+        fSum += f;
+        spark += "<i class='" + (f >= 4 ? "" : f <= 2 ? "lo" : "md") + "' style='height:" + Math.max(10, Math.round(f / 6 * 100)) + "%'></i>";
+      });
+      var formPct = xi.length ? Math.round(fSum / (xi.length * 6) * 100) : 0;
+      var formWord = formPct >= 62 ? "Good Form" : formPct >= 45 ? "Steady" : "Out of Sorts";
+
+      var natFlag = "";
+      try {
+        var hf = FO_ART + "flags/" + ((typeof FO_FLAG_FILE !== "undefined" && FO_FLAG_FILE[foSqNatId(homeNat)]) || foSqNatId(homeNat)) + ".svg";
+        natFlag = "<span class='fl'><img src='" + hf + "' alt='' onerror=\"this.parentNode.style.display='none'\"></span>";
+      } catch (eNf) {}
+
+      var rail =
+        "<aside class='fo-s2-rail'>" +
+        "<div class='fo-s2-card'><div class='fo-s2-ck'><span>Selected XI</span><em>" + xi.length + "/11</em></div>" + xiRows + "</div>" +
+        "<div class='fo-s2-card'><div class='fo-s2-ck'><span>Role balance</span><a id='fo-s2-fullstats'>View full stats</a></div>" + roleBal + "</div>" +
+        "<div class='fo-s2-card'><div class='fo-s2-ck'><span>Squad composition</span></div>" +
+        "<div class='fo-s2-kv'><span>" + natFlag + E(homeNat || "Home") + "</span><b>" + (seniors.length - overseas.length) + "</b></div>" +
+        "<div class='fo-s2-kv'><span>Overseas</span><b>" + overseas.length + "</b></div>" +
+        "<div class='fo-s2-kv'><span>Avg age</span><b>" + ageAvg.toFixed(1) + "</b></div>" +
+        "<div class='fo-s2-kv'><span>Weekly wages</span><b>" + foS2Money(wageSum) + "</b></div>" +
+        "</div>" +
+        "<div class='fo-s2-duo'>" +
+        "<div class='fo-s2-card'><div class='fo-s2-ck'><span>Team balance</span></div><div class='fo-s2-gauge'>" + foS2Donut(balScore, balCol) + "<span>" + balWord + "</span></div></div>" +
+        "<div class='fo-s2-card'><div class='fo-s2-ck'><span>Chem &amp; form</span></div><div class='fo-s2-gauge'><div class='fo-s2-spark'>" + spark + "</div><span><b style='font-size:15px'>" + formPct + "</b><br>" + formWord + "</span></div></div>" +
+        "</div>" +
+        "<button type='button' class='fo-s2-save' id='fo-s2-save'>Save XI</button>" +
+        "<button type='button' class='fo-s2-sugg' id='fo-s2-sugg'>&#10022; Suggest best XI</button>" +
+        "</aside>";
+
+      var roster2Body = header + band +
+        "<div class='fo-s2-main'><section>" + tools + listBody + "</section>" + rail + "</div>";
 
       var gridMen = sv.who === "yth" ? youths : sv.who === "all" ? everyone : seniors;
       var gridBody = foSqGrid(gridMen, sv, capt, xiIx);
 
-      page.innerHTML =
-        "<div class='fo-sqx listing" + (sv.view === "grid" ? " gridding" : " rostering") + "'><div class='fo-sqx-in'>" +
-        "<section class='fo-sqx-park'>" +
-        "<div class='fo-sqx-parkin'>" +
-        "<header class='fo-sqx-hd'><h1>Squad</h1><div class='fo-sqx-tag'>Select your XI. Shape your legacy.</div>" +
-        viewSwitch + "</header>" +
-        (sv.view === "grid" ? gridBody : rosterBody) +
-        "</div></section>" +
-        "</div></div>";
+      page.innerHTML = sv.view === "grid"
+        ? "<div class='fo-sqx listing gridding'><div class='fo-sqx-in'>" +
+          "<section class='fo-sqx-park'><div class='fo-sqx-parkin'>" +
+          "<header class='fo-sqx-hd'><h1>Squad</h1><div class='fo-sqx-tag'>Select your XI. Shape your legacy.</div>" +
+          viewSwitch + "</header>" + gridBody +
+          "</div></section></div></div>"
+        : "<div class='fo-sqx listing rostering'><div class='fo-s2-in'>" + roster2Body + "</div></div>";
 
       // ---- wiring ----
       page.querySelectorAll(".fo-sqx-vb").forEach(function (b) {
@@ -1237,6 +1569,139 @@
       if (pb) pb.addEventListener("click", function () {
         try { promoteYouth(App.teamIx, sv.sel); } catch (ePy) {}
         sv.xi = null; sv.sel = null; pgSquad();
+      });
+
+      // ==== SQUAD v2 wiring ==================================================
+      var s2Repaint = function () {
+        var y = window.scrollY; pgSquad();
+        try { window.scrollTo(0, y); } catch (eY2) {}
+      };
+      page.querySelectorAll(".fo-s2-vb").forEach(function (b) {
+        b.addEventListener("click", function () {
+          sv.view = b.getAttribute("data-view");
+          try { localStorage.setItem("fo_sq_view", sv.view); } catch (eV3) {}
+          pgSquad();
+        });
+      });
+      var q2 = page.querySelector("#fo-s2-q");
+      if (q2) q2.addEventListener("input", function () {
+        sv.q = q2.value;
+        var y = window.scrollY; pgSquad();
+        try {
+          window.scrollTo(0, y);
+          var q3 = document.querySelector("#fo-s2-q");
+          if (q3) { q3.focus(); q3.setSelectionRange(q3.value.length, q3.value.length); }
+        } catch (eQ) {}
+      });
+      var so2 = page.querySelector("#fo-s2-sort");
+      if (so2) so2.addEventListener("change", function () { sv.s2sort = so2.value; s2Repaint(); });
+      page.querySelectorAll(".fo-s2-chip").forEach(function (b) {
+        b.addEventListener("click", function () { sv.roleF = b.getAttribute("data-rf"); s2Repaint(); });
+      });
+      // a row opens its dossier; the buttons inside act without closing it
+      page.querySelectorAll(".fo-s2-row[data-open]").forEach(function (r) {
+        r.addEventListener("click", function (ev) {
+          if (ev.target.closest("button") || ev.target.closest("a")) return;
+          var n = r.getAttribute("data-open");
+          sv.open = sv.open === n ? null : n;
+          s2Repaint();
+        });
+      });
+      page.querySelectorAll("[data-goman]").forEach(function (b) {
+        b.addEventListener("click", function () { location.hash = "#/player?n=" + encodeURIComponent(b.getAttribute("data-goman")); });
+      });
+      page.querySelectorAll("[data-mkc]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          var n = b.getAttribute("data-mkc");
+          try { App.orders = App.orders || {}; App.orders.captain = n; if (typeof saveGame === "function") saveGame(); } catch (eC2) {}
+          try { toast(n + " takes the captaincy."); } catch (eT2) {}
+          s2Repaint();
+        });
+      });
+      page.querySelectorAll("[data-mkk]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          var n = b.getAttribute("data-mkk");
+          try { App.orders = App.orders || {}; App.orders.keeper = n; if (typeof saveGame === "function") saveGame(); } catch (eK2) {}
+          try { toast(n + " takes the gloves."); } catch (eT3) {}
+          s2Repaint();
+        });
+      });
+      // Add to XI: replace the armed man if one was chosen from the rail,
+      // otherwise the weakest man of the same class makes way
+      page.querySelectorAll("[data-addxi]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          var inN = b.getAttribute("data-addxi"), outN = null;
+          if (sv.dropArm && xiSet[sv.dropArm]) outN = sv.dropArm;
+          else {
+            var cls = foSqClass(byName[inN]);
+            var cand = sv.xi.map(function (n) { return byName[n]; }).filter(function (p) { return p && foSqClass(p) === cls; });
+            if (!cand.length) cand = sv.xi.map(function (n) { return byName[n]; }).filter(function (p) { return p && foSqClass(p) !== "wk"; });
+            cand.sort(function (a, b2) { return foPkOvr(a) - foPkOvr(b2); });
+            outN = cand[0] && cand[0].name;
+          }
+          if (!outN) return;
+          var at2 = sv.xi.indexOf(outN);
+          if (at2 >= 0) { sv.xi[at2] = inN; foSqCommitXI(sv.xi, outN); }
+          sv.dropArm = null; sv.open = inN;
+          try { toast(inN + " comes into the XI for " + outN + "."); } catch (eT4) {}
+          s2Repaint();
+        });
+      });
+      // the rail: reorder by drag on desktop, by the little arrows anywhere
+      var xiMove = function (from, to) {
+        if (from === to || from < 0 || to < 0 || from >= sv.xi.length || to >= sv.xi.length) return;
+        var m2 = sv.xi.splice(from, 1)[0];
+        sv.xi.splice(to, 0, m2);
+        foSqCommitXI(sv.xi);
+        s2Repaint();
+      };
+      page.querySelectorAll(".fo-s2-xirow").forEach(function (r) {
+        r.addEventListener("dragstart", function (ev) {
+          try { ev.dataTransfer.setData("text/plain", r.getAttribute("data-xi")); ev.dataTransfer.effectAllowed = "move"; } catch (eD) {}
+        });
+        r.addEventListener("dragover", function (ev) { ev.preventDefault(); r.classList.add("dragover"); });
+        r.addEventListener("dragleave", function () { r.classList.remove("dragover"); });
+        r.addEventListener("drop", function (ev) {
+          ev.preventDefault(); r.classList.remove("dragover");
+          var from = -1;
+          try { from = parseInt(ev.dataTransfer.getData("text/plain"), 10); } catch (eD2) {}
+          xiMove(from, parseInt(r.getAttribute("data-xi"), 10));
+        });
+      });
+      page.querySelectorAll(".fo-s2-xirow [data-up]").forEach(function (b) {
+        b.addEventListener("click", function () { var i2 = parseInt(b.getAttribute("data-up"), 10); xiMove(i2, i2 - 1); });
+      });
+      page.querySelectorAll(".fo-s2-xirow [data-dn]").forEach(function (b) {
+        b.addEventListener("click", function () { var i3 = parseInt(b.getAttribute("data-dn"), 10); xiMove(i3, i3 + 1); });
+      });
+      var fs2 = page.querySelector("#fo-s2-fullstats");
+      if (fs2) fs2.addEventListener("click", function () { sv.view = "grid"; try { localStorage.setItem("fo_sq_view", "grid"); } catch (eV4) {} pgSquad(); });
+      var sv2 = page.querySelector("#fo-s2-save");
+      if (sv2) sv2.addEventListener("click", function () {
+        try {
+          foSqCommitXI(sv.xi);
+          App.orders = App.orders || {};
+          // the sheet the engine reads always names a captain and a keeper
+          if (!App.orders.captain || sv.xi.indexOf(App.orders.captain) < 0)
+            App.orders.captain = xi.slice().sort(function (a, b2) { return (b2.capt || 0) - (a.capt || 0); })[0].name;
+          if (!App.orders.keeper || sv.xi.indexOf(App.orders.keeper) < 0)
+            App.orders.keeper = (xi.filter(function (p) { return p.keeper; })[0] || xi[0]).name;
+          if (typeof saveGame === "function") saveGame();
+        } catch (eS2) {}
+        try { toast("XI saved. This is the side the umpire fields."); } catch (eT5) {}
+        s2Repaint();
+      });
+      var sg2 = page.querySelector("#fo-s2-sugg");
+      if (sg2) sg2.addEventListener("click", function () {
+        try {
+          var best = pickXI(t).map(function (p) { return p.name; });
+          if (best && best.length === 11) {
+            sv.xi = best;
+            foSqCommitXI(sv.xi);
+            try { toast("The coaches name their strongest available XI."); } catch (eT6) {}
+          }
+        } catch (eSg) {}
+        s2Repaint();
       });
     } catch (e) { console.warn("pgSquad", e); }
   };
