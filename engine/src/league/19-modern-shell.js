@@ -63,24 +63,9 @@
     } catch (e) {}
   }
   // the dressing room has no door: give the plan a "done" that walks back out
-  function ordersDoor() {
-    try {
-      var on = (location.hash || "").split("?")[0] === "#/orders";
-      var el = document.getElementById("fo-ord-door");
-      if (!on) { if (el) el.remove(); return; }
-      if (el) return;
-      el = document.createElement("a");
-      el.id = "fo-ord-door"; el.href = "#/home";
-      el.innerHTML = "Plan set &middot; back to the club &#9656;";
-      el.addEventListener("click", function (ev) {
-        ev.preventDefault();
-        try { App.orders.saved = true; if (typeof saveGame === "function") saveGame(false); } catch (e2) {}
-        location.hash = "#/home"; if (typeof window.route === "function") window.route();
-      });
-      document.body.appendChild(el);
-    } catch (e) {}
-  }
-  function afterRoute() { matchCentre(); tidyNav(); ordersDoor(); }
+  // the "Plan set - back to the club" door is retired: saving the plan
+  // carries the manager home itself, with the confirmation as the toast
+  function afterRoute() { matchCentre(); tidyNav(); }
   function wireRoute() {
     try {
       if (typeof window.route === "function" && !window.route.__foMs) {
@@ -149,9 +134,6 @@
     ".fo-home2 .hg-bar{position:static;order:4;bottom:auto;margin-top:15px;padding:0;justify-content:flex-start;background:none}",
     "}",
     // == the dressing-room door ================================================
-    "html body #fo-ord-door{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:350;background:#C95532;color:#FFFEFC!important;font:700 12.5px/1 Inter,sans-serif;letter-spacing:.03em;border-radius:999px;padding:13px 20px;text-decoration:none;box-shadow:0 10px 28px rgba(201,85,50,.5)}",
-    "html body #fo-ord-door:hover{background:#A64426;text-decoration:none;color:#FFFEFC!important}",
-    "@media(max-width:820px){#fo-ord-door{right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px))}}",
     // == motion ================================================================
     "@media (prefers-reduced-motion:no-preference){",
     "#page.fo-page-in{animation:foMsPageIn .22s ease-out}",

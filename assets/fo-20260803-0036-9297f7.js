@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0032-c46f8b";
+  var FO_BUILD = "20260803-0036-9297f7";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -19135,7 +19135,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
               }));
             } catch (eW9) {}
             if (App.pending) { location.hash = "#/match"; if (typeof window.route === "function") window.route(); }
-            else { toast(filed ? "Orders saved \u00b7 the umpire has your sheet." : "Orders saved."); }
+            else {
+              // saving IS leaving: the sheet is filed, so the room's work is
+              // done - back to the club, with the confirmation riding along
+              try { App.orders.saved = true; if (typeof saveGame === "function") saveGame(false); } catch (eSv) {}
+              location.hash = "#/home"; if (typeof window.route === "function") window.route();
+              toast(filed ? "Orders set \u00b7 the umpire has your sheet." : "Orders set.");
+            }
             return;
           }
           // the click fired by a just-finished drag must not read as a tap -
@@ -32611,24 +32617,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     } catch (e) {}
   }
   // the dressing room has no door: give the plan a "done" that walks back out
-  function ordersDoor() {
-    try {
-      var on = (location.hash || "").split("?")[0] === "#/orders";
-      var el = document.getElementById("fo-ord-door");
-      if (!on) { if (el) el.remove(); return; }
-      if (el) return;
-      el = document.createElement("a");
-      el.id = "fo-ord-door"; el.href = "#/home";
-      el.innerHTML = "Plan set &middot; back to the club &#9656;";
-      el.addEventListener("click", function (ev) {
-        ev.preventDefault();
-        try { App.orders.saved = true; if (typeof saveGame === "function") saveGame(false); } catch (e2) {}
-        location.hash = "#/home"; if (typeof window.route === "function") window.route();
-      });
-      document.body.appendChild(el);
-    } catch (e) {}
-  }
-  function afterRoute() { matchCentre(); tidyNav(); ordersDoor(); }
+  // the "Plan set - back to the club" door is retired: saving the plan
+  // carries the manager home itself, with the confirmation as the toast
+  function afterRoute() { matchCentre(); tidyNav(); }
   function wireRoute() {
     try {
       if (typeof window.route === "function" && !window.route.__foMs) {
@@ -32697,9 +32688,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     ".fo-home2 .hg-bar{position:static;order:4;bottom:auto;margin-top:15px;padding:0;justify-content:flex-start;background:none}",
     "}",
     // == the dressing-room door ================================================
-    "html body #fo-ord-door{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:350;background:#C95532;color:#FFFEFC!important;font:700 12.5px/1 Inter,sans-serif;letter-spacing:.03em;border-radius:999px;padding:13px 20px;text-decoration:none;box-shadow:0 10px 28px rgba(201,85,50,.5)}",
-    "html body #fo-ord-door:hover{background:#A64426;text-decoration:none;color:#FFFEFC!important}",
-    "@media(max-width:820px){#fo-ord-door{right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px))}}",
     // == motion ================================================================
     "@media (prefers-reduced-motion:no-preference){",
     "#page.fo-page-in{animation:foMsPageIn .22s ease-out}",

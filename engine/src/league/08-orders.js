@@ -890,7 +890,13 @@
               }));
             } catch (eW9) {}
             if (App.pending) { location.hash = "#/match"; if (typeof window.route === "function") window.route(); }
-            else { toast(filed ? "Orders saved \u00b7 the umpire has your sheet." : "Orders saved."); }
+            else {
+              // saving IS leaving: the sheet is filed, so the room's work is
+              // done - back to the club, with the confirmation riding along
+              try { App.orders.saved = true; if (typeof saveGame === "function") saveGame(false); } catch (eSv) {}
+              location.hash = "#/home"; if (typeof window.route === "function") window.route();
+              toast(filed ? "Orders set \u00b7 the umpire has your sheet." : "Orders set.");
+            }
             return;
           }
           // the click fired by a just-finished drag must not read as a tap -
