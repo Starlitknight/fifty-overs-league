@@ -544,15 +544,6 @@
       // against the club's other bowlers), stamina, and his talents
       // bowler cards mirror the batting cards: name row with OVR right,
       // stars beneath (navy = with the ball), talents last
-      var legend = "<div class='fo-ord-bws'>" + bowlNames.map(function (nm3) {
-        var p3 = by[nm3] || {};
-        var pills3 = foOrdTalPills(p3, 2);
-        return "<button type='button' class='bw' data-fo-pc='" + E(nm3) + "'>" +
-          "<span class='bw-h'><b>" + E(dispNm(nm3)) + "</b><span class='bt'>" + E(foOrdBType(p3)) + " &middot; " + (tot[nm3] || 0) + " ov</span>" +
-          "<span class='ov' title='Overall rating'><b>" + foPkOvr(p3) + "</b></span></span>" +
-          "<span class='r2'>" + foOrdStarHTML(foOrdStars(foOrdBowlComp(p3))) + "</span>" +
-          "<span class='r3'>" + (pills3 || "") + "</span></button>";
-      }).join("") + "</div>";
       var toss = "<div class='pv-toss'><div class='fo-ord-vzh' style='margin-top:2px'>Toss</div><div class='fo-ord-toss'>" +
         "<span class='tl'>Call</span>" +
         "<button type='button' data-fo-toss='call:H' class='" + ((App.orders.tossCall || "H") === "H" ? "on" : "") + "'>Heads</button>" +
@@ -573,11 +564,16 @@
         "<div class='mg-hint'>Pick a bowler, then tap overs to hand them to him &middot; tap his over again to clear it. The list runs over 1 to over 50. Tap a bowler's badge to set his field: attacking, balanced or defensive.</div>" +
         "<div class='fo-ord-clearrow'><button type='button' class='fo-ord-clearp' data-fo-clearplan>&#8709; Clear the bowling plan</button></div>" +
         "<div class='mg-chips'>" + bowlNames.map(function (n9) {
-          // the lanes are desktop-only, so a phone gets the bowler's field
-          // here: the same badge, on his own chip
-          return "<button type='button' class='mgb mgb-c" + colorIx[n9] + (n9 === armNm ? " on" : "") + "' data-fo-arm='" + E(n9) + "'><i></i>" + E(dispNm(n9)) +
-            "<u>" + (tot[n9] || 0) + "</u>" +
-            "<s class='fbd" + (foMfVal(n9) ? " on" : "") + "' data-fo-mfc='" + E(n9) + "' title='" + E(foMfTitle(n9)) + "'>" + foMfShort(n9) + "</s></button>";
+          // one card per bowler, and the WHOLE card: name, type, overs
+          // planned, his bowling stars, his OVR and his field badge. The
+          // separate legend at the foot said all of this again, so it said
+          // it here once instead and the legend retired.
+          var p9c = by[n9] || {};
+          return "<button type='button' class='mgb mgb-c" + colorIx[n9] + (n9 === armNm ? " on" : "") + "' data-fo-arm='" + E(n9) + "'>" +
+            "<span class='bw-h'><b>" + E(dispNm(n9)) + "</b><span class='bt'>" + E(foOrdBType(p9c)) + " &middot; " + (tot[n9] || 0) + " ov</span>" +
+            "<s class='fbd" + (foMfVal(n9) ? " on" : "") + "' data-fo-mfc='" + E(n9) + "' title='" + E(foMfTitle(n9)) + "'>" + foMfShort(n9) + "</s>" +
+            "<span class='ov' title='Overall rating'><b>" + foPkOvr(p9c) + "</b></span></span>" +
+            "<span class='r2'>" + foOrdStarHTML(foOrdStars(foOrdBowlComp(p9c))) + "</span></button>";
         }).join("") + "</div>" +
         "<div class='mg-grid'>" + (function () {
           // THE TWO ENDS OF THE GROUND. Overs alternate ends the way an
@@ -605,7 +601,7 @@
       // two pages, one sheet: the tab decides which half paints
       if (tab === "bowl")
         return "<div class='fo-ord-planv'>" +
-          "<div class='pv-bowl'><div class='fo-ord-vzh'>Bowling</div>" + mgrid + legend + "</div></div>";
+          "<div class='pv-bowl'><div class='fo-ord-vzh'>Bowling</div>" + mgrid + "</div></div>";
       return "<div class='fo-ord-planv'>" + toss + xiCol + benchCol + "</div>";
     } catch (e) { return ""; }
   }
@@ -1117,17 +1113,23 @@
       // either end. The bowler chips ride sticky at the top so assigning
       // over 43 never means scrolling back up to re-arm a man
       ".fo-ord-mgrid{display:block;max-width:620px}" +
-      ".mg-chips{position:sticky;top:calc(var(--fo-tbh,52px) + 44px);z-index:6;background:rgba(248,245,238,.96);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);padding:6px 0;border-radius:0 0 10px 10px}" +
+
       ".mg-ph{display:block;margin:10px 0 4px;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#8a93a3}" +
       ".mg-ph.pp{color:#4E7A4E}.mg-ph.dth{color:#B04A2C}" +
       ".mg-hint{font-size:11.5px;color:#5b6472;line-height:1.5;margin:0 0 8px}" +
-      ".mg-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 9px}" +
-      "html body #page .mg-chips button.mgb{display:inline-flex;align-items:center;gap:6px;border:2px solid rgba(28,36,51,.14)!important;background:#FFFEFC!important;border-radius:99px;padding:7px 12px;font-size:12.5px;font-weight:800;color:#243244;cursor:pointer}" +
-      "html body #page .mg-chips button.mgb.on{border-color:#B04A2C!important;background:#B04A2C!important;color:#FFFEFC!important}" +
-      ".mg-chips .mgb i{width:11px;height:11px;border-radius:50%;flex:0 0 auto}" +
-      ".mg-chips .mgb u{text-decoration:none;font-size:11px;color:#8a93a3;font-weight:800}" +
-      ".mg-chips .mgb.on u{color:rgba(255,255,255,.85)}" +
-      ".mg-chips .mgb.on s{color:#FFFEFC;border-color:rgba(255,255,255,.55)}" +
+      ".mg-chips{display:grid;grid-template-columns:repeat(auto-fill,minmax(180px,1fr));gap:6px;margin:0 0 10px}" +
+      "html body #page .mg-chips button.mgb{display:flex;flex-direction:column;align-items:stretch;gap:3px;border:2px solid rgba(28,36,51,.14)!important;background:#FFFEFC!important;border-radius:10px;padding:7px 10px;cursor:pointer;text-align:left;min-width:0}" +
+      // armed: a heavy terracotta frame and a warm tint, the TEXT staying
+      // dark - the last version painted the whole card terracotta and the
+      // stars fought it
+      "html body #page .mg-chips button.mgb.on{border-color:#B04A2C!important;background:#FFF3EC!important}" +
+      ".mg-chips .mgb.on .bw-h b{color:#B04A2C}" +
+      ".mg-chips .mgb .bw-h{display:flex;align-items:center;gap:6px;min-width:0}" +
+      ".mg-chips .mgb .bw-h b{font-size:12.5px;font-weight:800;color:#243244;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}" +
+      ".mg-chips .mgb .bt{font-size:8.5px;font-weight:800;letter-spacing:.05em;text-transform:uppercase;color:#a9812f;flex:0 0 auto;white-space:nowrap}" +
+      ".mg-chips .mgb .ov{margin-left:auto;flex:0 0 auto}" +
+      ".mg-chips .mgb .ov b{font-size:15px;font-weight:800;color:#B04A2C}" +
+      ".mg-chips .mgb .r2{line-height:1}" +
       ".mg-chips .mgb s{text-decoration:none;font-size:9.5px;font-weight:700;letter-spacing:.03em;color:#8a93a3;border:1px solid rgba(28,36,51,.16);border-radius:6px;padding:2px 6px}" +
       ".mg-chips .mgb s.on{color:#FFFEFC;background:#0E233F;border-color:#0E233F}" +
       ".fo-ord-clearrow{display:flex;justify-content:flex-end;margin:9px 0 2px}" +
@@ -1222,9 +1224,10 @@
       ".fo-ord-xis .xc i.bdg:hover{border-color:#B04A2C;color:#B04A2C}" +
       ".fo-ord-xis .xc i.bdg.on{background:#0E233F;color:#FFFEFC;border-color:#0E233F}" +
       ".fo-ord-xis .xc .r2{display:flex;align-items:center;gap:6px;width:100%}" +
-      ".fo-ord-xis .xc .st,.fo-ord-bws .bw .st{text-decoration:none;font-size:13px;letter-spacing:1.2px;line-height:1;white-space:nowrap}" +
-      ".fo-ord-xis .xc .st em,.fo-ord-bws .bw .st em{font-style:normal;color:#d8d3c6}.fo-ord-xis .xc .st em.f{color:#D9A441}.fo-ord-bws .bw .st em.f{color:#0FB4C4}" +
+      ".fo-ord-xis .xc .st,.fo-ord-bws .bw .st,.mg-chips .mgb .st{text-decoration:none;font-size:13px;letter-spacing:1.2px;line-height:1;white-space:nowrap}" +
+      ".fo-ord-xis .xc .st em,.fo-ord-bws .bw .st em,.mg-chips .mgb .st em{font-style:normal;color:#d8d3c6}.fo-ord-xis .xc .st em.f{color:#D9A441}.fo-ord-bws .bw .st em.f,.mg-chips .mgb .st em.f{color:#0FB4C4}" +
       ".fo-ord-xis .xc .st em.h{background:linear-gradient(90deg,#D9A441 50%,#d8d3c6 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".mg-chips .mgb .st em.h{background:linear-gradient(90deg,#0FB4C4 50%,#d8d3c6 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       ".fo-scst{white-space:nowrap;margin-left:7px;display:inline-block;vertical-align:1px}" +
       ".fo-scst .st{text-decoration:none;font-size:12px;letter-spacing:.9px;line-height:1;white-space:nowrap}" +
       ".fo-scst .st em{font-style:normal;color:#e2ddd2}" +
