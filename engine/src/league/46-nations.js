@@ -41,19 +41,22 @@
   // pool is the national side's main ground; the rest illustrate its story
   // cards. A nation with no paintings yet gets the generic summer-noon
   // ground and no named ground fact.
+  // Keyed by the WORLD's region ids (sub, rsa, nzl, slk, win, bgd - the ids
+  // FO_CX_REGIONS actually serves), so every one of the nineteen nations
+  // resolves to its own painted grounds and nobody falls back to the generic.
   var NAT_ART = {
     eng: ["marylebone", "leeds", "london", "canterbury", "manchester", "nottingham"],
     aus: ["melbourne", "sydney", "adelaide", "brisbane", "perth"],
-    ind: ["mumbai", "chennai", "kolkata", "nagpur", "dharamshala"],
+    sub: ["mumbai", "chennai", "kolkata", "nagpur", "dharamshala"],
     pak: ["lahore", "sharjah"],
-    saf: ["cape-town", "durban", "johannesburg"],
-    nz: ["auckland", "christchurch", "wellington"],
-    sri: ["colombo", "galle", "kandy"],
-    wi: ["bridgetown", "kingston", "port-of-spain"],
+    rsa: ["cape-town", "durban", "johannesburg"],
+    nzl: ["auckland", "christchurch", "wellington"],
+    slk: ["colombo", "galle", "kandy"],
+    win: ["bridgetown", "kingston", "port-of-spain"],
     ire: ["dublin", "belfast", "cork"],
     ned: ["amsterdam", "rotterdam", "utrecht"],
     zim: ["harare", "bulawayo", "victoria-falls"],
-    afg: ["kabul"], ban: ["sylhet"], nep: ["kathmandu"],
+    afg: ["kabul"], bgd: ["sylhet"], nep: ["kathmandu"],
     sco: ["edinburgh"], wal: ["cardiff"], ken: ["nairobi"],
     usa: ["grand-prairie"], can: ["king-city"]
   };

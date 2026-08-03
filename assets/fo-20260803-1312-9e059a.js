@@ -4398,11 +4398,13 @@ window.foClubCrest = (function () {
 // shown; every other nation keeps its flag. Returns "" when there is none
 // so call sites can fall back to the flag they already draw.
 window.foNatLogo = function (rid) {
-  var HAVE = { eng: 1, ind: 1, ban: 1 };
-  rid = String(rid || "");
-  if (!HAVE[rid]) return "";
+  // keyed by the world's region ids (sub = India, bgd = Bangladesh), with
+  // the flag-style spellings kept as aliases
+  var HAVE = { eng: "eng", sub: "ind", ind: "ind", bgd: "ban", ban: "ban" };
+  var f = HAVE[String(rid || "")];
+  if (!f) return "";
   var base = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
-  return base + "natlogos/" + rid + ".webp";
+  return base + "natlogos/" + f + ".webp";
 };
 
 // Engine patch 2026-balanced: pace/spin balance, real Rocket Arm/Lightning Hands hooks, stronger fatigue, contextual chase pressure, death power, and ground-fielding run impact.
@@ -10292,7 +10294,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-1307-c44ee2";
+  var FO_BUILD = "20260803-1312-9e059a";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -44006,19 +44008,22 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // pool is the national side's main ground; the rest illustrate its story
   // cards. A nation with no paintings yet gets the generic summer-noon
   // ground and no named ground fact.
+  // Keyed by the WORLD's region ids (sub, rsa, nzl, slk, win, bgd - the ids
+  // FO_CX_REGIONS actually serves), so every one of the nineteen nations
+  // resolves to its own painted grounds and nobody falls back to the generic.
   var NAT_ART = {
     eng: ["marylebone", "leeds", "london", "canterbury", "manchester", "nottingham"],
     aus: ["melbourne", "sydney", "adelaide", "brisbane", "perth"],
-    ind: ["mumbai", "chennai", "kolkata", "nagpur", "dharamshala"],
+    sub: ["mumbai", "chennai", "kolkata", "nagpur", "dharamshala"],
     pak: ["lahore", "sharjah"],
-    saf: ["cape-town", "durban", "johannesburg"],
-    nz: ["auckland", "christchurch", "wellington"],
-    sri: ["colombo", "galle", "kandy"],
-    wi: ["bridgetown", "kingston", "port-of-spain"],
+    rsa: ["cape-town", "durban", "johannesburg"],
+    nzl: ["auckland", "christchurch", "wellington"],
+    slk: ["colombo", "galle", "kandy"],
+    win: ["bridgetown", "kingston", "port-of-spain"],
     ire: ["dublin", "belfast", "cork"],
     ned: ["amsterdam", "rotterdam", "utrecht"],
     zim: ["harare", "bulawayo", "victoria-falls"],
-    afg: ["kabul"], ban: ["sylhet"], nep: ["kathmandu"],
+    afg: ["kabul"], bgd: ["sylhet"], nep: ["kathmandu"],
     sco: ["edinburgh"], wal: ["cardiff"], ken: ["nairobi"],
     usa: ["grand-prairie"], can: ["king-city"]
   };

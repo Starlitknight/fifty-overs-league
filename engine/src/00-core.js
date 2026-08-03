@@ -4397,11 +4397,13 @@ window.foClubCrest = (function () {
 // shown; every other nation keeps its flag. Returns "" when there is none
 // so call sites can fall back to the flag they already draw.
 window.foNatLogo = function (rid) {
-  var HAVE = { eng: 1, ind: 1, ban: 1 };
-  rid = String(rid || "");
-  if (!HAVE[rid]) return "";
+  // keyed by the world's region ids (sub = India, bgd = Bangladesh), with
+  // the flag-style spellings kept as aliases
+  var HAVE = { eng: "eng", sub: "ind", ind: "ind", bgd: "ban", ban: "ban" };
+  var f = HAVE[String(rid || "")];
+  if (!f) return "";
   var base = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
-  return base + "natlogos/" + rid + ".webp";
+  return base + "natlogos/" + f + ".webp";
 };
 
 // Engine patch 2026-balanced: pace/spin balance, real Rocket Arm/Lightning Hands hooks, stronger fatigue, contextual chase pressure, death power, and ground-fielding run impact.
