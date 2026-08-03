@@ -2055,8 +2055,12 @@
     }
     foThCss();
     document.body.classList.add("fo-th");
-    if (foDashOn()) { foDashCss(); document.body.classList.add("fo-dash"); }
-    else document.body.classList.remove("fo-dash");
+    if (foDashOn()) {
+      foDashCss(); document.body.classList.add("fo-dash");
+      // the phone bottom-sheet modes belong to the retired skin
+      document.body.removeAttribute("data-mobsheet");
+      document.body.classList.remove("fo-th-ov0");
+    } else document.body.classList.remove("fo-dash");
     document.body.setAttribute("data-thtab", (typeof UI !== "undefined" && UI.matchTab) || "Scorecard");
     if (!rail) {
       rail = document.createElement("div"); rail.id = "fo-th-rail";
@@ -2065,7 +2069,7 @@
       }).join("");
       document.body.appendChild(rail);
       // phones open the field pane on demand (bottom sheet), desktop docks it
-      if (window.innerWidth <= 760 || window.innerHeight <= 520) document.body.classList.add("fo-th-ov0");
+      if (!foDashOn() && (window.innerWidth <= 760 || window.innerHeight <= 520)) document.body.classList.add("fo-th-ov0");
       rail.addEventListener("click", function (ev9) {
         var b9 = ev9.target.closest("[data-th]"); if (!b9) return;
         var k9 = b9.getAttribute("data-th");
@@ -2184,7 +2188,9 @@
   //  stage skin. Purely presentational - outcomes are never touched here.
   // ===========================================================================
   function foDashOn() {
-    try { return !foMobIsOn() && window.matchMedia("(min-width:900px)").matches; } catch (e) { return false; }
+    // the match centre is the ONE presentation now - desktop and phone alike;
+    // the stacked single-column shape below 900px is pure CSS
+    return true;
   }
   // one ball as a badge: dot grey, singles white, FOUR orange, SIX navy-gold,
   // W claret - the same coding on the scorebug, the feed and the rail
@@ -2310,7 +2316,7 @@
       "</div><div class='db-gnd k'>" + E(art.gnm) + (art.city ? ", " + E(art.city) : "") + " &nbsp;&#8982;</div></div>" +
       "</div>" +
       "<div class='fo-db-charts'>" +
-      "<div class='db-card'><div class='hd'><span class='k nv'>Runs per over</span><span class='k'>wicket overs marked &middot; this over in orange</span></div>" + rpoSvg + "</div>" +
+      "<div class='db-card'><div class='hd'><span class='k nv'>Runs per over</span><span class='k hint'>wicket overs marked &middot; this over in orange</span></div>" + rpoSvg + "</div>" +
       "<div class='db-card'>" + chase + fow +
       "<div class='db-fw pship'><span class='k'>Partnership</span><span><b>" + (inn.pshipR || 0) + " (" + (inn.pshipB || 0) + ")</b> &nbsp;<span class='k'>" + (inn.wkts + 1) + (["st", "nd", "rd"][inn.wkts] || "th") + " wkt</span></span></div></div>" +
       "</div></div>" +
@@ -2593,7 +2599,46 @@
       "body.fo-dash .db-p .pr u{display:none}" +
       "body.fo-dash .db-p .rw .k{max-width:40px}" +
       "}" +
-      "@media(max-width:1180px){body.fo-dash .fo-db-players{grid-template-columns:1fr 1fr}body.fo-dash .fo-db-info{grid-template-columns:1fr 1fr}}";
+      "@media(max-width:1180px){body.fo-dash .fo-db-players{grid-template-columns:1fr 1fr}body.fo-dash .fo-db-info{grid-template-columns:1fr 1fr}}" +
+      // ==== the phone: the same match centre, one column, thumb-sized ====
+      "@media(max-width:899.98px){" +
+      // the old bottom-sheet chrome stands down - the dashboard is the phone now
+      "body.fo-dash #fo-mob-nav,body.fo-dash #fo-mob-sheet,body.fo-dash #fo-mob-spdchip,body.fo-dash #fo-mob-flash,body.fo-dash #fo-th-gf{display:none !important}" +
+      "html body.fo-dash.fo-th.fo-th-ov0 #fo-oval,html body.fo-dash.fo-th[data-mobsheet] #fo-oval{display:flex !important}" +
+      "body.fo-dash .fo-db-wrap{padding:calc(var(--fo-tbh,52px) + 52px) 10px 96px}" +
+      "body.fo-dash .fo-db-bug{gap:10px 14px;padding:9px 12px;min-height:0}" +
+      "body.fo-dash .fo-db-bug .cr svg{width:30px;height:33px}" +
+      "body.fo-dash .fo-db-bug .tm b{font-size:12px;letter-spacing:.8px}" +
+      "body.fo-dash .fo-db-bug .tm span{font-size:9.5px}" +
+      "body.fo-dash .fo-db-bug .sc b{font-size:22px}" +
+      "body.fo-dash .fo-db-bug .st{padding-left:12px}" +
+      "body.fo-dash .fo-db-bug .st b{font-size:15px}" +
+      "body.fo-dash .fo-db-bug .bb9 .db-b{min-width:17px;height:17px;font-size:9px}" +
+      "body.fo-dash .fo-db-grid{display:flex;flex-direction:column;gap:10px;margin-top:10px}" +
+      "body.fo-dash .fo-db-left{gap:10px}" +
+      "body.fo-dash .fo-db-art{height:132px}" +
+      "body.fo-dash .fo-db-players{grid-template-columns:1fr;gap:8px}" +
+      "body.fo-dash .db-p{height:58px;gap:10px;padding:7px 12px}" +
+      "body.fo-dash .db-p img{width:38px;height:38px;flex-basis:38px}" +
+      "body.fo-dash .db-p .nm{font-size:13px}" +
+      "body.fo-dash .db-p .pr u{display:block}" +
+      "body.fo-dash .fo-db-info{grid-template-columns:1fr;gap:10px}" +
+      "body.fo-dash .fo-db-info>div{min-height:0}" +
+      "body.fo-dash .fo-db-info>.fo-db-field{min-height:320px}" +
+      "body.fo-dash .fo-db-charts{grid-template-columns:1fr;gap:10px}" +
+      "body.fo-dash .fo-db-comm .db-feed{overflow:visible}" +
+      "body.fo-dash .db-card .hd .k.hint{display:none}" +
+      "body.fo-dash .fo-db-bar{padding:10px 14px;gap:10px}" +
+      "body.fo-dash .fo-db-bar .bt{font-size:10.5px;letter-spacing:1.2px}" +
+      "html body.fo-dash #fo-db-act{padding:10px 16px;font-size:11px}" +
+      "html body.fo-dash.fo-thd #page .ftp-match-shell{top:52px;padding:12px 10px 30px}" +
+      "#fo-commpage .cp-hin{padding:12px 14px;gap:10px}" +
+      "#fo-commpage .cp-title b{font-size:16px}" +
+      "#fo-commpage .cp-filts{margin-left:0;flex-wrap:wrap}" +
+      "#fo-commpage .cp-in{padding:10px 8px 30px}" +
+      "#fo-commpage .db-cr{grid-template-columns:36px 26px 1fr;gap:7px;padding:9px 10px}" +
+      "#fo-commpage .db-cr .db-b{min-width:22px;height:22px;font-size:10px}" +
+      "}";
     document.head.appendChild(s);
   }
   function foThCss() {
@@ -3198,7 +3243,7 @@
       el.__foSig = sig;
       // phones flash the ball's result huge in the centre of the screen
       try {
-        if (foMobIsOn() && L && !M.done && window.__foMobFlashN !== M.log.length) {
+        if (foMobIsOn() && !foDashOn() && L && !M.done && window.__foMobFlashN !== M.log.length) {
           window.__foMobFlashN = M.log.length;
           var ms9 = document.body.getAttribute("data-mobsheet");
           var oF = L.out;
