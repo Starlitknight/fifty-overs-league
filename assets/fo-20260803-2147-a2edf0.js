@@ -10285,7 +10285,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-2142-cbd951";
+  var FO_BUILD = "20260803-2147-a2edf0";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -33130,6 +33130,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       }
     } catch (eNx) {}
 
+    // a sibling tab hands its own body in and borrows the hero + tab bar, so
+    // every view of the match stands in the same room
+    if (O && O.__tabBody != null) return hero + (tabBar || "") + O.__tabBody;
     return hero + (tabBar || "") +
       "<div class='fo-ms-g'>" +
       "<div class='fo-ms-card'>" +
@@ -33202,82 +33205,50 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           (t[0] === tab ? " aria-current='page'" : "") + ">" + t[1] + "</a>";
       }).join("") + "</nav>";
 
-      // THE SUMMARY IS ITS OWN ROOM: daylight, the navy hero, the dashboard.
-      if (tab === "sum") {
-        var crumb = "<div class='fo-ms-crumb'>&#8249;&#8249; &nbsp;" +
-          (f.ground ? E(f.ground) + " &nbsp;&middot;&nbsp; " : "") +
-          (O.roundNo ? "Round " + (O.roundNo | 0) + " &nbsp;&middot;&nbsp; " : (f.date ? E(f.date) + " &nbsp;&middot;&nbsp; " : "")) +
-          (rec.seasonNo ? "Season " + (rec.seasonNo | 0) : "League") + "</div>";
-        page.innerHTML =
-          "<div class='fo-mr fo-mr--sum'><div class='fo-ms-in'>" +
-          crumb + foMrSummary(rec, f, O, tabBar) +
-          "<div class='fo-mr-foot'>" +
-          "<a class='fo-mr-back day' href='" + (O.back || "#/fixtures") + "'>" + (O.backLbl || "&#8592; Results") + "</a>" +
-          "<a class='fo-mr-back day' href='#/league'>The league</a>" +
-          "<a class='fo-mr-back day' href='#/home'>Club</a>" +
-          "</div></div></div>";
-        try {
-          var tb9 = document.getElementById("topbar"), mr9 = page.querySelector(".fo-mr");
-          if (tb9 && mr9) mr9.style.paddingTop = (tb9.offsetHeight || 0) + "px";
-        } catch (eTb9) {}
-        return;
-      }
+      // ONE ROOM, FIVE VIEWS. Every tab now stands inside the Summary's own
+      // daylight skeleton - crumb, navy hero, tab bar - and only the body
+      // below the tabs changes. The old newspaper shell (Journal masthead,
+      // painting, its own scoreline) is gone; the hero already says all of it.
+      var crumb = "<div class='fo-ms-crumb'>&#8249;&#8249; &nbsp;" +
+        (f.ground ? E(f.ground) + " &nbsp;&middot;&nbsp; " : "") +
+        (O.roundNo ? "Round " + (O.roundNo | 0) + " &nbsp;&middot;&nbsp; " : (f.date ? E(f.date) + " &nbsp;&middot;&nbsp; " : "")) +
+        (rec.seasonNo ? "Season " + (rec.seasonNo | 0) : "League") + "</div>";
+      var dayFoot = "<div class='fo-mr-foot'>" +
+        "<a class='fo-mr-back day' href='" + (O.back || "#/fixtures") + "'>" + (O.backLbl || "&#8592; Results") + "</a>" +
+        "<a class='fo-mr-back day' href='#/league'>The league</a>" +
+        "<a class='fo-mr-back day' href='#/home'>Club</a>" +
+        "</div>";
 
-      var main;
-      if (tab === "chart") {
-        main =
-          // two rows, not one grid: the moment cards are short and the innings
-          // cards are tall, and mixing them left a column-high hole
-          "<div class='fo-mr-row2'>" + turnCard + momCard + "</div>" +
-          "<div class='fo-mr-cards fo-mr-cards--row'>" + foMrCard(f.first) + foMrCard(f.second) + "</div>" +
-          "<section class='fo-mr-wormsec'><div class='fo-mr-rule'><span>How it was scored</span></div>" + foMrWorm(f) + "</section>" +
-          moreHTML;
-      } else if (tab === "card") {
-        main = "<div class='fo-mr-panel'>" + foMrScorecard(rec) + "</div>";
-      } else if (tab === "comm") {
-        main = "<div class='fo-mr-panel'>" + foMrCommentary(rec, f, commAll) + "</div>";
-      } else if (tab === "fantasy") {
-        main = "<div class='fo-mr-panel'>" + foMrFantasy(rec) + "</div>";
+      var body;
+      if (tab === "sum") {
+        body = foMrSummary(rec, f, O, tabBar);
       } else {
-        main = "<div class='fo-mr-panel'>" + foMrFantasy(rec) + "</div>";
+        var inner;
+        if (tab === "chart") {
+          inner =
+            "<div class='fo-mr-row2'>" + turnCard + momCard + "</div>" +
+            "<div class='fo-mr-cards fo-mr-cards--row'>" + foMrCard(f.first) + foMrCard(f.second) + "</div>" +
+            "<section class='fo-mr-wormsec'><div class='fo-mr-rule'><span>How it was scored</span></div>" + foMrWorm(f) + "</section>" +
+            moreHTML;
+        } else if (tab === "card") {
+          inner = "<div class='fo-mr-panel'>" + foMrScorecard(rec) + "</div>";
+        } else if (tab === "comm") {
+          inner = "<div class='fo-mr-panel'>" + foMrCommentary(rec, f, commAll) + "</div>";
+        } else {
+          inner = "<div class='fo-mr-panel'>" + foMrFantasy(rec) + "</div>";
+        }
+        var O2 = Object.assign({}, O, { __tabBody: "<div class='fo-ms-tabbody'>" + inner + "</div>" });
+        body = foMrSummary(rec, f, O2, tabBar);
       }
 
       page.innerHTML =
-        "<div class='fo-mr'>" +
-        // THE ARTWORK IS A HEADER, NOT A BACKGROUND. It used to be a band of
-        // fixed height hung from the top of the page, which meant that on any
-        // screen taller than the headline the story began ON TOP OF IT - the
-        // drop cap and the whole first paragraph laid over a painting. Now the
-        // art lives inside the hero and is bounded by it, so no matter the
-        // viewport the writing starts below the picture, on solid ground.
-        "<header class='fo-mr-hero'>" +
-        "<figure class='fo-mr-plate'><img src='" + foMrGroundArt(f) + "' alt='' " +
-        "onerror=\"this.parentNode.style.display='none'\"></figure>" +
-        "<div class='fo-mr-in fo-mr-in--hero'>" +
-        "<div class='fo-mr-mast'>The Fifty Overs Journal <em>&middot; Match Report</em></div>" +
-        "<div class='fo-mr-folio'>" + E(f.date || "") + (f.ground ? " &middot; " + E(f.ground) : "") +
-        (f.comp ? " &middot; " + E(String(f.comp).charAt(0).toUpperCase() + String(f.comp).slice(1)) : "") + "</div>" +
-        "<h1 class='fo-mr-head'>" + E(hd.head) + "</h1>" +
-        "<p class='fo-mr-dek'>" + E(hd.dek) + "</p>" +
-        scoreline +
-        "</div></header>" +
-        "<div class='fo-mr-in fo-mr-in--body'>" +
-        tabBar + main +
-        "<div class='fo-mr-foot'>" +
-        (tab === "card" ? "<a class='fo-mr-back' href='" + O.href("chart") + "'>How it was scored</a>"
-                        : "<a class='fo-mr-back' href='" + O.href("card") + "'>Full scorecard</a>") +
-        "<a class='fo-mr-back' href='" + (O.back || "#/lore") + "'>" + (O.backLbl || "The Journal") + "</a>" +
-        "<a class='fo-mr-back' href='#/club'>Club</a>" +
-        "</div></div></div>";
-
-      // The topbar stays fixed so the nav is always in reach, and it is opaque
-      // now rather than a gradient - a gradient over the top of the painting
-      // is still something laid over the painting. So the page starts below
-      // it, measured rather than guessed.
+        "<div class='fo-mr fo-mr--sum'><div class='fo-ms-in'>" +
+        crumb + body + dayFoot +
+        "</div></div>";
       try {
-        var tb = document.getElementById("topbar"), mr = page.querySelector(".fo-mr");
-        if (tb && mr) mr.style.paddingTop = (tb.offsetHeight || 0) + "px";
-      } catch (eTb) {}
+        var tb9 = document.getElementById("topbar"), mr9 = page.querySelector(".fo-mr");
+        if (tb9 && mr9) mr9.style.paddingTop = (tb9.offsetHeight || 0) + "px";
+      } catch (eTb9) {}
   }
 
   window.foRenderReport = function () {
@@ -33519,6 +33490,14 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-ms-mid .potm b{font:600 15px Georgia,serif;color:#fff}",
       // tab bar in daylight
       ".fo-mr--sum .fo-mr-tabs{margin:14px 0;border-bottom:2px solid #e3dccb}",
+      // the sibling tabs live in the same daylight: their bodies sit on white
+      // cards under the navy hero, nothing routes back to the old newspaper
+      ".fo-mr--sum .fo-ms-tabbody{margin-top:2px}",
+      ".fo-mr--sum .fo-ms-tabbody .fo-mr-panel{background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);padding:16px 18px}",
+      ".fo-mr--sum .fo-ms-tabbody .fo-mr-row2{margin-bottom:14px}",
+      ".fo-mr--sum .fo-ms-tabbody .fo-mr-turn,.fo-mr--sum .fo-ms-tabbody .fo-mr-mom{background:#14243A;border:none;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.12)}",
+      ".fo-mr--sum .fo-ms-tabbody .fo-mr-wormsec{margin-top:14px}",
+      "@media(max-width:820px){.fo-mr--sum .fo-ms-tabbody .fo-mr-panel{padding:12px 10px}}",
       "html body #page .fo-mr--sum a.fo-mr-tab{color:#8a8272 !important}",
       "html body #page .fo-mr--sum a.fo-mr-tab:hover{color:#14243A !important}",
       "html body #page .fo-mr--sum a.fo-mr-tab.on{color:#C9571F !important;border-bottom-color:#C9571F}",
