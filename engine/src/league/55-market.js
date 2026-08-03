@@ -76,7 +76,7 @@
   }
 
   // ---- the data on the desk -------------------------------------------------
-  var MK = { listings: null, deals: null, mine: null, snap: null, at: 0, busy: 0, tab: "board" };
+  var MK = { listings: null, deals: null, mine: null, snap: null, at: 0, busy: 0, tab: "board", role: "all", sort: "close" };
   function refetch(force) {
     if (MK.busy) return;
     if (!force && MK.at && Date.now() - MK.at < 30000) return;
@@ -104,48 +104,80 @@
   }
 
   // ---- the rooms ------------------------------------------------------------
-  function cardHtml(L, cl, myBids) {
+  // which shelf of the board a man sits on, off the scout's public word
+  function roleBucket(sc) {
+    var r = String((sc && sc.role) || "").toLowerCase();
+    if (!r) return "";
+    if (/keeper|wicket/.test(r)) return "wk";
+    if (/allround|all-round/.test(r)) return "ar";
+    if (/seam|fast|medium|spin|bowl/.test(r)) return "bowl";
+    return "bat";
+  }
+  function flagSrc() {
+    try { var cl = claim(); return (typeof FO_ART !== "undefined" ? FO_ART : "client/art/") + "flags/" + window.__foCxAPI.flagFile(cl.country) + ".svg"; }
+    catch (e) { return ""; }
+  }
+  function rowHtml(L, cl, myBids) {
     var imp = impressionOf(L.id) || {};
     var sc = imp.scout || {};
     var meta = [];
-    if (sc.age) meta.push(sc.age + " yrs");
-    if (sc.role) meta.push(E(sc.role === "allrounder" ? "all-rounder" : sc.role === "keeper" ? "wicketkeeper" : sc.role));
     if (sc.hand) meta.push(E(sc.hand));
+    if (sc.role) meta.push(E(sc.role === "allrounder" ? "all-rounder" : sc.role === "keeper" ? "wicketkeeper" : sc.role));
+    if (sc.age) meta.push(sc.age);
     var high = +L.high || 0;
     var minBid = high ? high + STEP : Math.ceil((+L.asking || 0) * 0.55);
     var myBid = (myBids || []).filter(function (b) { return Number(b.id) === Number(L.id); })[0];
     var lead = myBid && high && +myBid.amount >= high;
     var mineSelling = cl && L.country_id === cl.country && L.slot === cl.slot;
-    return "<div class='fo-mk-card" + (L.slot < 0 ? " fa" : "") + (lead ? " lead" : "") + "' data-id='" + L.id + "'>" +
-      "<div class='fo-mk-top'>" +
-      "<div class='fo-mk-who'><b>" + E(L.player) + "</b>" +
-      "<span>" + (L.slot < 0 ? "<u class='fatag'>FREE AGENT</u>" : E(L.club || "a club")) +
-      (meta.length ? " &middot; " + meta.join(" &middot; ") : "") + "</span>" +
-      (sc.impression ? "<i>" + E(sc.impression) + (sc.bowl && sc.bowl !== "does not bowl" ? " &middot; " + E(sc.bowl) : "") + "</i>" : "") +
-      "</div>" +
-      "<div class='fo-mk-px'><span class='lb'>" + (high ? "High bid" : "Asking") + "</span>" +
-      "<b>" + money(high || L.asking) + "</b>" +
-      (high ? "<span class='by'>" + (lead ? "you lead" : E(L.highClub || L.high_club || "a club")) + "</span>" : "") + "</div>" +
-      "</div>" +
-      "<div class='fo-mk-meta'>" +
-      "<span>Reserve " + money(L.reserve) + "</span>" +
-      "<span>" + (L.bids != null ? L.bids : L.offers || 0) + " offer" + ((L.bids != null ? L.bids : L.offers) === 1 ? "" : "s") + "</span>" +
-      "<span class='cl'>Hammer " + E(dayTxt(L.closes_day)) + "</span>" +
-      "</div>" +
-      "<div class='fo-mk-act'>" +
+    var fa = L.slot < 0;
+    var state = lead ? "high bid &middot; you lead"
+      : high ? "high bid &middot; " + E(L.highClub || L.high_club || "a club") + " lead"
+      : "no bids yet &middot; reserve " + money(L.reserve);
+    var fl = flagSrc();
+    return "<div class='fo-mk-row" + (lead ? " lead" : "") + "' data-id='" + L.id + "'>" +
+      "<span class='rk" + (fa ? " fa" : "") + "'>" + (fa ? "FA" : "B") + "</span>" +
+      "<span class='who'><b>" + E(L.player) + "</b>" +
+      "<i>" + (meta.length ? meta.join(" &middot; ") : "an unscouted man") + "</i>" +
+      "<u class='" + (fa ? "" : "sell") + "'>" + (fa ? "Free agent" : "Listed by " + E(L.club || "a club")) + "</u>" +
+      (sc.impression ? "<em>" + E(sc.impression) + "</em>" : "") +
+      "</span>" +
+      (fl ? "<span class='mid'><img src='" + fl + "' alt=''></span>" : "") +
+      "<span class='pr'><b>" + money(high || L.asking) + "</b>" +
+      "<i>" + state + "</i><i>hammer " + E(dayTxt(L.closes_day)) + "</i>" +
+      "<span class='btns'>" +
       (mineSelling
-        ? "<button class='fo-mk-b ghost' data-mk-withdraw='" + L.id + "'>Withdraw</button>"
-        : "<button class='fo-mk-b' data-mk-bid='" + L.id + "' data-min='" + minBid + "'>" +
-          (myBid ? (lead ? "Raise (you lead)" : "Raise &middot; outbid!") : "Bid " + money(minBid) + "+") + "</button>") +
-      "<button class='fo-mk-b ghost' data-mk-scout='" + L.id + "'>Scout &middot; " + money(imp.fee || 4000) + "</button>" +
-      "</div></div>";
+        ? "<button class='act ghost' data-mk-withdraw='" + L.id + "'>Withdraw</button>"
+        : "<button class='act' data-mk-bid='" + L.id + "' data-min='" + minBid + "'>" + (myBid ? (lead ? "Raise" : "Outbid!") : "Bid") + "</button>") +
+      "<button class='act ghost' data-mk-scout='" + L.id + "'>Scout " + money(imp.fee || 4000) + "</button>" +
+      "</span></span>" +
+      "</div>";
   }
 
+  var ROLE_TABS = [["all", "All players"], ["bat", "Batters"], ["bowl", "Bowlers"], ["ar", "All-rounders"], ["wk", "Keepers"]];
+  var SORTS = [["close", "Closing soon"], ["new", "Newest"], ["hi", "Price high"], ["lo", "Price low"]];
   function boardHtml(cl) {
     if (!MK.listings) return "<div class='fo-mk-none'>Reading the board&hellip;</div>";
     if (!MK.listings.length) return "<div class='fo-mk-none'>The board is bare today. The umpire trickles new names on daily &mdash; look in tomorrow.</div>";
     var myBids = (MK.mine && MK.mine.bids) || [];
-    return "<div class='fo-mk-grid'>" + MK.listings.map(function (L) { return cardHtml(L, cl, myBids); }).join("") + "</div>";
+    var rows = MK.listings.slice();
+    if (MK.role !== "all") rows = rows.filter(function (L) {
+      var b9 = roleBucket((impressionOf(L.id) || {}).scout);
+      return b9 === MK.role || (MK.role !== "all" && !b9 && false);
+    });
+    if (MK.sort === "new") rows.sort(function (a, b) { return (b.id | 0) - (a.id | 0); });
+    else if (MK.sort === "hi") rows.sort(function (a, b) { return (+(b.high || b.asking) || 0) - (+(a.high || a.asking) || 0); });
+    else if (MK.sort === "lo") rows.sort(function (a, b) { return (+(a.high || a.asking) || 0) - (+(b.high || b.asking) || 0); });
+    var tabs = "<div class='fo-mk-rtabs'>" + ROLE_TABS.map(function (t) {
+      return "<button class='" + (MK.role === t[0] ? "on" : "") + "' data-mk-role='" + t[0] + "'>" + t[1] + "</button>";
+    }).join("") + "</div>";
+    var sortSel = "<div class='fo-mk-ftr'><label class='dd'>Sort" +
+      "<select id='fo-mk-sort'>" + SORTS.map(function (s2) {
+        return "<option value='" + s2[0] + "'" + (MK.sort === s2[0] ? " selected" : "") + ">" + s2[1] + "</option>";
+      }).join("") + "</select></label>" +
+      "<span class='cnt'>" + rows.length + " of " + MK.listings.length + " names</span></div>";
+    return tabs + sortSel +
+      (rows.length ? rows.map(function (L) { return rowHtml(L, cl, myBids); }).join("")
+        : "<div class='fo-mk-none'>Nobody of that kind on the board today.</div>");
   }
 
   function sellHtml(cl) {
@@ -209,9 +241,10 @@
     } catch (e) { try { console.warn("foRenderMarketPage", e); } catch (e2) {} }
   }
   function mast() {
-    return "<header class='fo-nvmast'><div class='k'>Open outcry &middot; three-day windows &middot; the hammer falls with the daily settle</div>" +
-      "<h1>The Transfer Market</h1>" +
-      "<p>Free agents walk on daily; clubs list the men they can spare. The high bid is public &mdash; beat it or hold your tongue.</p></header>";
+    var n = MK.listings ? MK.listings.length : null;
+    return "<div class='fo-mk-hd'><div><h1>Transfer market</h1>" +
+      "<p>Open outcry, three-day windows &mdash; the hammer falls with the daily settle.</p></div>" +
+      "<div class='chip'><span>On the board</span><b>" + (n == null ? "&hellip;" : n + " name" + (n === 1 ? "" : "s")) + "</b></div></div>";
   }
   function paint() {
     var page = document.getElementById("page"); if (!page) return;
@@ -230,6 +263,10 @@
     if (page.__foMkHtml === html && page.querySelector(".fo-mk")) return;
     page.__foMkHtml = html;
     page.innerHTML = html;
+    try {
+      var so = document.getElementById("fo-mk-sort");
+      if (so) so.addEventListener("change", function () { MK.sort = so.value; paint(); });
+    } catch (e9) {}
   }
 
   // ---- the deeds ------------------------------------------------------------
@@ -237,6 +274,7 @@
     var t9 = ev.target && ev.target.closest ? ev.target : null; if (!t9) return;
     var b;
     if ((b = t9.closest("[data-mk-tab]"))) { MK.tab = b.getAttribute("data-mk-tab"); paint(); return; }
+    if ((b = t9.closest("[data-mk-role]"))) { MK.role = b.getAttribute("data-mk-role"); paint(); return; }
     if ((b = t9.closest("[data-mk-bid]"))) {
       var id = +b.getAttribute("data-mk-bid"), min = +b.getAttribute("data-min") || STEP;
       var amt = prompt("Your offer (the board wants at least " + min + "):", String(min));
@@ -309,6 +347,40 @@
     var s = document.createElement("style"); s.id = "fo-mkt-css";
     s.textContent = [
       "html body #page .fo-mk{max-width:860px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
+      // the dashboard masthead + the board's list rows
+      "html body #page .fo-mk-hd{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}",
+      "html body #page .fo-mk-hd h1{font:700 30px/1 Oswald,sans-serif;text-transform:uppercase;color:#14243A;margin:0;letter-spacing:.01em}",
+      "html body #page .fo-mk-hd p{font:400 12.5px/1.4 Inter,sans-serif;color:#67748a;margin:7px 0 0}",
+      "html body #page .fo-mk-hd .chip{margin-left:auto;flex:none;background:#FFFEFC;border:1px solid rgba(27,36,50,.09);border-radius:11px;padding:10px 13px;text-align:right}",
+      "html body #page .fo-mk-hd .chip span{display:block;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#8a93a2}",
+      "html body #page .fo-mk-hd .chip b{display:block;font:700 15px/1.4 Inter,sans-serif;color:#14243A}",
+      "html body #page .fo-mk-rtabs{display:flex;gap:2px;background:#FFFEFC;border:1px solid rgba(27,36,50,.09);border-radius:12px;padding:5px;overflow-x:auto;margin-bottom:9px}",
+      "html body #page .fo-mk-rtabs button{flex:1;text-align:center;padding:11px 8px;border:0;background:transparent;border-radius:8px;font:600 10px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#67748a;white-space:nowrap;cursor:pointer;min-height:40px}",
+      "html body #page .fo-mk-rtabs button.on{background:#14243A;color:#F1EEE6}",
+      "html body #page .fo-mk-ftr{display:flex;align-items:center;gap:10px;margin-bottom:10px}",
+      "html body #page .fo-mk-ftr .dd{display:flex;align-items:center;gap:8px;background:#FFFEFC;border:1px solid rgba(27,36,50,.09);border-radius:10px;padding:6px 8px 6px 12px;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#1B2432}",
+      "html body #page .fo-mk-ftr select{border:0;background:transparent;font:600 11px/1.4 Inter,sans-serif;color:#14243A;min-height:32px}",
+      "html body #page .fo-mk-ftr .cnt{margin-left:auto;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8a93a2}",
+      "html body #page .fo-mk-row{display:flex;align-items:flex-start;gap:11px;background:#FFFEFC;border:1px solid rgba(27,36,50,.09);border-radius:12px;padding:12px 13px;margin-bottom:9px;box-shadow:0 1px 2px rgba(14,35,63,.04)}",
+      "html body #page .fo-mk-row.lead{border-color:rgba(23,122,87,.45)}",
+      "html body #page .fo-mk-row .rk{flex:none;width:24px;height:24px;border-radius:50%;background:#C9571F;color:#fff;font:700 9.5px/1 Inter,sans-serif;display:flex;align-items:center;justify-content:center;margin-top:2px}",
+      "html body #page .fo-mk-row .rk.fa{background:#1F6F4A}",
+      "html body #page .fo-mk-row .who{min-width:0;flex:1}",
+      "html body #page .fo-mk-row .who b{display:block;font:600 14px/1.2 Inter,sans-serif;color:#1B2432}",
+      "html body #page .fo-mk-row .who i{display:block;font-style:normal;font:400 10.5px/1.4 Inter,sans-serif;color:#8a93a2;margin-top:2px;text-transform:capitalize}",
+      "html body #page .fo-mk-row .who u{display:inline-block;text-decoration:none;font:600 8px/1 Oswald,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#1F6F4A;background:rgba(31,111,74,.08);border:1px solid rgba(31,111,74,.25);border-radius:6px;padding:4px 6px;margin-top:6px}",
+      "html body #page .fo-mk-row .who u.sell{color:#7A5480;background:rgba(122,84,128,.08);border-color:rgba(122,84,128,.25)}",
+      "html body #page .fo-mk-row .who em{display:block;font:italic 400 11px/1.4 Georgia,serif;color:rgba(20,28,40,.6);margin-top:5px}",
+      "html body #page .fo-mk-row .mid{flex:none;margin-top:3px}",
+      "html body #page .fo-mk-row .mid img{width:20px;height:14px;object-fit:cover;border-radius:2px}",
+      "html body #page .fo-mk-row .pr{flex:none;text-align:right;max-width:46%}",
+      "html body #page .fo-mk-row .pr b{display:block;font:700 17px/1.1 Oswald,sans-serif;color:#C9571F;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-row .pr i{display:block;font-style:normal;font:400 9.5px/1.4 Inter,sans-serif;color:#8a93a2;margin-top:2px}",
+      "html body #page .fo-mk-row.lead .pr i:first-of-type{color:#177A57;font-weight:600}",
+      "html body #page .fo-mk-row .btns{display:flex;gap:6px;justify-content:flex-end;margin-top:7px}",
+      "html body #page .fo-mk-row .act{font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#C9571F;background:#FFFEFC;border:1.5px solid rgba(201,87,31,.55);border-radius:8px;padding:8px 12px;cursor:pointer;min-height:34px}",
+      "html body #page .fo-mk-row .act:hover{background:rgba(201,87,31,.06)}",
+      "html body #page .fo-mk-row .act.ghost{color:#67748a;border-color:rgba(27,36,50,.18)}",
       "html body #page .fo-mk-tabs{display:flex;gap:8px;margin:0 0 14px}",
       "html body #page .fo-mk-tabs button{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.14);border-radius:999px;padding:9px 16px;cursor:pointer}",
       "html body #page .fo-mk-tabs button.on{background:#0E233F;color:#FFFEFC;border-color:#0E233F}",

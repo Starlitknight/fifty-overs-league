@@ -10212,7 +10212,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0701-8394c6";
+  var FO_BUILD = "20260803-0730-e4e9a0";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -43027,7 +43027,59 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-fin-foot a{display:inline-flex;align-items:center;min-height:44px;font:600 12px Inter,sans-serif;color:rgba(20,28,40,.65);background:var(--paper);border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:0 17px;text-decoration:none}",
       ".fo-fin-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5)}",
       "@media(max-width:780px){.fo-fin-cols,.fo-fin-grid{grid-template-columns:1fr}",
-      ".fo-fin{padding:18px 12px 40px}.fo-fin-bank{padding:18px}}"
+      ".fo-fin{padding:18px 12px 40px}.fo-fin-bank{padding:18px}}",
+      // ---- THE DASHBOARD SKIN: the books in the club-page card language ----
+      ".fo-f2{--acc:#C9571F;--navy:#14243A;--mut:#67748a;--edge:rgba(27,36,50,.09);--grn:#177A57;--red:#B23230;display:flex;flex-direction:column;gap:12px}",
+      ".fo-f2 .fo-f2-hd{display:flex;align-items:flex-start;gap:12px}",
+      ".fo-f2 .fo-f2-hd h1{font:700 30px/1 Oswald,sans-serif;text-transform:uppercase;color:var(--navy);margin:0;letter-spacing:.01em;font-family:Oswald,sans-serif}",
+      ".fo-f2 .fo-f2-hd p{font:400 12.5px/1.4 Inter,sans-serif;color:var(--mut);margin:7px 0 0;font-style:normal;font-family:Inter,sans-serif}",
+      ".fo-f2-chip{margin-left:auto;flex:none;background:#FFFEFC;border:1px solid var(--edge);border-radius:11px;padding:10px 13px;text-align:right}",
+      ".fo-f2-chip span{font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#8a93a2;display:block}",
+      "html body #page .fo-f2-chip b{display:block;font:700 16px/1.3 Inter,sans-serif;color:var(--navy);font-variant-numeric:tabular-nums}",
+      ".fo-f2-card{background:#FFFEFC;border:1px solid var(--edge);border-radius:13px;padding:15px 16px;box-shadow:0 1px 2px rgba(14,35,63,.05);text-align:left}",
+      ".fo-f2-sh{display:flex;align-items:center;font:600 11.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--navy);margin:-15px -16px 13px;padding:12px 16px 11px;background:linear-gradient(0deg,rgba(14,35,63,.03),rgba(14,35,63,.06));border-bottom:1px solid var(--edge);border-radius:12px 12px 0 0}",
+      ".fo-f2-sh:before{content:'';display:inline-block;width:7px;height:7px;background:var(--acc);border-radius:2px;margin-right:9px}",
+      "html body #page .fo-f2-sh a{margin-left:auto;font:600 10px/1 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:var(--acc) !important;text-decoration:none !important}",
+      ".fo-f2-tiles{display:grid;grid-template-columns:1fr 1fr;gap:11px}",
+      "@media(min-width:900px){.fo-f2-tiles{grid-template-columns:repeat(4,1fr)}}",
+      ".fo-f2-tile{background:#FFFEFC;border:1px solid var(--edge);border-radius:13px;padding:14px;text-align:center}",
+      ".fo-f2-tile .ic{width:38px;height:38px;border-radius:50%;background:var(--navy);color:#F1EEE6;display:flex;align-items:center;justify-content:center;font:700 15px/1 Inter,sans-serif;margin:0 auto 9px}",
+      ".fo-f2-tile span{font:600 8.5px/1.35 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8a93a2;display:block}",
+      "html body #page .fo-f2-tile b{display:block;font:700 19px/1.2 Inter,sans-serif;margin-top:5px;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-f2-tile b.up{color:var(--grn)}html body #page .fo-f2-tile b.dn{color:#B44A22}html body #page .fo-f2-tile b.nv{color:var(--navy)}",
+      "html body #page .fo-f2-tile i{display:block;font:400 10px/1.4 Inter,sans-serif;font-style:normal;color:#8a93a2;margin-top:5px}",
+      ".fo-f2-tile .bar{height:6px;border-radius:99px;background:#EBE6DA;margin-top:8px;overflow:hidden}",
+      ".fo-f2-tile .bar u{display:block;height:100%;background:var(--acc);border-radius:99px}",
+      ".fo-f2-duo{display:grid;grid-template-columns:1fr;gap:12px}",
+      "@media(min-width:900px){.fo-f2-duo{grid-template-columns:1fr 1fr}}",
+      ".fo-f2-r{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid rgba(27,36,50,.05);font:400 12.5px/1.3 Inter,sans-serif;color:#1B2432}",
+      ".fo-f2-r:last-of-type{border-bottom:0}",
+      "html body #page .fo-f2-r b{margin-left:auto;font-weight:600;font-variant-numeric:tabular-nums;color:#1B2432}",
+      "html body #page .fo-f2-r b.up{color:var(--grn)}html body #page .fo-f2-r b.dn{color:#B44A22}",
+      ".fo-f2-r em{font-style:normal;width:36px;text-align:right;font:400 10.5px/1 Inter,sans-serif;color:#8a93a2}",
+      ".fo-f2-r.tot{border-top:1.5px solid var(--edge);font-weight:700;padding-top:10px}",
+      ".fo-f2-chart svg{width:100%;height:auto;display:block}",
+      ".fo-f2-leg{display:flex;gap:14px;justify-content:center;margin-top:8px;font:400 10px/1 Inter,sans-serif;color:var(--mut)}",
+      ".fo-f2-tx .r{display:flex;align-items:center;gap:10px;padding:8.5px 0;border-bottom:1px solid rgba(27,36,50,.05)}",
+      ".fo-f2-tx .r:last-of-type{border-bottom:0}",
+      ".fo-f2-tx .r i{flex:none;width:20px;height:20px;border-radius:50%;font-style:normal;display:flex;align-items:center;justify-content:center;font:700 12px/1 Inter,sans-serif;color:#fff}",
+      ".fo-f2-tx .r i.up{background:var(--grn)}.fo-f2-tx .r i.dn{background:var(--red)}",
+      ".fo-f2-tx .r .w{min-width:0;font:500 12px/1.3 Inter,sans-serif;color:#1B2432}",
+      ".fo-f2-tx .r .w u{display:block;text-decoration:none;font:400 10px/1.4 Inter,sans-serif;color:#8a93a2}",
+      ".fo-f2-tx .r .d{margin-left:auto;font:400 10px/1 Inter,sans-serif;color:#8a93a2;white-space:nowrap}",
+      ".fo-f2-tx .r .a{font:600 12px/1 Inter,sans-serif;white-space:nowrap;min-width:74px;text-align:right;font-variant-numeric:tabular-nums}",
+      ".fo-f2-tx .r .a.up{color:var(--grn)}.fo-f2-tx .r .a.dn{color:var(--red)}",
+      ".fo-f2-hl .in9{display:flex;gap:14px;align-items:center}",
+      ".fo-f2-hl .gr{flex:none;width:64px;height:64px;border-radius:50%;border:3px solid var(--grn);display:flex;flex-direction:column;align-items:center;justify-content:center}",
+      ".fo-f2-hl .gr.warn{border-color:#B58128}.fo-f2-hl .gr.bad{border-color:var(--red)}",
+      "html body #page .fo-f2-hl .gr b{font:700 26px/1 'Fraunces',Georgia,serif;color:var(--grn)}",
+      "html body #page .fo-f2-hl .gr.warn b{color:#B58128}html body #page .fo-f2-hl .gr.bad b{color:var(--red)}",
+      ".fo-f2-hl .gr span{font:600 6.5px/1 Oswald,sans-serif;letter-spacing:.14em;color:var(--mut);margin-top:2px;text-transform:uppercase}",
+      ".fo-f2-hl p{font:400 12px/1.55 Inter,sans-serif;color:#3c4757;margin:0}",
+      ".fo-f2-hs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;border-top:1px solid var(--edge);margin-top:13px;padding-top:12px;text-align:center}",
+      ".fo-f2-hs span{font:600 8.5px/1.4 Oswald,sans-serif;letter-spacing:.11em;text-transform:uppercase;color:#8a93a2;display:block}",
+      "html body #page .fo-f2-hs b{display:block;font:600 13px/1.3 Inter,sans-serif;color:var(--navy);margin-top:3px}",
+      ".fo-f2-hs i{display:block;font-style:normal;font:400 9.5px/1.35 Inter,sans-serif;color:#8a93a2;margin-top:2px}"
     ].join("\n");
     document.head.appendChild(s);
   }
@@ -43051,6 +43103,55 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       (sub ? "<p>" + sub + "</p>" : "") + "</header>";
   }
 
+  // the statement's first page powers the balance line and the latest entries;
+  // it lands once, after the books, and the page repaints with it
+  var FTX = { at: 0, lines: null, busy: false };
+  function wantTx() {
+    if (FTX.busy || (FTX.lines && Date.now() - FTX.at < 60000)) return;
+    FTX.busy = true;
+    rpc("world_my_statement", { p_limit: 40 })
+      .then(function (r) {
+        FTX.busy = false; FTX.at = Date.now();
+        FTX.lines = (r && r.lines) || [];
+        if ((location.hash || "").indexOf("#/finance") === 0) window.foRenderFinancePage();
+      })
+      .catch(function () { FTX.busy = false; FTX.at = Date.now(); FTX.lines = []; });
+  }
+  // the balance walked over time, as one honest navy line
+  function chartCard() {
+    var ls = (FTX.lines || []).slice().reverse();      // oldest first
+    if (ls.length < 3) return "";
+    var pts = ls.map(function (l) { return Number(l.balance) || 0; });
+    var lo = Math.min.apply(null, pts), hi = Math.max.apply(null, pts);
+    if (hi === lo) { hi += 1; }
+    var W = 360, H = 120, PX = 14, PY = 14;
+    var xy = pts.map(function (v, i) {
+      var x = PX + (W - 2 * PX) * (pts.length === 1 ? 0 : i / (pts.length - 1));
+      var y = H - PY - (H - 2 * PY) * ((v - lo) / (hi - lo));
+      return x.toFixed(1) + "," + y.toFixed(1);
+    }).join(" ");
+    return "<div class='fo-f2-card fo-f2-chart'><div class='fo-f2-sh'>The treasury's line</div>" +
+      "<svg viewBox='0 0 " + W + " " + H + "' role='img' aria-label='Bank balance over time'>" +
+      "<line x1='" + PX + "' y1='" + (H - PY) + "' x2='" + (W - PX) + "' y2='" + (H - PY) + "' stroke='rgba(27,36,50,.12)'/>" +
+      "<polyline points='" + xy + "' fill='none' stroke='#14243A' stroke-width='2.5' stroke-linecap='round'/>" +
+      "</svg>" +
+      "<div class='fo-f2-leg'><span>" + Mk(lo) + " low</span><span>&middot;</span><span>" + Mk(hi) + " high</span><span>&middot;</span><span>last " + ls.length + " entries</span></div></div>";
+  }
+  function txCard() {
+    if (FTX.lines === null) return "<div class='fo-f2-card fo-f2-tx'><div class='fo-f2-sh'>Recent transactions</div>" +
+      "<div class='fo-st-none'>Opening the statement&hellip;</div></div>";
+    if (!FTX.lines.length) return "";
+    var rows = FTX.lines.slice(0, 6).map(function (l) {
+      var d = stDate(l.at), type = STK[l.kind] || l.kind, det = stDetail(type, l.label);
+      var up = l.amount > 0;
+      return "<div class='r'><i class='" + (up ? "up" : "dn") + "'>" + (up ? "+" : "&minus;") + "</i>" +
+        "<span class='w'>" + E(type) + (det ? "<u>" + E(det) + "</u>" : "") + "</span>" +
+        "<span class='d'>" + E(d.day.replace(/^\w+ /, "").replace(/ \d{4}$/, "")) + "</span>" +
+        "<span class='a " + (up ? "up" : "dn") + "'>" + (up ? "+" : "&minus;") + M(Math.abs(l.amount)) + "</span></div>";
+    }).join("");
+    return "<div class='fo-f2-card fo-f2-tx'><div class='fo-f2-sh'>Recent transactions<a href='#/statement'>View all &rsaquo;</a></div>" + rows + "</div>";
+  }
+
   function render(page, st) {
     var f = (st && st.finance) || {}, bank = Number(st && st.bank) || 0;
     var clubNm = (st.claim && st.claim.club) || "Your club";
@@ -43072,18 +43173,32 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var totOut = outWage + outUp + outInt + outFees + outScout + outAcad + outSeats;
 
     var perRound = rounds ? (totIn - outWage - outUp - outInt) / rounds : 0;
+    var net = totIn - totOut;
+    var squad = (st.squad || []).slice().filter(function (p) { return p && p.name; });
+    var billNow = squad.reduce(function (s2, p) { return s2 + (Number(p.wage) || 0); }, 0);
+    var wageShare = totIn > 0 ? pct(outWage, totIn) : 0;
 
-    var html = head(clubNm, "");
+    if (jwt()) wantTx();
 
-    // ---- the bank --------------------------------------------------------
-    html += "<div class='fo-fin-bank'><div class='lb'>In the treasury</div>" +
-      "<b>" + M(bank) + "</b>" +
-      "<div class='fo-fin-walk'>" +
-      "<div><span>Founded with</span><i>" + M(founded) + "</i></div>" +
-      "<div><span>Since then</span><i class='" + (swing >= 0 ? "fo-fin-up" : "fo-fin-dn") + "'>" + Msign(swing) + "</i></div>" +
-      "<div><span>Rounds settled</span><i>" + rounds + "</i></div>" +
-      "<div><span>A round is worth</span><i class='" + (perRound >= 0 ? "fo-fin-up" : "fo-fin-dn") + "'>" + Msign(Math.round(perRound)) + "</i></div>" +
-      "</div></div>";
+    // ---- the masthead ----------------------------------------------------
+    var html = "<div class='fo-f2'>" +
+      "<div class='fo-f2-hd'><div><h1>Finances</h1><p>The books of " + E(clubNm) + "</p></div>" +
+      "<div class='fo-f2-chip'><span>Bank balance</span><b>" + M(bank) + "</b></div></div>";
+
+    // ---- the four tiles --------------------------------------------------
+    var brkLine = function (nm, v, tot, dir) {
+      var p9 = tot > 0 ? pct(Math.abs(v), tot) : 0;
+      return "<div class='fo-f2-r'>" + E(nm) + "<b class='" + dir + "'>" + M(v) + "</b><em>" + (p9 ? p9 + "%" : "&mdash;") + "</em></div>";
+    };
+    html += "<div class='fo-f2-tiles'>" +
+      "<div class='fo-f2-tile'><div class='ic'>+</div><span>Taken this season</span><b class='up'>" + M(totIn) + "</b><i>Gate, sponsor &amp; fees</i></div>" +
+      "<div class='fo-f2-tile'><div class='ic'>&minus;</div><span>Spent this season</span><b class='dn'>" + M(totOut) + "</b><i>Wages, upkeep &amp; building</i></div>" +
+      "<div class='fo-f2-tile'><div class='ic'>&plusmn;</div><span>Net this season</span><b class='" + (net >= 0 ? "up" : "dn") + "'>" + Msign(net) + "</b><i>" +
+        (rounds ? "Worth " + Msign(Math.round(perRound)) + " a round" : "Before the first round") + "</i></div>" +
+      "<div class='fo-f2-tile'><div class='ic'>W</div><span>Wage bill a round</span><b class='nv'>" + M(billNow) + "</b>" +
+      "<i>" + (wageShare ? wageShare + "% of what the club takes" : "across " + squad.length + " professionals") + "</i>" +
+      (wageShare ? "<div class='bar'><u style='width:" + Math.min(100, wageShare) + "%'></u></div>" : "") + "</div>" +
+      "</div>";
 
     if (f.administration) {
       html += "<div class='fo-fin-admin'><b>The club is in administration</b>" +
@@ -43094,42 +43209,37 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "Win, fill the ground, and trim the wage bill: those are the ways out.</p></div>";
     }
 
-    // ---- the two ledgers -------------------------------------------------
-    html += "<div class='fo-fin-cols'>" +
-      "<section class='fo-fin-card fo-fin-in'><h2>Money in</h2>" +
-      line("The gate", inGate) +
-      line("Away cut", inAway) +
-      line("Sponsor", inSpon) +
-      line("International fees", inComp) +
-      line("Transfers in", inFees) +
-      "<div class='fo-fin-tot'><span>Taken</span><b>" + M(totIn) + "</b></div></section>" +
+    // ---- the two breakdowns ----------------------------------------------
+    html += "<div class='fo-f2-duo'>" +
+      "<section class='fo-f2-card'><div class='fo-f2-sh'>Income breakdown</div>" +
+      brkLine("Gate receipts", inGate, totIn, "up") +
+      brkLine("Away gate share", inAway, totIn, "up") +
+      brkLine("Sponsorship", inSpon, totIn, "up") +
+      brkLine("International fees", inComp, totIn, "up") +
+      brkLine("Transfer fees in", inFees, totIn, "up") +
+      "<div class='fo-f2-r tot'>Total<b>" + M(totIn) + "</b><em></em></div></section>" +
 
-      "<section class='fo-fin-card fo-fin-out'><h2>Money out</h2>" +
-      line("Wages", outWage) +
-      line("Upkeep", outUp) +
-      line("Transfers out", outFees) +
-      line("Scouting", outScout) +
-      line("Building", outAcad + outSeats) +
-      line("Interest", outInt) +
-      "<div class='fo-fin-tot'><span>Paid</span><b>" + M(totOut) + "</b></div></section>" +
+      "<section class='fo-f2-card'><div class='fo-f2-sh'>Expenditure breakdown</div>" +
+      brkLine("Player wages", outWage, totOut, "dn") +
+      brkLine("Ground &amp; academy upkeep", outUp, totOut, "dn") +
+      brkLine("Transfer fees out", outFees, totOut, "dn") +
+      brkLine("Scouting", outScout, totOut, "dn") +
+      brkLine("Building", outAcad + outSeats, totOut, "dn") +
+      brkLine("Interest", outInt, totOut, "dn") +
+      "<div class='fo-f2-r tot'>Total<b>" + M(totOut) + "</b><em></em></div></section>" +
       "</div>";
 
-    var net = totIn - totOut;
-    html += "<div class='fo-fin-net'><span class='who'>Taken less paid</span>" +
-      "<span class='big " + (net >= 0 ? "fo-fin-up" : "fo-fin-dn") + "' style='color:" + (net >= 0 ? "#1E7A55" : "#B23B2C") + "'>" + Msign(net) + "</span>" +
-      "<span class='note'>" + (net >= 0
-        ? "The club is paying for itself. What it earns above the wage bill is what pays for stands and colts."
-        : "The club is living on its founding money. That is allowed - it is what the money is for - but the sum above is how fast it is going.") +
-      "</span></div>";
+    // ---- the treasury's line + the latest entries ------------------------
+    html += "<div class='fo-f2-duo'>" + chartCard() + txCard() + "</div>";
 
-    // ---- the crowd + the ground ------------------------------------------
+    // ---- the crowd + the ground (the levers live here) -------------------
     var sup = Number(f.supporters) || 0, seats = Number(f.seats) || 0;
     var lastAtt = Number(f.lastAttendance) || 0, avgAtt = Number(f.avgAttendance) || 0;
     var mood = Math.max(0, Math.min(6, Number(f.mood) || 0));
     var full = pct(lastAtt, seats);
 
-    html += "<div class='fo-fin-grid'>" +
-      "<section class='fo-fin-card'><h2>The crowd</h2>" +
+    html += "<div class='fo-f2-duo'>" +
+      "<section class='fo-f2-card'><div class='fo-f2-sh'>The crowd</div>" +
       stat("Supporters on the books", sup.toLocaleString()) +
       stat("Last home crowd", lastAtt ? lastAtt.toLocaleString() + " of " + seats.toLocaleString() : "&mdash;") +
       stat("Average this season", avgAtt ? avgAtt.toLocaleString() : "&mdash;") +
@@ -43141,7 +43251,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "The support is " + E(String(f.moodWord || "patient")) + "</div>" +
       "</section>" +
 
-      "<section class='fo-fin-card'><h2>The ground</h2>" +
+      "<section class='fo-f2-card'><div class='fo-f2-sh'>The ground</div>" +
       stat("Seats", seats.toLocaleString()) +
       stat("Spent on stands", M(outSeats)) +
       stat("Academy level", (Number(st.academy) || 1) + " of 5") +
@@ -43151,13 +43261,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "</section></div>";
 
     // ---- the wage bill ---------------------------------------------------
-    var squad = (st.squad || []).slice().filter(function (p) { return p && p.name; });
     squad.sort(function (a, b) { return (Number(b.wage) || 0) - (Number(a.wage) || 0); });
     var top = squad.slice(0, 6);
-    var billNow = squad.reduce(function (s2, p) { return s2 + (Number(p.wage) || 0); }, 0);
     if (top.length) {
-      html += "<section class='fo-fin-card' style='margin-top:16px'><h2>The wage bill</h2>" +
-        "<p class='cap'>" + M(billNow) + " a round across " + squad.length + " professionals" +
+      html += "<section class='fo-f2-card'><div class='fo-f2-sh'>The wage bill</div>" +
+        "<p class='cap' style='font:italic 420 12.5px/1.5 Fraunces,Georgia,serif;color:rgba(20,28,40,.55);margin:0 0 10px'>" +
+        M(billNow) + " a round across " + squad.length + " professionals" +
         (rounds ? ", and " + M(outWage) + " paid out so far" : "") + ". The highest earners:</p>" +
         "<div class='fo-fin-wg'>" + top.map(function (p) {
           var role = p.bowlType ? "bowls" : "bats";
@@ -43168,9 +43277,33 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "</section>";
     }
 
+    // ---- financial health ------------------------------------------------
+    var wksHeld = billNow > 0 ? Math.floor(bank / billNow) : 999;
+    var grade = f.administration ? ["D", "bad", "In administration"]
+      : bank < 0 ? ["C", "bad", "Overdrawn"]
+      : net >= 0 ? ["A", "", "Strong"]
+      : bank >= founded ? ["B", "", "Sound"]
+      : ["B", "warn", "Watchful"];
+    var hlNote = f.administration
+      ? "The bank has hit the floor and the club is under. Win, fill the ground, and trim the wage bill: those are the ways out."
+      : net >= 0
+      ? "The club banks more than it spends, and the wage bill sits inside the gate. Keep signing inside your means and the books stay green."
+      : "The club is living on its founding money. That is what the money is for &mdash; but the net line above is how fast it is going.";
+    html += "<section class='fo-f2-card fo-f2-hl'><div class='fo-f2-sh'>Financial health</div>" +
+      "<div class='in9'><div class='gr " + grade[1] + "'><b>" + grade[0] + "</b><span>" + grade[2] + "</span></div>" +
+      "<p>" + hlNote + "</p></div>" +
+      "<div class='fo-f2-hs'>" +
+      "<div><span>Liquidity</span><b>" + (wksHeld > 900 ? "Untested" : wksHeld + " rounds") + "</b><i>of wages in the bank</i></div>" +
+      "<div><span>Trend</span><b>" + (rounds ? (perRound >= 0 ? "Positive" : "Negative") : "&mdash;") + "</b><i>" +
+        (rounds ? Msign(Math.round(perRound)) + " a round" : "before the first round") + "</i></div>" +
+      "<div><span>Risk</span><b>" + (f.administration ? "Administration" : bank < 0 ? "Overdrawn" : "Low") + "</b><i>" +
+        (bank < 0 ? "interest is running" : "no debt drawn") + "</i></div>" +
+      "</div></section>";
+
     // every total above is a sum of dated entries, and this is where they are
     html += "<a class='fo-fin-stlink' href='#/statement'>&#128220; The statement &mdash; every entry, dated, with the balance after it &rsaquo;</a>";
     html += "<div class='fo-fin-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/league'>My league &rsaquo;</a></div>";
+    html += "</div>";
 
     page.innerHTML = shell(html);
     wire(page, f, bank, st);
@@ -46471,7 +46604,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   // ---- the data on the desk -------------------------------------------------
-  var MK = { listings: null, deals: null, mine: null, snap: null, at: 0, busy: 0, tab: "board" };
+  var MK = { listings: null, deals: null, mine: null, snap: null, at: 0, busy: 0, tab: "board", role: "all", sort: "close" };
   function refetch(force) {
     if (MK.busy) return;
     if (!force && MK.at && Date.now() - MK.at < 30000) return;
@@ -46499,48 +46632,80 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   }
 
   // ---- the rooms ------------------------------------------------------------
-  function cardHtml(L, cl, myBids) {
+  // which shelf of the board a man sits on, off the scout's public word
+  function roleBucket(sc) {
+    var r = String((sc && sc.role) || "").toLowerCase();
+    if (!r) return "";
+    if (/keeper|wicket/.test(r)) return "wk";
+    if (/allround|all-round/.test(r)) return "ar";
+    if (/seam|fast|medium|spin|bowl/.test(r)) return "bowl";
+    return "bat";
+  }
+  function flagSrc() {
+    try { var cl = claim(); return (typeof FO_ART !== "undefined" ? FO_ART : "client/art/") + "flags/" + window.__foCxAPI.flagFile(cl.country) + ".svg"; }
+    catch (e) { return ""; }
+  }
+  function rowHtml(L, cl, myBids) {
     var imp = impressionOf(L.id) || {};
     var sc = imp.scout || {};
     var meta = [];
-    if (sc.age) meta.push(sc.age + " yrs");
-    if (sc.role) meta.push(E(sc.role === "allrounder" ? "all-rounder" : sc.role === "keeper" ? "wicketkeeper" : sc.role));
     if (sc.hand) meta.push(E(sc.hand));
+    if (sc.role) meta.push(E(sc.role === "allrounder" ? "all-rounder" : sc.role === "keeper" ? "wicketkeeper" : sc.role));
+    if (sc.age) meta.push(sc.age);
     var high = +L.high || 0;
     var minBid = high ? high + STEP : Math.ceil((+L.asking || 0) * 0.55);
     var myBid = (myBids || []).filter(function (b) { return Number(b.id) === Number(L.id); })[0];
     var lead = myBid && high && +myBid.amount >= high;
     var mineSelling = cl && L.country_id === cl.country && L.slot === cl.slot;
-    return "<div class='fo-mk-card" + (L.slot < 0 ? " fa" : "") + (lead ? " lead" : "") + "' data-id='" + L.id + "'>" +
-      "<div class='fo-mk-top'>" +
-      "<div class='fo-mk-who'><b>" + E(L.player) + "</b>" +
-      "<span>" + (L.slot < 0 ? "<u class='fatag'>FREE AGENT</u>" : E(L.club || "a club")) +
-      (meta.length ? " &middot; " + meta.join(" &middot; ") : "") + "</span>" +
-      (sc.impression ? "<i>" + E(sc.impression) + (sc.bowl && sc.bowl !== "does not bowl" ? " &middot; " + E(sc.bowl) : "") + "</i>" : "") +
-      "</div>" +
-      "<div class='fo-mk-px'><span class='lb'>" + (high ? "High bid" : "Asking") + "</span>" +
-      "<b>" + money(high || L.asking) + "</b>" +
-      (high ? "<span class='by'>" + (lead ? "you lead" : E(L.highClub || L.high_club || "a club")) + "</span>" : "") + "</div>" +
-      "</div>" +
-      "<div class='fo-mk-meta'>" +
-      "<span>Reserve " + money(L.reserve) + "</span>" +
-      "<span>" + (L.bids != null ? L.bids : L.offers || 0) + " offer" + ((L.bids != null ? L.bids : L.offers) === 1 ? "" : "s") + "</span>" +
-      "<span class='cl'>Hammer " + E(dayTxt(L.closes_day)) + "</span>" +
-      "</div>" +
-      "<div class='fo-mk-act'>" +
+    var fa = L.slot < 0;
+    var state = lead ? "high bid &middot; you lead"
+      : high ? "high bid &middot; " + E(L.highClub || L.high_club || "a club") + " lead"
+      : "no bids yet &middot; reserve " + money(L.reserve);
+    var fl = flagSrc();
+    return "<div class='fo-mk-row" + (lead ? " lead" : "") + "' data-id='" + L.id + "'>" +
+      "<span class='rk" + (fa ? " fa" : "") + "'>" + (fa ? "FA" : "B") + "</span>" +
+      "<span class='who'><b>" + E(L.player) + "</b>" +
+      "<i>" + (meta.length ? meta.join(" &middot; ") : "an unscouted man") + "</i>" +
+      "<u class='" + (fa ? "" : "sell") + "'>" + (fa ? "Free agent" : "Listed by " + E(L.club || "a club")) + "</u>" +
+      (sc.impression ? "<em>" + E(sc.impression) + "</em>" : "") +
+      "</span>" +
+      (fl ? "<span class='mid'><img src='" + fl + "' alt=''></span>" : "") +
+      "<span class='pr'><b>" + money(high || L.asking) + "</b>" +
+      "<i>" + state + "</i><i>hammer " + E(dayTxt(L.closes_day)) + "</i>" +
+      "<span class='btns'>" +
       (mineSelling
-        ? "<button class='fo-mk-b ghost' data-mk-withdraw='" + L.id + "'>Withdraw</button>"
-        : "<button class='fo-mk-b' data-mk-bid='" + L.id + "' data-min='" + minBid + "'>" +
-          (myBid ? (lead ? "Raise (you lead)" : "Raise &middot; outbid!") : "Bid " + money(minBid) + "+") + "</button>") +
-      "<button class='fo-mk-b ghost' data-mk-scout='" + L.id + "'>Scout &middot; " + money(imp.fee || 4000) + "</button>" +
-      "</div></div>";
+        ? "<button class='act ghost' data-mk-withdraw='" + L.id + "'>Withdraw</button>"
+        : "<button class='act' data-mk-bid='" + L.id + "' data-min='" + minBid + "'>" + (myBid ? (lead ? "Raise" : "Outbid!") : "Bid") + "</button>") +
+      "<button class='act ghost' data-mk-scout='" + L.id + "'>Scout " + money(imp.fee || 4000) + "</button>" +
+      "</span></span>" +
+      "</div>";
   }
 
+  var ROLE_TABS = [["all", "All players"], ["bat", "Batters"], ["bowl", "Bowlers"], ["ar", "All-rounders"], ["wk", "Keepers"]];
+  var SORTS = [["close", "Closing soon"], ["new", "Newest"], ["hi", "Price high"], ["lo", "Price low"]];
   function boardHtml(cl) {
     if (!MK.listings) return "<div class='fo-mk-none'>Reading the board&hellip;</div>";
     if (!MK.listings.length) return "<div class='fo-mk-none'>The board is bare today. The umpire trickles new names on daily &mdash; look in tomorrow.</div>";
     var myBids = (MK.mine && MK.mine.bids) || [];
-    return "<div class='fo-mk-grid'>" + MK.listings.map(function (L) { return cardHtml(L, cl, myBids); }).join("") + "</div>";
+    var rows = MK.listings.slice();
+    if (MK.role !== "all") rows = rows.filter(function (L) {
+      var b9 = roleBucket((impressionOf(L.id) || {}).scout);
+      return b9 === MK.role || (MK.role !== "all" && !b9 && false);
+    });
+    if (MK.sort === "new") rows.sort(function (a, b) { return (b.id | 0) - (a.id | 0); });
+    else if (MK.sort === "hi") rows.sort(function (a, b) { return (+(b.high || b.asking) || 0) - (+(a.high || a.asking) || 0); });
+    else if (MK.sort === "lo") rows.sort(function (a, b) { return (+(a.high || a.asking) || 0) - (+(b.high || b.asking) || 0); });
+    var tabs = "<div class='fo-mk-rtabs'>" + ROLE_TABS.map(function (t) {
+      return "<button class='" + (MK.role === t[0] ? "on" : "") + "' data-mk-role='" + t[0] + "'>" + t[1] + "</button>";
+    }).join("") + "</div>";
+    var sortSel = "<div class='fo-mk-ftr'><label class='dd'>Sort" +
+      "<select id='fo-mk-sort'>" + SORTS.map(function (s2) {
+        return "<option value='" + s2[0] + "'" + (MK.sort === s2[0] ? " selected" : "") + ">" + s2[1] + "</option>";
+      }).join("") + "</select></label>" +
+      "<span class='cnt'>" + rows.length + " of " + MK.listings.length + " names</span></div>";
+    return tabs + sortSel +
+      (rows.length ? rows.map(function (L) { return rowHtml(L, cl, myBids); }).join("")
+        : "<div class='fo-mk-none'>Nobody of that kind on the board today.</div>");
   }
 
   function sellHtml(cl) {
@@ -46604,9 +46769,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     } catch (e) { try { console.warn("foRenderMarketPage", e); } catch (e2) {} }
   }
   function mast() {
-    return "<header class='fo-nvmast'><div class='k'>Open outcry &middot; three-day windows &middot; the hammer falls with the daily settle</div>" +
-      "<h1>The Transfer Market</h1>" +
-      "<p>Free agents walk on daily; clubs list the men they can spare. The high bid is public &mdash; beat it or hold your tongue.</p></header>";
+    var n = MK.listings ? MK.listings.length : null;
+    return "<div class='fo-mk-hd'><div><h1>Transfer market</h1>" +
+      "<p>Open outcry, three-day windows &mdash; the hammer falls with the daily settle.</p></div>" +
+      "<div class='chip'><span>On the board</span><b>" + (n == null ? "&hellip;" : n + " name" + (n === 1 ? "" : "s")) + "</b></div></div>";
   }
   function paint() {
     var page = document.getElementById("page"); if (!page) return;
@@ -46625,6 +46791,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     if (page.__foMkHtml === html && page.querySelector(".fo-mk")) return;
     page.__foMkHtml = html;
     page.innerHTML = html;
+    try {
+      var so = document.getElementById("fo-mk-sort");
+      if (so) so.addEventListener("change", function () { MK.sort = so.value; paint(); });
+    } catch (e9) {}
   }
 
   // ---- the deeds ------------------------------------------------------------
@@ -46632,6 +46802,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var t9 = ev.target && ev.target.closest ? ev.target : null; if (!t9) return;
     var b;
     if ((b = t9.closest("[data-mk-tab]"))) { MK.tab = b.getAttribute("data-mk-tab"); paint(); return; }
+    if ((b = t9.closest("[data-mk-role]"))) { MK.role = b.getAttribute("data-mk-role"); paint(); return; }
     if ((b = t9.closest("[data-mk-bid]"))) {
       var id = +b.getAttribute("data-mk-bid"), min = +b.getAttribute("data-min") || STEP;
       var amt = prompt("Your offer (the board wants at least " + min + "):", String(min));
@@ -46704,6 +46875,40 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var s = document.createElement("style"); s.id = "fo-mkt-css";
     s.textContent = [
       "html body #page .fo-mk{max-width:860px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
+      // the dashboard masthead + the board's list rows
+      "html body #page .fo-mk-hd{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}",
+      "html body #page .fo-mk-hd h1{font:700 30px/1 Oswald,sans-serif;text-transform:uppercase;color:#14243A;margin:0;letter-spacing:.01em}",
+      "html body #page .fo-mk-hd p{font:400 12.5px/1.4 Inter,sans-serif;color:#67748a;margin:7px 0 0}",
+      "html body #page .fo-mk-hd .chip{margin-left:auto;flex:none;background:#FFFEFC;border:1px solid rgba(27,36,50,.09);border-radius:11px;padding:10px 13px;text-align:right}",
+      "html body #page .fo-mk-hd .chip span{display:block;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#8a93a2}",
+      "html body #page .fo-mk-hd .chip b{display:block;font:700 15px/1.4 Inter,sans-serif;color:#14243A}",
+      "html body #page .fo-mk-rtabs{display:flex;gap:2px;background:#FFFEFC;border:1px solid rgba(27,36,50,.09);border-radius:12px;padding:5px;overflow-x:auto;margin-bottom:9px}",
+      "html body #page .fo-mk-rtabs button{flex:1;text-align:center;padding:11px 8px;border:0;background:transparent;border-radius:8px;font:600 10px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#67748a;white-space:nowrap;cursor:pointer;min-height:40px}",
+      "html body #page .fo-mk-rtabs button.on{background:#14243A;color:#F1EEE6}",
+      "html body #page .fo-mk-ftr{display:flex;align-items:center;gap:10px;margin-bottom:10px}",
+      "html body #page .fo-mk-ftr .dd{display:flex;align-items:center;gap:8px;background:#FFFEFC;border:1px solid rgba(27,36,50,.09);border-radius:10px;padding:6px 8px 6px 12px;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#1B2432}",
+      "html body #page .fo-mk-ftr select{border:0;background:transparent;font:600 11px/1.4 Inter,sans-serif;color:#14243A;min-height:32px}",
+      "html body #page .fo-mk-ftr .cnt{margin-left:auto;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8a93a2}",
+      "html body #page .fo-mk-row{display:flex;align-items:flex-start;gap:11px;background:#FFFEFC;border:1px solid rgba(27,36,50,.09);border-radius:12px;padding:12px 13px;margin-bottom:9px;box-shadow:0 1px 2px rgba(14,35,63,.04)}",
+      "html body #page .fo-mk-row.lead{border-color:rgba(23,122,87,.45)}",
+      "html body #page .fo-mk-row .rk{flex:none;width:24px;height:24px;border-radius:50%;background:#C9571F;color:#fff;font:700 9.5px/1 Inter,sans-serif;display:flex;align-items:center;justify-content:center;margin-top:2px}",
+      "html body #page .fo-mk-row .rk.fa{background:#1F6F4A}",
+      "html body #page .fo-mk-row .who{min-width:0;flex:1}",
+      "html body #page .fo-mk-row .who b{display:block;font:600 14px/1.2 Inter,sans-serif;color:#1B2432}",
+      "html body #page .fo-mk-row .who i{display:block;font-style:normal;font:400 10.5px/1.4 Inter,sans-serif;color:#8a93a2;margin-top:2px;text-transform:capitalize}",
+      "html body #page .fo-mk-row .who u{display:inline-block;text-decoration:none;font:600 8px/1 Oswald,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#1F6F4A;background:rgba(31,111,74,.08);border:1px solid rgba(31,111,74,.25);border-radius:6px;padding:4px 6px;margin-top:6px}",
+      "html body #page .fo-mk-row .who u.sell{color:#7A5480;background:rgba(122,84,128,.08);border-color:rgba(122,84,128,.25)}",
+      "html body #page .fo-mk-row .who em{display:block;font:italic 400 11px/1.4 Georgia,serif;color:rgba(20,28,40,.6);margin-top:5px}",
+      "html body #page .fo-mk-row .mid{flex:none;margin-top:3px}",
+      "html body #page .fo-mk-row .mid img{width:20px;height:14px;object-fit:cover;border-radius:2px}",
+      "html body #page .fo-mk-row .pr{flex:none;text-align:right;max-width:46%}",
+      "html body #page .fo-mk-row .pr b{display:block;font:700 17px/1.1 Oswald,sans-serif;color:#C9571F;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-row .pr i{display:block;font-style:normal;font:400 9.5px/1.4 Inter,sans-serif;color:#8a93a2;margin-top:2px}",
+      "html body #page .fo-mk-row.lead .pr i:first-of-type{color:#177A57;font-weight:600}",
+      "html body #page .fo-mk-row .btns{display:flex;gap:6px;justify-content:flex-end;margin-top:7px}",
+      "html body #page .fo-mk-row .act{font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#C9571F;background:#FFFEFC;border:1.5px solid rgba(201,87,31,.55);border-radius:8px;padding:8px 12px;cursor:pointer;min-height:34px}",
+      "html body #page .fo-mk-row .act:hover{background:rgba(201,87,31,.06)}",
+      "html body #page .fo-mk-row .act.ghost{color:#67748a;border-color:rgba(27,36,50,.18)}",
       "html body #page .fo-mk-tabs{display:flex;gap:8px;margin:0 0 14px}",
       "html body #page .fo-mk-tabs button{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.14);border-radius:999px;padding:9px 16px;cursor:pointer}",
       "html body #page .fo-mk-tabs button.on{background:#0E233F;color:#FFFEFC;border-color:#0E233F}",
