@@ -133,9 +133,13 @@
       }
 
       var TIE_N = { r16: 8, qf: 4, sf: 2, final: 1 };
-      var row = function (nm, tag, win, me2, dim) {
-        return "<span class='t" + (win ? " w" : "") + (me2 ? " me" : "") + (dim ? " d" : "") + "'>" +
-          "<b>" + E(nm) + "</b>" + (tag ? "<u class='ff'>" + tag + "</u>" : "") + "</span>";
+      // every boy's club on the bracket is a door to that club's page
+      var row = function (nm, tag, win, me2, dim, slot) {
+        var href = slot == null ? "" : "#/team?c=" + encodeURIComponent(rid) + "&s=" + (slot | 0);
+        var el = href ? "a" : "span";
+        return "<" + el + " class='t" + (win ? " w" : "") + (me2 ? " me" : "") + (dim ? " d" : "") + "'" +
+          (href ? " href='" + href + "'" : "") + ">" +
+          "<b>" + E(nm) + "</b>" + (tag ? "<u class='ff'>" + tag + "</u>" : "") + "</" + el + ">";
       };
       var colOf = function (st) {
         var inner = "", i;
@@ -146,8 +150,8 @@
             var meH = me != null && t.homeSlot === me, meA = me != null && t.awaySlot === me;
             var short = (t.forfeit && t.forfeit.short) || [];
             return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
-              row(t.home, short.indexOf(t.homeSlot) >= 0 ? "short" : "", hWin, meH, done && !hWin) +
-              row(t.away, short.indexOf(t.awaySlot) >= 0 ? "short" : "", aWin, meA, done && !aWin) +
+              row(t.home, short.indexOf(t.homeSlot) >= 0 ? "short" : "", hWin, meH, done && !hWin, t.homeSlot) +
+              row(t.away, short.indexOf(t.awaySlot) >= 0 ? "short" : "", aWin, meA, done && !aWin, t.awaySlot) +
               (t.forfeit ? "<i class='ln'>Forfeit &mdash; fifteen under twenty-one could not be named.</i>" :
                 t.text ? "<i class='ln'>" + E(t.text) + "</i>" : "") + "</div></div>";
           }).join("");
@@ -155,8 +159,8 @@
           inner = ties1.map(function (t1) {
             var meH1 = me != null && t1[0] === me, meA1 = me != null && t1[1] === me;
             return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
-              row(bySlot1[t1[0]] || "Club " + t1[0], "", false, meH1) +
-              row(bySlot1[t1[1]] || "Club " + t1[1], "", false, meA1) + "</div></div>";
+              row(bySlot1[t1[0]] || "Club " + t1[0], "", false, meH1, false, t1[0]) +
+              row(bySlot1[t1[1]] || "Club " + t1[1], "", false, meA1, false, t1[1]) + "</div></div>";
           }).join("");
         } else {
           for (i = 0; i < TIE_N[st]; i++)

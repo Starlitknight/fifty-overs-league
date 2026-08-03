@@ -139,9 +139,15 @@
       }
 
       var TIE_N = { r16: 8, qf: 4, sf: 2, final: 1 };
-      var row = function (nm, sc, win, me2, dim) {
-        return "<span class='t" + (win ? " w" : "") + (me2 ? " me" : "") + (dim ? " d" : "") + "'>" +
-          "<b>" + E(nm) + "</b>" + (sc ? "<u>" + E(sc) + "</u>" : "") + "</span>";
+      // every side of every tie is a door to that club's own page
+      var row = function (nm, sc, win, me2, dim, href) {
+        var tag = href ? "a" : "span";
+        return "<" + tag + " class='t" + (win ? " w" : "") + (me2 ? " me" : "") + (dim ? " d" : "") + "'" +
+          (href ? " href='" + href + "'" : "") + ">" +
+          "<b>" + E(nm) + "</b>" + (sc ? "<u>" + E(sc) + "</u>" : "") + "</" + tag + ">";
+      };
+      var teamHref = function (c, s) {
+        return s == null ? "" : "#/team?c=" + encodeURIComponent(c || rid) + "&s=" + (s | 0);
       };
       var colOf = function (st) {
         var inner = "", i;
@@ -152,8 +158,8 @@
             var meA = mine != null && t.a && (t.a.slot | 0) === (mine | 0);
             var meB = mine != null && t.b && (t.b.slot | 0) === (mine | 0);
             return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
-              row(t.a && t.a.name, t.as_ || "", aWin, meA, done && !aWin) +
-              row(t.b && t.b.name, t.bs_ || "", bWin, meB, done && !bWin) +
+              row(t.a && t.a.name, t.as_ || "", aWin, meA, done && !aWin, teamHref(t.a && t.a.country, t.a && t.a.slot)) +
+              row(t.b && t.b.name, t.bs_ || "", bWin, meB, done && !bWin, teamHref(t.b && t.b.country, t.b && t.b.slot)) +
               (t.text ? "<i class='ln'>" + E(t.text) + "</i>" : "") + "</div></div>";
           }).join("");
         } else if (st === "r16" && ties0.length && Object.keys(bySlot0).length) {
@@ -161,8 +167,8 @@
             var meA0 = mine != null && (t0[0] | 0) === (mine | 0);
             var meB0 = mine != null && (t0[1] | 0) === (mine | 0);
             return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
-              row(bySlot0[t0[0]] || "Club " + t0[0], "", false, meA0) +
-              row(bySlot0[t0[1]] || "Club " + t0[1], "", false, meB0) + "</div></div>";
+              row(bySlot0[t0[0]] || "Club " + t0[0], "", false, meA0, false, teamHref(rid, t0[0])) +
+              row(bySlot0[t0[1]] || "Club " + t0[1], "", false, meB0, false, teamHref(rid, t0[1])) + "</div></div>";
           }).join("");
         } else {
           for (i = 0; i < TIE_N[st]; i++)
@@ -199,6 +205,9 @@
       "html body #page .fo-kb-tw{flex:1;display:flex;align-items:center;position:relative;padding:5px 0}",
       "html body #page .fo-kb-tie{width:100%;background:#fff;border:1px solid rgba(14,35,63,.16);border-radius:10px;overflow:hidden;box-shadow:0 2px 6px rgba(14,35,63,.06)}",
       "html body #page .fo-kb-tie .t{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:6px 10px;font:500 12px/1.3 Inter,sans-serif;color:#14202F}",
+      "html body #page .fo-kb-tie a.t,html body.ftpskin #page .fo-kb-tie a.t,html body #page .fo-kb-tie a.t:visited,html body #page .fo-kb-tie a.t:active{color:#14202F !important;text-decoration:none !important}",
+      "html body #page .fo-kb-tie a.t:hover{text-decoration:none !important;background:rgba(14,35,63,.05)}",
+      "html body #page .fo-kb-tie a.t:hover b{text-decoration:underline}",
       "html body #page .fo-kb-tie .t+.t{border-top:1px solid rgba(14,35,63,.09)}",
       "html body #page .fo-kb-tie .t b{font-weight:500;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       "html body #page .fo-kb-tie .t u{text-decoration:none;font:700 11px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums;color:#8a93a3;white-space:nowrap}",
@@ -297,6 +306,15 @@
           "</i><b>" + E(body.champion) + "</b></div></div>";
       }
 
+      // a side of a Champions Cup tie carries its passport (country + slot),
+      // so every name on the board is a door to that club's page
+      var ccRow = function (side, sc, win, dim) {
+        var href = side && side.slot != null && side.country
+          ? "#/team?c=" + encodeURIComponent(side.country) + "&s=" + (side.slot | 0) : "";
+        var tag = href ? "a" : "span";
+        return "<" + tag + " class='t" + (win ? " w" : dim ? " d" : "") + "'" + (href ? " href='" + href + "'" : "") + ">" +
+          "<b>" + E(side && side.name) + "</b>" + (sc ? "<u>" + E(sc) + "</u>" : "") + "</" + tag + ">";
+      };
       // ---- the groups: four cards, Mon-Wed of the closing week --------------
       var GN = ["Group A", "Group B", "Group C", "Group D"];
       var groups = [[], [], [], []];
@@ -310,8 +328,8 @@
             var aWin = t.winner === (t.a && t.a.name), bWin = t.winner === (t.b && t.b.name);
             var done = !!t.winner;
             return "<div class='fo-kb-tie'>" +
-              "<span class='t" + (aWin ? " w" : done ? " d" : "") + "'><b>" + E(t.a && t.a.name) + "</b><u>" + E(t.as_ || "") + "</u></span>" +
-              "<span class='t" + (bWin ? " w" : done ? " d" : "") + "'><b>" + E(t.b && t.b.name) + "</b><u>" + E(t.bs_ || "") + "</u></span></div>";
+              ccRow(t.a, t.as_ || "", aWin, done && !aWin) +
+              ccRow(t.b, t.bs_ || "", bWin, done && !bWin) + "</div>";
           }).join("");
         } else {
           for (var i = 0; i < 4; i++) inner += "<div class='fo-kb-tie tbd'><span>League champion</span></div>";
@@ -328,8 +346,8 @@
             var aWin = t.winner === (t.a && t.a.name), bWin = t.winner === (t.b && t.b.name);
             var done = !!t.winner;
             return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
-              "<span class='t" + (aWin ? " w" : done ? " d" : "") + "'><b>" + E(t.a && t.a.name) + "</b><u>" + E(t.as_ || "") + "</u></span>" +
-              "<span class='t" + (bWin ? " w" : done ? " d" : "") + "'><b>" + E(t.b && t.b.name) + "</b><u>" + E(t.bs_ || "") + "</u></span>" +
+              ccRow(t.a, t.as_ || "", aWin, done && !aWin) +
+              ccRow(t.b, t.bs_ || "", bWin, done && !bWin) +
               (t.text ? "<i class='ln'>" + E(t.text) + "</i>" : "") + "</div></div>";
           }).join("");
         } else {

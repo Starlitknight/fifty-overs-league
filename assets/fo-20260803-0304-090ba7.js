@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0252-75192e";
+  var FO_BUILD = "20260803-0304-090ba7";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -45305,9 +45305,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       }
 
       var TIE_N = { r16: 8, qf: 4, sf: 2, final: 1 };
-      var row = function (nm, sc, win, me2, dim) {
-        return "<span class='t" + (win ? " w" : "") + (me2 ? " me" : "") + (dim ? " d" : "") + "'>" +
-          "<b>" + E(nm) + "</b>" + (sc ? "<u>" + E(sc) + "</u>" : "") + "</span>";
+      // every side of every tie is a door to that club's own page
+      var row = function (nm, sc, win, me2, dim, href) {
+        var tag = href ? "a" : "span";
+        return "<" + tag + " class='t" + (win ? " w" : "") + (me2 ? " me" : "") + (dim ? " d" : "") + "'" +
+          (href ? " href='" + href + "'" : "") + ">" +
+          "<b>" + E(nm) + "</b>" + (sc ? "<u>" + E(sc) + "</u>" : "") + "</" + tag + ">";
+      };
+      var teamHref = function (c, s) {
+        return s == null ? "" : "#/team?c=" + encodeURIComponent(c || rid) + "&s=" + (s | 0);
       };
       var colOf = function (st) {
         var inner = "", i;
@@ -45318,8 +45324,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             var meA = mine != null && t.a && (t.a.slot | 0) === (mine | 0);
             var meB = mine != null && t.b && (t.b.slot | 0) === (mine | 0);
             return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
-              row(t.a && t.a.name, t.as_ || "", aWin, meA, done && !aWin) +
-              row(t.b && t.b.name, t.bs_ || "", bWin, meB, done && !bWin) +
+              row(t.a && t.a.name, t.as_ || "", aWin, meA, done && !aWin, teamHref(t.a && t.a.country, t.a && t.a.slot)) +
+              row(t.b && t.b.name, t.bs_ || "", bWin, meB, done && !bWin, teamHref(t.b && t.b.country, t.b && t.b.slot)) +
               (t.text ? "<i class='ln'>" + E(t.text) + "</i>" : "") + "</div></div>";
           }).join("");
         } else if (st === "r16" && ties0.length && Object.keys(bySlot0).length) {
@@ -45327,8 +45333,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             var meA0 = mine != null && (t0[0] | 0) === (mine | 0);
             var meB0 = mine != null && (t0[1] | 0) === (mine | 0);
             return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
-              row(bySlot0[t0[0]] || "Club " + t0[0], "", false, meA0) +
-              row(bySlot0[t0[1]] || "Club " + t0[1], "", false, meB0) + "</div></div>";
+              row(bySlot0[t0[0]] || "Club " + t0[0], "", false, meA0, false, teamHref(rid, t0[0])) +
+              row(bySlot0[t0[1]] || "Club " + t0[1], "", false, meB0, false, teamHref(rid, t0[1])) + "</div></div>";
           }).join("");
         } else {
           for (i = 0; i < TIE_N[st]; i++)
@@ -45365,6 +45371,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-kb-tw{flex:1;display:flex;align-items:center;position:relative;padding:5px 0}",
       "html body #page .fo-kb-tie{width:100%;background:#fff;border:1px solid rgba(14,35,63,.16);border-radius:10px;overflow:hidden;box-shadow:0 2px 6px rgba(14,35,63,.06)}",
       "html body #page .fo-kb-tie .t{display:flex;justify-content:space-between;align-items:baseline;gap:8px;padding:6px 10px;font:500 12px/1.3 Inter,sans-serif;color:#14202F}",
+      "html body #page .fo-kb-tie a.t,html body.ftpskin #page .fo-kb-tie a.t,html body #page .fo-kb-tie a.t:visited,html body #page .fo-kb-tie a.t:active{color:#14202F !important;text-decoration:none !important}",
+      "html body #page .fo-kb-tie a.t:hover{text-decoration:none !important;background:rgba(14,35,63,.05)}",
+      "html body #page .fo-kb-tie a.t:hover b{text-decoration:underline}",
       "html body #page .fo-kb-tie .t+.t{border-top:1px solid rgba(14,35,63,.09)}",
       "html body #page .fo-kb-tie .t b{font-weight:500;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       "html body #page .fo-kb-tie .t u{text-decoration:none;font:700 11px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums;color:#8a93a3;white-space:nowrap}",
@@ -45463,6 +45472,15 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           "</i><b>" + E(body.champion) + "</b></div></div>";
       }
 
+      // a side of a Champions Cup tie carries its passport (country + slot),
+      // so every name on the board is a door to that club's page
+      var ccRow = function (side, sc, win, dim) {
+        var href = side && side.slot != null && side.country
+          ? "#/team?c=" + encodeURIComponent(side.country) + "&s=" + (side.slot | 0) : "";
+        var tag = href ? "a" : "span";
+        return "<" + tag + " class='t" + (win ? " w" : dim ? " d" : "") + "'" + (href ? " href='" + href + "'" : "") + ">" +
+          "<b>" + E(side && side.name) + "</b>" + (sc ? "<u>" + E(sc) + "</u>" : "") + "</" + tag + ">";
+      };
       // ---- the groups: four cards, Mon-Wed of the closing week --------------
       var GN = ["Group A", "Group B", "Group C", "Group D"];
       var groups = [[], [], [], []];
@@ -45476,8 +45494,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             var aWin = t.winner === (t.a && t.a.name), bWin = t.winner === (t.b && t.b.name);
             var done = !!t.winner;
             return "<div class='fo-kb-tie'>" +
-              "<span class='t" + (aWin ? " w" : done ? " d" : "") + "'><b>" + E(t.a && t.a.name) + "</b><u>" + E(t.as_ || "") + "</u></span>" +
-              "<span class='t" + (bWin ? " w" : done ? " d" : "") + "'><b>" + E(t.b && t.b.name) + "</b><u>" + E(t.bs_ || "") + "</u></span></div>";
+              ccRow(t.a, t.as_ || "", aWin, done && !aWin) +
+              ccRow(t.b, t.bs_ || "", bWin, done && !bWin) + "</div>";
           }).join("");
         } else {
           for (var i = 0; i < 4; i++) inner += "<div class='fo-kb-tie tbd'><span>League champion</span></div>";
@@ -45494,8 +45512,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             var aWin = t.winner === (t.a && t.a.name), bWin = t.winner === (t.b && t.b.name);
             var done = !!t.winner;
             return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
-              "<span class='t" + (aWin ? " w" : done ? " d" : "") + "'><b>" + E(t.a && t.a.name) + "</b><u>" + E(t.as_ || "") + "</u></span>" +
-              "<span class='t" + (bWin ? " w" : done ? " d" : "") + "'><b>" + E(t.b && t.b.name) + "</b><u>" + E(t.bs_ || "") + "</u></span>" +
+              ccRow(t.a, t.as_ || "", aWin, done && !aWin) +
+              ccRow(t.b, t.bs_ || "", bWin, done && !bWin) +
               (t.text ? "<i class='ln'>" + E(t.text) + "</i>" : "") + "</div></div>";
           }).join("");
         } else {
@@ -45666,9 +45684,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       }
 
       var TIE_N = { r16: 8, qf: 4, sf: 2, final: 1 };
-      var row = function (nm, tag, win, me2, dim) {
-        return "<span class='t" + (win ? " w" : "") + (me2 ? " me" : "") + (dim ? " d" : "") + "'>" +
-          "<b>" + E(nm) + "</b>" + (tag ? "<u class='ff'>" + tag + "</u>" : "") + "</span>";
+      // every boy's club on the bracket is a door to that club's page
+      var row = function (nm, tag, win, me2, dim, slot) {
+        var href = slot == null ? "" : "#/team?c=" + encodeURIComponent(rid) + "&s=" + (slot | 0);
+        var el = href ? "a" : "span";
+        return "<" + el + " class='t" + (win ? " w" : "") + (me2 ? " me" : "") + (dim ? " d" : "") + "'" +
+          (href ? " href='" + href + "'" : "") + ">" +
+          "<b>" + E(nm) + "</b>" + (tag ? "<u class='ff'>" + tag + "</u>" : "") + "</" + el + ">";
       };
       var colOf = function (st) {
         var inner = "", i;
@@ -45679,8 +45701,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             var meH = me != null && t.homeSlot === me, meA = me != null && t.awaySlot === me;
             var short = (t.forfeit && t.forfeit.short) || [];
             return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
-              row(t.home, short.indexOf(t.homeSlot) >= 0 ? "short" : "", hWin, meH, done && !hWin) +
-              row(t.away, short.indexOf(t.awaySlot) >= 0 ? "short" : "", aWin, meA, done && !aWin) +
+              row(t.home, short.indexOf(t.homeSlot) >= 0 ? "short" : "", hWin, meH, done && !hWin, t.homeSlot) +
+              row(t.away, short.indexOf(t.awaySlot) >= 0 ? "short" : "", aWin, meA, done && !aWin, t.awaySlot) +
               (t.forfeit ? "<i class='ln'>Forfeit &mdash; fifteen under twenty-one could not be named.</i>" :
                 t.text ? "<i class='ln'>" + E(t.text) + "</i>" : "") + "</div></div>";
           }).join("");
@@ -45688,8 +45710,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           inner = ties1.map(function (t1) {
             var meH1 = me != null && t1[0] === me, meA1 = me != null && t1[1] === me;
             return "<div class='fo-kb-tw'><div class='fo-kb-tie'>" +
-              row(bySlot1[t1[0]] || "Club " + t1[0], "", false, meH1) +
-              row(bySlot1[t1[1]] || "Club " + t1[1], "", false, meA1) + "</div></div>";
+              row(bySlot1[t1[0]] || "Club " + t1[0], "", false, meH1, false, t1[0]) +
+              row(bySlot1[t1[1]] || "Club " + t1[1], "", false, meA1, false, t1[1]) + "</div></div>";
           }).join("");
         } else {
           for (i = 0; i < TIE_N[st]; i++)
