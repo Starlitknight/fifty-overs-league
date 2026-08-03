@@ -311,7 +311,7 @@
       // INSIDE the masthead - fixed, centred, the full height of the band -
       // and the page's art gains the row the bar used to occupy. The masthead
       // is sticky at top:0, so a fixed bar at top:0 tracks it exactly.
-      "@media(min-width:1300px){",
+      "@media(min-width:900px){",
       // the masthead itself sits at z 320, so the merged bar must clear it
       "#fo-menubar{position:fixed;top:0;left:50%;transform:translateX(-50%);height:var(--fo-tbh,52px);background:transparent;border-bottom:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;z-index:321;display:flex;align-items:stretch}",
       "#fo-menubar .fo-mb-in{height:100%;align-items:stretch;padding:0;overflow:visible;max-width:none;margin:0}",

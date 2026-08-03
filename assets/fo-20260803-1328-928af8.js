@@ -4393,20 +4393,6 @@ window.foClubCrest = (function () {
   };
 })();
 
-// THE BOARD'S OWN BADGE. Nations whose boards have lodged a real logo
-// (client/art/natlogos/<rid>.webp) fly it wherever the national SIDE is
-// shown; every other nation keeps its flag. Returns "" when there is none
-// so call sites can fall back to the flag they already draw.
-window.foNatLogo = function (rid) {
-  // keyed by the world's region ids (sub = India, bgd = Bangladesh), with
-  // the flag-style spellings kept as aliases
-  var HAVE = { eng: "eng", sub: "ind", ind: "ind", bgd: "ban", ban: "ban" };
-  var f = HAVE[String(rid || "")];
-  if (!f) return "";
-  var base = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
-  return base + "natlogos/" + f + ".webp";
-};
-
 // Engine patch 2026-balanced: pace/spin balance, real Rocket Arm/Lightning Hands hooks, stronger fatigue, contextual chase pressure, death power, and ground-fielding run impact.
 pgEditor=function(){};
 pgCommentary=function(){};
@@ -10294,7 +10280,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-1320-874371";
+  var FO_BUILD = "20260803-1328-928af8";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -36126,14 +36112,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
               // a finished tie opens its own match page
               var tag = done ? "a" : "div";
               var href = done ? " href='#/wcmatch?s=" + p.season + "&st=" + sg.stage + "&g=" + gi2 + "'" : "";
-              var crestIm = function (rid9) {
-                var lg9 = ""; try { lg9 = window.foNatLogo ? window.foNatLogo(rid9) : ""; } catch (eL9) {}
-                return "<img" + (lg9 ? " class='natlogo'" : "") + " src='" + (lg9 || flagOf(rid9)) + "' alt=''>";
-              };
               return "<" + tag + " class='fo-pl-cm" + (mineM ? " mine" : "") + "'" + href + ">" +
-                crestIm(m.a.rid) + "<span class='" + (done && m.winner === m.a ? "w" : "") + "'>" + E(m.a.nm) + "</span>" +
+                "<img src='" + flagOf(m.a.rid) + "' alt=''><span class='" + (done && m.winner === m.a ? "w" : "") + "'>" + E(m.a.nm) + "</span>" +
                 "<u>v</u>" +
-                "<span class='" + (done && m.winner === m.b ? "w" : "") + "'>" + E(m.b.nm) + "</span>" + crestIm(m.b.rid) +
+                "<span class='" + (done && m.winner === m.b ? "w" : "") + "'>" + E(m.b.nm) + "</span><img src='" + flagOf(m.b.rid) + "' alt=''>" +
                 (done ? "<em>" + E(m.winner.nm) + " through &middot; " + m.hs + " v " + m.as + "</em>" : "") +
                 "</" + tag + ">";
             }).join("") + "</div>";
@@ -36294,7 +36276,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body #page a.fo-pl-cm:hover span{color:#B44A22}",
     "html body #page .fo-pl-cm.mine{background:rgba(217,85,42,.06);border-radius:8px;padding:6px 8px}",
     "html body #page .fo-pl-cm img{width:20px;height:14px;object-fit:cover;border-radius:2px}",
-    "html body #page .fo-pl-cm img.natlogo{width:20px;height:18px;object-fit:contain;border-radius:0}",
     "html body #page .fo-pl-cm span.w{font-weight:700}",
     "html body #page .fo-pl-cm u{text-decoration:none;color:rgba(20,28,40,.4);font-size:10.5px}",
     "html body #page .fo-pl-cm em{flex-basis:100%;font:400 10.5px/1.3 Inter,sans-serif;font-style:normal;color:rgba(20,28,40,.55)}",
@@ -37017,9 +36998,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       var key = "wcm|" + season + "|" + st + "|" + gi;
       var innBlock = function (nat, rid2, sc, x, win) {
         var cps = checkpoints(key + rid2, sc.runs, sc.wkts >= 10 ? 10 : sc.wkts);
-        var lg2 = ""; try { lg2 = window.foNatLogo ? window.foNatLogo(rid2) : ""; } catch (eL2) {}
         return "<div class='fo-wm-inn" + (win ? " win" : "") + "'>" +
-          "<div class='fo-wm-innh'><img" + (lg2 ? " class='natlogo'" : "") + " src='" + (lg2 || flagOf(rid2)) + "' alt=''><b>" + E(nat) + "</b><u>" + sc.runs + (sc.wkts >= 10 ? " all out" : "/" + sc.wkts) + "</u></div>" +
+          "<div class='fo-wm-innh'><img src='" + flagOf(rid2) + "' alt=''><b>" + E(nat) + "</b><u>" + sc.runs + (sc.wkts >= 10 ? " all out" : "/" + sc.wkts) + "</u></div>" +
           "<div class='fo-wm-cps'>" + cps.map(function (c) { return "<span><i>" + c.ov + " ov</i><b>" + c.r + "/" + c.w + "</b></span>"; }).join("") + "</div>" +
           "<div class='fo-wm-perf'>" +
           x.bats.map(function (b2) { return "<div><b>" + E(b2.n) + "</b><u>" + b2.r + "</u></div>"; }).join("") +
@@ -37067,7 +37047,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     "html body #page .fo-wm-inn.win{border-left:3px solid #C95532}",
     "html body #page .fo-wm-innh{display:flex;align-items:center;gap:9px}",
     "html body #page .fo-wm-innh img{width:26px;height:18px;object-fit:cover;border-radius:3px}",
-    "html body #page .fo-wm-innh img.natlogo{width:26px;height:24px;object-fit:contain;border-radius:0}",
     "html body #page .fo-wm-innh b{flex:1;font:600 15px/1.2 Inter,sans-serif}",
     "html body #page .fo-wm-innh u{text-decoration:none;font-family:Oswald,sans-serif;font-weight:700;font-size:19px;font-variant-numeric:tabular-nums}",
     "html body #page .fo-wm-cps{display:flex;gap:6px;margin-top:12px;overflow-x:auto;padding-bottom:2px}",
@@ -39810,10 +39789,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         : "";
       var natRows = (RK.countries || []).map(function (n) {
         var isMineN = !!(cl && cl.country === n.id);
-        var lg = ""; try { lg = window.foNatLogo ? window.foNatLogo(n.id) : ""; } catch (eLg) {}
         return "<a class='fo-rk-row nat" + (isMineN ? " mine" : "") + "' href='#/nation?n=" + encodeURIComponent(n.id) + "'>" +
           "<i>" + n.rank + "</i>" +
-          "<img" + (lg ? " class='natlogo'" : "") + " src='" + (lg || flagOf(n.id)) + "' alt='' onerror=\"this.style.display='none'\">" +
+          "<img src='" + flagOf(n.id) + "' alt='' onerror=\"this.style.display='none'\">" +
           "<b>" + E(n.name) + "</b>" +
           "<u>XI " + fmt(n.natRating) + (n.natP ? "" : " &middot; unproven") + "</u>" +
           "<span class='pts'>" + fmt(n.clubRating) + "</span></a>";
@@ -39853,7 +39831,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-rk-row:first-of-type{border-top:none}",
       ".fo-rk-row i{font:700 11px/1 Oswald,sans-serif;font-style:normal;color:rgba(20,28,40,.4);width:24px;text-align:right;flex:none}",
       ".fo-rk-row img{width:22px;height:15px;object-fit:cover;border-radius:2px;flex:none}",
-      ".fo-rk-row img.natlogo{width:22px;height:20px;object-fit:contain;border-radius:0}",
       ".fo-rk-row b{font:600 13px/1.25 Inter,sans-serif;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       ".fo-rk-row b em{font-style:normal;font:700 8px/1 Oswald,sans-serif;letter-spacing:.12em;color:#C8542F;border:1px solid rgba(200,84,47,.45);border-radius:999px;padding:2px 6px;vertical-align:1px}",
       ".fo-rk-row b em.bs{color:#8a6d3b;border-color:rgba(138,109,59,.4)}",
@@ -43996,12 +43973,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var base = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
     try { return base + "flags/" + cx().flagFile(rid) + ".svg"; } catch (e) { return ""; }
   }
-  // The national side wears its board's real logo where one exists, the
-  // flag where one does not. The 'natlogo' class flips the img from a
-  // cropped flag ribbon to a contained badge.
+  // The national side flies its flag, everywhere it appears.
   function natCrest(rid, cls) {
-    var lg = ""; try { lg = window.foNatLogo ? window.foNatLogo(rid) : ""; } catch (e) {}
-    return "<img class='" + cls + (lg ? " natlogo" : "") + "' src='" + (lg || flagOf(rid)) +
+    return "<img class='" + cls + "' src='" + flagOf(rid) +
       "' alt='' onerror=\"this.style.display='none'\">";
   }
   // EVERY NATION HAS ONE HOME - and a gallery. The first painting in each
@@ -44072,10 +44046,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-nat-fl img{width:32px;height:22px;object-fit:cover;border-radius:4px;border:2px solid transparent}",
       "html body #page .fo-nat-fl.on img{border-color:#0B1D3A;box-shadow:0 0 0 3px rgba(11,29,58,.18)}",
       "html body #page .fo-nat-fl span{font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.05em;color:rgba(20,28,40,.55);text-transform:uppercase}",
-      "html body #page .fo-nat-fl img.natlogo{object-fit:contain;border-radius:0;width:26px;height:22px}",
-      "html body #page .fo-nat-flag.natlogo{object-fit:contain;box-shadow:none;border-radius:0;width:17px;height:17px}",
-      "html body #page .fo-ac-card h3 .fo-nat-flag.natlogo{width:21px;height:21px;vertical-align:-5px}",
-      "html body #page .fo-ac-card h3 span .fo-nat-flag.natlogo{width:16px;height:16px;vertical-align:-4px}",
       "html body #page .fo-nt-hero .shield img.natlogo{width:48px;height:58px;object-fit:contain;border-radius:0}",
       "html body #page .fo-nt-hero .shield.logo{background:none;clip-path:none;box-shadow:none;width:auto;height:auto}",
       "html body #page .fo-nt-hero .shield.logo img.natlogo{width:80px;height:92px;filter:drop-shadow(0 0 1.5px rgba(255,255,255,.9)) drop-shadow(0 0 14px rgba(255,255,255,.55)) drop-shadow(0 4px 10px rgba(0,0,0,.45))}",
@@ -44116,14 +44086,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-nt-hero{position:relative;background:linear-gradient(158deg,#152C4E,#0C1E36);overflow:hidden;min-height:250px}",
       "html body #page .fo-nt-hero .bgart{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 60%}",
       "html body #page .fo-nt-hero .veil{position:absolute;inset:0;background:linear-gradient(90deg,rgba(9,18,33,.92) 0%,rgba(9,18,33,.55) 44%,rgba(9,18,33,.12) 78%)}",
-      "html body #page .fo-nt-hero .hin{position:relative;display:flex;align-items:center;gap:clamp(14px,2.4vw,28px);padding-top:clamp(26px,4vw,56px);padding-bottom:clamp(26px,4vw,56px)}",
-      "html body #page .fo-nt-hero .shield{flex:none;width:clamp(72px,8vw,110px);height:clamp(84px,9.5vw,128px);background:#FFFEFC;clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(0,0,0,.4)}",
-      "html body #page .fo-nt-hero .shield img{width:60%;height:44%;object-fit:cover;border-radius:2px}",
-      "html body #page .fo-nt-hero .shield.logo{background:none;clip-path:none;box-shadow:none}",
-      "html body #page .fo-nt-hero .shield.logo img.natlogo{width:100%;height:100%;object-fit:contain;border-radius:0;filter:drop-shadow(0 0 1.5px rgba(255,255,255,.9)) drop-shadow(0 0 14px rgba(255,255,255,.55)) drop-shadow(0 4px 10px rgba(0,0,0,.45))}",
+      "html body #page .fo-nt-hero .hin{position:relative;display:flex;align-items:center;padding-top:clamp(26px,4vw,56px);padding-bottom:clamp(26px,4vw,56px)}",
       "html body #page .fo-nt-hero .kick{font:600 10.5px/1 Oswald,sans-serif;letter-spacing:.28em;text-transform:uppercase;color:#E8B96A;margin-bottom:10px}",
-      "html body #page .fo-nt-hero h2{font:700 clamp(34px,4.5vw,62px)/1 Oswald,sans-serif;text-transform:uppercase;color:#FFFEFC;margin:0;display:flex;align-items:center;gap:14px;text-shadow:0 2px 10px rgba(0,0,0,.45)}",
-      "html body #page .fo-nt-hero h2 .hfl{width:clamp(26px,2.5vw,38px);height:auto;aspect-ratio:38/26;object-fit:cover;border-radius:3px;box-shadow:0 0 0 1px rgba(255,255,255,.35)}",
+      "html body #page .fo-nt-hero h2{font:700 clamp(34px,4.5vw,62px)/1 Oswald,sans-serif;text-transform:uppercase;color:#FFFEFC;margin:0;display:flex;align-items:center;gap:clamp(12px,1.4vw,20px);text-shadow:0 2px 10px rgba(0,0,0,.45)}",
+      "html body #page .fo-nt-hero h2 .hfl{flex:none;width:clamp(58px,6.5vw,96px);height:auto;aspect-ratio:3/2;object-fit:cover;border-radius:8px;box-shadow:0 6px 16px rgba(0,0,0,.45),0 0 0 1.5px rgba(255,255,255,.4)}",
       "html body #page .fo-nt-hero .hf{display:flex;flex-wrap:wrap;gap:6px clamp(14px,2vw,26px);margin-top:16px}",
       "html body #page .fo-nt-hero .hf span{font:600 8.5px/1.5 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,239,228,.6)}",
       "html body #page .fo-nt-hero .hf b{display:block;font:600 15px/1.3 Inter,sans-serif;color:#FFFEFC;text-transform:none;letter-spacing:0;white-space:nowrap;text-shadow:0 1px 6px rgba(0,0,0,.5)}",
@@ -44307,17 +44273,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     var windows9 = (snap.windows || [5, 9, 13]);
     var hour9 = (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC";
     var fmtR = function (v) { return Number(v || 0).toLocaleString("en-US"); };
-    // a real board logo stands on the art unframed; only a flag still needs
-    // the white shield behind it to read
-    var hasLogo = false;
-    try { hasLogo = !!(window.foNatLogo && window.foNatLogo(ST.nation)); } catch (eHL) {}
     var hero = "<div class='fo-nt-bleed fo-nt-hero'>" +
       "<img class='bgart' src='" + ga.art + "' alt='' onerror=\"this.style.display='none'\"><span class='veil'></span>" +
       "<div class='fo-nt-in hin'>" +
-      "<span class='shield" + (hasLogo ? " logo" : "") + "'>" + natCrest(ST.nation, "") + "</span>" +
       "<div><div class='kick'>The International Game</div>" +
-      "<h2>" + E(n.name || ST.nation) +
-      " <img class='hfl' src='" + flagOf(ST.nation) + "' alt='' onerror=\"this.style.display='none'\"></h2>" +
+      "<h2><img class='hfl' src='" + flagOf(ST.nation) + "' alt='' onerror=\"this.style.display='none'\"> " +
+      E(n.name || ST.nation) + "</h2>" +
       "<div class='hf'>" +
       (natRank ? "<span>World rank<b>#" + natRank.rank + "</b></span>" : "") +
       (ga.name ? "<span>Home ground<b>" + E(ga.name) + "</b></span>" : "") +
@@ -44803,7 +44764,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       // INSIDE the masthead - fixed, centred, the full height of the band -
       // and the page's art gains the row the bar used to occupy. The masthead
       // is sticky at top:0, so a fixed bar at top:0 tracks it exactly.
-      "@media(min-width:1300px){",
+      "@media(min-width:900px){",
       // the masthead itself sits at z 320, so the merged bar must clear it
       "#fo-menubar{position:fixed;top:0;left:50%;transform:translateX(-50%);height:var(--fo-tbh,52px);background:transparent;border-bottom:none;box-shadow:none;-webkit-backdrop-filter:none;backdrop-filter:none;z-index:321;display:flex;align-items:stretch}",
       "#fo-menubar .fo-mb-in{height:100%;align-items:stretch;padding:0;overflow:visible;max-width:none;margin:0}",

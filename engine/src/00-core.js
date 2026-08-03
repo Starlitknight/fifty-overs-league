@@ -4392,20 +4392,6 @@ window.foClubCrest = (function () {
   };
 })();
 
-// THE BOARD'S OWN BADGE. Nations whose boards have lodged a real logo
-// (client/art/natlogos/<rid>.webp) fly it wherever the national SIDE is
-// shown; every other nation keeps its flag. Returns "" when there is none
-// so call sites can fall back to the flag they already draw.
-window.foNatLogo = function (rid) {
-  // keyed by the world's region ids (sub = India, bgd = Bangladesh), with
-  // the flag-style spellings kept as aliases
-  var HAVE = { eng: "eng", sub: "ind", ind: "ind", bgd: "ban", ban: "ban" };
-  var f = HAVE[String(rid || "")];
-  if (!f) return "";
-  var base = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
-  return base + "natlogos/" + f + ".webp";
-};
-
 // Engine patch 2026-balanced: pace/spin balance, real Rocket Arm/Lightning Hands hooks, stronger fatigue, contextual chase pressure, death power, and ground-fielding run impact.
 pgEditor=function(){};
 pgCommentary=function(){};

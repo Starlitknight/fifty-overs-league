@@ -197,9 +197,8 @@
       var key = "wcm|" + season + "|" + st + "|" + gi;
       var innBlock = function (nat, rid2, sc, x, win) {
         var cps = checkpoints(key + rid2, sc.runs, sc.wkts >= 10 ? 10 : sc.wkts);
-        var lg2 = ""; try { lg2 = window.foNatLogo ? window.foNatLogo(rid2) : ""; } catch (eL2) {}
         return "<div class='fo-wm-inn" + (win ? " win" : "") + "'>" +
-          "<div class='fo-wm-innh'><img" + (lg2 ? " class='natlogo'" : "") + " src='" + (lg2 || flagOf(rid2)) + "' alt=''><b>" + E(nat) + "</b><u>" + sc.runs + (sc.wkts >= 10 ? " all out" : "/" + sc.wkts) + "</u></div>" +
+          "<div class='fo-wm-innh'><img src='" + flagOf(rid2) + "' alt=''><b>" + E(nat) + "</b><u>" + sc.runs + (sc.wkts >= 10 ? " all out" : "/" + sc.wkts) + "</u></div>" +
           "<div class='fo-wm-cps'>" + cps.map(function (c) { return "<span><i>" + c.ov + " ov</i><b>" + c.r + "/" + c.w + "</b></span>"; }).join("") + "</div>" +
           "<div class='fo-wm-perf'>" +
           x.bats.map(function (b2) { return "<div><b>" + E(b2.n) + "</b><u>" + b2.r + "</u></div>"; }).join("") +
@@ -247,7 +246,6 @@
     "html body #page .fo-wm-inn.win{border-left:3px solid #C95532}",
     "html body #page .fo-wm-innh{display:flex;align-items:center;gap:9px}",
     "html body #page .fo-wm-innh img{width:26px;height:18px;object-fit:cover;border-radius:3px}",
-    "html body #page .fo-wm-innh img.natlogo{width:26px;height:24px;object-fit:contain;border-radius:0}",
     "html body #page .fo-wm-innh b{flex:1;font:600 15px/1.2 Inter,sans-serif}",
     "html body #page .fo-wm-innh u{text-decoration:none;font-family:Oswald,sans-serif;font-weight:700;font-size:19px;font-variant-numeric:tabular-nums}",
     "html body #page .fo-wm-cps{display:flex;gap:6px;margin-top:12px;overflow-x:auto;padding-bottom:2px}",

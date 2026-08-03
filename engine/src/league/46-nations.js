@@ -29,12 +29,9 @@
     var base = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
     try { return base + "flags/" + cx().flagFile(rid) + ".svg"; } catch (e) { return ""; }
   }
-  // The national side wears its board's real logo where one exists, the
-  // flag where one does not. The 'natlogo' class flips the img from a
-  // cropped flag ribbon to a contained badge.
+  // The national side flies its flag, everywhere it appears.
   function natCrest(rid, cls) {
-    var lg = ""; try { lg = window.foNatLogo ? window.foNatLogo(rid) : ""; } catch (e) {}
-    return "<img class='" + cls + (lg ? " natlogo" : "") + "' src='" + (lg || flagOf(rid)) +
+    return "<img class='" + cls + "' src='" + flagOf(rid) +
       "' alt='' onerror=\"this.style.display='none'\">";
   }
   // EVERY NATION HAS ONE HOME - and a gallery. The first painting in each
@@ -105,10 +102,6 @@
       "html body #page .fo-nat-fl img{width:32px;height:22px;object-fit:cover;border-radius:4px;border:2px solid transparent}",
       "html body #page .fo-nat-fl.on img{border-color:#0B1D3A;box-shadow:0 0 0 3px rgba(11,29,58,.18)}",
       "html body #page .fo-nat-fl span{font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.05em;color:rgba(20,28,40,.55);text-transform:uppercase}",
-      "html body #page .fo-nat-fl img.natlogo{object-fit:contain;border-radius:0;width:26px;height:22px}",
-      "html body #page .fo-nat-flag.natlogo{object-fit:contain;box-shadow:none;border-radius:0;width:17px;height:17px}",
-      "html body #page .fo-ac-card h3 .fo-nat-flag.natlogo{width:21px;height:21px;vertical-align:-5px}",
-      "html body #page .fo-ac-card h3 span .fo-nat-flag.natlogo{width:16px;height:16px;vertical-align:-4px}",
       "html body #page .fo-nt-hero .shield img.natlogo{width:48px;height:58px;object-fit:contain;border-radius:0}",
       "html body #page .fo-nt-hero .shield.logo{background:none;clip-path:none;box-shadow:none;width:auto;height:auto}",
       "html body #page .fo-nt-hero .shield.logo img.natlogo{width:80px;height:92px;filter:drop-shadow(0 0 1.5px rgba(255,255,255,.9)) drop-shadow(0 0 14px rgba(255,255,255,.55)) drop-shadow(0 4px 10px rgba(0,0,0,.45))}",
@@ -149,14 +142,10 @@
       "html body #page .fo-nt-hero{position:relative;background:linear-gradient(158deg,#152C4E,#0C1E36);overflow:hidden;min-height:250px}",
       "html body #page .fo-nt-hero .bgart{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:center 60%}",
       "html body #page .fo-nt-hero .veil{position:absolute;inset:0;background:linear-gradient(90deg,rgba(9,18,33,.92) 0%,rgba(9,18,33,.55) 44%,rgba(9,18,33,.12) 78%)}",
-      "html body #page .fo-nt-hero .hin{position:relative;display:flex;align-items:center;gap:clamp(14px,2.4vw,28px);padding-top:clamp(26px,4vw,56px);padding-bottom:clamp(26px,4vw,56px)}",
-      "html body #page .fo-nt-hero .shield{flex:none;width:clamp(72px,8vw,110px);height:clamp(84px,9.5vw,128px);background:#FFFEFC;clip-path:polygon(0 0,100% 0,100% 72%,50% 100%,0 72%);display:flex;align-items:center;justify-content:center;box-shadow:0 6px 16px rgba(0,0,0,.4)}",
-      "html body #page .fo-nt-hero .shield img{width:60%;height:44%;object-fit:cover;border-radius:2px}",
-      "html body #page .fo-nt-hero .shield.logo{background:none;clip-path:none;box-shadow:none}",
-      "html body #page .fo-nt-hero .shield.logo img.natlogo{width:100%;height:100%;object-fit:contain;border-radius:0;filter:drop-shadow(0 0 1.5px rgba(255,255,255,.9)) drop-shadow(0 0 14px rgba(255,255,255,.55)) drop-shadow(0 4px 10px rgba(0,0,0,.45))}",
+      "html body #page .fo-nt-hero .hin{position:relative;display:flex;align-items:center;padding-top:clamp(26px,4vw,56px);padding-bottom:clamp(26px,4vw,56px)}",
       "html body #page .fo-nt-hero .kick{font:600 10.5px/1 Oswald,sans-serif;letter-spacing:.28em;text-transform:uppercase;color:#E8B96A;margin-bottom:10px}",
-      "html body #page .fo-nt-hero h2{font:700 clamp(34px,4.5vw,62px)/1 Oswald,sans-serif;text-transform:uppercase;color:#FFFEFC;margin:0;display:flex;align-items:center;gap:14px;text-shadow:0 2px 10px rgba(0,0,0,.45)}",
-      "html body #page .fo-nt-hero h2 .hfl{width:clamp(26px,2.5vw,38px);height:auto;aspect-ratio:38/26;object-fit:cover;border-radius:3px;box-shadow:0 0 0 1px rgba(255,255,255,.35)}",
+      "html body #page .fo-nt-hero h2{font:700 clamp(34px,4.5vw,62px)/1 Oswald,sans-serif;text-transform:uppercase;color:#FFFEFC;margin:0;display:flex;align-items:center;gap:clamp(12px,1.4vw,20px);text-shadow:0 2px 10px rgba(0,0,0,.45)}",
+      "html body #page .fo-nt-hero h2 .hfl{flex:none;width:clamp(58px,6.5vw,96px);height:auto;aspect-ratio:3/2;object-fit:cover;border-radius:8px;box-shadow:0 6px 16px rgba(0,0,0,.45),0 0 0 1.5px rgba(255,255,255,.4)}",
       "html body #page .fo-nt-hero .hf{display:flex;flex-wrap:wrap;gap:6px clamp(14px,2vw,26px);margin-top:16px}",
       "html body #page .fo-nt-hero .hf span{font:600 8.5px/1.5 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,239,228,.6)}",
       "html body #page .fo-nt-hero .hf b{display:block;font:600 15px/1.3 Inter,sans-serif;color:#FFFEFC;text-transform:none;letter-spacing:0;white-space:nowrap;text-shadow:0 1px 6px rgba(0,0,0,.5)}",
@@ -340,17 +329,12 @@
     var windows9 = (snap.windows || [5, 9, 13]);
     var hour9 = (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC";
     var fmtR = function (v) { return Number(v || 0).toLocaleString("en-US"); };
-    // a real board logo stands on the art unframed; only a flag still needs
-    // the white shield behind it to read
-    var hasLogo = false;
-    try { hasLogo = !!(window.foNatLogo && window.foNatLogo(ST.nation)); } catch (eHL) {}
     var hero = "<div class='fo-nt-bleed fo-nt-hero'>" +
       "<img class='bgart' src='" + ga.art + "' alt='' onerror=\"this.style.display='none'\"><span class='veil'></span>" +
       "<div class='fo-nt-in hin'>" +
-      "<span class='shield" + (hasLogo ? " logo" : "") + "'>" + natCrest(ST.nation, "") + "</span>" +
       "<div><div class='kick'>The International Game</div>" +
-      "<h2>" + E(n.name || ST.nation) +
-      " <img class='hfl' src='" + flagOf(ST.nation) + "' alt='' onerror=\"this.style.display='none'\"></h2>" +
+      "<h2><img class='hfl' src='" + flagOf(ST.nation) + "' alt='' onerror=\"this.style.display='none'\"> " +
+      E(n.name || ST.nation) + "</h2>" +
       "<div class='hf'>" +
       (natRank ? "<span>World rank<b>#" + natRank.rank + "</b></span>" : "") +
       (ga.name ? "<span>Home ground<b>" + E(ga.name) + "</b></span>" : "") +
