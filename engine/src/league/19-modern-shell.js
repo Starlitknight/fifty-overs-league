@@ -149,8 +149,8 @@
     ".fo-home2 .hg-bar{position:static;order:4;bottom:auto;margin-top:15px;padding:0;justify-content:flex-start;background:none}",
     "}",
     // == the dressing-room door ================================================
-    "#fo-ord-door{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:350;background:#C95532;color:#FFFEFC;font:700 12.5px/1 Inter,sans-serif;letter-spacing:.03em;border-radius:999px;padding:13px 20px;text-decoration:none;box-shadow:0 10px 28px rgba(201,85,50,.5)}",
-    "#fo-ord-door:hover{background:#A64426;text-decoration:none;color:#FFFEFC}",
+    "html body #fo-ord-door{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:350;background:#C95532;color:#FFFEFC!important;font:700 12.5px/1 Inter,sans-serif;letter-spacing:.03em;border-radius:999px;padding:13px 20px;text-decoration:none;box-shadow:0 10px 28px rgba(201,85,50,.5)}",
+    "html body #fo-ord-door:hover{background:#A64426;text-decoration:none;color:#FFFEFC!important}",
     "@media(max-width:820px){#fo-ord-door{right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px))}}",
     // == motion ================================================================
     "@media (prefers-reduced-motion:no-preference){",

@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260802-2358-a437be";
+  var FO_BUILD = "20260803-0003-2244e4";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -19379,10 +19379,11 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".mg-hint{font-size:11.5px;color:#5b6472;line-height:1.5;margin:0 0 8px}" +
       ".mg-chips{display:flex;flex-wrap:wrap;gap:6px;margin:0 0 9px}" +
       "html body #page .mg-chips button.mgb{display:inline-flex;align-items:center;gap:6px;border:2px solid rgba(28,36,51,.14)!important;background:#FFFEFC!important;border-radius:99px;padding:7px 12px;font-size:12.5px;font-weight:800;color:#243244;cursor:pointer}" +
-      "html body #page .mg-chips button.mgb.on{border-color:#B04A2C!important;background:#FFF6F2!important;color:#B04A2C}" +
+      "html body #page .mg-chips button.mgb.on{border-color:#B04A2C!important;background:#B04A2C!important;color:#FFFEFC!important}" +
       ".mg-chips .mgb i{width:11px;height:11px;border-radius:50%;flex:0 0 auto}" +
       ".mg-chips .mgb u{text-decoration:none;font-size:11px;color:#8a93a3;font-weight:800}" +
-      ".mg-chips .mgb.on u{color:#B04A2C}" +
+      ".mg-chips .mgb.on u{color:rgba(255,255,255,.85)}" +
+      ".mg-chips .mgb.on s{color:#FFFEFC;border-color:rgba(255,255,255,.55)}" +
       ".mg-chips .mgb s{text-decoration:none;font-size:9.5px;font-weight:700;letter-spacing:.03em;color:#8a93a3;border:1px solid rgba(28,36,51,.16);border-radius:6px;padding:2px 6px}" +
       ".mg-chips .mgb s.on{color:#FFFEFC;background:#0E233F;border-color:#0E233F}" +
       ".fo-ord-clearrow{display:flex;justify-content:flex-end;margin:9px 0 2px}" +
@@ -32668,8 +32669,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     ".fo-home2 .hg-bar{position:static;order:4;bottom:auto;margin-top:15px;padding:0;justify-content:flex-start;background:none}",
     "}",
     // == the dressing-room door ================================================
-    "#fo-ord-door{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:350;background:#C95532;color:#FFFEFC;font:700 12.5px/1 Inter,sans-serif;letter-spacing:.03em;border-radius:999px;padding:13px 20px;text-decoration:none;box-shadow:0 10px 28px rgba(201,85,50,.5)}",
-    "#fo-ord-door:hover{background:#A64426;text-decoration:none;color:#FFFEFC}",
+    "html body #fo-ord-door{position:fixed;right:16px;bottom:calc(16px + env(safe-area-inset-bottom,0px));z-index:350;background:#C95532;color:#FFFEFC!important;font:700 12.5px/1 Inter,sans-serif;letter-spacing:.03em;border-radius:999px;padding:13px 20px;text-decoration:none;box-shadow:0 10px 28px rgba(201,85,50,.5)}",
+    "html body #fo-ord-door:hover{background:#A64426;text-decoration:none;color:#FFFEFC!important}",
     "@media(max-width:820px){#fo-ord-door{right:12px;bottom:calc(16px + env(safe-area-inset-bottom,0px))}}",
     // == motion ================================================================
     "@media (prefers-reduced-motion:no-preference){",
