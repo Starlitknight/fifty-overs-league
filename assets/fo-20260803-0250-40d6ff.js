@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0245-ef98c9";
+  var FO_BUILD = "20260803-0250-40d6ff";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -45214,6 +45214,23 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
 
   var STAGE_NM = { r16: "Round of 16", qf: "Quarter-finals", sf: "Semi-finals", final: "THE FINAL" };
   var STAGE_ORDER = ["r16", "qf", "sf", "final"];
+  function ART() { return (typeof FO_ART !== "undefined") ? FO_ART : "client/art/"; }
+  function flagOf(rid) { try { return ART() + "flags/" + window.__foCxAPI.flagFile(rid) + ".svg"; } catch (e) { return ""; } }
+  // EVERY NATION RUNS THIS CUP. The umpire plays a knockout in all nineteen
+  // leagues, so both cup pages carry the same flag rail: tap a flag, read
+  // that nation's bracket.
+  function natRail(rid, base) {
+    try {
+      var regs = (window.__foCxAPI.regions() || []).filter(function (r) { return !r.final; });
+      if (!regs.length) return "";
+      return "<div class='fo-kb-natsw'><i>Every nation&rsquo;s cup</i><div class='fo-kb-nats'>" +
+        regs.map(function (r) {
+          return "<a class='fo-kb-nat" + (r.id === rid ? " on" : "") + "' href='" + base + "?n=" + r.id + "'>" +
+            "<img src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\"><span>" + E(r.nm) + "</span></a>";
+        }).join("") + "</div></div>";
+    } catch (e) { return ""; }
+  }
+  try { window.__foKbNatRail = natRail; } catch (eNr) {}
   function stageDay(st) {
     var p = P(); if (!p) return "";
     var FA = { r16: 6, qf: 13, sf: 20, final: 27 };
@@ -45280,7 +45297,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-kb-hero'><div><span class='eb'>The national knockout &middot; season&nbsp;" + seasonNo + "</span>" +
         "<h1>The " + E(natNm) + " Cup</h1>" +
         "<p>Sixteen clubs, four Sundays, one trophy. Every round a fresh draw.</p></div>" +
-        "<span class='tro' aria-hidden='true'>&#127942;</span></div>";
+        "<span class='tro' aria-hidden='true'>&#127942;</span></div>" +
+        natRail(rid, "#/facup");
       if (body && body.champion) {
         html += "<div class='fo-fa-champ'><span>&#127942;</span><div><i>Cup winners, season " + seasonNo + "</i><b>" +
           E(body.champion) + "</b></div></div>";
@@ -45367,6 +45385,17 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page .fo-kb-gcard h4 span{font:600 9px/1.3 Oswald,sans-serif;letter-spacing:.06em;color:#8a6d3b;text-align:right}",
       "html body #page .fo-kb-gcard .fo-kb-tie{margin-top:7px}",
       "html body #page .fo-kb-in.kb-short .fo-kb-ties{height:330px}",
+      // the nineteen nations' rail: tap a flag, read that nation's cup
+      "html body #page .fo-kb-natsw{margin:0 0 14px;background:#fff;border:1px solid rgba(14,35,63,.14);border-radius:13px;padding:9px 12px 6px}",
+      "html body #page .fo-kb-natsw>i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(20,32,47,.5);font-style:normal;margin-bottom:7px}",
+      "html body #page .fo-kb-nats{display:flex;gap:12px;overflow-x:auto;padding-bottom:4px;scrollbar-width:none;mask-image:linear-gradient(90deg,#000 94%,transparent);-webkit-mask-image:linear-gradient(90deg,#000 94%,transparent)}",
+      "html body #page .fo-kb-nats::-webkit-scrollbar{display:none}",
+      "html body #page .fo-kb-nat{flex:none;display:flex;flex-direction:column;align-items:center;gap:4px;text-decoration:none !important;opacity:.75}",
+      "html body #page .fo-kb-nat img{width:30px;height:21px;object-fit:cover;border-radius:4px;border:2px solid transparent;box-shadow:0 1px 3px rgba(14,35,63,.2)}",
+      "html body #page .fo-kb-nat.on{opacity:1}",
+      "html body #page .fo-kb-nat.on img{border-color:#C95532;box-shadow:0 0 0 3px rgba(201,85,50,.16)}",
+      "html body #page .fo-kb-nat span{font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:rgba(20,32,47,.55) !important;max-width:64px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      "html body #page .fo-kb-nat.on span{color:#B04A2C !important}",
       // the connector plumbing (only boards that opt in wear it: the Colts
       // bracket is fixed; the FA Cup redraws each round and stays unlinked)
       "html body #page .fo-kb-in.linked .fo-kb-col:not(:last-child) .fo-kb-tw:after{content:'';position:absolute;right:-15px;width:14px;border-color:rgba(14,35,63,.28);border-style:solid;border-width:0}",
@@ -45619,7 +45648,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<div class='fo-kb-hero'><div><span class='eb'>The academies&rsquo; week &middot; season&nbsp;" + seasonNo + "</span>" +
         "<h1>The " + E(natNm) + " Colts Cup</h1>" +
         "<p>Sixteen clubs, both divisions, one hat. Name fifteen men under twenty-one or forfeit the tie.</p></div>" +
-        "<span class='tro' aria-hidden='true'>&#127942;</span></div>";
+        "<span class='tro' aria-hidden='true'>&#127942;</span></div>" +
+        (window.__foKbNatRail ? window.__foKbNatRail(rid, "#/colts") : "");
       if (body && body.champion) {
         html += "<div class='fo-cc-champ'><span>&#127942;</span><div><i>Colts Cup champions, season " + seasonNo + "</i><b>" +
           E(body.champion) + "</b></div></div>";

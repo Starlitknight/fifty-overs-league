@@ -115,7 +115,8 @@
         "<div class='fo-kb-hero'><div><span class='eb'>The academies&rsquo; week &middot; season&nbsp;" + seasonNo + "</span>" +
         "<h1>The " + E(natNm) + " Colts Cup</h1>" +
         "<p>Sixteen clubs, both divisions, one hat. Name fifteen men under twenty-one or forfeit the tie.</p></div>" +
-        "<span class='tro' aria-hidden='true'>&#127942;</span></div>";
+        "<span class='tro' aria-hidden='true'>&#127942;</span></div>" +
+        (window.__foKbNatRail ? window.__foKbNatRail(rid, "#/colts") : "");
       if (body && body.champion) {
         html += "<div class='fo-cc-champ'><span>&#127942;</span><div><i>Colts Cup champions, season " + seasonNo + "</i><b>" +
           E(body.champion) + "</b></div></div>";
