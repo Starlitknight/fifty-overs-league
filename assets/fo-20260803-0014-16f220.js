@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0008-bf6a0d";
+  var FO_BUILD = "20260803-0014-16f220";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -18783,20 +18783,8 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       }
       var bowlNames = xiNames.filter(function (nm9) { var p9 = by[nm9]; return p9 && p9.bowlType && p9.bowlType !== "none"; })
         .sort(function (a, b) { return (first[a] || 99) - (first[b] || 99); });
-      var lanes = "<div class='fo-ord-lanes'>" +
-        "<div class='fo-ord-lane lax'><span class='ln'></span><span class='lt lnum'>" +
-        [1, 10, 20, 30, 40, 50].map(function (o9) { return "<em style='left:" + (((o9 - 0.5) / 50) * 100).toFixed(1) + "%'>" + o9 + "</em>"; }).join("") +
-        "</span><u></u></div>" +
-        bowlNames.map(function (nmL) {
-          var cellsL = "";
-          for (var oL = 1; oL <= 50; oL++)
-            cellsL += "<i class='" + (g[oL] === nmL ? "f" : "") + (oL <= 10 ? " pp" : oL >= 41 ? " dth" : "") + "' data-lo='" + oL + "' data-ln='" + E(nmL) + "' title='Over " + oL + " &rarr; " + E(dispNm(nmL)) + "'></i>";
-          return "<div class='fo-ord-lane'><span class='ln'>" + E(dispNm(nmL)) +
-            "<i class='fbd" + (foMfVal(nmL) ? " on" : "") + "' data-fo-mfc='" + E(nmL) + "' title='" + E(foMfTitle(nmL)) + "'>" + foMfShort(nmL) + "</i>" +
-            "</span><span class='lt'>" + cellsL + "</span><u>" + (tot[nmL] || 0) + "</u></div>";
-        }).join("") +
-        "<div class='fo-ord-lane lax'><span class='ln'></span><span class='lt'><em style='flex:10'>Powerplay</em><em style='flex:30'>Middle</em><em style='flex:10'>Death</em></span><u></u></div></div>" +
-        "<div class='fo-ord-clearrow lanes'><button type='button' class='fo-ord-clearp' data-fo-clearplan>&#8709; Clear the bowling plan</button></div>";
+      // the fifty-wide desktop lanes are retired: the two-ends board below is
+      // the bowling board on every width, phone and desk alike
       // each bowler as a small card: type, overs, bowling stars (ranked
       // against the club's other bowlers), stamina, and his talents
       // bowler cards mirror the batting cards: name row with OVR right,
@@ -18837,30 +18825,32 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
             "<s class='fbd" + (foMfVal(n9) ? " on" : "") + "' data-fo-mfc='" + E(n9) + "' title='" + E(foMfTitle(n9)) + "'>" + foMfShort(n9) + "</s></button>";
         }).join("") + "</div>" +
         "<div class='mg-grid'>" + (function () {
-          // a vertical over-list in TWO columns of twenty-five: overs 1-25
-          // down the left, 26-50 down the right, so the innings fits in half
-          // the scroll. One row a tap-target, the phases named where they
-          // start in each column.
+          // THE TWO ENDS OF THE GROUND. Overs alternate ends the way an
+          // innings actually runs: 1, 3, 5... from the Pavilion End, 2, 4,
+          // 6... from the Far End, each pair side by side. The pleasant
+          // consequence is real cricket's own shape - a bowler on a spell
+          // alternates overs, so his overs STACK straight down the end he is
+          // bowling from, and "never two in a row" becomes visible: two in a
+          // row would mean bowling from both ends at once.
           var cell9 = function (o9) {
             var b9 = g[o9];
             return "<button type='button' class='mgc" + (b9 ? " mgc-c" + colorIx[b9] : "") + (o9 <= 10 ? " pp" : o9 >= 41 ? " dth" : "") + "' data-mo='" + o9 + "'><em>" + o9 + "</em>" +
               (b9 ? "<b>" + inits(b9) + "</b><span class='mgn'>" + E(dispNm(b9)) + "</span>" : "<span class='mgn mgn-e'>&mdash;</span>") + "</button>";
           };
-          var c1 = "<span class='mg-ph pp'>Powerplay 1-10</span>", c2 = "<span class='mg-ph'>Middle 26-40</span>";
-          for (var oA = 1; oA <= 25; oA++) {
-            if (oA === 11) c1 += "<span class='mg-ph'>Middle 11-25</span>";
-            c1 += cell9(oA);
+          var h9 = "<span class='mg-endh'>Pavilion End</span><span class='mg-endh'>Far End</span>";
+          for (var pr9 = 0; pr9 < 25; pr9++) {
+            var oL9 = pr9 * 2 + 1;
+            if (oL9 === 1) h9 += "<span class='mg-ph pp'>Powerplay &middot; overs 1-10</span>";
+            if (oL9 === 11) h9 += "<span class='mg-ph'>Middle &middot; overs 11-40</span>";
+            if (oL9 === 41) h9 += "<span class='mg-ph dth'>Death &middot; overs 41-50</span>";
+            h9 += cell9(oL9) + cell9(oL9 + 1);
           }
-          for (var oB = 26; oB <= 50; oB++) {
-            if (oB === 41) c2 += "<span class='mg-ph dth'>Death 41-50</span>";
-            c2 += cell9(oB);
-          }
-          return "<div class='mg-col'>" + c1 + "</div><div class='mg-col'>" + c2 + "</div>";
+          return h9;
         })() + "</div></div>";
       // two pages, one sheet: the tab decides which half paints
       if (tab === "bowl")
         return "<div class='fo-ord-planv'>" +
-          "<div class='pv-bowl'><div class='fo-ord-vzh'>Bowling</div>" + lanes + mgrid + legend + "</div></div>";
+          "<div class='pv-bowl'><div class='fo-ord-vzh'>Bowling</div>" + mgrid + legend + "</div></div>";
       return "<div class='fo-ord-planv'>" + toss + xiCol + benchCol + "</div>";
     } catch (e) { return ""; }
   }
@@ -19368,18 +19358,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-ord-tabs{display:flex;gap:6px;margin:10px 0 12px}" +
       "html body.ftpskin #page .fo-ord-tabs button,html body #page .fo-ord-tabs button{flex:1;padding:11px 0;border-radius:12px;border:1px solid rgba(28,36,51,.16)!important;background:#FFFEFC!important;color:#5b6472!important;font-size:13px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;cursor:pointer;box-shadow:none!important}" +
       "html body #page .fo-ord-tabs button.on{background:#0E233F!important;border-color:#0E233F!important;color:#FFFEFC!important}" +
-      // ---- phone bowling: arm a bowler, tap big over-cells (the 50-wide
-      // lanes are desktop-only - their cells are unusably narrow on a phone)
-      ".fo-ord-mgrid{display:none}" +
-      "@media(max-width:820px){" +
-      "html body #page .fo-ord-lanes{display:none!important}" +
-      ".fo-ord-clearrow.lanes{display:none}" +   // the lanes' clear button leaves with the lanes; the mgrid has its own
-   // outranks the base .fo-ord-lanes{display:flex} that follows in this sheet
-      ".fo-ord-mgrid{display:block}" +
-      // ---- the overs run DOWN the page on a phone: one over a row, big
-      // targets, the phases named where they begin, and the bowler chips
-      // riding along at the top so assigning over 43 never means scrolling
-      // back up to re-arm a man
+      // ---- the bowling board, every width: arm a bowler, tap overs at
+      // either end. The bowler chips ride sticky at the top so assigning
+      // over 43 never means scrolling back up to re-arm a man
+      ".fo-ord-mgrid{display:block;max-width:620px}" +
       ".mg-chips{position:sticky;top:calc(var(--fo-tbh,52px) + 44px);z-index:6;background:rgba(248,245,238,.96);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);padding:6px 0;border-radius:0 0 10px 10px}" +
       ".mg-ph{display:block;margin:10px 0 4px;font-size:10px;font-weight:800;letter-spacing:.14em;text-transform:uppercase;color:#8a93a3}" +
       ".mg-ph.pp{color:#4E7A4E}.mg-ph.dth{color:#B04A2C}" +
@@ -19394,14 +19376,14 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".mg-chips .mgb s{text-decoration:none;font-size:9.5px;font-weight:700;letter-spacing:.03em;color:#8a93a3;border:1px solid rgba(28,36,51,.16);border-radius:6px;padding:2px 6px}" +
       ".mg-chips .mgb s.on{color:#FFFEFC;background:#0E233F;border-color:#0E233F}" +
       ".fo-ord-clearrow{display:flex;justify-content:flex-end;margin:9px 0 2px}" +
-      ".fo-ord-clearrow.lanes{margin:7px 0 0}" +
       "html body.ftpskin #page button.fo-ord-clearp,html body #page button.fo-ord-clearp{border:1px solid rgba(28,36,51,.16)!important;background:#FFFEFC!important;color:#5a6472!important;border-radius:999px;padding:7px 13px;font-size:11px;font-weight:700;letter-spacing:.02em;cursor:pointer}" +
       "html body #page button.fo-ord-clearp:hover{border-color:#B04A2C!important;color:#B04A2C!important}" +
-      // the overs run DOWN the page: one over a row, the over number on the
-      // left, the bowler's chip and name beside it, the phase named by the
-      // coloured left edge - over 1 at the top, over 50 at the foot
-      ".mg-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:0 8px;align-items:start}" +
-      ".mg-col{display:flex;flex-direction:column;gap:3px;min-width:0}" +
+      // the two ends side by side, over pairs down the page: odd overs from
+      // the Pavilion End on the left, even from the Far End on the right,
+      // the phase headers spanning both
+      ".mg-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:3px 8px;align-items:stretch}" +
+      ".mg-ph{grid-column:1/-1}" +
+      ".mg-endh{font-size:10.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#41577a;text-align:center;padding:3px 0 4px;border-bottom:2px solid rgba(28,36,51,.14)}" +
       "html body #page .mg-grid button.mgc{display:flex;align-items:center;gap:6px;border:1px solid rgba(28,36,51,.16)!important;border-left:4px solid #c8cfd9!important;background:#FFFEFC!important;border-radius:8px;height:40px;padding:0 6px 0 0!important;cursor:pointer;overflow:hidden}" +
       "html body #page .mg-grid button.mgc.pp{border-left-color:#4E7A4E!important}" +
       "html body #page .mg-grid button.mgc.dth{border-left-color:#B04A2C!important}" +
@@ -19409,7 +19391,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".mg-grid .mgc b{display:flex;align-items:center;justify-content:center;height:22px;width:28px;flex:0 0 auto;border-radius:6px;font-size:9.5px;font-weight:800;color:#fff}" +
       ".mg-grid .mgc .mgn{font-size:11.5px;font-weight:700;color:#243244;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}" +
       ".mg-grid .mgc .mgn-e{color:#b6bdc9;font-weight:600;font-style:italic}" +
-      "}" +
       // one uniform navy for every bowler's cells - the initials tell them
       // apart, the colour stays calm
       ".mg-chips .mgb i{display:none}" +
