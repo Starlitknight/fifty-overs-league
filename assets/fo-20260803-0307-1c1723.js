@@ -10175,7 +10175,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-0304-090ba7";
+  var FO_BUILD = "20260803-0307-1c1723";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -28834,11 +28834,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         "<b>" + E(heroName) + "</b>" +
         "<span class='hg-sub'>" + posLine + "</span>" +
         "<span class='hg-form'><u>FORM</u>" + beads + "</span>";
-      var barHtml = btn("fo-hm-nx", "NEXT MATCH \u25B8", "PLAY \u25B8") +
-        btn("fo-hm-lg", "YOUR LEAGUE", "LEAGUE") +
-        btn("fo-hm-sq", "THE SQUAD", "SQUAD") +
-        btn("fo-hm-wd", "WORLD MAP", "WORLD") +
-        btn("fo-hm-cp", "CHAMPIONS CUP", "CUP");
+      // one door on the wallpaper: the next match. Everything else lives in
+      // the menu bar, and repeating it here was two navigations again.
+      var barHtml = btn("fo-hm-nx", "NEXT MATCH \u25B8", "PLAY \u25B8");
       // THE PAINTING HANGS ONCE. Boot answers arrive one by one - the world's
       // club names, then its table, then the served snapshot - and each used
       // to rebuild this whole page, tearing down and re-decoding the same
@@ -28862,8 +28860,6 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       }
       try { document.body.classList.add("fo-home-on"); document.body.classList.remove("fo-boss-on"); document.body.classList.remove("fo-ov-on"); } catch (eBc) {}
       try { foHgFit(page.querySelector(".fo-hg2")); } catch (eF) {}
-      var go = function (id, hash) { var b = page.querySelector("#" + id); if (b) b.addEventListener("click", function () { location.hash = hash; if (typeof window.route === "function") window.route(); }); };
-      go("fo-hm-lg", "#/league"); go("fo-hm-sq", "#/squad"); go("fo-hm-wd", "#/world"); go("fo-hm-cp", "#/cup");
       // the golden path: one button that always knows the next step
       try {
         var nxB = page.querySelector("#fo-hm-nx");

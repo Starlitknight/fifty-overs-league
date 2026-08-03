@@ -5330,11 +5330,9 @@
         "<b>" + E(heroName) + "</b>" +
         "<span class='hg-sub'>" + posLine + "</span>" +
         "<span class='hg-form'><u>FORM</u>" + beads + "</span>";
-      var barHtml = btn("fo-hm-nx", "NEXT MATCH \u25B8", "PLAY \u25B8") +
-        btn("fo-hm-lg", "YOUR LEAGUE", "LEAGUE") +
-        btn("fo-hm-sq", "THE SQUAD", "SQUAD") +
-        btn("fo-hm-wd", "WORLD MAP", "WORLD") +
-        btn("fo-hm-cp", "CHAMPIONS CUP", "CUP");
+      // one door on the wallpaper: the next match. Everything else lives in
+      // the menu bar, and repeating it here was two navigations again.
+      var barHtml = btn("fo-hm-nx", "NEXT MATCH \u25B8", "PLAY \u25B8");
       // THE PAINTING HANGS ONCE. Boot answers arrive one by one - the world's
       // club names, then its table, then the served snapshot - and each used
       // to rebuild this whole page, tearing down and re-decoding the same
@@ -5358,8 +5356,6 @@
       }
       try { document.body.classList.add("fo-home-on"); document.body.classList.remove("fo-boss-on"); document.body.classList.remove("fo-ov-on"); } catch (eBc) {}
       try { foHgFit(page.querySelector(".fo-hg2")); } catch (eF) {}
-      var go = function (id, hash) { var b = page.querySelector("#" + id); if (b) b.addEventListener("click", function () { location.hash = hash; if (typeof window.route === "function") window.route(); }); };
-      go("fo-hm-lg", "#/league"); go("fo-hm-sq", "#/squad"); go("fo-hm-wd", "#/world"); go("fo-hm-cp", "#/cup");
       // the golden path: one button that always knows the next step
       try {
         var nxB = page.querySelector("#fo-hm-nx");
