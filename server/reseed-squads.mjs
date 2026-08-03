@@ -52,7 +52,7 @@ const dry = (process.env.DRY_RUN || '').trim() === 'YES';
 const PLAY_TABLES = [
   'matches', 'cup_matches', 'nat_matches', 'youth_matches', 'comp_matches',
   'ticks', 'orders', 'callups', 'nat_squad', 'nat_squads', 'friendlies',
-  'listings', 'bids', 'scouted', 'training_rounds', 'snapshots',
+  'listings', 'bids', 'scouted', 'training_rounds', 'snapshots', 'match_logs',
   'comps', 'comp_clubs',
   // the club statement. Every line in it is rewritten from the finance walk
   // each time the money settles, so it is play, not world: wipe it with the

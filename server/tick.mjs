@@ -148,6 +148,21 @@ async function playRound(pool, host, country, season, round, opts) {
       `INSERT INTO matches(id, country_id, season_no, round, home_slot, away_slot, seed, engine_version, pitch, orders, result, result_canonical, home_name, away_name, living, ratings)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,$12::text,$13,$14,$15::jsonb,$16::jsonb) ON CONFLICT (id) DO NOTHING`,
       [id, country, season.season_no, round, hs, as, seed, ENGINE_VERSION, cond.pitch, JSON.stringify(tieOrders), resultJson, resultJson, home.name, away.name, JSON.stringify(living), rat ? JSON.stringify(rat) : null]);
+    // THE COMMENTARY KEEPS FOR A WEEK. The engine's ball-by-ball is read off
+    // the match just played and banked beside the card (never inside it - the
+    // canonical result does not move). A failure here must not cost the round:
+    // the scorecard is the record, the commentary is a luxury.
+    try {
+      if (host.lastMatchLog) {
+        const log = host.lastMatchLog();
+        if (log && log.length) {
+          await pool.query(
+            `INSERT INTO match_logs(match_id, country_id, log) VALUES ($1,$2,$3::jsonb)
+             ON CONFLICT (match_id) DO NOTHING`,
+            [id, country, JSON.stringify(log)]);
+        }
+      }
+    } catch (eLg) { console.error('commentary bank failed for ' + id + ':', eLg.message); }
     played++;
   }
   return played;
@@ -633,6 +648,11 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
             AND (season_no < $2 OR (season_no = $2 AND round < $3 - 1))`,
         [country, season.season_no, round]);
     } catch (eSl) { console.error('almanack slimming failed for ' + country + ':', eSl.message); }
+    // the week-old commentary is let go; the RPC refuses to serve past the
+    // week anyway, so a late prune never leaks a stale book
+    try {
+      await pool.query(`DELETE FROM match_logs WHERE played_at < now() - interval '7 days'`);
+    } catch (eLp) { /* pre-045 database: no commentary bank yet */ }
   }
   // THE MARKET. Bot clubs shed men on league rounds; the free-agent trickle
   // walks on EVERY day the world turns, rest days included - which is why

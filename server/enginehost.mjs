@@ -150,6 +150,15 @@ globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson, wea
     worm: M.worm
   });
 };
+// THE COMMENTARY OF THE MATCH JUST PLAYED. __svcRun leaves the finished match
+// in M; this reads its ball-by-ball out without re-running a single delivery
+// and without touching the canonical result - the log is banked BESIDE the
+// card (match_logs, kept a week), never inside it, so nothing about the
+// canonical shape or the golden-master replays moves an inch.
+globalThis.__svcLastLog = function () {
+  try { return JSON.stringify((typeof M !== 'undefined' && M && M.log) || []); }
+  catch (e) { return '[]'; }
+};
 // the fixture's conditions, from the planet's ONE table - the same function a
 // phone calls to print the forecast, so the umpire can never play a different
 // pitch than the fixtures page promised
@@ -185,6 +194,7 @@ globalThis.__svcWorldCfg = function () {
 };`, eng.ctx);
   const gen = vm.runInContext('__svcGenSquad', eng.ctx);
   const run = vm.runInContext('__svcRun', eng.ctx);
+  const lastLog = vm.runInContext('__svcLastLog', eng.ctx);
   const cfg = vm.runInContext('__svcWorldCfg', eng.ctx);
   const cond = vm.runInContext('__svcCond', eng.ctx);
   const doct = vm.runInContext('__svcDoctrine', eng.ctx);
@@ -211,6 +221,9 @@ globalThis.__svcWorldCfg = function () {
       return run(JSON.stringify(homeTeam), JSON.stringify(awayTeam), pitch, seed,
         ordersMap ? JSON.stringify(ordersMap) : null, weather || 'Sunny');
     },
+    // the ball-by-ball of the match runMatch JUST played, read from the vm's
+    // finished state - no re-simulation, no change to the canonical card
+    lastMatchLog() { return JSON.parse(lastLog()); },
     // what the sky and the square will do for a given fixture - deterministic,
     // published in advance, identical on every device and on the umpire
     condFor(rid, slot, seasonNo, round) { return JSON.parse(cond(rid, slot, seasonNo, round)); },

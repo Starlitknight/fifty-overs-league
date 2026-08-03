@@ -343,10 +343,9 @@
       // the card came off the record, but this device could not re-run the
       // match ball for ball, and inventing the balls is not on offer
       if (rec && rec.__servedCard) {
-        return foMrNone("No ball-by-ball for this one",
-          "The World Service banks every scorecard but not the commentary - it is the largest part of a match and the cheapest to re-derive, so your device re-runs it. " +
-          "This match would not re-run exactly, most often because a club has bought or sold players since the season began. " +
-          "The scorecard, the chart and the points above are the umpire's own record and are exact.");
+        return foMrNone("The commentary has aged out",
+          "The umpire keeps every match's full ball-by-ball for a week after it is played, then lets it go - " +
+          "the scorecard, the chart and the points above are his own record and are kept forever.");
       }
       return foMrNone("The commentary has been let go",
         "Only the two most recent matches keep their ball-by-ball; older ones are trimmed so a whole career still fits on your phone. " +
@@ -556,6 +555,24 @@
     MR_CARD[k] = p;
     return p;
   }
+  // THE UMPIRE'S OWN COMMENTARY, kept for a week after the match (migration
+  // 045). Where it exists it outranks the replay's - it is the very
+  // ball-by-ball the match was settled on - and after the week it is let go,
+  // scorecard forever, exactly as the save's own slimming has always worked.
+  var MR_LOG = {};
+  function foMrLogFetch(nat, id) {
+    var k = nat + "|" + id;
+    if (MR_LOG[k]) return MR_LOG[k];
+    var p = fetch(MR_SB + "/rest/v1/rpc/world_match_log", {
+      method: "POST",
+      headers: { apikey: MR_KEY, Authorization: "Bearer " + MR_KEY, "content-type": "application/json" },
+      body: JSON.stringify({ p_country: nat, p_match_id: id })
+    }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { return (j && j.log && j.log.length) ? j.log : null; })
+      .catch(function () { return null; });      // no RPC yet: the replay still stands
+    MR_LOG[k] = p;
+    return p;
+  }
   // the clubs of a nation, by the name the snapshot publishes AND by the name
   // a manager christened - the same translation the replay needs
   function foMrSidesBy(nat) {
@@ -632,7 +649,7 @@
       var sigOwn = location.hash;
       var have = MR_REP[ck];
       (have ? Promise.resolve(have) : Promise.all([
-        foMrNames(nat), WTs.roundState(nat, hit.row.round | 0), foMrCardFetch(nat, id)
+        foMrNames(nat), WTs.roundState(nat, hit.row.round | 0), foMrCardFetch(nat, id), foMrLogFetch(nat, id)
       ]).then(function (all) {
         // WHICH OF THE TWO TO READ FROM. A replay that AGREES with the banked
         // verdict is not a rival account of the match - it is the same match,
@@ -643,6 +660,8 @@
         // whenever the replay cannot be made to agree, and it is exact.
         var rep = foMrReplayServed(nat, hit.row, hit.season, all[1]);
         var built = rep || foMrRecFromCard(nat, hit, all[2], null);
+        // the umpire's banked commentary outranks anything re-derived
+        if (built && all[3] && all[3].length) built.log = all[3];
         MR_REP[ck] = built || false;                       // false: neither could be had
         return built;
       })).then(function (rep) {
