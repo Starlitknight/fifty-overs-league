@@ -565,10 +565,23 @@
     var h0 = pl.natHour(rid);
     var hNowW = (now - (pl.EPOCH + pl.dayIx(now) * 86400000)) / 3600000;
     var state = hNowW < h0 ? "up" : hNowW < h0 + (pl.LIVE_LEN || 3) ? "live" : "fin";
-    // a link marked go=1 wants the broadcast itself, not this page - join it
+    // a link marked go=1 wants the broadcast itself, not this page - join it.
+    // A JOIN THAT FAILS MUST NOT STRAND THE READER on the curtain: if the
+    // broadcast has not started shortly, clear the cached refusal and try
+    // once more; if it still will not start, put the fixtures page up.
     if (q.go && state === "live") {
       page.innerHTML = "<div class='fo-wt'><p style='padding:80px 20px;color:#fff;font:italic 400 15px Georgia,serif'>Joining the broadcast&hellip;</p></div>";
       setTimeout(function () { try { window.foWtSpectate(rid, null, null, fi); } catch (eGo) {} }, 30);
+      setTimeout(function () {
+        if ((location.hash || "").split("?")[0] !== "#/watch") return;
+        try { delete ORD_CACHE[rid + ":" + round]; } catch (eC) {}
+        try { window.foWtSpectate(rid, null, null, fi); } catch (eG2) {}
+      }, 7000);
+      setTimeout(function () {
+        if ((location.hash || "").split("?")[0] !== "#/watch") return;
+        location.hash = "#/watch?n=" + encodeURIComponent(rid) + "&f=" + fi;
+        try { if (typeof window.route === "function") window.route(); } catch (eR) {}
+      }, 15000);
       return;
     }
 

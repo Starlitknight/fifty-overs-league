@@ -2393,6 +2393,14 @@ function pgMatch(){
       const wtR=JSON.parse(localStorage.getItem('fo_wt_resume')||'null');
       if(wtR&&wtR.until&&Date.now()<wtR.until){
         $('#page').innerHTML='<div style="padding:90px 24px;text-align:center;font:italic 400 15px Georgia,serif;color:#6d6455">Rejoining the broadcast&hellip;</div>';
+        // and if the world will not answer, let go of the note rather than
+        // hold the reader on this curtain forever
+        setTimeout(function(){try{
+          if((location.hash||'').split('?')[0]!=='#/match')return;
+          if(typeof M!=='undefined'&&M)return;
+          localStorage.removeItem('fo_wt_resume');
+          if(typeof route==='function')route();
+        }catch(eW2){}},15000);
         return;
       }
     }catch(eWt){}
