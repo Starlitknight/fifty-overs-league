@@ -10285,7 +10285,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260803-2332-bf9a33";
+  var FO_BUILD = "20260804-0106-19c128";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -34592,7 +34592,47 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     ar: ["All-rounder", "Batting", "Bowling", "Fielding", "Fitness", "Rest"],
     wk: ["Keeping", "Batting", "Fielding", "Fitness", "Rest"]
   };
-  var FOCI = [["balanced", "Balanced"], ["batting", "Batting"], ["bowling", "Bowling"], ["fielding", "Fielding"], ["fitness", "Fitness"], ["recovery", "Recovery"]];
+  var FOCI = [["balanced", "Balanced"], ["batting", "Batting"], ["bowling", "Bowling"], ["fitness", "Fitness"], ["fielding", "Fielding"], ["recovery", "Recovery"]];
+  // ---- the shirt number: the umpire's own algorithm, quoted ----------------
+  // The server banks p.no once per man (hash of his name, probed over the
+  // squad in name order). Until a squad has been through a settle, the same
+  // arithmetic here answers identically - one number, every device.
+  function h32n(s) { var h = 2166136261 >>> 0; s = String(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
+  function squadNumbers(squad) {
+    var taken = {}, out = {};
+    var byName = squad.slice().sort(function (a, b) { return a.name < b.name ? -1 : 1; });
+    byName.forEach(function (p) { var n = p.no | 0; if (n >= 1 && n <= 99 && !taken[n]) { taken[n] = p.name; out[p.name] = n; } });
+    byName.forEach(function (p) {
+      if (out[p.name]) return;
+      var v = (h32n(p.name) % 99) + 1, guard = 0;
+      while (taken[v] && guard++ < 120) v = (v % 99) + 1;
+      taken[v] = p.name; out[p.name] = v;
+    });
+    return out;
+  }
+  // the scorebook's abbreviations: a bowler wears his arm and craft
+  function abbrevOf(p) {
+    var L = p.hand === "L";
+    var bt = String(p.bowlTypeFull || p.bowlType || "");
+    if (/fingerSpin|partTimeSpin/.test(bt)) return L ? "SLA" : "OB";
+    if (/wristSpin/.test(bt)) return L ? "SLC" : "LB";
+    if (/seamFastMedium/.test(bt)) return (L ? "L" : "R") + "FM";
+    if (/seamFast/.test(bt)) return (L ? "L" : "R") + "F";
+    if (/seam/i.test(bt)) return (L ? "L" : "R") + "M";
+    return L ? "LH Bat" : "RH Bat";
+  }
+  // one full normal session banks ~24 points; a step needs thresh(skill)
+  function sessionsOf(p, prog) {
+    var pp = projProgress(p, prog);
+    if (!pp) return null;
+    var sk = pp.sk;
+    var th = 80 + (((p.skills && p.skills[sk]) || 0) * 1.5);
+    return { done: Math.min(Math.floor(pp.banked / 24), Math.ceil(th / 24)), of: Math.ceil(th / 24), pct: pp.pct };
+  }
+  // which shelf of the balance chart a programme sits on
+  var PROG_BUCKET = { "Batting": "bat", "New-ball batting": "bat", "Spin batting": "bat", "Power hitting": "bat", "Finishing": "bat",
+    "Bowling": "bowl", "New-ball seam": "bowl", "Spin bowling": "bowl", "Death bowling": "bowl", "Control bowling": "bowl",
+    "Keeping": "field", "Fielding": "field", "Fitness": "fit", "All-rounder": "bat", "Rest": "rest" };
   var INTEN = [["light", "Light"], ["normal", "Normal"], ["high", "High"], ["intensive", "Intensive"]];
   // what "coach decides" means under each club focus, per unit; null defers
   // to the engine's own per-man default programme
@@ -34607,7 +34647,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   var sv = null;
   function blankState() {
     var u = {}; UNITS.forEach(function (x) { u[x[0]] = { f: "coach", i: "normal" }; });
-    return { focus: "balanced", units: u, projects: [null, null, null], dirty: 0 };
+    return { focus: "balanced", units: u, projects: [null, null, null], overrides: {}, dirty: 0 };
   }
   function loadState() {
     if (sv) return sv;
@@ -34618,6 +34658,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         if (v2.focus) sv.focus = v2.focus;
         UNITS.forEach(function (x) { if (v2.units && v2.units[x[0]]) sv.units[x[0]] = { f: v2.units[x[0]].f || "coach", i: v2.units[x[0]].i || "normal" }; });
         (v2.projects || []).slice(0, 3).forEach(function (pr, i) { if (pr && pr.n) sv.projects[i] = { n: pr.n, f: pr.f }; });
+        if (v2.overrides) sv.overrides = v2.overrides;
       }
     } catch (e) {}
     return sv;
@@ -34630,6 +34671,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   function progFor(p) {
     var st = loadState();
     for (var i = 0; i < 3; i++) if (st.projects[i] && st.projects[i].n === p.name) return { prog: st.projects[i].f, why: "project" };
+    if (st.overrides && st.overrides[p.name]) return { prog: st.overrides[p.name], why: "pinned" };
     var up = resolveUnit(unitOf(p));
     if (up) return { prog: up, why: "unit" };
     return { prog: defaultProg(p), why: "coach" };
@@ -34641,7 +34683,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       if (d.why !== "coach") plan[p.name] = d.prog;   // the coach's own default is left to the engine
     });
     var prj = []; st.projects.forEach(function (x) { if (x && x.n && x.f) prj.push({ n: x.n, f: x.f }); });
-    plan.__v2 = { focus: st.focus, units: st.units, projects: prj };
+    var ovr = {};
+    squad.forEach(function (p) { if (st.overrides && st.overrides[p.name]) ovr[p.name] = st.overrides[p.name]; });
+    plan.__v2 = { focus: st.focus, units: st.units, projects: prj, overrides: ovr };
     return plan;
   }
 
@@ -34670,11 +34714,21 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "<h1>The Nets</h1><p>Purposeful work. Better players. Stronger team.</p></div>" +
       "<span class='cr'>" + crest + "</span></div>";
 
+    // work banked: every point in every man's ledger, told in sessions
+    var bankedPts = 0;
+    squad.forEach(function (p) { var tp = p.trainProgress || {}; for (var k in tp) bankedPts += (+tp[k] || 0); });
+    var bankedSes = Math.round(bankedPts / 24);
+    var IC = {
+      men: "<svg viewBox='0 0 24 24'><circle cx='8' cy='8' r='3'/><circle cx='16' cy='8' r='3'/><path d='M2 20 Q8 13 12 18 Q16 13 22 20'/></svg>",
+      tgt: "<svg viewBox='0 0 24 24'><circle cx='12' cy='12' r='9'/><circle cx='12' cy='12' r='5'/><circle cx='12' cy='12' r='1.5' fill='currentColor'/></svg>",
+      db: "<svg viewBox='0 0 24 24'><rect x='2' y='9' width='3' height='6' rx='1'/><rect x='19' y='9' width='3' height='6' rx='1'/><rect x='5' y='7' width='3' height='10' rx='1'/><rect x='16' y='7' width='3' height='10' rx='1'/><line x1='8' y1='12' x2='16' y2='12'/></svg>",
+      tm: "<svg viewBox='0 0 24 24'><circle cx='12' cy='13' r='8'/><line x1='12' y1='13' x2='12' y2='8'/><line x1='10' y1='2' x2='14' y2='2'/><line x1='12' y1='2' x2='12' y2='5'/></svg>"
+    };
     var band = "<div class='fo-t2-band'>" +
-      "<div><b>" + squad.length + "</b><i>Squad in training</i></div>" +
-      "<div><b>" + E(focusLbl) + "</b><i>Club focus</i></div>" +
-      "<div><b>" + nProj + " / 3</b><i>Projects</i></div>" +
-      "<div><b>" + avgCap + "%</b><i>Avg capacity</i></div></div>";
+      "<div><s>" + IC.men + "</s><span><b>" + squad.length + "</b><i>Squad in training</i></span></div>" +
+      "<div><s>" + IC.tgt + "</s><span><b>" + E(focusLbl) + "</b><i>Club focus</i></span></div>" +
+      "<div><s>" + IC.db + "</s><span><b>" + bankedSes + "</b><i>Work banked &middot; sessions</i></span></div>" +
+      "<div><s>" + IC.tm + "</s><span><b>" + avgCap + "%</b><i>Avg capacity</i></span></div></div>";
 
     var focusCard = "<div class='fo-t2-card'><div class='fo-t2-ck'>Club focus</div>" +
       "<p class='fo-t2-dim'>The overall emphasis for the training cycle. It steers what the coach decides; it never overrides a unit you have set yourself.</p>" +
@@ -34741,13 +34795,56 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
         }).join("") + "</div>"
       : "";
 
-    var roster = "<details class='fo-t2-card fo-t2-roster'><summary>What the plan is doing, man by man</summary>" +
+    // ---- THE TRAINING PLAN, man by man: jersey, meta, work banked, override --
+    var nos = squadNumbers(squad);
+    var roster = "<div class='fo-t2-card'><div class='fo-t2-ck'>Training plan</div>" +
+      "<p class='fo-t2-dim'>Assign individual focus. Work banked reflects completed sessions. A row on Coach decides follows its unit.</p>" +
       squad.map(function (p) {
-        var d = progFor(p), c = capacityOf(p);
-        var why = d.why === "project" ? "personal project" : d.why === "unit" ? "unit plan" : "coach's call";
-        return "<div class='fo-t2-man'><a href='#/player?n=" + encodeURIComponent(p.name) + "'>" + E(p.name) + "</a>" +
-          "<i>" + E(d.prog) + " &middot; " + why + "</i><em>" + c + "%</em></div>";
-      }).join("") + "</details>";
+        var d = progFor(p);
+        var ses = sessionsOf(p, d.prog);
+        var why = d.why === "project" ? " &middot; project" : "";
+        var opts = UNIT_PROGS[unitOf(p)];
+        var pinned = st.overrides && st.overrides[p.name];
+        var sel = d.why === "project"
+          ? "<span class='fo-t2-projtag'>" + E(d.prog) + " &middot; project</span>"
+          : "<select data-t2ov='" + E(p.name) + "'>" +
+            "<option value=''>Coach decides" + (d.why !== "pinned" ? " &middot; " + E(d.prog) : "") + "</option>" +
+            opts.map(function (pg) { return "<option value='" + E(pg) + "'" + (pinned === pg ? " selected" : "") + ">" + E(pg) + "</option>"; }).join("") +
+            "</select>";
+        return "<div class='fo-t2-row'>" +
+          "<span class='fo-t2-shirt'><svg viewBox='0 0 40 40'><path d='M13 4 L5 9 L8 16 L11 14 L11 36 L29 36 L29 14 L32 16 L35 9 L27 4 Q20 9 13 4 Z' fill='#14243A' stroke='#C9571F' stroke-width='1.4'/></svg><b>" + nos[p.name] + "</b></span>" +
+          "<span class='fo-t2-who'><a href='#/player?n=" + encodeURIComponent(p.name) + "'>" + E(p.name) + "</a>" +
+          "<i>" + (p.age | 0) + " &middot; " + (p.hand === "L" ? "LH" : "RH") + " Bat &middot; " + E(abbrevOf(p)) + why + "</i></span>" +
+          "<span class='fo-t2-work'>" + (ses
+            ? "<i>" + ses.done + " / " + ses.of + " sessions</i><u><b style='width:" + ses.pct + "%'></b></u>"
+            : "<i>resting</i><u><b style='width:0'></b></u>") + "</span>" +
+          sel +
+          "</div>";
+      }).join("") + "</div>";
+
+    // ---- TRAINING BALANCE + SESSION NOTES, side by side ---------------------
+    var buckets = { bat: 0, bowl: 0, field: 0, fit: 0, rest: 0 };
+    squad.forEach(function (p) { var b = PROG_BUCKET[progFor(p).prog]; if (b != null) buckets[b]++; });
+    var nTot = Math.max(1, squad.length);
+    var BAL = [["Batting", buckets.bat, "#C9571F"], ["Bowling", buckets.bowl, "#14243A"],
+      ["Fielding", buckets.field, "#177A57"], ["Fitness", buckets.fit, "#D9A21B"], ["Recovery", buckets.rest, "#B23230"]];
+    var balCard = "<div class='fo-t2-card'><div class='fo-t2-ck'>Training balance</div>" +
+      BAL.filter(function (b) { return b[1] > 0; }).map(function (b) {
+        var pc = Math.round(100 * b[1] / nTot);
+        return "<div class='fo-t2-bal'><span>" + b[0] + "</span><u><b style='width:" + pc + "%;background:" + b[2] + "'></b></u><em>" + pc + "%</em></div>";
+      }).join("") + "</div>";
+    var notes = [];
+    notes.push(focusLbl + " emphasis this cycle" + (st.focus === "balanced" ? " - the coach reads each man his own programme." : "."));
+    UNITS.forEach(function (x) {
+      var u = st.units[x[0]], men = byUnit[x[0]];
+      if (!men.length) return;
+      if (u.f !== "coach") notes.push(x[1] + " working " + u.f + (u.i !== "normal" ? " at " + u.i + " intensity" : "") + ".");
+      else if (u.i !== "normal") notes.push(x[1] + " at " + u.i + " intensity.");
+    });
+    if (nProj) notes.push(nProj + " personal project" + (nProj === 1 ? "" : "s") + " running alongside the units.");
+    var notesCard = "<div class='fo-t2-card'><div class='fo-t2-ck'>Session notes</div>" +
+      "<ul class='fo-t2-notes'>" + notes.slice(0, 4).map(function (n) { return "<li>" + E(n) + "</li>"; }).join("") + "</ul></div>";
+    var twin = "<div class='fo-t2-twin'>" + balCard + notesCard + "</div>";
 
     // TODAY AT THE NETS - the umpire's own report from the last settle,
     // written server-side from real skill steps and real load. Nothing here
@@ -34763,9 +34860,9 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     } catch (eRp) {}
 
     page.innerHTML = "<div class='fo-t2'><div class='fo-t2-in'>" +
-      hero + band + focusCard + unitCards + projCard + report + attention + roster +
-      "<button type='button' class='fo-t2-save" + (st.dirty ? " dirty" : "") + "' id='fo-t2-save'>Save training plan" + (st.dirty ? " &middot; unsaved" : "") + "</button>" +
-      "<p class='fo-t2-fine'>The plan is a standing order: the umpire works it at every world update until you change it. Light freshens the legs; High and Intensive bank more work but carry load into the next morning.</p>" +
+      hero + band + focusCard + unitCards + projCard + roster + twin + report + attention +
+      "<button type='button' class='fo-t2-save" + (st.dirty ? " dirty" : "") + "' id='fo-t2-save'><svg viewBox='0 0 24 24' class='pl'><path d='M2 21 L23 12 L2 3 L2 10 L17 12 L2 14 Z' fill='currentColor'/></svg>Save training plan" + (st.dirty ? " &middot; unsaved" : "") + "</button>" +
+      "<p class='fo-t2-fine'>You can review and send to the world when ready. The plan is a standing order: the umpire works it at every update until you change it.</p>" +
       "</div></div>";
 
     // ---- the hands ---------------------------------------------------------
@@ -34790,6 +34887,13 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
           var man = squad.filter(function (p) { return p.name === nm; })[0];
           st.projects[i] = { n: nm, f: (st.projects[i] && st.projects[i].n === nm && st.projects[i].f) || defaultProg(man || {}) };
         }
+        st.dirty = 1; rep();
+      });
+    });
+    page.querySelectorAll("select[data-t2ov]").forEach(function (s) {
+      s.addEventListener("change", function () {
+        var nm = s.getAttribute("data-t2ov");
+        if (s.value) st.overrides[nm] = s.value; else delete st.overrides[nm];
         st.dirty = 1; rep();
       });
     });
@@ -34822,10 +34926,38 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       ".fo-t2-hero p{margin:0;font:400 13px Inter,sans-serif;color:rgba(246,243,235,.82)}",
       ".fo-t2-hero .cr svg{width:56px;height:74px}",
       ".fo-t2-band{display:flex;background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);margin-bottom:12px;overflow:hidden}",
-      ".fo-t2-band>div{flex:1;padding:11px 8px;text-align:center;border-right:1px solid #eee7d9;min-width:0}",
+      ".fo-t2-band>div{flex:1;display:flex;align-items:center;gap:8px;padding:11px 10px;border-right:1px solid #eee7d9;min-width:0}",
       ".fo-t2-band>div:last-child{border-right:none}",
-      ".fo-t2-band b{display:block;font:700 16px Inter,sans-serif;color:#14243A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      ".fo-t2-band i{display:block;margin-top:3px;font:600 8.5px Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#8a8272;font-style:normal}",
+      ".fo-t2-band s{flex:0 0 auto;width:22px;height:22px;text-decoration:none;color:#C9571F}",
+      ".fo-t2-band s svg{width:22px;height:22px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}",
+      ".fo-t2-band span{min-width:0}",
+      ".fo-t2-band b{display:block;font:700 15px Inter,sans-serif;color:#14243A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-t2-band i{display:block;margin-top:2px;font:600 8px Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8a8272;font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      // the training plan, man by man: jersey / who / work banked / override
+      ".fo-t2-row{display:grid;grid-template-columns:38px minmax(0,1.2fr) minmax(90px,1fr) minmax(120px,150px);gap:10px;align-items:center;padding:9px 0;border-bottom:1px solid #f3eee1}",
+      ".fo-t2-row:last-of-type{border-bottom:none}",
+      ".fo-t2-shirt{position:relative;width:36px;height:36px}",
+      ".fo-t2-shirt svg{width:36px;height:36px;display:block}",
+      ".fo-t2-shirt b{position:absolute;inset:6px 0 0 0;text-align:center;font:800 12px Oswald,sans-serif;color:#F6F3EB}",
+      ".fo-t2-who{min-width:0}",
+      ".fo-t2-who a{display:block;font:700 13px Inter,sans-serif;color:#14243A !important;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-t2-who i{display:block;font:500 10.5px Inter,sans-serif;color:#8a8272;font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-t2-work i{display:block;font:600 10.5px Inter,sans-serif;color:#4c4437;font-style:normal;margin-bottom:3px;white-space:nowrap}",
+      ".fo-t2-work u{display:block;height:6px;border-radius:3px;background:#ece7da;overflow:hidden;text-decoration:none}",
+      ".fo-t2-work u b{display:block;height:100%;border-radius:3px;background:#177A57}",
+      ".fo-t2-row select{width:100%;font:600 11.5px Inter,sans-serif;color:#14243A;border:1px solid #d9d0bc;border-radius:9px;background:#FBF9F3;padding:7px 6px;min-width:0}",
+      ".fo-t2-projtag{font:700 9px Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8a6a1f;background:#F8ECD4;border:1px solid #e8d5a8;border-radius:8px;padding:6px 8px;text-align:center;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      // balance + notes, shoulder to shoulder on a desk
+      ".fo-t2-twin{display:grid;grid-template-columns:1fr 1fr;gap:12px}",
+      ".fo-t2-twin .fo-t2-card{margin-bottom:12px}",
+      ".fo-t2-bal{display:flex;align-items:center;gap:10px;padding:6px 0;font:600 12px Inter,sans-serif;color:#4c4437}",
+      ".fo-t2-bal span{flex:0 0 64px}",
+      ".fo-t2-bal u{flex:1;height:7px;border-radius:4px;background:#ece7da;overflow:hidden;text-decoration:none;display:block}",
+      ".fo-t2-bal u b{display:block;height:100%;border-radius:4px}",
+      ".fo-t2-bal em{font-style:normal;font-variant-numeric:tabular-nums;color:#14243A;font-weight:700;flex:0 0 34px;text-align:right}",
+      ".fo-t2-notes{margin:0;padding-left:17px;font:400 12.5px Inter,sans-serif;color:#4c4437;line-height:1.65}",
+      ".fo-t2-notes li{margin-bottom:5px}",
+      ".fo-t2-save .pl{width:14px;height:14px;vertical-align:-2px;margin-right:8px}",
       ".fo-t2-card{background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);padding:14px 16px;margin-bottom:12px}",
       ".fo-t2-ck{font:700 11px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#14243A;margin-bottom:8px}",
       ".fo-t2-ck em{font-style:normal;color:#177A57;margin-left:6px}",
@@ -34881,7 +35013,12 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       "html body #page button.fo-t2-save.dirty{box-shadow:0 0 0 3px rgba(201,87,31,.25)}",
       ".fo-t2-fine{margin:9px 0 0;text-align:center;font:italic 400 11.5px Georgia,serif;color:#8a8272}",
       "@media(max-width:560px){.fo-t2-hero h1{font-size:27px}.fo-t2-hero .cr svg{width:42px;height:55px}",
-      ".fo-t2-band b{font-size:13.5px}.fo-t2-band i{font-size:7.5px}",
+      ".fo-t2-band b{font-size:12.5px}.fo-t2-band i{font-size:7px}.fo-t2-band s,.fo-t2-band s svg{width:17px;height:17px}.fo-t2-band>div{gap:5px;padding:9px 6px}",
+      ".fo-t2-row{grid-template-columns:28px minmax(0,1.3fr) minmax(62px,.7fr) minmax(86px,98px);gap:6px}",
+      ".fo-t2-shirt,.fo-t2-shirt svg{width:30px;height:30px}.fo-t2-shirt b{inset:5px 0 0 0;font-size:10px}",
+      ".fo-t2-who a{font-size:11.5px}.fo-t2-who i{font-size:9px}",
+      ".fo-t2-work i{font-size:9px}.fo-t2-row select{font-size:10px;padding:6px 4px}",
+      ".fo-t2-twin{grid-template-columns:1fr}",
       ".fo-t2-ur{align-items:stretch;flex-direction:column}.fo-t2-ints{justify-content:space-between}}"
     ].join("\n");
     document.head.appendChild(s);

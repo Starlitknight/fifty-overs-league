@@ -485,6 +485,23 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
         }
       }
     } catch (eRp) {}
+    // EVERY MAN GETS A SHIRT NUMBER, once, and keeps it. Assigned from a hash
+    // of his name with linear probing over the squad (name order), so every
+    // device computes the same number the umpire banks. A number already on a
+    // shirt is never reassigned while its owner is in the squad.
+    try {
+      const h32s = s => { let h = 2166136261 >>> 0; s = String(s); for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; };
+      const takenNo = {};
+      const byName = squad.slice().sort((a, b) => a.name < b.name ? -1 : 1);
+      byName.forEach(q => { const n = q.no | 0; if (n >= 1 && n <= 99 && !takenNo[n]) takenNo[n] = q.name; });
+      byName.forEach(q => {
+        const n = q.no | 0;
+        if (n >= 1 && n <= 99 && takenNo[n] === q.name) return;
+        let v = (h32s(q.name) % 99) + 1, guard = 0;
+        while (takenNo[v] && guard++ < 120) v = (v % 99) + 1;
+        takenNo[v] = q.name; q.no = v;
+      });
+    } catch (eNo) {}
     await pool.query('UPDATE clubs SET squad=$3::jsonb WHERE country_id=$1 AND slot=$2',
       [country, club.slot, JSON.stringify(squad)]);
     touched++;
