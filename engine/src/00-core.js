@@ -2392,7 +2392,7 @@ function pgMatch(){
     try{
       const wtR=JSON.parse(localStorage.getItem('fo_wt_resume')||'null');
       if(wtR&&wtR.until&&Date.now()<wtR.until){
-        $('#page').innerHTML='<div style="padding:90px 24px;text-align:center;font:italic 400 15px Georgia,serif;color:#6d6455">Rejoining the broadcast&hellip;</div>';
+        $('#page').innerHTML='<div style="padding:90px 24px;text-align:center;font:italic 400 15px Georgia,serif;color:#6d6455">Rejoining the broadcast&hellip; <a href="#/home" style="color:#C9571F;text-decoration:underline">or go to the club</a></div>';
         // and if the world will not answer, let go of the note rather than
         // hold the reader on this curtain forever
         setTimeout(function(){try{

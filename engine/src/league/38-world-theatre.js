@@ -570,7 +570,8 @@
     // broadcast has not started shortly, clear the cached refusal and try
     // once more; if it still will not start, put the fixtures page up.
     if (q.go && state === "live") {
-      page.innerHTML = "<div class='fo-wt'><p style='padding:80px 20px;color:#fff;font:italic 400 15px Georgia,serif'>Joining the broadcast&hellip;</p></div>";
+      page.innerHTML = "<div class='fo-wt'><p style='padding:80px 20px;color:#fff;font:italic 400 15px Georgia,serif'>Joining the broadcast&hellip; " +
+        "<a href='#/watch?n=" + encodeURIComponent(rid) + "&f=" + fi + "' style='color:#E8B96A;text-decoration:underline'>taking long? open the fixtures page</a></p></div>";
       setTimeout(function () { try { window.foWtSpectate(rid, null, null, fi); } catch (eGo) {} }, 30);
       setTimeout(function () {
         if ((location.hash || "").split("?")[0] !== "#/watch") return;
