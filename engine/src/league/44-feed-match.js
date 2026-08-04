@@ -178,7 +178,14 @@
       (done ? "<a class='fd-enter' href='#/report?n=" + encodeURIComponent(rid) + "&w=" + encodeURIComponent(id) + "'>The full report and scorecard &rsaquo;</a>" : "") +
       "</div>";
     var comm = seen.slice(-160).reverse().map(function (r4) {
-      if (r4._top) return "<div class='fd-row top'><div class='w'>" + E(r4.txt) + "</div></div>";
+      if (r4._top) {
+        // the banner carries the umpire's who-line too: the man on strike and
+        // his partner, runs and balls, exactly as printed at the over's end
+        var wb = parseWho(r4.oversumTop).bats;
+        return "<div class='fd-row top'><div class='w'>" + E(r4.txt) +
+          (wb.length ? "<span class='os'>" + wb.map(function (b9) { return "<strong>" + E(b9.nm) + "</strong> " + b9.r + " (" + b9.b + "b)"; }).join(" &middot; ") + "</span>" : "") +
+          "</div></div>";
+      }
       // the umpire's notes between deliveries - toss, fall of wicket,
       // milestone, drinks - arrive with no ball number; they read as marginalia
       if (r4.intro || r4.no === "") return "<div class='fd-row in'><div class='w'>" +
@@ -262,6 +269,8 @@
       ".fo-fd .fd-row.big{background:#FDF6EC;border-radius:8px}",
       ".fo-fd .fd-row.wkt{background:#FBEFEA;border-radius:8px}",
       ".fo-fd .fd-row.top .w{font:700 12px Inter,sans-serif;color:#14243A;background:#F6F3EB;border-radius:8px;padding:7px 10px}",
+      ".fo-fd .fd-row.top .w .os{display:block;margin-top:4px;font:400 11.5px/1.5 Inter,sans-serif;color:#6d6455}",
+      ".fo-fd .fd-row.top .w .os strong{font-weight:600;color:#14243A}",
       ".fo-fd .fd-row.in .w{font:italic 400 12.5px Georgia,serif;color:#6d6455}",
       ".fo-fd .fd-row.in .sg{font-style:normal;color:#C9571F;margin-right:2px}",
       ".fo-fd .fd-sub{font:italic 400 13px/1.6 'Fraunces',Georgia,serif;color:rgba(255,254,252,.75);margin-top:8px}",
