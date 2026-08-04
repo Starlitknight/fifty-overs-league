@@ -71,6 +71,13 @@
     for (var i = 0; i < seen.length; i++) {
       var r = seen[i]; if (!r) continue;
       var I = inns[(r.inn | 0) === 1 ? 1 : 0];
+      // the umpire's opening line names the day: the weather, the pitch and
+      // who called the toss right - it becomes the bug's conditions line
+      if (r.out === "▶" && !inns.meta) {
+        var cw = /with (.+?) conditions and an? (.+?) pitch/.exec(r.txt || "");
+        var ct = /([A-Za-z0-9 '&-]+?) won the toss and chose to (\w+)/.exec(r.txt || "");
+        if (cw || ct) inns.meta = { wx: cw && cw[1], pitch: cw && cw[2], tossWin: ct && ct[1].trim(), tossDo: ct && ct[2] };
+      }
       if (r._top) {
         I.top = r; I.sinceTop = [];
         var tp = parseTop(r.txt);
@@ -207,24 +214,16 @@
     var inns = bookState(seen);
     var innNow = inns[1].open ? 1 : 0, I = inns[innNow];
     var tp = I.top ? parseTop(I.top.txt) : null;
-    // the crease line: the who-line's men, the strike dot on the striker; a
-    // new man mid-over is named without a number - the umpire has not printed
-    // one for him yet
-    var creaseHtml = "";
-    if (I.who && I.who.bats.length) {
-      var sn = surname(I.striker);
-      var names = I.who.bats.map(function (b9) {
-        var onStrike = sn && surname(b9.nm) === sn;
-        return "<u>" + E(b9.nm) + (onStrike ? " &#9679;" : "") + "</u> " + b9.r + " (" + b9.b + "b)";
-      });
-      if (sn && !I.who.bats.some(function (b9) { return surname(b9.nm) === sn; }))
-        names.push("<u>" + E(I.striker) + " &#9679;</u> new man");
-      var bowlSide = I.who.bowl ? "<span><u>" + E(I.who.bowl.nm) + "</u> " + I.who.bowl.o + "-" + I.who.bowl.r + "-" + I.who.bowl.w + "</span>" : "";
-      creaseHtml = "<div class='fd-crease'><span>" + names.join(" &middot; ") + "</span>" + bowlSide + "</div>";
-    } else if (I.striker || I.bowler) {
-      creaseHtml = "<div class='fd-crease'><span>" + (I.striker ? "<u>" + E(I.striker) + " &#9679;</u>" : "") + "</span>" +
-        (I.bowler ? "<span><u>" + E(I.bowler) + "</u> bowling</span>" : "") + "</div>";
+    // the bug keeps to what the book below does NOT already say: the score,
+    // the chase, the day's conditions, and the over in progress. The crease
+    // tallies and the last ball live in the over banners and the scorecard.
+    var meta = inns.meta, condBits = [];
+    if (meta) {
+      if (meta.wx) condBits.push(E(meta.wx));
+      if (meta.pitch) condBits.push(E(meta.pitch) + " pitch");
+      if (meta.tossWin) condBits.push(E(meta.tossWin) + " won the toss" + (meta.tossDo ? ", chose to " + E(meta.tossDo) : ""));
     }
+    var condLine = condBits.length ? "<div class='fd-cond'>" + condBits.join(" &middot; ") + "</div>" : "";
     var chase = innNow && inns[0].brk
       ? "<div class='fd-chase'>" + E(inns[0].brk.replace(/^Innings break\.\s*/, "")) + "</div>" : "";
     var scoreLine = tp
@@ -232,12 +231,10 @@
       : "<div class='fd-score'>" + E(innNow ? m.away.name : m.home.name).toUpperCase() + "<span>the innings is under way</span></div>";
     var overHtml = I.sinceTop.length
       ? "<div class='fd-over'><span>this over</span>" + I.sinceTop.map(function (r3) { return ring(r3.out); }).join("") + "</div>" : "";
-    var lastRow = seen.length ? seen[seen.length - 1] : null;
-    var lastLine = lastRow && lastRow.txt ? "<div class='fd-last'>" + E(lastRow.txt) + "</div>" : "";
     var bug =
       "<div class='fd-bug'>" +
       "<div class='fd-teams'><b>" + E(m.home.name) + "</b><i>v</i><b>" + E(m.away.name) + "</b></div>" +
-      scoreLine + chase + creaseHtml + overHtml + lastLine +
+      condLine + scoreLine + chase + overHtml +
       (done ? "<a class='fd-enter' href='#/report?n=" + encodeURIComponent(rid) + "&w=" + encodeURIComponent(id) + "'>The full report and scorecard &rsaquo;</a>" : "") +
       "</div>";
     var tabs = ["live|The book", "card|Scorecard", "charts|Charts", "teams|Teams"].map(function (t9) {
@@ -485,14 +482,12 @@
       ".fo-fd .fd-score em{font-style:normal;font-size:30px;color:#FFFEFC;font-variant-numeric:tabular-nums}",
       ".fo-fd .fd-score span{font:600 11px Inter,sans-serif;letter-spacing:0;color:rgba(255,254,252,.6)}",
       ".fo-fd .fd-chase{font:italic 400 12px/1.5 'Fraunces',Georgia,serif;color:#E8B96A;margin-top:6px}",
-      ".fo-fd .fd-crease{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font:400 11.5px/1.5 Inter,sans-serif;color:rgba(255,254,252,.85);flex-wrap:wrap}",
-      ".fo-fd .fd-crease u{text-decoration:none;color:#FFFEFC;font-weight:600}",
+      ".fo-fd .fd-cond{font:600 10.5px/1.6 Inter,sans-serif;letter-spacing:.02em;color:rgba(255,254,252,.55);margin-top:5px}",
       ".fo-fd .fd-over{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center}",
       ".fo-fd .fd-over span{font:700 8.5px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,254,252,.45);margin-right:4px}",
       ".fo-fd .fd-over i,.fo-fd .fd-comm .bb i{font-style:normal;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,254,252,.1);border:1px solid rgba(255,254,252,.18);font:700 11px/1 Oswald,sans-serif;color:#E8DFCE}",
       ".fo-fd .fd-over i.b{background:rgba(232,185,106,.2);border-color:#E8B96A;color:#E8B96A}",
       ".fo-fd .fd-over i.w{background:rgba(255,107,94,.22);border-color:#FF6B5E;color:#FF6B5E}",
-      ".fo-fd .fd-last{font:italic 400 12px/1.5 'Fraunces',Georgia,serif;color:rgba(255,254,252,.65);margin-top:9px}",
       "html body #page .fo-fd .fd-enter{display:block;width:100%;margin-top:12px;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:#C95532 !important;border:none;border-radius:999px;padding:13px 16px;cursor:pointer;text-align:center;text-decoration:none !important}",
       // the tab rail: an almanack rule with an underline, not a row of pills
       ".fo-fd .fd-tabs{display:flex;gap:2px;margin:18px 0 0;border-bottom:1px solid #d8d0bd;overflow-x:auto;scrollbar-width:none}",
