@@ -224,8 +224,17 @@
       if (meta.tossWin) condBits.push(E(meta.tossWin) + " won the toss" + (meta.tossDo ? ", chose to " + E(meta.tossDo) : ""));
     }
     var condLine = condBits.length ? "<div class='fd-cond'>" + condBits.join(" &middot; ") + "</div>" : "";
-    var chase = innNow && inns[0].brk
-      ? "<div class='fd-chase'>" + E(inns[0].brk.replace(/^Innings break\.\s*/, "")) + "</div>" : "";
+    var chase = "";
+    if (innNow && inns[0].brk) {
+      var needLn = "";
+      // the equation of the chase, in the broadcast's own phrasing: runs
+      // needed from balls remaining, both read off the umpire's last print
+      if (live && tp && inns[1].target) {
+        var need9 = inns[1].target - tp.runs, ballsLeft = (50 - tp.over) * 6;
+        if (need9 > 0 && ballsLeft > 0) needLn = " <b>" + E(tp.team) + " need " + need9 + " from " + ballsLeft + " balls.</b>";
+      }
+      chase = "<div class='fd-chase'>" + E(inns[0].brk.replace(/^Innings break\.\s*/, "")) + needLn + "</div>";
+    }
     var scoreLine = tp
       ? "<div class='fd-score'>" + E(tp.team).toUpperCase() + " <em>" + tp.runs + "/" + tp.wkts + "</em><span>after " + tp.over + " overs</span></div>"
       : "<div class='fd-score'>" + E(innNow ? m.away.name : m.home.name).toUpperCase() + "<span>the innings is under way</span></div>";
@@ -244,7 +253,7 @@
     var body = T.tab === "card" ? cardPanel(inns, m)
       : T.tab === "charts" ? chartsPanel(inns, m, live)
       : T.tab === "teams" ? teamsPanel(m, rid)
-      : livePanel(seen);
+      : livePanel(seen, done);
     var state = live ? "live" : done ? "fin" : "up";
     page.innerHTML = shell(rid, cal, state,
       "<div class='fd-ground'>" + E(m.home.name) + "&rsquo;s ground" + (m.home.city ? " &middot; " + E(m.home.city) : "") + "</div>" +
@@ -255,7 +264,7 @@
   }
 
   // ---- THE BOOK, with filters ----------------------------------------------
-  function livePanel(seen) {
+  function livePanel(seen, done) {
     var f = T.filter;
     var keep = function (r) {
       if (f === "b46") return r.out === "4" || r.out === "6";
@@ -266,7 +275,9 @@
       return true;
     };
     var rows = seen.filter(keep);
-    if (f === "all") rows = rows.slice(-160);
+    // while the broadcast runs, the book keeps to the recent play; at stumps
+    // it opens in full - every ball of the match, first to last
+    if (f === "all" && !done) rows = rows.slice(-160);
     var chips = ["all|The lot", "b46|4s &amp; 6s", "wk|Wickets", "fld|In the field", "ov|Overs", "note|The notes"].map(function (c9) {
       var p9 = c9.split("|");
       return "<button type='button' class='" + (T.filter === p9[0] ? "on" : "") + "' onclick='foFeedFilter(\"" + p9[0] + "\")'>" + p9[1] + "</button>";
@@ -435,7 +446,7 @@
     if (live && inns[1].open && !inns[1].close && inns[1].target && inns[1].overs.length) {
       var lo = inns[1].overs[inns[1].overs.length - 1];
       var need = inns[1].target - lo.runs, left = maxOv - lo.over;
-      if (need > 0 && left > 0) ask = "<span class='lg ask'><b>" + need + " needed &middot; the ask " + (need / left).toFixed(2) + " an over</b></span>";
+      if (need > 0 && left > 0) ask = "<span class='lg ask'><b>needs " + need + " from " + (left * 6) + " balls &middot; " + (need / left).toFixed(2) + " an over</b></span>";
     }
     var wormSvg = "<svg viewBox='0 0 " + W + " " + H + "' class='fd-svg'>" + defs + grid + areas + tgt + worm + dots + chips + "</svg>";
     // the manhattan: the umpire's "(N runs)" per over, every wicket flagged
@@ -533,6 +544,7 @@
       ".fo-fd .fd-score em{font-style:normal;font-size:30px;color:#FFFEFC;font-variant-numeric:tabular-nums}",
       ".fo-fd .fd-score span{font:600 11px Inter,sans-serif;letter-spacing:0;color:rgba(255,254,252,.6)}",
       ".fo-fd .fd-chase{font:italic 400 12px/1.5 'Fraunces',Georgia,serif;color:#E8B96A;margin-top:6px}",
+      ".fo-fd .fd-chase b{font-style:normal;font:700 11.5px Oswald,sans-serif;letter-spacing:.05em;color:#FFFEFC}",
       ".fo-fd .fd-cond{font:600 10.5px/1.6 Inter,sans-serif;letter-spacing:.02em;color:rgba(255,254,252,.55);margin-top:5px}",
       ".fo-fd .fd-over{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center}",
       ".fo-fd .fd-over span{font:700 8.5px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,254,252,.45);margin-right:4px}",
