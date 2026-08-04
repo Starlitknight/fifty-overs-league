@@ -2013,7 +2013,10 @@
     try {
       if (st === "tactics") st = "oval";   // the tactics sheet folded into the oval
       document.body.setAttribute("data-mobsheet", st);
-      if (foMobIsOn()) {
+      // the dash owns the drawer on every screen size; the retired sheet's
+      // "live means drawer closed" rule must not reach it - on a phone it ran
+      // on every render and shut the scorecard the moment it was opened
+      if (foMobIsOn() && !foDashOn()) {
         if (st === "score") {
           try {
             if (typeof UI !== "undefined") {
@@ -2157,7 +2160,7 @@
       sh9.addEventListener("pointercancel", drEnd9);
       document.addEventListener("pointerup", drEnd9);
     }
-    if (!document.body.getAttribute("data-mobsheet")) foMobSheet("live");
+    if (!foDashOn() && !document.body.getAttribute("data-mobsheet")) foMobSheet("live");
     foMobTalkHome();
     // drawer close
     if (!document.getElementById("fo-thd-x")) {

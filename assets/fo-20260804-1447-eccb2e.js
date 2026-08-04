@@ -10341,7 +10341,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
   // is stamped (build.sh replaces the placeholder) and version.json says what
   // is actually deployed; when they disagree, one tap reloads with a
   // cache-busting query that forces the CDN to hand over the new build.
-  var FO_BUILD = "20260804-1432-390ca9";
+  var FO_BUILD = "20260804-1447-eccb2e";
   try { window.FO_BUILD = FO_BUILD; console.info("Fifty Overs build", FO_BUILD); } catch (e) {}
   function foBase() {
     return location.pathname.replace(/client\/game\.html.*$/, "").replace(/index\.html.*$/, "");
@@ -17307,7 +17307,10 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
     try {
       if (st === "tactics") st = "oval";   // the tactics sheet folded into the oval
       document.body.setAttribute("data-mobsheet", st);
-      if (foMobIsOn()) {
+      // the dash owns the drawer on every screen size; the retired sheet's
+      // "live means drawer closed" rule must not reach it - on a phone it ran
+      // on every render and shut the scorecard the moment it was opened
+      if (foMobIsOn() && !foDashOn()) {
         if (st === "score") {
           try {
             if (typeof UI !== "undefined") {
@@ -17451,7 +17454,7 @@ window.FO_WORLD_SNAPSHOT={"seed":2026,"season":0,"asOfDay":29,"matchday":14,"sta
       sh9.addEventListener("pointercancel", drEnd9);
       document.addEventListener("pointerup", drEnd9);
     }
-    if (!document.body.getAttribute("data-mobsheet")) foMobSheet("live");
+    if (!foDashOn() && !document.body.getAttribute("data-mobsheet")) foMobSheet("live");
     foMobTalkHome();
     // drawer close
     if (!document.getElementById("fo-thd-x")) {
