@@ -322,10 +322,26 @@
     } catch (e) {}
     return _wtPgMatch ? _wtPgMatch.apply(this, arguments) : undefined;
   };
+  // NEVER A MODAL. An alert() freezes every click and every timer behind it -
+  // on a slow network the joining curtain armed alert after alert and the
+  // whole page read as dead. The theatre now speaks in toasts and writes the
+  // reason on the curtain itself, and the page stays alive underneath.
+  function wtSay(msg) {
+    try { window.__foWtWhy = msg; } catch (e0) {}
+    try { if (typeof toast === "function") toast(msg); } catch (e1) { try { console.warn("[theatre] " + msg); } catch (e2) {} }
+    try {
+      var pg = document.getElementById("page");
+      if (pg && /Joining the broadcast|Rejoining the broadcast/.test(pg.textContent || "")) {
+        var p2 = pg.querySelector(".fo-wt p") || pg.querySelector("div");
+        if (p2) p2.innerHTML = E(msg) + " &middot; <a href='#/league?t=fixtures' style='color:#C9571F;text-decoration:underline'>the fixtures page</a>" +
+          " &middot; <a href='#/home' style='color:#C9571F;text-decoration:underline'>the club</a>";
+      }
+    } catch (e3) {}
+  }
   window.foWtSpectate = function (rid, season, round, fi) {
     try {
       if (typeof M !== "undefined" && M && !M.done && M.meta && !M.meta.__spectate) {
-        alert("A match of yours is in progress - finish it first."); return;
+        wtSay("A match of yours is in progress - finish it first."); return;
       }
       var sv = serverFixtures(rid, Date.now()), m = sv.fx[fi];
       if (!m) return;
@@ -336,7 +352,7 @@
       var hNowG = (nowG - (plG.EPOCH + plG.dayIx(nowG) * 86400000)) / 3600000;
       var h0G = plG.natHour(rid);
       if (hNowG < h0G) {
-        alert("The first ball is at " + (h0G < 10 ? "0" : "") + h0G + ":00 UTC - the broadcast opens then.");
+        wtSay("The first ball is at " + (h0G < 10 ? "0" : "") + h0G + ":00 UTC - the broadcast opens then.");
         return;
       }
       // The round's revealed orders AND the living state of the men playing it
@@ -346,7 +362,7 @@
       var started = false, key = rid + ":" + srvRound;
       var noWorld = function () {
         if (started) return; started = true;
-        alert("The World Service can't be reached just now. Rather than show you a match that isn't the one on record, the broadcast waits - try again in a moment.");
+        wtSay("The World Service can't be reached just now - the broadcast waits rather than show a match that isn't the one on record. Try again in a moment.");
       };
       var giveUp = setTimeout(noWorld, 9000);
       roundOrders(rid, srvRound).then(function (om) {
@@ -362,7 +378,7 @@
     try {
       var m = sv.fx[fi], cal = sv.cal, srvRound = cal.round;
       var sqH = serverSquad(rid, m.home.slot), sqA = serverSquad(rid, m.away.slot);
-      if (!sqH || !sqA) { alert("The squads are still warming up - try again in a moment."); return; }
+      if (!sqH || !sqA) { wtSay("The squads are still warming up - try again in a moment."); return; }
       var liv = LIV_VAL[rid + ":" + srvRound];
       if (liv) { sqH = applyLiving(sqH, liv[m.home.name]); sqA = applyLiving(sqA, liv[m.away.name]); }
       var home = { name: m.home.name, ground: (m.home.city || m.home.name) + " Ground", players: sqH };
@@ -446,7 +462,7 @@
   window.foWtFriendly = function (fid) {
     try {
       if (typeof M !== "undefined" && M && !M.done && M.meta && !M.meta.__spectate) {
-        alert("A match of yours is in progress - finish it first."); return;
+        wtSay("A match of yours is in progress - finish it first."); return;
       }
       fetch(SB_URL + "/rest/v1/rpc/world_friendly_detail", {
         method: "POST",
@@ -458,11 +474,11 @@
           var nowT = Date.now();
           if (nowT < d.playAtMs) {
             var dD = new Date(d.playAtMs), p2 = function (n) { return (n < 10 ? "0" : "") + n; };
-            alert("The first ball is at " + p2(dD.getHours()) + ":" + p2(dD.getMinutes()) + " - the broadcast opens then.");
+            wtSay("The first ball is at " + p2(dD.getHours()) + ":" + p2(dD.getMinutes()) + " - the broadcast opens then.");
             return;
           }
           var sqH = serverSquad(d.home.country, d.home.slot), sqA = serverSquad(d.away.country, d.away.slot);
-          if (!sqH || !sqA) { alert("The squads are still warming up - try again in a moment."); return; }
+          if (!sqH || !sqA) { wtSay("The squads are still warming up - try again in a moment."); return; }
           if (d.living) { sqH = applyLiving(sqH, d.living[d.home.name]); sqA = applyLiving(sqA, d.living[d.away.name]); }
           var home = { name: d.home.name, ground: d.home.name + "'s ground", players: sqH };
           var away = { name: d.away.name, players: sqA };
@@ -507,7 +523,7 @@
           location.hash = "#/match";
           if (typeof window.route === "function") window.route();
         })
-        .catch(function (e) { alert(String(e.message || "The world could not be reached.").slice(0, 140)); });
+        .catch(function (e) { wtSay(String(e.message || "The world could not be reached.").slice(0, 140)); });
     } catch (e) { try { console.warn("foWtFriendly", e); } catch (e2) {} }
   };
 
