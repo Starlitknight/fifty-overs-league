@@ -16,7 +16,7 @@
 import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
 import { EPOCH, dayIx, daySettled, seedOf, cupDraw, natHour, scheduleOf, seasonSchedules, ROUNDS, isWindowRound,
-         CYCLE, LEAGUE_DAYS, roundOfDay, CUP_DAYS, PLAYOFF_DAYS, FA_DAYS, TRANSITION_DAY,
+         CYCLE, LEAGUE_DAYS, roundOfDay, dayOfRound, CUP_DAYS, PLAYOFF_DAYS, FA_DAYS, TRANSITION_DAY,
          WINDOW_DAYS, isWorldCupSeason, REST_DAYS, COLTS_DAYS } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
 import { calibrate, countryConfigs, BASE_XI, NAT_STR, HUMAN_STR } from './init-world.mjs';
@@ -169,6 +169,21 @@ async function playRound(pool, host, country, season, round, opts) {
 }
 
 // standings derived purely from persisted matches — re-runnable, never drifts
+// THE EMBARGO. A round is prebanked the moment its window opens (that is the
+// feed the live viewer reads), but it is not PUBLIC until the window closes:
+// the table, the results, the stats and roundsPlayed must never spoil an
+// afternoon still being broadcast. This is the last round whose day has
+// settled - everything published reads matches only up to it.
+export function settledRound(country, startDay, now) {
+  const dayOfR = r => r <= ROUNDS ? dayOfRound(r) : (r === ROUNDS + 1 ? PLAYOFF_DAYS.semi : PLAYOFF_DAYS.final);
+  let cut = 0;
+  for (let r = 1; r <= ROUNDS + 2; r++) {
+    const d = dayOfR(r);
+    if (d == null) break;
+    if (daySettled(now, startDay + d, country)) cut = r; else break;
+  }
+  return cut;
+}
 export async function computeLeague(pool, country, seasonNo, now) {
   const season = (await pool.query('SELECT * FROM seasons WHERE country_id=$1 AND season_no=$2', [country, seasonNo])).rows[0];
   const clubs = (await pool.query('SELECT slot, name, ground, is_boss FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
@@ -177,11 +192,12 @@ export async function computeLeague(pool, country, seasonNo, now) {
   // patch and the filed orders, none of which a league table looks at. A card
   // is around 38 KB, so every row cost more than twice what it needed to, on a
   // read that runs for every nation on every tick and grows all season.
+  const cut9 = settledRound(country, season.start_day, now || Date.now());
   const ms = (await pool.query(
     `SELECT id, round, home_slot, away_slot, home_name, away_name, seed, engine_version,
             (result - 'worm') AS result
-       FROM matches WHERE country_id=$1 AND season_no=$2 ORDER BY round, id`,
-    [country, season.season_no])).rows;
+       FROM matches WHERE country_id=$1 AND season_no=$2 AND round <= $3 ORDER BY round, id`,
+    [country, season.season_no, cut9])).rows;
   const bySlot = Object.fromEntries(clubs.map(c => [c.slot, c]));
   // THE PYRAMID: the season row says who plays in which division this year
   // (membership is seasonal - promotion and relegation redraw it). A world
@@ -390,10 +406,19 @@ export async function computeRankings(pool, now) {
   // sends back a few dozen bytes and its 38 KB of ball-by-ball never crosses
   // the wire. A world banked before this existed is filled in by fillRatings
   // below, a batch a tick, and then costs nothing forever.
-  const ms = (await pool.query(
+  const ms0 = (await pool.query(
     `SELECT season_no, round, country_id, home_slot, away_slot, home_name, away_name, ratings,
             CASE WHEN ratings IS NULL THEN (result - 'worm') END AS result FROM matches
       ORDER BY season_no, round, country_id, home_slot`)).rows;
+  // the embargo holds here too: a prebanked round must not move the ladder
+  // while its window is still being broadcast
+  const starts9 = {};
+  (await pool.query('SELECT country_id, season_no, start_day FROM seasons')).rows
+    .forEach(s9 => { starts9[s9.country_id + ':' + s9.season_no] = s9.start_day; });
+  const ms = ms0.filter(m9 => {
+    const st9 = starts9[m9.country_id + ':' + m9.season_no];
+    return st9 == null || (m9.round | 0) <= settledRound(m9.country_id, st9, now || Date.now());
+  });
   ms.forEach((m, i) => events.push({
     at: seq(m.season_no, m.round | 0), i,
     ak: key(m.country_id, m.home_slot), bk: key(m.country_id, m.away_slot),
@@ -740,6 +765,31 @@ export async function runDue(pool, host, country, { now = Date.now(), failAfter 
     if (day - season.start_day > PLAYOFF_DAYS.final) break;
     out.push({ day, ...(await runTick(pool, host, country, day, { now, failAfter, world })) });
   }
+  // THE FIRST BALL IS THE SIMULATION. From the moment a nation's window
+  // opens, its round is already played and banked - the match cards and the
+  // ball-by-ball, nothing else - so a viewer reads the live match as a feed
+  // of the umpire's own record instead of re-simulating it. Standings, the
+  // squads' evolution and the public snapshot still settle when the window
+  // closes, exactly as before, so nothing spoils early. The closing resolve
+  // finds these matches already banked and skips them: playRound has always
+  // been idempotent per match, and the engine deterministic, so the two
+  // passes cannot disagree.
+  try {
+    const today = dayIx(now);
+    const dToday = today - season.start_day;
+    const winOpen = now >= EPOCH + today * 86400000 + natHour(country) * 3600000;
+    if (winOpen && !daySettled(now, today, country) && dToday >= 0 && dToday <= PLAYOFF_DAYS.final) {
+      const r9 = roundOfDay(dToday);
+      if (r9) {
+        if (r9 <= ROUNDS) {
+          try { await ensureNatSquad(pool, country, season.season_no, r9); } catch (eN9) {}
+          if (isWindowRound(r9)) { try { await ensureCallups(pool, country, season.season_no, r9); } catch (eC9) {} }
+        }
+        const pb = await playRound(pool, host, country, season, r9, { now });
+        if (pb) out.push({ day: today, prebanked: pb });
+      }
+    }
+  } catch (ePb) { console.error('prebank failed for ' + country + ':', ePb.message); }
   // A WORLD THAT WAS ALREADY PLAYING WHEN THE SELECTORS ARRIVED. runTick names
   // a side before each round and again after it, but a day already settled
   // short-circuits before reaching either - so a league that had banked rounds
@@ -750,9 +800,12 @@ export async function runDue(pool, host, country, { now = Date.now(), failAfter 
   // actually played cricket this finds the squad already there and does
   // nothing; only a world that needs catching up pays for a republish.
   try {
-    const played = (await pool.query(
+    const playedRaw = (await pool.query(
       'SELECT COALESCE(MAX(round),0) AS r FROM matches WHERE country_id=$1 AND season_no=$2',
       [country, season.season_no])).rows[0].r | 0;
+    // a prebanked round is not a played round until its window closes - the
+    // selectors must not name the NEXT fifteen off cricket still on air
+    const played = Math.min(playedRaw, settledRound(country, season.start_day, now));
     const stands = Math.min(played + 1, ROUNDS);
     const had = (await pool.query(
       'SELECT 1 FROM nat_squad WHERE country_id=$1 AND season_no=$2 AND round=$3',

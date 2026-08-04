@@ -88,12 +88,16 @@ test('one runAllDue settles round 1 across the whole planet', async () => {
   const countries = Object.keys(all);
   assert.equal(countries.length, 16);
   for (const c of countries) {
-    const fresh = all[c].filter(x => !x.skipped);
+    // a nation whose NEXT window has already opened at this instant also
+    // prebanks that round (the FTP-style feed), and the selectors may then
+    // republish a fifteen - those entries ride along, marked, and are not a
+    // settled day. A settled day is the entry that carries its round.
+    const fresh = all[c].filter(x => !x.skipped && x.round != null);
     assert.equal(fresh.length, 1, c + ' settles exactly one day');
     assert.equal(fresh[0].round, 1, c + ' plays round 1');
     assert.equal(fresh[0].played, 8, c + ' plays eight matches - both divisions');
   }
-  const n = await pool.query('SELECT count(*)::int AS n FROM matches');
+  const n = await pool.query('SELECT count(*)::int AS n FROM matches WHERE round=1');
   assert.equal(n.rows[0].n, 128, '16 nations x 8 matches');
   const today = (await pool.query("SELECT body FROM snapshots WHERE key='world/today'")).rows[0].body;
   assert.equal(today.countries.length, 16, 'world/today carries every league');
@@ -107,12 +111,13 @@ test('one runAllDue settles round 1 across the whole planet', async () => {
 });
 
 test('a second runAllDue is a planet-wide no-op', async () => {
+  const before9 = (await pool.query('SELECT count(*)::int AS n FROM matches')).rows[0].n;
   const all = await runAllDue(pool, host, { now: ALL_SETTLED });
   for (const c of Object.keys(all)) {
-    assert.ok(all[c].every(x => x.skipped), c + ' re-run entirely skipped');
+    assert.ok(all[c].every(x => x.skipped), c + ' re-run entirely skipped (prebank finds its matches already banked)');
   }
   const n = await pool.query('SELECT count(*)::int AS n FROM matches');
-  assert.equal(n.rows[0].n, 128, 'no new matches anywhere');
+  assert.equal(n.rows[0].n, before9, 'no new matches anywhere');
 });
 
 // ONE NATION'S BAD DAY IS NOT THE PLANET'S. A failure settling one country

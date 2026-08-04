@@ -295,7 +295,10 @@ test('008: signing up auto-claims the first free club; a full country says so', 
 });
 
 test('009: season leaders come straight from the banked scorecards', async () => {
-  const lg = await computeLeague(pool, 'eng', 1, EPOCH + 102 * DAY);
+  // the embargo makes `now` load-bearing: a board only reads rounds whose
+  // windows have closed by then, so a whole-season read needs a clock that
+  // has genuinely passed the whole season
+  const lg = await computeLeague(pool, 'eng', 1, EPOCH + 200 * DAY);
   assert.ok(lg.stats.bat.length >= 3, 'batting leaders exist after round 1');
   assert.ok(lg.stats.bat[0].runs >= lg.stats.bat[1].runs, 'sorted by runs');
   assert.ok(lg.stats.bowl.length >= 3, 'bowling leaders exist');

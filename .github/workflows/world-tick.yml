@@ -15,6 +15,10 @@ on:
     # so the extra firings cost nothing when there is nothing due.
     - cron: '23 * * * *'
     - cron: '51 * * * *'
+    # windows open on the hour, and the prebank (the round simulated at the
+    # first ball, FTP-style) should land minutes after - a third line close
+    # to the top of the hour keeps the feed viewer's opening overs on time
+    - cron: '4 * * * *'
   workflow_dispatch:
     inputs:
       reset_world:
