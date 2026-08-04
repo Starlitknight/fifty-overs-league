@@ -722,7 +722,7 @@
 
   // the server mirror, exported: nation pages list the same fixtures, the
   // same calendar and the same live states the theatre plays from
-  window.__foWT = { serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror, divMembers: divMembers,
+  window.__foWT = { flagOf: flagOf, serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror, divMembers: divMembers,
     serverSquad: serverSquad, applyLiving: applyLiving,
     // THE MATCH ON RECORD IS NOT THE MATCH FROM A CLEAN SEED. The umpire plays
     // each round with the men as they were that day - the experience, the

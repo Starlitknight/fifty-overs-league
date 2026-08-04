@@ -3,9 +3,11 @@
 // at the first ball, so the live page is a READER, not an engine. One fetch of
 // the umpire's banked ball-by-ball, each delivery revealed on the world clock,
 // and every number on screen printed by the umpire himself - the end-of-over
-// rows carry the running score, the batters' tallies and the bowlers' figures.
-// Joining at any minute is instant on any device: there is nothing to catch
-// up, because nothing is computed here.
+// rows carry the running score, the batters' tallies and the bowlers' figures,
+// and the innings-break row carries the target. Joining at any minute is
+// instant on any device: there is nothing to catch up, nothing is computed.
+// The dress is the broadcast theatre's own - the navy bug, the gold score,
+// the crease line, the over of circles - worn by a reader instead of a sim.
 (function () {
   "use strict";
   if (window.__foFeed) return; window.__foFeed = 1;
@@ -32,43 +34,60 @@
     LOGS[k] = pr;
     return pr;
   }
-  // the ball badge, same coding the rest of the game speaks
-  function ball(o) {
+  // the over circles, in the theatre's own coding: gold for a boundary,
+  // red for a wicket, quiet rings for the rest
+  function ring(o) {
     var wk = o && o[0] === "w" && o !== "wide";
-    var cls = o === "4" ? "r4" : o === "6" ? "r6" : wk ? "wk" : (o === "dot" || o === "●") ? "" : "r1";
+    var cls = (o === "4" || o === "6") ? " b" : wk ? " w" : "";
     var sym = o === "dot" ? "&middot;" : wk ? "W" : o === "wide" ? "wd" : o === "noball" ? "nb" : (o === "bye" || o === "legbye") ? "b" : E(o);
-    return "<i class='fd-b " + cls + "'>" + sym + "</i>";
+    return "<i class='" + cls.trim() + "'>" + sym + "</i>";
   }
   // "End of over 12 (5 runs) - Yorkshire 61/2. ..." -> the umpire's own score
   function parseTop(txt) {
     var m = /End of over (\d+)[^-]*-\s*(.+?)\s+(\d+)\/(\d+)\./.exec(txt || "");
     return m ? { over: +m[1], team: m[2], runs: +m[3], wkts: +m[4] } : null;
   }
+  // the umpire's who-line: "<strong>N. Dunn</strong> 44 (57b), ... <strong>
+  // J. Mercer (rfm)</strong> 7-24-2" -> the men at the crease and the bowler
+  function parseWho(oversumTop) {
+    var out = { bats: [], bowl: null };
+    String(oversumTop || "").split(/,\s*(?=<strong>)/).forEach(function (seg) {
+      var f = /<strong>([^<]+?)<\/strong>\s*(\d+)-(\d+)-(\d+)\s*$/.exec(seg);
+      if (f) { out.bowl = { nm: f[1], fig: f[2] + "-" + f[3] + "-" + f[4] }; return; }
+      var b = /<strong>([^<]+?)<\/strong>\s*(\d+)\s*\((\d+)b\)/.exec(seg);
+      if (b) out.bats.push({ nm: b[1], r: +b[2], b: +b[3] });
+    });
+    return out;
+  }
+  function surname(nm) { var p = String(nm || "").trim().split(/\s+/); return p[p.length - 1] || ""; }
   var T = { id: null, timer: null };
   window.foRenderFeedPage = function () {
     var page = document.getElementById("page"); if (!page) return;
     var pl = P(), wt = window.__foWT;
     if (!pl || !wt || !wt.serverFixtures) { setTimeout(window.foRenderFeedPage, 600); return; }
     css();
+    document.body.classList.add("fo-fd-on");
     var q = qs(), rid = q.n || "eng";
     var sv = wt.serverFixtures(rid, Date.now());
     var fx = sv.fx || [], cal = sv.cal;
-    if (!fx.length || !cal.round) { page.innerHTML = shell("<p class='fd-dim'>No round on today's card.</p>"); return; }
+    if (!fx.length || !cal.round) { page.innerHTML = shell(rid, cal, null, "<p class='fd-dim'>No round on today's card.</p>"); return; }
     var fi = Math.max(0, Math.min(fx.length - 1, parseInt(q.f || "0", 10) || 0));
     var m = fx[fi];
     var id = rid + ":s" + cal.seasonNo + ":r" + cal.round + ":h" + m.home.slot + "a" + m.away.slot;
     var winStart = pl.EPOCH + pl.dayIx(Date.now()) * 86400000 + pl.natHour(rid) * 3600000;
     var winLen = (pl.LIVE_LEN || 3) * 3600000, BALL_MS = winLen / 600;
     T.id = id;
-    page.innerHTML = shell("<p class='fd-dim'>Opening the umpire's book&hellip;</p>");
+    page.innerHTML = shell(rid, cal, null, mast(m, "Opening the umpire's book&hellip;"));
     logFetch(rid, id).then(function (log) {
       if (T.id !== id || (location.hash || "").split("?")[0] !== "#/feed") return;
       if (!log) {
-        // the window is open but the prebank has not landed yet - the umpire
-        // walks out within minutes of the first ball; ask again shortly
-        page.innerHTML = shell(
-          "<div class='fd-mast'><h1>" + E(m.home.name) + " <i>v</i> " + E(m.away.name) + "</h1>" +
-          "<p class='fd-sub'>Round " + cal.round + " &middot; the umpire is walking out &mdash; the first deliveries arrive in a minute or two.</p></div>");
+        // sealed until the first ball (migration 047), or the prebank has not
+        // landed yet: either way the umpire walks out shortly - ask again
+        var mins = Math.max(1, Math.ceil((winStart - Date.now()) / 60000));
+        page.innerHTML = shell(rid, cal, "up",
+          mast(m, Date.now() < winStart
+            ? "Round " + cal.round + " &middot; the first ball at " + hh(pl.natHour(rid)) + " UTC &mdash; about " + mins + " minute" + (mins === 1 ? "" : "s") + " away."
+            : "Round " + cal.round + " &middot; the umpire is walking out &mdash; the first deliveries arrive in a minute or two."));
         clearTimeout(T.timer);
         T.timer = setTimeout(function () { logFetch(rid, id, true).then(function () { window.foRenderFeedPage(); }); }, 45000);
         return;
@@ -81,11 +100,16 @@
       }, 6000);
     });
   };
+  function hh(h) { return (h < 10 ? "0" : "") + h + ":00"; }
+  function mast(m, sub) {
+    return "<div class='fd-bug'><div class='fd-teams'><b>" + E(m.home.name) + "</b><i>v</i><b>" + E(m.away.name) + "</b></div>" +
+      "<div class='fd-sub'>" + sub + "</div></div>";
+  }
   function paint(page, log, m, rid, cal, winStart, BALL_MS, id) {
     var now = Date.now();
     var over = now >= winStart + 600 * BALL_MS;
-    // deliveries reveal on the clock; the special rows (toss, over summaries)
-    // travel with the delivery they precede
+    // deliveries reveal on the clock; the umpire's notes (toss, fall of
+    // wicket, drinks, the over summary) travel with the delivery they precede
     var nBalls = over ? 1e9 : Math.max(0, Math.floor((now - winStart) / BALL_MS));
     var seen = [], balls = 0;
     for (var i = 0; i < log.length; i++) {
@@ -95,89 +119,156 @@
       seen.push(r);
       if (isBall) balls++;
     }
-    var live = !over && balls > 0;
-    var done = over || balls >= log.filter(function (r2) { return r2 && r2.no !== "" && !r2._top && !r2.intro; }).length;
-    // the umpire's latest printed score, and the balls bowled since he printed it
-    var top = null, sinceTop = [];
-    for (var j = seen.length - 1; j >= 0; j--) {
-      if (seen[j] && seen[j]._top) { top = seen[j]; break; }
-      if (seen[j] && seen[j].no !== "" && !seen[j].intro) sinceTop.unshift(seen[j]);
+    var totalBalls = log.filter(function (r2) { return r2 && r2.no !== "" && !r2._top && !r2.intro; }).length;
+    var live = !over && balls > 0 && balls < totalBalls;
+    var done = over || balls >= totalBalls;
+    // one pass down the umpire's book: his latest printed score, the men his
+    // who-line named, the innings-break line, and who holds bat and ball now
+    var top = null, who = null, brk = null, striker = null, bowlerNm = null, lastTxt = null;
+    var sinceTop = [];
+    for (var j = 0; j < seen.length; j++) {
+      var s9 = seen[j];
+      if (!s9) continue;
+      if (s9._top) { top = s9; who = parseWho(s9.oversumTop); sinceTop = []; continue; }
+      if (s9.no !== "" && !s9.intro) {
+        sinceTop.push(s9);
+        if (s9.strikerNm) striker = s9.strikerNm;
+        if (s9.bowlerNm) bowlerNm = s9.bowlerNm;
+      }
+      if (s9.out === "-" && /Innings break/.test(s9.txt || "")) brk = s9.txt;
+      if (s9.txt) lastTxt = s9.txt;
     }
     var tp = top ? parseTop(top.txt) : null;
     var innNow = seen.length ? (seen[seen.length - 1].inn | 0) : 0;
+    var batNow = innNow ? (tp ? tp.team : m.away.name) : (tp ? tp.team : null);
+    // the crease line: the who-line's men, the strike dot on the striker; a
+    // new man mid-over is named without a number - the umpire has not printed
+    // one for him yet
+    var creaseHtml = "";
+    if (who && who.bats.length) {
+      var sn = surname(striker);
+      var names = who.bats.map(function (b9) {
+        var onStrike = sn && surname(b9.nm) === sn;
+        return "<u>" + E(b9.nm) + (onStrike ? " &#9679;" : "") + "</u> " + b9.r + " (" + b9.b + "b)";
+      });
+      if (sn && !who.bats.some(function (b9) { return surname(b9.nm) === sn; }))
+        names.push("<u>" + E(striker) + " &#9679;</u> new man");
+      var bowlSide = who.bowl ? "<span><u>" + E(who.bowl.nm) + "</u> " + who.bowl.fig + "</span>" : "";
+      creaseHtml = "<div class='fd-crease'><span>" + names.join(" &middot; ") + "</span>" + bowlSide + "</div>";
+    } else if (striker || bowlerNm) {
+      creaseHtml = "<div class='fd-crease'><span>" + (striker ? "<u>" + E(striker) + " &#9679;</u>" : "") + "</span>" +
+        (bowlerNm ? "<span><u>" + E(bowlerNm) + "</u> bowling</span>" : "") + "</div>";
+    }
+    // the target line, in the umpire's own words from the innings break
+    var chase = "";
+    if (innNow && brk) {
+      var tb = /Innings break\.\s*(.+?)\s*Target (\d+)\./.exec(brk);
+      if (tb) chase = "<div class='fd-chase'>" + E(tb[1]) + " Target " + tb[2] + ".</div>";
+    }
+    var scoreLine = tp
+      ? "<div class='fd-score'>" + E(tp.team).toUpperCase() + " <em>" + tp.runs + "/" + tp.wkts + "</em><span>after " + tp.over + " overs</span></div>"
+      : "<div class='fd-score'>" + E(batNow || m.home.name).toUpperCase() + "<span>the innings is under way</span></div>";
+    var overHtml = sinceTop.length
+      ? "<div class='fd-over'><span>this over</span>" + sinceTop.map(function (r3) { return ring(r3.out); }).join("") + "</div>" : "";
+    var lastLine = lastTxt ? "<div class='fd-last'>" + E(lastTxt) + "</div>" : "";
     var bug =
       "<div class='fd-bug'>" +
-      (tp
-        ? "<div class='t'><b>" + E(tp.team) + "</b><span class='sc'>" + tp.runs + "/" + tp.wkts + "</span><i>after " + tp.over + " overs</i></div>"
-        : "<div class='t'><b>" + E(innNow ? m.away.name : m.home.name) + "</b><i>the innings is under way</i></div>") +
-      (sinceTop.length ? "<div class='ov'><span>this over</span>" + sinceTop.map(function (r3) { return ball(r3.out); }).join("") + "</div>" : "") +
-      (top && top.oversumTop ? "<div class='who'>" + top.oversumTop + "</div>" : "") +
+      "<div class='fd-teams'><b>" + E(m.home.name) + "</b><i>v</i><b>" + E(m.away.name) + "</b></div>" +
+      scoreLine + chase + creaseHtml + overHtml + lastLine +
+      (done ? "<a class='fd-enter' href='#/report?n=" + encodeURIComponent(rid) + "&w=" + encodeURIComponent(id) + "'>The full report and scorecard &rsaquo;</a>" : "") +
       "</div>";
     var comm = seen.slice(-160).reverse().map(function (r4) {
       if (r4._top) return "<div class='fd-row top'><div class='w'>" + E(r4.txt) + "</div></div>";
-      // the umpire's notes between deliveries - toss, fall of wicket, milestone,
-      // drinks - arrive with no ball number; they read as marginalia
+      // the umpire's notes between deliveries - toss, fall of wicket,
+      // milestone, drinks - arrive with no ball number; they read as marginalia
       if (r4.intro || r4.no === "") return "<div class='fd-row in'><div class='w'>" +
         (r4.out && r4.out !== "▶" ? "<b class='sg'>" + E(r4.out) + "</b> " : "") + E(r4.txt) + "</div></div>";
-      return "<div class='fd-row" + (r4.out === "4" || r4.out === "6" ? " big" : "") + (r4.out && r4.out[0] === "w" && r4.out !== "wide" ? " wkt" : "") + "'>" +
-        "<span class='n'>" + E(r4.no) + "</span>" + ball(r4.out) +
+      var wk4 = r4.out && r4.out[0] === "w" && r4.out !== "wide";
+      return "<div class='fd-row" + (r4.out === "4" || r4.out === "6" ? " big" : "") + (wk4 ? " wkt" : "") + "'>" +
+        "<span class='n'>" + E(r4.no) + "</span><span class='bb'>" + ring(r4.out) + "</span>" +
         "<div class='w'>" + E(r4.txt) + "</div></div>";
     }).join("");
-    var st = live ? "<span class='fd-live'><b></b>LIVE</span>"
-      : done ? "<span class='fd-fin'>STUMPS</span>"
-      : "<span class='fd-fin'>FIRST BALL SOON</span>";
-    page.innerHTML = shell(
-      "<div class='fd-mast'><div class='fd-k'>Round " + cal.round + " &middot; " + st + "</div>" +
-      "<h1>" + E(m.home.name) + " <i>v</i> " + E(m.away.name) + "</h1></div>" +
+    var state = live ? "live" : done ? "fin" : "up";
+    page.innerHTML = shell(rid, cal, state,
+      "<div class='fd-ground'>" + E(m.home.name) + "&rsquo;s ground" + (m.home.city ? " &middot; " + E(m.home.city) : "") + "</div>" +
       bug +
-      (done ? "<a class='fd-rep' href='#/report?n=" + encodeURIComponent(rid) + "&w=" + encodeURIComponent(id) + "'>The full report and scorecard &rsaquo;</a>" : "") +
       "<div class='fd-comm'><div class='fd-ch'>Ball by ball &middot; the umpire's own book</div>" + (comm || "<p class='fd-dim'>The first ball is moments away.</p>") + "</div>" +
       "<div class='fd-foot'><a href='#/league?t=fixtures'>&#8592; The round</a><a href='#/home'>The club &rsaquo;</a></div>");
   }
-  function shell(inner) { return "<div class='fo-fd'>" + inner + "</div>"; }
+  function shell(rid, cal, state, inner) {
+    var wt = window.__foWT, flag = "";
+    try { if (wt && wt.flagOf) flag = "<img class='fd-flag' src='" + wt.flagOf(rid) + "' alt=''>"; } catch (eF) {}
+    var chip = state === "live" ? "<span class='fd-live'><i></i>LIVE</span>"
+      : state === "fin" ? "<span class='fd-fin'>STUMPS</span>"
+      : state === "up" ? "<span class='fd-fin'>FIRST BALL SOON</span>" : "";
+    return "<div class='fo-fd'><div class='fd-in'>" +
+      "<div class='fd-top'><a class='fd-back' href='#/league?t=fixtures'>&larr; Fixtures</a>" + flag +
+      "<span class='fd-lg'>" + E(rid).toUpperCase() + (cal && cal.round ? " &middot; round " + cal.round : "") + "</span>" + chip + "</div>" +
+      inner + "</div></div>";
+  }
+  window.addEventListener("hashchange", function () {
+    if ((location.hash || "").split("?")[0] !== "#/feed") {
+      document.body.classList.remove("fo-fd-on");
+      try { clearInterval(T.timer); clearTimeout(T.timer); } catch (e) {}
+    }
+  });
   function css() {
     if (document.getElementById("fo-fd-css")) return;
     var s = document.createElement("style"); s.id = "fo-fd-css";
     s.textContent = [
-      "html body #page .fo-fd{max-width:760px;margin:14px auto 44px;padding:0 12px;font-family:Inter,-apple-system,sans-serif;color:#14243A}",
-      ".fo-fd .fd-mast{margin:6px 0 12px}",
-      ".fo-fd .fd-k{font:700 10px Oswald,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#8a8272;display:flex;align-items:center;gap:8px}",
-      ".fo-fd .fd-live{display:inline-flex;align-items:center;gap:5px;font:700 9.5px Oswald,sans-serif;letter-spacing:.14em;color:#fff;background:#C0392E;border-radius:5px;padding:3px 7px}",
-      ".fo-fd .fd-live b{width:5px;height:5px;border-radius:50%;background:#fff;animation:fdLv 1.4s ease-in-out infinite}",
-      "@keyframes fdLv{0%,100%{opacity:1}50%{opacity:.25}}",
-      ".fo-fd .fd-fin{font:700 9.5px Oswald,sans-serif;letter-spacing:.14em;color:#8a6a1f;background:#F8ECD4;border:1px solid #e8d5a8;border-radius:5px;padding:3px 7px}",
-      ".fo-fd h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(24px,4vw,36px);margin:6px 0 0;letter-spacing:-.01em}",
-      ".fo-fd h1 i{font-style:italic;color:#C9571F;font-size:.6em;margin:0 6px}",
-      ".fo-fd .fd-sub{font:italic 400 13.5px Georgia,serif;color:#6d6455;margin:8px 0 0}",
-      ".fo-fd .fd-bug{background:linear-gradient(160deg,#14243A,#0E2246);border-radius:16px;padding:16px 18px;color:#F6F3EB;box-shadow:0 10px 30px rgba(20,36,58,.18);border-bottom:3px solid #C9571F}",
-      ".fo-fd .fd-bug .t{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}",
-      "html body #page .fo-fd .fd-bug b{font:700 15px Oswald,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:#F6F3EB}",
-      "html body #page .fo-fd .fd-bug .sc{font:700 34px Oswald,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums}",
-      "html body #page .fo-fd .fd-bug i{font:600 11px Inter,sans-serif;color:#E8B96A;font-style:normal}",
-      ".fo-fd .fd-bug .ov{display:flex;align-items:center;gap:5px;margin-top:10px}",
-      ".fo-fd .fd-bug .ov span{font:700 8.5px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#8FA8CC;margin-right:4px}",
-      ".fo-fd .fd-bug .who{margin-top:10px;padding-top:10px;border-top:1px solid rgba(246,243,235,.18);font:500 12px Inter,sans-serif;color:#D8E2F2;line-height:1.6}",
-      ".fo-fd .fd-bug .who strong{color:#FFFEFC}",
-      "html body #page .fo-fd .fd-rep{display:block;margin:12px 0 0;text-align:center;font:700 11px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#fff !important;background:#C9571F;border-radius:11px;padding:13px;text-decoration:none}",
-      ".fo-fd .fd-comm{background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);padding:12px 14px;margin-top:12px}",
+      // the theatre's clean white room: cream paper, one block of navy
+      "html body.ftpskin.fo-fd-on,html body.fo-fd-on{background:#F1EEE6 !important}",
+      "html body.fo-fd-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
+      "html body.fo-fd-on #page{padding:0 !important;margin:0 !important;background:transparent !important}",
+      ".fo-fd{position:relative;min-height:70vh;color:#14202F;font-family:Inter,-apple-system,sans-serif}",
+      ".fo-fd .fd-in{max-width:680px;margin:0 auto;padding:18px 16px 60px}",
+      ".fo-fd .fd-top{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:14px}",
+      "html body #page .fo-fd .fd-back{font:600 12px/1 Inter,sans-serif;color:#3a4353 !important;text-decoration:none !important;border:1px solid rgba(14,35,63,.22);border-radius:999px;padding:7px 13px;background:#fff}",
+      ".fo-fd .fd-flag{width:26px;height:18px;object-fit:cover;border-radius:3px;box-shadow:0 1px 3px rgba(14,35,63,.25)}",
+      ".fo-fd .fd-lg{font:700 10.5px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#14202F}",
+      ".fo-fd .fd-live{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:800 10px/1 Oswald,sans-serif;letter-spacing:.14em;color:#B23230}",
+      ".fo-fd .fd-live i{width:8px;height:8px;border-radius:50%;background:#B23230;animation:foFdPulse 1.2s ease-in-out infinite}",
+      "@keyframes foFdPulse{0%,100%{opacity:1}50%{opacity:.25}}",
+      ".fo-fd .fd-fin{margin-left:auto;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;color:rgba(20,32,47,.55)}",
+      ".fo-fd .fd-ground{font:600 11px/1.4 Inter,sans-serif;color:rgba(20,32,47,.55);margin-bottom:7px}",
+      // THE BUG - the theatre's navy, terracotta spine, gold score
+      ".fo-fd .fd-bug{background:#0E233F;border-left:3px solid #C95532;border-radius:16px;padding:15px 17px;color:#FFFEFC;box-shadow:0 8px 24px rgba(14,35,63,.18)}",
+      ".fo-fd .fd-teams{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}",
+      ".fo-fd .fd-teams b{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:18px;color:#FFFEFC}",
+      ".fo-fd .fd-teams i{font-style:italic;font-size:11px;color:rgba(255,254,252,.5)}",
+      ".fo-fd .fd-score{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font:700 15px/1.3 Oswald,sans-serif;letter-spacing:.06em;color:#E8B96A;margin-top:8px}",
+      ".fo-fd .fd-score em{font-style:normal;font-size:30px;color:#FFFEFC;font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-score span{font:600 11px Inter,sans-serif;letter-spacing:0;color:rgba(255,254,252,.6)}",
+      ".fo-fd .fd-chase{font:italic 400 12px/1.5 'Fraunces',Georgia,serif;color:#E8B96A;margin-top:6px}",
+      ".fo-fd .fd-crease{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font:400 11.5px/1.5 Inter,sans-serif;color:rgba(255,254,252,.85);flex-wrap:wrap}",
+      ".fo-fd .fd-crease u{text-decoration:none;color:#FFFEFC;font-weight:600}",
+      ".fo-fd .fd-over{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center}",
+      ".fo-fd .fd-over span{font:700 8.5px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,254,252,.45);margin-right:4px}",
+      ".fo-fd .fd-over i,.fo-fd .fd-comm .bb i{font-style:normal;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,254,252,.1);border:1px solid rgba(255,254,252,.18);font:700 11px/1 Oswald,sans-serif;color:#E8DFCE}",
+      ".fo-fd .fd-over i.b{background:rgba(232,185,106,.2);border-color:#E8B96A;color:#E8B96A}",
+      ".fo-fd .fd-over i.w{background:rgba(255,107,94,.22);border-color:#FF6B5E;color:#FF6B5E}",
+      ".fo-fd .fd-last{font:italic 400 12px/1.5 'Fraunces',Georgia,serif;color:rgba(255,254,252,.65);margin-top:9px}",
+      "html body #page .fo-fd .fd-enter{display:block;width:100%;margin-top:12px;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:#C95532 !important;border:none;border-radius:999px;padding:13px 16px;cursor:pointer;text-align:center;text-decoration:none !important}",
+      // the book, on paper below the broadcast
+      ".fo-fd .fd-comm{background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);padding:12px 14px;margin-top:14px}",
       ".fo-fd .fd-ch{font:700 10px Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#8a8272;margin:2px 0 8px}",
       ".fo-fd .fd-row{display:flex;align-items:flex-start;gap:9px;padding:8px 2px;border-bottom:1px solid #f3eee1;font:400 13px/1.55 Inter,sans-serif}",
       ".fo-fd .fd-row:last-child{border-bottom:none}",
-      ".fo-fd .fd-row .n{flex:0 0 34px;font:700 11px Oswald,sans-serif;color:#8a8272;font-variant-numeric:tabular-nums;padding-top:2px}",
+      ".fo-fd .fd-row .n{flex:0 0 34px;font:700 11px Oswald,sans-serif;color:#8a8272;font-variant-numeric:tabular-nums;padding-top:4px}",
+      ".fo-fd .fd-row .bb i{width:22px;height:22px;font-size:10.5px;background:#F1EEE6;border-color:#e3dccb;color:#8a8272}",
+      ".fo-fd .fd-row .bb i.b{background:#C9571F;border-color:#C9571F;color:#fff}",
+      ".fo-fd .fd-row .bb i.w{background:#8E1F13;border-color:#8E1F13;color:#fff}",
       ".fo-fd .fd-row .w{flex:1;min-width:0}",
       ".fo-fd .fd-row.big{background:#FDF6EC;border-radius:8px}",
       ".fo-fd .fd-row.wkt{background:#FBEFEA;border-radius:8px}",
       ".fo-fd .fd-row.top .w{font:700 12px Inter,sans-serif;color:#14243A;background:#F6F3EB;border-radius:8px;padding:7px 10px}",
       ".fo-fd .fd-row.in .w{font:italic 400 12.5px Georgia,serif;color:#6d6455}",
       ".fo-fd .fd-row.in .sg{font-style:normal;color:#C9571F;margin-right:2px}",
-      ".fo-fd .fd-b{flex:0 0 22px;width:22px;height:22px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font:700 10.5px Oswald,sans-serif;background:#F1EEE6;color:#8a8272;border:1px solid #e3dccb;font-style:normal}",
-      ".fo-fd .fd-b.r1{color:#14243A;background:#FFFEFC}",
-      ".fo-fd .fd-b.r4{background:#C9571F;border-color:#C9571F;color:#fff}",
-      ".fo-fd .fd-b.r6{background:#14243A;border-color:#14243A;color:#E8B96A}",
-      ".fo-fd .fd-b.wk{background:#8E1F13;border-color:#8E1F13;color:#fff}",
+      ".fo-fd .fd-sub{font:italic 400 13px/1.6 'Fraunces',Georgia,serif;color:rgba(255,254,252,.75);margin-top:8px}",
       ".fo-fd .fd-dim{font:italic 400 13.5px Georgia,serif;color:#8a8272;padding:30px 6px}",
       ".fo-fd .fd-foot{display:flex;justify-content:space-between;margin-top:14px}",
-      "html body #page .fo-fd .fd-foot a{font:700 10px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#C9571F !important;text-decoration:none}"
+      "html body #page .fo-fd .fd-foot a{font:700 10px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#C9571F !important;text-decoration:none !important}",
+      "@media(max-width:430px){.fo-fd .fd-teams b{font-size:16px}.fo-fd .fd-score em{font-size:26px}}"
     ].join("\n");
     document.head.appendChild(s);
   }
