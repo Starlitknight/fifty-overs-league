@@ -274,6 +274,54 @@
     xi.sort(function (a, b) { return (a.mpos - b.mpos) || (b.bat - a.bat); });
     return xi;
   }
+  // ---- THE BROADCAST SURVIVES A RELOAD ------------------------------------
+  // The match on air lives only in memory; a reload used to land the manager
+  // on #/match with no match, which falls through to the next fixture's
+  // orders sheet - the wrong room entirely. So the theatre notes what is on
+  // air and until when; a reload (or a return to #/match) inside that window
+  // simply rejoins the broadcast at the live ball, the way television works.
+  var WT_RES = "fo_wt_resume";
+  function wtRemember(o) { try { localStorage.setItem(WT_RES, JSON.stringify(o)); } catch (e) {} }
+  function wtForget() { try { localStorage.removeItem(WT_RES); } catch (e) {} }
+  function wtMaybeResume() {
+    try {
+      if ((location.hash || "").split("?")[0] !== "#/match") return;
+      if (typeof M !== "undefined" && M && M.meta && !M.done) return;   // something real is playing
+      var o = null; try { o = JSON.parse(localStorage.getItem(WT_RES) || "null"); } catch (eP) {}
+      if (!o || !o.until) return;
+      if (Date.now() >= o.until) { wtForget(); return; }
+      if (o.k === "friendly") window.foWtFriendly(o.fid);
+      else window.foWtSpectate(o.rid, null, null, o.fi);
+    } catch (e) {}
+  }
+  (function () {
+    var n = 0, t = setInterval(function () {
+      if (++n > 40) { clearInterval(t); return; }
+      if (!P() || typeof newMatch !== "function") return;
+      clearInterval(t);
+      wtMaybeResume();
+    }, 500);
+    window.addEventListener("hashchange", function () { setTimeout(wtMaybeResume, 350); });
+  })();
+  // #/match with nothing in memory used to bounce straight to #/orders before
+  // the resume could act - the reload-lands-on-the-orders-sheet confusion.
+  // While a remembered broadcast is inside its window, hold the room open and
+  // rejoin instead of bouncing.
+  var _wtPgMatch = window.pgMatch;
+  window.pgMatch = function (q) {
+    try {
+      if ((typeof M === "undefined" || !M) && !(window.App && App.pending)) {
+        var o = null; try { o = JSON.parse(localStorage.getItem(WT_RES) || "null"); } catch (eP) {}
+        if (o && o.until && Date.now() < o.until) {
+          var pg = document.getElementById("page");
+          if (pg) pg.innerHTML = "<div style='padding:90px 24px;text-align:center;font:italic 400 15px Georgia,serif;color:#6d6455'>Rejoining the broadcast&hellip;</div>";
+          wtMaybeResume();   // fires now if the world is aboard; the boot poll covers the rest
+          return;
+        }
+      }
+    } catch (e) {}
+    return _wtPgMatch ? _wtPgMatch.apply(this, arguments) : undefined;
+  };
   window.foWtSpectate = function (rid, season, round, fi) {
     try {
       if (typeof M !== "undefined" && M && !M.done && M.meta && !M.meta.__spectate) {
@@ -383,6 +431,7 @@
           }
         } catch (e) { clearInterval(window.__foWtDrv); }
       }, isLive ? 1000 : 2200);
+      wtRemember({ k: "league", rid: rid, fi: fi, until: winStart + winLen });
       location.hash = "#/match";
       if (typeof window.route === "function") window.route();
     } catch (e) { try { console.warn("foWtSpectate", e); } catch (e2) {} }
@@ -454,6 +503,7 @@
               }
             } catch (e) { clearInterval(window.__foWtDrv); }
           }, isLive ? 1000 : 2200);
+          wtRemember({ k: "friendly", fid: +d.id, until: winStart + winLen });
           location.hash = "#/match";
           if (typeof window.route === "function") window.route();
         })

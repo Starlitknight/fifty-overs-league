@@ -2384,7 +2384,19 @@ function foOrdersHardWarns(){ // illegal (blocking) problems only - under-covera
 function pgMatch(){
   // no live or pending match: never leave the user on a dead "Match centre" -
   // send them to the match-prep hub (today's fixture + Gaffer's plan / lineup).
-  if(!App.pending&&!M){location.hash='#/orders';if(typeof route==='function')route();return}
+  // EXCEPT while a world broadcast is inside its window: the theatre left a
+  // note (fo_wt_resume) so a reload rejoins the live match instead of dumping
+  // the viewer on an orders sheet. The world-theatre module reads the same
+  // note and restarts the broadcast the moment the planet is aboard.
+  if(!App.pending&&!M){
+    try{
+      const wtR=JSON.parse(localStorage.getItem('fo_wt_resume')||'null');
+      if(wtR&&wtR.until&&Date.now()<wtR.until){
+        $('#page').innerHTML='<div style="padding:90px 24px;text-align:center;font:italic 400 15px Georgia,serif;color:#6d6455">Rejoining the broadcast&hellip;</div>';
+        return;
+      }
+    }catch(eWt){}
+    location.hash='#/orders';if(typeof route==='function')route();return}
   if((!M||M.done)&&App.pending){
     const hard=foOrdersHardWarns();
     if(hard.length){
