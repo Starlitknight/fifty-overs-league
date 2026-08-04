@@ -3054,6 +3054,14 @@
       "#fo-th-gf{left:10px;right:10px;bottom:calc(206px + env(safe-area-inset-bottom));max-width:none}" +
       // SCORE / TACTICS: the engine tabs render inside the tall sheet
       "html body.fo-th.fo-thd #page .ftp-match-shell{left:10px;right:10px;top:auto;bottom:calc(60px + env(safe-area-inset-bottom));height:calc(88dvh - 82px);width:auto;z-index:56;background:transparent;border:none;box-shadow:none;backdrop-filter:none;padding:2px 2px 8px;border-radius:0;overflow:auto;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}" +
+      // the dash drawer fills the phone: an opaque card wall-to-wall between
+      // the site chrome and the command bar, nothing bleeding through. The
+      // doubled .fo-thd outranks the dash sheet, which lands later in the DOM.
+      "html body.fo-dash.fo-thd.fo-thd #page .ftp-match-shell{left:0;right:0;top:88px;bottom:calc(58px + env(safe-area-inset-bottom));height:auto;background:#F1EEE6 !important;padding:8px 10px 14px}" +
+      "html body.fo-dash.fo-thd.fo-thd #page .ftp-match-shell .panel{overflow-x:auto}" +
+      "html body.fo-dash.fo-thd.fo-thd #page .ftp-match-links{background:#F1EEE6 !important;padding:8px 0 10px}" +
+      "html body.fo-dash.fo-thd.fo-thd #page .ftp-match-links a{background:#FFFEFC !important;border:1px solid #e3dccb !important}" +
+      "html body.fo-dash.fo-thd.fo-thd #page .ftp-match-links a.on{background:#C9571F !important;border-color:#C9571F !important}" +
       "html body.fo-th.fo-thd #page .ftp-match-links{position:sticky;top:0;z-index:2;background:rgba(7,17,33,.96) !important;padding:6px 0 10px;margin:0}" +
       "html body.fo-th.fo-thd #page .ftp-match-links a{min-height:34px;display:inline-flex;align-items:center}" +
       // the score sheet keeps three panels - scorecard, commentary, charts;
