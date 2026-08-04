@@ -2683,6 +2683,12 @@
       ".fo-hg2 .hg-bar .hg-ls{display:none}" +
       "@media(max-width:760px){.fo-hg2 .hg-bar .hg-lf{display:none}.fo-hg2 .hg-bar .hg-ls{display:inline}}" +
       // ---- the club home, elevated: golden-hour bloom, luminous depth ----
+      // pinned to the viewport, not fitted to it: while the wallpaper hung
+      // in the document flow, every late arrival above it (the clock, a
+      // webfont, a banner) re-anchored it with a fresh negative margin and
+      // the whole painting visibly jumped. Fixed, it cannot be moved by
+      // anything the topbar does.
+      "html body #page .fo-hg2.fo-home2{position:fixed;top:0;left:0;right:0;bottom:0;height:100dvh;margin:0 !important;z-index:1}" +
       ".fo-home2 .hg-bg{animation:foHgIn 1.4s ease-out,foHgDrift 34s ease-in-out 1.4s infinite alternate;object-position:50% 46%}" +
       "@keyframes foHgDrift{from{transform:scale(1.06) translate3d(0,0,0)}to{transform:scale(1.13) translate3d(-2.2%,-1.4%,0)}}" +
       "@media(prefers-reduced-motion:reduce){.fo-home2 .hg-bg{animation:foHgIn .9s ease-out !important}}" +
@@ -3216,6 +3222,12 @@
   function foHgFit(el) {
     try {
       if (!el) return;
+      // the club-home wallpaper is pinned to the viewport (position:fixed),
+      // so there is nothing to fit - and fitting it was the last flicker:
+      // every late arrival in the topbar (the clock, a banner, a webfont)
+      // moved the measured top, and this re-anchoring VISIBLY JUMPED the
+      // whole painting a few times in the first seconds of a landing
+      if (el.classList && el.classList.contains("fo-home2")) return;
       // wallpaper mode: the painting owns the whole screen - pull up under
       // the (transparent) header, fill the viewport, kill any leftover scroll
       el.style.marginTop = "0px"; el.style.marginBottom = "0px";
@@ -5391,9 +5403,14 @@
           im9.src = FO_ART + "home/" + v + ".webp";
         }
       } else {
+        // the entrance fade plays once per sitting: a shell rebuilt on the
+        // way back from another room re-hangs the already-decoded painting
+        // instantly instead of fading in from nothing again
+        var anim0 = window.__foHgShown ? " style='animation:foHgDrift 34s ease-in-out infinite alternate'" : "";
+        window.__foHgShown = true;
         page.innerHTML =
           "<div class='fo-hg2 fo-home2' data-hgv='" + E(v) + "' style='--lac:" + (region.ac || "#EBC271") + "'>" +
-          "<img class='hg-bg' src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
+          "<img class='hg-bg'" + anim0 + " src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
           "<div class='hg-grain'></div><div class='hg-scrim'></div><div class='hg-bloom'></div>" +
           "<div class='hg-id'>" + idHtml + "</div>" +
           "<div class='hg-bar'>" + barHtml + "</div></div>";
