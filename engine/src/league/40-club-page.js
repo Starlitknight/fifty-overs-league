@@ -351,34 +351,13 @@
   var SORTS = [["ovr", "Strongest first"], ["age", "Youngest first"], ["wage", "Best paid"], ["name", "By name"]];
 
   // ---- A GROUND FOR EVERY CLUB ----------------------------------------------
-  // Only a quarter of the world's grounds are painted. A club whose own city
-  // has no painting borrows one from its own country's gallery - picked off a
-  // hash of the club's name, so the same club shows the same ground on every
-  // device, forever. The navy panel stays as the last resort only.
-  var FB_GROUNDS = {
-    eng: ["leeds", "london", "canterbury", "manchester", "nottingham", "marylebone"],
-    aus: ["sydney", "melbourne", "adelaide", "brisbane", "perth"],
-    sub: ["mumbai", "chennai", "kolkata", "nagpur", "dharamshala"],
-    pak: ["lahore", "sharjah"],
-    rsa: ["cape-town", "durban", "johannesburg"],
-    nzl: ["auckland", "christchurch", "wellington"],
-    slk: ["colombo", "galle", "kandy"],
-    win: ["bridgetown", "kingston", "port-of-spain"],
-    ire: ["dublin", "belfast", "cork"],
-    ned: ["amsterdam", "rotterdam", "utrecht"],
-    zim: ["harare", "bulawayo", "victoria-falls"],
-    afg: ["kabul"], bgd: ["sylhet"], nep: ["kathmandu"],
-    sco: ["edinburgh"], wal: ["cardiff"], ken: ["nairobi"],
-    usa: ["grand-prairie"], can: ["king-city"]
-  };
-  function h32(s) {
-    var h = 2166136261 >>> 0; s = String(s || "");
-    for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
-    return h >>> 0;
-  }
-  function fbGroundOf(cid, name) {
-    var list = FB_GROUNDS[cid] || FB_GROUNDS.eng;
-    return ART() + "cities/" + list[h32(name) % list.length] + "-ground.webp";
+  // Only a quarter of the world's grounds are painted. Every club whose own
+  // city has no painting - the user's own included - stands in front of Old
+  // Trafford: one understudy ground for the whole world, so an unpainted club
+  // page never reads as a different club's home by accident. The navy panel
+  // stays as the last resort only.
+  function fbGroundOf() {
+    return ART() + "cities/manchester-ground.webp";
   }
 
   // ---- your own men, in the shape the public view uses ----------------------
