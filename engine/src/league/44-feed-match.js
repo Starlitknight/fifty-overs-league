@@ -788,8 +788,9 @@
       ".fo-fd .fd-bh .lo{font:400 11.5px Inter,sans-serif;color:var(--fomut)}",
       ".fo-fd .seq{display:inline-flex;gap:5px;flex-wrap:wrap}",
       ".fo-fd .seq i,.fo-fd .fd-ev .dot i{font-style:normal;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#F1EEE6;border:1px solid var(--fobrd);font:700 11px/1 Oswald,sans-serif;color:#6d6455}",
-      ".fo-fd .seq i.b,.fo-fd .fd-ev .dot i.b{background:var(--foor);border-color:var(--foor);color:#fff}",
-      ".fo-fd .seq i.w,.fo-fd .fd-ev .dot i.w{background:var(--fowkt);border-color:var(--fowkt);color:#fff}",
+      // boundaries ring green, wickets ring red - the reading at a glance
+      ".fo-fd .seq i.b,.fo-fd .fd-ev .dot i.b{background:#177A57;border-color:#177A57;color:#fff}",
+      ".fo-fd .seq i.w,.fo-fd .fd-ev .dot i.w{background:#B23230;border-color:#B23230;color:#fff}",
       "html body #page .fo-fd .fd-fsel{font:600 11.5px Inter,sans-serif;color:#5b5344;background:#F6F3EB;border:1px solid var(--fobrd);border-radius:8px;padding:6px 9px;cursor:pointer}",
       // ---- the timeline of events
       ".fo-fd .fd-tl{position:relative;padding-left:2px}",
