@@ -344,7 +344,7 @@
         wtSay("A match of yours is in progress - finish it first."); return;
       }
       var sv = serverFixtures(rid, Date.now()), m = sv.fx[fi];
-      if (!m) return;
+      if (!m) { wtSay("That fixture is not on today's card - the day's fixtures may still be loading. Try again in a moment."); return; }
       var cal = sv.cal, srvRound = cal.round;
       // no early broadcasts: bot or human, a match cannot be watched (and its
       // result cannot be learned) before its scheduled first ball
@@ -372,7 +372,7 @@
         started = true;
         foWtBegin(rid, sv, fi, om || {});
       });
-    } catch (e) { try { console.warn("foWtSpectate", e); } catch (e2) {} }
+    } catch (e) { wtSay("The broadcast could not start: " + String((e && e.message) || e).slice(0, 120)); try { console.warn("foWtSpectate", e); } catch (e2) {} }
   };
   function foWtBegin(rid, sv, fi, ordersMap) {
     try {
@@ -432,7 +432,13 @@
       var isLive = nowT >= winStart && nowT < winStart + winLen;
       window.__foWtBall = 0;
       var target0 = isLive ? liveBall(nowT) : 0;         // stumps entry replays from ball one
-      while (M && !M.done && window.__foWtBall < target0) { autoPick(); stepBall(); window.__foWtBall++; }
+      // fast-forward with a wall-clock budget: if the catch-up runs long the
+      // drive interval finishes the job, and the page never freezes
+      var ffT0 = Date.now();
+      while (M && !M.done && window.__foWtBall < target0) {
+        autoPick(); stepBall(); window.__foWtBall++;
+        if (Date.now() - ffT0 > 8000) break;
+      }
       try { if (window.__foWtDrv) clearInterval(window.__foWtDrv); } catch (e) {}
       window.__foWtDrv = setInterval(function () {
         try {
@@ -450,7 +456,7 @@
       wtRemember({ k: "league", rid: rid, fi: fi, until: winStart + winLen });
       location.hash = "#/match";
       if (typeof window.route === "function") window.route();
-    } catch (e) { try { console.warn("foWtSpectate", e); } catch (e2) {} }
+    } catch (e) { wtSay("The broadcast could not start: " + String((e && e.message) || e).slice(0, 120)); try { console.warn("foWtSpectate", e); } catch (e2) {} }
   };
 
   // ---- FRIENDLIES IN THE THEATRE: watched == recorded, no stakes attached --
@@ -505,7 +511,13 @@
           var isLive = nowT >= winStart && nowT < winStart + winLen;
           window.__foWtBall = 0;
           var target0 = isLive ? liveBall(nowT) : 0;
-          while (M && !M.done && window.__foWtBall < target0) { autoPick(); stepBall(); window.__foWtBall++; }
+          // fast-forward with a wall-clock budget: if the catch-up runs long the
+      // drive interval finishes the job, and the page never freezes
+      var ffT0 = Date.now();
+      while (M && !M.done && window.__foWtBall < target0) {
+        autoPick(); stepBall(); window.__foWtBall++;
+        if (Date.now() - ffT0 > 8000) break;
+      }
           try { if (window.__foWtDrv) clearInterval(window.__foWtDrv); } catch (e) {}
           window.__foWtDrv = setInterval(function () {
             try {
@@ -524,7 +536,7 @@
           if (typeof window.route === "function") window.route();
         })
         .catch(function (e) { wtSay(String(e.message || "The world could not be reached.").slice(0, 140)); });
-    } catch (e) { try { console.warn("foWtFriendly", e); } catch (e2) {} }
+    } catch (e) { wtSay("The broadcast could not start: " + String((e && e.message) || e).slice(0, 120)); try { console.warn("foWtFriendly", e); } catch (e2) {} }
   };
 
   // where a nation's card stands right now - and the door straight into one
