@@ -511,6 +511,31 @@
     } catch (e) { try { console.warn("foWtFriendly", e); } catch (e2) {} }
   };
 
+  // where a nation's card stands right now - and the door straight into one
+  // match's live broadcast, for any page that lists fixtures. No hub between
+  // a match and its coverage: the row IS the way in.
+  window.foWtState = function (rid) {
+    try {
+      var pl = P(), now = Date.now();
+      var cal = serverCal(now);
+      var h0 = pl.natHour(rid);
+      var hNow = (now - (pl.EPOCH + pl.dayIx(now) * 86400000)) / 3600000;
+      return { round: cal.round, state: !cal.round ? "rest" : hNow < h0 ? "up" : hNow < h0 + (pl.LIVE_LEN || 3) ? "live" : "fin" };
+    } catch (e) { return null; }
+  };
+  window.foWtGoHref = function (rid, hs, as) {
+    try {
+      var st = window.foWtState(rid);
+      if (!st || st.state !== "live") return null;
+      var sv = serverFixtures(rid, Date.now());
+      var fi = -1;
+      (sv.fx || []).forEach(function (m, i) {
+        if (fi < 0 && m && m.home && m.away && m.home.slot === (hs | 0) && m.away.slot === (as | 0)) fi = i;
+      });
+      if (fi < 0) return null;
+      return "#/watch?n=" + encodeURIComponent(rid) + "&f=" + fi + "&go=1";
+    } catch (e) { return null; }
+  };
   window.foRenderWatchPage = function () {
     var page = document.getElementById("page"); if (!page || !P() || !cx()) return;
     foWtCss();
@@ -540,6 +565,12 @@
     var h0 = pl.natHour(rid);
     var hNowW = (now - (pl.EPOCH + pl.dayIx(now) * 86400000)) / 3600000;
     var state = hNowW < h0 ? "up" : hNowW < h0 + (pl.LIVE_LEN || 3) ? "live" : "fin";
+    // a link marked go=1 wants the broadcast itself, not this page - join it
+    if (q.go && state === "live") {
+      page.innerHTML = "<div class='fo-wt'><p style='padding:80px 20px;color:#fff;font:italic 400 15px Georgia,serif'>Joining the broadcast&hellip;</p></div>";
+      setTimeout(function () { try { window.foWtSpectate(rid, null, null, fi); } catch (eGo) {} }, 30);
+      return;
+    }
 
     var hh0 = (h0 < 10 ? "0" : "") + h0 + ":00 UTC";
     // T-minus one hour: the teamsheets are public - show the ACTUAL elevens,

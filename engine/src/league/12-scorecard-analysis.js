@@ -5815,7 +5815,6 @@
         sec2Title = "Matchday";
         fixturesPanel = "<div class='fo-nt-md" + (srv.state === "live" ? " live" : "") + "'>" +
           "<div class='fo-nt-st'>" + stateWord + "</div>" + mdRows +
-          (srv.state === "live" ? "<a class='fo-nt-theatre' href='#/watch?n=" + encodeURIComponent(nation) + "'>Open the broadcast theatre &rsaquo;</a>" : "") +
           "</div>" + upHTML;
         // -- everything already banked, newest round first
         var rKeys = Object.keys(resByRound).map(Number).sort(function (a9, b9) { return b9 - a9; });

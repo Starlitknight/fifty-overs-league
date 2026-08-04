@@ -397,15 +397,22 @@
           // match's own preview - the ground, the hour, the form, the men.
           (pairs.length ? pairs.map(function (pr) {
             var hs = pr[0], as = pr[1], mine = (hs === mySlot || as === mySlot);
+            // A MATCH ON AIR IS ITS OWN DOOR. While the round is live its row
+            // goes straight into the broadcast and says LIVE where the hour
+            // stood; before the first ball it opens the preview, and once
+            // settled the results tab already opens the report.
+            var lv = ""; try { if (rd === curRound && window.foWtGoHref) lv = window.foWtGoHref(natId, hs, as) || ""; } catch (eLv) {}
             var pv = ""; try { pv = window.foPreviewHref(natId, rd, hs, as); } catch (ePv) {}
+            var href = lv || pv;
             var inner =
               (mine ? "<span class='fo-lgx-yours'>Your match</span>" : "") +
               "<span class='fo-lgx-side'>" + shield(nameAt(hs), bossAt(hs), natId) + "<b>" + E(nameAt(hs)) + "</b></span>" +
-              "<span class='fo-lgx-vs'><i>v</i><u>" + hh(hour) + "</u>" + (groundOf(hs) ? "<em>" + E(groundOf(hs)) + "</em>" : "") + "</span>" +
+              "<span class='fo-lgx-vs'><i>v</i>" + (lv ? "<s class='fo-lgx-lv'><b></b>LIVE</s>" : "<u>" + hh(hour) + "</u>") +
+              (groundOf(hs) ? "<em>" + E(groundOf(hs)) + "</em>" : "") + "</span>" +
               "<span class='fo-lgx-side a'><b>" + E(nameAt(as)) + "</b>" + shield(nameAt(as), bossAt(as), natId) + "</span>" +
-              (pv ? "<u class='fo-lgx-go'>&rsaquo;</u>" : "");
-            return pv
-              ? "<a class='fo-lgx-fx open" + (mine ? " mine" : "") + "' href='" + pv + "'>" + inner + "</a>"
+              (href ? "<u class='fo-lgx-go'>&rsaquo;</u>" : "");
+            return href
+              ? "<a class='fo-lgx-fx open" + (mine ? " mine" : "") + "' href='" + href + "'>" + inner + "</a>"
               : "<div class='fo-lgx-fx" + (mine ? " mine" : "") + "'>" + inner + "</div>";
           }).join("") : "<p class='fo-lgx-dim'>No fixtures for this round yet.</p>") +
           "</div>";
@@ -827,6 +834,10 @@
     "html body #page .fo-lgx-side u{text-decoration:none;font:700 12.5px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums;color:#141C28;flex:0 0 auto}",
     "html body #page .fo-lgx-vs{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:54px}",
     "html body #page .fo-lgx-vs i{font:italic 400 11px/1 'Fraunces',Georgia,serif;color:rgba(20,28,40,.38)}",
+    "html body #page .fo-lgx-lv{display:inline-flex;align-items:center;gap:4px;text-decoration:none;font:700 9px/1 Oswald,sans-serif;letter-spacing:.14em;color:#fff;background:#C0392E;border-radius:5px;padding:4px 7px}",
+    "html body #page .fo-lgx-lv b{width:5px;height:5px;border-radius:50%;background:#fff;animation:foLgxLv 1.4s ease-in-out infinite}",
+    "@keyframes foLgxLv{0%,100%{opacity:1}50%{opacity:.25}}",
+    "@media (prefers-reduced-motion:reduce){html body #page .fo-lgx-lv b{animation:none}}",
     "html body #page .fo-lgx-vs u,html body #page .fo-lgx-vs em{text-decoration:none;font:600 9px/1.25 Inter,sans-serif;color:rgba(20,28,40,.42);font-style:normal;text-align:center}",
     "html body #page .fo-lgx-verdict{grid-column:1/-1;margin-top:2px;padding-top:7px;border-top:1px dashed rgba(20,28,40,.1);font:italic 420 11.5px/1.45 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6)}",
     "html body #page .fo-lgx-verdict.w{color:#177A57}",

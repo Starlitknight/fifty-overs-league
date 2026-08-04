@@ -423,7 +423,12 @@
         play: "<svg viewBox='0 0 24 24' width='16' height='16' fill='currentColor'><path d='M8 5v14l11-7z'/></svg>"
       };
       var actions = [];
-      if (c0.k === "live") actions.push("<a class='fo-pm-cta live' href='#/watch?n=" + encodeURIComponent(natId) + "'>" + ACT.play + "Watch it live</a>");
+      if (c0.k === "live") {
+        // straight into THIS match's broadcast - never the theatre hub
+        var lvHref = null;
+        try { if (window.foWtGoHref) lvHref = window.foWtGoHref(natId, hSlot, aSlot); } catch (eLh) {}
+        actions.push("<a class='fo-pm-cta live' href='" + (lvHref || ("#/watch?n=" + encodeURIComponent(natId))) + "'>" + ACT.play + "Watch it live</a>");
+      }
       if (mine && c0.k === "soon") actions.push("<a class='fo-pm-cta' href='#/orders'>" + ACT.sheet + "Set your team sheet</a>");
       if (c0.k === "done") actions.push("<a class='fo-pm-cta' href='#/league?t=results'>" + ACT.bars + "Read the report</a>");
       actions.push(stage

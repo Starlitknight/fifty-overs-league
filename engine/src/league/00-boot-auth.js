@@ -680,8 +680,19 @@
     try {
       var ml = document.getElementById("fo-mlive"); if (!ml) return;
       var go = null, mineNow = false;
-      try { if (typeof M !== "undefined" && M && !M.done) go = "#/match"; } catch (e0) {}
-      if (!go) { try { var em = (typeof foEmbargo === "function") ? foEmbargo() : null; if (em && em.active && !em.pre) go = "#/matchday"; } catch (e1) {} }
+      // THE PILL IS A SUMMONS, NOT A TICKER. It lights for MY club's match
+      // and for nothing else - spectating another club's broadcast is a
+      // choice, not an alarm. A live match someone else is playing announces
+      // itself beside its own row, where it belongs.
+      try {
+        if (typeof M !== "undefined" && M && !M.done) {
+          var myNmM = ""; try { myNmM = ((typeof foMyClub === "function" && foMyClub()) || userTeam() || {}).name || ""; } catch (eNm0) {}
+          var mMine = !(M.meta && M.meta.__spectate) ||
+            (M.meta && myNmM && (M.meta.home === myNmM || M.meta.away === myNmM));
+          if (mMine) { go = "#/match"; mineNow = true; }
+        }
+      } catch (e0) {}
+      if (!go) { try { var em = (typeof foEmbargo === "function") ? foEmbargo() : null; if (em && em.active && !em.pre) { go = "#/matchday"; mineNow = true; } } catch (e1) {} }
       // MY CLUB'S OWN LEAGUE MATCH, which nothing above this could see.
       // A league fixture resolves on the server, so M is null; and the
       // embargo window is read off the last round banked on THIS device,
@@ -706,7 +717,7 @@
               var is9 = function (sd) { return !!sd && ((slot9 >= 0 && sd.slot === slot9) || (mine9 && sd.name === mine9)); };
               sv9.fx.forEach(function (f9, i9) {
                 if (go || !f9 || !(is9(f9.home) || is9(f9.away))) return;
-                go = "#/watch?n=" + encodeURIComponent(nat9) + "&f=" + i9;
+                go = "#/watch?n=" + encodeURIComponent(nat9) + "&f=" + i9 + "&go=1";
                 mineNow = true;
               });
             }
@@ -720,7 +731,7 @@
           ((window.__foFrAll) || []).forEach(function (c2) {
             if (go || !c2 || (c2.status !== "accepted" && c2.status !== "played")) return;
             if (myNm && c2.challenger_club !== myNm && c2.opponent_club !== myNm) return;
-            try { if (foFrBcastState(c2).phase === "live") go = "#/friendly?id=" + c2.id; } catch (eS) {}
+            try { if (foFrBcastState(c2).phase === "live") { go = "#/friendly?id=" + c2.id; mineNow = true; } } catch (eS) {}
           });
         } catch (e2) {}
       }
