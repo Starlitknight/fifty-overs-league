@@ -490,6 +490,8 @@
       v: function (p) { return Math.round(p.exp || 0); } },
     { k: "form", l: "Form", s: "Form", tip: "Current form: abysmal to excellent, worth up to 6% either way", num: 1,
       v: function (p) { return p.formIx == null ? 3 : p.formIx; } },
+    { k: "fit", l: "Fitness", s: "Fit", tip: "Match fitness - the energy left in his legs. Tired men bowl slower, misfield more, and train at half pace; sort on this before naming the XI", num: 1,
+      v: function (p) { try { return foEnergyOf(p).pct; } catch (e) { return 100; } } },
     { k: "wage", l: "Wage", s: "Wage", tip: "What he costs the club a week", num: 1,
       v: function (p) { return Math.round(p.wage || 0); } },
     { k: "ovr", l: "OVR", s: "OVR", tip: "Overall rating - the one number the whole game sorts by", num: 1, agg: 1,
@@ -553,6 +555,16 @@
       if (c.k === "age") return "<td class='n c-age' title='" + E(foAgeLong(p)) + "'>" + E(foAgeText(p)) + "</td>";
       if (c.k === "wage") return "<td class='n c-wage'>" + (typeof money === "function" ? money(p.wage || 0) : "$" + (p.wage | 0)) + "</td>";
       if (c.k === "form") return "<td class='n c-form'>" + foSqFormGlyph(p) + "</td>";
+      // fitness is a gauge, not a rating: the bar drains as the fatigue
+      // ladder climbs, and the ladder word is the tooltip
+      if (c.k === "fit") {
+        var en9 = { pct: 100, raw: "rested", tired: false };
+        try { en9 = foEnergyOf(p); } catch (eEn9) {}
+        var fc9 = en9.tired ? "#B23230" : en9.pct >= 80 ? "#177A57" : "#C9A24B";
+        return "<td class='n c-fit' title='" + E("Fitness: " + en9.raw + " (" + en9.pct + "%)") + "'>" +
+          "<span class='fo-sqg-fit'><i style='width:" + en9.pct + "%;background:" + fc9 + "'></i></span>" +
+          "<span class='fo-sqg-v' style='color:" + fc9 + "'>" + en9.pct + "</span></td>";
+      }
       if (v < 0) return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "'><span class='fo-sqg-nil' title='" + E(c.nil || "Does not bowl") + "'>&ndash;</span></td>";
       // the number is the reading; the ladder word it sits on is the tooltip
       return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "' title='" + E(c.l + ": " + foSqLad(v, c.k) + " (" + v + ")") + "'>" +
@@ -742,6 +754,10 @@
       ".fo-sqg-fl img{width:100%;height:100%;object-fit:cover;display:block}",
       ".fo-sqg-nat{font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:rgba(20,28,40,.55)}",
       ".fo-sqg-v{font-family:Oswald,sans-serif;font-weight:600;font-size:12.5px;font-variant-numeric:tabular-nums}",
+      ".fo-sqg .c-fit{white-space:nowrap}",
+      ".fo-sqg-fit{display:inline-block;width:34px;height:5px;border-radius:3px;background:rgba(20,32,47,.12);margin-right:6px;vertical-align:2px;overflow:hidden}",
+      ".fo-sqg-fit i{display:block;height:100%;border-radius:3px}",
+      "@media(max-width:900px){.fo-sqg-fit{width:22px}}",
       ".fo-sqg td.agg .fo-sqg-v{font-weight:700;font-size:13.5px}",
       ".fo-sqg td.c-ovr .fo-sqg-v{font-size:15px}",
       // the club's own line, under the men

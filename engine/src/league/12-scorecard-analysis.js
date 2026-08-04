@@ -7344,3 +7344,61 @@
   // render. This is the LAST league module: every pg* override exists now -
   // route once more so the overlay owns the first visible frame.
   setTimeout(function () { try { if (typeof window.route === "function") window.route(); } catch (eRR) {} }, 0);
+
+  // ==== THE IMAGE KEEPER =====================================================
+  // Every page in this game redraws by rebuilding its whole HTML, and each
+  // rebuild used to tear down every <img> on the page - flags, crests, faces,
+  // ground paintings - which then re-decoded from scratch and blanked for a
+  // frame or two: the "everything flickers on landing" complaint, one page at
+  // a time. Rather than teach thirty renderers to diff, one observer watches
+  // the page: when a repaint recreates an image whose markup is identical to
+  // one it just removed, the already-decoded original is put back in its
+  // place. MutationObserver callbacks run at the microtask checkpoint, BEFORE
+  // the browser paints the new frame, so the swap is invisible - the painting
+  // never leaves the wall. Repeated identical images (ten England flags in a
+  // table) are kept in per-markup stacks so each teardown pairs with its own
+  // rebuild.
+  (function () {
+    try {
+      var keep = function (muts) {
+        var pool = null;
+        for (var i = 0; i < muts.length; i++) {
+          var rm = muts[i].removedNodes;
+          for (var j = 0; j < rm.length; j++) {
+            var n = rm[j]; if (!n || n.nodeType !== 1) continue;
+            var imgs = n.tagName === "IMG" ? [n] : (n.querySelectorAll ? n.querySelectorAll("img") : []);
+            for (var k = 0; k < imgs.length; k++) {
+              var im = imgs[k];
+              if (!im.complete || !im.naturalWidth) continue;   // never finished loading: nothing worth keeping
+              var key = im.outerHTML;
+              (pool = pool || {})[key] = pool[key] || [];
+              pool[key].push(im);
+            }
+          }
+        }
+        if (!pool) return;
+        for (var i2 = 0; i2 < muts.length; i2++) {
+          var ad = muts[i2].addedNodes;
+          for (var j2 = 0; j2 < ad.length; j2++) {
+            var n2 = ad[j2]; if (!n2 || n2.nodeType !== 1 || !n2.isConnected) continue;
+            var imgs2 = n2.tagName === "IMG" ? [n2] : (n2.querySelectorAll ? n2.querySelectorAll("img") : []);
+            for (var k2 = 0; k2 < imgs2.length; k2++) {
+              var im2 = imgs2[k2];
+              if (im2.complete && im2.naturalWidth) continue;   // already decoded: it will not flash
+              var stack = pool[im2.outerHTML];
+              if (stack && stack.length && im2.parentNode) {
+                var prev = stack.pop();
+                if (prev !== im2) im2.parentNode.replaceChild(prev, im2);
+              }
+            }
+          }
+        }
+      };
+      var mount = function () {
+        var pg = document.getElementById("page");
+        if (!pg) { setTimeout(mount, 400); return; }
+        new MutationObserver(keep).observe(pg, { childList: true, subtree: true });
+      };
+      mount();
+    } catch (eIK) {}
+  })();
