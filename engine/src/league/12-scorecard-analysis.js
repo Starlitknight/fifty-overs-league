@@ -5245,7 +5245,19 @@
         if (page.__foHomeSig != null && page.__foHomeTk === tk0 && page.querySelector(".fo-home2")) return;
         page.__foHomeTk = tk0;
       } catch (eTk) {}
-      var v = foHgVariant();
+      // THE DAY'S PAINTING IS CHOSEN ONCE PER SITTING. foHgVariant reads the
+      // next fixture's forecast, and that answer can move while boot answers
+      // land - the local season initialising a beat after the first paint
+      // used to flip the wet/dry pick, tear the whole hero down and blink
+      // the wallpaper mid-landing. So: ask the season to exist BEFORE the
+      // first pick (the pick is then right first time), and hold the pick
+      // for the whole sitting. Only a phone/desktop orientation change
+      // re-opens the question - and that swap preloads before it hangs.
+      try { if (typeof seasonInit === "function") seasonInit(); } catch (eSi) {}
+      var m9 = false; try { m9 = window.innerWidth <= 760; } catch (eM9) {}
+      var v;
+      if (window.__foHgPin && window.__foHgPin.m === m9) v = window.__foHgPin.v;
+      else { v = foHgVariant(); window.__foHgPin = { m: m9, v: v }; }
       var me = null; try { me = userTeam(); } catch (e) {}
       var nation = foLgNation(), region = (foRegionById(nation) || {}).r || { nm: "your nation", ac: "#EBC271" };
       // ---- YOUR FRONT DOOR SPEAKS THE WORLD, OR IT SPEAKS FOR ITSELF --------
@@ -5355,12 +5367,29 @@
       // shell and its art stay on the wall while only the words change; the
       // page is torn down solely when the painting itself must change.
       var shell = page.querySelector(".fo-hg2.fo-home2");
-      if (shell && shell.getAttribute("data-hgv") === v) {
+      if (shell) {
         shell.style.setProperty("--lac", region.ac || "#EBC271");
         // the weather caption chip is gone by decree: the painting says it all
         var wxEl = shell.querySelector(".hg-wx"); if (wxEl) wxEl.remove();
         var idEl = shell.querySelector(".hg-id"); if (idEl) idEl.innerHTML = idHtml;
         var barEl = shell.querySelector(".hg-bar"); if (barEl) barEl.innerHTML = barHtml;
+        // a different painting is hung only once it has fully arrived - the
+        // old one stays on the wall meanwhile, so there is never a blank
+        // frame between the two
+        if (shell.getAttribute("data-hgv") !== v && shell.__foHgSwap !== v) {
+          shell.__foHgSwap = v;
+          var im9 = new Image();
+          im9.onload = function () {
+            try {
+              var bg9 = shell.querySelector(".hg-bg");
+              if (bg9) bg9.src = im9.src;
+              shell.setAttribute("data-hgv", v);
+            } catch (eSw) {}
+            shell.__foHgSwap = null;
+          };
+          im9.onerror = function () { shell.__foHgSwap = null; };
+          im9.src = FO_ART + "home/" + v + ".webp";
+        }
       } else {
         page.innerHTML =
           "<div class='fo-hg2 fo-home2' data-hgv='" + E(v) + "' style='--lac:" + (region.ac || "#EBC271") + "'>" +

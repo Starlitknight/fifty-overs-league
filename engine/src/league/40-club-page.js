@@ -359,6 +359,28 @@
   function fbGroundOf() {
     return ART() + "cities/manchester-ground.webp";
   }
+  // A club whose own city IS painted - Mumbai's Wankhede, the MCG, Eden
+  // Gardens - hangs its own ground first; Old Trafford stands in only where
+  // the gallery is silent. The settled painting is remembered per club so a
+  // dossier repaint starts from the answer, never from the fallback walk
+  // (whose 404 round-trip is a visible blink).
+  var GR_OK = {};
+  try { window.__foGrOk = GR_OK; } catch (eGk) {}
+  function groundArtOf(cid, slot) {
+    var k = cid + ":" + slot;
+    if (GR_OK[k]) return GR_OK[k];
+    try {
+      var sides = (window.__foPlanet && window.__foPlanet.sidesOf(cid)) || [];
+      for (var i = 0; i < sides.length; i++) {
+        if ((sides[i].slot | 0) === (slot | 0)) {
+          var own = window.foGroundArtUrl ? window.foGroundArtUrl(sides[i].city) : null;
+          if (own) return own;
+          break;
+        }
+      }
+    } catch (e) {}
+    return fbGroundOf();
+  }
 
   // ---- your own men, in the shape the public view uses ----------------------
   // The world's squad is already the game's squad (league/37 adopts it), so for
@@ -533,7 +555,6 @@
       var homeGames = played.filter(function (r) { return r.home === name; });
       var homeW = homeGames.filter(function (r) { return r.winner === name; }).length;
       var homeRec = homeGames.length ? homeW + "&ndash;" + (homeGames.length - homeW) : "&mdash;";
-      var gSlug = String(name).toLowerCase().replace(/[^a-z0-9\s-]/g, "").replace(/\s+/g, "-");
       // the season so far, in the division's own numbers
       var nrCount = tRow ? Math.max(0, (tRow.p | 0) - (tRow.w | 0) - (tRow.l | 0)) : 0;
       var leader = ownTbl[0] || null;
@@ -679,8 +700,10 @@
         var gNote = gMost ? E(pitchNm(gMost)) + " strips &middot; " + E((PITCH_NOTE[gMost] || [""])[0]).replace(/\.$/, "").toLowerCase() : "";
         var gCard = "<div class='fo-cd-card fo-cd-gr'>" +
           "<div class='gwrap'>" +
-          "<img src='" + ART() + "cities/" + gSlug + "-ground.webp' alt='" + E(gname) + "'" +
-          " data-fb='" + fbGroundOf(cid, name) + "'" +
+          "<img src='" + groundArtOf(cid, slot) + "' alt='" + E(gname) + "'" +
+          " data-gk='" + E(cid + ":" + slot) + "'" +
+          " data-fb='" + fbGroundOf() + "'" +
+          " onload=\"try{window.__foGrOk[this.dataset.gk]=this.getAttribute('src')}catch(e){}\"" +
           " onerror=\"if(this.dataset.fb&&this.src.indexOf(this.dataset.fb)<0){this.src=this.dataset.fb}" +
           "else{var g=this.closest('.fo-cd-gr');if(g)g.classList.add('noart');this.parentNode.removeChild(this)}\">" +
           "<div class='gov'><div class='gt'>" + E(gname) + (gNote ? "<u>" + gNote + "</u>" : "") + "</div>" +
@@ -1021,11 +1044,33 @@
           (isMine ? "<div id='fo-cp-mine'></div>" : "") + "</div>";
       }
 
-      page.innerHTML = "<div class='fo-cp fo-cd'>" +
+      var html9 = "<div class='fo-cp fo-cd'>" +
         "<a class='fo-cd-bk' href='#/nation?n=" + encodeURIComponent(cid) + "'>&lsaquo; " + E(natName(cid)) + " league</a>" +
         (tab === "overview" ? bodyHTML : slimHead + tabBar + bodyHTML) +
         "<div class='fo-cp-foot'><a href='#/rankings'>The world rankings &rsaquo;</a><a href='#/nation?n=" + encodeURIComponent(cid) + "'>The league table &rsaquo;</a></div>" +
         "</div>";
+      // THE DOSSIER SETTLES, IT DOES NOT BLINK. Boot answers land one by one
+      // (the club, the squad, the honours, the snapshot wake-ups) and each
+      // used to rebuild the whole page - a dozen teardowns in the first two
+      // seconds, every one re-hanging the ground painting from scratch. An
+      // answer that changes nothing now changes nothing; and when the words
+      // do move, the already-decoded painting is carried across to the new
+      // page rather than fetched and decoded again.
+      if (page.__foCpSig === html9 && page.querySelector(".fo-cp")) {
+        if (canChallenge) { try { paintTies(); } catch (eTs) {} }
+        return;
+      }
+      page.__foCpSig = html9;
+      var keep9 = null;
+      try {
+        var old9 = page.querySelector(".fo-cd-gr img");
+        if (old9 && old9.complete && old9.naturalWidth) keep9 = old9;
+      } catch (eK9) {}
+      page.innerHTML = html9;
+      try {
+        var new9 = page.querySelector(".fo-cd-gr img");
+        if (keep9 && new9 && keep9.src === new9.src) new9.parentNode.replaceChild(keep9, new9);
+      } catch (eK8) {}
 
       try {
         var sel = document.getElementById("fo-cp-sort");
@@ -1087,7 +1132,9 @@
       }
     };
 
-    paint(null, null, null);
+    // the first stroke starts from everything already in hand - a re-render
+    // with warm caches then composes the identical page and paints nothing
+    paint(CLUB_CACHE[cid + ":" + slot] || null, SQ_CACHE[cid + ":" + slot] || null, HON_CACHE);
     fetchClub(cid, slot, function (info) { paint(info, SQ_CACHE[cid + ":" + slot], HON_CACHE); });
     fetchSquad(cid, slot, function (sq) { paint(CLUB_CACHE[cid + ":" + slot], sq, HON_CACHE); });
     fetchHonours(function (hon) { paint(CLUB_CACHE[cid + ":" + slot], SQ_CACHE[cid + ":" + slot], hon); });
