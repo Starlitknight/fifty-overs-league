@@ -3531,6 +3531,11 @@
   // card; the older cut-out trophies keep the drawn plinth.
   var FO_CX_TROPHY_FULL = { bgd: 1, nep: 1, sco: 1, wal: 1, ken: 1, usa: 1, can: 1 };
   function foCitySlug(c) { return String(c || "").toLowerCase().replace(/\s+/g, "-"); }
+  // the ground-art resolver, shared with the live feed's match stage: a city
+  // with a named ground has artwork on disk; anyone else keeps the navy
+  window.foGroundArtUrl = function (city) {
+    try { return city && FO_CITY_GROUNDS[city] ? FO_ART + "cities/" + foCitySlug(city) + "-ground.webp" : null; } catch (e) { return null; }
+  };
   function foCityClub(city) {
     for (var ri = 0; ri < FO_CX_REGIONS.length; ri++) {
       var r = FO_CX_REGIONS[ri];

@@ -6,9 +6,10 @@
 // rows carry the running score, the batters' tallies and the bowlers' figures,
 // the fall-of-wicket rows carry the partnerships, and the innings-break row
 // carries the target. From those prints alone the page keeps a LIVE SCORECARD,
-// the worm and the manhattan, the partnership ladder and the filed teamsheets,
-// under the broadcast theatre's own dress. Nothing simulated, nothing invented:
-// arithmetic on the umpire's numbers, never numbers of our own.
+// the worm and the manhattan, the partnership ladder and the filed teamsheets.
+// The dress is a broadcast stage over the home ground's own artwork, a
+// timeline of the umpire's book, and the situation at the crease beside it.
+// Nothing simulated, nothing invented: arithmetic on the umpire's numbers.
 (function () {
   "use strict";
   if (window.__foFeed) return; window.__foFeed = 1;
@@ -35,7 +36,7 @@
     LOGS[k] = pr;
     return pr;
   }
-  // the over circles, in the theatre's own coding: gold for a boundary,
+  // the outcome circle, one coding everywhere: gold for a boundary, wicket
   // red for a wicket, quiet rings for the rest
   function ring(o) {
     var wk = o && o[0] === "w" && o !== "wide";
@@ -61,18 +62,23 @@
     return out;
   }
   function surname(nm) { var p = String(nm || "").replace(/\s*\([^)]*\)\s*$/, "").trim().split(/\s+/); return p[p.length - 1] || ""; }
-  function bKey(nm) { var c = String(nm || "").trim(); return (c[0] || "") .toLowerCase() + "|" + surname(c).toLowerCase(); }
+  function bKey(nm) { var c = String(nm || "").trim(); return (c[0] || "").toLowerCase() + "|" + surname(c).toLowerCase(); }
   var HOW = { wB: "bowled", wC: "caught", wLBW: "lbw", wRO: "run out", wST: "stumped" };
+  // the home ground's own artwork, resolved by the scorecard module's shared
+  // helper; no art of our own - a missing city simply keeps the navy
+  function stageArt(city) {
+    try { return window.foGroundArtUrl ? window.foGroundArtUrl(city) : null; } catch (e) { return null; }
+  }
 
-  // ---- ONE PASS DOWN THE BOOK: everything the tabs need, per innings -------
+  // ---- ONE PASS DOWN THE BOOK: everything the panels need, per innings -----
   function bookState(seen) {
-    var mk = function () { return { bats: [], byKey: {}, bowls: [], bowlByKey: {}, overs: [], fow: [], top: null, who: null, team: null, brk: null, target: null, striker: null, bowler: null, sinceTop: [], open: false }; };
+    var mk = function () { return { bats: [], byKey: {}, bowls: [], bowlByKey: {}, overs: [], fow: [], top: null, who: null, team: null, brk: null, target: null, striker: null, bowler: null, sinceTop: [], open: false, lastNo: null, pshipBalls: 0 }; };
     var inns = [mk(), mk()], pendingWk = null;
     for (var i = 0; i < seen.length; i++) {
       var r = seen[i]; if (!r) continue;
       var I = inns[(r.inn | 0) === 1 ? 1 : 0];
       // the umpire's opening line names the day: the weather, the pitch and
-      // who called the toss right - it becomes the bug's conditions line
+      // who called the toss right - it becomes the stage's conditions line
       if (r.out === "▶" && !inns.meta) {
         var cw = /with (.+?) conditions and an? (.+?) pitch/.exec(r.txt || "");
         var ct = /([A-Za-z0-9 '&-]+?) won the toss and chose to (\w+)/.exec(r.txt || "");
@@ -99,6 +105,8 @@
       if (r.no !== "" && !r.intro) {
         I.open = true;
         I.sinceTop.push(r);
+        I.lastNo = r.no;
+        I.pshipBalls++;
         if (r.strikerNm) {
           I.striker = r.strikerNm;
           var ks = bKey(r.strikerNm);
@@ -117,6 +125,7 @@
           ed.nm = fx[2]; ed.r = +fx[3]; ed.b = +fx[4];
           ed.out = pendingWk ? { how: HOW[pendingWk.code] || "out", bowler: pendingWk.bowler, fld: pendingWk.fld } : { how: "out" };
           I.fow.push({ p: +fx[1], nm: fx[2], r: +fx[3], b: +fx[4], score: +fx[6], w: +fx[7], no: pendingWk ? pendingWk.no : "" });
+          I.pshipBalls = 0;
           pendingWk = null;
         }
       }
@@ -140,7 +149,7 @@
     var q = qs(), rid = q.n || "eng";
     var sv = wt.serverFixtures(rid, Date.now());
     var fx = sv.fx || [], cal = sv.cal;
-    if (!fx.length || !cal.round) { page.innerHTML = shell(rid, cal, null, "<p class='fd-dim'>No round on today's card.</p>"); return; }
+    if (!fx.length || !cal.round) { page.innerHTML = shell(rid, cal, null, null, "<p class='fd-dim'>No round on today's card.</p>"); return; }
     var fi = Math.max(0, Math.min(fx.length - 1, parseInt(q.f || "0", 10) || 0));
     var m = fx[fi];
     var id = rid + ":s" + cal.seasonNo + ":r" + cal.round + ":h" + m.home.slot + "a" + m.away.slot;
@@ -148,15 +157,15 @@
     var winLen = (pl.LIVE_LEN || 3) * 3600000, BALL_MS = winLen / 600;
     if (T.id !== id) { T.tab = "live"; T.filter = "all"; }
     T.id = id;
-    page.innerHTML = shell(rid, cal, null, mast(m, "Opening the umpire's book&hellip;"));
+    page.innerHTML = shell(rid, cal, null, m, stageShell(m, null, "Opening the umpire's book&hellip;"));
     logFetch(rid, id).then(function (log) {
       if (T.id !== id || (location.hash || "").split("?")[0] !== "#/feed") return;
       if (!log) {
         // sealed until the first ball (migration 047), or the prebank has not
         // landed yet: either way the umpire walks out shortly - ask again
         var mins = Math.max(1, Math.ceil((winStart - Date.now()) / 60000));
-        page.innerHTML = shell(rid, cal, "up",
-          mast(m, Date.now() < winStart
+        page.innerHTML = shell(rid, cal, "up", m,
+          stageShell(m, null, Date.now() < winStart
             ? "Round " + cal.round + " &middot; the first ball at " + hh(pl.natHour(rid)) + " UTC &mdash; about " + mins + " minute" + (mins === 1 ? "" : "s") + " away."
             : "Round " + cal.round + " &middot; the umpire is walking out &mdash; the first deliveries arrive in a minute or two."));
         clearTimeout(T.timer);
@@ -189,9 +198,11 @@
   };
   window.foFeedFilter = function (f) { T.filter = f; if (T.args) paint.apply(null, T.args); };
   function hh(h) { return (h < 10 ? "0" : "") + h + ":00"; }
-  function mast(m, sub) {
-    return "<div class='fd-bug'><div class='fd-teams'><b>" + E(m.home.name) + "</b><i>v</i><b>" + E(m.away.name) + "</b></div>" +
-      "<div class='fd-sub'>" + sub + "</div></div>";
+  function stageShell(m, inner, sub) {
+    return "<div class='fd-stage'><div class='fd-stagein'>" +
+      "<div class='fd-teams'><b>" + E(m.home.name) + "</b><i>vs</i><b>" + E(m.away.name) + "</b></div>" +
+      (inner || "") + (sub ? "<div class='fd-sub'>" + sub + "</div>" : "") +
+      "</div></div>";
   }
 
   function paint(page, log, m, rid, cal, winStart, BALL_MS, id) {
@@ -214,57 +225,83 @@
     var inns = bookState(seen);
     var innNow = inns[1].open ? 1 : 0, I = inns[innNow];
     var tp = I.top ? parseTop(I.top.txt) : null;
-    // the bug keeps to what the book below does NOT already say: the score,
-    // the chase, the day's conditions, and the over in progress. The crease
-    // tallies and the last ball live in the over banners and the scorecard.
+
+    // ---- THE MATCH STAGE ---------------------------------------------------
     var meta = inns.meta, condBits = [];
     if (meta) {
       if (meta.wx) condBits.push(E(meta.wx));
       if (meta.pitch) condBits.push(E(meta.pitch) + " pitch");
-      if (meta.tossWin) condBits.push(E(meta.tossWin) + " won the toss" + (meta.tossDo ? ", chose to " + E(meta.tossDo) : ""));
+      if (meta.tossWin) condBits.push(E(meta.tossWin) + " won the toss" + (meta.tossDo ? " and chose to " + E(meta.tossDo) : ""));
     }
-    var condLine = condBits.length ? "<div class='fd-cond'>" + condBits.join(" &middot; ") + "</div>" : "";
-    var chase = "";
-    if (innNow && inns[0].brk) {
-      var needLn = "";
-      // the equation of the chase, in the broadcast's own phrasing: runs
-      // needed from balls remaining, both read off the umpire's last print
-      if (live && tp && inns[1].target) {
-        var need9 = inns[1].target - tp.runs, ballsLeft = (50 - tp.over) * 6;
-        if (need9 > 0 && ballsLeft > 0) needLn = " <b>" + E(tp.team) + " need " + need9 + " from " + ballsLeft + " balls.</b>";
+    var art = stageArt(m.home.city);
+    // the exact position of the innings: the last delivery's own number
+    var posOv = I.lastNo ? parseFloat(I.lastNo) : (tp ? tp.over : 0);
+    var ovLabel = I.lastNo ? I.lastNo : (tp ? tp.over + ".0" : "0.0");
+    var scoreHtml;
+    if (tp) {
+      scoreHtml = "<div class='fd-scorerow'><em>" + tp.runs + "/" + tp.wkts + "</em><span>" + ovLabel + " <u>OVERS</u></span></div>";
+    } else {
+      scoreHtml = "<div class='fd-scorerow'><span class='op'>" + E(innNow ? m.away.name : m.home.name) + " &middot; the innings is under way</span></div>";
+    }
+    // the three reads under the score, all arithmetic on the umpire's prints
+    var mets = "";
+    if (tp && tp.over > 0) {
+      var rr = tp.runs / tp.over;
+      var l5 = I.overs.slice(-5);
+      var l5r = 0; l5.forEach(function (o) { l5r += o.ovRuns; });
+      var l5from = tp.over - l5.length;
+      var l5w = I.fow.filter(function (fw) { var o9 = parseFloat(fw.no) || 0; return o9 > l5from && o9 <= tp.over + 1; }).length;
+      var third;
+      if (innNow && inns[1].target) {
+        var need = inns[1].target - tp.runs, bLeft = (50 - tp.over) * 6;
+        third = need > 0 ? "<div class='mt'><u>NEEDED</u><b>" + need + " <s>off " + bLeft + "b</s></b></div>" : "";
+      } else {
+        third = "<div class='mt'><u>PROJECTED</u><b>" + Math.round(rr * 50) + "</b></div>";
       }
-      chase = "<div class='fd-chase'>" + E(inns[0].brk.replace(/^Innings break\.\s*/, "")) + needLn + "</div>";
+      mets = "<div class='fd-mets'>" +
+        "<div class='mt'><u>RUN RATE</u><b>" + rr.toFixed(2) + "</b></div>" +
+        "<div class='mt'><u>LAST " + l5.length + "</u><b>" + l5r + "/" + l5w + "</b></div>" +
+        third + "</div>";
     }
-    var scoreLine = tp
-      ? "<div class='fd-score'>" + E(tp.team).toUpperCase() + " <em>" + tp.runs + "/" + tp.wkts + "</em><span>after " + tp.over + " overs</span></div>"
-      : "<div class='fd-score'>" + E(innNow ? m.away.name : m.home.name).toUpperCase() + "<span>the innings is under way</span></div>";
-    var overHtml = I.sinceTop.length
-      ? "<div class='fd-over'><span>this over</span>" + I.sinceTop.map(function (r3) { return ring(r3.out); }).join("") + "</div>" : "";
-    var bug =
-      "<div class='fd-bug'>" +
-      "<div class='fd-teams'><b>" + E(m.home.name) + "</b><i>v</i><b>" + E(m.away.name) + "</b></div>" +
-      condLine + scoreLine + chase + overHtml +
+    var strip = "";
+    if (tp || I.open) {
+      var pc = Math.max(0, Math.min(100, posOv / 50 * 100));
+      strip = "<div class='fd-strip'><span class='s0'>1</span><span class='bar'><i style='width:" + pc.toFixed(1) + "%'></i>" +
+        "<em style='left:" + pc.toFixed(1) + "%'>" + Math.max(1, Math.ceil(posOv || 1)) + "</em></span><span class='s1'>50</span></div>";
+    }
+    var stage =
+      "<div class='fd-stage" + (art ? " hasart" : "") + "'" +
+      (art ? " style=\"background-image:linear-gradient(90deg,rgba(10,26,48,.97) 0%,rgba(10,26,48,.9) 48%,rgba(10,26,48,.68) 100%),url('" + art + "')\"" : "") + ">" +
+      "<div class='fd-stagein'>" +
+      "<div class='fd-teams'><b>" + E(m.home.name) + "</b><i>vs</i><b>" + E(m.away.name) + "</b></div>" +
+      (condBits.length ? "<div class='fd-cond'>" + condBits.join(" &middot; ") + "</div>" : "") +
+      scoreHtml + mets +
       (done ? "<a class='fd-enter' href='#/report?n=" + encodeURIComponent(rid) + "&w=" + encodeURIComponent(id) + "'>The full report and scorecard &rsaquo;</a>" : "") +
-      "</div>";
-    var tabs = ["live|The book", "card|Scorecard", "charts|Charts", "teams|Teams"].map(function (t9) {
+      strip +
+      "</div></div>";
+
+    // ---- TABS + WORKSPACE --------------------------------------------------
+    var tabs = ["live|Live", "card|Scorecard", "charts|Charts", "teams|Lineups"].map(function (t9) {
       var p9 = t9.split("|");
       return "<button type='button' class='" + (T.tab === p9[0] ? "on" : "") + "' onclick='foFeedTab(\"" + p9[0] + "\")'>" + p9[1] + "</button>";
     }).join("");
-    var body = T.tab === "card" ? cardPanel(inns, m)
-      : T.tab === "charts" ? chartsPanel(inns, m, live)
-      : T.tab === "teams" ? teamsPanel(m, rid)
-      : livePanel(seen, done);
-    var state = live ? "live" : done ? "fin" : "up";
-    page.innerHTML = shell(rid, cal, state,
-      "<div class='fd-ground'>" + E(m.home.name) + "&rsquo;s ground" + (m.home.city ? " &middot; " + E(m.home.city) : "") + "</div>" +
-      bug +
+    var body;
+    if (T.tab === "card") body = cardPanel(inns, m);
+    else if (T.tab === "charts") body = chartsPanel(inns, m, live);
+    else if (T.tab === "teams") body = teamsPanel(m, rid);
+    else body = "<div class='fd-work'>" +
+      "<div class='fd-wfeed'>" + livePanel(seen, done, I, tp) + "</div>" +
+      "<div class='fd-wside'>" + creasePanel(inns, innNow, tp, live) + "</div>" +
+      "</div>";
+    page.innerHTML = shell(rid, cal, live ? "live" : done ? "fin" : "up", m,
+      stage +
       "<div class='fd-tabs'>" + tabs + "</div>" +
       body +
       "<div class='fd-foot'><a href='#/league?t=fixtures'>&#8592; The round</a><a href='#/home'>The club &rsaquo;</a></div>");
   }
 
-  // ---- THE BOOK, with filters ----------------------------------------------
-  function livePanel(seen, done) {
+  // ---- BALL-BY-BALL, a timeline of the umpire's book -----------------------
+  function livePanel(seen, done, I, tp) {
     var f = T.filter;
     var keep = function (r) {
       if (f === "b46") return r.out === "4" || r.out === "6";
@@ -278,29 +315,109 @@
     // while the broadcast runs, the book keeps to the recent play; at stumps
     // it opens in full - every ball of the match, first to last
     if (f === "all" && !done) rows = rows.slice(-160);
-    var chips = ["all|The lot", "b46|4s &amp; 6s", "wk|Wickets", "fld|In the field", "ov|Overs", "note|The notes"].map(function (c9) {
-      var p9 = c9.split("|");
-      return "<button type='button' class='" + (T.filter === p9[0] ? "on" : "") + "' onclick='foFeedFilter(\"" + p9[0] + "\")'>" + p9[1] + "</button>";
-    }).join("");
-    var comm = rows.reverse().map(function (r4) {
+    // the fall-of-wicket line rides inside its wicket's event
+    var items = [];
+    for (var i = 0; i < rows.length; i++) {
+      var r = rows[i];
+      if (r.out === "✕" && items.length) {
+        var prev = items[items.length - 1];
+        if (prev.r.out && prev.r.out[0] === "w" && prev.r.out !== "wide") { prev.fow = r.txt; continue; }
+      }
+      items.push({ r: r });
+    }
+    var comm = items.reverse().map(function (it) {
+      var r4 = it.r;
       if (r4._top) {
-        // the banner carries the umpire's who-line too: the man on strike and
-        // his partner, runs and balls, exactly as printed at the over's end
         var wb = parseWho(r4.oversumTop).bats;
-        return "<div class='fd-row top'><div class='w'>" + E(r4.txt) +
+        return "<div class='fd-ev top'><div class='w'>" + E(r4.txt) +
           (wb.length ? "<span class='os'>" + wb.map(function (b9) { return "<strong>" + E(b9.nm) + "</strong> " + b9.r + " (" + b9.b + "b)"; }).join(" &middot; ") + "</span>" : "") +
           "</div></div>";
       }
-      if (r4.intro || r4.no === "") return "<div class='fd-row in'><div class='w'>" +
-        (r4.out && r4.out !== "▶" ? "<b class='sg'>" + E(r4.out) + "</b> " : "") + E(r4.txt) + "</div></div>";
+      if (r4.intro || r4.no === "") return "<div class='fd-ev note'><span class='ic'>" + (r4.out && r4.out !== "▶" ? E(r4.out) : "&#9873;") + "</span><div class='w'>" + E(r4.txt) + "</div></div>";
       var wk4 = r4.out && r4.out[0] === "w" && r4.out !== "wide";
-      return "<div class='fd-row" + (r4.out === "4" || r4.out === "6" ? " big" : "") + (wk4 ? " wkt" : "") + "'>" +
-        "<span class='n'>" + E(r4.no) + "</span><span class='bb'>" + ring(r4.out) + "</span>" +
-        "<div class='w'>" + E(r4.txt) + "</div></div>";
+      var txt = r4.txt || "", head = "", body9 = txt;
+      var ci = txt.indexOf(" : ");
+      if (ci > 0) { head = txt.slice(0, ci); body9 = txt.slice(ci + 3); }
+      if (wk4) {
+        var hb = surname(r4.bowlerNm), hs = surname(r4.strikerNm);
+        var hl = (hb && hs) ? (hb + " GETS " + hs).toUpperCase() : (head || "WICKET").toUpperCase();
+        body9 = body9.replace(/^WICKET\s*-\s*/, "");
+        return "<div class='fd-ev wkt'><span class='dot'>" + ring(r4.out) + "</span>" +
+          "<div class='w'><span class='no'>" + E(r4.no) + "</span><b class='hl'>" + E(hl) + "</b>" +
+          "<p>" + E(body9) + "</p>" +
+          (it.fow ? "<span class='fowchip'>&#10007; " + E(it.fow) + "</span>" : "") + "</div></div>";
+      }
+      return "<div class='fd-ev'><span class='dot'>" + ring(r4.out) + "</span>" +
+        "<div class='w'><span class='no'>" + E(r4.no) + "</span><b>" + E(head) + "</b>" +
+        "<p>" + E(body9) + "</p></div></div>";
     }).join("");
-    return "<div class='fd-comm'><div class='fd-ch'>Ball by ball &middot; the umpire's own book</div>" +
-      "<div class='fd-chips'>" + chips + "</div>" +
-      (comm || "<p class='fd-dim'>" + (T.filter === "all" ? "The first ball is moments away." : "Nothing under that heading yet.") + "</p>") + "</div>";
+    // the header's right hand: the over in progress and the last over's line
+    var curOv = I && I.lastNo ? Math.ceil(parseFloat(I.lastNo)) : (tp ? tp.over : null);
+    var lastLn = "";
+    if (I && I.top) {
+      var lw = /\((\d+) runs?(?:, (\d+) wkts?)?\)/.exec(I.top.txt || "");
+      if (lw) lastLn = "<span class='lo'>last over " + lw[1] + " run" + (lw[1] === "1" ? "" : "s") + (lw[2] ? " &middot; " + lw[2] + " wkt" : "") + "</span>";
+    }
+    var ovRings = I && I.sinceTop.length ? "<span class='seq'>" + I.sinceTop.map(function (r3) { return ring(r3.out); }).join("") + "</span>" : "";
+    var sel = ["all|The lot", "b46|4s &amp; 6s", "wk|Wickets", "fld|In the field", "ov|Overs", "note|The notes"].map(function (c9) {
+      var p9 = c9.split("|");
+      return "<option value='" + p9[0] + "'" + (T.filter === p9[0] ? " selected" : "") + ">" + p9[1] + "</option>";
+    }).join("");
+    return "<div class='fd-panel fd-bbb'>" +
+      "<div class='fd-bh'><div class='tl'><b>BALL-BY-BALL</b><span>The Umpire&rsquo;s Book</span></div>" +
+      "<div class='tr'>" + (curOv ? "<span class='ov9'>OVER " + curOv + "</span>" : "") + lastLn + ovRings +
+      "<select class='fd-fsel' onchange='foFeedFilter(this.value)'>" + sel + "</select></div></div>" +
+      "<div class='fd-tl'>" + (comm || "<p class='fd-dim'>" + (T.filter === "all" ? "The first ball is moments away." : "Nothing under that heading yet.") + "</p>") + "</div></div>";
+  }
+
+  // ---- AT THE CREASE, the situation beside the book ------------------------
+  function creasePanel(inns, innNow, tp, live) {
+    var I = inns[innNow];
+    var rows = "";
+    if (I.who && I.who.bats.length) {
+      var sn = surname(I.striker);
+      rows = I.who.bats.map(function (b9) {
+        var onStrike = sn && surname(b9.nm) === sn;
+        return "<div class='cb'><span class='nm'>" + (onStrike ? "<i class='st'></i>" : "") + E(b9.nm) + "</span><span class='rv'>" + b9.r + "*</span><span class='bv'>(" + b9.b + ")</span></div>";
+      }).join("");
+      if (sn && !I.who.bats.some(function (b9) { return surname(b9.nm) === sn; }))
+        rows += "<div class='cb'><span class='nm'><i class='st'></i>" + E(I.striker) + "</span><span class='rv new'>new man</span></div>";
+    } else if (I.striker) {
+      rows = "<div class='cb'><span class='nm'><i class='st'></i>" + E(I.striker) + "</span><span class='rv new'>at the crease</span></div>";
+    }
+    var bowl = "";
+    if (I.who && I.who.bowl) {
+      bowl = "<div class='sh'>BOWLING</div><div class='cb bw'><span class='nm'>" + E(I.who.bowl.nm) + "</span>" +
+        "<span class='rv'>" + I.who.bowl.o + "&ndash;" + I.who.bowl.r + "</span><span class='wv'>" + I.who.bowl.w + "</span></div>" +
+        "<div class='lbl'><span></span><span>O&ndash;R</span><span>W</span></div>";
+    } else if (I.bowler) {
+      bowl = "<div class='sh'>BOWLING</div><div class='cb bw'><span class='nm'>" + E(I.bowler) + "</span><span class='rv new'>opening spell</span></div>";
+    }
+    // the stand: runs from the umpire's two latest prints, balls counted
+    // straight off the book. Between a wicket and the next print the runs are
+    // unprinted, so only the balls are shown.
+    var pship = "";
+    if (I.open && !I.close) {
+      var lastF = I.fow.length ? I.fow[I.fow.length - 1] : null;
+      var pr = (tp && (!lastF || tp.wkts === lastF.w)) ? tp.runs - (lastF ? lastF.score : 0) : null;
+      var parts = [];
+      if (pr != null && pr >= 0) parts.push(pr + " RUN" + (pr === 1 ? "" : "S"));
+      parts.push(I.pshipBalls + " BALL" + (I.pshipBalls === 1 ? "" : "S"));
+      pship = "<div class='sh'>PARTNERSHIP</div><div class='pv'>" + parts.join(" &middot; ") + "</div>";
+    }
+    var curOv = I.sinceTop.length ? "<div class='sh'>CURRENT OVER</div><div class='seq'>" + I.sinceTop.map(function (r3) { return ring(r3.out); }).join("") + "</div>" : "";
+    if (!rows && !bowl) {
+      return "<div class='fd-panel fd-crease'><div class='fd-bh'><div class='tl'><b>AT THE CREASE</b></div></div>" +
+        "<p class='fd-dim'>The umpire names the men at the crease from the first over.</p>" +
+        "<button type='button' class='fd-viewsc' onclick='foFeedTab(\"card\")'>VIEW FULL SCORECARD</button></div>";
+    }
+    return "<div class='fd-panel fd-crease'>" +
+      "<div class='fd-bh'><div class='tl'><b>AT THE CREASE</b></div></div>" +
+      rows +
+      (bowl ? "<div class='dv'></div>" + bowl : "") +
+      ((pship || curOv) ? "<div class='dv'></div>" + pship + curOv : "") +
+      "<button type='button' class='fd-viewsc' onclick='foFeedTab(\"card\")'>VIEW FULL SCORECARD</button>" +
+      "</div>";
   }
 
   // ---- THE LIVE SCORECARD, from the umpire's prints ------------------------
@@ -339,14 +456,14 @@
       if (ix === 0 && I.brk) out += "<div class='fd-note'>" + E(I.brk) + "</div>";
     }
     if (!out) out = "<p class='fd-dim'>The umpire prints the first tallies at the end of over one.</p>";
-    return "<div class='fd-comm'><div class='fd-ch'>The live scorecard &middot; as the umpire prints it</div>" + out +
+    return "<div class='fd-panel'><div class='fd-ch'>The live scorecard &middot; as the umpire prints it</div>" + out +
       "<div class='fd-note'>Current batters read as at the umpire&rsquo;s last end-of-over print; dismissed men are final.</div></div>";
   }
   // the partnership ladder: every stand from the umpire's fall-of-wicket
   // lines, and the unbroken stand as the difference of his two latest scores
   function partHtml(I) {
     var tp = I.close || (I.top ? (function (t9) { return t9 ? { runs: t9.runs, wkts: t9.wkts } : null; })(parseTop(I.top.txt)) : null);
-    var items = I.fow.map(function (fw, k) {
+    var items = I.fow.map(function (fw) {
       return { lbl: ordinal(fw.w) + " wicket", p: fw.p, note: E(fw.nm) + " " + fw.r + " (" + fw.b + "b) &middot; fell at " + fw.score + "/" + fw.w + (fw.no ? " &middot; ov " + fw.no : "") };
     });
     if (tp && (!I.close)) {
@@ -368,7 +485,7 @@
   // ---- THE CHARTS: worm and manhattan from the end-of-over prints ----------
   function chartsPanel(inns, m, live) {
     var any = inns[0].overs.length || inns[1].overs.length;
-    if (!any) return "<div class='fd-comm'><div class='fd-ch'>The charts</div><p class='fd-dim'>The worm starts crawling at the end of over one.</p></div>";
+    if (!any) return "<div class='fd-panel'><div class='fd-ch'>The charts</div><p class='fd-dim'>The worm starts crawling at the end of over one.</p></div>";
     var W = 640, H = 270, padL = 36, padB = 26, padT = 18, padR = 14;
     var maxOv = 50;
     var maxSc = 20;
@@ -437,9 +554,8 @@
       if (!I.overs.length) return "";
       var lastO = I.overs[I.overs.length - 1];
       var rr = lastO.over > 0 ? (lastO.runs / lastO.over) : null;
-      var bits = "<span class='lg'><i style='background:" + COL[ix] + "'></i>" + E(I.team || (ix ? m.away.name : m.home.name)) +
+      return "<span class='lg'><i style='background:" + COL[ix] + "'></i>" + E(I.team || (ix ? m.away.name : m.home.name)) +
         (rr != null ? "<b>" + rr.toFixed(2) + " an over</b>" : "") + "</span>";
-      return bits;
     }).join("");
     // the ask: what the chase still needs of every remaining over
     var ask = "";
@@ -473,15 +589,15 @@
       });
     });
     var mhSvg = "<svg viewBox='0 0 " + W + " " + H2 + "' class='fd-svg'>" + defs + bars + "</svg>";
-    return "<div class='fd-comm'><div class='fd-ch'>The worm &middot; from the end-of-over prints</div>" +
+    return "<div class='fd-panel'><div class='fd-ch'>The worm &middot; from the end-of-over prints</div>" +
       "<div class='fd-leg'>" + leg + ask + "</div>" + wormSvg +
       "<div class='fd-ch' style='margin-top:18px'>The manhattan &middot; runs each over, wickets flagged</div>" + mhSvg + "</div>";
   }
 
-  // ---- THE TEAMS: the sheets the managers filed ----------------------------
+  // ---- THE LINEUPS: the sheets the managers filed --------------------------
   function teamsPanel(m, rid) {
     var ord = T.ord[T.id];
-    if (!ord) return "<div class='fd-comm'><div class='fd-ch'>The teamsheets</div><p class='fd-dim'>Fetching the named elevens&hellip;</p></div>";
+    if (!ord) return "<div class='fd-panel'><div class='fd-ch'>The teamsheets</div><p class='fd-dim'>Fetching the named elevens&hellip;</p></div>";
     var col = function (nm) {
       var o = ord[nm];
       var list = o && (o.batOrder || o.xi);
@@ -495,19 +611,20 @@
         (o.tossCall ? "<u class='t2'>toss call " + (o.tossCall === "H" ? "heads" : "tails") + (o.tossDecision ? " &middot; would " + E(o.tossDecision) + " first" : "") + "</u>" : "") +
         "</div>";
     };
-    return "<div class='fd-comm'><div class='fd-ch'>The teamsheets &middot; public from an hour before the first ball</div>" +
+    return "<div class='fd-panel'><div class='fd-ch'>The teamsheets &middot; public from an hour before the first ball</div>" +
       "<div class='fd-xic'>" + col(m.home.name) + col(m.away.name) + "</div></div>";
   }
 
-  function shell(rid, cal, state, inner) {
+  function shell(rid, cal, state, m, inner) {
     var wt = window.__foWT, flag = "";
     try { if (wt && wt.flagOf) flag = "<img class='fd-flag' src='" + wt.flagOf(rid) + "' alt=''>"; } catch (eF) {}
     var chip = state === "live" ? "<span class='fd-live'><i></i>LIVE</span>"
       : state === "fin" ? "<span class='fd-fin'>STUMPS</span>"
       : state === "up" ? "<span class='fd-fin'>FIRST BALL SOON</span>" : "";
+    var ground = m && m.home ? "<span class='vd'></span><span class='gr'>" + E(m.home.name) + "&rsquo;s ground" + (m.home.city ? " &middot; " + E(m.home.city) : "") + "</span>" : "";
     return "<div class='fo-fd'><div class='fd-in'>" +
-      "<div class='fd-top'><a class='fd-back' href='#/league?t=fixtures'>&larr; Fixtures</a>" + flag +
-      "<span class='fd-lg'>" + E(rid).toUpperCase() + (cal && cal.round ? " &middot; round " + cal.round : "") + "</span>" + chip + "</div>" +
+      "<div class='fd-meta'><a class='fd-back' href='#/league?t=fixtures'>&larr; Back to Fixtures</a>" + flag +
+      "<span class='fd-lg'>" + E(rid).toUpperCase() + (cal && cal.round ? " &middot; ROUND " + cal.round : "") + "</span>" + ground + chip + "</div>" +
       inner + "</div></div>";
   }
   window.addEventListener("hashchange", function () {
@@ -520,88 +637,140 @@
     if (document.getElementById("fo-fd-css")) return;
     var s = document.createElement("style"); s.id = "fo-fd-css";
     s.textContent = [
-      // the theatre's clean white room: cream paper, one block of navy
+      // the page's tokens, drawn from the game's standing palette
+      ".fo-fd{--fon9:#0A1A30;--fon:#0E233F;--focream:#F1EEE6;--fopaper:#FFFEFC;--foor:#C9571F;--fogold:#E8B96A;--fowkt:#8E1F13;--foink:#14243A;--fomut:#8a8272;--fobrd:#e3dccb;--fosoftred:#FBEFEA}",
+      // the theatre's clean cream room, given the full width of the house
       "html body.ftpskin.fo-fd-on,html body.fo-fd-on{background:#F1EEE6 !important}",
       "html body.fo-fd-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
       "html body.fo-fd-on #page{padding:0 !important;margin:0 !important;background:transparent !important}",
-      ".fo-fd{position:relative;min-height:70vh;color:#14202F;font-family:Inter,-apple-system,sans-serif}",
-      ".fo-fd .fd-in{max-width:680px;margin:0 auto;padding:18px 16px 60px}",
-      ".fo-fd .fd-top{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-bottom:14px}",
-      "html body #page .fo-fd .fd-back{font:600 12px/1 Inter,sans-serif;color:#3a4353 !important;text-decoration:none !important;border:1px solid rgba(14,35,63,.22);border-radius:999px;padding:7px 13px;background:#fff}",
-      ".fo-fd .fd-flag{width:26px;height:18px;object-fit:cover;border-radius:3px;box-shadow:0 1px 3px rgba(14,35,63,.25)}",
-      ".fo-fd .fd-lg{font:700 10.5px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#14202F}",
-      ".fo-fd .fd-live{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:800 10px/1 Oswald,sans-serif;letter-spacing:.14em;color:#B23230}",
-      ".fo-fd .fd-live i{width:8px;height:8px;border-radius:50%;background:#B23230;animation:foFdPulse 1.2s ease-in-out infinite}",
-      "@keyframes foFdPulse{0%,100%{opacity:1}50%{opacity:.25}}",
-      ".fo-fd .fd-fin{margin-left:auto;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;color:rgba(20,32,47,.55)}",
-      ".fo-fd .fd-ground{font:600 11px/1.4 Inter,sans-serif;color:rgba(20,32,47,.55);margin-bottom:7px}",
-      // THE BUG - the theatre's navy, terracotta spine, gold score
-      ".fo-fd .fd-bug{background:#0E233F;border-left:3px solid #C95532;border-radius:16px;padding:15px 17px;color:#FFFEFC;box-shadow:0 8px 24px rgba(14,35,63,.18)}",
-      ".fo-fd .fd-teams{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}",
-      ".fo-fd .fd-teams b{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:18px;color:#FFFEFC}",
-      ".fo-fd .fd-teams i{font-style:italic;font-size:11px;color:rgba(255,254,252,.5)}",
-      ".fo-fd .fd-score{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;font:700 15px/1.3 Oswald,sans-serif;letter-spacing:.06em;color:#E8B96A;margin-top:8px}",
-      ".fo-fd .fd-score em{font-style:normal;font-size:30px;color:#FFFEFC;font-variant-numeric:tabular-nums}",
-      ".fo-fd .fd-score span{font:600 11px Inter,sans-serif;letter-spacing:0;color:rgba(255,254,252,.6)}",
-      ".fo-fd .fd-chase{font:italic 400 12px/1.5 'Fraunces',Georgia,serif;color:#E8B96A;margin-top:6px}",
-      ".fo-fd .fd-chase b{font-style:normal;font:700 11.5px Oswald,sans-serif;letter-spacing:.05em;color:#FFFEFC}",
-      ".fo-fd .fd-cond{font:600 10.5px/1.6 Inter,sans-serif;letter-spacing:.02em;color:rgba(255,254,252,.55);margin-top:5px}",
-      ".fo-fd .fd-over{display:flex;gap:6px;margin-top:10px;flex-wrap:wrap;align-items:center}",
-      ".fo-fd .fd-over span{font:700 8.5px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,254,252,.45);margin-right:4px}",
-      ".fo-fd .fd-over i,.fo-fd .fd-comm .bb i{font-style:normal;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,254,252,.1);border:1px solid rgba(255,254,252,.18);font:700 11px/1 Oswald,sans-serif;color:#E8DFCE}",
-      ".fo-fd .fd-over i.b{background:rgba(232,185,106,.2);border-color:#E8B96A;color:#E8B96A}",
-      ".fo-fd .fd-over i.w{background:rgba(255,107,94,.22);border-color:#FF6B5E;color:#FF6B5E}",
-      "html body #page .fo-fd .fd-enter{display:block;width:100%;margin-top:12px;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:#C95532 !important;border:none;border-radius:999px;padding:13px 16px;cursor:pointer;text-align:center;text-decoration:none !important}",
-      // the tab rail: an almanack rule with an underline, not a row of pills
+      // the nav stands a little taller here, and the day box speaks quietly
+      "html body.fo-fd-on #topbar#topbar{min-height:68px}",
+      "html body.fo-fd-on #topbar#topbar #fo-wclock{background:transparent !important;border-color:transparent !important;box-shadow:none !important;opacity:.85}",
+      ".fo-fd{position:relative;min-height:70vh;color:var(--foink);font-family:Inter,-apple-system,sans-serif}",
+      ".fo-fd .fd-in{max-width:1240px;margin:0 auto;padding:16px 24px 60px}",
+      "@media(min-width:1400px){.fo-fd .fd-in{padding-left:44px;padding-right:44px}}",
+      // ---- the metadata row, one line above the stage
+      ".fo-fd .fd-meta{display:flex;align-items:center;gap:11px;flex-wrap:wrap;min-height:46px;margin-bottom:10px}",
+      "html body #page .fo-fd .fd-back{font:600 13px/1 Inter,sans-serif;color:#3a4353 !important;text-decoration:none !important;white-space:nowrap}",
+      ".fo-fd .fd-flag{width:24px;height:16px;object-fit:cover;border-radius:2.5px;box-shadow:0 1px 3px rgba(14,35,63,.25)}",
+      ".fo-fd .fd-lg{font:700 12px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--foink);white-space:nowrap}",
+      ".fo-fd .fd-meta .vd{width:1px;height:16px;background:rgba(20,36,58,.18)}",
+      ".fo-fd .fd-meta .gr{font:400 13.5px/1.3 Inter,sans-serif;color:var(--fomut)}",
+      ".fo-fd .fd-live{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:800 11px/1 Oswald,sans-serif;letter-spacing:.16em;color:#B23230}",
+      ".fo-fd .fd-live i{width:8px;height:8px;border-radius:50%;background:#B23230;animation:foFdPulse 1.6s ease-in-out infinite}",
+      "@keyframes foFdPulse{0%,100%{opacity:1}50%{opacity:.3}}",
+      ".fo-fd .fd-fin{margin-left:auto;font:700 10px/1 Oswald,sans-serif;letter-spacing:.14em;color:rgba(20,32,47,.55)}",
+      // ---- THE MATCH STAGE: home ground behind a deep navy wash
+      ".fo-fd .fd-stage{position:relative;overflow:hidden;min-height:250px;border-radius:16px;background:linear-gradient(120deg,var(--fon9),var(--fon));background-size:cover;background-position:center;color:#FFFEFC;box-shadow:0 10px 30px rgba(14,35,63,.2);display:flex;align-items:stretch}",
+      ".fo-fd .fd-stagein{position:relative;flex:1;display:flex;flex-direction:column;padding:26px 30px 18px;min-width:0}",
+      ".fo-fd .fd-teams{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}",
+      ".fo-fd .fd-teams b{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(22px,2.4vw,30px);color:#FFFEFC;letter-spacing:.01em}",
+      ".fo-fd .fd-teams i{font-style:italic;font-family:'Fraunces',Georgia,serif;font-size:15px;color:var(--foor)}",
+      ".fo-fd .fd-cond{font:500 13.5px/1.6 Inter,sans-serif;color:#8FA8CC;margin-top:4px}",
+      ".fo-fd .fd-scorerow{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-top:12px}",
+      ".fo-fd .fd-scorerow em{font-style:normal;font:700 clamp(48px,6vw,68px)/1 Oswald,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums;letter-spacing:.01em}",
+      ".fo-fd .fd-scorerow span{font:700 21px/1 Oswald,sans-serif;color:var(--fogold);font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-scorerow span u{text-decoration:none;font-size:13px;letter-spacing:.16em}",
+      ".fo-fd .fd-scorerow .op{font:italic 400 15px/1.5 'Fraunces',Georgia,serif;color:rgba(255,254,252,.8)}",
+      ".fo-fd .fd-mets{display:flex;gap:0;margin-top:14px;flex-wrap:wrap}",
+      ".fo-fd .fd-mets .mt{padding:0 22px;border-left:1px solid rgba(255,254,252,.16)}",
+      ".fo-fd .fd-mets .mt:first-child{padding-left:0;border-left:none}",
+      ".fo-fd .fd-mets u{display:block;text-decoration:none;font:700 10px/1 Oswald,sans-serif;letter-spacing:.2em;color:rgba(255,254,252,.5);margin-bottom:5px}",
+      ".fo-fd .fd-mets b{font:700 21px/1 Oswald,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-mets b s{text-decoration:none;font-size:13px;color:var(--fogold)}",
+      // the innings-progress strip along the stage floor
+      ".fo-fd .fd-strip{display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:18px}",
+      ".fo-fd .fd-strip .s0,.fo-fd .fd-strip .s1{font:700 10px Oswald,sans-serif;color:rgba(255,254,252,.45)}",
+      ".fo-fd .fd-strip .bar{position:relative;flex:1;height:4px;border-radius:99px;background:rgba(143,168,204,.28)}",
+      ".fo-fd .fd-strip .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,var(--fogold),var(--foor))}",
+      ".fo-fd .fd-strip .bar em{position:absolute;top:50%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:var(--fogold);color:var(--fon9);font:700 10.5px/24px Oswald,sans-serif;font-style:normal;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.35)}",
+      ".fo-fd .fd-sub{font:italic 400 14px/1.6 'Fraunces',Georgia,serif;color:rgba(255,254,252,.78);margin-top:10px}",
+      "html body #page .fo-fd .fd-enter{display:inline-block;margin-top:14px;font:700 11.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:var(--foor) !important;border:none;border-radius:999px;padding:12px 22px;cursor:pointer;text-align:center;text-decoration:none !important;align-self:flex-start}",
+      // ---- the tab rail: an almanack rule with an underline
       ".fo-fd .fd-tabs{display:flex;gap:2px;margin:18px 0 0;border-bottom:1px solid #d8d0bd;overflow-x:auto;scrollbar-width:none}",
       ".fo-fd .fd-tabs::-webkit-scrollbar{display:none}",
-      "html body #page .fo-fd .fd-tabs button{flex:0 0 auto;font:600 11px Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;color:#8a8272 !important;background:transparent !important;border:none !important;border-bottom:2px solid transparent !important;border-radius:0 !important;box-shadow:none !important;padding:10px 14px 9px !important;margin:0 0 -1px !important;cursor:pointer;transition:color .15s}",
+      "html body #page .fo-fd .fd-tabs button{flex:0 0 auto;font:600 12px Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;color:#8a8272 !important;background:transparent !important;border:none !important;border-bottom:2px solid transparent !important;border-radius:0 !important;box-shadow:none !important;padding:14px 16px 12px !important;margin:0 0 -1px !important;cursor:pointer;transition:color .15s}",
       "html body #page .fo-fd .fd-tabs button.on{color:#14243A !important;font-weight:700 !important;border-bottom-color:#C9571F !important}",
       "html body #page .fo-fd .fd-tabs button:hover{color:#14243A !important}",
-      // the book, on paper below the broadcast
-      ".fo-fd .fd-comm{background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);padding:12px 14px;margin-top:12px}",
-      ".fo-fd .fd-ch{font:700 10px Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#8a8272;margin:2px 0 8px}",
-      // the filters read as a line of the page, not a second row of buttons
-      ".fo-fd .fd-chips{display:flex;gap:16px;flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;margin:2px 0 10px;padding-bottom:9px;border-bottom:1px dashed #e8e1cf}",
-      ".fo-fd .fd-chips::-webkit-scrollbar{display:none}",
-      ".fo-fd .fd-chips button{white-space:nowrap}",
-      "html body #page .fo-fd .fd-chips button{font:400 11.5px Inter,sans-serif !important;color:#8a8272 !important;background:transparent !important;border:none !important;border-bottom:2px solid transparent !important;border-radius:0 !important;box-shadow:none !important;padding:0 0 3px !important;margin:0 !important;cursor:pointer;transition:color .15s}",
-      "html body #page .fo-fd .fd-chips button.on{color:#C9571F !important;font-weight:600 !important;border-bottom-color:#C9571F !important}",
-      "html body #page .fo-fd .fd-chips button:hover{color:#14243A !important}",
-      ".fo-fd .fd-row{display:flex;align-items:flex-start;gap:9px;padding:8px 2px;border-bottom:1px solid #f3eee1;font:400 13px/1.55 Inter,sans-serif}",
-      ".fo-fd .fd-row:last-child{border-bottom:none}",
-      ".fo-fd .fd-row .n{flex:0 0 34px;font:700 11px Oswald,sans-serif;color:#8a8272;font-variant-numeric:tabular-nums;padding-top:4px}",
-      ".fo-fd .fd-row .bb i{width:22px;height:22px;font-size:10.5px;background:#F1EEE6;border-color:#e3dccb;color:#8a8272}",
-      ".fo-fd .fd-row .bb i.b{background:#C9571F;border-color:#C9571F;color:#fff}",
-      ".fo-fd .fd-row .bb i.w{background:#8E1F13;border-color:#8E1F13;color:#fff}",
-      ".fo-fd .fd-row .w{flex:1;min-width:0}",
-      ".fo-fd .fd-row.big{background:#FDF6EC;border-radius:8px}",
-      ".fo-fd .fd-row.wkt{background:#FBEFEA;border-radius:8px}",
-      ".fo-fd .fd-row.top .w{font:700 12px Inter,sans-serif;color:#14243A;background:#F6F3EB;border-radius:8px;padding:7px 10px}",
-      ".fo-fd .fd-row.top .w .os{display:block;margin-top:4px;font:400 11.5px/1.5 Inter,sans-serif;color:#6d6455}",
-      ".fo-fd .fd-row.top .w .os strong{font-weight:600;color:#14243A}",
-      ".fo-fd .fd-row.in .w{font:italic 400 12.5px Georgia,serif;color:#6d6455}",
-      ".fo-fd .fd-row.in .sg{font-style:normal;color:#C9571F;margin-right:2px}",
-      // the scorecard tables
+      // ---- the two-column live workspace
+      ".fo-fd .fd-work{display:grid;grid-template-columns:1fr;grid-template-areas:'side' 'feed';gap:18px;margin-top:14px;align-items:start}",
+      "@media(min-width:900px){.fo-fd .fd-work{grid-template-columns:minmax(0,2.15fr) minmax(300px,1fr);grid-template-areas:'feed side';gap:28px}}",
+      ".fo-fd .fd-wfeed{grid-area:feed;min-width:0}",
+      ".fo-fd .fd-wside{grid-area:side;min-width:0}",
+      "@media(min-width:900px){.fo-fd .fd-wside{position:sticky;top:84px}}",
+      ".fo-fd .fd-panel{background:rgba(255,254,250,.96);border:1px solid #ddd5c7;border-radius:14px;box-shadow:0 8px 24px rgba(22,31,42,.06);padding:16px 18px;margin-top:14px}",
+      ".fo-fd .fd-work .fd-panel{margin-top:0}",
+      // ---- the ball-by-ball header
+      ".fo-fd .fd-bh{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}",
+      ".fo-fd .fd-bh .tl b{font:700 13px Oswald,sans-serif;letter-spacing:.18em;color:var(--foink)}",
+      ".fo-fd .fd-bh .tl span{display:block;font:italic 400 11.5px 'Fraunces',Georgia,serif;color:var(--fomut);margin-top:2px}",
+      ".fo-fd .fd-bh .tr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}",
+      ".fo-fd .fd-bh .ov9{font:700 11px Oswald,sans-serif;letter-spacing:.14em;color:var(--foor)}",
+      ".fo-fd .fd-bh .lo{font:400 11.5px Inter,sans-serif;color:var(--fomut)}",
+      ".fo-fd .seq{display:inline-flex;gap:5px;flex-wrap:wrap}",
+      ".fo-fd .seq i,.fo-fd .fd-ev .dot i{font-style:normal;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#F1EEE6;border:1px solid var(--fobrd);font:700 11px/1 Oswald,sans-serif;color:#6d6455}",
+      ".fo-fd .seq i.b,.fo-fd .fd-ev .dot i.b{background:var(--foor);border-color:var(--foor);color:#fff}",
+      ".fo-fd .seq i.w,.fo-fd .fd-ev .dot i.w{background:var(--fowkt);border-color:var(--fowkt);color:#fff}",
+      "html body #page .fo-fd .fd-fsel{font:600 11.5px Inter,sans-serif;color:#5b5344;background:#F6F3EB;border:1px solid var(--fobrd);border-radius:8px;padding:6px 9px;cursor:pointer}",
+      // ---- the timeline of events
+      ".fo-fd .fd-tl{position:relative;padding-left:2px}",
+      ".fo-fd .fd-tl:before{content:'';position:absolute;left:14px;top:10px;bottom:10px;width:1px;background:#ece5d3}",
+      ".fo-fd .fd-ev{position:relative;display:flex;align-items:flex-start;gap:13px;padding:10px 2px;border-bottom:1px solid #f3eee1}",
+      ".fo-fd .fd-ev:last-child{border-bottom:none}",
+      ".fo-fd .fd-ev .dot{position:relative;z-index:1;flex:0 0 26px}",
+      ".fo-fd .fd-ev .w{flex:1;min-width:0}",
+      ".fo-fd .fd-ev .no{font:700 11px Oswald,sans-serif;color:var(--fomut);font-variant-numeric:tabular-nums;margin-right:8px}",
+      ".fo-fd .fd-ev b{font:600 13.5px Inter,sans-serif;color:var(--foink)}",
+      ".fo-fd .fd-ev p{margin:3px 0 0;font:400 13px/1.55 Inter,sans-serif;color:#4a4436}",
+      // wickets: restrained fire
+      ".fo-fd .fd-ev.wkt{background:var(--fosoftred);border-radius:10px;border-bottom:none;padding:13px 12px;margin:4px 0}",
+      ".fo-fd .fd-ev.wkt .hl{font:700 13px Oswald,sans-serif;letter-spacing:.08em;color:var(--fowkt)}",
+      ".fo-fd .fd-ev.wkt .fowchip{display:inline-block;margin-top:8px;font:600 11.5px Inter,sans-serif;color:#6d4a42;background:rgba(255,254,252,.72);border:1px solid #e8c9b8;border-radius:8px;padding:5px 9px}",
+      // notes: marginalia, not cards
+      ".fo-fd .fd-ev.note{border-bottom:none;padding:6px 2px}",
+      ".fo-fd .fd-ev.note .ic{position:relative;z-index:1;flex:0 0 26px;text-align:center;color:var(--foor);font-size:12px;line-height:22px}",
+      ".fo-fd .fd-ev.note .w{font:italic 400 12.5px/1.55 Georgia,serif;color:#a05f2e}",
+      // over banners
+      ".fo-fd .fd-ev.top{border-bottom:none;padding:8px 0}",
+      ".fo-fd .fd-ev.top .w{position:relative;z-index:1;font:700 12px Inter,sans-serif;color:var(--foink);background:#F6F3EB;border-radius:8px;padding:8px 11px}",
+      ".fo-fd .fd-ev.top .w .os{display:block;margin-top:4px;font:400 11.5px/1.5 Inter,sans-serif;color:#6d6455}",
+      ".fo-fd .fd-ev.top .w .os strong{font-weight:600;color:var(--foink)}",
+      // ---- at the crease
+      ".fo-fd .fd-crease .cb{display:flex;align-items:baseline;gap:8px;padding:6px 0;font:400 13.5px Inter,sans-serif}",
+      ".fo-fd .fd-crease .cb .nm{flex:1;font-weight:600;color:var(--foink);display:flex;align-items:center;gap:7px;min-width:0}",
+      ".fo-fd .fd-crease .cb .nm .st{width:7px;height:7px;border-radius:50%;background:var(--foor);flex:0 0 7px}",
+      ".fo-fd .fd-crease .cb .rv{font:700 14px Oswald,sans-serif;color:var(--foink);font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-crease .cb .rv.new{font:italic 400 12px Georgia,serif;color:var(--fomut)}",
+      ".fo-fd .fd-crease .cb .bv{font:400 12.5px Inter,sans-serif;color:var(--fomut);font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-crease .cb .wv{font:700 16px Oswald,sans-serif;color:var(--foor)}",
+      ".fo-fd .fd-crease .lbl{display:flex;justify-content:flex-end;gap:14px;font:700 8.5px Oswald,sans-serif;letter-spacing:.14em;color:#b3ab99}",
+      ".fo-fd .fd-crease .lbl span:first-child{flex:1}",
+      ".fo-fd .fd-crease .dv{height:1px;background:#efe9d9;margin:10px 0}",
+      ".fo-fd .fd-crease .sh{font:700 10px Oswald,sans-serif;letter-spacing:.18em;color:var(--fomut);margin:2px 0 6px}",
+      ".fo-fd .fd-crease .pv{font:700 13px Oswald,sans-serif;letter-spacing:.06em;color:var(--foink);margin-bottom:10px}",
+      "html body #page .fo-fd .fd-viewsc{display:block;width:100%;margin-top:14px;font:700 11px Oswald,sans-serif !important;letter-spacing:.16em;color:var(--foink) !important;background:transparent !important;border:1px solid rgba(20,36,58,.3) !important;border-radius:10px;padding:11px;cursor:pointer;text-align:center;transition:border-color .15s}",
+      "html body #page .fo-fd .fd-viewsc:hover{border-color:var(--foor) !important;color:var(--foor) !important}",
+      // ---- the scorecard tables
+      ".fo-fd .fd-ch{font:700 10px Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fomut);margin:2px 0 8px}",
       ".fo-fd .fd-ih{display:flex;align-items:baseline;gap:10px;margin:12px 0 6px}",
-      ".fo-fd .fd-ih b{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:16px;color:#14243A}",
-      ".fo-fd .fd-ih span{font:700 13px Oswald,sans-serif;color:#C9571F}",
+      ".fo-fd .fd-ih b{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:16px;color:var(--foink)}",
+      ".fo-fd .fd-ih span{font:700 13px Oswald,sans-serif;color:var(--foor)}",
       ".fo-fd .fd-tb{width:100%;border-collapse:collapse;margin:4px 0 10px;font:400 12.5px/1.5 Inter,sans-serif}",
-      ".fo-fd .fd-tb th{font:700 9.5px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#8a8272;text-align:left;padding:4px 6px;border-bottom:1px solid #e3dccb}",
-      ".fo-fd .fd-tb td{padding:5px 6px;border-bottom:1px solid #f3eee1;color:#14243A}",
+      ".fo-fd .fd-tb th{font:700 9.5px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fomut);text-align:left;padding:4px 6px;border-bottom:1px solid var(--fobrd)}",
+      ".fo-fd .fd-tb td{padding:5px 6px;border-bottom:1px solid #f3eee1;color:var(--foink)}",
       ".fo-fd .fd-tb .r{text-align:right;font-variant-numeric:tabular-nums}",
-      ".fo-fd .fd-tb td.h{font-size:11.5px;color:#8a8272;font-style:italic}",
+      ".fo-fd .fd-tb td.h{font-size:11.5px;color:var(--fomut);font-style:italic}",
       ".fo-fd .fd-tb tr.no td:first-child{font-weight:600}",
-      ".fo-fd .fd-note{font:italic 400 11.5px/1.6 Georgia,serif;color:#8a8272;margin:8px 0 2px}",
+      ".fo-fd .fd-note{font:italic 400 11.5px/1.6 Georgia,serif;color:var(--fomut);margin:8px 0 2px}",
       // partnerships
-      ".fo-fd .fd-ph{font:700 9.5px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#8a8272;margin:10px 0 6px}",
+      ".fo-fd .fd-ph{font:700 9.5px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fomut);margin:10px 0 6px}",
       ".fo-fd .fd-pr{display:grid;grid-template-columns:74px 1fr 34px;gap:4px 10px;align-items:center;padding:3px 0;font:400 12px Inter,sans-serif}",
       ".fo-fd .fd-pr .l{font:700 10px Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#5b5344}",
       ".fo-fd .fd-pr .bar{height:9px;background:#F1EEE6;border-radius:99px;overflow:hidden}",
-      ".fo-fd .fd-pr .bar i{display:block;height:100%;background:#14243A;border-radius:99px}",
-      ".fo-fd .fd-pr.lv .bar i{background:#C9571F}",
-      ".fo-fd .fd-pr .v{text-align:right;font:700 12.5px Oswald,sans-serif;color:#14243A;font-variant-numeric:tabular-nums}",
-      ".fo-fd .fd-pr .nt{grid-column:2/4;font:italic 400 11px Georgia,serif;color:#8a8272;margin-top:-2px}",
+      ".fo-fd .fd-pr .bar i{display:block;height:100%;background:var(--foink);border-radius:99px}",
+      ".fo-fd .fd-pr.lv .bar i{background:var(--foor)}",
+      ".fo-fd .fd-pr .v{text-align:right;font:700 12.5px Oswald,sans-serif;color:var(--foink);font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-pr .nt{grid-column:2/4;font:italic 400 11px Georgia,serif;color:var(--fomut);margin-top:-2px}",
       // charts
       ".fo-fd .fd-svg{width:100%;height:auto;display:block}",
       ".fo-fd .fd-svg .gl{stroke:#efe9d9;stroke-width:1}",
@@ -614,7 +783,7 @@
       ".fo-fd .fd-svg .ep{stroke:#FFFEFC;stroke-width:1.6}",
       ".fo-fd .fd-svg .lvp{animation:fdPing 1.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}",
       "@keyframes fdPing{0%,100%{transform:scale(.6);opacity:.28}50%{transform:scale(1.25);opacity:.1}}",
-      "@media(prefers-reduced-motion:reduce){.fo-fd .fd-svg .lvp,.fo-fd .fd-live b{animation:none}}",
+      "@media(prefers-reduced-motion:reduce){.fo-fd .fd-svg .lvp,.fo-fd .fd-live i{animation:none}}",
       ".fo-fd .fd-svg .chip{font:700 10px Oswald,sans-serif;letter-spacing:.06em;fill:#FFFEFC;text-anchor:middle}",
       ".fo-fd .fd-svg .tl{stroke:#E8B96A;stroke-width:1.8;stroke-dasharray:6 5}",
       ".fo-fd .fd-svg .tchip{fill:#F8ECD4;stroke:#E8B96A;stroke-width:1}",
@@ -626,20 +795,31 @@
       ".fo-fd .fd-leg .lg b{font:700 10.5px Oswald,sans-serif;letter-spacing:.04em;color:#14243A;margin-left:2px}",
       ".fo-fd .fd-leg .lg.ask{background:#FBEFEA;border-color:#e8c9b8}",
       ".fo-fd .fd-leg .lg.ask b{color:#8E1F13}",
-      // teamsheets
+      // lineups
       ".fo-fd .fd-xic{display:grid;grid-template-columns:1fr 1fr;gap:14px}",
-      ".fo-fd .fd-xic .c b{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:14px;color:#14243A;margin-bottom:2px}",
-      ".fo-fd .fd-xic .c u{display:block;text-decoration:none;font:700 8.5px Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#C9571F;margin-bottom:6px}",
-      ".fo-fd .fd-xic .c u.t2{margin-top:8px;color:#8a8272}",
-      ".fo-fd .fd-xic .c span{display:flex;align-items:baseline;gap:6px;font:400 12px/1.6 Inter,sans-serif;color:#14243A}",
+      ".fo-fd .fd-xic .c b{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:14px;color:var(--foink);margin-bottom:2px}",
+      ".fo-fd .fd-xic .c u{display:block;text-decoration:none;font:700 8.5px Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--foor);margin-bottom:6px}",
+      ".fo-fd .fd-xic .c u.t2{margin-top:8px;color:var(--fomut)}",
+      ".fo-fd .fd-xic .c span{display:flex;align-items:baseline;gap:6px;font:400 12px/1.6 Inter,sans-serif;color:var(--foink)}",
       ".fo-fd .fd-xic .c span i{font-style:normal;font:700 9px/1 Oswald,sans-serif;color:#b3ab99;width:13px;text-align:right}",
-      ".fo-fd .fd-xic .c span em{font-style:normal;font:700 9px Oswald,sans-serif;color:#C9571F}",
-      "@media(max-width:430px){.fo-fd .fd-xic{grid-template-columns:1fr}}",
-      ".fo-fd .fd-sub{font:italic 400 13px/1.6 'Fraunces',Georgia,serif;color:rgba(255,254,252,.75);margin-top:8px}",
-      ".fo-fd .fd-dim{font:italic 400 13.5px Georgia,serif;color:#8a8272;padding:30px 6px}",
-      ".fo-fd .fd-foot{display:flex;justify-content:space-between;margin-top:14px}",
+      ".fo-fd .fd-xic .c span em{font-style:normal;font:700 9px Oswald,sans-serif;color:var(--foor)}",
+      ".fo-fd .fd-dim{font:italic 400 13.5px Georgia,serif;color:var(--fomut);padding:24px 6px}",
+      ".fo-fd .fd-foot{display:flex;justify-content:space-between;margin-top:16px}",
       "html body #page .fo-fd .fd-foot a{font:700 10px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#C9571F !important;text-decoration:none !important}",
-      "@media(max-width:430px){.fo-fd .fd-teams b{font-size:16px}.fo-fd .fd-score em{font-size:26px}}"
+      // ---- the phone: stacked, the crease first, the stage tighter
+      "@media(max-width:640px){",
+      ".fo-fd .fd-in{padding:12px 16px 50px}",
+      ".fo-fd .fd-meta{min-height:0;gap:8px}",
+      ".fo-fd .fd-meta .gr{display:none}",
+      ".fo-fd .fd-stage{min-height:0}",
+      ".fo-fd .fd-stagein{padding:18px 18px 14px}",
+      ".fo-fd .fd-scorerow em{font-size:50px}",
+      ".fo-fd .fd-scorerow span{font-size:17px}",
+      ".fo-fd .fd-mets .mt{padding:0 13px}",
+      ".fo-fd .fd-mets b{font-size:18px}",
+      ".fo-fd .fd-xic{grid-template-columns:1fr}",
+      ".fo-fd .fd-bh .tr{width:100%;justify-content:flex-start}",
+      "}"
     ].join("\n");
     document.head.appendChild(s);
   }
