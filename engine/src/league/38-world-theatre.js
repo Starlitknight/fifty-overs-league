@@ -580,7 +580,9 @@
         if (fi < 0 && m && m.home && m.away && m.home.slot === (hs | 0) && m.away.slot === (as | 0)) fi = i;
       });
       if (fi < 0) return null;
-      return "#/watch?n=" + encodeURIComponent(rid) + "&f=" + fi + "&go=1";
+      // the feed page IS the live coverage now - the umpire simulated at the
+      // first ball, and the reader joins instantly at any minute
+      return "#/feed?n=" + encodeURIComponent(rid) + "&f=" + fi;
     } catch (e) { return null; }
   };
   window.foRenderWatchPage = function () {
@@ -616,7 +618,14 @@
     // A JOIN THAT FAILS MUST NOT STRAND THE READER on the curtain: if the
     // broadcast has not started shortly, clear the cached refusal and try
     // once more; if it still will not start, put the fixtures page up.
-    if (q.go && state === "live") {
+    if (q.go) {
+      // the engine-replay join is retired for league cricket: the umpire
+      // simulated this match at the first ball, and the feed page reads it
+      location.hash = "#/feed?n=" + encodeURIComponent(rid) + "&f=" + fi;
+      if (typeof window.route === "function") window.route();
+      return;
+    }
+    if (false) {
       page.innerHTML = "<div class='fo-wt'><p style='padding:80px 20px;color:#fff;font:italic 400 15px Georgia,serif'>Joining the broadcast&hellip; " +
         "<a href='#/watch?n=" + encodeURIComponent(rid) + "&f=" + fi + "' style='color:#E8B96A;text-decoration:underline'>taking long? open the fixtures page</a></p></div>";
       setTimeout(function () { try { window.foWtSpectate(rid, null, null, fi); } catch (eGo) {} }, 30);
@@ -686,8 +695,8 @@
       "<div class='fo-wt-teams'><b>" + E(m.home.name) + "</b><i>v</i><b>" + E(m.away.name) + "</b></div>" +
       "<div class='fo-wt-score'>" + bugLine + "</div>" +
       xiHTML +
-      (state !== "up" ? "<button type='button' class='fo-wt-enter' onclick='foWtSpectate(\"" + rid + "\",0,0," + fi + ")'>" +
-        (state === "live" ? "Enter the broadcast theatre &rsaquo;" : "Watch it back in the theatre &rsaquo;") + "</button>" : "") +
+      (state !== "up" ? "<a class='fo-wt-enter' href='#/feed?n=" + encodeURIComponent(rid) + "&f=" + fi + "'>" +
+        (state === "live" ? "Watch the live broadcast &rsaquo;" : "Watch it back &rsaquo;") + "</a>" : "") +
       "</div></div>" +
       (others ? "<div class='fo-wt-rail'><i>Also in this round</i>" + others + "</div>" : "") +
       "<div class='fo-wt-natsw'><i>Other leagues today &middot; first ball UTC</i>" +
@@ -765,7 +774,7 @@
       ".fo-wt-over i.b{background:rgba(232,185,106,.2);border-color:#E8B96A;color:#E8B96A}",
       ".fo-wt-over i.w{background:rgba(255,107,94,.22);border-color:#FF6B5E;color:#FF6B5E}",
       ".fo-wt-comm{font:italic 400 12px/1.5 'Fraunces',Georgia,serif;color:rgba(255,254,252,.65);margin-top:9px}",
-      ".fo-wt-enter{display:block;width:100%;margin-top:12px;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:#C95532 !important;border:none !important;border-radius:999px !important;padding:13px 16px !important;cursor:pointer}",
+      ".fo-wt-enter{display:block;width:100%;margin-top:12px;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:#C95532 !important;border:none !important;border-radius:999px !important;padding:13px 16px !important;cursor:pointer;text-align:center;text-decoration:none !important}",
       ".fo-wt-teamsin{margin-top:12px;border-top:1px solid rgba(255,254,252,.14);padding-top:11px}",
       ".fo-wt-teamsin .ld{font:400 12px/1.4 Inter,sans-serif;color:rgba(255,254,252,.65)}",
       ".fo-wt-teamsin .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}",

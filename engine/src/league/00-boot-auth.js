@@ -717,7 +717,7 @@
               var is9 = function (sd) { return !!sd && ((slot9 >= 0 && sd.slot === slot9) || (mine9 && sd.name === mine9)); };
               sv9.fx.forEach(function (f9, i9) {
                 if (go || !f9 || !(is9(f9.home) || is9(f9.away))) return;
-                go = "#/watch?n=" + encodeURIComponent(nat9) + "&f=" + i9 + "&go=1";
+                go = "#/feed?n=" + encodeURIComponent(nat9) + "&f=" + i9;
                 mineNow = true;
               });
             }

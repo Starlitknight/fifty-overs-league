@@ -777,7 +777,12 @@ export async function runDue(pool, host, country, { now = Date.now(), failAfter 
   try {
     const today = dayIx(now);
     const dToday = today - season.start_day;
-    const winOpen = now >= EPOCH + today * 86400000 + natHour(country) * 3600000;
+    // AN HOUR OF DAYLIGHT BEFORE THE FIRST BALL. The team sheets lock exactly
+    // one hour before the window (migration 006), so from that moment the
+    // match's inputs are frozen and simulating it is as correct at 13:00 as
+    // at 14:00. Banking then means the feed is certainly on the shelf when
+    // the broadcast opens, with a full hour of slack for a dropped cron.
+    const winOpen = now >= EPOCH + today * 86400000 + natHour(country) * 3600000 - 3600000;
     if (winOpen && !daySettled(now, today, country) && dToday >= 0 && dToday <= PLAYOFF_DAYS.final) {
       const r9 = roundOfDay(dToday);
       if (r9) {

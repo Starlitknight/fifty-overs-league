@@ -5742,9 +5742,9 @@
             var rec = null;
             if (snapSeasonOk) rec = (resByRound[srv.cal.round] || []).filter(function (r6) { return r6.home === f5.home.name && r6.away === f5.away.name; })[0];
             var tail;
-            if (srv.state === "live") tail = "<button type='button' class='fo-nt-watch' onclick='foWtSpectate(\"" + nation + "\",0,0," + i5 + ")'>&#9679; Watch LIVE</button>";
+            if (srv.state === "live") tail = "<a class='fo-nt-watch' href='#/feed?n=" + encodeURIComponent(nation) + "&f=" + i5 + "'>&#9679; Watch LIVE</a>";
             else if (srv.state === "fin") tail = rec
-              ? "<span class='res'>" + E(rec.text) + "</span><button type='button' class='fo-nt-watch ghost' onclick='foWtSpectate(\"" + nation + "\",0,0," + i5 + ")'>Watch it back &rsaquo;</button>"
+              ? "<span class='res'>" + E(rec.text) + "</span><a class='fo-nt-watch ghost' href='#/feed?n=" + encodeURIComponent(nation) + "&f=" + i5 + "'>Watch it back &rsaquo;</a>"
               : "<span class='res dim'>Stumps &middot; the umpire files the scorecard on the hour</span>";
             else if (teamsInP) tail = "<span class='res'>Teamsheets in &middot; first ball " + hhFmt(srv.hour) + "</span><a class='fo-nt-watch ghost' href='#/watch?n=" + encodeURIComponent(nation) + "&f=" + i5 + "'>See the XIs &rsaquo;</a>";
             else tail = "<span class='res dim'>First ball " + hhFmt(srv.hour) + "</span>";
@@ -6432,7 +6432,7 @@
       ".fo-nt-mx .r{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:6px}",
       ".fo-nt-mx .res{font-size:11.5px;letter-spacing:.3px;color:#c9d6ea}",
       ".fo-nt-mx .res.dim{color:#8a9bb8}",
-      "html body #page .fo-nt-watch{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.6px;text-transform:uppercase;font-size:10.5px;color:#fff !important;background:linear-gradient(180deg,#E8894A,#C8542F) !important;border:0 !important;border-radius:999px;padding:8px 14px;cursor:pointer}",
+      "html body #page .fo-nt-watch{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.6px;text-transform:uppercase;font-size:10.5px;color:#fff !important;background:linear-gradient(180deg,#E8894A,#C8542F) !important;border:0 !important;border-radius:999px;padding:8px 14px;cursor:pointer;text-decoration:none !important;display:inline-block}",
       "html body #page .fo-nt-watch.ghost{background:transparent !important;border:1px solid rgba(235,194,113,.45) !important;color:#F3D37A !important}",
       "html body #page .fo-nt-theatre{display:block;text-align:center;margin-top:9px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;font-size:11px;color:#FF9C90 !important;text-decoration:none !important;border:1px solid rgba(255,107,94,.4);border-radius:999px;padding:10px 14px}",
       ".fo-nt-quiet{font-style:italic;font-size:13px;color:#9fb0cb;padding:6px 2px}",

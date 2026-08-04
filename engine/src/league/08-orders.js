@@ -809,6 +809,27 @@
       "<div class='fo-ord-tach'>Field when bowling</div>" +
       "<div class='fo-ord-tr3'>" + cell2("Powerplay", sel2("fp:pp", FLD, App.orders.fieldPlan.pp)) + cell2("Middle", sel2("fp:mid", FLD, App.orders.fieldPlan.mid)) + cell2("Death", sel2("fp:death", FLD, App.orders.fieldPlan.death)) + "</div></div>";
     var prev = null; try { prev = (typeof foPreviousOrders === "function") ? foPreviousOrders() : null; } catch (e) {}
+    // TEAMS IN AT T-MINUS ONE HOUR, said on the sheet itself. The World
+    // Service refuses a round inside its final hour (the same law that lets
+    // the umpire bank the match early), so from that moment this page is
+    // writing NEXT round's sheet - say so, or a late edit looks like it
+    // counted for today. Friendly and practice sheets play on save and are
+    // not bound by the league clock.
+    var lockB = "";
+    try {
+      var plL = window.__foPlanet, clmL = window.__foWorldClaim;
+      if (!clmL) { try { clmL = JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eC8) {} }
+      if (!App.pending && plL && clmL && window.__foWT && window.__foWT.serverFixtures) {
+        var nowL = Date.now(), svL = window.__foWT.serverFixtures(clmL.country, nowL);
+        if (svL && svL.cal && svL.cal.round && svL.fx && svL.fx.length) {
+          var h0L = plL.natHour(clmL.country);
+          var hNowL = (nowL - (plL.EPOCH + plL.dayIx(nowL) * 86400000)) / 3600000;
+          if (hNowL >= h0L - 1) lockB = "<div class='fo-ord-lock'><b>Round " + svL.cal.round + " teamsheets are in.</b> Lineups lock an hour before the first ball" +
+            (hNowL < h0L ? " &mdash; today&rsquo;s XI is final with the umpire." : hNowL < h0L + (plL.LIVE_LEN || 3) ? " &mdash; today&rsquo;s match is being played to the sheet already filed." : ".") +
+            " Anything you save now applies from the next round.</div>";
+        }
+      }
+    } catch (eLk) {}
     // ---- simple mode: the Gaffer fills the sheet, the manager reads it -----
     if (foOrdMode() === "simple") {
       try {
@@ -825,7 +846,7 @@
       page.innerHTML =
         "<div class='fo-ord-hero'>" + foOrdHeroSide(opp.home, t.name) + "<span class='h-v'>v</span>" + foOrdHeroSide(opp.away, t.name) + "</div>" +
         "<div class='fo-ord-herosub'>" + E(foPitchName(opp.pitch)) + " pitch &middot; " + E(opp.weather || "") + " &middot; " + E(opp.ground || "") + "</div>" +
-        foOrdTabBar(tabS) +
+        lockB + foOrdTabBar(tabS) +
         "<div class='panel fo-keep'><h4>The Gaffer's plan &middot; " + (tabS === "bowl" ? "Bowling" : "Batting") + "</h4><div class='pad'>" +
         (tabS === "bat" ? "<div class='fo-j-gbox' style='max-width:none;margin:2px 0 10px'><img class='gf' src='" + FO_ART + "gaffer.png' alt=''>" +
         "<span class='bx'><span class='sp'>The Gaffer</span><span class='tx'>&ldquo;" + foOrdGafferSays(opp) + "&rdquo;</span></span></div>" : "") +
@@ -840,7 +861,7 @@
       return;
     }
     var tabA = foOrdTab();
-    page.innerHTML = cond + foOrdTabBar(tabA) +
+    page.innerHTML = cond + lockB + foOrdTabBar(tabA) +
       "<div class='fo-ord-cols fo-ord-one'>" +
       (tabA === "bat"
         ? "<div class='panel fo-keep'><h4>Batting order</h4><div class='pad'>" +
@@ -1410,6 +1431,8 @@
       "html body #page .fo-ord-hero .h-v{font-family:Oswald,sans-serif;font-size:13px;color:#B04A2C !important;font-weight:600;text-transform:uppercase;letter-spacing:2px}" +
       "html body #page .fo-ord-herosub,html body.ftpskin #page .fo-ord-herosub{text-align:center;font-family:Oswald,sans-serif;letter-spacing:2px;text-transform:uppercase;font-size:13px;font-weight:600;color:#33415e !important;margin:0 0 10px;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +
       "@media(max-width:600px){.fo-ord-hero .h-t{font-size:21px}.fo-ord-hero{gap:9px}}" +
+      "html body #page .fo-ord-lock{margin:10px 0 2px;background:#FBF3E4;border:1px solid #E8B96A;border-left:4px solid #C9571F;border-radius:10px;padding:10px 13px;font:400 12.5px/1.55 Inter,sans-serif;color:#5b5344}" +
+      "html body #page .fo-ord-lock b{color:#8E1F13;font-weight:700}" +
       "@media(max-width:480px){.fo-ord-lane .ln{flex-basis:96px;font-size:9.5px}.fo-ord-lane.lax em{font-size:6.5px}.fo-ord-lane .lt.lnum em{font-size:6.5px}}" +
       ".fo-ord-tp{display:inline;background:none;border:none;padding:0;color:#b3bac4;font-size:7.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}" +
       ".fo-ord-tp + .fo-ord-tp:before{content:'· ';color:#d3d8de}" +

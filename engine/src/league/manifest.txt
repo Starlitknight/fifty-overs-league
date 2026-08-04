@@ -33,6 +33,7 @@
 36-champions-cup.js
 37-world-club.js
 38-world-theatre.js
+44-feed-match.js
 39-rankings.js
 40-club-page.js
 41-player-page.js
