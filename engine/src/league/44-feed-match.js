@@ -69,6 +69,29 @@
   function stageArt(city) {
     try { return window.foGroundArtUrl ? window.foGroundArtUrl(city) : null; } catch (e) { return null; }
   }
+  // THE INTERNATIONAL'S STAR, the same mark every other surface wears. The
+  // umpire's who-line abbreviates a man ("N. Dunn") while the named fifteen
+  // holds his full name, so an abbreviation is expanded against the squad
+  // before asking the game's own star renderer - never a star by guesswork.
+  function pstar(nm, rid) {
+    try {
+      if (!nm || !window.foNatStar) return "";
+      var full = String(nm).replace(/\s*\([^)]*\)\s*$/, "").trim();
+      var direct = window.foNatStar(full, null, { rid: rid });
+      if (direct) return direct;
+      var ab = /^([A-Za-z])\.\s+(.+)$/.exec(full);
+      if (!ab) return "";
+      var L = window.__foWorldLg; if (!L) return "";
+      var b = L.get ? L.get(rid) : null;
+      var sq = (b && b.nat && b.nat.squad) || [];
+      for (var i = 0; i < sq.length; i++) {
+        var n9 = (sq[i] && sq[i].name) || "";
+        if (n9 && n9[0].toLowerCase() === ab[1].toLowerCase() && surname(n9).toLowerCase() === ab[2].toLowerCase())
+          return window.foNatStar(n9, null, { rid: rid }) || "";
+      }
+      return "";
+    } catch (e) { return ""; }
+  }
 
   // ---- ONE PASS DOWN THE BOOK: everything the panels need, per innings -----
   function bookState(seen) {
@@ -156,7 +179,7 @@
     var winStart = pl.EPOCH + pl.dayIx(Date.now()) * 86400000 + pl.natHour(rid) * 3600000;
     var winLen = (pl.LIVE_LEN || 3) * 3600000, BALL_MS = winLen / 600;
     if (T.id !== id) { T.tab = "live"; T.filter = "all"; }
-    T.id = id;
+    T.id = id; T.rid = rid;
     page.innerHTML = shell(rid, cal, null, m, stageShell(m, null, "Opening the umpire's book&hellip;"));
     logFetch(rid, id).then(function (log) {
       if (T.id !== id || (location.hash || "").split("?")[0] !== "#/feed") return;
@@ -378,20 +401,20 @@
       var sn = surname(I.striker);
       rows = I.who.bats.map(function (b9) {
         var onStrike = sn && surname(b9.nm) === sn;
-        return "<div class='cb'><span class='nm'>" + (onStrike ? "<i class='st'></i>" : "") + E(b9.nm) + "</span><span class='rv'>" + b9.r + "*</span><span class='bv'>(" + b9.b + ")</span></div>";
+        return "<div class='cb'><span class='nm'>" + (onStrike ? "<i class='st'></i>" : "") + E(b9.nm) + pstar(b9.nm, T.rid) + "</span><span class='rv'>" + b9.r + "*</span><span class='bv'>(" + b9.b + ")</span></div>";
       }).join("");
       if (sn && !I.who.bats.some(function (b9) { return surname(b9.nm) === sn; }))
-        rows += "<div class='cb'><span class='nm'><i class='st'></i>" + E(I.striker) + "</span><span class='rv new'>new man</span></div>";
+        rows += "<div class='cb'><span class='nm'><i class='st'></i>" + E(I.striker) + pstar(I.striker, T.rid) + "</span><span class='rv new'>new man</span></div>";
     } else if (I.striker) {
-      rows = "<div class='cb'><span class='nm'><i class='st'></i>" + E(I.striker) + "</span><span class='rv new'>at the crease</span></div>";
+      rows = "<div class='cb'><span class='nm'><i class='st'></i>" + E(I.striker) + pstar(I.striker, T.rid) + "</span><span class='rv new'>at the crease</span></div>";
     }
     var bowl = "";
     if (I.who && I.who.bowl) {
-      bowl = "<div class='sh'>BOWLING</div><div class='cb bw'><span class='nm'>" + E(I.who.bowl.nm) + "</span>" +
+      bowl = "<div class='sh'>BOWLING</div><div class='cb bw'><span class='nm'>" + E(I.who.bowl.nm) + pstar(I.who.bowl.nm, T.rid) + "</span>" +
         "<span class='rv'>" + I.who.bowl.o + "&ndash;" + I.who.bowl.r + "</span><span class='wv'>" + I.who.bowl.w + "</span></div>" +
         "<div class='lbl'><span></span><span>O&ndash;R</span><span>W</span></div>";
     } else if (I.bowler) {
-      bowl = "<div class='sh'>BOWLING</div><div class='cb bw'><span class='nm'>" + E(I.bowler) + "</span><span class='rv new'>opening spell</span></div>";
+      bowl = "<div class='sh'>BOWLING</div><div class='cb bw'><span class='nm'>" + E(I.bowler) + pstar(I.bowler, T.rid) + "</span><span class='rv new'>opening spell</span></div>";
     }
     // the stand: runs from the umpire's two latest prints, balls counted
     // straight off the book. Between a wicket and the next print the runs are
@@ -442,7 +465,7 @@
                b9.out.how === "stumped" ? "st &dagger; b " + E(surname(b9.out.bowler || "")) : E(b9.out.how))
             : "not out";
           var sr = (b9.r != null && b9.b > 0) ? Math.round(b9.r / b9.b * 100) : null;
-          return "<tr class='" + (b9.out ? "o" : "no") + "'><td>" + E(b9.nm) + "</td><td class='h'>" + how + "</td>" +
+          return "<tr class='" + (b9.out ? "o" : "no") + "'><td>" + E(b9.nm) + pstar(b9.nm, T.rid) + "</td><td class='h'>" + how + "</td>" +
             "<td class='r'>" + (b9.r != null ? b9.r + (b9.out ? "" : "*") : "&mdash;") + "</td>" +
             "<td class='r'>" + (b9.b != null ? b9.b : "&mdash;") + "</td>" +
             "<td class='r'>" + (sr != null ? sr : "&mdash;") + "</td></tr>";
@@ -450,7 +473,7 @@
       if (I.bowls.length)
         out += "<table class='fd-tb'><tr><th>Bowling</th><th class='r'>O</th><th class='r'>R</th><th class='r'>W</th></tr>" +
           I.bowls.map(function (w9) {
-            return "<tr><td>" + E(w9.nm) + "</td><td class='r'>" + w9.o + "</td><td class='r'>" + w9.r + "</td><td class='r'>" + w9.w + "</td></tr>";
+            return "<tr><td>" + E(w9.nm) + pstar(w9.nm, T.rid) + "</td><td class='r'>" + w9.o + "</td><td class='r'>" + w9.r + "</td><td class='r'>" + w9.w + "</td></tr>";
           }).join("") + "</table>";
       if (I.fow.length || I.top) out += partHtml(I);
       if (ix === 0 && I.brk) out += "<div class='fd-note'>" + E(I.brk) + "</div>";
@@ -605,7 +628,7 @@
       return "<div class='c'><b>" + E(nm) + "</b><u>manager&rsquo;s named order</u>" +
         list.slice(0, 11).map(function (p9, k) {
           var n9 = typeof p9 === "string" ? p9 : (p9 && p9.name) || "";
-          return "<span><i>" + (k + 1) + "</i>" + E(n9) +
+          return "<span><i>" + (k + 1) + "</i>" + E(n9) + pstar(n9, rid) +
             (o.captain === n9 ? " <em>C</em>" : "") + (o.keeper === n9 ? " &dagger;" : "") + "</span>";
         }).join("") +
         (o.tossCall ? "<u class='t2'>toss call " + (o.tossCall === "H" ? "heads" : "tails") + (o.tossDecision ? " &middot; would " + E(o.tossDecision) + " first" : "") + "</u>" : "") +
