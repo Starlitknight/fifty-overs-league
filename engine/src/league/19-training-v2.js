@@ -227,26 +227,31 @@
         return "<button type='button' class='fo-t2-chip" + (st.focus === f[0] ? " on" : "") + "' data-t2f='" + f[0] + "'>" + f[1] + "</button>";
       }).join("") + "</div></div>";
 
-    var unitCards = "<div class='fo-t2-card'><div class='fo-t2-ck'>Unit plans</div>" + UNITS.map(function (x) {
+    // the team-sheet tiles (user's pick, variant A): each unit under its own
+    // navy header with a gold capacity bar, a segmented intensity control,
+    // and the coach's line as an italic footer
+    var SEG = [["light", "Lgt"], ["normal", "Nrm"], ["high", "Hi"], ["intensive", "Max"]];
+    var unitCards = "<div class='fo-t2-card'><div class='fo-t2-ck'>Unit plans</div><div class='fo-t2-ugrid'>" + UNITS.map(function (x) {
       var u = x[0], men = byUnit[u], pick = st.units[u];
       if (!men.length) return "";
       var uCap = Math.round(men.map(capacityOf).reduce(function (a, b) { return a + b; }, 0) / men.length);
       var resolved = resolveUnit(u);
       var coachLine = pick.f === "coach"
-        ? "<div class='fo-t2-rec'>COACH RECOMMENDS <b>" + E(resolved || defaultProg(men[0])) + "</b>" +
-          (uCap <= 55 ? "<span>Heavy workload in the last round - most of this unit will mainly recover.</span>" : "") + "</div>"
+        ? "<div class='fo-t2-urec'>Coach recommends <b>" + E(resolved || defaultProg(men[0])) + "</b>" +
+          (uCap <= 55 ? " &mdash; heavy workload in the last round, most of this unit will mainly recover." : ".") + "</div>"
         : "";
-      return "<div class='fo-t2-unit'>" +
-        "<div class='fo-t2-uh'><b>" + x[1] + "</b><i>" + men.length + (men.length === 1 ? " man" : " men") + " &middot; capacity " + uCap + "%</i></div>" +
-        "<div class='fo-t2-ur'>" +
+      return "<div class='fo-t2-tile'>" +
+        "<div class='fo-t2-th'><b>" + x[1] + "</b><i>" + men.length + (men.length === 1 ? " man" : " men") + "</i>" +
+        "<span class='cap' title='Training capacity " + uCap + "%'><b style='width:" + uCap + "%'></b></span></div>" +
+        "<div class='fo-t2-tb'>" +
         "<select data-t2u='" + u + "'>" +
         "<option value='coach'" + (pick.f === "coach" ? " selected" : "") + ">Coach decides</option>" +
         UNIT_PROGS[u].map(function (pg) { return "<option value='" + E(pg) + "'" + (pick.f === pg ? " selected" : "") + ">" + E(pg) + "</option>"; }).join("") +
         "</select>" +
-        "<span class='fo-t2-ints'>" + INTEN.map(function (nn) {
-          return "<button type='button' class='fo-t2-int" + (pick.i === nn[0] ? " on" : "") + "' data-t2i='" + u + "|" + nn[0] + "'>" + nn[1] + "</button>";
+        "<span class='fo-t2-seg'>" + SEG.map(function (nn) {
+          return "<button type='button' class='" + (pick.i === nn[0] ? "on" : "") + "' data-t2i='" + u + "|" + nn[0] + "' title='" + nn[0] + "'>" + nn[1] + "</button>";
         }).join("") + "</span></div>" + coachLine + "</div>";
-    }).join("") + "</div>";
+    }).join("") + "</div></div>";
 
     var projCard = "<div class='fo-t2-card'><div class='fo-t2-ck'>Individual development projects <em>" + nProj + "/3</em></div>" +
       "<p class='fo-t2-dim'>Three men receive personal coaching. A project outranks his unit's plan.</p>" +
@@ -458,22 +463,26 @@
       "html body #page button.fo-t2-chip.on{background:#C9571F;border-color:#C9571F;color:#fff}",
       "html body.ftpskin button.fo-t2-chip{background:#FFFEFC !important;color:#4c4437 !important;border-color:#d9d0bc !important}",
       "html body.ftpskin button.fo-t2-chip.on{background:#C9571F !important;color:#fff !important;border-color:#C9571F !important}",
-      "html body.ftpskin button.fo-t2-int{background:#FFFEFC !important;color:#8a8272 !important;border-color:#d9d0bc !important}",
-      "html body.ftpskin button.fo-t2-int.on{background:#14243A !important;color:#E8B96A !important;border-color:#14243A !important}",
+      "html body.ftpskin .fo-t2-seg button{background:#FFFEFC !important;color:#8a8272 !important;border-color:#eee7d9 !important}",
+      "html body.ftpskin .fo-t2-seg button.on{background:#C9571F !important;color:#fff !important}",
       "html body.ftpskin button.fo-t2-save{background:#C9571F !important;color:#fff !important;border:none !important}",
-      ".fo-t2-unit{border-top:1px solid #f3eee1;padding:11px 0}",
-      ".fo-t2-unit:first-of-type{border-top:none}",
-      ".fo-t2-uh{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin-bottom:7px}",
-      ".fo-t2-uh b{font:700 13.5px Inter,sans-serif;color:#14243A}",
-      ".fo-t2-uh i{font:500 11px Inter,sans-serif;color:#8a8272;font-style:normal;white-space:nowrap}",
-      ".fo-t2-ur{display:flex;align-items:center;gap:8px;flex-wrap:wrap}",
-      ".fo-t2-ur select,.fo-t2-proj select{font:600 12.5px Inter,sans-serif;color:#14243A;border:1px solid #d9d0bc;border-radius:9px;background:#FBF9F3;padding:8px 10px;max-width:100%}",
-      ".fo-t2-ints{display:flex;gap:4px}",
-      "html body #page button.fo-t2-int{font:700 9px Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;border:1px solid #d9d0bc;background:#FFFEFC;color:#8a8272;border-radius:7px;padding:6px 9px;cursor:pointer}",
-      "html body #page button.fo-t2-int.on{background:#14243A;border-color:#14243A;color:#E8B96A}",
-      ".fo-t2-rec{margin-top:8px;font:700 9.5px Oswald,sans-serif;letter-spacing:.14em;color:#8a6a1f;background:#F8ECD4;border:1px solid #e8d5a8;border-radius:8px;padding:7px 10px}",
-      ".fo-t2-rec b{color:#14243A;margin-left:5px;letter-spacing:.06em}",
-      ".fo-t2-rec span{display:block;margin-top:3px;font:400 11px Inter,sans-serif;letter-spacing:0;text-transform:none;color:#6d6455}",
+      ".fo-t2-ugrid{display:grid;grid-template-columns:1fr;gap:9px}",
+      "@media(min-width:760px){.fo-t2-ugrid{grid-template-columns:1fr 1fr}}",
+      ".fo-t2-tile{border:1px solid #eee7d9;border-radius:12px;overflow:hidden}",
+      ".fo-t2-th{display:flex;align-items:center;gap:9px;background:linear-gradient(135deg,#14243A,#0E2246);padding:9px 12px}",
+      ".fo-t2-th b{font:700 12px Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#F6F3EB;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-t2-th i{font:600 10px Inter,sans-serif;color:#E8B96A;font-style:normal;white-space:nowrap}",
+      ".fo-t2-th .cap{flex:0 0 34px;width:34px;height:5px;border-radius:3px;background:rgba(246,243,235,.25);overflow:hidden}",
+      ".fo-t2-th .cap b{display:block;height:100%;background:#E8B96A;border-radius:3px;flex:none}",
+      ".fo-t2-tb{display:flex;align-items:center;gap:8px;padding:10px 12px;background:#FDFCF8}",
+      ".fo-t2-tb select,.fo-t2-proj select{font:600 12.5px Inter,sans-serif;color:#14243A;border:1px solid #d9d0bc;border-radius:9px;background:#FBF9F3;padding:8px 10px;max-width:100%}",
+      ".fo-t2-tb select{flex:1;min-width:0}",
+      ".fo-t2-seg{display:flex;flex:0 0 auto;border:1px solid #d9d0bc;border-radius:9px;overflow:hidden}",
+      "html body #page .fo-t2-seg button{font:700 8.5px Oswald,sans-serif;font-family:Oswald,sans-serif !important;letter-spacing:.08em;text-transform:uppercase;padding:8px;color:#8a8272;background:#FFFEFC;border:none;border-right:1px solid #eee7d9;border-radius:0;cursor:pointer;min-height:0}",
+      "html body #page .fo-t2-seg button:last-child{border-right:none}",
+      "html body #page .fo-t2-seg button.on{background:#C9571F;color:#fff}",
+      ".fo-t2-urec{padding:7px 12px;background:#FBF6EA;border-top:1px dashed #e8d5a8;font:italic 400 11.5px Georgia,serif;color:#8a6a1f;line-height:1.5}",
+      ".fo-t2-urec b{font-style:normal;font-family:Inter,sans-serif;font-size:11.5px;color:#14243A}",
       ".fo-t2-proj{border-top:1px dashed #e8d5a8;padding:11px 0;display:flex;flex-direction:column;gap:8px}",
       ".fo-t2-proj:first-of-type{border-top:none}",
       ".fo-t2-pb{display:flex;align-items:center;gap:9px;font:600 11.5px Inter,sans-serif;color:#4c4437}",
@@ -510,7 +519,7 @@
       ".fo-t2-who a{font-size:11.5px}.fo-t2-who i{font-size:9px}",
       ".fo-t2-work i{font-size:9px}.fo-t2-row select{font-size:10px;padding:6px 4px}",
       ".fo-t2-twin{grid-template-columns:1fr}",
-      ".fo-t2-ur{align-items:stretch;flex-direction:column}.fo-t2-ints{justify-content:space-between}}"
+      ".fo-t2-tb{flex-wrap:wrap}.fo-t2-tb select{flex:1 1 100%}.fo-t2-seg{flex:1;display:flex}html body #page .fo-t2-seg button{flex:1;padding:8px 6px}}"
     ].join("\n");
     document.head.appendChild(s);
   }
