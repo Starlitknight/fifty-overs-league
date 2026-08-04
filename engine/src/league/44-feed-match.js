@@ -44,6 +44,22 @@
     var sym = o === "dot" ? "&middot;" : wk ? "W" : o === "wide" ? "wd" : o === "noball" ? "nb" : (o === "bye" || o === "legbye") ? "b" : E(o);
     return "<i class='" + cls.trim() + "'>" + sym + "</i>";
   }
+  // THE FIELDING, NAMED. The engine prints a fixed vocabulary for work in
+  // the field - 'Brilliant stop by', 'Rocket Arm!', 'Misfield by', 'Fumble
+  // from', 'DROPPED!', 'Stumping chance missed' - and the wicket codes name
+  // the catches, run outs and stumpings. Each phrase becomes a tag on the
+  // delivery, and the fielding filter can serve them apart.
+  function fldTag(r) {
+    var t = (r && r.txt) || "", o = r && r.out;
+    if (o === "wRO") return { k: "ro", lbl: "RUN OUT", good: 1 };
+    if (o === "wST") return { k: "ro", lbl: "STUMPED", good: 1 };
+    if (o === "wC") return { k: "ct", lbl: "CATCH", good: 1 };
+    if (/Stumping chance missed/i.test(t)) return { k: "ms", lbl: "MISSED STUMPING", good: 0 };
+    if (/DROPPED!/i.test(t)) return { k: "ms", lbl: "DROPPED CATCH", good: 0 };
+    if (/Misfield by|Fumble from/i.test(t)) return { k: "ms", lbl: "MISFIELD", good: 0 };
+    if (/Brilliant stop|Rocket Arm|attacks the ball/i.test(t)) return { k: "gr", lbl: "GREAT FIELDING", good: 1 };
+    return null;
+  }
   // "End of over 12 (5 runs) - Yorkshire 61/2. ..." -> the umpire's own score
   function parseTop(txt) {
     var m = /End of over (\d+)\s*\((\d+) runs?[^)]*\)[^-]*-\s*(.+?)\s+(\d+)\/(\d+)\./.exec(txt || "");
@@ -363,7 +379,10 @@
       if (f === "b46") return r.out === "4" || r.out === "6";
       if (f === "wk") return (r.out && r.out[0] === "w" && r.out !== "wide") || r.out === "✕";
       if (f === "ov") return !!r._top;
-      if (f === "fld") return r.ev && r.ev.fldNm;
+      if (f === "fld") return !!fldTag(r);
+      if (f === "fldg") { var tg = fldTag(r); return !!(tg && tg.k === "gr"); }
+      if (f === "flde") { var te = fldTag(r); return !!(te && te.k === "ms"); }
+      if (f === "fldw") { var tw = fldTag(r); return !!(tw && (tw.k === "ct" || tw.k === "ro")); }
       if (f === "note") return r.no === "" && !r._top;
       return true;
     };
@@ -398,13 +417,17 @@
         var hb = surname(r4.bowlerNm), hs = surname(r4.strikerNm);
         var hl = (hb && hs) ? (hb + " GETS " + hs).toUpperCase() : (head || "WICKET").toUpperCase();
         body9 = body9.replace(/^WICKET\s*-\s*/, "");
+        var wtg = fldTag(r4);
         return "<div class='fd-ev wkt'><span class='dot'>" + ring(r4.out) + "</span>" +
           "<div class='w'><span class='no'>" + E(r4.no) + "</span><b class='hl'>" + E(hl) + "</b>" +
+          (wtg && wtg.k !== "ct" ? "<span class='fdtag g'>" + wtg.lbl + "</span>" : "") +
           "<p>" + E(body9) + "</p>" +
           (it.fow ? "<span class='fowchip'>&#10007; " + E(it.fow) + "</span>" : "") + "</div></div>";
       }
+      var dtg = fldTag(r4);
       return "<div class='fd-ev'><span class='dot'>" + ring(r4.out) + "</span>" +
         "<div class='w'><span class='no'>" + E(r4.no) + "</span><b>" + E(head) + "</b>" +
+        (dtg ? "<span class='fdtag " + (dtg.good ? "g" : "b") + "'>" + dtg.lbl + "</span>" : "") +
         "<p>" + E(body9) + "</p></div></div>";
     }).join("");
     // the header's right hand: the over in progress and the last over's line
@@ -415,7 +438,7 @@
       if (lw) lastLn = "<span class='lo'>last over " + lw[1] + " run" + (lw[1] === "1" ? "" : "s") + (lw[2] ? " &middot; " + lw[2] + " wkt" : "") + "</span>";
     }
     var ovRings = I && I.sinceTop.length ? "<span class='seq'>" + I.sinceTop.map(function (r3) { return ring(r3.out); }).join("") + "</span>" : "";
-    var sel = ["all|The lot", "b46|4s &amp; 6s", "wk|Wickets", "fld|In the field", "ov|Overs", "note|The notes"].map(function (c9) {
+    var sel = ["all|The lot", "b46|4s &amp; 6s", "wk|Wickets", "fld|In the field &middot; all", "fldg|&nbsp;&nbsp;Great fielding", "flde|&nbsp;&nbsp;Misfields &amp; drops", "fldw|&nbsp;&nbsp;Catches &amp; run outs", "ov|Overs", "note|The notes"].map(function (c9) {
       var p9 = c9.split("|");
       return "<option value='" + p9[0] + "'" + (T.filter === p9[0] ? " selected" : "") + ">" + p9[1] + "</option>";
     }).join("");
@@ -862,7 +885,10 @@
       // strength stars: the roster's ladder, gold for the bat, teal for the ball
       ".fo-fd .fd-strn{display:inline-flex;line-height:1}",
       ".fo-fd .fd-strn .st{display:inline-flex;text-decoration:none}",
-      ".fo-fd .fd-strn em{font-style:normal;font-size:9px;line-height:1;color:#ddd5c7}",
+      ".fo-fd .fd-strn em{font-style:normal;font-size:13px;line-height:1;color:#ddd5c7;letter-spacing:.5px}",
+      ".fo-fd .fdtag{display:inline-block;margin-left:8px;vertical-align:1px;font:700 8.5px Oswald,sans-serif;letter-spacing:.14em;border-radius:5px;padding:2.5px 6px}",
+      ".fo-fd .fdtag.g{color:#177A57;background:#E8F3ED;border:1px solid #bfdccf}",
+      ".fo-fd .fdtag.b{color:#8E1F13;background:#FBEFEA;border:1px solid #e8c9b8}",
       ".fo-fd .fd-strn.bt em.f{color:#E8B96A}",
       ".fo-fd .fd-strn.bt em.h{color:#E8B96A;opacity:.45}",
       ".fo-fd .fd-strn.bw em.f{color:#0FB4C4}",
