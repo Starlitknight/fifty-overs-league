@@ -5405,8 +5405,13 @@
       } else {
         // the entrance fade plays once per sitting: a shell rebuilt on the
         // way back from another room re-hangs the already-decoded painting
-        // instantly instead of fading in from nothing again
-        var anim0 = window.__foHgShown ? " style='animation:foHgDrift 34s ease-in-out infinite alternate'" : "";
+        // instantly instead of fading in from nothing again. And the fade
+        // starts when the PAINTING ARRIVES, not when the element is made -
+        // a fade that starts against an empty box makes a slow-loading
+        // painting pop in abruptly at whatever opacity the clock reached
+        var anim0 = window.__foHgShown
+          ? " style='animation:foHgDrift 34s ease-in-out infinite alternate'"
+          : " style='animation:none;opacity:0' onload=\"this.style.cssText=''\"";
         window.__foHgShown = true;
         page.innerHTML =
           "<div class='fo-hg2 fo-home2' data-hgv='" + E(v) + "' style='--lac:" + (region.ac || "#EBC271") + "'>" +
@@ -7342,8 +7347,14 @@
   // The engine painted its first frame before the overlay finished loading,
   // so a cold refresh on #/squad (or any wrapped page) showed the RAW engine
   // render. This is the LAST league module: every pg* override exists now -
-  // route once more so the overlay owns the first visible frame.
-  setTimeout(function () { try { if (typeof window.route === "function") window.route(); } catch (eRR) {} }, 0);
+  // route once more so the overlay owns the first visible frame, and only
+  // THEN lift the boot veil (see 08-orders for why it must not lift sooner):
+  // the first frame anyone sees is the finished overlay, never the raw
+  // engine page it replaces.
+  setTimeout(function () {
+    try { if (typeof window.route === "function") window.route(); } catch (eRR) {}
+    try { var _bv = document.getElementById("fo-boot"); if (_bv) _bv.parentNode.removeChild(_bv); } catch (eBv) {}
+  }, 0);
 
   // ==== THE IMAGE KEEPER =====================================================
   // Every page in this game redraws by rebuilding its whole HTML, and each

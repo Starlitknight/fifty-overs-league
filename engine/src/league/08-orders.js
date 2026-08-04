@@ -1816,9 +1816,14 @@
     } catch (e) {}
   }
 
-  // Lift the boot veil (injected by build.sh) now that the brand CSS and the right
-  // screen are in place · the engine's original UI never gets a frame to flash.
-  try { var _bv = document.getElementById("fo-boot"); if (_bv) _bv.parentNode.removeChild(_bv); } catch (e) {}
+  // The boot veil (injected by build.sh) used to lift HERE - but four league
+  // modules were still to parse, and the overlay's first route had not run.
+  // Every reload therefore revealed whatever frame existed at this instant
+  // (the raw engine render, or a blank page) and then visibly swapped it for
+  // the real one a beat later: the "every page flickers on reload". The LAST
+  // league module now lifts the veil, after the overlay's first route has
+  // painted, so the first frame anyone sees is the finished one. The 4s CSS
+  // failsafe in the veil itself still guards a wedged boot.
 
   // Debug/test handle for the season planner's engine-facing helpers (no behaviour).
   try { window.__fol = { userFixtures: foUserFixtures, fixtureMeta: foFixtureMeta, plannerHTML: foPlannerHTML, smartBowling: foSmartBowling, countryPool: buildCountryPool, marketPool: foMarketPool, draftPrice: foDraftPrice }; } catch (e) {}
