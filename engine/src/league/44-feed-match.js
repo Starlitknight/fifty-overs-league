@@ -162,6 +162,39 @@
     return inns;
   }
 
+  // STRENGTH, ON THE SAME LADDER AS EVERYWHERE ELSE. The roster's absolute
+  // ten-star scale (foStarsFor: composite 15 -> 0 stars, 92 -> 10), read off
+  // the same served squads the umpire fields. Gold for the bat, teal for the
+  // ball. A man the seed cannot derive (a mid-season signing on a claimed
+  // club) simply shows no stars - never the wrong ones.
+  function squadMap(rid, m) {
+    var key = rid + ":" + m.home.slot + ":" + m.away.slot;
+    if (T.sq && T.sqKey === key) return T.sq;
+    var mp = {};
+    try {
+      var wt = window.__foWT;
+      [m.home.slot, m.away.slot].forEach(function (sl) {
+        ((wt && wt.serverSquad && wt.serverSquad(rid, sl)) || []).forEach(function (p) {
+          if (!p || !p.name) return;
+          mp[p.name.toLowerCase()] = p;
+          var ab = (p.name[0] + ". " + surname(p.name)).toLowerCase();
+          if (!mp[ab]) mp[ab] = p;
+        });
+      });
+    } catch (e) {}
+    T.sq = mp; T.sqKey = key;
+    return mp;
+  }
+  function sStars(nm, mode) {
+    try {
+      var FS = window.foStarsFor; if (!FS || !T.args) return "";
+      var p = squadMap(T.args[3], T.args[2])[String(nm || "").replace(/\s*\([^)]*\)\s*$/, "").trim().toLowerCase()];
+      if (!p) return "";
+      var comp = mode === "bowl" ? FS.bowl(p) : FS.bat(p);
+      if (!(comp > 0)) return "";
+      return "<span class='fd-strn " + (mode === "bowl" ? "bw" : "bt") + "'>" + FS.html(FS.stars(comp)) + "</span>";
+    } catch (e) { return ""; }
+  }
   var T = { id: null, timer: null, tab: "live", filter: "all", args: null, ord: {}, ordBusy: {} };
   window.foRenderFeedPage = function () {
     var page = document.getElementById("page"); if (!page) return;
@@ -401,7 +434,7 @@
       var sn = surname(I.striker);
       rows = I.who.bats.map(function (b9) {
         var onStrike = sn && surname(b9.nm) === sn;
-        return "<div class='cb'><span class='nm'>" + (onStrike ? "<i class='st'></i>" : "") + E(b9.nm) + pstar(b9.nm, T.rid) + "</span><span class='rv'>" + b9.r + "*</span><span class='bv'>(" + b9.b + ")</span></div>";
+        return "<div class='cb'><span class='nm'>" + (onStrike ? "<i class='st'></i>" : "") + E(b9.nm) + pstar(b9.nm, T.rid) + "<span class='ss'>" + sStars(b9.nm, "bat") + "</span></span><span class='rv'>" + b9.r + "*</span><span class='bv'>(" + b9.b + ")</span></div>";
       }).join("");
       if (sn && !I.who.bats.some(function (b9) { return surname(b9.nm) === sn; }))
         rows += "<div class='cb'><span class='nm'><i class='st'></i>" + E(I.striker) + pstar(I.striker, T.rid) + "</span><span class='rv new'>new man</span></div>";
@@ -410,7 +443,7 @@
     }
     var bowl = "";
     if (I.who && I.who.bowl) {
-      bowl = "<div class='sh'>BOWLING</div><div class='cb bw'><span class='nm'>" + E(I.who.bowl.nm) + pstar(I.who.bowl.nm, T.rid) + "</span>" +
+      bowl = "<div class='sh'>BOWLING</div><div class='cb bw'><span class='nm'>" + E(I.who.bowl.nm) + pstar(I.who.bowl.nm, T.rid) + "<span class='ss'>" + sStars(I.who.bowl.nm, "bowl") + "</span></span>" +
         "<span class='rv'>" + I.who.bowl.o + "&ndash;" + I.who.bowl.r + "</span><span class='wv'>" + I.who.bowl.w + "</span></div>" +
         "<div class='lbl'><span></span><span>O&ndash;R</span><span>W</span></div>";
     } else if (I.bowler) {
@@ -465,7 +498,7 @@
                b9.out.how === "stumped" ? "st &dagger; b " + E(surname(b9.out.bowler || "")) : E(b9.out.how))
             : "not out";
           var sr = (b9.r != null && b9.b > 0) ? Math.round(b9.r / b9.b * 100) : null;
-          return "<tr class='" + (b9.out ? "o" : "no") + "'><td>" + E(b9.nm) + pstar(b9.nm, T.rid) + "</td><td class='h'>" + how + "</td>" +
+          return "<tr class='" + (b9.out ? "o" : "no") + "'><td>" + E(b9.nm) + pstar(b9.nm, T.rid) + "<span class='ss'>" + sStars(b9.nm, "bat") + "</span></td><td class='h'>" + how + "</td>" +
             "<td class='r'>" + (b9.r != null ? b9.r + (b9.out ? "" : "*") : "&mdash;") + "</td>" +
             "<td class='r'>" + (b9.b != null ? b9.b : "&mdash;") + "</td>" +
             "<td class='r'>" + (sr != null ? sr : "&mdash;") + "</td></tr>";
@@ -473,7 +506,7 @@
       if (I.bowls.length)
         out += "<table class='fd-tb'><tr><th>Bowling</th><th class='r'>O</th><th class='r'>R</th><th class='r'>W</th></tr>" +
           I.bowls.map(function (w9) {
-            return "<tr><td>" + E(w9.nm) + pstar(w9.nm, T.rid) + "</td><td class='r'>" + w9.o + "</td><td class='r'>" + w9.r + "</td><td class='r'>" + w9.w + "</td></tr>";
+            return "<tr><td>" + E(w9.nm) + pstar(w9.nm, T.rid) + "<span class='ss'>" + sStars(w9.nm, "bowl") + "</span></td><td class='r'>" + w9.o + "</td><td class='r'>" + w9.r + "</td><td class='r'>" + w9.w + "</td></tr>";
           }).join("") + "</table>";
       if (I.fow.length || I.top) out += partHtml(I);
       if (ix === 0 && I.brk) out += "<div class='fd-note'>" + E(I.brk) + "</div>";
@@ -628,7 +661,7 @@
       return "<div class='c'><b>" + E(nm) + "</b><u>manager&rsquo;s named order</u>" +
         list.slice(0, 11).map(function (p9, k) {
           var n9 = typeof p9 === "string" ? p9 : (p9 && p9.name) || "";
-          return "<span><i>" + (k + 1) + "</i>" + E(n9) + pstar(n9, rid) +
+          return "<span><i>" + (k + 1) + "</i>" + E(n9) + pstar(n9, rid) + "<u class='ssin'>" + sStars(n9, "bat") + "</u>" +
             (o.captain === n9 ? " <em>C</em>" : "") + (o.keeper === n9 ? " &dagger;" : "") + "</span>";
         }).join("") +
         (o.tossCall ? "<u class='t2'>toss call " + (o.tossCall === "H" ? "heads" : "tails") + (o.tossDecision ? " &middot; would " + E(o.tossDecision) + " first" : "") + "</u>" : "") +
@@ -760,8 +793,8 @@
       ".fo-fd .fd-ev.top .w .os strong{font-weight:600;color:var(--foink)}",
       // ---- at the crease
       ".fo-fd .fd-crease .cb{display:flex;align-items:baseline;gap:8px;padding:6px 0;font:400 13.5px Inter,sans-serif}",
-      ".fo-fd .fd-crease .cb .nm{flex:1;font-weight:600;color:var(--foink);display:flex;align-items:center;gap:7px;min-width:0}",
-      ".fo-fd .fd-crease .cb .nm .st{width:7px;height:7px;border-radius:50%;background:var(--foor);flex:0 0 7px}",
+      ".fo-fd .fd-crease .cb .nm{flex:1;font-weight:600;color:var(--foink);display:flex;align-items:center;gap:7px;min-width:0;flex-wrap:wrap}",
+      ".fo-fd .fd-crease .cb .nm i.st{width:7px;height:7px;border-radius:50%;background:var(--foor);flex:0 0 7px}",
       ".fo-fd .fd-crease .cb .rv{font:700 14px Oswald,sans-serif;color:var(--foink);font-variant-numeric:tabular-nums}",
       ".fo-fd .fd-crease .cb .rv.new{font:italic 400 12px Georgia,serif;color:var(--fomut)}",
       ".fo-fd .fd-crease .cb .bv{font:400 12.5px Inter,sans-serif;color:var(--fomut);font-variant-numeric:tabular-nums}",
@@ -826,6 +859,17 @@
       ".fo-fd .fd-xic .c span{display:flex;align-items:baseline;gap:6px;font:400 12px/1.6 Inter,sans-serif;color:var(--foink)}",
       ".fo-fd .fd-xic .c span i{font-style:normal;font:700 9px/1 Oswald,sans-serif;color:#b3ab99;width:13px;text-align:right}",
       ".fo-fd .fd-xic .c span em{font-style:normal;font:700 9px Oswald,sans-serif;color:var(--foor)}",
+      // strength stars: the roster's ladder, gold for the bat, teal for the ball
+      ".fo-fd .fd-strn{display:inline-flex;line-height:1}",
+      ".fo-fd .fd-strn .st{display:inline-flex;text-decoration:none}",
+      ".fo-fd .fd-strn em{font-style:normal;font-size:9px;line-height:1;color:#ddd5c7}",
+      ".fo-fd .fd-strn.bt em.f{color:#E8B96A}",
+      ".fo-fd .fd-strn.bt em.h{color:#E8B96A;opacity:.45}",
+      ".fo-fd .fd-strn.bw em.f{color:#0FB4C4}",
+      ".fo-fd .fd-strn.bw em.h{color:#0FB4C4;opacity:.45}",
+      ".fo-fd .ss{display:block;flex-basis:100%;margin-top:1px}",
+      ".fo-fd .ss:empty{display:none}",
+      ".fo-fd .fd-xic .c span u.ssin{display:inline-flex;margin:0 0 0 4px;text-decoration:none}",
       ".fo-fd .fd-dim{font:italic 400 13.5px Georgia,serif;color:var(--fomut);padding:24px 6px}",
       ".fo-fd .fd-foot{display:flex;justify-content:space-between;margin-top:16px}",
       "html body #page .fo-fd .fd-foot a{font:700 10px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#C9571F !important;text-decoration:none !important}",
