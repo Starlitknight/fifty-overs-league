@@ -242,7 +242,7 @@
       return "<button type='button' class='" + (T.tab === p9[0] ? "on" : "") + "' onclick='foFeedTab(\"" + p9[0] + "\")'>" + p9[1] + "</button>";
     }).join("");
     var body = T.tab === "card" ? cardPanel(inns, m)
-      : T.tab === "charts" ? chartsPanel(inns, m)
+      : T.tab === "charts" ? chartsPanel(inns, m, live)
       : T.tab === "teams" ? teamsPanel(m, rid)
       : livePanel(seen);
     var state = live ? "live" : done ? "fin" : "up";
@@ -355,65 +355,116 @@
   function ordinal(n) { return n === 1 ? "1st" : n === 2 ? "2nd" : n === 3 ? "3rd" : n + "th"; }
 
   // ---- THE CHARTS: worm and manhattan from the end-of-over prints ----------
-  function chartsPanel(inns, m) {
+  function chartsPanel(inns, m, live) {
     var any = inns[0].overs.length || inns[1].overs.length;
     if (!any) return "<div class='fd-comm'><div class='fd-ch'>The charts</div><p class='fd-dim'>The worm starts crawling at the end of over one.</p></div>";
-    var W = 640, H = 240, padL = 34, padB = 22, padT = 12, padR = 10;
+    var W = 640, H = 270, padL = 36, padB = 26, padT = 18, padR = 14;
     var maxOv = 50;
     var maxSc = 20;
     inns.forEach(function (I) { I.overs.forEach(function (o) { if (o.runs > maxSc) maxSc = o.runs; }); });
     if (inns[1].target && inns[1].target > maxSc) maxSc = inns[1].target;
-    maxSc = Math.ceil((maxSc + 10) / 20) * 20;
+    maxSc = Math.ceil((maxSc + 12) / 20) * 20;
     var X = function (ov) { return padL + (W - padL - padR) * ov / maxOv; };
     var Y = function (sc) { return H - padB - (H - padB - padT) * sc / maxSc; };
+    var COL = ["#14243A", "#C9571F"];
+    // the gradients that make the paper glow a little
+    var defs = "<defs>" +
+      "<linearGradient id='fdA0' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#14243A' stop-opacity='.20'/><stop offset='1' stop-color='#14243A' stop-opacity='0'/></linearGradient>" +
+      "<linearGradient id='fdA1' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#C9571F' stop-opacity='.22'/><stop offset='1' stop-color='#C9571F' stop-opacity='0'/></linearGradient>" +
+      "<linearGradient id='fdB0' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#2C4467'/><stop offset='1' stop-color='#14243A'/></linearGradient>" +
+      "<linearGradient id='fdB1' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#E8894A'/><stop offset='1' stop-color='#C9571F'/></linearGradient>" +
+      "</defs>";
     var grid = "";
     for (var g = 0; g <= maxSc; g += Math.max(20, Math.ceil(maxSc / 5 / 20) * 20))
-      grid += "<line x1='" + padL + "' y1='" + Y(g) + "' x2='" + (W - padR) + "' y2='" + Y(g) + "' class='gl'/><text x='" + (padL - 5) + "' y='" + (Y(g) + 3) + "' class='ax e'>" + g + "</text>";
+      grid += "<line x1='" + padL + "' y1='" + Y(g) + "' x2='" + (W - padR) + "' y2='" + Y(g) + "' class='gl'/><text x='" + (padL - 6) + "' y='" + (Y(g) + 3) + "' class='ax e'>" + g + "</text>";
     for (var gx = 10; gx <= maxOv; gx += 10)
-      grid += "<text x='" + X(gx) + "' y='" + (H - 7) + "' class='ax m'>" + gx + "</text>";
-    var COL = ["#14243A", "#C9571F"];
-    var worm = "", dots = "";
+      grid += "<line x1='" + X(gx) + "' y1='" + padT + "' x2='" + X(gx) + "' y2='" + (H - padB) + "' class='gv'/><text x='" + X(gx) + "' y='" + (H - 8) + "' class='ax m'>" + gx + "</text>";
+    // a smooth hand for the same printed points: the curve passes through
+    // every end-of-over score the umpire wrote, softened between them
+    function smoothPath(pts) {
+      if (pts.length < 2) return "M" + pts[0][0] + " " + pts[0][1];
+      var d = "M" + pts[0][0] + " " + pts[0][1];
+      for (var k = 1; k < pts.length; k++) {
+        var mx = (pts[k - 1][0] + pts[k][0]) / 2, my = (pts[k - 1][1] + pts[k][1]) / 2;
+        d += "Q" + pts[k - 1][0] + " " + pts[k - 1][1] + " " + mx + " " + my;
+      }
+      d += "L" + pts[pts.length - 1][0] + " " + pts[pts.length - 1][1];
+      return d;
+    }
+    var areas = "", worm = "", dots = "", chips = "";
     inns.forEach(function (I, ix) {
       if (!I.overs.length) return;
-      // o.runs is the cumulative score the umpire printed at that over's end
-      var pts = "M" + X(0) + " " + Y(0) + I.overs.map(function (o) { return "L" + X(o.over) + " " + Y(o.runs); }).join("");
-      worm += "<path d='" + pts + "' class='wl' style='stroke:" + COL[ix] + "'/>";
+      var pts = [[X(0), Y(0)]].concat(I.overs.map(function (o) { return [X(o.over), Y(o.runs)]; }));
+      var line = smoothPath(pts);
+      var last = pts[pts.length - 1];
+      areas += "<path d='" + line + "L" + last[0] + " " + Y(0) + "L" + X(0) + " " + Y(0) + "Z' fill='url(#fdA" + ix + ")'/>";
+      worm += "<path d='" + line + "' class='wl' style='stroke:" + COL[ix] + "'/>";
       I.fow.forEach(function (fw) {
         var ov9 = parseFloat(fw.no) || null;
-        if (ov9 != null) dots += "<circle cx='" + X(ov9) + "' cy='" + Y(fw.score) + "' r='4' class='wd' style='fill:" + COL[ix] + "'/>";
+        if (ov9 != null) dots += "<circle cx='" + X(ov9) + "' cy='" + Y(fw.score) + "' r='4.5' class='wd' style='fill:#8E1F13'/>";
       });
+      // the endpoint wears its score: a chip at the head of the worm, and a
+      // pulse while that innings is still being read out
+      var lastO = I.overs[I.overs.length - 1];
+      var isLive = live && I.open && !I.close && (ix === 1 || !inns[1].open);
+      var lbl = lastO.runs + "/" + lastO.wkts;
+      var cw = 16 + lbl.length * 7.5;
+      var cx9 = Math.min(last[0], W - padR - cw - 2), cy9 = Math.max(padT + 10, last[1] - 22);
+      chips += (isLive ? "<circle cx='" + last[0] + "' cy='" + last[1] + "' r='9' style='fill:" + COL[ix] + "' opacity='.18' class='lvp'/>" : "") +
+        "<circle cx='" + last[0] + "' cy='" + last[1] + "' r='4.5' style='fill:" + COL[ix] + "' class='ep'/>" +
+        "<rect x='" + cx9 + "' y='" + (cy9 - 12) + "' width='" + cw + "' height='17' rx='8.5' style='fill:" + COL[ix] + "'/>" +
+        "<text x='" + (cx9 + cw / 2) + "' y='" + cy9 + "' class='chip'>" + lbl + "</text>";
     });
     var tgt = "";
-    if (inns[1].target) tgt = "<line x1='" + padL + "' y1='" + Y(inns[1].target) + "' x2='" + (W - padR) + "' y2='" + Y(inns[1].target) + "' class='tl'/><text x='" + (W - padR) + "' y='" + (Y(inns[1].target) - 4) + "' class='ax t'>target " + inns[1].target + "</text>";
+    if (inns[1].target) {
+      var tw = 52 + String(inns[1].target).length * 6;
+      tgt = "<line x1='" + padL + "' y1='" + Y(inns[1].target) + "' x2='" + (W - padR) + "' y2='" + Y(inns[1].target) + "' class='tl'/>" +
+        "<rect x='" + (W - padR - tw) + "' y='" + (Y(inns[1].target) - 20) + "' width='" + tw + "' height='15' rx='7.5' class='tchip'/>" +
+        "<text x='" + (W - padR - tw / 2) + "' y='" + (Y(inns[1].target) - 9) + "' class='ttxt'>TARGET " + inns[1].target + "</text>";
+    }
     var leg = inns.map(function (I, ix) {
       if (!I.overs.length) return "";
-      return "<span class='lg'><i style='background:" + COL[ix] + "'></i>" + E(I.team || (ix ? m.away.name : m.home.name)) + "</span>";
+      var lastO = I.overs[I.overs.length - 1];
+      var rr = lastO.over > 0 ? (lastO.runs / lastO.over) : null;
+      var bits = "<span class='lg'><i style='background:" + COL[ix] + "'></i>" + E(I.team || (ix ? m.away.name : m.home.name)) +
+        (rr != null ? "<b>" + rr.toFixed(2) + " an over</b>" : "") + "</span>";
+      return bits;
     }).join("");
-    var wormSvg = "<svg viewBox='0 0 " + W + " " + H + "' class='fd-svg'>" + grid + tgt + worm + dots + "</svg>";
-    // the manhattan: the umpire's "(N runs)" per over, wickets flagged above
-    var mh = "";
-    var maxR = 1; inns.forEach(function (I) { I.overs.forEach(function (o) { if (o.ovRuns > maxR) maxR = o.ovRuns; }); });
-    var H2 = 170, bw = (W - padL - padR) / maxOv / 2 - 1;
-    var Y2 = function (v) { return H2 - padB - (H2 - padB - padT) * v / (maxR + 2); };
+    // the ask: what the chase still needs of every remaining over
+    var ask = "";
+    if (live && inns[1].open && !inns[1].close && inns[1].target && inns[1].overs.length) {
+      var lo = inns[1].overs[inns[1].overs.length - 1];
+      var need = inns[1].target - lo.runs, left = maxOv - lo.over;
+      if (need > 0 && left > 0) ask = "<span class='lg ask'><b>" + need + " needed &middot; the ask " + (need / left).toFixed(2) + " an over</b></span>";
+    }
+    var wormSvg = "<svg viewBox='0 0 " + W + " " + H + "' class='fd-svg'>" + defs + grid + areas + tgt + worm + dots + chips + "</svg>";
+    // the manhattan: the umpire's "(N runs)" per over, every wicket flagged
+    // above the over it fell in, the biggest over crowned in gold
+    var maxR = 1, best = null;
+    inns.forEach(function (I, ix) { I.overs.forEach(function (o) { if (o.ovRuns > maxR) { maxR = o.ovRuns; best = ix + ":" + o.over; } }); });
+    var H2 = 190, bw = (W - padL - padR) / maxOv / 2 - 1;
+    var Y2 = function (v) { return H2 - padB - (H2 - padB - padT) * v / (maxR + 3); };
     var bars = "";
     for (var g2 = 0; g2 <= maxR + 2; g2 += 5)
-      bars += "<line x1='" + padL + "' y1='" + Y2(g2) + "' x2='" + (W - padR) + "' y2='" + Y2(g2) + "' class='gl'/><text x='" + (padL - 5) + "' y='" + (Y2(g2) + 3) + "' class='ax e'>" + g2 + "</text>";
+      bars += "<line x1='" + padL + "' y1='" + Y2(g2) + "' x2='" + (W - padR) + "' y2='" + Y2(g2) + "' class='gl'/><text x='" + (padL - 6) + "' y='" + (Y2(g2) + 3) + "' class='ax e'>" + g2 + "</text>";
     for (var gx2 = 10; gx2 <= maxOv; gx2 += 10)
-      bars += "<text x='" + X(gx2) + "' y='" + (H2 - 7) + "' class='ax m'>" + gx2 + "</text>";
+      bars += "<text x='" + X(gx2) + "' y='" + (H2 - 8) + "' class='ax m'>" + gx2 + "</text>";
     inns.forEach(function (I, ix) {
+      var wkByOver = {};
+      I.fow.forEach(function (fw) { var o9 = Math.ceil(parseFloat(fw.no)) || 0; wkByOver[o9] = (wkByOver[o9] || 0) + 1; });
       I.overs.forEach(function (o) {
         var x0 = X(o.over - 1) + (ix ? bw + 1 : 0);
-        bars += "<rect x='" + x0 + "' y='" + Y2(o.ovRuns) + "' width='" + bw + "' height='" + (Y2(0) - Y2(o.ovRuns)) + "' rx='1.5' style='fill:" + COL[ix] + (ix ? "" : "") + "' opacity='" + (ix ? "0.95" : "0.85") + "'/>";
-      });
-      I.fow.forEach(function (fw) {
-        var ov9 = Math.ceil(parseFloat(fw.no)) || null;
-        if (ov9 != null) bars += "<circle cx='" + (X(ov9 - 1) + (ix ? bw + 1 : 0) + bw / 2) + "' cy='" + (padT + 4 + (ix ? 10 : 0)) + "' r='3.5' class='wd' style='fill:#8E1F13'/>";
+        var crown = best === (ix + ":" + o.over);
+        bars += "<rect x='" + x0 + "' y='" + Y2(o.ovRuns) + "' width='" + bw + "' height='" + Math.max(0, Y2(0) - Y2(o.ovRuns)) + "' rx='2.5' fill='url(#fdB" + ix + ")'" + (crown ? " class='crown'" : "") + "/>";
+        var nw = wkByOver[o.over] || 0;
+        for (var w9 = 0; w9 < nw; w9++)
+          bars += "<circle cx='" + (x0 + bw / 2) + "' cy='" + (Y2(o.ovRuns) - 7 - w9 * 9) + "' r='3.4' class='wd' style='fill:#8E1F13'/>";
       });
     });
-    var mhSvg = "<svg viewBox='0 0 " + W + " " + H2 + "' class='fd-svg'>" + bars + "</svg>";
+    var mhSvg = "<svg viewBox='0 0 " + W + " " + H2 + "' class='fd-svg'>" + defs + bars + "</svg>";
     return "<div class='fd-comm'><div class='fd-ch'>The worm &middot; from the end-of-over prints</div>" +
-      "<div class='fd-leg'>" + leg + "</div>" + wormSvg +
-      "<div class='fd-ch' style='margin-top:16px'>The manhattan &middot; runs each over, wickets flagged</div>" + mhSvg + "</div>";
+      "<div class='fd-leg'>" + leg + ask + "</div>" + wormSvg +
+      "<div class='fd-ch' style='margin-top:18px'>The manhattan &middot; runs each over, wickets flagged</div>" + mhSvg + "</div>";
   }
 
   // ---- THE TEAMS: the sheets the managers filed ----------------------------
@@ -542,16 +593,27 @@
       // charts
       ".fo-fd .fd-svg{width:100%;height:auto;display:block}",
       ".fo-fd .fd-svg .gl{stroke:#efe9d9;stroke-width:1}",
+      ".fo-fd .fd-svg .gv{stroke:#f4efe2;stroke-width:1}",
       ".fo-fd .fd-svg .ax{font:600 9px Inter,sans-serif;fill:#8a8272}",
       ".fo-fd .fd-svg .ax.e{text-anchor:end}",
       ".fo-fd .fd-svg .ax.m{text-anchor:middle}",
-      ".fo-fd .fd-svg .ax.t{text-anchor:end;fill:#8a6a1f}",
-      ".fo-fd .fd-svg .wl{fill:none;stroke-width:2.4;stroke-linejoin:round;stroke-linecap:round}",
-      ".fo-fd .fd-svg .wd{stroke:#FFFEFC;stroke-width:1.4}",
-      ".fo-fd .fd-svg .tl{stroke:#E8B96A;stroke-width:1.6;stroke-dasharray:5 4}",
-      ".fo-fd .fd-leg{display:flex;gap:14px;margin:0 0 6px;flex-wrap:wrap}",
-      ".fo-fd .fd-leg .lg{display:inline-flex;align-items:center;gap:6px;font:600 11px Inter,sans-serif;color:#5b5344}",
+      ".fo-fd .fd-svg .wl{fill:none;stroke-width:2.8;stroke-linejoin:round;stroke-linecap:round}",
+      ".fo-fd .fd-svg .wd{stroke:#FFFEFC;stroke-width:1.6}",
+      ".fo-fd .fd-svg .ep{stroke:#FFFEFC;stroke-width:1.6}",
+      ".fo-fd .fd-svg .lvp{animation:fdPing 1.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}",
+      "@keyframes fdPing{0%,100%{transform:scale(.6);opacity:.28}50%{transform:scale(1.25);opacity:.1}}",
+      "@media(prefers-reduced-motion:reduce){.fo-fd .fd-svg .lvp,.fo-fd .fd-live b{animation:none}}",
+      ".fo-fd .fd-svg .chip{font:700 10px Oswald,sans-serif;letter-spacing:.06em;fill:#FFFEFC;text-anchor:middle}",
+      ".fo-fd .fd-svg .tl{stroke:#E8B96A;stroke-width:1.8;stroke-dasharray:6 5}",
+      ".fo-fd .fd-svg .tchip{fill:#F8ECD4;stroke:#E8B96A;stroke-width:1}",
+      ".fo-fd .fd-svg .ttxt{font:700 8.5px Oswald,sans-serif;letter-spacing:.12em;fill:#8a6a1f;text-anchor:middle}",
+      ".fo-fd .fd-svg .crown{stroke:#E8B96A;stroke-width:1.6}",
+      ".fo-fd .fd-leg{display:flex;gap:12px;margin:0 0 8px;flex-wrap:wrap;align-items:center}",
+      ".fo-fd .fd-leg .lg{display:inline-flex;align-items:center;gap:6px;font:600 11px Inter,sans-serif;color:#5b5344;background:#F6F3EB;border:1px solid #e8e1cf;border-radius:999px;padding:4px 11px}",
       ".fo-fd .fd-leg .lg i{width:14px;height:4px;border-radius:2px;display:inline-block}",
+      ".fo-fd .fd-leg .lg b{font:700 10.5px Oswald,sans-serif;letter-spacing:.04em;color:#14243A;margin-left:2px}",
+      ".fo-fd .fd-leg .lg.ask{background:#FBEFEA;border-color:#e8c9b8}",
+      ".fo-fd .fd-leg .lg.ask b{color:#8E1F13}",
       // teamsheets
       ".fo-fd .fd-xic{display:grid;grid-template-columns:1fr 1fr;gap:14px}",
       ".fo-fd .fd-xic .c b{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:14px;color:#14243A;margin-bottom:2px}",
