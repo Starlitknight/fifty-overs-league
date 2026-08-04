@@ -374,6 +374,32 @@
       });
     } catch (e) { wtSay("The broadcast could not start: " + String((e && e.message) || e).slice(0, 120)); try { console.warn("foWtSpectate", e); } catch (e2) {} }
   };
+  // CATCH-UP OFF THE MAIN THREAD'S BACK. Joining mid-window can mean
+  // hundreds of deliveries; simming them in one synchronous run froze slower
+  // machines for minutes and the theatre then painted mid-churn. The pump
+  // bowls a small slice per timeslot, narrates progress on the curtain, and
+  // only opens the theatre once the match has reached the live ball.
+  function wtPump(target0, done) {
+    var meta0 = M && M.meta;
+    var step = function () {
+      try {
+        if (!M || M.meta !== meta0) return;                 // superseded by another join
+        var upTo = Math.min(target0, window.__foWtBall + 60);
+        while (M && !M.done && window.__foWtBall < upTo) { autoPick(); stepBall(); window.__foWtBall++; }
+        if (M && !M.done && window.__foWtBall < target0) {
+          try {
+            var cur = document.querySelector("#page .fo-wt p");
+            if (cur) cur.innerHTML = "Joining the broadcast&hellip; catching up to the live ball <b>" +
+              Math.min(99, Math.round(100 * window.__foWtBall / Math.max(1, target0))) + "%</b>";
+          } catch (eC) {}
+          setTimeout(step, 16);
+          return;
+        }
+        done();
+      } catch (eP) { wtSay("The broadcast could not start: " + String((eP && eP.message) || eP).slice(0, 120)); }
+    };
+    step();
+  }
   function foWtBegin(rid, sv, fi, ordersMap) {
     try {
       var m = sv.fx[fi], cal = sv.cal, srvRound = cal.round;
@@ -432,30 +458,27 @@
       var isLive = nowT >= winStart && nowT < winStart + winLen;
       window.__foWtBall = 0;
       var target0 = isLive ? liveBall(nowT) : 0;         // stumps entry replays from ball one
-      // fast-forward with a wall-clock budget: if the catch-up runs long the
-      // drive interval finishes the job, and the page never freezes
-      var ffT0 = Date.now();
-      while (M && !M.done && window.__foWtBall < target0) {
-        autoPick(); stepBall(); window.__foWtBall++;
-        if (Date.now() - ffT0 > 8000) break;
-      }
-      try { if (window.__foWtDrv) clearInterval(window.__foWtDrv); } catch (e) {}
-      window.__foWtDrv = setInterval(function () {
-        try {
-          if ((location.hash || "").split("?")[0] !== "#/match" || !M || !M.meta || !M.meta.__spectate) { clearInterval(window.__foWtDrv); return; }
-          if (M.done) { clearInterval(window.__foWtDrv); return; }
-          if (isLive) {
-            // hold the live minute: bowl only the deliveries the clock has reached
-            var tb = liveBall(Date.now()), guard = 0;
-            while (M && !M.done && window.__foWtBall < tb && guard++ < 650) { autoPick(); stepBall(); window.__foWtBall++; }
-          } else {
-            autoPick(); stepBall(); window.__foWtBall++;
-          }
-        } catch (e) { clearInterval(window.__foWtDrv); }
-      }, isLive ? 1000 : 2200);
-      wtRemember({ k: "league", rid: rid, fi: fi, until: winStart + winLen });
-      location.hash = "#/match";
-      if (typeof window.route === "function") window.route();
+      wtPump(target0, function () {
+        try { if (window.__foWtDrv) clearInterval(window.__foWtDrv); } catch (e) {}
+        window.__foWtDrv = setInterval(function () {
+          try {
+            if ((location.hash || "").split("?")[0] !== "#/match" || !M || !M.meta || !M.meta.__spectate) { clearInterval(window.__foWtDrv); return; }
+            if (M.done) { clearInterval(window.__foWtDrv); return; }
+            if (isLive) {
+              // hold the live minute: bowl only the deliveries the clock has reached
+              var tb = liveBall(Date.now()), guard = 0;
+              while (M && !M.done && window.__foWtBall < tb && guard++ < 650) { autoPick(); stepBall(); window.__foWtBall++; }
+            } else {
+              autoPick(); stepBall(); window.__foWtBall++;
+            }
+          } catch (e) { clearInterval(window.__foWtDrv); }
+        }, isLive ? 1000 : 2200);
+        wtRemember({ k: "league", rid: rid, fi: fi, until: winStart + winLen });
+        location.hash = "#/match";
+        if (typeof window.route === "function") window.route();
+        // one clean paint after the dust settles, so the stage measures right
+        setTimeout(function () { try { if (typeof renderMatch === "function") renderMatch(); } catch (eR9) {} }, 150);
+      });
     } catch (e) { wtSay("The broadcast could not start: " + String((e && e.message) || e).slice(0, 120)); try { console.warn("foWtSpectate", e); } catch (e2) {} }
   };
 
@@ -511,29 +534,25 @@
           var isLive = nowT >= winStart && nowT < winStart + winLen;
           window.__foWtBall = 0;
           var target0 = isLive ? liveBall(nowT) : 0;
-          // fast-forward with a wall-clock budget: if the catch-up runs long the
-      // drive interval finishes the job, and the page never freezes
-      var ffT0 = Date.now();
-      while (M && !M.done && window.__foWtBall < target0) {
-        autoPick(); stepBall(); window.__foWtBall++;
-        if (Date.now() - ffT0 > 8000) break;
-      }
-          try { if (window.__foWtDrv) clearInterval(window.__foWtDrv); } catch (e) {}
-          window.__foWtDrv = setInterval(function () {
-            try {
-              if ((location.hash || "").split("?")[0] !== "#/match" || !M || !M.meta || !M.meta.__spectate) { clearInterval(window.__foWtDrv); return; }
-              if (M.done) { clearInterval(window.__foWtDrv); return; }
-              if (isLive) {
-                var tb = liveBall(Date.now()), guard = 0;
-                while (M && !M.done && window.__foWtBall < tb && guard++ < 650) { autoPick(); stepBall(); window.__foWtBall++; }
-              } else {
-                autoPick(); stepBall(); window.__foWtBall++;
-              }
-            } catch (e) { clearInterval(window.__foWtDrv); }
-          }, isLive ? 1000 : 2200);
-          wtRemember({ k: "friendly", fid: +d.id, until: winStart + winLen });
-          location.hash = "#/match";
-          if (typeof window.route === "function") window.route();
+          wtPump(target0, function () {
+            try { if (window.__foWtDrv) clearInterval(window.__foWtDrv); } catch (e) {}
+            window.__foWtDrv = setInterval(function () {
+              try {
+                if ((location.hash || "").split("?")[0] !== "#/match" || !M || !M.meta || !M.meta.__spectate) { clearInterval(window.__foWtDrv); return; }
+                if (M.done) { clearInterval(window.__foWtDrv); return; }
+                if (isLive) {
+                  var tb = liveBall(Date.now()), guard = 0;
+                  while (M && !M.done && window.__foWtBall < tb && guard++ < 650) { autoPick(); stepBall(); window.__foWtBall++; }
+                } else {
+                  autoPick(); stepBall(); window.__foWtBall++;
+                }
+              } catch (e) { clearInterval(window.__foWtDrv); }
+            }, isLive ? 1000 : 2200);
+            wtRemember({ k: "friendly", fid: +d.id, until: winStart + winLen });
+            location.hash = "#/match";
+            if (typeof window.route === "function") window.route();
+            setTimeout(function () { try { if (typeof renderMatch === "function") renderMatch(); } catch (eR9) {} }, 150);
+          });
         })
         .catch(function (e) { wtSay(String(e.message || "The world could not be reached.").slice(0, 140)); });
     } catch (e) { wtSay("The broadcast could not start: " + String((e && e.message) || e).slice(0, 120)); try { console.warn("foWtFriendly", e); } catch (e2) {} }
@@ -601,13 +620,14 @@
       page.innerHTML = "<div class='fo-wt'><p style='padding:80px 20px;color:#fff;font:italic 400 15px Georgia,serif'>Joining the broadcast&hellip; " +
         "<a href='#/watch?n=" + encodeURIComponent(rid) + "&f=" + fi + "' style='color:#E8B96A;text-decoration:underline'>taking long? open the fixtures page</a></p></div>";
       setTimeout(function () { try { window.foWtSpectate(rid, null, null, fi); } catch (eGo) {} }, 30);
+      var goBusy = function () { try { return typeof M !== "undefined" && M && !M.done && M.meta && M.meta.__spectate; } catch (eB) { return false; } };
       setTimeout(function () {
-        if ((location.hash || "").split("?")[0] !== "#/watch") return;
+        if ((location.hash || "").split("?")[0] !== "#/watch" || goBusy()) return;
         try { delete ORD_CACHE[rid + ":" + round]; } catch (eC) {}
         try { window.foWtSpectate(rid, null, null, fi); } catch (eG2) {}
       }, 7000);
       setTimeout(function () {
-        if ((location.hash || "").split("?")[0] !== "#/watch") return;
+        if ((location.hash || "").split("?")[0] !== "#/watch" || goBusy()) return;
         location.hash = "#/watch?n=" + encodeURIComponent(rid) + "&f=" + fi;
         try { if (typeof window.route === "function") window.route(); } catch (eR) {}
       }, 15000);
