@@ -145,6 +145,7 @@
         I.open = true;
         I.sinceTop.push(r);
         I.lastNo = r.no;
+        I.lastDel = r;
         I.pshipBalls++;
         if (r.strikerNm) {
           I.striker = r.strikerNm;
@@ -192,6 +193,7 @@
       [m.home.slot, m.away.slot].forEach(function (sl) {
         ((wt && wt.serverSquad && wt.serverSquad(rid, sl)) || []).forEach(function (p) {
           if (!p || !p.name) return;
+          p.__fdSlot = sl;
           mp[p.name.toLowerCase()] = p;
           var ab = (p.name[0] + ". " + surname(p.name)).toLowerCase();
           if (!mp[ab]) mp[ab] = p;
@@ -211,6 +213,22 @@
       return "<span class='fd-strn " + (mode === "bowl" ? "bw" : "bt") + "'>" + FS.html(FS.stars(comp)) + "</span>";
     } catch (e) { return ""; }
   }
+  // EVERY NAME IS A DOOR. A player named anywhere outside the commentary
+  // prose links to his page, resolved through the served squads to the club
+  // he actually plays for; a name the seed cannot place stays plain text.
+  function plink(nm, label) {
+    try {
+      var clean = String(nm || "").replace(/\s*\([^)]*\)\s*$/, "").trim();
+      var lbl = label != null ? label : nm;
+      var p = T.args ? squadMap(T.args[3], T.args[2])[clean.toLowerCase()] : null;
+      if (!p || p.__fdSlot == null) return E(lbl);
+      return "<a class='fd-plink' href='#/player?c=" + encodeURIComponent(T.args[3]) + "&s=" + p.__fdSlot + "&n=" + encodeURIComponent(p.name) + "'>" + E(lbl) + "</a>";
+    } catch (e) { return E(nm); }
+  }
+  function tlink(nm, slot, rid) {
+    if (slot == null) return E(nm);
+    return "<a class='fd-plink' href='#/team?c=" + encodeURIComponent(rid) + "&s=" + (slot | 0) + "'>" + E(nm) + "</a>";
+  }
   var T = { id: null, timer: null, tab: "live", filter: "all", args: null, ord: {}, ordBusy: {} };
   window.foRenderFeedPage = function () {
     var page = document.getElementById("page"); if (!page) return;
@@ -227,7 +245,7 @@
     var id = rid + ":s" + cal.seasonNo + ":r" + cal.round + ":h" + m.home.slot + "a" + m.away.slot;
     var winStart = pl.EPOCH + pl.dayIx(Date.now()) * 86400000 + pl.natHour(rid) * 3600000;
     var winLen = (pl.LIVE_LEN || 3) * 3600000, BALL_MS = winLen / 600;
-    if (T.id !== id) { T.tab = "live"; T.filter = "all"; }
+    if (T.id !== id) { T.tab = "live"; T.filter = "all"; T.full = false; }
     T.id = id; T.rid = rid;
     page.innerHTML = shell(rid, cal, null, m, stageShell(m, null, "Opening the umpire's book&hellip;"));
     logFetch(rid, id).then(function (log) {
@@ -269,6 +287,7 @@
     }
   };
   window.foFeedFilter = function (f) { T.filter = f; if (T.args) paint.apply(null, T.args); };
+  window.foFeedAll = function () { T.full = true; if (T.args) paint.apply(null, T.args); };
   function hh(h) { return (h < 10 ? "0" : "") + h + ":00"; }
   function stageShell(m, inner, sub) {
     return "<div class='fd-stage'><div class='fd-stagein'>" +
@@ -345,7 +364,7 @@
       "<div class='fd-stage" + (art ? " hasart" : "") + "'" +
       (art ? " style=\"background-image:linear-gradient(90deg,rgba(10,26,48,.97) 0%,rgba(10,26,48,.9) 48%,rgba(10,26,48,.68) 100%),url('" + art + "')\"" : "") + ">" +
       "<div class='fd-stagein'>" +
-      "<div class='fd-teams'><b>" + E(m.home.name) + "</b><i>vs</i><b>" + E(m.away.name) + "</b></div>" +
+      "<div class='fd-teams'><b>" + tlink(m.home.name, m.home.slot, rid) + "</b><i>vs</i><b>" + tlink(m.away.name, m.away.slot, rid) + "</b></div>" +
       (condBits.length ? "<div class='fd-cond'>" + condBits.join(" &middot; ") + "</div>" : "") +
       scoreHtml + mets +
       (done ? "<a class='fd-enter' href='#/report?n=" + encodeURIComponent(rid) + "&w=" + encodeURIComponent(id) + "'>The full report and scorecard &rsaquo;</a>" : "") +
@@ -387,9 +406,11 @@
       return true;
     };
     var rows = seen.filter(keep);
-    // while the broadcast runs, the book keeps to the recent play; at stumps
-    // it opens in full - every ball of the match, first to last
-    if (f === "all" && !done) rows = rows.slice(-160);
+    // while the broadcast runs, the book keeps to the recent play - but one
+    // press opens the whole thing, back to the toss, first innings and all;
+    // at stumps it opens in full on its own
+    var clipped = false;
+    if (f === "all" && !done && !T.full && rows.length > 160) { rows = rows.slice(-160); clipped = true; }
     // the fall-of-wicket line rides inside its wicket's event
     var items = [];
     for (var i = 0; i < rows.length; i++) {
@@ -415,18 +436,23 @@
       if (ci > 0) { head = txt.slice(0, ci); body9 = txt.slice(ci + 3); }
       if (wk4) {
         var hb = surname(r4.bowlerNm), hs = surname(r4.strikerNm);
-        var hl = (hb && hs) ? (hb + " GETS " + hs).toUpperCase() : (head || "WICKET").toUpperCase();
+        var hl = (hb && hs)
+          ? plink(r4.bowlerNm, hb.toUpperCase()) + " GETS " + plink(r4.strikerNm, hs.toUpperCase())
+          : E((head || "WICKET").toUpperCase());
         body9 = body9.replace(/^WICKET\s*-\s*/, "");
         var wtg = fldTag(r4);
         return "<div class='fd-ev wkt'><span class='dot'>" + ring(r4.out) + "</span>" +
-          "<div class='w'><span class='no'>" + E(r4.no) + "</span><b class='hl'>" + E(hl) + "</b>" +
+          "<div class='w'><span class='no'>" + E(r4.no) + "</span><b class='hl'>" + hl + "</b>" +
           (wtg && wtg.k !== "ct" ? "<span class='fdtag g'>" + wtg.lbl + "</span>" : "") +
           "<p>" + E(body9) + "</p>" +
           (it.fow ? "<span class='fowchip'>&#10007; " + E(it.fow) + "</span>" : "") + "</div></div>";
       }
       var dtg = fldTag(r4);
+      var headHtml = (r4.bowlerNm && r4.strikerNm)
+        ? plink(r4.bowlerNm, surname(r4.bowlerNm)) + " to " + plink(r4.strikerNm, surname(r4.strikerNm))
+        : E(head);
       return "<div class='fd-ev'><span class='dot'>" + ring(r4.out) + "</span>" +
-        "<div class='w'><span class='no'>" + E(r4.no) + "</span><b>" + E(head) + "</b>" +
+        "<div class='w'><span class='no'>" + E(r4.no) + "</span><b>" + headHtml + "</b>" +
         (dtg ? "<span class='fdtag " + (dtg.good ? "g" : "b") + "'>" + dtg.lbl + "</span>" : "") +
         "<p>" + E(body9) + "</p></div></div>";
     }).join("");
@@ -446,27 +472,54 @@
       "<div class='fd-bh'><div class='tl'><b>BALL-BY-BALL</b><span>The Umpire&rsquo;s Book</span></div>" +
       "<div class='tr'>" + (curOv ? "<span class='ov9'>OVER " + curOv + "</span>" : "") + lastLn + ovRings +
       "<select class='fd-fsel' onchange='foFeedFilter(this.value)'>" + sel + "</select></div></div>" +
-      "<div class='fd-tl'>" + (comm || "<p class='fd-dim'>" + (T.filter === "all" ? "The first ball is moments away." : "Nothing under that heading yet.") + "</p>") + "</div></div>";
+      "<div class='fd-tl'>" + (comm || "<p class='fd-dim'>" + (T.filter === "all" ? "The first ball is moments away." : "Nothing under that heading yet.") + "</p>") +
+      (clipped ? "<button type='button' class='fd-allbtn' onclick='foFeedAll()'>Read the whole book &middot; back to the toss</button>" : "") + "</div></div>";
+  }
+
+  // WHO TAKES THE NEXT BALL. Read off the umpire's book by the laws of the
+  // game itself: an odd number of batted runs crosses the batters, the end
+  // of an over (the banner just printed) swaps the ends, and a wicket means
+  // the new man is still walking out - no dot until the umpire names him.
+  function nextStriker(I) {
+    var last = I.sinceTop.length ? I.sinceTop[I.sinceTop.length - 1] : null;
+    var overEnded = false;
+    if (!last) { last = I.lastDel || null; overEnded = true; }
+    if (!last || !last.strikerNm) return null;
+    var S = last.strikerNm, o = last.out, t = last.txt || "";
+    if (o && o[0] === "w" && o !== "wide") return null;
+    var crossed = false;
+    if (o === "1" || o === "3") crossed = true;
+    else if ((o === "bye" || o === "legbye") && !/\btwo\b|\bfour\b/i.test(t)) crossed = true;
+    else if (o === "wide" && /they cross|come back|single/i.test(t)) crossed = true;
+    var other = crossed !== overEnded;                 // one swap flips, two cancel
+    if (!other) return S;
+    if (I.who && I.who.bats) {
+      for (var k = 0; k < I.who.bats.length; k++)
+        if (surname(I.who.bats[k].nm).toLowerCase() !== surname(S).toLowerCase()) return I.who.bats[k].nm;
+    }
+    return null;
   }
 
   // ---- AT THE CREASE, the situation beside the book ------------------------
   function creasePanel(inns, innNow, tp, live) {
     var I = inns[innNow];
     var rows = "";
+    var nxt = nextStriker(I), sn = surname(nxt || "");
     if (I.who && I.who.bats.length) {
-      var sn = surname(I.striker);
       rows = I.who.bats.map(function (b9) {
         var onStrike = sn && surname(b9.nm) === sn;
-        return "<div class='cb'><span class='nm'>" + (onStrike ? "<i class='st'></i>" : "") + E(b9.nm) + pstar(b9.nm, T.rid) + "<span class='ss'>" + sStars(b9.nm, "bat") + "</span></span><span class='rv'>" + b9.r + "*</span><span class='bv'>(" + b9.b + ")</span></div>";
+        return "<div class='cb'><span class='nm'>" + (onStrike ? "<i class='st' title='takes the next ball'></i>" : "") + plink(b9.nm) + pstar(b9.nm, T.rid) + "<span class='ss'>" + sStars(b9.nm, "bat") + "</span></span><span class='rv'>" + b9.r + "*</span><span class='bv'>(" + b9.b + ")</span></div>";
       }).join("");
-      if (sn && !I.who.bats.some(function (b9) { return surname(b9.nm) === sn; }))
-        rows += "<div class='cb'><span class='nm'><i class='st'></i>" + E(I.striker) + pstar(I.striker, T.rid) + "</span><span class='rv new'>new man</span></div>";
+      // a fresh man at the crease the umpire has not printed a tally for yet
+      var fsn = surname(I.striker || "");
+      if (fsn && !I.who.bats.some(function (b9) { return surname(b9.nm) === fsn; }))
+        rows += "<div class='cb'><span class='nm'>" + (sn && fsn === sn ? "<i class='st' title='takes the next ball'></i>" : "") + E(I.striker) + pstar(I.striker, T.rid) + "</span><span class='rv new'>new man</span></div>";
     } else if (I.striker) {
-      rows = "<div class='cb'><span class='nm'><i class='st'></i>" + E(I.striker) + pstar(I.striker, T.rid) + "</span><span class='rv new'>at the crease</span></div>";
+      rows = "<div class='cb'><span class='nm'>" + (sn && surname(I.striker) === sn ? "<i class='st' title='takes the next ball'></i>" : "") + E(I.striker) + pstar(I.striker, T.rid) + "</span><span class='rv new'>at the crease</span></div>";
     }
     var bowl = "";
     if (I.who && I.who.bowl) {
-      bowl = "<div class='sh'>BOWLING</div><div class='cb bw'><span class='nm'>" + E(I.who.bowl.nm) + pstar(I.who.bowl.nm, T.rid) + "<span class='ss'>" + sStars(I.who.bowl.nm, "bowl") + "</span></span>" +
+      bowl = "<div class='sh'>BOWLING</div><div class='cb bw'><span class='nm'>" + plink(I.who.bowl.nm) + pstar(I.who.bowl.nm, T.rid) + "<span class='ss'>" + sStars(I.who.bowl.nm, "bowl") + "</span></span>" +
         "<span class='rv'>" + I.who.bowl.o + "&ndash;" + I.who.bowl.r + "</span><span class='wv'>" + I.who.bowl.w + "</span></div>" +
         "<div class='lbl'><span></span><span>O&ndash;R</span><span>W</span></div>";
     } else if (I.bowler) {
@@ -521,7 +574,7 @@
                b9.out.how === "stumped" ? "st &dagger; b " + E(surname(b9.out.bowler || "")) : E(b9.out.how))
             : "not out";
           var sr = (b9.r != null && b9.b > 0) ? Math.round(b9.r / b9.b * 100) : null;
-          return "<tr class='" + (b9.out ? "o" : "no") + "'><td>" + E(b9.nm) + pstar(b9.nm, T.rid) + "<span class='ss'>" + sStars(b9.nm, "bat") + "</span></td><td class='h'>" + how + "</td>" +
+          return "<tr class='" + (b9.out ? "o" : "no") + "'><td>" + plink(b9.nm) + pstar(b9.nm, T.rid) + "<span class='ss'>" + sStars(b9.nm, "bat") + "</span></td><td class='h'>" + how + "</td>" +
             "<td class='r'>" + (b9.r != null ? b9.r + (b9.out ? "" : "*") : "&mdash;") + "</td>" +
             "<td class='r'>" + (b9.b != null ? b9.b : "&mdash;") + "</td>" +
             "<td class='r'>" + (sr != null ? sr : "&mdash;") + "</td></tr>";
@@ -529,7 +582,7 @@
       if (I.bowls.length)
         out += "<table class='fd-tb'><tr><th>Bowling</th><th class='r'>O</th><th class='r'>R</th><th class='r'>W</th></tr>" +
           I.bowls.map(function (w9) {
-            return "<tr><td>" + E(w9.nm) + pstar(w9.nm, T.rid) + "<span class='ss'>" + sStars(w9.nm, "bowl") + "</span></td><td class='r'>" + w9.o + "</td><td class='r'>" + w9.r + "</td><td class='r'>" + w9.w + "</td></tr>";
+            return "<tr><td>" + plink(w9.nm) + pstar(w9.nm, T.rid) + "<span class='ss'>" + sStars(w9.nm, "bowl") + "</span></td><td class='r'>" + w9.o + "</td><td class='r'>" + w9.r + "</td><td class='r'>" + w9.w + "</td></tr>";
           }).join("") + "</table>";
       if (I.fow.length || I.top) out += partHtml(I);
       if (ix === 0 && I.brk) out += "<div class='fd-note'>" + E(I.brk) + "</div>";
@@ -677,21 +730,21 @@
   function teamsPanel(m, rid) {
     var ord = T.ord[T.id];
     if (!ord) return "<div class='fd-panel'><div class='fd-ch'>The teamsheets</div><p class='fd-dim'>Fetching the named elevens&hellip;</p></div>";
-    var col = function (nm) {
+    var col = function (nm, slot) {
       var o = ord[nm];
       var list = o && (o.batOrder || o.xi);
-      if (!list || !list.length) return "<div class='c'><b>" + E(nm) + "</b><u>no sheet filed &middot; the engine names the XI at the toss</u></div>";
-      return "<div class='c'><b>" + E(nm) + "</b><u>manager&rsquo;s named order</u>" +
+      if (!list || !list.length) return "<div class='c'><b>" + tlink(nm, slot, rid) + "</b><u>no sheet filed &middot; the engine names the XI at the toss</u></div>";
+      return "<div class='c'><b>" + tlink(nm, slot, rid) + "</b><u>manager&rsquo;s named order</u>" +
         list.slice(0, 11).map(function (p9, k) {
           var n9 = typeof p9 === "string" ? p9 : (p9 && p9.name) || "";
-          return "<span><i>" + (k + 1) + "</i>" + E(n9) + pstar(n9, rid) + "<u class='ssin'>" + sStars(n9, "bat") + "</u>" +
+          return "<span><i>" + (k + 1) + "</i>" + plink(n9) + pstar(n9, rid) + "<u class='ssin'>" + sStars(n9, "bat") + "</u>" +
             (o.captain === n9 ? " <em>C</em>" : "") + (o.keeper === n9 ? " &dagger;" : "") + "</span>";
         }).join("") +
         (o.tossCall ? "<u class='t2'>toss call " + (o.tossCall === "H" ? "heads" : "tails") + (o.tossDecision ? " &middot; would " + E(o.tossDecision) + " first" : "") + "</u>" : "") +
         "</div>";
     };
     return "<div class='fd-panel'><div class='fd-ch'>The teamsheets &middot; public from an hour before the first ball</div>" +
-      "<div class='fd-xic'>" + col(m.home.name) + col(m.away.name) + "</div></div>";
+      "<div class='fd-xic'>" + col(m.home.name, m.home.slot) + col(m.away.name, m.away.slot) + "</div></div>";
   }
 
   function shell(rid, cal, state, m, inner) {
@@ -828,6 +881,8 @@
       ".fo-fd .fd-crease .dv{height:1px;background:#efe9d9;margin:10px 0}",
       ".fo-fd .fd-crease .sh{font:700 10px Oswald,sans-serif;letter-spacing:.18em;color:var(--fomut);margin:2px 0 6px}",
       ".fo-fd .fd-crease .pv{font:700 13px Oswald,sans-serif;letter-spacing:.06em;color:var(--foink);margin-bottom:10px}",
+      "html body #page .fo-fd .fd-allbtn{display:block;width:100%;margin-top:10px;font:700 10.5px Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;color:#C9571F !important;background:transparent !important;border:1px dashed #e0b9a4 !important;border-radius:10px;padding:11px;cursor:pointer}",
+      "html body #page .fo-fd .fd-allbtn:hover{border-style:solid !important}",
       "html body #page .fo-fd .fd-viewsc{display:block;width:100%;margin-top:14px;font:700 11px Oswald,sans-serif !important;letter-spacing:.16em;color:var(--foink) !important;background:transparent !important;border:1px solid rgba(20,36,58,.3) !important;border-radius:10px;padding:11px;cursor:pointer;text-align:center;transition:border-color .15s}",
       "html body #page .fo-fd .fd-viewsc:hover{border-color:var(--foor) !important;color:var(--foor) !important}",
       // ---- the scorecard tables
@@ -897,6 +952,9 @@
       ".fo-fd .ss{display:block;flex-basis:100%;margin-top:1px}",
       ".fo-fd .ss:empty{display:none}",
       ".fo-fd .fd-xic .c span u.ssin{display:inline-flex;margin:0 0 0 4px;text-decoration:none}",
+      "html body #page .fo-fd a.fd-plink,html body #page .fo-fd a.fd-plink:visited{color:inherit !important;text-decoration:none !important;border-bottom:1px dotted rgba(20,36,58,.28)}",
+      "html body #page .fo-fd a.fd-plink:hover{border-bottom-style:solid;border-bottom-color:#C9571F}",
+      "html body #page .fo-fd .fd-teams a.fd-plink{border-bottom-color:rgba(255,254,252,.3)}",
       ".fo-fd .fd-dim{font:italic 400 13.5px Georgia,serif;color:var(--fomut);padding:24px 6px}",
       ".fo-fd .fd-foot{display:flex;justify-content:space-between;margin-top:16px}",
       "html body #page .fo-fd .fd-foot a{font:700 10px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#C9571F !important;text-decoration:none !important}",
