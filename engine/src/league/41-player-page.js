@@ -462,6 +462,7 @@
     } else if (TAB === "matches") {
       var fx = nextFixtureFor(team.name || "");
       var spot = xiSpot(p, team);
+      setTimeout(function () { try { ppFillLog(p, hit, team); } catch (eL) {} }, 30);
       room =
         "<div class='fo-pp-col'>" +
         "<div class='fo-pp-card pad0'><div class='fo-pp-ph'><h3>Match log</h3>" +
@@ -828,6 +829,115 @@
       return "<div><b>" + x[1] + "</b><i>" + x[0] + "</i></div>";
     }).join("") + (inns ? "" : "<p class='fo-pp-dim'>The record starts on the next matchday.</p>");
   }
+  // ---- THE MATCH LOG THE UMPIRE KEEPS ---------------------------------------
+  // A world club's matches are played on the server, so the engine's "Recent
+  // matches" panel (the local record) never fills for them - the log sat empty
+  // for men who had played. The nation's book lists every settled fixture, and
+  // migration 025 banks the full card; this reads the club's matches from the
+  // book and the man's own lines from the cards - batting, bowling, catches -
+  // every number as banked on the day.
+  var PP_SB = "https://egaipdksvztqqgouriyc.supabase.co";
+  var PP_KEY = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+  var PP_CARDS = {};
+  function ppCard(nat, id) {
+    var k = nat + "|" + id;
+    if (PP_CARDS[k]) return PP_CARDS[k];
+    var pr = fetch(PP_SB + "/rest/v1/rpc/world_match_card", {
+      method: "POST",
+      headers: { apikey: PP_KEY, Authorization: "Bearer " + PP_KEY, "content-type": "application/json" },
+      body: JSON.stringify({ p_country: nat, p_match_id: id })
+    }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { return (j && j.card) ? j.card : null; })
+      .catch(function () { return null; });
+    PP_CARDS[k] = pr;
+    return pr;
+  }
+  function ppOvers(balls) { balls = balls | 0; return Math.floor(balls / 6) + (balls % 6 ? "." + (balls % 6) : ""); }
+  function ppWorldRid(hit) {
+    try { if (hit.world && hit.world.rid) return hit.world.rid; } catch (e) {}
+    try {
+      if (isMine(hit.p.name)) {
+        var cl = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+        return (cl && cl.country) || null;
+      }
+    } catch (e2) {}
+    return null;
+  }
+  function ppServedLog(p, hit, team) {
+    var rid = ppWorldRid(hit); if (!rid) return null;
+    var book = null;
+    try { book = window.__foWorldLg && window.__foWorldLg.get && window.__foWorldLg.get(rid); } catch (e) {}
+    var results = (book && book.results) || [];
+    var names = {};
+    if (team && team.name) names[team.name] = 1;
+    try {
+      var slot = hit.world && hit.world.slot;
+      if (slot != null) {
+        (window.__foPlanet.sidesOf(rid) || []).forEach(function (sd) { if (sd.slot === (slot | 0)) names[sd.name] = 1; });
+        var nm = window.__foWorldNames && window.__foWorldNames.get(rid);
+        if (nm && nm[slot] != null) names[nm[slot]] = 1;
+      }
+    } catch (e2) {}
+    var ms = results.filter(function (m) { return names[m.home] || names[m.away]; });
+    if (!ms.length) return null;
+    ms.sort(function (a, b) { return (b.round | 0) - (a.round | 0); });
+    return { rid: rid, names: names, ms: ms.slice(0, 24) };
+  }
+  function ppLineFromCard(card, names, pname) {
+    var out = { bat: "", bowl: "", ct: 0 };
+    try {
+      (card.innings || []).forEach(function (inn) {
+        if (names[inn.batTeam]) (inn.bat || []).forEach(function (r) {
+          if (r && r.p && r.p.name === pname) out.bat = r.r + (r.out ? "" : "*") + " (" + r.b + ")";
+        });
+        if (names[inn.bowlTeam]) {
+          var bw = inn.bowlers && inn.bowlers[pname];
+          if (bw) out.bowl = bw.w + "-" + bw.r + " (" + ppOvers(bw.b) + ")";
+          var f = inn.fielding && inn.fielding[pname];
+          if (f) out.ct += (f.ct | 0) + (f.st | 0);
+        }
+      });
+    } catch (e) {}
+    return out;
+  }
+  function ppFillLog(p, hit, team) {
+    var got = ppServedLog(p, hit, team);
+    if (!got) {
+      // the book may simply not be on this device yet - send for it, once
+      try {
+        var rid0 = ppWorldRid(hit), LGx = window.__foWorldLg;
+        if (rid0 && LGx && LGx.want && !ppFillLog.__asked) {
+          ppFillLog.__asked = 1;
+          LGx.want(rid0, function () { try { if (onPage() && TAB === "matches") ppFillLog(p, hit, team); } catch (eW) {} });
+        }
+      } catch (e) {}
+      return false;
+    }
+    var sig = location.hash;
+    Promise.all(got.ms.map(function (m) { return ppCard(got.rid, m.id); })).then(function (cards) {
+      if (location.hash !== sig || !onPage() || TAB !== "matches") return;
+      var slot = document.querySelector("#page .fo-pp-slot[data-slot='recent']"); if (!slot) return;
+      var rows = got.ms.map(function (m, i) {
+        var mineHome = !!got.names[m.home];
+        var opp = mineHome ? m.away : m.home;
+        var res = !m.winner ? "&mdash;" : got.names[m.winner] ? "Won" : "Lost";
+        var line = cards[i] ? ppLineFromCard(cards[i], got.names, p.name) : null;
+        var bits = [];
+        if (line && line.bat) bits.push(line.bat);
+        if (line && line.bowl) bits.push(line.bowl);
+        if (line && line.ct) bits.push(line.ct + " ct");
+        var his = bits.length ? bits.join(" &middot; ") : (cards[i] ? "no recorded involvement" : "card on its way");
+        return "<tr><td>R" + (m.round | 0) + "</td><td>" + (mineHome ? "v " : "at ") + E(opp) + "</td>" +
+          "<td class='" + (res === "Won" ? "w" : res === "Lost" ? "l" : "") + "'>" + res + "</td>" +
+          "<td>" + his + "</td><td class='sm'>League</td></tr>";
+      }).join("");
+      slot.innerHTML = "<div class='panel' data-fo-servedlog><h4>Recent matches</h4><div class='pad'>" +
+        "<table class='fo-pp-log'><tr><th>Rd</th><th>Fixture</th><th>Result</th><th>His match</th><th></th></tr>" + rows + "</table>" +
+        "<p class='fo-pp-dim'>From the umpire's book &middot; every line as banked on the day.</p></div></div>";
+      try { filterLog(activeFilter()); } catch (eF2) {}
+    });
+    return true;
+  }
   function honoursHtml(p, team) {
     var got = [];
     try {
@@ -859,6 +969,8 @@
       var want = { career: document.getElementById("fo-career"), recent: pick(/^Recent matches/i),
         dev: document.querySelector("#page .fo-pop-dev"), record: document.querySelector("#page .fo-ls-career") };
       wrap.querySelectorAll(".fo-pp-slot").forEach(function (slot) {
+        // the umpire's own log stands; the empty local panel must not join it
+        if (slot.getAttribute("data-slot") === "recent" && slot.querySelector("[data-fo-servedlog]")) return;
         var node = want[slot.getAttribute("data-slot")];
         if (node && node.parentNode !== slot) slot.appendChild(node);
         if (slot.getAttribute("data-slot") === "recent") filterLog(activeFilter());
@@ -900,6 +1012,15 @@
   var CSS = [
     "html body #page .fo-pp{position:relative;max-width:1000px;margin:14px auto 44px;padding:0 12px;color:#141C28;--navy:#0C1B33;--gold:#C9A24B;--nac:#C95532}",
     "html body #page .fo-pp-attic{display:none}",
+    // ---- the umpire's match log --------------------------------------------
+    "html body #page .fo-pp-slot[data-slot='recent'] .pad{overflow-x:auto}",
+    "html body #page .fo-pp-log{width:100%;border-collapse:collapse;font:500 12.5px Inter,sans-serif}",
+    "html body #page .fo-pp-log th{font:700 9px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#8a8272;text-align:left;padding:6px 8px;border-bottom:1px solid #eee7d9;white-space:nowrap}",
+    "html body #page .fo-pp-log td{padding:9px 8px;border-bottom:1px solid #f3eee1;color:#141C28}",
+    "html body #page .fo-pp-log tr:last-child td{border-bottom:none}",
+    "html body #page .fo-pp-log td.w{color:#177A57;font-weight:700}",
+    "html body #page .fo-pp-log td.l{color:#8E1F13;font-weight:700}",
+    "html body #page .fo-pp-log td.sm{font-size:10.5px;color:#8a8272;white-space:nowrap}",
     "html body #page a.fo-pp-back{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;margin:0 -12px 6px;border-radius:12px;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--nac);text-decoration:none}",
     // ---- the hero -----------------------------------------------------------
     "html body #page .fo-pp-plate{position:relative;display:grid;grid-template-columns:236px minmax(0,1fr) auto;gap:20px;align-items:start;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:18px;padding:16px 18px;box-shadow:0 10px 30px rgba(30,38,52,.07)}",
