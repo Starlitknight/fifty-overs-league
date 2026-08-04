@@ -3536,6 +3536,17 @@
   window.foGroundArtUrl = function (city) {
     try { return city && FO_CITY_GROUNDS[city] ? FO_ART + "cities/" + foCitySlug(city) + "-ground.webp" : null; } catch (e) { return null; }
   };
+  // the weather's own skies: one hand-painted scene per condition in the
+  // engine's WXLIST, for any stage that knows its weather but not its ground.
+  // 'rain' is the mid-match interruption (the umpire's RAIN row), not a
+  // forecast.
+  var FO_WX_ART = { sunny: "01-clear-summer-noon", overcast: "02-soft-overcast", drizzle: "03-light-drizzle",
+    rain: "04-heavy-rain-delay", humid: "05-post-rain-sunbreak", "dew later": "05-post-rain-sunbreak",
+    misty: "06-morning-mist", windy: "07-strong-wind", hot: "08-dry-heatwave", scorching: "08-dry-heatwave",
+    chilly: "10-cold-early-season" };
+  window.foWeatherArtUrl = function (wx) {
+    try { var k = String(wx || "").toLowerCase().trim(); return FO_WX_ART[k] ? FO_ART + "weather/" + FO_WX_ART[k] + ".webp" : null; } catch (e) { return null; }
+  };
   function foCityClub(city) {
     for (var ri = 0; ri < FO_CX_REGIONS.length; ri++) {
       var r = FO_CX_REGIONS[ri];

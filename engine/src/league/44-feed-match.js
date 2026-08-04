@@ -157,6 +157,7 @@
           pendingWk = { code: r.out, bowler: r.bowlerNm, fld: r.ev && r.ev.fldNm, no: r.no };
         continue;
       }
+      if (r.out === "\u2602") inns.rain = true;
       if (r.out === "✕") {
         var fx = /Partnership ends at (\d+)\s*-\s*(.+?) out for (\d+)\s*\((\d+)\)\.\s*(.+?)\s+(\d+)\/(\d+)\./.exec(r.txt || "");
         if (fx) {
@@ -324,7 +325,11 @@
       if (meta.pitch) condBits.push(E(meta.pitch) + " pitch");
       if (meta.tossWin) condBits.push(E(meta.tossWin) + " won the toss" + (meta.tossDo ? " and chose to " + E(meta.tossDo) : ""));
     }
-    var art = stageArt(m.home.city);
+    // the stage wears the home ground's art; a ground the seed cannot dress
+    // wears the day's weather instead - and once real rain has stopped play,
+    // the rain scene overrules everything
+    var wxArt = window.foWeatherArtUrl ? window.foWeatherArtUrl(inns.rain ? "rain" : (meta && meta.wx)) : null;
+    var art = (inns.rain && wxArt) ? wxArt : (stageArt(m.home.city) || wxArt);
     // the exact position of the innings: the last delivery's own number
     var posOv = I.lastNo ? parseFloat(I.lastNo) : (tp ? tp.over : 0);
     var ovLabel = I.lastNo ? I.lastNo : (tp ? tp.over + ".0" : "0.0");
