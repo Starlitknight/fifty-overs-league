@@ -127,13 +127,15 @@
       page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>" +
         (window.__foAuthPending
           ? "Reaching your club&hellip; the boys will be here in a moment."
-          : "Your academy belongs to your club in the served world. Sign in to the account that holds it and the boys will be here waiting.") +
+          : "Your academy belongs to your club in the served world. Sign in to the account that holds it and the boys will be here waiting." +
+            "<br><button type='button' class='fo-door-btn' data-fo-door>Sign in</button>") +
         "</p></div>");
       return;
     }
     rpc("world_my_academy").then(function (ac) {
       if (!ac || ac.signedIn === false) {
-        page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>Sign in first - the academy is your club&rsquo;s, and the world keeps it.</p></div>");
+        page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>Sign in first - the academy is your club&rsquo;s, and the world keeps it." +
+          "<br><button type='button' class='fo-door-btn' data-fo-door>Sign in</button></p></div>");
         return;
       }
       if (!ac.country) {

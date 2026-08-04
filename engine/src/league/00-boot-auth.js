@@ -286,10 +286,44 @@
     if (!s || !s.access_token) { clearSession(); return Promise.resolve(false); }
     if (s.expires_at && (s.expires_at - Date.now() > 60000)) { JWT = s.access_token; return Promise.resolve(true); }
     if (!s.refresh_token) { clearSession(); return Promise.resolve(false); }
-    return fetch(URL + "/auth/v1/token?grant_type=refresh_token", { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ refresh_token: s.refresh_token }) })
-      .then(function (r) { return r.json().then(function (d) { if (!r.ok || !d.access_token) throw new Error("refresh failed"); return d; }); })
-      .then(function (d) { JWT = d.access_token; saveSession(d); return true; })
-      .catch(function () { clearSession(); return false; });
+    return refreshSession(s.refresh_token, 0);
+  }
+  // A REFRESH THAT FAILS IS NOT A SESSION THAT IS DEAD. Tokens last an hour,
+  // so nearly every return visit renews one over the network - and a phone's
+  // network is exactly the thing that flakes while a page loads. Only the
+  // auth server actually refusing the token ends the session; anything else -
+  // a dropped request, a gateway error, airplane mode - keeps the stored
+  // session and tries again: once straight away, then quietly in the
+  // background, repainting the page the moment a retry lands.
+  function refreshSession(tok, attempt) {
+    return fetch(URL + "/auth/v1/token?grant_type=refresh_token", { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ refresh_token: tok }) })
+      .then(function (r) { return r.text().then(function (t) {
+        var d = null; try { d = JSON.parse(t); } catch (eP) {}
+        if (r.ok && d && d.access_token) { JWT = d.access_token; saveSession(d); return true; }
+        if (r.status >= 400 && r.status < 500) { clearSession(); return false; }
+        throw new Error("HTTP " + r.status);
+      }); })
+      .catch(function () {
+        if (attempt < 1) return new Promise(function (res) { setTimeout(res, 2000); }).then(function () { return refreshSession(tok, attempt + 1); });
+        lateRestore();
+        return false;
+      });
+  }
+  var lateTries = 0;
+  function lateRestore() {
+    if (lateTries >= 10) return;
+    lateTries++;
+    setTimeout(function () {
+      if (JWT || !lsGet(SESS)) return;
+      restoreSession().then(function (ok) {
+        if (!ok) return;
+        try {
+          var pg = document.getElementById("page");
+          if (pg) { pg.__foLgSig = null; pg.__foPmSig = null; pg.__foHomeSig = null; pg.__foClSig = null; pg.__foSig = null; }
+          if (typeof window.route === "function") window.route();
+        } catch (eLr) {}
+      });
+    }, 30000);
   }
 
   // A SESSION BEING RESTORED IS NOT A SESSION THAT IS ABSENT.
@@ -326,6 +360,28 @@
   })();
   // and a session that is never restored at all must not hang the wait
   setTimeout(function () { try { foAuthSettled(); } catch (eT) {} }, 8000);
+
+  // A CARD THAT SAYS "SIGN IN" MUST BE A DOOR. The only way back into a
+  // signed-out account used to be the Log out pill at the far end of the nav,
+  // which doubles as Sign in when there is no session - a door nobody can
+  // find. Any room may now print a real button: mark it data-fo-door and this
+  // one listener opens the front gate from anywhere.
+  try {
+    document.addEventListener("click", function (ev) {
+      var el = ev.target && ev.target.closest ? ev.target.closest("[data-fo-door]") : null;
+      if (!el) return;
+      ev.preventDefault();
+      try { if (typeof window.foDoorOpen === "function") window.foDoorOpen(); } catch (eD2) {}
+    });
+    var ds = document.createElement("style"); ds.id = "fo-door-css";
+    ds.textContent =
+      "html body button.fo-door-btn,html body.ftpskin #page button.fo-door-btn{display:inline-block;margin-top:13px;" +
+      "font:700 12px Oswald,sans-serif !important;letter-spacing:.18em;text-transform:uppercase;" +
+      "background:#C9571F !important;color:#fff !important;border:none !important;border-radius:10px;" +
+      "padding:12px 26px;cursor:pointer;min-height:0}" +
+      "html body button.fo-door-btn:hover{background:#A64426 !important}";
+    (document.head || document.documentElement).appendChild(ds);
+  } catch (eDoor) {}
 
   // ---- cross-device cloud saves (needs the 0022 migration; fails silently
   // until it is run). The whole game state already lives in fo_*/fol_*

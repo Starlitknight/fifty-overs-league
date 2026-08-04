@@ -183,7 +183,8 @@
   function sellHtml(cl) {
     var me = null; try { me = userTeam(); } catch (e) {}
     var men = (me && me.players) || [];
-    if (!jwt()) return "<div class='fo-mk-none'>Sign in to the account that holds your club to deal.</div>";
+    if (!jwt()) return "<div class='fo-mk-none'>Sign in to the account that holds your club to deal." +
+      "<br><button type='button' class='fo-door-btn' data-fo-door>Sign in</button></div>";
     if (!men.length) return "<div class='fo-mk-none'>No squad on the device yet.</div>";
     var listedNames = {};
     ((MK.mine && MK.mine.sales) || []).forEach(function (s) { if (s.status === "open") listedNames[s.player] = s; });
