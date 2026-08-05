@@ -77,14 +77,20 @@ export function tierOf(level, seed) {
 // cricketer the boy already is. `pools` is how many generated squads he is
 // picked out of - three squads to find a jewel, one to find anybody - `rank`
 // is where in that field he stands, and `share` is how much of that man has
-// arrived. Measured against a real generated squad, this puts a jewel at
-// roughly the median senior and a poor boy below the worst of them, which is
-// exactly the read the manager is being asked to make.
+// arrived.
+//
+// A BOY IS ALWAYS WEAKER THAN A SENIOR. Calibrated against the generator's
+// own floors: the weakest senior of the weakest generated squad rates about
+// 28.6k, and the strongest possible jewel source (best of three squads)
+// about 53k - so even a twenty-year-old jewel on his best day lands near
+// 26.5k, under every senior at every club. What a tier buys is HOW CLOSE to
+// the seniors a boy starts, never past them; the rest is four seasons of
+// nets before he walks at twenty-one.
 const TIER_CUT = {
-  jewel:   { pools: 3, rank: 'best',  share: 0.97 },
-  good:    { pools: 1, rank: 'best',  share: 0.86 },
-  average: { pools: 1, rank: 'mid',   share: 0.88 },
-  poor:    { pools: 1, rank: 'worst', share: 0.85 }
+  jewel:   { pools: 3, rank: 'best',  share: 0.50 },
+  good:    { pools: 1, rank: 'best',  share: 0.46 },
+  average: { pools: 1, rank: 'mid',   share: 0.56 },
+  poor:    { pools: 1, rank: 'worst', share: 0.52 }
 };
 // and a year of growing is worth five per cent of the man, so a sixteen-year-
 // old of any tier reads lower than a twenty-year-old of the same one
@@ -287,6 +293,47 @@ export async function ageYouth(pool, country, seasonNo) {
 // from. A pure read of the boys on the books.
 export function leavingAt(youth) {
   return (Array.isArray(youth) ? youth : []).filter(y => y && (y.age || 0) + 1 >= LEAVE_AT);
+}
+
+// THE REDEAL OF 2026. The first crops were dealt under the old pricing,
+// which let a lucky boy read level with a senior pro - and the board ruled
+// that a boy is always weaker than a senior. So one time only, by decree:
+// every club's youth list - managed and unmanaged alike - is torn up and
+// dealt fresh from the recalibrated hat, sixteen boys apiece. Everything
+// priced under the old model goes with them: unanswered scout reports,
+// prebanked candidates (relaid by the same tick under the new pricing), and
+// named Colts squads that would name boys who no longer exist. Idempotent by
+// ticks row; the boys come out of the seeded hat, so a re-run deals the same
+// sixteen.
+export async function redealYouth(pool, host, country, { count = 16 } = {}) {
+  const key = country + ':youth:redeal:v2';
+  const claim = await pool.query(
+    `INSERT INTO ticks(key, status) VALUES ($1,'running')
+     ON CONFLICT (key) DO UPDATE SET key=EXCLUDED.key RETURNING status`, [key]);
+  if (claim.rows[0].status === 'done') return 0;
+  const clubs = (await pool.query(
+    'SELECT slot, academy, squad FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
+  const cfg = archOf(host, country);
+  let dealt = 0;
+  for (const c of clubs) {
+    const taken = new Set((Array.isArray(c.squad) ? c.squad : []).map(p => p && p.name));
+    const youth = [];
+    let n = 0;
+    while (youth.length < count && n < count * 4) {
+      const seed = 'redeal2|' + country + '|' + c.slot + '|' + (n++);
+      const boy = makeRecruit(host, cfg.nat, cfg.arch, tierOf(c.academy, seed), seed);
+      if (boy && !taken.has(boy.name) && !youth.some(y => y && y.name === boy.name)) {
+        youth.push(boy); dealt++;
+      }
+    }
+    await pool.query('UPDATE clubs SET youth=$3::jsonb WHERE country_id=$1 AND slot=$2',
+      [country, c.slot, JSON.stringify(youth)]);
+  }
+  await pool.query('DELETE FROM academy_scouts WHERE country_id=$1 AND decision IS NULL', [country]);
+  await pool.query('DELETE FROM academy_candidates WHERE country_id=$1', [country]);
+  await pool.query('DELETE FROM colts_squads WHERE country_id=$1', [country]);
+  await pool.query(`UPDATE ticks SET status='done', finished_at=now() WHERE key=$1`, [key]);
+  return dealt;
 }
 
 // ---------------------------------------------------------------------------

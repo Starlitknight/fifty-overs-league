@@ -21,7 +21,7 @@ import { EPOCH, dayIx, daySettled, seedOf, cupDraw, natHour, scheduleOf, seasonS
 import { livingPatch, evolveCountry } from './living.mjs';
 import { calibrate, countryConfigs, BASE_XI, NAT_STR, HUMAN_STR } from './init-world.mjs';
 import { stockAcademies, layCandidates, ageYouth, playColtsStage, computeColts, coltRecords,
-         COLTS_STAGES, dealYouthToAll } from './youth.mjs';
+         COLTS_STAGES, dealYouthToAll, redealYouth } from './youth.mjs';
 import { settleMoney } from './economy.mjs';
 import { runComps } from './comps.mjs';
 import { ensureCallups, absentBySlot, coverSheet, runWindows, rebuildNations, seasonSquad,
@@ -708,6 +708,11 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
   // check ever runs; it is a no-op forever after its one firing
   try { await dealYouthToAll(pool, host, country); }
   catch (eDl) { console.error('founding youth deal failed for ' + country + ':', eDl.message); }
+  // the 2026 redeal: the old crops read level with seniors, the board ruled
+  // a boy is always weaker - one firing tears up every list and deals fresh
+  // from the recalibrated hat, BEFORE the stocker or the candidate layer run
+  try { await redealYouth(pool, host, country); }
+  catch (eRd) { console.error('youth redeal failed for ' + country + ':', eRd.message); }
   try { await stockAcademies(pool, host, country, { worldDay: day }); }
   catch (eY) { console.error('academy stocking failed for ' + country + ' day ' + day + ':', eY.message); }
   try {
