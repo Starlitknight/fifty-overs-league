@@ -79,7 +79,8 @@
   }
 
   // ---- the data on the desk -------------------------------------------------
-  var MK = { listings: null, deals: null, mine: null, snap: null, at: 0, busy: 0, tab: "board", role: "all", sort: "close", nat: "all", shown: 40, open: {} };
+  var MK = { listings: null, deals: null, mine: null, snap: null, at: 0, busy: 0, tab: "board", role: "all", sort: "close", nat: "all", shown: 40, open: {},
+    view: (function () { try { return localStorage.getItem("fo_mkt_view") === "table" ? "table" : "cards"; } catch (e) { return "cards"; } })() };
   function refetch(force) {
     if (MK.busy) return;
     if (!force && MK.at && Date.now() - MK.at < 30000) return;
@@ -214,13 +215,15 @@
   function gaugesHtml(man) {
     if (!man || !man.skills) return "";
     try {
-      return "<div class='gg'>" + readPicks(man).map(function (k, i) {
+      // every gauge is toned by its VALUE - red is weak, green is strong,
+      // wherever the bar sits. Position never lies about quality.
+      return "<div class='gg'>" + readPicks(man).map(function (k) {
         var v = readOf(man, k), off = v < 0;
-        return "<span class='g" + (i === 0 ? " lead" : "") + (off ? " off" : "") +
+        return "<span class='g" + (off ? " off" : "") +
           "' title='" + READ_LBL[k] + (off ? "" : " &middot; " + E(skWord(v))) + "'>" +
           "<span class='lb'>" + READ_LBL[k] + "</span>" +
           "<span class='vl'>" + (off ? "&ndash;" : v) + "</span>" +
-          "<span class='tr'><span class='fl' style='width:" + Math.max(3, Math.max(0, v)) + "%'></span></span>" +
+          "<span class='tr'><span class='fl " + skTone(Math.max(0, v)) + "' style='width:" + Math.max(3, Math.max(0, v)) + "%'></span></span>" +
           "</span>";
       }).join("") + "</div>";
     } catch (e) { return ""; }
@@ -279,6 +282,18 @@
     var open = !!MK.open[L.id];
     var chev = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' " +
       "stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>";
+    // the lister's door and the bidder's door: every club name walks
+    var clubDoor = (!fa && L.country_id != null && L.slot >= 0)
+      ? "#/team?c=" + encodeURIComponent(L.country_id) + "&s=" + (L.slot | 0) : null;
+    var provTxt = (fa ? "Free agent" : "Listed by " + E(L.club || "a club")) +
+      (L.country_id ? " &middot; " + E(natNm(L.country_id)) : "");
+    var hc = L.high_country != null ? L.high_country : L.highCountry;
+    var hs = L.high_slot != null ? L.high_slot : L.highSlot;
+    var bidder = lead ? "<span class='club you'>You</span>"
+      : high ? ((hc != null && hs != null && hs >= 0)
+          ? "<a class='club' href='#/team?c=" + encodeURIComponent(hc) + "&s=" + (hs | 0) + "'>" + E(L.highClub || L.high_club || "a club") + "</a>"
+          : "<span class='club'>" + E(L.highClub || L.high_club || "a club") + "</span>")
+      : "<span class='club none'>Nobody yet</span>";
     return "<div class='fo-mk-row" + (lead ? " lead" : "") + "' data-id='" + L.id + "'>" +
       "<div class='bd'>" +
       "<div class='tp'>" +
@@ -286,6 +301,7 @@
       "<span class='nm'>" +
       (door ? "<a class='pdoor' href='" + door + "'><b>" + E(L.player) + (man && man.keeper ? " &dagger;" : "") + "</b></a>"
             : "<b>" + E(L.player) + (man && man.keeper ? " &dagger;" : "") + "</b>") +
+      (man && man.age && man.age <= 21 ? "<span class='yth'>Youth &middot; " + (man.age | 0) + "</span>" : "") +
       "<span class='mt'>" + (meta.length ? meta.join(" &nbsp;&middot;&nbsp; ") : "a cricketer") + "</span></span>" +
       "</div>" +
       gaugesHtml(man) +
@@ -295,25 +311,28 @@
           (open ? fullCardHtml(man) : "")
         : "") +
       "<div class='prov'>" +
-      "<span class='tag" + (fa ? " fa" : "") + "'>" +
-      (fa ? "Free agent" : "Listed by " + E(L.club || "a club")) +
-      (L.country_id ? " &middot; " + E(natNm(L.country_id)) : "") + "</span>" +
-      (sc.impression ? "<span class='imp'>&ldquo;" + E(sc.impression) + "&rdquo;</span>" : "") +
+      (clubDoor
+        ? "<a class='tag' href='" + clubDoor + "'>" + provTxt + " &rsaquo;</a>"
+        : "<span class='tag" + (fa ? " fa" : "") + "'>" + provTxt + "</span>") +
       "</div>" +
       "</div>" +
+      // THE AUCTIONEER'S LINE (B3): the bidder gets top billing, the price
+      // is the biggest thing on the card, and the deed happens right here -
+      // AUTO BID at the next minimum, or a figure of your own on one line.
       "<div class='rail'>" +
-      "<span class='lb'>" + (high ? (lead ? "High bid &middot; you lead" : "High bid") : "No bids yet") + "</span>" +
-      "<span class='amt'>" + money(high || L.asking) + "</span>" +
-      "<span class='ld" + (lead ? " you" : "") + "'>" +
-      (lead ? "your offer stands" : high ? E(L.highClub || L.high_club || "a club") + " lead" : "reserve " + money(L.reserve)) +
-      "</span>" +
+      "<span class='lb2'>The bidding stands with</span>" +
+      bidder +
+      "<span class='amt'>" + money(high || L.asking) + "<i>" + (high ? "HIGH" : "ASK") + "</i></span>" +
+      (!high ? "<span class='rsv'>reserve " + money(L.reserve) + "</span>" : "") +
+      "<span class='lb2 hm'>Hammer</span>" +
       (hmMs
         ? "<span class='hmwrap' data-mk-hh='" + hmMs + "'>" + hammerPlate(hmMs) + "</span>"
         : "<span class='hmwrap'><b class='clk calm'>" + E(dayTxt(L.closes != null ? L.closes : L.closes_day)) + "</b></span>") +
       (mineSelling
         ? "<button class='act ghost' data-mk-withdraw='" + L.id + "'>Withdraw</button>"
-        : "<button class='act" + (myBid && !lead ? " hot" : "") + "' data-mk-bid='" + L.id + "' data-min='" + minBid + "'>" +
-          (myBid ? (lead ? "Raise your bid" : "Outbid them") : "Make a bid") + "</button>") +
+        : "<button class='go' data-mk-bid-auto='" + L.id + "' data-min='" + minBid + "' title='Bid the next minimum, " + money(minBid) + "'>Auto bid</button>" +
+          "<div class='cust'><input class='fo-mk-in' id='fo-mk-in-" + L.id + "' inputmode='numeric' placeholder='or your own figure&hellip;'>" +
+          "<button class='snd' data-mk-place='" + L.id + "' data-min='" + minBid + "' aria-label='Place your bid'>&rarr;</button></div>") +
       "</div>" +
       "</div>";
   }
@@ -381,10 +400,14 @@
     else if (MK.sort === "ovr") rows.sort(function (a, b) { return ovrOf(b) - ovrOf(a); });
     else if (MK.sort === "young") rows.sort(function (a, b) { return (ageOf(a) || 99) - (ageOf(b) || 99); });
     else if (MK.sort === "old") rows.sort(function (a, b) { return ageOf(b) - ageOf(a); });
+    else if (MK.sort === "wage") rows.sort(function (a, b) {
+      var wa = (manOf(a) || {}).wage || 0, wb = (manOf(b) || {}).wage || 0; return wb - wa;
+    });
     else if (MK.sort.indexOf("s:") === 0) {
       var k9 = MK.sort.slice(2);
       rows.sort(function (a, b) { return readOf(manOf(b), k9) - readOf(manOf(a), k9); });
     }
+    if (MK.view === "table") return tableHtml(rows, cl, myBids);
     var vis = rows.slice(0, MK.shown);
     var more = rows.length > vis.length
       ? "<button class='fo-mk-more' data-mk-more>Show " + Math.min(40, rows.length - vis.length) +
@@ -397,6 +420,71 @@
       "The hammer has a minute hand: a bid landed inside the final ten minutes pushes it back to ten minutes out, " +
       "so an auction ends in a bidding war, never a snipe. The umpire settles the sale on his next pass; " +
       "the highest offer at or above the reserve takes the man whether you are awake or not.</p>";
+  }
+
+  // THE TABLE: the whole board as one sortable page of the books. Every
+  // name and club is a door, weak reads print ghost-grey like the cards,
+  // the hammer column ticks, and one press bids the next minimum.
+  var TH_COLS = [["", "The man"], ["age", "Age"], ["ovr", "OVR"], ["s:bat", "Bat"], ["s:bowl", "Bowl"],
+    ["s:keep", "Keep"], ["s:field", "Fld"], ["s:tech", "Tec"], ["s:pow", "Pwr"], ["s:end", "End"],
+    ["wage", "Wage"], ["hi", "High bid"], ["close", "Hammer"], ["", ""]];
+  function tableHtml(rows, cl, myBids) {
+    var head = TH_COLS.map(function (c) {
+      var on = c[0] && (MK.sort === c[0] || (c[0] === "age" && (MK.sort === "young" || MK.sort === "old")));
+      return "<th" + (c[0] ? " data-mk-th='" + c[0] + "'" : "") + (on ? " class='on'" : "") + ">" + c[1] +
+        (on ? " <span class='ar'>" + (MK.sort === "old" ? "&#9650;" : MK.sort === "young" ? "&#9660;" : "&#9660;") + "</span>" : "") + "</th>";
+    }).join("");
+    var body = rows.map(function (L) {
+      var man = dress(L).man || null;
+      var picks = man ? readPicks(man) : [];
+      var high = +L.high || 0;
+      var minBid = high ? high + STEP : Math.ceil((+L.asking || 0) * 0.55);
+      var mineSelling = cl && L.country_id === cl.country && L.slot === cl.slot;
+      var myBid = (myBids || []).filter(function (x) { return Number(x.id) === Number(L.id); })[0];
+      var lead = myBid && high && +myBid.amount >= high;
+      var fa = L.slot < 0;
+      var door = L.slot >= 0 && L.country_id
+        ? "#/player?c=" + encodeURIComponent(L.country_id) + "&s=" + (L.slot | 0) + "&n=" + encodeURIComponent(L.player) : "";
+      var clubDoor = (!fa && L.country_id != null && L.slot >= 0)
+        ? "#/team?c=" + encodeURIComponent(L.country_id) + "&s=" + (L.slot | 0) : null;
+      var hc = L.high_country != null ? L.high_country : L.highCountry;
+      var hs = L.high_slot != null ? L.high_slot : L.highSlot;
+      var cells = ["bat", "bowl", "keep", "field", "tech", "pow", "end"].map(function (k) {
+        var v = man ? readOf(man, k) : -1;
+        if (v < 0) return "<td class='dim'>&ndash;</td>";
+        return "<td class='" + (k === picks[0] ? "hot" : v <= 20 ? "dim" : "") + "'>" + v + "</td>";
+      }).join("");
+      var subBits = [];
+      if (man && man.nat) subBits.push(natFlag(man.nat) + " " + E(String(man.nat).toUpperCase()));
+      if (man) subBits.push(roleLbl(man));
+      subBits.push(fa ? "Free agent" : (clubDoor ? "<a class='cl' href='" + clubDoor + "'>" + E(L.club || "a club") + "</a>" : E(L.club || "a club")));
+      return "<tr>" +
+        "<td>" + (door ? "<a class='pn' href='" + door + "'>" : "<span class='pn'>") + E(L.player) +
+        (man && man.keeper ? " &dagger;" : "") + (door ? "</a>" : "</span>") +
+        (man && man.age && man.age <= 21 ? "<span class='yth'>Youth</span>" : "") +
+        "<span class='sub'>" + subBits.join(" &middot; ") + "</span></td>" +
+        "<td>" + (man && man.age ? (man.age | 0) : "&ndash;") + "</td>" +
+        "<td><b>" + (ovrOf(L) > 0 ? ovrOf(L) : "&ndash;") + "</b></td>" +
+        cells +
+        "<td>" + (man && man.wage ? money(man.wage) : "&ndash;") + "</td>" +
+        "<td><span class='hb" + (high ? "" : " dim") + "'>" + (high ? money(high) : "no bids") + "</span>" +
+        "<span class='hbc'>" + (lead ? "<span class='you'>you lead</span>"
+          : high ? ((hc != null && hs != null && hs >= 0)
+              ? "<a href='#/team?c=" + encodeURIComponent(hc) + "&s=" + (hs | 0) + "'>" + E(L.highClub || L.high_club || "a club") + "</a>"
+              : E(L.highClub || L.high_club || "a club"))
+          : "reserve " + money(L.reserve)) + "</span></td>" +
+        "<td>" + (function () {
+          var ms = +(L.closesMs != null ? L.closesMs : L.closes_ms) || 0;
+          return ms ? "<span class='hmwrap tbl' data-mk-hh='" + ms + "'>" + hammerPlate(ms) + "</span>"
+                    : "<b class='clk calm'>" + E(dayTxt(L.closes != null ? L.closes : L.closes_day)) + "</b>";
+        })() + "</td>" +
+        "<td>" + (mineSelling
+          ? "<button class='qb gh' data-mk-withdraw='" + L.id + "'>Withdraw</button>"
+          : "<button class='qb' data-mk-bid-auto='" + L.id + "' data-min='" + minBid + "' title='Bid the next minimum, " + money(minBid) + "'>Auto bid</button>") + "</td>" +
+        "</tr>";
+    }).join("");
+    return "<div class='fo-mk-tblwrap'><table class='fo-mk-tbl'><thead><tr>" + head + "</tr></thead>" +
+      "<tbody>" + (body || "<tr><td colspan='14' class='dim' style='text-align:center;padding:26px'>Nobody of that kind on the board today.</td></tr>") + "</tbody></table></div>";
   }
 
   function sellHtml(cl) {
@@ -496,7 +584,14 @@
     (MK.listings || []).forEach(function (L) { if (L.country_id) natIds[L.country_id] = 1; });
     var natList = Object.keys(natIds).map(function (id) { return [id, natNm(id)]; })
       .sort(function (a, b) { return a[1] < b[1] ? -1 : 1; });
+    var icoCards = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><rect x='3.5' y='4' width='17' height='7' rx='2'/><rect x='3.5' y='14' width='17' height='7' rx='2'/></svg>";
+    var icoTable = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2'><path d='M4 6.5h16M4 12h16M4 17.5h16'/></svg>";
     return "<span class='dv'></span>" +
+      "<div class='fo-mk-vt'>" +
+      "<button class='" + (MK.view === "cards" ? "on" : "") + "' data-mk-view='cards'>" + icoCards + "Cards</button>" +
+      "<button class='" + (MK.view === "table" ? "on" : "") + "' data-mk-view='table'>" + icoTable + "Table</button>" +
+      "</div>" +
+      "<span class='dv'></span>" +
       "<div class='fo-mk-rlinks'>" + ROLE_TABS.map(function (t) {
         return "<button class='" + (MK.role === t[0] ? "on" : "") + "' data-mk-role='" + t[0] + "'>" + t[1] + "</button>";
       }).join("") + "</div>" +
@@ -512,6 +607,10 @@
   function paint() {
     var page = document.getElementById("page"); if (!page) return;
     if ((location.hash || "").split("?")[0] !== "#/market") return;
+    // never yank a half-typed bid out of a manager's hands: postpone this
+    // repaint; the next refetch cycle will catch the board up
+    var ae = document.activeElement;
+    if (ae && ae.classList && ae.classList.contains("fo-mk-in") && page.contains(ae)) return;
     var cl = claim();
     var t = MK.tab;
     var html = "<div class='fo-mk'>" + mast() +
@@ -538,27 +637,216 @@
   }
 
   // ---- the deeds ------------------------------------------------------------
+  // one door for both bidding paths: validate, place, log on the wire
+  function placeBid(id, amt, min, inEl) {
+    var nm = "";
+    try { nm = ((MK.listings || []).filter(function (L) { return Number(L.id) === Number(id); })[0] || {}).player || ""; } catch (e) {}
+    rpc("world_market_bid", { p_id: id, p_amount: amt }).then(function () {
+      toastMsg("Offer in: $" + amt.toLocaleString() + " on " + (nm || "the man") + " &mdash; you lead until someone answers.");
+      wireAdd("in", "Your offer of " + money(amt) + " on " + (nm || "a listed man") + " is in &mdash; you lead");
+      if (inEl) inEl.value = "";
+      refetch(true);
+      setTimeout(wireCheck, 1500);
+    }).catch(sayErr);
+  }
+
+  /* ==========================================================================
+     THE WIRE — market notifications behind a bell in the masthead.
+     Outbid, offer placed, hammer won, hammer gone: each lands as a line in
+     a small ledger kept on the device, with an unread count on the bell.
+     The world serves state on the umpire's clock and this poller re-asks it
+     roughly once a minute wherever you are in the game - so word arrives
+     within the minute, honestly, rather than "instantly" dishonestly.
+     ======================================================================== */
+  var WIRE_KEY = "fo_mkt_wire";
+  function wireLoad() {
+    try { return JSON.parse(localStorage.getItem(WIRE_KEY) || "") || { items: [], st: {} }; }
+    catch (e) { return { items: [], st: {} }; }
+  }
+  function wireSave(w) { try { localStorage.setItem(WIRE_KEY, JSON.stringify(w)); } catch (e) {} }
+  function wireAdd(kind, text) {
+    var w = wireLoad();
+    w.items.unshift({ k: kind, t: text, at: Date.now(), r: false });
+    w.items = w.items.slice(0, 30);
+    wireSave(w);
+    bellBadge();
+    var pop = document.getElementById("fo-wire-pop");
+    if (pop && pop.classList.contains("on")) bellPaint();
+  }
+  function agoTxt(at) {
+    var m = Math.max(0, Math.round((Date.now() - at) / 60000));
+    if (m < 1) return "just now";
+    if (m < 60) return m + (m === 1 ? " minute ago" : " minutes ago");
+    var h = Math.round(m / 60);
+    if (h < 24) return h + (h === 1 ? " hour ago" : " hours ago");
+    var d = Math.round(h / 24);
+    return d === 1 ? "yesterday" : d + " days ago";
+  }
+  // the poll: my open offers vs the board's standing highs
+  var wireBusy = 0;
+  function wireCheck() {
+    try {
+      if (wireBusy) return;
+      var cl = claim(); if (!cl || !cl.country || !jwt()) return;
+      wireBusy = 1;
+      rpc("world_market_mine", {}).then(function (mine) {
+        var bids = (mine && mine.bids) || [];
+        if (!bids.length) { wireBusy = 0; var w0 = wireLoad(); w0.st = {}; wireSave(w0); return; }
+        var ids = bids.map(function (x) { return Number(x.id); }).filter(function (x) { return x > 0; });
+        sel("world_listings?id=in.(" + ids.join(",") + ")&select=id,player,high,high_club").then(function (rows) {
+          rows = rows || [];
+          var byId = {}; rows.forEach(function (r) { byId[Number(r.id)] = r; });
+          var w = wireLoad(); var st = w.st || {};
+          bids.forEach(function (bd) {
+            var idb = Number(bd.id), row = byId[idb], prev = st[idb];
+            if (!row) {
+              // the window shut while we watched: ask the register who won
+              if (prev && !prev.done) {
+                st[idb] = { done: 1 };
+                sel("world_deals?id=eq." + idb + "&select=player,fee,to_club").then(function (ds) {
+                  var d = ds && ds[0];
+                  if (d && d.to_club === cl.club) {
+                    wireAdd("won", "The hammer fell: " + E(d.player) + " is yours for " + money(d.fee));
+                  } else if (d) {
+                    wireAdd("gone", "The hammer fell on " + E(d.player) + " &mdash; he went to " + E(d.to_club || "another club") + " for " + money(d.fee));
+                  } else {
+                    wireAdd("gone", "The hammer fell on " + E(bd.player || "a man you bid for"));
+                  }
+                  var w2 = wireLoad(); delete (w2.st || {})[idb]; wireSave(w2);
+                }).catch(function () {});
+              }
+              return;
+            }
+            var leadNow = +bd.amount >= +(row.high || 0);
+            if (prev && prev.lead && !leadNow) {
+              wireAdd("out", E(row.high_club || "A rival") + " outbid you on " + E(row.player) +
+                " &mdash; the board stands at " + money(row.high));
+            }
+            st[idb] = { lead: leadNow, amt: +bd.amount };
+          });
+          // reload before saving: any wireAdd() fired during this sweep wrote
+          // items the snapshot above does not carry, and saving that stale
+          // copy back would quietly erase them
+          var wf = wireLoad(); wf.st = st; wireSave(wf); wireBusy = 0;
+        }, function () { wireBusy = 0; });
+      }, function () { wireBusy = 0; });
+    } catch (e) { wireBusy = 0; }
+  }
+  try { setInterval(wireCheck, 60000); setTimeout(wireCheck, 4000); } catch (eW) {}
+
+  // the bell itself, kept alive in the masthead like the menu button is
+  function bellBadge() {
+    var el = document.getElementById("fo-wire-bdg"); if (!el) return;
+    var n = wireLoad().items.filter(function (x) { return !x.r; }).length;
+    el.textContent = n > 9 ? "9+" : String(n);
+    el.style.display = n ? "" : "none";
+  }
+  function bellPaint() {
+    var pop = document.getElementById("fo-wire-pop"); if (!pop) return;
+    var w = wireLoad();
+    var ic = { out: ["&#9660;", "out"], in: ["&#10003;", "in"], won: ["&#9733;", "won"], gone: ["&#8212;", "gone"] };
+    pop.innerHTML = "<div class='ph'><b>The wire</b><span id='fo-wire-clear'>Mark all read</span></div>" +
+      (w.items.length ? w.items.map(function (it) {
+        var g = ic[it.k] || ic.gone;
+        return "<div class='it" + (it.r ? "" : " unread") + "'><span class='ic " + g[1] + "'>" + g[0] + "</span>" +
+          "<div class='tx'>" + it.t + "<i>" + agoTxt(it.at) + "</i></div></div>";
+      }).join("") : "<div class='none'>Nothing on the wire yet. Bid on a man and word of the auction lands here.</div>");
+    var mk = document.getElementById("fo-wire-clear");
+    if (mk) mk.addEventListener("click", function (ev) {
+      ev.stopPropagation();
+      var w2 = wireLoad(); (w2.items || []).forEach(function (x) { x.r = true; }); wireSave(w2);
+      bellBadge(); bellPaint();
+    });
+  }
+  function bellToggle(btn) {
+    var pop = document.getElementById("fo-wire-pop");
+    if (!pop) {
+      pop = document.createElement("div"); pop.id = "fo-wire-pop";
+      document.body.appendChild(pop);
+      pop.addEventListener("click", function (ev) {
+        if (ev.target.closest(".it")) { pop.classList.remove("on"); location.hash = "#/market"; }
+      });
+      document.addEventListener("click", function (ev) {
+        if (!pop.classList.contains("on")) return;
+        if (pop.contains(ev.target) || ev.target.closest("#fo-wire-btn")) return;
+        pop.classList.remove("on");
+      });
+      window.addEventListener("hashchange", function () { pop.classList.remove("on"); });
+    }
+    if (pop.classList.contains("on")) { pop.classList.remove("on"); return; }
+    bellPaint();
+    var rc = btn.getBoundingClientRect();
+    var w = Math.min(360, (window.innerWidth || 360) - 16);
+    pop.style.width = w + "px";
+    pop.style.left = Math.max(8, Math.min(rc.right - w, (window.innerWidth || 360) - w - 8)) + "px";
+    pop.style.top = (rc.bottom + 8) + "px";
+    pop.classList.add("on");
+    // opening the wire reads it
+    var w2 = wireLoad(); (w2.items || []).forEach(function (x) { x.r = true; }); wireSave(w2);
+    setTimeout(bellBadge, 600);
+  }
+  function bellMount() {
+    try {
+      css();
+      var tb = document.getElementById("topbar"); if (!tb) return;
+      if (document.getElementById("fo-wire-btn")) { bellBadge(); return; }
+      var btn = document.createElement("button");
+      btn.id = "fo-wire-btn"; btn.type = "button";
+      btn.setAttribute("aria-label", "Market notifications");
+      btn.innerHTML = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' " +
+        "stroke-linecap='round' stroke-linejoin='round'><path d='M6 8.6a6 6 0 0 1 12 0c0 6 2.4 7.4 2.4 7.4H3.6S6 14.6 6 8.6'/><path d='M10.2 20a2 2 0 0 0 3.6 0'/></svg>" +
+        "<span id='fo-wire-bdg' style='display:none'></span>";
+      btn.addEventListener("click", function (ev) { ev.preventDefault(); ev.stopPropagation(); bellToggle(btn); });
+      // beside the menu button, well clear of the clock chip that owns the
+      // masthead's right edge
+      var mn = document.getElementById("fo-mnav-btn");
+      if (mn && mn.parentNode) mn.parentNode.insertBefore(btn, mn.nextSibling);
+      else tb.insertBefore(btn, tb.firstChild);
+      bellBadge();
+    } catch (e) {}
+  }
+  try { setInterval(bellMount, 1500); } catch (eB) {}
+  setTimeout(bellMount, 500);
+
   document.addEventListener("click", function (ev) {
     var t9 = ev.target && ev.target.closest ? ev.target : null; if (!t9) return;
     var b;
     if ((b = t9.closest("[data-mk-tab]"))) { MK.tab = b.getAttribute("data-mk-tab"); paint(); return; }
     if ((b = t9.closest("[data-mk-role]"))) { MK.role = b.getAttribute("data-mk-role"); MK.shown = 40; paint(); return; }
+    if ((b = t9.closest("[data-mk-view]"))) {
+      MK.view = b.getAttribute("data-mk-view") === "table" ? "table" : "cards";
+      try { localStorage.setItem("fo_mkt_view", MK.view); } catch (eV) {}
+      paint(); return;
+    }
+    if ((b = t9.closest("[data-mk-th]"))) {
+      var kT = b.getAttribute("data-mk-th");
+      if (kT === "age") MK.sort = (MK.sort === "young" ? "old" : "young");
+      else MK.sort = kT;
+      paint(); return;
+    }
     if ((b = t9.closest("[data-mk-more]"))) { MK.shown += 40; paint(); return; }
     if ((b = t9.closest("[data-mk-full]"))) {
       var idF = +b.getAttribute("data-mk-full");
       MK.open[idF] = !MK.open[idF];
       paint(); return;
     }
-    if ((b = t9.closest("[data-mk-bid]"))) {
-      var id = +b.getAttribute("data-mk-bid"), min = +b.getAttribute("data-min") || STEP;
-      var amt = prompt("Your offer (the board wants at least " + min + "):", String(min));
-      if (amt == null) return;
-      amt = Math.round(+String(amt).replace(/[^0-9]/g, ""));
-      if (!(amt > 0)) return;
-      rpc("world_market_bid", { p_id: id, p_amount: amt }).then(function () {
-        toastMsg("Offer in: $" + amt.toLocaleString() + ". Highest when the hammer falls takes him.");
-        refetch(true);
-      }).catch(sayErr);
+    // AUTO BID: one press places the exact next minimum - no dialog
+    if ((b = t9.closest("[data-mk-bid-auto]"))) {
+      placeBid(+b.getAttribute("data-mk-bid-auto"), +b.getAttribute("data-min") || STEP, +b.getAttribute("data-min") || STEP, null);
+      return;
+    }
+    // or a figure of your own, typed on the card itself
+    if ((b = t9.closest("[data-mk-place]"))) {
+      var idP = +b.getAttribute("data-mk-place"), minP = +b.getAttribute("data-min") || STEP;
+      var inEl = document.getElementById("fo-mk-in-" + idP);
+      var amtP = inEl ? Math.round(+String(inEl.value).replace(/[^0-9]/g, "")) : 0;
+      if (!(amtP > 0)) { if (inEl) { inEl.classList.add("no"); setTimeout(function () { inEl.classList.remove("no"); }, 450); inEl.focus(); } return; }
+      if (amtP < minP) {
+        if (inEl) { inEl.classList.add("no"); setTimeout(function () { inEl.classList.remove("no"); }, 450); }
+        toastMsg("The board wants at least " + money(minP) + ".");
+        return;
+      }
+      placeBid(idP, amtP, minP, inEl);
       return;
     }
     if ((b = t9.closest("[data-mk-withdraw]"))) {
@@ -655,10 +943,12 @@
       "html body #page .fo-mk-row .gg .g{width:96px;min-width:0}",
       "html body #page .fo-mk-row .gg .lb{display:block;font:600 8px/1 Oswald,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:#98a0ae}",
       "html body #page .fo-mk-row .gg .vl{display:block;font:600 26px/1.2 Oswald,sans-serif;color:#14243A;font-variant-numeric:tabular-nums}",
-      "html body #page .fo-mk-row .gg .g.lead .vl{color:#C9571F}",
       "html body #page .fo-mk-row .gg .tr{display:block;height:3.5px;border-radius:2px;background:#EDE8DC;margin-top:3px;overflow:hidden}",
-      "html body #page .fo-mk-row .gg .fl{display:block;height:100%;border-radius:2px;background:#4E8A72}",
-      "html body #page .fo-mk-row .gg .g.lead .fl{background:#C9571F}",
+      "html body #page .fo-mk-row .gg .fl{display:block;height:100%;border-radius:2px}",
+      "html body #page .fo-mk-row .gg .fl.t1{background:#C05B45}",
+      "html body #page .fo-mk-row .gg .fl.t2{background:#D9A441}",
+      "html body #page .fo-mk-row .gg .fl.t3{background:#4E8A72}",
+      "html body #page .fo-mk-row .gg .fl.t4{background:#177A57}",
       "html body #page .fo-mk-row .gg .g.off .vl{color:#c3c9d2}",
       "html body #page .fo-mk-row .gg .g.off .fl{background:#E3DECF}",
       // the fold: Full card opens the seven reads as toned bars
@@ -682,27 +972,42 @@
       "html body #page .fo-mk-row .prov .tag{flex:none;font:600 8px/1 Oswald,sans-serif;letter-spacing:.11em;text-transform:uppercase;color:#7A5480;background:rgba(122,84,128,.07);border:1px solid rgba(122,84,128,.22);border-radius:6px;padding:5px 8px}",
       "html body #page .fo-mk-row .prov .tag.fa{color:#1F6F4A;background:rgba(31,111,74,.07);border-color:rgba(31,111,74,.22)}",
       "html body #page .fo-mk-row .prov .imp{flex:1;min-width:0;font:italic 400 11px/1.5 Georgia,serif;color:rgba(20,28,40,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      // THE RAIL: one navy field holding everything about the money
-      "html body #page .fo-mk-row .rail{background:linear-gradient(170deg,#14243A,#0C1C31);color:#F6EFDF;padding:20px;display:flex;flex-direction:column;gap:7px;justify-content:center}",
+      // THE AUCTIONEER'S LINE (B3): cream carries every fact, gold is spent
+      // on the clock alone, orange on the one button alone
+      "html body #page .fo-mk-row .rail{background:linear-gradient(170deg,#14243A,#0C1C31);color:#F6EFDF;padding:18px 20px;display:flex;flex-direction:column;gap:5px;justify-content:center}",
       "html body #page .fo-mk-row.lead .rail{background:linear-gradient(170deg,#14313A,#0C2420)}",
-      "html body #page .fo-mk-row .rail .lb{font:600 7.5px/1.4 Oswald,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:rgba(246,239,223,.5)}",
-      "html body #page .fo-mk-row .rail .amt{font:600 29px/1 Oswald,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums}",
-      "html body #page .fo-mk-row .rail .ld{font:400 10.5px/1.5 Inter,sans-serif;color:rgba(246,239,223,.62);margin-top:-2px}",
-      "html body #page .fo-mk-row .rail .ld.you{color:#8FD6B5;font-weight:600}",
-      "html body #page .fo-mk-row .rail .hmwrap{display:block;margin-top:4px}",
-      "html body #page .fo-mk-row .rail .clk{display:block;font:600 19px/1.15 Oswald,sans-serif;letter-spacing:.07em;font-variant-numeric:tabular-nums;color:#E8B96A}",
+      "html body #page .fo-mk-row .rail .lb2{font:600 7.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(246,239,223,.42)}",
+      "html body #page .fo-mk-row .rail .lb2.hm{margin-top:7px}",
+      "html body #page .fo-mk-row .rail .club{font:600 13px/1.4 Inter,sans-serif;color:#FFFDF7;text-decoration:none;border-bottom:1px solid rgba(255,253,247,.3);align-self:flex-start}",
+      "html body #page .fo-mk-row .rail a.club:hover{border-bottom-color:#FFFDF7;color:#FFFDF7}",
+      "html body #page .fo-mk-row .rail .club.you{color:#8FD6B5;border-bottom-color:transparent}",
+      "html body #page .fo-mk-row .rail .club.none{color:rgba(246,239,223,.5);border-bottom-color:transparent;font-weight:400}",
+      "html body #page .fo-mk-row .rail .amt{font:600 32px/1 Oswald,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums;margin-top:5px}",
+      "html body #page .fo-mk-row .rail .amt i{font:600 11px/1 Oswald,sans-serif;font-style:normal;color:rgba(246,239,223,.5);letter-spacing:.08em;margin-left:6px}",
+      "html body #page .fo-mk-row .rail .rsv{font:400 10.5px/1.4 Inter,sans-serif;color:rgba(246,239,223,.55)}",
+      "html body #page .fo-mk-row .rail .hmwrap{display:block}",
+      "html body #page .fo-mk-row .rail .clk{display:block;font:600 18px/1.15 Oswald,sans-serif;letter-spacing:.06em;font-variant-numeric:tabular-nums;color:#E8B96A}",
       "html body #page .fo-mk-row .rail .clk.soon{color:#FF9E86}",
       "html body #page .fo-mk-row .rail .clk.final{color:#FF9E86;animation:fo-mk-beat 1.1s ease-in-out infinite}",
       "html body #page .fo-mk-row .rail .clk.gone{color:rgba(246,239,223,.8);letter-spacing:.18em}",
-      "html body #page .fo-mk-row .rail .hnote{display:block;font:italic 400 10px/1.45 Georgia,serif;color:rgba(255,180,160,.85);margin-top:3px}",
+      "html body #page .fo-mk-row .rail .hnote{display:block;font:italic 400 10px/1.45 Georgia,serif;color:rgba(255,180,160,.85);margin-top:2px}",
       "@keyframes fo-mk-beat{0%,100%{opacity:1}50%{opacity:.55}}",
       "@media(prefers-reduced-motion:reduce){html body #page .fo-mk-row .rail .clk.final{animation:none}}",
-      "html body #page .fo-mk-row .rail .act{margin-top:10px;font:600 9.5px/1 Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;color:#FFFEFC !important;background:#C9571F !important;border:0 !important;border-radius:999px !important;padding:12px 0 !important;width:100%;cursor:pointer;transition:background .15s}",
-      "html body #page .fo-mk-row .rail .act:hover{background:#A64426 !important}",
-      "html body #page .fo-mk-row .rail .act.hot{background:#8E1F13 !important}",
-      "html body #page .fo-mk-row .rail .act.hot:hover{background:#6F160D !important}",
-      "html body #page .fo-mk-row .rail .act.ghost{color:rgba(246,239,223,.85) !important;background:transparent !important;border:1px solid rgba(246,239,223,.35) !important}",
+      // the deed: AUTO BID at the next minimum, or a figure on one line
+      "html body #page .fo-mk-row .rail .go{margin-top:10px;font:600 13px/1 Oswald,sans-serif !important;letter-spacing:.14em;text-transform:uppercase;color:#FFFEFC !important;background:#C9571F !important;border:0 !important;border-radius:9px !important;padding:13px 0 !important;width:100%;cursor:pointer;transition:background .15s}",
+      "html body #page .fo-mk-row .rail .go:hover{background:#A64426 !important}",
+      "html body #page .fo-mk-row .rail .cust{display:flex;align-items:center;gap:8px;margin-top:8px}",
+      "html body #page .fo-mk-row .rail .cust input.fo-mk-in{flex:1;min-width:0;background:transparent !important;border:0 !important;border-bottom:1px solid rgba(246,239,223,.28) !important;border-radius:0 !important;color:#FFFDF7 !important;font:600 13px/1 Inter,sans-serif !important;padding:8px 2px !important;font-variant-numeric:tabular-nums;box-shadow:none !important;min-height:0 !important}",
+      "html body #page .fo-mk-row .rail .cust input.fo-mk-in::placeholder{color:rgba(246,239,223,.35);font-weight:400}",
+      "html body #page .fo-mk-row .rail .cust input.fo-mk-in:focus{outline:none !important;border-bottom-color:#E8B96A !important}",
+      "html body #page .fo-mk-row .rail .cust input.fo-mk-in.no{animation:fo-mk-shake .4s}",
+      "@keyframes fo-mk-shake{0%,100%{transform:none}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-3px)}}",
+      "html body #page .fo-mk-row .rail .cust .snd{flex:none;width:34px;height:34px;border-radius:8px !important;background:transparent !important;border:1px solid rgba(246,239,223,.32) !important;color:#F6EFDF !important;cursor:pointer;font-size:14px;padding:0 !important;box-shadow:none !important}",
+      "html body #page .fo-mk-row .rail .cust .snd:hover{background:rgba(255,255,255,.08) !important}",
+      "html body #page .fo-mk-row .rail .act.ghost{margin-top:10px;font:600 9.5px/1 Oswald,sans-serif !important;letter-spacing:.14em;text-transform:uppercase;color:rgba(246,239,223,.85) !important;background:transparent !important;border:1px solid rgba(246,239,223,.35) !important;border-radius:999px !important;padding:12px 0 !important;width:100%;cursor:pointer}",
       "html body #page .fo-mk-row .rail .act.ghost:hover{background:rgba(255,255,255,.08) !important}",
+      // the gold youth mark for the under-21s
+      "html body #page .yth{display:inline-flex;font:700 7.5px/1 Oswald,sans-serif;letter-spacing:.14em;color:#7A5210;background:linear-gradient(120deg,#F3DFA9,#E8B96A);border-radius:5px;padding:3.5px 6px;vertical-align:3px;margin-left:8px;text-transform:uppercase;white-space:nowrap}",
       // the door to the rest of a big board
       "html body #page .fo-mk-more{display:block;width:100%;margin:2px 0 0;padding:13px !important;font:600 10px/1 Oswald,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;color:#67748a !important;background:#FFFEFC !important;border:1px dashed rgba(27,36,50,.25) !important;border-radius:12px !important;cursor:pointer}",
       "html body #page .fo-mk-more:hover{color:#B44A22 !important;border-color:rgba(201,87,31,.5) !important;background:#FFFEFC !important}",
@@ -730,6 +1035,64 @@
       "html body #page .fo-mk-foot{display:flex;gap:10px;justify-content:space-between;margin-top:20px;flex-wrap:wrap}",
       "html body #page .fo-mk-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
       "html body #page .fo-mk-foot a:hover{color:#B44A22;text-decoration:none}",
+      // the view toggle: cards or the whole book
+      "html body #page .fo-mk-vt{display:inline-flex;gap:2px;background:#FFFEFC;border:1px solid rgba(27,36,50,.14);border-radius:9px;padding:3px}",
+      "html body #page .fo-mk-vt button{display:inline-flex;align-items:center;gap:6px;font:600 9px/1 Oswald,sans-serif !important;letter-spacing:.12em;text-transform:uppercase;color:#67748a !important;background:transparent !important;border:0 !important;border-radius:7px !important;padding:7px 11px !important;cursor:pointer;box-shadow:none !important}",
+      "html body #page .fo-mk-vt button svg{width:12px;height:12px}",
+      "html body #page .fo-mk-vt button.on{background:#14243A !important;color:#F1EEE6 !important}",
+      // THE TABLE: the whole board as one sortable page of the books
+      "html body #page .fo-mk-tblwrap{background:#FFFEFC;border:1px solid rgba(27,36,50,.12);border-radius:14px;overflow-x:auto;margin-bottom:4px}",
+      "html body #page .fo-mk-tbl{border-collapse:collapse;width:100%;min-width:1020px}",
+      "html body #page .fo-mk-tbl th{background:#14243A;color:rgba(246,239,223,.75);font:600 8.5px/1.3 Oswald,sans-serif;letter-spacing:.13em;text-transform:uppercase;padding:11px 9px;text-align:right;white-space:nowrap;cursor:pointer;position:sticky;top:0}",
+      "html body #page .fo-mk-tbl th:first-child{text-align:left;padding-left:16px}",
+      "html body #page .fo-mk-tbl th.on{color:#E8B96A}",
+      "html body #page .fo-mk-tbl th .ar{font-size:8px}",
+      "html body #page .fo-mk-tbl td{padding:9px;border-top:1px solid rgba(27,36,50,.06);font:500 12.5px/1.3 Inter,sans-serif;color:#2a3444;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}",
+      "html body #page .fo-mk-tbl td:first-child{text-align:left;padding-left:16px}",
+      "html body #page .fo-mk-tbl tr:hover td{background:#FBFAF5}",
+      "html body #page .fo-mk-tbl td .pn{font:600 13.5px/1.25 'Fraunces',Georgia,serif;color:#141C28;text-decoration:none}",
+      "html body #page .fo-mk-tbl td a.pn:hover{color:#C9571F;text-decoration:underline;text-underline-offset:3px}",
+      "html body #page .fo-mk-tbl td .sub{display:block;font:400 10px/1.5 Inter,sans-serif;color:#98a0ae}",
+      "html body #page .fo-mk-tbl td .sub img{width:14px;height:10px;object-fit:cover;border-radius:1.5px;vertical-align:-1px;box-shadow:0 0 0 1px rgba(27,36,50,.12)}",
+      "html body #page .fo-mk-tbl td .sub a.cl{color:#7A5480;text-decoration:none;border-bottom:1px dotted rgba(122,84,128,.5)}",
+      "html body #page .fo-mk-tbl td .sub a.cl:hover{color:#C9571F;border-bottom-color:#C9571F}",
+      "html body #page .fo-mk-tbl td.hot{color:#14243A;font-weight:700}",
+      "html body #page .fo-mk-tbl td.dim,html body #page .fo-mk-tbl td .hb.dim{color:#c3c9d2;font-weight:400}",
+      "html body #page .fo-mk-tbl td .hb{font-weight:700;color:#14243A}",
+      "html body #page .fo-mk-tbl td .hbc{display:block;font:600 10px/1.5 Inter,sans-serif}",
+      "html body #page .fo-mk-tbl td .hbc a{color:#7A5480;text-decoration:none;border-bottom:1px dotted rgba(122,84,128,.5)}",
+      "html body #page .fo-mk-tbl td .hbc a:hover{color:#C9571F;border-bottom-color:#C9571F}",
+      "html body #page .fo-mk-tbl td .hbc .you{color:#177A57}",
+      "html body #page .fo-mk-tbl td .yth{vertical-align:1px;margin-left:6px}",
+      "html body #page .fo-mk-tbl .hmwrap.tbl .clk{display:inline;font:600 12.5px/1.2 Oswald,sans-serif;letter-spacing:.04em;color:#14243A;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-tbl .hmwrap.tbl .clk.soon,html body #page .fo-mk-tbl .hmwrap.tbl .clk.final{color:#8E1F13;animation:none}",
+      "html body #page .fo-mk-tbl .hmwrap.tbl .clk.gone{color:#98a0ae}",
+      "html body #page .fo-mk-tbl .hmwrap.tbl .hnote{display:none}",
+      "html body #page .fo-mk-tbl .qb{font:600 8px/1 Oswald,sans-serif !important;letter-spacing:.1em;text-transform:uppercase;color:#FFFEFC !important;background:#C9571F !important;border:0 !important;border-radius:999px !important;padding:8px 12px !important;cursor:pointer;box-shadow:none !important}",
+      "html body #page .fo-mk-tbl .qb:hover{background:#A64426 !important}",
+      "html body #page .fo-mk-tbl .qb.gh{color:#67748a !important;background:transparent !important;border:1px solid rgba(27,36,50,.25) !important}",
+      // THE WIRE: the bell in the masthead and its ledger
+      "html body #topbar #fo-wire-btn{position:relative;display:inline-flex;align-items:center;justify-content:center;width:34px;height:34px;border-radius:9px !important;background:rgba(255,255,255,.08) !important;border:0 !important;color:#F6EFDF !important;cursor:pointer;margin:0 6px;padding:0 !important;box-shadow:none !important;vertical-align:middle;flex:none;align-self:center}",
+      "html body #topbar #fo-wire-btn:hover{background:rgba(255,255,255,.16) !important}",
+      "html body #topbar #fo-wire-btn svg{width:17px;height:17px;display:block}",
+      "html body #topbar #fo-wire-btn #fo-wire-bdg{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:#8E1F13;color:#fff;font:700 9.5px/16px Inter,sans-serif;text-align:center;padding:0 4px;box-shadow:0 0 0 2px #0E233F}",
+      "#fo-wire-pop{position:fixed;z-index:460;display:none;background:#FFFEFC;border:1px solid rgba(27,36,50,.16);border-radius:14px;box-shadow:0 26px 60px rgba(10,22,42,.3);overflow:hidden;color:#141C28;max-height:70vh;overflow-y:auto}",
+      "#fo-wire-pop.on{display:block;animation:fo-mk-drop2 .15s ease}",
+      "@keyframes fo-mk-drop2{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}",
+      "#fo-wire-pop .ph{display:flex;align-items:baseline;gap:10px;padding:13px 16px;border-bottom:1px solid rgba(27,36,50,.1);position:sticky;top:0;background:#FFFEFC}",
+      "#fo-wire-pop .ph b{font:600 13.5px/1 'Fraunces',Georgia,serif}",
+      "#fo-wire-pop .ph span{margin-left:auto;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#C9571F;cursor:pointer}",
+      "#fo-wire-pop .it{display:flex;gap:11px;padding:12px 16px;border-bottom:1px solid rgba(27,36,50,.06);cursor:pointer}",
+      "#fo-wire-pop .it:hover{background:#FBFAF5}",
+      "#fo-wire-pop .it.unread{background:#FBF7EE}",
+      "#fo-wire-pop .ic{flex:none;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:12px}",
+      "#fo-wire-pop .ic.out{background:rgba(142,31,19,.1);color:#8E1F13}",
+      "#fo-wire-pop .ic.in{background:rgba(23,122,87,.1);color:#177A57}",
+      "#fo-wire-pop .ic.won{background:rgba(232,185,106,.2);color:#B8933A}",
+      "#fo-wire-pop .ic.gone{background:rgba(27,36,50,.07);color:#67748a}",
+      "#fo-wire-pop .tx{min-width:0;font:400 12px/1.5 Inter,sans-serif;color:#2a3444;white-space:normal}",
+      "#fo-wire-pop .tx i{display:block;font-style:normal;font:400 10px/1.5 Inter,sans-serif;color:#98a0ae;margin-top:2px}",
+      "#fo-wire-pop .none{padding:24px 18px;font:italic 400 12.5px/1.6 Georgia,serif;color:rgba(20,28,40,.5);text-align:center}",
       // narrower grounds: the rail becomes the card's foot, gauges close ranks
       "@media(max-width:640px){",
       "html body #page .fo-mk-row{grid-template-columns:1fr}",

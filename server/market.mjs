@@ -500,7 +500,11 @@ export async function rebuildMarket(pool, now = Date.now()) {
   const byId = Object.fromEntries(tops.map(t => [t.listing_id, t]));
   body.listings.forEach(L => {
     const t = byId[L.id];
-    if (t) { L.bids = t.n; L.high = +t.amount; L.highClub = t.club; }
+    if (t) {
+      L.bids = t.n; L.high = +t.amount; L.highClub = t.club;
+      // the door to the bidder's own ground (053)
+      L.highCountry = t.country_id; L.highSlot = t.slot;
+    }
   });
   await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ('market',$1,now())
     ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`, [JSON.stringify(body)]);

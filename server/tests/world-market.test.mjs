@@ -202,6 +202,9 @@ test('the open bid: the floor, the bank, and the board must be beaten', async ()
   assert.equal(board.offers, 1);
   assert.equal(Number(board.high), L.asking + 9000, 'the high bid is on the board');
   assert.ok(board.high_club, 'and so is who holds it');
+  // 053: the bidder's ADDRESS is public too, so his name can be a door
+  assert.equal(board.high_country, 'eng');
+  assert.equal(Number(board.high_slot), 1, 'the leading club\'s seat rides the view');
   assert.equal(Number(board.reserve), L.reserve, 'and the reserve');
   // an offer made in the open stands
   await assert.rejects(as(U1, `SELECT public.world_market_unbid($1)`, [L.id]), /stands/);
