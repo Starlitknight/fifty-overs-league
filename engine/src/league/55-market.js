@@ -216,11 +216,18 @@
       : "no bids yet &middot; reserve " + money(L.reserve);
     var hmMs = +(L.closesMs != null ? L.closesMs : L.closes_ms) || 0;
     var hmSoon = !!(hmMs && hmMs - Date.now() < 3600000);
+    // EVERY NAME IS A DOOR (the feed's rule): a listed club man opens his own
+    // dossier. A free agent has no club page to stand on, so he stays print.
+    var door = L.slot >= 0 && L.country_id
+      ? "#/player?c=" + encodeURIComponent(L.country_id) + "&s=" + (L.slot | 0) + "&n=" + encodeURIComponent(L.player)
+      : "";
     return "<div class='fo-mk-row" + (lead ? " lead" : "") + "' data-id='" + L.id + "'>" +
       "<div class='hd'>" +
       "<span class='who'>" +
       (ovr != null ? "<span class='ovr' title='Overall'>" + ovr + "</span>" : "") +
-      "<span class='nm'><b>" + E(L.player) + (man && man.keeper ? " &dagger;" : "") + "</b>" +
+      "<span class='nm'>" +
+      (door ? "<a class='pdoor' href='" + door + "'><b>" + E(L.player) + (man && man.keeper ? " &dagger;" : "") + "</b></a>"
+            : "<b>" + E(L.player) + (man && man.keeper ? " &dagger;" : "") + "</b>") +
       "<span class='mt'>" + (meta.length ? meta.join(" &nbsp;&middot;&nbsp; ") : "a cricketer") + "</span></span>" +
       "</span>" +
       "<span class='pr'>" +
@@ -456,6 +463,8 @@
       "html body #page .fo-mk-row .ovr{flex:none;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#14243A;color:#F6EFDF;border-radius:9px;font:600 15px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums}",
       "html body #page .fo-mk-row .nm{min-width:0}",
       "html body #page .fo-mk-row .nm b{display:block;font:600 16.5px/1.15 'Fraunces',Georgia,serif;color:#141C28;letter-spacing:.005em}",
+      "html body #page .fo-mk-row .nm a.pdoor{text-decoration:none;color:inherit}",
+      "html body #page .fo-mk-row .nm a.pdoor:hover b{color:#C9571F;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}",
       "html body #page .fo-mk-row .nm .mt{display:block;font:400 10.5px/1.5 Inter,sans-serif;color:#7d8798;margin-top:3px}",
       "html body #page .fo-mk-row .pr{flex:none;text-align:right;max-width:44%}",
       "html body #page .fo-mk-row .pr .amt{display:block;font:600 21px/1 Oswald,sans-serif;color:#C9571F;font-variant-numeric:tabular-nums;letter-spacing:.01em}",
