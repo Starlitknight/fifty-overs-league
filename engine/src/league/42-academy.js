@@ -103,6 +103,26 @@
     stamina: "stamina", fielding: "ground fielding", catching: "catching",
     keeping: "keeping", stumping: "stumping"
   };
+  // THE SCOUT'S BANDS. A report carries a [lo, hi] range per skill, never the
+  // number itself (migration 050): the band is drawn where it sits on the
+  // 0-99 rail, so a wide gold smear at the top of the scale reads exactly as
+  // it should - "could be special, could merely be good".
+  function bandGrid(p) {
+    var sb = (p && p.skillBands) || {}, out = "";
+    for (var g = 0; g < SKILLS.length; g++) {
+      var rows = "";
+      for (var i = 0; i < SKILLS[g][1].length; i++) {
+        var k = SKILLS[g][1][i], b = sb[k];
+        if (!b || !isFinite(+b.lo) || !isFinite(+b.hi)) continue;
+        var lo = Math.max(0, Math.min(100, +b.lo)), hi = Math.max(lo + 2, Math.min(100, +b.hi));
+        rows += "<div class='fo-ac-sk'><i>" + E(SKILL_NM[k] || k) + "</i>" +
+          "<s class='rail'><u class='bnd' style='left:" + lo + "%;width:" + (hi - lo) + "%'></u></s>" +
+          "<b class='rng'>" + Math.round(lo) + "&ndash;" + Math.round(hi) + "</b></div>";
+      }
+      if (rows) out += "<div class='fo-ac-skg'><h5>" + E(SKILLS[g][0]) + "</h5>" + rows + "</div>";
+    }
+    return out ? "<div class='fo-ac-skills'>" + out + "</div>" : "";
+  }
   function skillGrid(p) {
     var sk = (p && p.skills) || {}, out = "";
     for (var g = 0; g < SKILLS.length; g++) {
@@ -230,8 +250,29 @@
 
   // THE BOY ON THE TABLE. Everything about him, and two buttons.
   function recruitHTML(pend, ac) {
-    var p = pend.recruit, o = ovrOf(p);
+    var p = pend.recruit;
     var nat = (ac.nations || []).filter(function (n) { return n.id === pend.nation; })[0];
+    // the scout's report (050): ranges, not numbers - the signature is the reveal
+    if (p && p.scouted) {
+      var rb = p.ratingBand;
+      var lvl9 = Math.max(1, Math.min(5, +p.level || +ac.level || 1));
+      return "<div class='fo-ac-offer'>" +
+        "<div class='fo-ac-oh'><div><b>" + E(p.name) + "</b>" +
+          "<i>" + E(roleOf(p)) + " &middot; " + E(p.age) + " years old &middot; found in " + E((nat && nat.name) || pend.nation) + "</i></div>" +
+          (rb ? "<u class='rng'>" + (+rb.lo) + "&ndash;" + (+rb.hi) + "</u>" : "") + "</div>" +
+        "<div class='fo-ac-orow'>" +
+          "<span><i>Wage if signed</i><b>" + wage(p.wage) + "</b><u>a round, every round</u></span>" +
+          "<span><i>He is yours for</i><b>" + yearsLeft(p.age) + "</b><u>" + (yearsLeft(p.age) === 1 ? "season" : "seasons") + "</u></span>" +
+        "</div>" +
+        bandGrid(p) +
+        "<div class='fo-ac-note thin'>This is the scout's opinion, not the boy's file: every range holds the truth somewhere inside it, and a level-" + lvl9 +
+          " academy reads a boy to about &plusmn;" + E(p.blur || "") + ". Build the academy up and this same report sharpens. The only way to know who he really is, is to sign him &mdash; the signature is the reveal.</div>" +
+        "<div class='fo-ac-obtns'>" +
+          "<button type='button' class='fo-ac-btn' data-fo-rec='sign'>Sign him and find out</button>" +
+          "<button type='button' class='fo-ac-btn ghost' data-fo-rec='release'>Let him go</button>" +
+        "</div></div>";
+    }
+    var o = ovrOf(p);
     return "<div class='fo-ac-offer'>" +
       "<div class='fo-ac-oh'><div><b>" + E(p.name) + "</b>" +
         "<i>" + E(roleOf(p)) + " &middot; " + E(p.age) + " years old &middot; found in " + E((nat && nat.name) || pend.nation) + "</i></div>" +
@@ -241,7 +282,6 @@
         "<span><i>He is yours for</i><b>" + yearsLeft(p.age) + "</b><u>" + (yearsLeft(p.age) === 1 ? "season" : "seasons") + "</u></span>" +
       "</div>" +
       skillGrid(p) +
-      "<div class='fo-ac-note thin'>What you see is what there is. Nothing is hidden and nothing is promised: the nets work on these numbers at the ordinary rate, faster because he is young, and four seasons of them move a cricketer by about a tenth. Judge him on what he already is, against how old he is.</div>" +
       "<div class='fo-ac-obtns'>" +
         "<button type='button' class='fo-ac-btn' data-fo-rec='sign'>Sign him to the academy</button>" +
         "<button type='button' class='fo-ac-btn ghost' data-fo-rec='release'>Let him go</button>" +
@@ -561,6 +601,11 @@
       "html body #page .fo-ac-sk s{flex:1;height:5px;border-radius:999px;background:rgba(20,28,40,.09);text-decoration:none;overflow:hidden}",
       "html body #page .fo-ac-sk s u{display:block;height:100%;text-decoration:none;background:linear-gradient(90deg,#E8B96A,#C8542F)}",
       "html body #page .fo-ac-sk b{flex:0 0 20px;text-align:right;font:600 10.5px/1 Inter,sans-serif;color:#141C28;font-variant-numeric:tabular-nums}",
+      // the scout's band: a gold smear WHERE the truth lives, not a fill
+      "html body #page .fo-ac-sk s.rail{position:relative;overflow:hidden}",
+      "html body #page .fo-ac-sk s.rail u.bnd{position:absolute;top:0;bottom:0;height:auto;border-radius:999px;background:linear-gradient(90deg,rgba(232,185,106,.55),#C8542F,rgba(232,185,106,.55))}",
+      "html body #page .fo-ac-sk b.rng{flex:0 0 42px}",
+      "html body #page .fo-ac-oh u.rng{font-variant-numeric:tabular-nums}",
       "html body #page .fo-ac-obtns{display:flex;gap:8px;margin-top:13px;flex-wrap:wrap}",
       "html body #page .fo-ac-obtns .fo-ac-btn{flex:1 1 150px}",
       "html body #page .fo-ac-btn.ghost{background:transparent !important;border:1px solid rgba(20,28,40,.22) !important;color:rgba(20,28,40,.62) !important}",

@@ -179,3 +179,56 @@ test('a better academy really does find better boys', async () => {
       'level ' + lv + ' turned out ' + good + ' good-or-better, expected about ' + Math.round(want));
   }
 });
+
+test('the scout hands over a report, not the file - and the signature is the reveal', async () => {
+  // a fresh trip on the second rest day of the season (050: the fog)
+  const d2 = startDay + REST_DAYS[1];
+  const setDay = async d => {
+    const now = Number((await pool.query('SELECT now_ms() n')).rows[0].n);
+    await pool.query('UPDATE worlds SET epoch_ms=$1 WHERE id=1', [Math.floor(now - d * DAY)]);
+  };
+  await setDay(d2);
+  await layCandidates(pool, host, 'eng', { worldDay: d2, startDay, restDays: REST_DAYS });
+  const r = (await pool.query(`SELECT world_scout('eng') rep`)).rows[0].rep;
+  assert.equal(r.ok, true);
+  const rep = r.recruit;
+  // ranges, never numbers: the file's skills stay sealed until the signature
+  assert.equal(rep.scouted, true, 'the trip returns a report');
+  assert.ok(!rep.skills, 'no skill is served as a number');
+  assert.ok(rep.skillBands && Object.keys(rep.skillBands).length >= 10, 'a band per skill');
+  assert.ok(rep.name && rep.age >= 16 && rep.age <= 20, 'the plain facts stay plain');
+  // every band is honest: the truth (banked on the trip row) sits inside it
+  const truth = (await pool.query(
+    `SELECT recruit FROM academy_scouts WHERE country_id='eng' AND slot=1 AND world_day=$1`, [d2])).rows[0].recruit;
+  for (const k of Object.keys(truth.skills || {})) {
+    const b = rep.skillBands[k];
+    assert.ok(b && b.lo <= truth.skills[k] && truth.skills[k] <= b.hi,
+      k + ': ' + truth.skills[k] + ' inside [' + (b && b.lo) + ',' + (b && b.hi) + ']');
+  }
+  // the report is deterministic: read twice, worded once
+  const p1 = (await pool.query(`SELECT world_my_academy() a`)).rows[0].a.pending.recruit;
+  const p2 = (await pool.query(`SELECT world_my_academy() a`)).rows[0].a.pending.recruit;
+  assert.deepEqual(p1, p2, 'the same trip serves the same report');
+  assert.deepEqual(p1.skillBands, rep.skillBands, 'and it is the trip\'s own report');
+  // a better academy reads the same boy sharper - build it and look again
+  const lvl0 = (await pool.query(`SELECT academy FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].academy;
+  await pool.query(`UPDATE clubs SET academy=5 WHERE country_id='eng' AND slot=1`);
+  const sharp = (await pool.query(`SELECT world_my_academy() a`)).rows[0].a.pending.recruit;
+  let narrower = 0;
+  for (const k of Object.keys(rep.skillBands)) {
+    const w0 = rep.skillBands[k].hi - rep.skillBands[k].lo, w5 = sharp.skillBands[k].hi - sharp.skillBands[k].lo;
+    assert.ok(w5 <= w0, k + ': a level-five report is never blurrier');
+    assert.ok(sharp.skillBands[k].lo <= truth.skills[k] && truth.skills[k] <= sharp.skillBands[k].hi,
+      k + ': still honest at level five');
+    if (w5 < w0) narrower++;
+  }
+  assert.ok(narrower >= 8, 'and most bands genuinely sharpened: ' + narrower);
+  await pool.query(`UPDATE clubs SET academy=$1 WHERE country_id='eng' AND slot=1`, [lvl0]);
+  // the signature is the reveal: the boy who joins is the boy who was laid out
+  const signed = (await pool.query(`SELECT world_recruit('sign') s`)).rows[0].s;
+  assert.equal(signed.ok, true);
+  const youth = (await pool.query(`SELECT youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].youth;
+  const boy = youth.filter(y => y.name === truth.name)[0];
+  assert.ok(boy, 'he is on the books under his own name');
+  assert.deepEqual(boy.skills, truth.skills, 'with his real skills, exactly as generated');
+});
