@@ -1,13 +1,20 @@
 (function () {
   "use strict";
   // =========================================================================
-  // SQUAD INTELLIGENCE
-  // A second, read-only way to understand the club's players. The operational
-  // squad room remains at #/squad; this page turns the same live state into a
-  // clean performance workspace for comparison and succession decisions.
+  // SQUAD INTELLIGENCE - the third way to read the squad
+  //
+  // This is not a page. The squad room owns one address, #/squad, and offers
+  // three ways to look at the same men: the Roster (people), the Grid (every
+  // attribute, sortable) and Int (the analyst's read - who is worth what, at
+  // what age, and where the squad is thin). This module hands the squad
+  // renderer a body and a wiring function; the shell, the masthead and the
+  // view switch belong to 09-squad-matchlab.js and are shared by all three.
+  //
+  // The dressing: the Split Desk. A navy band carries the department name,
+  // the two filters and the five headline figures; the working area below it
+  // is the same daylight paper the Grid uses, so the two read as one room.
   // =========================================================================
-  if (window.__foSquadIntelligencePage) return;
-  window.__foSquadIntelligencePage = 1;
+  if (window.__foSquadIntel) return;
   var FO_SI_ROLES = { opener: "bat", topOrderBat: "bat", middleOrderBat: "bat", allRounder: "ar",
     wicketkeeper: "wk", seamFast: "bowl", seamFastMedium: "bowl", seamMedium: "bowl",
     wristSpin: "bowl", fingerSpin: "bowl" };
@@ -69,230 +76,303 @@
   }
   function foSiTrend(p) {
     var f = p && p.formIx != null ? +p.formIx : 3;
-    if (f >= 5) return { cls: "up", mark: "\u2191", word: "Strong" };
-    if (f <= 2) return { cls: "down", mark: "\u2193", word: "Watch" };
-    return { cls: "flat", mark: "\u2014", word: "Steady" };
+    if (f >= 5) return { cls: "up", mark: "↑", word: "Strong" };
+    if (f <= 2) return { cls: "down", mark: "↓", word: "Watch" };
+    return { cls: "flat", mark: "—", word: "Steady" };
   }
-  function foSiDecision(p, rank, total) {
-    var age = p.age | 0, fit = foSiEnergy(p), ovr = foSiOvr(p), role = foSiRoleName(p).toLowerCase();
-    if (rank === 0) return "Your highest-rated player and the standard-setter in this squad. Build the strongest XI around " + foSiShort(p.name) + ".";
-    if (age <= 22 && ovr >= 55) return "A high-value young " + role + ". Protect minutes for development without overloading him on crowded matchdays.";
-    if (age >= 32 && ovr >= 65) return "Elite short-term value, but the age curve is narrowing. Begin succession planning while his influence is still strong.";
-    if (fit < 65) return "Current ability is being limited by availability. Rest and rotation will return more value than another intensive training block.";
-    if (rank >= Math.max(5, total - 3)) return "A depth option today. Define one specialist role for him or consider whether the wage can be used more efficiently elsewhere.";
-    return "A reliable squad option with a clear role. Compare him against adjacent players before locking the next First XI.";
+  // A YEAR HERE IS ONE SEASON. The squad module owns that arithmetic; borrow
+  // it so a man three-quarters through his thirty-first year plots at 31.75
+  // and not at a flat 31 alongside everyone else born that season.
+  function foSiAge(p) {
+    try {
+      var A = window.__foAge;
+      if (A && A.parts) {
+        var a = A.parts(p), L = 42;
+        try { var c = window.__foPlanet && window.__foPlanet.CYCLE; if (c >= 1) L = c | 0; } catch (eC) {}
+        return a.y + Math.min(0.98, a.d / L);
+      }
+    } catch (e) {}
+    return +(p && p.age) || 0;
+  }
+  // THE VALUE LAW: a bar is coloured by what it is worth, never by what it is.
+  function foSiTone(v) { return v < 30 ? "t1" : v < 50 ? "t2" : v < 75 ? "t3" : "t4"; }
+  // a round number a reader can hold, for an axis of about `want` ticks
+  function foSiStep(range, want, pows) {
+    var raw = range / Math.max(1, want);
+    for (var i = 0; i < pows.length; i++) if (pows[i] >= raw) return pows[i];
+    return pows[pows.length - 1];
   }
 
   function foSiCss() {
     if (document.getElementById("fo-si-css")) return;
     var s = document.createElement("style"); s.id = "fo-si-css";
     s.textContent = [
-      "html body.fo-si-on{background:#F1F4F8 !important}",
-      "html body.fo-si-on #page.fo-si-page{box-sizing:border-box;max-width:none !important;width:100vw !important;min-height:calc(100vh - var(--fo-tbh,68px));margin-left:calc((100% - 100vw)/2) !important;margin-right:0 !important;padding:0 28px 26px !important;background:#F1F4F8 !important;color:#1B273B;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}",
-      ".fo-si{max-width:1500px;margin:0 auto;padding-top:17px}",
+      ".fo-si{--nv:#14243A;--nv2:#0C1B2E;--cr:#F1EEE6;--pp:#FFFEFC;--gd:#E8B96A;--gdD:#B8933A;--or:#C9571F;--hair:rgba(27,36,50,.12);--mut:#7B8698}",
       ".fo-si *{box-sizing:border-box}",
-      ".fo-si-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;padding:0 0 22px}",
-      ".fo-si-ey{font:700 9px/1.2 Oswald,Inter,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#3488E2;margin:0 0 8px}",
-      ".fo-si-head h1{margin:0;color:#1B273B;font:800 38px/.98 Inter,sans-serif;letter-spacing:-.045em}",
-      ".fo-si-sub{margin:9px 0 0;color:#8190A4;font-size:11px;line-height:1.5}",
-      ".fo-si-actions{display:flex;align-items:center;gap:9px;padding-top:1px}",
-      "html body #page .fo-si select{appearance:none;-webkit-appearance:none;min-width:102px;height:39px;border:1px solid #D6DEE8 !important;border-radius:9px !important;background:#fff url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%237D8CA2' stroke-width='1.4'/%3E%3C/svg%3E\") no-repeat right 12px center/9px 6px !important;color:#65748A !important;font:700 9px Oswald,Inter,sans-serif !important;letter-spacing:.17em;text-transform:uppercase;padding:0 32px 0 14px !important;box-shadow:none !important}",
-      "html body #page .fo-si .fo-si-compare{height:39px;border:0 !important;border-radius:9px !important;background:#F25D34 !important;color:#fff !important;font:700 9px Oswald,Inter,sans-serif !important;letter-spacing:.19em;text-transform:uppercase;padding:0 18px !important;box-shadow:none !important;white-space:nowrap}",
-      "html body #page .fo-si .fo-si-compare:hover{background:#DF4D27 !important}",
-      "html body #page .fo-si .fo-si-compare.on{background:#142C4C !important}",
-      ".fo-si-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px;margin:0 0 14px}",
-      ".fo-si-kpi{height:76px;border:1px solid #D6DEE8;border-radius:11px;background:#fff;padding:13px 14px;box-shadow:0 1px 1px rgba(18,36,61,.02)}",
-      ".fo-si-kpi span{display:block;color:#8492A6;font:700 9px/1 Oswald,Inter,sans-serif;letter-spacing:.21em;text-transform:uppercase}",
-      ".fo-si-kpi .v{display:flex;align-items:flex-end;justify-content:space-between;gap:8px;margin-top:7px}",
-      ".fo-si-kpi b{font-size:23px;line-height:1;font-weight:800;color:#1B273B;font-variant-numeric:tabular-nums}",
-      ".fo-si-kpi em{font-size:8px;font-style:normal;color:#2AA775;white-space:nowrap;margin-bottom:2px}.fo-si-kpi em.watch{color:#F25D34}",
-      ".fo-si-work{display:grid;grid-template-columns:350px minmax(520px,1fr) 300px;gap:14px;align-items:stretch}",
-      ".fo-si-card{background:#fff;border:1px solid #D5DEE9;border-radius:13px;overflow:hidden;box-shadow:0 1px 1px rgba(18,36,61,.025)}",
-      ".fo-si-rank{min-height:594px}",
-      ".fo-si-cardhead{height:49px;padding:0 14px;display:flex;align-items:center;justify-content:space-between;border-bottom:1px solid #DFE5ED}",
-      ".fo-si-cardhead b,.fo-si-title{color:#1A2940;font:700 9px/1 Oswald,Inter,sans-serif;letter-spacing:.21em;text-transform:uppercase}",
-      ".fo-si-cardhead span{color:#92A0B2;font:500 7.5px/1 Oswald,Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase}",
-      ".fo-si-list{padding:4px 10px 10px}",
-      "html body #page .fo-si-row{width:100%;height:62px;display:grid;grid-template-columns:38px minmax(0,1fr) 53px 29px;gap:7px;align-items:center;margin:0;padding:0 7px;border:0 !important;border-bottom:1px solid #E8EDF3 !important;border-radius:0 !important;background:#fff !important;color:#1D2A40 !important;text-align:left;box-shadow:none !important;cursor:pointer}",
-      "html body #page .fo-si-row:hover,html body #page .fo-si-row.on{background:#F5F8FB !important}",
-      "html body #page .fo-si-row.on{box-shadow:inset 3px 0 0 #398FE5 !important}",
-      ".fo-si-thumb{width:36px;height:36px;border-radius:9px;overflow:hidden;background:#102846;display:block}",
-      ".fo-si-thumb img{width:100%;height:100%;display:block;object-fit:cover;object-position:50% 22%}",
-      ".fo-si-rid{min-width:0}.fo-si-rid b{display:block;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;font-size:11px;line-height:1.15;color:#1C2B42}.fo-si-rid span{display:block;margin-top:3px;color:#8593A5;font:700 7.5px/1 Oswald,Inter,sans-serif;letter-spacing:.16em;text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      ".fo-si-trend{font-size:7.5px;white-space:nowrap}.fo-si-trend.up{color:#21A676}.fo-si-trend.down{color:#F25D34}.fo-si-trend.flat{color:#54B89A}",
-      ".fo-si-rat{text-align:right;font-size:17px;font-weight:800;color:#1A2940;font-variant-numeric:tabular-nums}",
-      ".fo-si-mid{display:grid;grid-template-rows:388px 1fr;gap:14px;min-width:0}",
-      ".fo-si-mapcard{padding:0 14px 13px}",
-      ".fo-si-mapcard .fo-si-cardhead{margin:0 -14px;padding:0 14px}",
-      ".fo-si-map{position:relative;height:324px;margin-top:0;border-left:1px solid #DDE5EE;border-bottom:1px solid #D5DEE8;background-image:linear-gradient(#E6ECF2 1px,transparent 1px),linear-gradient(90deg,#E6ECF2 1px,transparent 1px);background-size:16.666% 25%;overflow:hidden}",
-      ".fo-si-axis{position:absolute;left:0;top:3px;color:#9AA8B9;font:700 8px/1 Oswald,Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase;z-index:1}",
-      ".fo-si-hint{position:absolute;right:10px;top:10px;padding:7px 9px;border:1px solid #D9E2EC;border-radius:8px;background:rgba(255,255,255,.9);color:#8796A9;font-size:7px;z-index:2}",
-      "html body #page .fo-si-dot{position:absolute;width:39px;height:39px;margin:-19px 0 0 -19px;border:3px solid rgba(255,255,255,.92) !important;border-radius:50% !important;color:#fff !important;background:#4E9BE8 !important;font-size:10px !important;font-weight:800 !important;box-shadow:0 0 0 1px rgba(45,103,168,.16),0 3px 7px rgba(26,60,98,.12) !important;padding:0 !important;z-index:3;cursor:pointer;transition:transform .14s ease}",
-      "html body #page .fo-si-dot:hover,html body #page .fo-si-dot.on{transform:scale(1.11)}",
-      "html body #page .fo-si-dot.gold{background:#E4B23D !important}html body #page .fo-si-dot.green{background:#35B98F !important}html body #page .fo-si-dot.orange{background:#EF6A3A !important}",
-      ".fo-si-dotlabel{position:absolute;transform:translate(-50%,23px);font-size:6.5px;font-weight:700;color:#53647A;white-space:nowrap;z-index:2}",
-      ".fo-si-build{padding:0 14px 13px}",
-      ".fo-si-build .fo-si-cardhead{height:42px;margin:0 -14px;border-bottom:0;padding:0 14px}",
-      ".fo-si-buildgrid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}",
-      ".fo-si-buildbox{height:118px;border:1px solid #D9E1EA;border-radius:10px;padding:14px 13px;background:#fff}",
-      ".fo-si-buildbox span{display:block;color:#8896A8;font:700 8.5px/1 Oswald,Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase}",
-      ".fo-si-buildbox b{display:block;margin:9px 0 12px;font-size:27px;line-height:1;font-weight:800;color:#1B273B}",
-      ".fo-si-bar{height:6px;border-radius:999px;background:#E8EDF2;overflow:hidden}.fo-si-bar i{display:block;height:100%;border-radius:inherit;background:#35AF85}",
-      ".fo-si-bar.orange i{background:#EF6942}.fo-si-bar.blue i{background:#3D91E5}.fo-si-bar.gold i{background:#D4A73E}.fo-si-bar.purple i{background:#7D62DC}",
-      ".fo-si-player{min-height:594px;background:#fff}",
-      ".fo-si-hero{position:relative;height:225px;padding:18px 17px;background:#102948;color:#fff;overflow:hidden}",
-      ".fo-si-hero:after{content:'';position:absolute;right:-28px;top:17px;width:215px;height:215px;border:1px solid rgba(225,177,61,.22);border-radius:50%;box-shadow:0 0 0 22px rgba(225,177,61,.035),0 0 0 44px rgba(225,177,61,.025)}",
-      ".fo-si-selected{position:relative;z-index:3;color:#55A8F7;font:700 8px/1 Oswald,Inter,sans-serif;letter-spacing:.21em;text-transform:uppercase}",
-      ".fo-si-hero h2{position:relative;z-index:3;width:132px;margin:14px 0 3px;font-size:23px;line-height:.92;letter-spacing:-.025em;color:#fff}",
-      ".fo-si-meta{position:relative;z-index:3;color:#9AAAC0;font-size:7.5px;line-height:1.4}",
-      ".fo-si-big{position:relative;z-index:3;margin-top:17px;font-size:50px;line-height:.8;font-weight:800;color:#fff}.fo-si-big span{display:block;margin-top:9px;color:#8EA1B8;font:700 8px/1 Oswald,Inter,sans-serif;letter-spacing:.19em;text-transform:uppercase}",
-      ".fo-si-art{position:absolute;z-index:2;right:-4px;bottom:0;width:190px;height:198px;object-fit:cover;object-position:50% 23%;clip-path:ellipse(47% 49% at 53% 51%)}",
-      ".fo-si-detail{padding:17px 15px 15px}",
-      ".fo-si-stat{display:grid;grid-template-columns:85px minmax(0,1fr) 25px;gap:10px;align-items:center;height:32px}",
-      ".fo-si-stat span{color:#8B99AB;font:700 8px/1 Oswald,Inter,sans-serif;letter-spacing:.19em;text-transform:uppercase}.fo-si-stat b{text-align:right;color:#233147;font-size:8.5px}",
-      ".fo-si-note{margin-top:10px;padding:10px 11px;border-radius:9px;background:#F3F6FA;color:#77869A;font-size:7.5px;line-height:1.55}",
-      ".fo-si-comparetray{display:none;position:fixed;left:50%;bottom:22px;z-index:360;transform:translateX(-50%);align-items:center;gap:10px;min-width:340px;padding:9px 12px;border-radius:13px;background:#102948;color:#fff;box-shadow:0 16px 44px rgba(16,41,72,.28)}",
-      ".fo-si-comparetray.show{display:flex}.fo-si-comparetray span{flex:1;font-size:10px;color:#C7D2DF}",
-      "html body #page .fo-si-comparetray button{border:1px solid rgba(255,255,255,.2) !important;border-radius:8px !important;background:rgba(255,255,255,.08) !important;color:#fff !important;font-size:9px !important;padding:7px 10px !important}",
-      "@media(max-width:1210px){.fo-si-work{grid-template-columns:310px minmax(470px,1fr) 270px}.fo-si-stat{grid-template-columns:72px minmax(0,1fr) 24px}.fo-si-art{width:170px}.fo-si-row{grid-template-columns:38px minmax(0,1fr) 47px 26px !important}}",
-      "@media(max-width:980px){html body.fo-si-on #page.fo-si-page{padding:0 18px 24px !important}.fo-si-work{grid-template-columns:310px minmax(0,1fr)}.fo-si-player{grid-column:1/-1;min-height:0;display:grid;grid-template-columns:330px 1fr}.fo-si-hero{height:260px}.fo-si-kpis{grid-template-columns:repeat(3,1fr)}}",
-      "@media(max-width:720px){html body.fo-si-on #page.fo-si-page{padding:0 12px 88px !important}.fo-si{padding-top:14px}.fo-si-head{display:block;padding-bottom:15px}.fo-si-head h1{font-size:32px}.fo-si-actions{margin-top:15px;display:grid;grid-template-columns:1fr 1fr}.fo-si-actions .fo-si-compare{grid-column:1/-1}.fo-si-kpis{grid-template-columns:repeat(2,1fr)}.fo-si-kpi:last-child{grid-column:1/-1}.fo-si-work{display:flex;flex-direction:column}.fo-si-rank{min-height:0}.fo-si-list{max-height:410px;overflow:auto}.fo-si-mid{display:flex;flex-direction:column}.fo-si-mapcard{height:390px}.fo-si-map{height:325px}.fo-si-buildgrid{grid-template-columns:1fr}.fo-si-buildbox{height:92px}.fo-si-player{display:block}.fo-si-hero{height:235px}.fo-si-art{width:190px}.fo-si-comparetray{min-width:0;width:calc(100% - 24px);bottom:76px}}"
+
+      /* ---- the band: navy desk over the daylight working area ---- */
+      ".fo-si-band{background:linear-gradient(168deg,#182B44,#0C1B2E);border-radius:14px;padding:18px 20px 20px;margin:0 0 16px}",
+      ".fo-si-bhd{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin:0 0 16px}",
+      ".fo-si-ey{font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:var(--gd);margin:0 0 9px}",
+      ".fo-si-bhd h2{margin:0;font:700 27px/1 Oswald,sans-serif;letter-spacing:.02em;text-transform:uppercase;color:#FFFDF7}",
+      ".fo-si-actions{display:flex;align-items:center;gap:8px}",
+      "html body #page .fo-si select{appearance:none;-webkit-appearance:none;min-width:118px;height:36px;border:1px solid rgba(232,185,106,.32) !important;border-radius:9px !important;background:rgba(255,253,247,.06) url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%23E8B96A' stroke-width='1.4'/%3E%3C/svg%3E\") no-repeat right 12px center/9px 6px !important;color:#F1EEE6 !important;font:600 9px Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;padding:0 32px 0 13px !important;box-shadow:none !important;cursor:pointer}",
+      "html body #page .fo-si select option{color:#14243A;background:#FFFEFC}",
+      ".fo-si-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}",
+      ".fo-si-kpi{border:1px solid rgba(232,185,106,.18);border-radius:11px;background:rgba(255,253,247,.05);padding:12px 13px 13px}",
+      ".fo-si-kpi span{display:block;font:600 8px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(241,238,230,.5)}",
+      ".fo-si-kpi .v{display:flex;align-items:flex-end;gap:8px;margin-top:10px}",
+      ".fo-si-kpi b{font:700 25px/1 Oswald,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums}",
+      ".fo-si-kpi em{font-style:normal;font:600 8px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#5FBF98;margin-left:auto;padding-bottom:3px}",
+      ".fo-si-kpi em.watch{color:#E0906F}",
+
+      /* ---- the working area ---- */
+      ".fo-si-work{display:grid;grid-template-columns:320px minmax(0,1fr) 306px;gap:14px;align-items:start}",
+      ".fo-si-card{background:var(--pp);border:1px solid var(--hair);border-radius:13px;overflow:hidden}",
+      ".fo-si-ch{display:flex;align-items:baseline;gap:10px;padding:13px 15px;border-bottom:1px solid var(--hair)}",
+      ".fo-si-ch b{font:700 9px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--nv)}",
+      ".fo-si-ch span{margin-left:auto;font:600 7.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}",
+
+      /* ranking - every man on the books, never a silent top-N */
+      ".fo-si-list{max-height:600px;overflow:auto;overscroll-behavior:contain}",
+      "html body #page button.fo-si-row{display:grid;width:100%;grid-template-columns:36px minmax(0,1fr) auto 34px;gap:9px;align-items:center;margin:0;padding:9px 12px !important;border:0 !important;border-bottom:1px solid rgba(27,36,50,.07) !important;border-radius:0 !important;background:var(--pp) !important;text-align:left;box-shadow:none !important;cursor:pointer}",
+      "html body #page button.fo-si-row:hover{background:#F7F4EC !important}",
+      "html body #page button.fo-si-row.on{background:linear-gradient(90deg,rgba(232,185,106,.18),rgba(232,185,106,0) 70%) !important;box-shadow:inset 3px 0 0 var(--gd) !important}",
+      ".fo-si-thumb{width:36px;height:36px;border-radius:9px;display:block;object-fit:cover;object-position:50% 20%;background:#16283F;box-shadow:0 0 0 1px rgba(27,36,50,.16)}",
+      ".fo-si-rid{min-width:0}",
+      ".fo-si-rid b{display:block;font:600 13.5px/1.2 Fraunces,Georgia,serif;color:var(--nv);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-si-rid i{display:block;margin-top:3px;font:600 7.5px/1 Oswald,sans-serif;font-style:normal;letter-spacing:.15em;text-transform:uppercase;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-si-trend{font:600 7.5px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;color:#4E8A72}",
+      ".fo-si-trend.up{color:#177A57}.fo-si-trend.down{color:#B4432C}",
+      ".fo-si-rat{text-align:right;font:700 17px/1 Oswald,sans-serif;color:var(--nv);font-variant-numeric:tabular-nums}",
+      ".fo-si-empty{padding:22px 16px;font:italic 400 12px/1.6 Fraunces,Georgia,serif;color:var(--mut)}",
+
+      /* the chart: age across, rating up */
+      ".fo-si-mid{display:grid;gap:14px;min-width:0}",
+      ".fo-si-chart{position:relative;padding:16px 16px 44px 52px;height:376px}",
+      ".fo-si-plot{position:relative;height:100%;border-left:1px solid rgba(27,36,50,.22);border-bottom:1px solid rgba(27,36,50,.22)}",
+      ".fo-si-gl{position:absolute;background:rgba(27,36,50,.07)}",
+      ".fo-si-gl.v{top:0;bottom:0;width:1px}.fo-si-gl.h{left:0;right:0;height:1px}",
+      ".fo-si-tk{position:absolute;font:600 8px/1 Oswald,sans-serif;letter-spacing:.1em;color:var(--mut);font-variant-numeric:tabular-nums}",
+      ".fo-si-tk.x{bottom:-19px;transform:translateX(-50%)}",
+      ".fo-si-tk.y{left:-11px;transform:translate(-100%,-50%)}",
+      ".fo-si-axl{position:absolute;font:600 8px/1 Oswald,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:var(--nv)}",
+      ".fo-si-axl.x{left:52px;right:16px;bottom:14px;text-align:center}",
+      ".fo-si-axl.y{left:14px;top:50%;transform:translate(-50%,-50%) rotate(-90deg);transform-origin:center}",
+      "html body #page button.fo-si-dot{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;padding:0 !important;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,254,252,.9) !important;border-radius:50% !important;font:700 11px/1 Oswald,sans-serif !important;font-variant-numeric:tabular-nums;color:#F1EEE6 !important;background:var(--nv) !important;box-shadow:0 2px 7px rgba(20,36,58,.2) !important;cursor:pointer;z-index:3;transition:transform .14s ease}",
+      "html body #page button.fo-si-dot.bat{background:#C9571F !important}",
+      "html body #page button.fo-si-dot.ar{background:#177A57 !important}",
+      "html body #page button.fo-si-dot.wk{background:#B8933A !important}",
+      "html body #page button.fo-si-dot:hover{transform:scale(1.1);z-index:5}",
+      "html body #page button.fo-si-dot.on{box-shadow:0 0 0 3px var(--gd),0 2px 9px rgba(20,36,58,.3) !important;z-index:6}",
+      ".fo-si-dl{position:absolute;margin:-.5em 0 0 20px;font:500 8px/1 Inter,sans-serif;color:#4C5867;white-space:nowrap;z-index:4;pointer-events:none;text-shadow:0 0 3px #FFFEFC,0 0 3px #FFFEFC,0 0 3px #FFFEFC}",
+      ".fo-si-dl.lf{margin-left:-20px;transform:translateX(-100%)}",
+      ".fo-si-key{display:flex;flex-wrap:wrap;gap:14px;padding:0 16px 15px}",
+      ".fo-si-key span{display:inline-flex;align-items:center;gap:6px;font:600 7.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}",
+      ".fo-si-key i{width:9px;height:9px;border-radius:50%;background:var(--nv)}",
+      ".fo-si-key i.bat{background:#C9571F}.fo-si-key i.ar{background:#177A57}.fo-si-key i.wk{background:#B8933A}",
+
+      /* construction */
+      ".fo-si-build{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:15px}",
+      ".fo-si-bb{border:1px solid var(--hair);border-radius:11px;padding:14px 14px 15px;background:var(--pp)}",
+      ".fo-si-bb span{display:block;font:600 8px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}",
+      ".fo-si-bb b{display:block;margin:10px 0 12px;font:700 27px/1 Oswald,sans-serif;color:var(--nv);font-variant-numeric:tabular-nums}",
+      ".fo-si-bar{height:6px;border-radius:4px;background:#E7E1D3;overflow:hidden}",
+      ".fo-si-bar i{display:block;height:100%;border-radius:4px;background:#177A57}",
+      ".fo-si-bar i.t1{background:#C05B45}.fo-si-bar i.t2{background:#D9A441}.fo-si-bar i.t3{background:#4E8A72}.fo-si-bar i.t4{background:#177A57}",
+
+      /* the selected man */
+      ".fo-si-hero{position:relative;padding:18px 18px 20px;min-height:230px;overflow:hidden;background:linear-gradient(168deg,#182B44,#0C1B2E)}",
+      ".fo-si-hero .lb{position:relative;z-index:3;display:block;font:600 8px/1 Oswald,sans-serif;letter-spacing:.21em;text-transform:uppercase;color:var(--gd)}",
+      ".fo-si-idw{position:relative;z-index:3;width:150px}",
+      ".fo-si-hero h3{margin:13px 0 4px;font:600 25px/.98 Fraunces,Georgia,serif;color:#FFFDF7}",
+      ".fo-si-hero .mt{font:400 9.5px/1.45 Inter,sans-serif;color:rgba(246,239,223,.6)}",
+      ".fo-si-hero .big{position:relative;z-index:3;margin-top:16px;font:700 50px/.8 Oswald,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums}",
+      ".fo-si-hero .big span{display:block;margin-top:9px;font:600 8px/1 Oswald,sans-serif;letter-spacing:.19em;text-transform:uppercase;color:rgba(246,239,223,.55)}",
+      ".fo-si-plate{position:absolute;right:14px;bottom:0;z-index:2;width:110px;height:186px;object-fit:cover;object-position:50% 22%;border-radius:9px 9px 0 0;box-shadow:0 0 0 1px rgba(232,185,106,.34),0 -6px 26px rgba(0,0,0,.4)}",
+      ".fo-si-stats{padding:15px 17px 17px}",
+      ".fo-si-st{display:grid;grid-template-columns:74px minmax(0,1fr) 30px;gap:10px;align-items:center;padding:7px 0}",
+      ".fo-si-st span{font:600 8px/1 Oswald,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:var(--mut)}",
+      ".fo-si-st b{text-align:right;font:700 12px/1 Oswald,sans-serif;color:var(--nv);font-variant-numeric:tabular-nums}",
+
+      "@media(max-width:1240px){.fo-si-work{grid-template-columns:290px minmax(0,1fr) 280px}}",
+      "@media(max-width:1040px){.fo-si-work{grid-template-columns:290px minmax(0,1fr)}.fo-si-player{grid-column:1/-1;display:grid;grid-template-columns:330px minmax(0,1fr)}.fo-si-kpis{grid-template-columns:repeat(3,1fr)}}",
+      "@media(max-width:760px){.fo-si-band{padding:15px 14px 16px}.fo-si-bhd{display:block}.fo-si-bhd h2{font-size:23px}.fo-si-actions{margin-top:13px;display:grid;grid-template-columns:1fr 1fr}.fo-si-kpis{grid-template-columns:repeat(2,1fr)}.fo-si-kpi:last-child{grid-column:1/-1}.fo-si-work{display:flex;flex-direction:column}.fo-si-player{display:block}.fo-si-chart{padding:14px 12px 42px 40px;height:340px}.fo-si-build{grid-template-columns:1fr}" +
+        /* on a phone the plot is barely wider than the dots: the ratings stay,
+           the names go, and a tap still opens the man */
+        ".fo-si-dl{display:none}html body #page button.fo-si-dot{width:28px;height:28px;margin:-14px 0 0 -14px;font-size:10px !important}.fo-si-list{max-height:none}}"
     ].join("\n");
     document.head.appendChild(s);
   }
 
-  function foSiRender() {
-    try {
-      foSiCss();
-      var page = document.getElementById("page"); if (!page) return;
-      document.body.classList.add("fo-si-on");
-      page.classList.add("fo-si-page");
-      var t = userTeam();
-      var all = (t.players || []).slice();
-      window.squadIntelligence = window.squadIntelligence || {};
-      var st = window.squadIntelligence;
-      st.role = ["all", "bat", "ar", "bowl", "wk"].indexOf(st.role) >= 0 ? st.role : "all";
-      st.sort = ["ovr", "age", "wage", "fitness"].indexOf(st.sort) >= 0 ? st.sort : "ovr";
-      st.compare = !!st.compare; st.picks = st.picks || [];
+  // -------------------------------------------------------------------------
+  // the body. `sv` is the squad room's own view state, so the role filter and
+  // the selected man survive a repaint and a trip to the Grid and back.
+  // -------------------------------------------------------------------------
+  function foSiBody(sv) {
+    foSiCss();
+    var t = userTeam();
+    var all = (t.players || []).slice();
+    sv.iRole = ["all", "bat", "ar", "bowl", "wk"].indexOf(sv.iRole) >= 0 ? sv.iRole : "all";
+    sv.iSort = ["ovr", "age", "wage", "fitness"].indexOf(sv.iSort) >= 0 ? sv.iSort : "ovr";
 
-      var pool = all.filter(function (p) { return st.role === "all" || foSiRoleKey(p) === st.role; });
-      pool.sort(function (a, b) {
-        if (st.sort === "age") return (a.age | 0) - (b.age | 0) || foSiOvr(b) - foSiOvr(a);
-        if (st.sort === "wage") return (+b.wage || 0) - (+a.wage || 0);
-        if (st.sort === "fitness") return foSiEnergy(b) - foSiEnergy(a) || foSiOvr(b) - foSiOvr(a);
-        return foSiOvr(b) - foSiOvr(a);
-      });
-      if (!pool.length) pool = all.slice().sort(function (a, b) { return foSiOvr(b) - foSiOvr(a); });
-      var byName = {}; all.forEach(function (p) { byName[p.name] = p; });
-      if (!st.selected || !byName[st.selected] || pool.indexOf(byName[st.selected]) < 0) st.selected = pool[0] && pool[0].name;
-      var selected = byName[st.selected] || pool[0] || all[0];
+    var pool = all.filter(function (p) { return sv.iRole === "all" || foSiRoleKey(p) === sv.iRole; });
+    pool.sort(function (a, b) {
+      if (sv.iSort === "age") return foSiAge(a) - foSiAge(b) || foSiOvr(b) - foSiOvr(a);
+      if (sv.iSort === "wage") return (+b.wage || 0) - (+a.wage || 0);
+      if (sv.iSort === "fitness") return foSiEnergy(b) - foSiEnergy(a) || foSiOvr(b) - foSiOvr(a);
+      return foSiOvr(b) - foSiOvr(a);
+    });
+    if (!pool.length) pool = all.slice().sort(function (a, b) { return foSiOvr(b) - foSiOvr(a); });
+    var byName = {}; all.forEach(function (p) { byName[p.name] = p; });
+    if (!sv.iSel || !byName[sv.iSel] || pool.indexOf(byName[sv.iSel]) < 0) sv.iSel = pool[0] && pool[0].name;
+    var selected = byName[sv.iSel] || pool[0] || all[0];
+    if (!selected) return "<section class='fo-si'><div class='fo-si-card'><div class='fo-si-empty'>There is nobody on the books yet.</div></div></section>";
 
-      var wage = all.reduce(function (n, p) { return n + (+p.wage || 0); }, 0);
-      var age = all.length ? all.reduce(function (n, p) { return n + (+p.age || 0); }, 0) / all.length : 0;
-      var available = all.length ? Math.round(100 * all.filter(function (p) { return foSiEnergy(p) >= 65; }).length / all.length) : 0;
-      var counts = { bat: 0, ar: 0, bowl: 0, wk: 0 };
-      all.forEach(function (p) { counts[foSiRoleKey(p)] += 1; });
-      var balance = foSiClamp(100 - Math.max(0, 5 - counts.bat) * 7 - Math.max(0, 4 - counts.bowl) * 8 - Math.max(0, 2 - counts.ar) * 6 - (counts.wk ? 0 : 18), 30, 100);
-      var ageCurve = foSiClamp(100 - Math.abs(age - 27) * 8, 28, 100);
-      var avgOvr = all.length ? all.reduce(function (n, p) { return n + foSiOvr(p); }, 0) / all.length : 0;
-      var avgWage = all.length ? wage / all.length : 0;
-      var wageEff = foSiClamp(58 + (avgOvr - 50) * .8 - Math.max(0, avgWage - 1600) / 120, 35, 96);
-      var clubLabel = (t.name || "Your club").toUpperCase();
+    // ---- the headline figures ----
+    var wage = all.reduce(function (n, p) { return n + (+p.wage || 0); }, 0);
+    var age = all.length ? all.reduce(function (n, p) { return n + foSiAge(p); }, 0) / all.length : 0;
+    var available = all.length ? Math.round(100 * all.filter(function (p) { return foSiEnergy(p) >= 65; }).length / all.length) : 0;
+    var counts = { bat: 0, ar: 0, bowl: 0, wk: 0 };
+    all.forEach(function (p) { counts[foSiRoleKey(p)] += 1; });
+    var balance = foSiClamp(100 - Math.max(0, 5 - counts.bat) * 7 - Math.max(0, 4 - counts.bowl) * 8 - Math.max(0, 2 - counts.ar) * 6 - (counts.wk ? 0 : 18), 30, 100);
+    var ageCurve = foSiClamp(100 - Math.abs(age - 27) * 8, 28, 100);
+    var avgOvr = all.length ? all.reduce(function (n, p) { return n + foSiOvr(p); }, 0) / all.length : 0;
+    var avgWage = all.length ? wage / all.length : 0;
+    var wageEff = foSiClamp(58 + (avgOvr - 50) * .8 - Math.max(0, avgWage - 1600) / 120, 35, 96);
+    var clubLabel = (t.name || "Your club").toUpperCase();
 
-      function kpi(lbl, val, note, watch) {
-        return "<div class='fo-si-kpi'><span>" + lbl + "</span><div class='v'><b>" + val + "</b><em" + (watch ? " class='watch'" : "") + ">" + note + "</em></div></div>";
-      }
-      var kpis = kpi("Squad size", all.length, all.length >= 16 ? "Full" : "Thin", all.length < 15) +
-        kpi("Availability", available + "%", available >= 90 ? "Healthy" : available >= 75 ? "Manage" : "Watch", available < 75) +
-        kpi("Role balance", balance, balance >= 85 ? "Strong" : "Review", balance < 75) +
-        kpi("Average age", age.toFixed(1), age > 31 ? "Watch" : age < 25 ? "Young" : "Balanced", age > 31) +
-        kpi("Wage efficiency", wageEff, wageEff >= 72 ? "Good" : "Review", wageEff < 60);
+    function kpi(lbl, val, note, watch) {
+      return "<div class='fo-si-kpi'><span>" + lbl + "</span><div class='v'><b>" + val + "</b>" +
+        "<em" + (watch ? " class='watch'" : "") + ">" + note + "</em></div></div>";
+    }
+    var kpis = kpi("Squad size", all.length, all.length >= 16 ? "Full" : "Thin", all.length < 15) +
+      kpi("Availability", available + "%", available >= 90 ? "Healthy" : available >= 75 ? "Manage" : "Watch", available < 75) +
+      kpi("Role balance", balance, balance >= 85 ? "Strong" : "Review", balance < 75) +
+      kpi("Average age", age.toFixed(1), age > 31 ? "Watch" : age < 25 ? "Young" : "Balanced", age > 31) +
+      kpi("Wage efficiency", wageEff, wageEff >= 72 ? "Good" : "Review", wageEff < 60);
 
-      var ranking = pool.slice(0, 8).map(function (p) {
-        var tr = foSiTrend(p), on = selected && selected.name === p.name;
-        return "<button type='button' class='fo-si-row" + (on ? " on" : "") + "' data-si-player='" + foSiE(p.name) + "'>" +
-          "<span class='fo-si-thumb'><img src='" + foSiE(foSiArt(p)) + "' alt='' loading='lazy'></span>" +
-          "<span class='fo-si-rid'><b>" + foSiE(p.name) + "</b><span>" + foSiE(foSiRoleName(p).replace("Wicketkeeper", "WK").replace("All-rounder", "AR")) + " &middot; AGE " + (p.age | 0) + " &middot; " + foSiNat(p) + "</span></span>" +
-          "<span class='fo-si-trend " + tr.cls + "'>" + tr.mark + " " + tr.word + "</span><b class='fo-si-rat'>" + foSiOvr(p) + "</b></button>";
-      }).join("") || "<div class='fo-si-note'>No players match this role.</div>";
+    var SEL = function (id, val, opts) {
+      return "<select id='" + id + "'>" + opts.map(function (o) {
+        return "<option value='" + o[0] + "'" + (val === o[0] ? " selected" : "") + ">" + o[1] + "</option>";
+      }).join("") + "</select>";
+    };
+    var band =
+      "<div class='fo-si-band'>" +
+      "<div class='fo-si-bhd'><div><div class='fo-si-ey'>" + foSiE(clubLabel) + " &middot; PERFORMANCE DEPARTMENT</div>" +
+      "<h2>Squad Intelligence</h2></div>" +
+      "<div class='fo-si-actions'>" +
+      SEL("fo-si-role", sv.iRole, [["all", "All roles"], ["bat", "Batters"], ["ar", "All-rounders"], ["bowl", "Bowlers"], ["wk", "Wicketkeepers"]]) +
+      SEL("fo-si-sort", sv.iSort, [["ovr", "Overall rating"], ["age", "Age curve"], ["wage", "Weekly wage"], ["fitness", "Availability"]]) +
+      "</div></div>" +
+      "<div class='fo-si-kpis'>" + kpis + "</div></div>";
 
-      var mapPlayers = pool.slice().sort(function (a, b) { return foSiOvr(b) - foSiOvr(a); }).slice(0, 7);
-      var hi = mapPlayers.length ? foSiOvr(mapPlayers[0]) : 100;
-      var lo = mapPlayers.length ? foSiOvr(mapPlayers[mapPlayers.length - 1]) : 0;
-      var xpos = [75, 59, 86, 69, 43, 54, 81];
-      var dots = mapPlayers.map(function (p, i) {
-        var y = 25 + (hi === lo ? i * 7 : (hi - foSiOvr(p)) / Math.max(1, hi - lo) * 57);
-        var x = xpos[i % xpos.length];
-        var rk = foSiRoleKey(p), cls = i === 0 ? " gold" : rk === "ar" ? " green" : rk === "bat" && i > 4 ? " orange" : "";
-        return "<button type='button' class='fo-si-dot" + cls + (selected && selected.name === p.name ? " on" : "") + "' data-si-player='" + foSiE(p.name) + "' style='left:" + x + "%;top:" + y.toFixed(1) + "%'>" + foSiOvr(p) + "</button>" +
-          "<span class='fo-si-dotlabel' style='left:" + x + "%;top:" + y.toFixed(1) + "%'>" + foSiE(foSiShort(p.name)) + "</span>";
+    // ---- the ranking ----
+    var ranking = pool.map(function (p) {
+      var tr = foSiTrend(p);
+      return "<button type='button' class='fo-si-row" + (selected.name === p.name ? " on" : "") + "' data-si-player='" + foSiE(p.name) + "'>" +
+        "<img class='fo-si-thumb' src='" + foSiE(foSiArt(p)) + "' alt='' loading='lazy' decoding='async'>" +
+        "<span class='fo-si-rid'><b>" + foSiE(p.name) + "</b><i>" +
+        foSiE(foSiRoleName(p).replace("Wicketkeeper", "WK").replace("All-rounder", "AR")) +
+        " &middot; AGE " + Math.floor(foSiAge(p)) + " &middot; " + foSiNat(p) + "</i></span>" +
+        "<span class='fo-si-trend " + tr.cls + "'>" + tr.mark + " " + tr.word + "</span>" +
+        "<b class='fo-si-rat'>" + foSiOvr(p) + "</b></button>";
+    }).join("") || "<div class='fo-si-empty'>No players match this role.</div>";
+
+    // ---- the map: age across the bottom, rating up the side ----
+    var ages = pool.map(foSiAge), ovrs = pool.map(foSiOvr);
+    var a0 = Math.floor(Math.min.apply(null, ages) - 1), a1 = Math.ceil(Math.max.apply(null, ages) + 1);
+    if (a1 - a0 < 6) { var padA = (6 - (a1 - a0)) / 2; a0 = Math.floor(a0 - padA); a1 = Math.ceil(a1 + padA); }
+    var r0 = Math.max(0, Math.floor((Math.min.apply(null, ovrs) - 4) / 5) * 5);
+    var r1 = Math.min(100, Math.ceil((Math.max.apply(null, ovrs) + 4) / 5) * 5);
+    if (r1 - r0 < 20) { r0 = Math.max(0, r0 - 10); r1 = Math.min(100, r1 + 10); }
+    // a squad spans a dozen years at most, so age wants a tick every couple of
+    // them; ratings want the fives and tens a reader already thinks in
+    var xStep = (a1 - a0) <= 20 ? 2 : 5;
+    var yStep = foSiStep(r1 - r0, 5, [5, 10, 20, 25]);
+    var xPct = function (v) { return (v - a0) / (a1 - a0) * 100; };
+    var yPct = function (v) { return 100 - (v - r0) / (r1 - r0) * 100; };
+
+    var gl = "", xt = "", yt = "", v;
+    for (v = Math.ceil(a0 / xStep) * xStep; v <= a1; v += xStep) {
+      gl += "<span class='fo-si-gl v' style='left:" + xPct(v).toFixed(2) + "%'></span>";
+      xt += "<span class='fo-si-tk x' style='left:" + xPct(v).toFixed(2) + "%'>" + v + "</span>";
+    }
+    for (v = Math.ceil(r0 / yStep) * yStep; v <= r1; v += yStep) {
+      gl += "<span class='fo-si-gl h' style='top:" + yPct(v).toFixed(2) + "%'></span>";
+      yt += "<span class='fo-si-tk y' style='top:" + yPct(v).toFixed(2) + "%'>" + v + "</span>";
+    }
+    // Two men of the same age and the same rating would sit exactly on top of
+    // one another and one of them would vanish. A few hundredths of a year of
+    // spread - far less than a tick - keeps both of them visible.
+    var seen = {};
+    var dots = pool.map(function (p) {
+      var a = foSiAge(p), o = foSiOvr(p), k = Math.round(a * 2) + ":" + o;
+      var n = seen[k] = (seen[k] || 0) + 1;
+      var x = foSiClamp(xPct(a + (n - 1) * 0.22) * 100, 100, 9900) / 100;
+      var y = yPct(o);
+      var rk = foSiRoleKey(p);
+      return "<button type='button' class='fo-si-dot " + rk + (selected.name === p.name ? " on" : "") + "'" +
+        " data-si-player='" + foSiE(p.name) + "' title='" + foSiE(p.name) + "'" +
+        " style='left:" + x.toFixed(2) + "%;top:" + y.toFixed(2) + "%'>" + o + "</button>" +
+        // the name reads out to the side, not underneath: dots stack vertically
+        // far more often than they sit side by side, and a label under a dot
+        // lands on the man below it. Near the right edge it flips inward.
+        "<span class='fo-si-dl" + (x > 76 ? " lf" : "") + "' style='left:" + x.toFixed(2) + "%;top:" + y.toFixed(2) + "%'>" + foSiE(foSiShort(p.name)) + "</span>";
+    }).join("");
+
+    var map =
+      "<article class='fo-si-card'><div class='fo-si-ch'><b>Squad performance map</b><span>Click a player to inspect</span></div>" +
+      "<div class='fo-si-chart'><span class='fo-si-axl y'>Rating</span><span class='fo-si-axl x'>Age</span>" +
+      "<div class='fo-si-plot'>" + gl + yt + xt + dots + "</div></div>" +
+      "<div class='fo-si-key'><span><i class='bat'></i>Batter</span><span><i></i>Bowler</span>" +
+      "<span><i class='ar'></i>All-rounder</span><span><i class='wk'></i>Wicketkeeper</span></div></article>";
+
+    function box(lbl, val) {
+      return "<div class='fo-si-bb'><span>" + lbl + "</span><b>" + val + "</b>" +
+        "<div class='fo-si-bar'><i class='" + foSiTone(val) + "' style='width:" + val + "%'></i></div></div>";
+    }
+    var build = "<article class='fo-si-card'><div class='fo-si-ch'><b>Squad construction</b></div>" +
+      "<div class='fo-si-build'>" + box("Role balance", balance) + box("Age curve", ageCurve) + box("Fitness", available) + "</div></article>";
+
+    // ---- the selected man ----
+    var keep = foSiStat(selected, "keep"), bowl = foSiStat(selected, "bowl");
+    var stats = [["Batting", foSiStat(selected, "bat")], keep ? ["Keeping", keep] : ["Bowling", bowl],
+      ["Fielding", foSiStat(selected, "field")], ["Experience", foSiStat(selected, "exp")],
+      ["Fitness", foSiEnergy(selected)]].map(function (x) {
+        return "<div class='fo-si-st'><span>" + x[0] + "</span>" +
+          "<div class='fo-si-bar'><i class='" + foSiTone(x[1]) + "' style='width:" + x[1] + "%'></i></div>" +
+          "<b>" + x[1] + "</b></div>";
       }).join("");
 
-      var selRank = all.slice().sort(function (a, b) { return foSiOvr(b) - foSiOvr(a); }).indexOf(selected);
-      var chosenOvr = foSiOvr(selected), keep = foSiStat(selected, "keep"), bowl = foSiStat(selected, "bowl");
-      var skill2 = keep ? ["Keeping", keep, "gold"] : ["Bowling", bowl, "gold"];
-      var stats = [["Batting", foSiStat(selected, "bat"), "blue"], skill2,
-        ["Fielding", foSiStat(selected, "field"), ""], ["Experience", foSiStat(selected, "exp"), "purple"],
-        ["Fitness", foSiEnergy(selected), ""]].map(function (x) {
-          return "<div class='fo-si-stat'><span>" + x[0] + "</span><div class='fo-si-bar " + x[2] + "'><i style='width:" + x[1] + "%'></i></div><b>" + x[1] + "</b></div>";
-        }).join("");
+    var player = "<aside class='fo-si-card fo-si-player'>" +
+      "<div class='fo-si-hero'><span class='lb'>Selected player</span>" +
+      "<div class='fo-si-idw'><h3>" + foSiE(selected.name) + "</h3>" +
+      "<div class='mt'>" + foSiE(foSiRoleName(selected)) + " &middot; " + (selected.hand === "L" ? "LHB" : "RHB") + " &middot; " + foSiNat(selected) + "</div></div>" +
+      "<div class='big'>" + foSiOvr(selected) + "<span>Overall</span></div>" +
+      "<img class='fo-si-plate' src='" + foSiE(foSiArt(selected)) + "' alt='' decoding='async'></div>" +
+      "<div class='fo-si-stats'>" + stats + "</div></aside>";
 
-      var pageHtml = "<main class='fo-si'>" +
-        "<header class='fo-si-head'><div><div class='fo-si-ey'>" + foSiE(clubLabel) + " &middot; PERFORMANCE DEPARTMENT</div><h1>Squad Intelligence</h1><p class='fo-si-sub'>Make faster decisions with role-fit, performance and availability in one workspace.</p></div>" +
-        "<div class='fo-si-actions'><select id='fo-si-role' aria-label='Filter roles'><option value='all'>All roles</option><option value='bat'>Batters</option><option value='ar'>All-rounders</option><option value='bowl'>Bowlers</option><option value='wk'>Wicketkeepers</option></select>" +
-        "<select id='fo-si-sort' aria-label='Sort players'><option value='ovr'>Overall rating</option><option value='age'>Age curve</option><option value='wage'>Weekly wage</option><option value='fitness'>Availability</option></select>" +
-        "<button type='button' id='fo-si-compare' class='fo-si-compare" + (st.compare ? " on" : "") + "'>" + (st.compare ? "Finish comparison" : "Compare players") + "</button></div></header>" +
-        "<section class='fo-si-kpis'>" + kpis + "</section>" +
-        "<section class='fo-si-work'>" +
-          "<article class='fo-si-card fo-si-rank'><div class='fo-si-cardhead'><b>Player ranking</b><span>" + (st.sort === "ovr" ? "Overall \u2193" : foSiE(st.sort) + " \u2193") + "</span></div><div class='fo-si-list'>" + ranking + "</div></article>" +
-          "<div class='fo-si-mid'>" +
-            "<article class='fo-si-card fo-si-mapcard'><div class='fo-si-cardhead'><b>Squad performance map</b><span>Click a player to inspect</span></div><div class='fo-si-map'><span class='fo-si-axis'>Current ability</span><span class='fo-si-hint'>Upper-right = strongest value</span>" + dots + "</div></article>" +
-            "<article class='fo-si-card fo-si-build'><div class='fo-si-cardhead'><b>Squad construction</b></div><div class='fo-si-buildgrid'>" +
-              "<div class='fo-si-buildbox'><span>Role balance</span><b>" + balance + "</b><div class='fo-si-bar'><i style='width:" + balance + "%'></i></div></div>" +
-              "<div class='fo-si-buildbox'><span>Age curve</span><b>" + ageCurve + "</b><div class='fo-si-bar orange'><i style='width:" + ageCurve + "%'></i></div></div>" +
-              "<div class='fo-si-buildbox'><span>Fitness</span><b>" + available + "</b><div class='fo-si-bar'><i style='width:" + available + "%'></i></div></div>" +
-            "</div></article>" +
-          "</div>" +
-          "<aside class='fo-si-card fo-si-player'><div class='fo-si-hero'><div class='fo-si-selected'>Selected player</div><h2>" + foSiE(selected.name) + "</h2><div class='fo-si-meta'>" + foSiE(foSiRoleName(selected)) + " &middot; " + (selected.hand === "L" ? "LHB" : "RHB") + " &middot; " + foSiNat(selected) + "</div><div class='fo-si-big'>" + chosenOvr + "<span>Overall</span></div><img class='fo-si-art' src='" + foSiE(foSiArt(selected)) + "' alt=''></div>" +
-            "<div class='fo-si-detail'>" + stats + "<div class='fo-si-note'>Decision signal: " + foSiE(foSiDecision(selected, selRank, all.length)) + "</div></div></aside>" +
-        "</section>" +
-        "<div class='fo-si-comparetray" + (st.compare ? " show" : "") + "'><span>" + (st.picks.length ? st.picks.map(foSiE).join(" vs ") : "Select two players from the ranking") + "</span><button type='button' id='fo-si-clear'>Clear</button></div>" +
-      "</main>";
-      page.innerHTML = pageHtml;
-
-      var role = page.querySelector("#fo-si-role"), sort = page.querySelector("#fo-si-sort");
-      if (role) { role.value = st.role; role.addEventListener("change", function () { st.role = role.value; st.selected = null; foSiRender(); }); }
-      if (sort) { sort.value = st.sort; sort.addEventListener("change", function () { st.sort = sort.value; foSiRender(); }); }
-      var compare = page.querySelector("#fo-si-compare");
-      if (compare) compare.addEventListener("click", function () { st.compare = !st.compare; if (!st.compare) st.picks = []; foSiRender(); });
-      var clear = page.querySelector("#fo-si-clear");
-      if (clear) clear.addEventListener("click", function () { st.picks = []; foSiRender(); });
-      [].slice.call(page.querySelectorAll("[data-si-player]")).forEach(function (b) {
-        b.addEventListener("click", function () {
-          var name = b.getAttribute("data-si-player"); st.selected = name;
-          if (st.compare) {
-            var ix = st.picks.indexOf(name);
-            if (ix >= 0) st.picks.splice(ix, 1);
-            else { if (st.picks.length >= 2) st.picks.shift(); st.picks.push(name); }
-          }
-          foSiRender();
-        });
-      });
-    } catch (e) {
-      try { console.error("Squad Intelligence", e); foPageFailed("squad intelligence", e, "Squad Intelligence could not be drawn."); } catch (e2) {}
-    }
+    return "<section class='fo-si'>" + band +
+      "<div class='fo-si-work'>" +
+      "<article class='fo-si-card'><div class='fo-si-ch'><b>Player ranking</b><span>" +
+      ({ ovr: "Overall", age: "Age", wage: "Wage", fitness: "Availability" }[sv.iSort] || "Overall") + " ↓</span></div>" +
+      "<div class='fo-si-list'>" + ranking + "</div></article>" +
+      "<div class='fo-si-mid'>" + map + build + "</div>" + player +
+      "</div></section>";
   }
-  window.foRenderSquadIntelligence = foSiRender;
 
-  // On a cold deep link the core router deliberately keeps this hash until
-  // the league module is ready. Ask it to paint now that the renderer exists.
-  if ((location.hash || "").split("?")[0] === "#/squad-intelligence") {
-    setTimeout(function () { if (typeof window.route === "function") window.route(); }, 0);
+  // wiring. `repaint` is the squad room's own repainter, so a filter change or
+  // a click on a dot redraws the whole room and keeps the switch where it was.
+  function foSiWire(page, sv, repaint) {
+    var role = page.querySelector("#fo-si-role");
+    if (role) role.addEventListener("change", function () { sv.iRole = role.value; sv.iSel = null; repaint(); });
+    var sort = page.querySelector("#fo-si-sort");
+    if (sort) sort.addEventListener("change", function () { sv.iSort = sort.value; repaint(); });
+    page.querySelectorAll("[data-si-player]").forEach(function (b) {
+      b.addEventListener("click", function () { sv.iSel = b.getAttribute("data-si-player"); repaint(); });
+    });
   }
-  window.addEventListener("hashchange", function () {
-    if ((location.hash || "").split("?")[0] !== "#/squad-intelligence") {
-      document.body.classList.remove("fo-si-on");
-      var p = document.getElementById("page"); if (p) p.classList.remove("fo-si-page");
-    }
-  });
+
+  window.__foSquadIntel = { body: foSiBody, wire: foSiWire };
 })();

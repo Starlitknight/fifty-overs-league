@@ -59,7 +59,6 @@
     { k: "Your club", rooms: [
       ["home", "house", "Home ground"],
       ["squad", "people", "The squad"],
-      ["squad-intelligence", "chart", "Squad intelligence"],
       ["training", "net", "The nets"],
       ["academy", "star", "Youth Academy"],
       ["market", "coin", "The transfer market"],

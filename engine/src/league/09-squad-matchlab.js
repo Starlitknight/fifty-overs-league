@@ -5,6 +5,8 @@
   // click-to-expand detail. Training is a read-only badge here · the Training
   // page is the one canonical home for assignments.
   // =========================================================================
+  // the three ways to read the squad, in the order the switch shows them
+  var SQ_VIEWS = ["roster", "grid", "int"];
   try {
     var foSqCss = document.createElement("style");
     foSqCss.textContent =
@@ -814,6 +816,7 @@
       "html body #page .fo-sqx.analyst button.fo-sqx-vb.on{background:#14243A !important;color:#F1EEE6 !important}",
       // the book fills the same room the roster's list does
       ".fo-sqx.analyst .fo-sqg-outer{max-width:none;margin:0 0 34px}",
+      ".fo-sqa-warn{padding:26px 20px;border:1px solid rgba(27,36,50,.12);border-radius:13px;background:#FFFEFC;color:#7B8698;font:italic 400 13px/1.6 Fraunces,Georgia,serif}",
       "@media(max-width:600px){.fo-sqx.analyst .fo-sqa-ttl h1{font-size:30px}}",
       ".fo-sqx.gridding .fo-sqx-bg,.fo-sqx.gridding .fo-sqx-veil{display:none}",
       // overflow:hidden on the park (it clips the ground art) would make the
@@ -1256,15 +1259,16 @@
       window.squadView = window.squadView || {};
       var sv = window.squadView;
       sv.mode = sv.mode || "xi"; sv.tab = ["ovr", "bat", "bwl", "fld", "rec"].indexOf(sv.tab) >= 0 ? sv.tab : "ovr";
-      // TWO WAYS TO READ A SQUAD. The roster is people - a face, a role, one
+      // THREE WAYS TO READ A SQUAD. The roster is people - a face, a role, one
       // number - and it stays the front door. The grid is the comparison: every
-      // attribute the engine holds, sortable on any of them. The park view is
-      // retired; the choice between the two that are left is remembered on the
-      // device, because a manager who prefers the numbers prefers them daily.
-      if (["roster", "grid"].indexOf(sv.view) < 0) {
+      // attribute the engine holds, sortable on any of them. Int is the
+      // analyst's read: what each man is worth, at what age, and where the
+      // squad is thin. The park view is retired; the choice is remembered on
+      // the device, because a manager who prefers the numbers prefers them daily.
+      if (SQ_VIEWS.indexOf(sv.view) < 0) {
         var vSaved = null;
         try { vSaved = localStorage.getItem("fo_sq_view"); } catch (eV) {}
-        sv.view = vSaved === "grid" ? "grid" : "roster";
+        sv.view = SQ_VIEWS.indexOf(vSaved) > 0 ? vSaved : "roster";
       }
       sv.who = ["sen", "yth", "all"].indexOf(sv.who) >= 0 ? sv.who : "sen";
       sv.sortK = sv.sortK || "ovr"; sv.sortDir = sv.sortDir === 1 ? 1 : -1;
@@ -1433,9 +1437,11 @@
       var page = document.getElementById("page"); if (!page) return;
       document.body.classList.add("fo-sqx-on");
 
-      // the switch: two chips, in the masthead, on both views
+      // the switch: three chips, in the masthead, in the same place on all
+      // three views, so toggling never moves the control under the finger
+      var VIEWLBL = [["roster", "Roster"], ["grid", "Grid"], ["int", "Int"]];
       var viewSwitch = "<div class='fo-sqx-vsw'>" +
-        [["roster", "Roster"], ["grid", "Grid"]].map(function (v) {
+        VIEWLBL.map(function (v) {
           return "<button type='button' class='fo-sqx-vb" + (sv.view === v[0] ? " on" : "") + "' data-view='" + v[0] + "'>" + v[1] + "</button>";
         }).join("") + "</div>";
 
@@ -1486,7 +1492,7 @@
 
       var band =
         "<div class='fo-s2-bandwrap'>" +
-        "<div class='fo-s2-vsw'>" + [["roster", "Roster"], ["grid", "Grid"]].map(function (v) {
+        "<div class='fo-s2-vsw'>" + VIEWLBL.map(function (v) {
           return "<button type='button' class='fo-s2-vb" + (sv.view === v[0] ? " on" : "") + "' data-view='" + v[0] + "'>" + v[1] + "</button>";
         }).join("") + "</div>" +
         "<div class='fo-s2-band'>" +
@@ -1653,7 +1659,7 @@
         "<div class='fo-s2-main'><section>" + tools + listBody + "</section>" + rail + "</div>";
 
       var gridMen = sv.who === "yth" ? youths : sv.who === "all" ? everyone : seniors;
-      var gridBody = foSqGrid(gridMen, sv, capt, xiIx);
+      var gridBody = sv.view === "grid" ? foSqGrid(gridMen, sv, capt, xiIx) : "";
 
       // THE ANALYST'S DESK: a gilt eyebrow, a plain masthead, and then the
       // book itself. The view switch sits below the title on the left, on
@@ -1664,18 +1670,33 @@
         var phA = window.__foPlanet.phaseOf(Date.now());
         if (phA && phA.season) ebA += " &middot; Season " + (phA.season | 0) + " &middot; Day " + ((phA.di | 0) + 1);
       } catch (eEb) {}
-      ebA += " &middot; " + (sv.who === "yth" ? "the academy" : sv.who === "all" ? "every man on the books" : "the playing staff");
+      ebA += " &middot; " + (sv.view === "int" ? "the analyst&#39;s read"
+        : sv.who === "yth" ? "the academy" : sv.who === "all" ? "every man on the books" : "the playing staff");
 
-      page.innerHTML = sv.view === "grid"
-        ? "<div class='fo-sqx listing gridding analyst'><div class='fo-sqx-in'>" +
+      // Int borrows the Grid's shell whole - the same eyebrow, the same
+      // masthead, the same switch on the same line - so the three views are
+      // one room with three lights on rather than three pages.
+      var deskBody = gridBody;
+      if (sv.view === "int") {
+        try { deskBody = window.__foSquadIntel.body(sv); }
+        catch (eI) {
+          console.warn("squad intelligence", eI);
+          deskBody = "<div class='fo-sqa-warn'>The analyst&#39;s read could not be drawn. The roster and the grid are unaffected.</div>";
+        }
+      }
+      page.innerHTML = sv.view === "roster"
+        ? "<div class='fo-sqx listing rostering'><div class='fo-s2-in'>" + roster2Body + "</div></div>"
+        : "<div class='fo-sqx listing gridding analyst" + (sv.view === "int" ? " intel" : "") + "'><div class='fo-sqx-in'>" +
           "<section class='fo-sqx-park'><div class='fo-sqx-parkin'>" +
           "<header class='fo-sqa-mast'>" +
           "<div class='fo-sqa-ttl'><div class='eb'>" + ebA + "</div><h1>The squad</h1></div>" +
-          viewSwitch + "</header>" + gridBody +
-          "</div></section></div></div>"
-        : "<div class='fo-sqx listing rostering'><div class='fo-s2-in'>" + roster2Body + "</div></div>";
+          viewSwitch + "</header>" + deskBody +
+          "</div></section></div></div>";
 
       // ---- wiring ----
+      if (sv.view === "int") {
+        try { window.__foSquadIntel.wire(page, sv, pgSquad); } catch (eIW) { console.warn("squad intelligence wiring", eIW); }
+      }
       page.querySelectorAll(".fo-sqx-vb").forEach(function (b) {
         b.addEventListener("click", function () {
           sv.view = b.getAttribute("data-view"); sv.viewSet = 1;
