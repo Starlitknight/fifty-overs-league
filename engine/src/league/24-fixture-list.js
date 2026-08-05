@@ -49,11 +49,37 @@
     return { t0: t0, phase: now < t0 ? "pre" : now < end ? "live" : "done" };
   }
   function frRows(my) {
+    var out = { up: [], done: [] };
+    // ---- the world's own friendlies (the friendlies post, migration 009+) --
+    // These are the matches the umpire actually plays; the club page files
+    // them and this card must show them. One fetch a minute, repaint on land.
+    var wRows = frWorld();
+    (wRows || []).forEach(function (f) {
+      if (!f || (f.status !== "accepted" && f.status !== "played")) return;
+      var t0 = +f.playAtMs; if (!(t0 > 0)) return;
+      var atHome = !!f.mine;                       // the challenger hosts
+      var o = { t0: t0, atHome: atHome, host: f.home,
+        opp: atHome ? f.away : f.home, id: f.id, world: true };
+      var now = Date.now();
+      if (f.status === "played" && f.text) {
+        var tx = String(f.text);
+        o.tie = /\btied?\b/i.test(tx) && tx.indexOf("won") < 0;
+        o.won = !o.tie && tx.lastIndexOf(my, 0) === 0;
+        o.text = tx;
+        out.done.push(o);
+      } else {
+        // accepted and waiting, or banked with the broadcast still showing
+        // (048 withholds the result line until the last ball) - both are
+        // coming cricket as far as this card is concerned
+        o.live = now >= t0 && (f.status === "played" || now < t0 + 3 * 3600000);
+        out.up.push(o);
+      }
+    });
+    // ---- and the old local ledger, for whatever it still holds -------------
     var rows = window.__foFrAll;
     if (rows === undefined) {
       try { if (window.__foFriendlies && window.__foFriendlies.all) rows = window.__foFriendlies.all(repaint); } catch (e) {}
     }
-    var out = { up: [], done: [] };
     (rows || []).forEach(function (c) {
       if (!c || (c.status !== "accepted" && c.status !== "played")) return;
       if (c.challenger_club !== my && c.opponent_club !== my) return;
@@ -75,6 +101,26 @@
       }
     });
     return out;
+  }
+  // the manager's friendlies off the world post, cached a minute at a time
+  var FRW = { rows: null, at: 0, busy: false };
+  function frWorld() {
+    try {
+      var tok = (window.__foJWT && window.__foJWT()) || "";
+      if (!tok) return FRW.rows || [];
+      if (FRW.busy || (FRW.rows && Date.now() - FRW.at < 60000)) return FRW.rows || [];
+      FRW.busy = true;
+      var SB = "https://egaipdksvztqqgouriyc.supabase.co";
+      var KEY = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+      fetch(SB + "/rest/v1/rpc/world_my_friendlies", {
+        method: "POST",
+        headers: { apikey: KEY, Authorization: "Bearer " + tok, "content-type": "application/json" },
+        body: "{}"
+      }).then(function (r) { return r.ok ? r.json() : []; })
+        .then(function (rows) { FRW.rows = Array.isArray(rows) ? rows : []; FRW.at = Date.now(); FRW.busy = false; repaint(); })
+        .catch(function () { FRW.busy = false; FRW.rows = FRW.rows || []; });
+      return FRW.rows || [];
+    } catch (e) { return FRW.rows || []; }
   }
 
   // ---- the shared furniture -------------------------------------------------
@@ -237,7 +283,7 @@
     });
     fr.done.forEach(function (f) {
       resItems.push({ ts: f.t0, lt: f.won ? "W" : f.tie ? "T" : "L",
-        html: rowHtml({ href: "#/friendly?id=" + f.id, dt: frDt(f.t0),
+        html: rowHtml({ href: (f.world ? "#/feed?fr=" : "#/friendly?id=") + f.id, dt: frDt(f.t0),
           cmp: "FR", cmpCls: "fr", chip: f.won ? "W" : f.tie ? "T" : "L", chipCls: f.won ? "w" : f.tie ? "t" : "l",
           name: (f.atHome ? "v " : "at ") + E(f.opp),
           sub: "Friendly &middot; " + frHH(f.t0),
@@ -288,7 +334,7 @@
           right: "Preview &rsaquo;", rightCls: "act" }) });
     });
     fr.up.forEach(function (f) {
-      var href = "#/friendly?id=" + f.id;
+      var href = (f.world ? "#/feed?fr=" : "#/friendly?id=") + f.id;
       var gr = frGround(f.host);
       upItems.push({ ts: f.t0, href: href, isHome: f.atHome, live: f.live,
         kick: f.live ? "Live now &middot; Friendly" : "Up next &middot; Friendly",
@@ -369,7 +415,7 @@
           right: E((r.result.text || "").replace(/\s*\(.*\)$/, "")) });
       }).join("");
       fr.done.sort(function (a, b) { return a.t0 - b.t0; }).forEach(function (f) {
-        resRows += rowHtml({ href: "#/friendly?id=" + f.id, dt: frDt(f.t0),
+        resRows += rowHtml({ href: (f.world ? "#/feed?fr=" : "#/friendly?id=") + f.id, dt: frDt(f.t0),
           cmp: "FR", cmpCls: "fr", chip: f.won ? "W" : f.tie ? "T" : "L", chipCls: f.won ? "w" : f.tie ? "t" : "l",
           name: (f.atHome ? "v " : "at ") + E(f.opp),
           sub: "Friendly &middot; " + frHH(f.t0),
@@ -410,7 +456,7 @@
       });
       fr.up.forEach(function (f) {
         upItems.push({ ts: f.t0,
-          html: rowHtml({ href: "#/friendly?id=" + f.id, dt: frDt(f.t0),
+          html: rowHtml({ href: (f.world ? "#/feed?fr=" : "#/friendly?id=") + f.id, dt: frDt(f.t0),
             cmp: "FR", cmpCls: "fr", chip: f.live ? "&#9679;" : f.atHome ? "H" : "A",
             chipCls: f.live ? "lv" : "f", cls: f.live ? "up live" : "up",
             name: (f.atHome ? "v " : "at ") + E(f.opp),
@@ -425,7 +471,7 @@
       // the next engagement up in lights: a live friendly outranks everything
       var frLive = fr.up.filter(function (f) { return f.live; })[0];
       if (frLive) {
-        feature = nextCard({ href: "#/friendly?id=" + frLive.id, isHome: frLive.atHome, live: true,
+        feature = nextCard({ href: (frLive.world ? "#/feed?fr=" : "#/friendly?id=") + frLive.id, isHome: frLive.atHome, live: true,
           kick: "Live now &middot; Friendly", name: (frLive.atHome ? "v " : "at ") + E(frLive.opp),
           when: E(frDt(frLive.t0) + " · " + frHH(frLive.t0)) });
       } else {
@@ -441,7 +487,7 @@
             name: (u0.isHome ? "v " : "at ") + E(u0.opp.name),
             when: E((when0 ? when0 + " · " : "") + u0.ground) });
         } else if (f0) {
-          feature = nextCard({ href: "#/friendly?id=" + f0.id, isHome: f0.atHome,
+          feature = nextCard({ href: (f0.world ? "#/feed?fr=" : "#/friendly?id=") + f0.id, isHome: f0.atHome,
             kick: "Up next &middot; Friendly", name: (f0.atHome ? "v " : "at ") + E(f0.opp),
             when: E(frDt(f0.t0) + " · " + frHH(f0.t0)) });
         }
