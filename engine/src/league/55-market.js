@@ -79,14 +79,18 @@
   }
 
   // ---- the data on the desk -------------------------------------------------
-  var MK = { listings: null, deals: null, mine: null, snap: null, at: 0, busy: 0, tab: "board", role: "all", sort: "close" };
+  var MK = { listings: null, deals: null, mine: null, snap: null, at: 0, busy: 0, tab: "board", role: "all", sort: "close", nat: "all", shown: 40 };
   function refetch(force) {
     if (MK.busy) return;
     if (!force && MK.at && Date.now() - MK.at < 30000) return;
     var cl = claim(); if (!cl || !cl.country) return;
     MK.busy = 1;
+    // THE WHOLE WORLD'S BOARD. Every nation's listings in one room - the
+    // server has always allowed a cross-border deal (moveMan carries a man
+    // between countries, the books count both sides); only this fetch ever
+    // narrowed the view to home.
     var qs = [
-      sel("world_listings?country_id=eq." + encodeURIComponent(cl.country) + "&order=closes_day.asc,id.asc"),
+      sel("world_listings?order=closes_day.asc,id.asc"),
       sel("world_deals?or=(from_country.eq." + encodeURIComponent(cl.country) + ",to_country.eq." + encodeURIComponent(cl.country) + ")&order=settled_day.desc,id.desc&limit=24"),
       snapshot("market"),
       jwt() ? rpc("world_market_mine", {}).catch(function () { return null; }) : Promise.resolve(null)
@@ -224,6 +228,7 @@
     var sc = imp.scout || {};
     var meta = [];
     if (man) {
+      if (man.nat) meta.push("<span class='natc'>" + natFlag(man.nat) + E(String(man.nat).toUpperCase()) + "</span>");
       if (man.age) meta.push((man.age | 0) + " yrs");
       if (man.hand) meta.push(man.hand === "L" ? "left-hand" : "right-hand");
       meta.push(roleLbl(man));
@@ -270,7 +275,9 @@
       "</div>" +
       statGrid(man) +
       "<div class='ft'>" +
-      "<span class='tag" + (fa ? " fa" : "") + "'>" + (fa ? "Free agent" : "Listed by " + E(L.club || "a club")) + "</span>" +
+      "<span class='tag" + (fa ? " fa" : "") + "'>" +
+      (fa ? "Free agent" : "Listed by " + E(L.club || "a club")) +
+      (L.country_id ? " &middot; " + E(natNm(L.country_id)) : "") + "</span>" +
       (sc.impression ? "<span class='imp'>&ldquo;" + E(sc.impression) + "&rdquo;</span>" : "") +
       (mineSelling
         ? "<button class='act ghost' data-mk-withdraw='" + L.id + "'>Withdraw</button>"
@@ -314,13 +321,30 @@
     try { return m && window.foPkOvr ? (foPkOvr(m) | 0) : -1; } catch (e) { return -1; }
   }
   function ageOf(L) { var m = manOf(L); return m && m.age ? +m.age : 0; }
+  function closeKey(L) {
+    var ms = +(L.closesMs != null ? L.closesMs : L.closes_ms) || 0;
+    return ms || (+L.closes_day || 0) * 86400000;
+  }
+  // a league's plain name off the atlas; the id in capitals when it is shy
+  function natNm(id) {
+    try {
+      var rs = window.__foCxAPI.regions();
+      for (var i = 0; i < rs.length; i++) if (rs[i].id === id) return rs[i].nm;
+    } catch (e) {}
+    return String(id || "").toUpperCase();
+  }
+  function natFlag(nat) {
+    try { return (window.foFlag && nat) ? foFlag(nat) : ""; } catch (e) { return ""; }
+  }
   function boardHtml(cl) {
     if (!MK.listings) return "<div class='fo-mk-none'>Reading the board&hellip;</div>";
     if (!MK.listings.length) return "<div class='fo-mk-none'>The board is bare today. The umpire trickles new names on daily &mdash; look in tomorrow.</div>";
     var myBids = (MK.mine && MK.mine.bids) || [];
     var rows = MK.listings.slice();
+    if (MK.nat !== "all") rows = rows.filter(function (L) { return L.country_id === MK.nat; });
     if (MK.role !== "all") rows = rows.filter(function (L) { return bucketOf(L) === MK.role; });
-    if (MK.sort === "new") rows.sort(function (a, b) { return (b.id | 0) - (a.id | 0); });
+    if (MK.sort === "close") rows.sort(function (a, b) { return closeKey(a) - closeKey(b); });
+    else if (MK.sort === "new") rows.sort(function (a, b) { return (b.id | 0) - (a.id | 0); });
     else if (MK.sort === "hi") rows.sort(function (a, b) { return (+(b.high || b.asking) || 0) - (+(a.high || a.asking) || 0); });
     else if (MK.sort === "lo") rows.sort(function (a, b) { return (+(a.high || a.asking) || 0) - (+(b.high || b.asking) || 0); });
     else if (MK.sort === "ovr") rows.sort(function (a, b) { return ovrOf(b) - ovrOf(a); });
@@ -330,11 +354,20 @@
       var k9 = MK.sort.slice(2);
       rows.sort(function (a, b) { return readOf(manOf(b), k9) - readOf(manOf(a), k9); });
     }
+    // the nations actually on the board today, alphabetised by name
+    var natIds = {};
+    MK.listings.forEach(function (L) { if (L.country_id) natIds[L.country_id] = 1; });
+    var natList = Object.keys(natIds).map(function (id) { return [id, natNm(id)]; })
+      .sort(function (a, b) { return a[1] < b[1] ? -1 : 1; });
     var bar = "<div class='fo-mk-bar'>" +
       "<div class='fo-mk-rtabs'>" + ROLE_TABS.map(function (t) {
         return "<button class='" + (MK.role === t[0] ? "on" : "") + "' data-mk-role='" + t[0] + "'>" + t[1] + "</button>";
       }).join("") + "</div>" +
       "<span class='cnt'>" + rows.length + " of " + MK.listings.length + " names</span>" +
+      "<label class='dd'>League" +
+      "<select id='fo-mk-nat'><option value='all'>All nations</option>" + natList.map(function (n) {
+        return "<option value='" + E(n[0]) + "'" + (MK.nat === n[0] ? " selected" : "") + ">" + E(n[1]) + "</option>";
+      }).join("") + "</select></label>" +
       "<label class='dd'>Sort" +
       "<select id='fo-mk-sort'>" + SORTS.map(function (g) {
         return "<optgroup label='" + g[0] + "'>" + g[1].map(function (s2) {
@@ -342,9 +375,15 @@
         }).join("") + "</optgroup>";
       }).join("") + "</select></label>" +
       "</div>";
+    var vis = rows.slice(0, MK.shown);
+    var more = rows.length > vis.length
+      ? "<button class='fo-mk-more' data-mk-more>Show " + Math.min(40, rows.length - vis.length) +
+        " more &middot; " + (rows.length - vis.length) + " still on the board</button>"
+      : "";
     return bar +
-      (rows.length ? rows.map(function (L) { return rowHtml(L, cl, myBids); }).join("")
+      (vis.length ? vis.map(function (L) { return rowHtml(L, cl, myBids); }).join("")
         : "<div class='fo-mk-none'>Nobody of that kind on the board today.</div>") +
+      more +
       "<p class='fo-mk-note'>Every listed man's card is open &mdash; age, wages and all seven summary reads sit on the board for all to see. " +
       "The hammer has a minute hand: a bid landed inside the final ten minutes pushes it back to ten minutes out, " +
       "so an auction ends in a bidding war, never a snipe. The umpire settles the sale on his next pass; " +
@@ -438,6 +477,8 @@
     try {
       var so = document.getElementById("fo-mk-sort");
       if (so) so.addEventListener("change", function () { MK.sort = so.value; paint(); });
+      var no = document.getElementById("fo-mk-nat");
+      if (no) no.addEventListener("change", function () { MK.nat = no.value; MK.shown = 40; paint(); });
     } catch (e9) {}
   }
 
@@ -446,7 +487,8 @@
     var t9 = ev.target && ev.target.closest ? ev.target : null; if (!t9) return;
     var b;
     if ((b = t9.closest("[data-mk-tab]"))) { MK.tab = b.getAttribute("data-mk-tab"); paint(); return; }
-    if ((b = t9.closest("[data-mk-role]"))) { MK.role = b.getAttribute("data-mk-role"); paint(); return; }
+    if ((b = t9.closest("[data-mk-role]"))) { MK.role = b.getAttribute("data-mk-role"); MK.shown = 40; paint(); return; }
+    if ((b = t9.closest("[data-mk-more]"))) { MK.shown += 40; paint(); return; }
     if ((b = t9.closest("[data-mk-bid]"))) {
       var id = +b.getAttribute("data-mk-bid"), min = +b.getAttribute("data-min") || STEP;
       var amt = prompt("Your offer (the board wants at least " + min + "):", String(min));
@@ -539,6 +581,12 @@
       "html body #page .fo-mk-row .nm a.pdoor{text-decoration:none;color:inherit}",
       "html body #page .fo-mk-row .nm a.pdoor:hover b{color:#C9571F;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}",
       "html body #page .fo-mk-row .nm .mt{display:block;font:400 10.5px/1.5 Inter,sans-serif;color:#7d8798;margin-top:3px}",
+      // the man's own colours: a small flag and his code, leading the meta line
+      "html body #page .fo-mk-row .mt .natc{display:inline-flex;align-items:center;gap:5px;font:600 10px/1 Inter,sans-serif;color:#4a5568;vertical-align:middle}",
+      "html body #page .fo-mk-row .mt .natc img{width:16px;height:11px;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(27,36,50,.12);display:inline-block}",
+      // the door to the rest of a big board
+      "html body #page .fo-mk-more{display:block;width:100%;margin:2px 0 0;padding:13px !important;font:600 10px/1 Oswald,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;color:#67748a !important;background:#FFFEFC !important;border:1px dashed rgba(27,36,50,.25) !important;border-radius:12px !important;cursor:pointer}",
+      "html body #page .fo-mk-more:hover{color:#B44A22 !important;border-color:rgba(201,87,31,.5) !important;background:#FFFEFC !important}",
       "html body #page .fo-mk-row .pr{flex:none;text-align:right;max-width:44%}",
       "html body #page .fo-mk-row .pr .amt{display:block;font:600 21px/1 Oswald,sans-serif;color:#C9571F;font-variant-numeric:tabular-nums;letter-spacing:.01em}",
       "html body #page .fo-mk-row .pr .st{display:block;font:400 10px/1.4 Inter,sans-serif;color:#8a93a2;margin-top:4px}",
