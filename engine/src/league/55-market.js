@@ -34,14 +34,17 @@
   }
   // exact dollars, for the sums where "$1k" hides the truth of a wage or bid
   function exact(v) { var n = Math.round(+v || 0); return (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString("en-US"); }
-  // a birthday the record keeps: a day-of-year seeded by the man's name, so
-  // his age reads the same everywhere and the days tick over with the world
+  // AGE RUNS ON THE WORLD'S OWN CALENDAR: one year is one season, to the
+  // day. The squad module's __foAge is the single authority (name-hashed
+  // birthday, day-of-season off the planet clock) - the market defers to
+  // it so every page in the game reads the same figure for the same man.
   function ageTxt(man) {
     if (!man || !man.age) return "";
-    var h = 0, s = String(man.name || "");
-    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
-    var di = 0; try { var ph = window.__foPlanet.phaseOf(Date.now()); di = (ph && ph.di) | 0; } catch (e) {}
-    return (man.age | 0) + "y " + ((h + di) % 365) + "d";
+    try {
+      var A = window.__foAge;
+      if (A && A.parts) { var a = A.parts(man); return a.y + "y " + a.d + "d"; }
+    } catch (e) {}
+    return (man.age | 0) + " yrs";
   }
   // a talent, in the scout's words rather than the database's
   var TALENT_LBL = { bigMatch: "Big-match", anchor: "Anchor", finisher: "Finisher", sixMachine: "Six machine",

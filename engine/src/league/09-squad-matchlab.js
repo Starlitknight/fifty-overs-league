@@ -426,18 +426,27 @@
   //  every device, with no drift between a manager who logs in daily and one who
   //  comes back in a fortnight.
   // ---------------------------------------------------------------------------
-  var FO_AGE_DAYS = 30;
+  // ONE YEAR IS ONE SEASON, TO THE DAY. The year's length is not this
+  // module's to declare: the planet's CYCLE is the law (42 world days at
+  // present), read live so the calendar can never drift from the world it
+  // describes. The old hard-coded 30 made a year shorter than the season -
+  // day 31 of the summer read as day 1 of a new one nobody had started.
+  function foAgeDays() {
+    try { var c = window.__foPlanet && window.__foPlanet.CYCLE; if (c >= 1) return c | 0; } catch (e) {}
+    return 42;
+  }
   function foSqSeasonDay() {
+    var L = foAgeDays();
     try {
       var pl = window.__foPlanet;
       if (pl && pl.phaseOf) {
         var di = pl.phaseOf(Date.now()).di;
-        if (di >= 0) return (di % FO_AGE_DAYS) + 1;
+        if (di >= 0) return (di % L) + 1;
       }
-      if (pl && pl.dayIx) return (((pl.dayIx(Date.now()) % FO_AGE_DAYS) + FO_AGE_DAYS) % FO_AGE_DAYS) + 1;
+      if (pl && pl.dayIx) return (((pl.dayIx(Date.now()) % L) + L) % L) + 1;
     } catch (e) {}
     var d0 = Math.floor((Date.now() - Date.UTC(2026, 6, 28)) / 86400000);
-    return (((d0 % FO_AGE_DAYS) + FO_AGE_DAYS) % FO_AGE_DAYS) + 1;
+    return (((d0 % L) + L) % L) + 1;
   }
   // EVERY MAN HAS HIS OWN BIRTHDAY. The day part used to be the day of the
   // SEASON, which made it the same number for everybody: a whole dressing room
@@ -449,14 +458,15 @@
   // day on every device and in every session, for as long as he is called what
   // he is called, and it costs no bytes in the save or the snapshot.
   function foBirthDay(p) {
-    return (foHash32("bday|" + ((p && p.name) || "")) % FO_AGE_DAYS) + 1;   // 1..30
+    return (foHash32("bday|" + ((p && p.name) || "")) % foAgeDays()) + 1;   // 1..cycle
   }
   function foAgeParts(p) {
+    var L = foAgeDays();
     var y = Math.max(0, p.age | 0), bd = foBirthDay(p), sd = foSqSeasonDay();
     // days since HIS last birthday, wrapping the season boundary: a man born on
-    // day 28 is four days past it on day 2, not twenty-six short of it
-    var d = ((sd - bd) % FO_AGE_DAYS + FO_AGE_DAYS) % FO_AGE_DAYS;
-    return { y: y, d: d, bd: bd, total: y * FO_AGE_DAYS + d };
+    // day 40 is four days past it on day 2, not thirty-eight short of it
+    var d = ((sd - bd) % L + L) % L;
+    return { y: y, d: d, bd: bd, total: y * L + d };
   }
   function foAgeText(p) {
     var a = foAgeParts(p);
@@ -466,7 +476,7 @@
     var a = foAgeParts(p);
     return a.y + " years, " + a.d + (a.d === 1 ? " day" : " days") +
       " \u2014 his birthday falls on day " + a.bd + " of the season, and a year here is one season, " +
-      FO_AGE_DAYS + " days";
+      foAgeDays() + " days";
   }
   try { window.__foAge = { parts: foAgeParts, text: foAgeText, long: foAgeLong, birthday: foBirthDay }; } catch (eAg) {}
 
