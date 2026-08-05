@@ -721,11 +721,6 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
   // check ever runs; it is a no-op forever after its one firing
   try { await dealYouthToAll(pool, host, country); }
   catch (eDl) { console.error('founding youth deal failed for ' + country + ':', eDl.message); }
-  // the 2026 redeal: the old crops read level with seniors, the board ruled
-  // a boy is always weaker - one firing tears up every list and deals fresh
-  // from the recalibrated hat, BEFORE the stocker or the candidate layer run
-  try { await redealYouth(pool, host, country); }
-  catch (eRd) { console.error('youth redeal failed for ' + country + ':', eRd.message); }
   try { await stockAcademies(pool, host, country, { worldDay: day }); }
   catch (eY) { console.error('academy stocking failed for ' + country + ' day ' + day + ':', eY.message); }
   try {
@@ -774,6 +769,15 @@ export async function runDue(pool, host, country, { now = Date.now(), failAfter 
   const season = (await pool.query('SELECT * FROM seasons WHERE country_id=$1 ORDER BY season_no DESC LIMIT 1', [country])).rows[0];
   if (!season) return [];
   await levelNewClaims(pool, host, country);
+  // THE 2026 REDEAL FIRES FROM HERE, not from inside a day's settle: a day
+  // already marked done never reruns, so a decree buried in the settle sat
+  // waiting for the NEXT world-day instead of landing on the next tick.
+  // Self-guarded by its own ticks row - one cheap read per tick forever
+  // after it has fired - and it logs its firing so the run shows it.
+  try {
+    const dealt = await redealYouth(pool, host, country);
+    if (dealt) console.log('youth redeal: ' + dealt + ' boys dealt for ' + country);
+  } catch (eRd0) { console.error('youth redeal failed for ' + country + ':', eRd0.message); }
   const out = [];
   for (let day = season.start_day; day <= dayIx(now); day++) {
     if (!daySettled(now, day, country)) break;
