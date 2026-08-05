@@ -159,7 +159,10 @@
       ".fo-si-axl{position:absolute;font:600 8px/1 Oswald,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:var(--nv)}",
       ".fo-si-axl.x{left:52px;right:16px;bottom:14px;text-align:center}",
       ".fo-si-axl.y{left:14px;top:50%;transform:translate(-50%,-50%) rotate(-90deg);transform-origin:center}",
-      "html body #page button.fo-si-dot{position:absolute;width:34px;height:34px;margin:-17px 0 0 -17px;padding:0 !important;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,254,252,.9) !important;border-radius:50% !important;font:700 11px/1 Oswald,sans-serif !important;font-variant-numeric:tabular-nums;color:#F1EEE6 !important;background:var(--nv) !important;box-shadow:0 2px 7px rgba(20,36,58,.2) !important;cursor:pointer;z-index:3;transition:transform .14s ease}",
+      // min-width/min-height are held down on purpose: the phone skin gives
+      // every button a 38px minimum, which turned a 28px round dot into an
+      // egg. A dot is a dot at every width.
+      "html body #page button.fo-si-dot{position:absolute;width:34px !important;height:34px !important;min-width:0 !important;min-height:0 !important;margin:-17px 0 0 -17px;padding:0 !important;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,254,252,.9) !important;border-radius:50% !important;font:700 11px/1 Oswald,sans-serif !important;font-variant-numeric:tabular-nums;color:#F1EEE6 !important;background:var(--nv) !important;box-shadow:0 2px 7px rgba(20,36,58,.2) !important;cursor:pointer;z-index:3;transition:transform .14s ease}",
       "html body #page button.fo-si-dot.bat{background:#C9571F !important}",
       "html body #page button.fo-si-dot.ar{background:#177A57 !important}",
       "html body #page button.fo-si-dot.wk{background:#B8933A !important}",
@@ -197,10 +200,27 @@
 
       "@media(max-width:1240px){.fo-si-work{grid-template-columns:290px minmax(0,1fr) 280px}}",
       "@media(max-width:1040px){.fo-si-work{grid-template-columns:290px minmax(0,1fr)}.fo-si-player{grid-column:1/-1;display:grid;grid-template-columns:330px minmax(0,1fr)}.fo-si-kpis{grid-template-columns:repeat(3,1fr)}}",
-      "@media(max-width:760px){.fo-si-band{padding:15px 14px 16px}.fo-si-bhd{display:block}.fo-si-bhd h2{font-size:23px}.fo-si-actions{margin-top:13px;display:grid;grid-template-columns:1fr 1fr}.fo-si-kpis{grid-template-columns:repeat(2,1fr)}.fo-si-kpi:last-child{grid-column:1/-1}.fo-si-work{display:flex;flex-direction:column}.fo-si-player{display:block}.fo-si-chart{padding:14px 12px 42px 40px;height:340px}.fo-si-build{grid-template-columns:1fr}" +
+      // THE PHONE. align-items:stretch is not decoration. The desktop grid
+      // above sets align-items:start, and when this rule turns that same box
+      // into a column flexbox the start makes every card shrink to its own
+      // content - the cards stood inset with dead air either side and the
+      // chart lost a fifth of its width. Stretch puts them back on the edges.
+      "@media(max-width:760px){.fo-si-band{padding:14px 13px 15px;border-radius:12px;margin-bottom:12px}" +
+        ".fo-si-bhd{display:block;margin-bottom:12px}.fo-si-bhd h2{font-size:22px}.fo-si-ey{font-size:8px;margin-bottom:7px}" +
+        ".fo-si-actions{margin-top:11px;display:grid;grid-template-columns:1fr 1fr;gap:7px}" +
+        "html body #page .fo-si select{min-width:0;height:34px;font-size:8.5px !important;padding:0 24px 0 10px !important;background-position:right 9px center !important}" +
+        ".fo-si-kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}" +
+        ".fo-si-kpi{padding:9px 9px 10px;border-radius:9px}.fo-si-kpi span{font-size:7px;letter-spacing:.13em}" +
+        ".fo-si-kpi .v{display:block;margin-top:6px}.fo-si-kpi b{font-size:19px}" +
+        ".fo-si-kpi em{display:block;margin:5px 0 0;padding:0;font-size:7px}" +
+        ".fo-si-work{display:flex;flex-direction:column;align-items:stretch}.fo-si-player{display:block}" +
+        ".fo-si-chart{padding:14px 14px 40px 34px;height:360px}.fo-si-build{grid-template-columns:1fr}" +
+        ".fo-si-tk{font-size:7.5px}.fo-si-tk.y{left:-8px}" +
+        ".fo-si-axl{font-size:7.5px;letter-spacing:.16em}.fo-si-axl.y{left:9px}.fo-si-axl.x{left:34px;bottom:12px}" +
+        ".fo-si-key{gap:9px;padding:0 14px 14px}.fo-si-key span{font-size:7px}" +
         /* on a phone the plot is barely wider than the dots: the ratings stay,
            the names go, and a tap still opens the man */
-        ".fo-si-dl{display:none}html body #page button.fo-si-dot{width:28px;height:28px;margin:-14px 0 0 -14px;font-size:10px !important}.fo-si-list{max-height:none}}"
+        ".fo-si-dl{display:none}html body #page button.fo-si-dot{width:28px !important;height:28px !important;margin:-14px 0 0 -14px;font-size:10px !important}.fo-si-list{max-height:none}}"
     ].join("\n");
     document.head.appendChild(s);
   }
@@ -362,9 +382,72 @@
       "</div></section>";
   }
 
+  // -------------------------------------------------------------------------
+  // KEEPING THE DOTS APART
+  //
+  // Two men of the same age and a rating within a point of each other land on
+  // top of one another and one of them disappears. Nudging them by a fraction
+  // of a year cannot fix that: on a phone the whole plot is 300px wide, so a
+  // dot is worth about two years of the axis and no honest jitter is large
+  // enough. So the spreading is done in pixels, after layout, where the real
+  // geometry is known: each dot in turn is fanned right, then left, in whole
+  // dot-widths until it clears everything already placed. The vertical
+  // position - the rating, the thing being read - is never touched.
+  // -------------------------------------------------------------------------
+  function foSiSpread(page) {
+    var plot = page.querySelector(".fo-si-plot"); if (!plot) return;
+    var W = plot.clientWidth, H = plot.clientHeight; if (!W || !H) return;
+    var dots = [].slice.call(plot.querySelectorAll(".fo-si-dot"));
+    if (dots.length < 2) return;
+    var d = dots[0].offsetWidth || 30, half = d / 2, placed = [];
+    dots.forEach(function (el) {
+      var x = parseFloat(el.style.left) / 100 * W;
+      var y = parseFloat(el.style.top) / 100 * H;
+      var dx = 0, guard = 0;
+      while (guard++ < 30) {
+        var clash = 0;
+        for (var i = 0; i < placed.length; i++) {
+          if (Math.abs(placed[i].x - (x + dx)) < d * .94 && Math.abs(placed[i].y - y) < d * .82) { clash = 1; break; }
+        }
+        if (!clash) break;
+        dx = dx > 0 ? -dx : (-dx + d * .94);          // right, left, wider right...
+        if (x + dx < half || x + dx > W - half) dx = dx > 0 ? -dx : (-dx + d * .94);
+      }
+      placed.push({ el: el, x: x + dx, y: y, dx: dx });
+      if (dx) el.style.marginLeft = (dx - half) + "px";
+    });
+
+    // Second pass: the names. A label sits twenty pixels to the right of its
+    // dot and can be sixty wide, so on a crowded row it lands squarely on
+    // whoever stands next along. Put it on the side that is free, and only
+    // drop it when both sides are taken.
+    var GAP = 20;
+    placed.forEach(function (p) {
+      var lab = p.el.nextElementSibling;
+      if (!lab || lab.className.indexOf("fo-si-dl") < 0) return;
+      var lw = lab.offsetWidth; if (!lw) return;                  // hidden on phones
+      var free = function (from, to) {
+        for (var i = 0; i < placed.length; i++) {
+          var o = placed[i];
+          if (o === p || Math.abs(o.y - p.y) > d * .6) continue;
+          if (o.x + half > from && o.x - half < to) return 0;
+        }
+        return 1;
+      };
+      if (p.x + half + GAP + lw <= W && free(p.x + half, p.x + half + GAP + lw)) {
+        lab.style.marginLeft = (GAP + p.dx) + "px"; lab.style.transform = "none"; return;
+      }
+      if (p.x - half - GAP - lw >= 0 && free(p.x - half - GAP - lw, p.x - half)) {
+        lab.style.marginLeft = (-GAP + p.dx) + "px"; lab.style.transform = "translateX(-100%)"; return;
+      }
+      lab.style.display = "none";
+    });
+  }
+
   // wiring. `repaint` is the squad room's own repainter, so a filter change or
   // a click on a dot redraws the whole room and keeps the switch where it was.
   function foSiWire(page, sv, repaint) {
+    try { foSiSpread(page); } catch (eS) {}
     var role = page.querySelector("#fo-si-role");
     if (role) role.addEventListener("change", function () { sv.iRole = role.value; sv.iSel = null; repaint(); });
     var sort = page.querySelector("#fo-si-sort");
