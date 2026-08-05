@@ -253,6 +253,30 @@
     FRS[k] = pr;
     return pr;
   }
+  // THE RESULT LINE, once the broadcast has shown its last ball. The server
+  // withholds it until friendly_done_ms (048), so asking early just gets
+  // null and the page asks again on its next paint. Cached per friendly;
+  // when the line lands the stage repaints with it.
+  function frResult(frId) {
+    var k = "frtx:" + frId;
+    if (FRS[k] !== undefined) return FRS[k];
+    FRS[k] = null;
+    var tok = ""; try { tok = (window.__foJWT && window.__foJWT()) || ""; } catch (e) {}
+    fetch(SB + "/rest/v1/rpc/world_friendly_detail", {
+      method: "POST",
+      headers: { apikey: KEY, Authorization: "Bearer " + (tok || KEY), "content-type": "application/json" },
+      body: JSON.stringify({ p_id: +frId })
+    }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) {
+        var tx = (d && d.text) || null;
+        if (tx) {
+          FRS[k] = tx;
+          if (T.args && T.id === "fr:" + frId) { try { paint.apply(null, T.args); } catch (e2) {} }
+        } else delete FRS[k];               // not sealed-open yet: ask again next paint
+      })
+      .catch(function () { delete FRS[k]; });
+    return null;
+  }
   function frSide(side) {
     var city = null;
     try {
@@ -411,6 +435,14 @@
     var inns = bookState(seen);
     var innNow = inns[1].open ? 1 : 0, I = inns[innNow];
     var tp = I.top ? parseTop(I.top.txt) : null;
+    // THE LAST BALL COUNTS. The over-summary rides BEFORE a delivery, so an
+    // innings that ends mid-over leaves the top a ball stale - the book read
+    // 192/9 while the umpire's fall note said 193/10, and the match never
+    // looked finished. The fall note carries the true tally; prefer it.
+    if (tp && I.fow.length) {
+      var lf9 = I.fow[I.fow.length - 1];
+      if (lf9.score >= tp.runs && lf9.w >= tp.wkts) { tp.runs = lf9.score; tp.wkts = lf9.w; }
+    }
 
     // ---- THE MATCH STAGE ---------------------------------------------------
     var meta = inns.meta, condBits = [];
@@ -442,7 +474,11 @@
       var l5from = tp.over - l5.length;
       var l5w = I.fow.filter(function (fw) { var o9 = parseFloat(fw.no) || 0; return o9 > l5from && o9 <= tp.over + 1; }).length;
       var third;
-      if (innNow && inns[1].target) {
+      if (done) {
+        // the match is over: a NEEDED or PROJECTED read is a question with
+        // no innings left to answer it
+        third = "";
+      } else if (innNow && inns[1].target) {
         var need = inns[1].target - tp.runs, bLeft = (50 - tp.over) * 6;
         third = need > 0 ? "<div class='mt'><u>NEEDED</u><b>" + need + " <s>off " + bLeft + "b</s></b></div>" : "";
       } else {
@@ -466,6 +502,13 @@
       "<div class='fd-teams'><b>" + tlink(m.home.name, m.home.slot, m.home.__c || rid) + "</b><i>vs</i><b>" + tlink(m.away.name, m.away.slot, m.away.__c || rid) + "</b></div>" +
       (condBits.length ? "<div class='fd-cond'>" + condBits.join(" &middot; ") + "</div>" : "") +
       scoreHtml + mets +
+      (done && cal.__fr ? (function () {
+        // the post-match read the page was missing: FULL TIME and the
+        // umpire's own result line, fetched once the server unseals it
+        var rTx = frResult(String(id).replace(/^fr:/, ""));
+        return "<div class='fd-ftime'><u>FULL TIME</u><b>" +
+          (rTx ? E(rTx) : "the umpire is signing the card&hellip;") + "</b></div>";
+      })() : "") +
       (done && !cal.__fr ? "<a class='fd-enter' href='#/report?n=" + encodeURIComponent(rid) + "&w=" + encodeURIComponent(id) + "'>The full report and scorecard &rsaquo;</a>" : "") +
       (done && cal.__fr ? "<a class='fd-enter' href='#' onclick='foFeedTab(\"card\");return false'>The full scorecard &rsaquo;</a>" : "") +
       strip +
@@ -921,6 +964,9 @@
       ".fo-fd .fd-strip .bar em{position:absolute;top:50%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:var(--fogold);color:var(--fon9);font:700 10.5px/24px Oswald,sans-serif;font-style:normal;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.35)}",
       ".fo-fd .fd-sub{font:italic 400 14px/1.6 'Fraunces',Georgia,serif;color:rgba(255,254,252,.78);margin-top:10px}",
       "html body #page .fo-fd .fd-enter{display:inline-block;margin-top:14px;font:700 11.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:var(--foor) !important;border:none;border-radius:999px;padding:12px 22px;cursor:pointer;text-align:center;text-decoration:none !important;align-self:flex-start}",
+      "html body #page .fo-fd .fd-ftime{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;margin:12px 0 0}",
+      "html body #page .fo-fd .fd-ftime u{text-decoration:none;flex:none;font:700 10px/1 Oswald,sans-serif;letter-spacing:.22em;color:#E8B96A}",
+      "html body #page .fo-fd .fd-ftime b{font:600 16px/1.35 'Fraunces',Georgia,serif;font-weight:600;color:#FFFEFC}",
       // ---- the tab rail: an almanack rule with an underline
       ".fo-fd .fd-tabs{display:flex;gap:2px;margin:18px 0 0;border-bottom:1px solid #d8d0bd;overflow-x:auto;scrollbar-width:none}",
       ".fo-fd .fd-tabs::-webkit-scrollbar{display:none}",
