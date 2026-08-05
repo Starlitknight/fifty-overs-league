@@ -148,12 +148,14 @@
   var HM_CLOCK = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.1' " +
     "stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='8.4'/><path d='M12 7.4V12l3.1 1.9'/></svg>";
   function hmTier(left) { return left <= 0 ? "gone" : left < 600000 ? "final" : left < 3600000 ? "soon" : "calm"; }
+  // the reading: days out it says "1d 12h 05m"; inside a day the seconds
+  // run - "12h 05m 33s" - so the plate reads as a LIVE clock, not a label
   function hmParts(left) {
     var s = Math.max(0, Math.floor(left / 1000));
     var d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
-    if (d >= 1) return d + "d " + (h < 10 ? "0" : "") + h + "h";
-    if (h >= 1) return h + "h " + (m < 10 ? "0" : "") + m + "m";
-    return m + ":" + (ss < 10 ? "0" : "") + ss;
+    var p2 = function (n) { return (n < 10 ? "0" : "") + n; };
+    if (d >= 1) return d + "d " + p2(h) + "h " + p2(m) + "m";
+    return h + "h " + p2(m) + "m " + p2(ss) + "s";
   }
   function hammerPlate(ms) {
     var left = ms - Date.now();
@@ -596,7 +598,7 @@
       "html body #page .fo-mk-row .fo-mk-hmr{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:9px;border:1px solid rgba(27,36,50,.14);background:#FBFAF5;color:#67748a}",
       "html body #page .fo-mk-row .fo-mk-hmr svg{width:12px;height:12px;flex:none}",
       "html body #page .fo-mk-row .fo-mk-hmr i{font-style:normal;font:600 7.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#98a0ae}",
-      "html body #page .fo-mk-row .fo-mk-hmr b{font:600 14px/1 Oswald,sans-serif;color:#14243A;font-variant-numeric:tabular-nums;letter-spacing:.03em;min-width:52px;text-align:right}",
+      "html body #page .fo-mk-row .fo-mk-hmr b{font:600 16px/1 Oswald,sans-serif;color:#C9571F;font-variant-numeric:tabular-nums;letter-spacing:.03em;min-width:88px;text-align:right}",
       "html body #page .fo-mk-row .fo-mk-hmr.soon{border-color:rgba(142,31,19,.4);background:rgba(142,31,19,.05);color:#8E1F13}",
       "html body #page .fo-mk-row .fo-mk-hmr.soon i{color:#B0554A}",
       "html body #page .fo-mk-row .fo-mk-hmr.soon b{color:#8E1F13}",
