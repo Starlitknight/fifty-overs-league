@@ -1529,13 +1529,25 @@
       };
       var listBody = [["bat", "Batters"], ["ar", "All-rounders"], ["bowl", "Bowlers"], ["wk", "Wicketkeepers"]].map(function (sec) {
         if (sv.roleF !== "all" && sv.roleF !== sec[0]) return "";
-        var men = everyone.filter(function (p) { return foSqClass(p) === sec[0]; });
+        var men = seniors.filter(function (p) { return foSqClass(p) === sec[0]; });
         if (q9) men = men.filter(function (p) { return p.name.toLowerCase().indexOf(q9) >= 0; });
         if (!men.length) return "";
         men = sortMen(men);
         return "<div class='fo-s2-sec'><div class='fo-s2-seck'><span>" + sec[1] + "</span><em>" + men.length + " player" + (men.length === 1 ? "" : "s") + "</em></div>" +
           men.map(s2Row).join("") + "</div>";
-      }).join("") || "<div class='fo-s2-sec'><div class='fo-s2-row' style='border-top:1px solid #eee7d9;border-radius:9px;cursor:default'>Nobody matches that search.</div></div>";
+      }).join("");
+      // the boys close the roster in a room of their own: an academy list at
+      // the foot of the page, not four sixteen-year-olds filed among the
+      // senior batters as if they were their equals
+      if (sv.roleF === "all" && youths.length) {
+        var boys9 = q9 ? youths.filter(function (p) { return p.name.toLowerCase().indexOf(q9) >= 0; }) : youths;
+        if (boys9.length) {
+          listBody += "<div class='fo-s2-sec'><div class='fo-s2-seck'><span>Youth</span><em>" +
+            boys9.length + (boys9.length === 1 ? " boy" : " boys") + " &middot; academy, under twenty-one</em></div>" +
+            sortMen(boys9.slice()).map(s2Row).join("") + "</div>";
+        }
+      }
+      listBody = listBody || "<div class='fo-s2-sec'><div class='fo-s2-row' style='border-top:1px solid #eee7d9;border-radius:9px;cursor:default'>Nobody matches that search.</div></div>";
 
       // ---- the rail: the First XI, in batting order, managed in place ----
       var xiRows = sv.xi.map(function (n, i) {
