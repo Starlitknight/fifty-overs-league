@@ -1249,6 +1249,23 @@
         });
         if (!frLive) { var pc2 = foPracBc(); if (pc2 && foFrBcastState(pc2).phase === "live") frLive = pc2; }
       } catch (eF) {}
+      // the world's own friendlies light the pill too: banked at the hour
+      // lock and broadcasting ('played' with the result line withheld), or
+      // accepted with the umpire still to catch up - inside the window
+      var wrLive = null;
+      try {
+        if (!frLive) {
+          var wfh = window.__foFriendlyHome;
+          var wr = (wfh && wfh.rows) ? wfh.rows() : [];
+          var nowW = Date.now();
+          (wr || []).forEach(function (f) {
+            if (wrLive || !f) return;
+            var t0w = +f.playAtMs;
+            if (!(t0w > 0) || nowW < t0w || nowW >= t0w + 3 * 3600000) return;
+            if ((f.status === "played" && !f.text) || f.status === "accepted") wrLive = f;
+          });
+        }
+      } catch (eW2) {}
       var go = null;
       if (em.active) {
         // deep-link MY game in the live round; the board is never the target
@@ -1262,13 +1279,16 @@
           if (mineP && mineP.ix != null) go = "#/scorecard?i=" + mineP.ix;
         } catch (eMe) {}
       } else if (frLive) go = "#/friendly?id=" + frLive.id;
+      else if (wrLive) go = "#/feed?fr=" + wrLive.id;
       // remember the broadcast window: end times are fixed, so on the next
       // page load the pill can paint instantly instead of waiting for the
       // first data fetch. Sanity-capped: a cache entry can never outlive a
       // real broadcast, and a stale matchday target is discarded.
       try {
         if (go) {
-          var until = em.active ? em.endsAt : foFrBcastState(frLive).endsAt;
+          var until = em.active ? em.endsAt
+            : frLive ? foFrBcastState(frLive).endsAt
+            : (+wrLive.playAtMs + 3 * 3600000);
           if (until > Date.now() + 2 * 3600000) until = Date.now() + 2 * 3600000;
           lsSet("fol_livepill", JSON.stringify({ go: go, until: until }));
         } else {

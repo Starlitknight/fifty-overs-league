@@ -237,11 +237,15 @@
       body: "{}"
     }).then(function (r) { return r.ok ? r.json() : []; }).then(done).catch(function () { done([]); });
   }
-  // accepted, and not yet out of its broadcast window: the ones still to come
+  // accepted, and not yet out of its broadcast window: the ones still to come.
+  // A row the umpire has already banked at the hour lock reads 'played' with
+  // the result line withheld - that is in-flight cricket, not history, and
+  // the card must not blink out at T-1h
   function frUpcoming(list) {
     var now = Date.now();
     return (list || []).filter(function (f) {
-      return f && f.status === "accepted" && f.playAtMs && now < f.playAtMs + FR_WINDOW;
+      if (!f || !f.playAtMs || now >= f.playAtMs + FR_WINDOW) return false;
+      return f.status === "accepted" || (f.status === "played" && !f.text);
     }).sort(function (a, b) { return a.playAtMs - b.playAtMs; });
   }
   // the other club, and the address of its dossier - where the tie itself lives
@@ -364,6 +368,9 @@
   // render, and a probe can drive them without a whole club behind it
   window.__foFriendlyHome = {
     next: foNextFriendly, fixtures: foFixturesFriendly,
+    // the cached world rows, for anyone who needs a synchronous read - the
+    // topbar's live pill polls this; a stale cache quietly refreshes behind it
+    rows: function () { try { frLoad(function () {}); } catch (e) {} return FR.list || []; },
     reload: function () { FR.at = 0; FR.list = null; }
   };
 
