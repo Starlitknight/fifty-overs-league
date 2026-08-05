@@ -68,10 +68,10 @@
     if (document.getElementById("fo-fin-css")) return;
     var s = document.createElement("style"); s.id = "fo-fin-css";
     s.textContent = [
-      "html body.fo-fin-on{background:#E9E4D8 !important}",
+      "html body.fo-fin-on{background:#F3F0E7 !important}",
       "html body.fo-fin-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
       "html body #page .fo-fin{--ink:#141C28;--paper:#FFFEFC;--band:#F4EFE3;--brand:#C95532;--gold:#C89A2E;--navy:#0E2246;",
-      "  max-width:1120px;margin:0 auto;padding:26px 16px 44px;color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}",
+      "  max-width:1500px;margin:0 auto;padding:24px 28px 44px;color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}",
       "#page .fo-fin *{box-sizing:border-box}",
       // masthead
       ".fo-fin-k{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:var(--brand)}",
@@ -221,7 +221,64 @@
       ".fo-f2-hs{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;border-top:1px solid var(--edge);margin-top:13px;padding-top:12px;text-align:center}",
       ".fo-f2-hs span{font:600 8.5px/1.4 Oswald,sans-serif;letter-spacing:.11em;text-transform:uppercase;color:#8a93a2;display:block}",
       "html body #page .fo-f2-hs b{display:block;font:600 13px/1.3 Inter,sans-serif;color:var(--navy);margin-top:3px}",
-      ".fo-f2-hs i{display:block;font-style:normal;font:400 9.5px/1.35 Inter,sans-serif;color:#8a93a2;margin-top:2px}"
+      ".fo-f2-hs i{display:block;font-style:normal;font:400 9.5px/1.35 Inter,sans-serif;color:#8a93a2;margin-top:2px}",
+      // ---- MATCHDAY ECONOMY: the selected premium commercial dashboard ----
+      ".fo-me{--navy:#102641;--ink:#17263B;--orange:#D94716;--gold:#C79A31;--green:#16805A;--paper:#FFFEFB;--edge:#DCD7CB;--mut:#6D7786;display:flex;flex-direction:column;gap:16px;color:var(--ink)}",
+      ".fo-me *{box-sizing:border-box}",
+      ".fo-me-head{display:flex;align-items:flex-end;gap:24px;padding:2px 2px 5px}",
+      ".fo-me-ey{color:var(--orange);font:700 9px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;margin-bottom:8px}",
+      ".fo-me-head h1{margin:0;color:var(--ink);font:600 clamp(38px,4.2vw,58px)/.95 'Fraunces',Georgia,serif;letter-spacing:-.035em}",
+      ".fo-me-head p{margin:10px 0 0;color:#505B69;font:400 13px/1.5 Inter,sans-serif}",
+      ".fo-me-actions{display:flex;align-items:center;gap:10px;margin-left:auto;padding-bottom:2px}",
+      "html body #page .fo-me-btn,html body #page button.fo-me-btn{display:inline-flex;align-items:center;justify-content:center;height:46px;min-width:142px;padding:0 18px !important;border:1px solid #CFC8B9 !important;border-radius:7px !important;background:#FFFEFB !important;color:var(--ink) !important;font:700 10px/1 Oswald,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;text-decoration:none !important;box-shadow:none !important}",
+      "html body #page .fo-me-btn.primary,html body #page button.fo-me-btn.primary{border-color:var(--orange) !important;background:var(--orange) !important;color:#fff !important}",
+      "html body #page button.fo-me-btn[disabled]{background:#D7D2C7 !important;border-color:#D7D2C7 !important;color:#8D877C !important;cursor:not-allowed}",
+      ".fo-me-top{display:grid;grid-template-columns:minmax(360px,1.02fr) minmax(620px,1.98fr);gap:16px;align-items:stretch}",
+      ".fo-me-card{background:var(--paper);border:1px solid var(--edge);border-radius:11px;box-shadow:0 2px 8px rgba(20,35,55,.035);overflow:hidden}",
+      ".fo-me-stadium{padding:17px 18px 15px;display:flex;flex-direction:column;min-height:424px}",
+      ".fo-me-cardtitle{display:flex;align-items:center;gap:11px;margin:0 0 12px;color:var(--ink);font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
+      ".fo-me-cardtitle:before,.fo-me-cardtitle:after{content:'';height:1px;flex:1;background:#D2A746}.fo-me-cardtitle:before{max-width:36px}",
+      ".fo-me-oval{position:relative;width:min(92%,420px);aspect-ratio:1.56;margin:5px auto 12px;border:20px solid #E9E2D2;border-radius:50%;background:repeating-conic-gradient(from 2deg,#15304F 0 7deg,#F7F3E9 7deg 11deg,#D95A2C 11deg 17deg,#F7F3E9 17deg 20deg);box-shadow:inset 0 0 0 3px #BEA25F,0 7px 18px rgba(23,38,59,.1)}",
+      ".fo-me-oval:before{content:'';position:absolute;inset:17px;border:8px solid #F5F0E4;border-radius:50%;background:repeating-linear-gradient(90deg,rgba(255,255,255,.045) 0 30px,rgba(8,60,35,.04) 30px 60px),#477C4D;box-shadow:inset 0 0 0 2px rgba(255,255,255,.4)}",
+      ".fo-me-pitch{position:absolute;z-index:2;left:50%;top:50%;width:34px;height:118px;transform:translate(-50%,-50%);border:1px solid rgba(255,255,255,.66);background:#CBB889;box-shadow:0 0 0 1px rgba(45,72,42,.2)}",
+      ".fo-me-pitch:before,.fo-me-pitch:after{content:'';position:absolute;left:-7px;width:46px;border-top:2px solid rgba(255,255,255,.75)}.fo-me-pitch:before{top:16px}.fo-me-pitch:after{bottom:16px}",
+      ".fo-me-stadfoot{display:grid;grid-template-columns:96px 1fr;gap:18px;align-items:center;margin-top:auto}",
+      ".fo-me-ring{width:78px;height:78px;border-radius:50%;display:flex;align-items:center;justify-content:center;position:relative;background:conic-gradient(var(--green) var(--fill),#E9E5DC 0);margin:auto}",
+      ".fo-me-ring:after{content:'';position:absolute;inset:8px;border-radius:50%;background:var(--paper)}",
+      ".fo-me-ring b{position:relative;z-index:2;font:700 22px/1 Inter,sans-serif}.fo-me-ring span{position:absolute;z-index:2;top:13px;font:700 6px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--mut)}",
+      ".fo-me-cap b{display:block;color:var(--ink);font:700 25px/1.1 Inter,sans-serif;font-variant-numeric:tabular-nums}.fo-me-cap span{display:block;margin-top:8px;padding-top:8px;border-top:1px solid #D6CDBB;color:var(--mut);font:700 8px/1.2 Oswald,sans-serif;letter-spacing:.15em;text-transform:uppercase}.fo-me-cap em{color:var(--orange);font-style:normal}",
+      ".fo-me-right{display:grid;grid-template-rows:auto 1fr;gap:16px;min-width:0}",
+      ".fo-me-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}",
+      ".fo-me-kpi{min-height:105px;padding:16px 14px;display:grid;grid-template-columns:42px 1fr;gap:12px;align-items:center}",
+      ".fo-me-kpi .ico{width:42px;height:42px;border:1.5px solid currentColor;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--orange);font:700 17px/1 Inter,sans-serif}.fo-me-kpi.green .ico,.fo-me-kpi.green b{color:var(--green)}.fo-me-kpi.gold .ico,.fo-me-kpi.gold b{color:var(--gold)}",
+      ".fo-me-kpi span{display:block;color:#677282;font:700 8px/1.3 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase}.fo-me-kpi b{display:block;margin-top:7px;color:var(--ink);font:700 20px/1 Inter,sans-serif;font-variant-numeric:tabular-nums;white-space:nowrap}",
+      ".fo-me-data{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(260px,.9fr);gap:16px;min-height:303px}",
+      ".fo-me-panelhead{height:46px;display:flex;align-items:center;padding:0 16px;border-bottom:1px solid #E4DFD5;color:var(--ink);font:700 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase}",
+      ".fo-me-chart{padding:0 16px 14px;display:flex;flex-direction:column}",
+      ".fo-me-bars{position:relative;display:flex;align-items:flex-end;justify-content:space-around;gap:12px;height:205px;margin-top:14px;padding:12px 14px 26px;border-left:1px solid #D8DDE2;border-bottom:1px solid #D8DDE2;background:repeating-linear-gradient(to bottom,#fff 0 39px,#E9ECEF 40px)}",
+      ".fo-me-bar{position:relative;flex:1;max-width:42px;height:var(--h);min-height:8px;background:linear-gradient(180deg,#F05B22,#D94716);border-radius:3px 3px 0 0;box-shadow:0 3px 7px rgba(217,71,22,.15)}",
+      ".fo-me-bar b{position:absolute;left:50%;bottom:calc(100% + 6px);transform:translateX(-50%);font:700 8px/1 Inter,sans-serif;color:var(--orange);white-space:nowrap}.fo-me-bar span{position:absolute;left:50%;top:calc(100% + 8px);transform:translateX(-50%);font:700 7px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--mut);white-space:nowrap}",
+      ".fo-me-chartleg{display:flex;justify-content:center;gap:18px;margin-top:10px;color:var(--mut);font:500 8px/1 Inter,sans-serif}.fo-me-chartleg i{width:14px;height:5px;background:var(--orange);display:inline-block;margin-right:5px}.fo-me-chartleg i.nv{height:2px;background:var(--navy)}",
+      ".fo-me-empty{display:flex;align-items:center;justify-content:center;height:190px;color:var(--mut);font:500 11px/1.5 Inter,sans-serif;text-align:center}",
+      ".fo-me-mix{padding-bottom:14px}",
+      ".fo-me-mixbody{display:grid;grid-template-columns:130px 1fr;gap:12px;align-items:center;padding:20px 16px 8px}",
+      ".fo-me-donut{width:126px;height:126px;border-radius:50%;position:relative;background:var(--mix);box-shadow:inset 0 0 0 1px rgba(19,38,64,.08)}.fo-me-donut:after{content:'REVENUE';position:absolute;inset:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--paper);color:var(--mut);font:700 7px/1 Oswald,sans-serif;letter-spacing:.12em}",
+      ".fo-me-mixrow{display:grid;grid-template-columns:9px 1fr auto;gap:8px;align-items:center;padding:8px 0;border-bottom:1px solid #EEEAE2;color:#4D5968;font:500 9px/1 Inter,sans-serif}.fo-me-mixrow:last-child{border-bottom:0}.fo-me-mixrow i{width:8px;height:8px;border-radius:50%}.fo-me-mixrow b{font-size:10px;color:var(--ink)}",
+      ".fo-me-bottom{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(410px,1fr);gap:16px}",
+      ".fo-me-levers{padding:0 14px 14px}",
+      ".fo-me-levergrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}",
+      ".fo-me-lever{min-height:145px;border:1px solid #E2D9C7;border-radius:8px;padding:13px;background:#FFFEFB;display:flex;flex-direction:column}",
+      ".fo-me-lever .top{display:flex;align-items:center;gap:9px}.fo-me-lever .ic{width:34px;height:34px;border:1px solid #D7C49B;border-radius:50%;display:flex;align-items:center;justify-content:center;color:var(--orange);font:700 13px/1 Inter,sans-serif}.fo-me-lever span{color:#4E5968;font:700 8px/1.2 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
+      ".fo-me-lever b{display:block;margin-top:7px;color:var(--ink);font:700 16px/1.1 Inter,sans-serif}.fo-me-lever em{display:block;margin:8px 0;color:var(--mut);font:400 9px/1.4 Inter,sans-serif;font-style:normal}",
+      "html body #page .fo-me-lever button{margin-top:auto;width:100%;border:0 !important;border-top:1px solid #E2D9C7 !important;border-radius:0 !important;background:transparent !important;color:var(--orange) !important;text-align:left;font:700 8px/1 Oswald,sans-serif !important;letter-spacing:.11em;text-transform:uppercase;padding:10px 0 0 !important;box-shadow:none !important}.fo-me-lever button[disabled]{color:#9E978A !important}",
+      ".fo-me-forecast{padding-bottom:14px}.fo-me-forecastbody{display:grid;grid-template-columns:138px 1fr;gap:14px;padding:13px 16px 0;align-items:stretch}.fo-me-opp{display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #E5DFD4;text-align:center}.fo-me-shield{width:56px;height:62px;clip-path:polygon(8% 0,92% 0,88% 70%,50% 100%,12% 70%);display:flex;align-items:center;justify-content:center;background:#D9A91F;color:#102641;font:700 17px/1 'Fraunces',serif}.fo-me-opp b{margin-top:9px;font:700 16px/1.1 'Fraunces',Georgia,serif}.fo-me-opp span{margin-top:6px;color:var(--mut);font:700 7px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase}",
+      ".fo-me-fgrid{display:grid;grid-template-columns:1fr 1fr}.fo-me-fstat{padding:11px;border-bottom:1px solid #E9E4DB}.fo-me-fstat:nth-child(odd){border-right:1px solid #E9E4DB}.fo-me-fstat span{display:block;color:#7B8491;font:700 7px/1.2 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase}.fo-me-fstat b{display:block;margin-top:6px;color:var(--ink);font:700 15px/1 Inter,sans-serif}.fo-me-fstat.green b{color:var(--green)}",
+      ".fo-me-account{display:grid;grid-template-columns:1fr 1fr 1.05fr;gap:16px}",
+      ".fo-me-account .fo-f2-card{min-width:0}",
+      ".fo-me-health{background:var(--navy);color:#fff;padding:16px}.fo-me-health h3{margin:0 0 12px;color:#D6AA45;font:700 10px/1 Oswald,sans-serif;letter-spacing:.15em;text-transform:uppercase}.fo-me-health .grade{display:flex;align-items:center;gap:14px;padding:5px 0 13px;border-bottom:1px solid rgba(255,255,255,.14)}.fo-me-health .grade b{font:600 48px/1 'Fraunces',serif;color:#D6AA45}.fo-me-health .grade span{font:700 14px/1 Oswald,sans-serif;letter-spacing:.12em;color:#61C697}.fo-me-health .stats{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:13px;text-align:center}.fo-me-health .stats span{display:block;color:#8FA1B8;font:700 7px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase}.fo-me-health .stats b{display:block;margin-top:5px;color:#fff;font:700 13px/1 Inter,sans-serif}.fo-me-health p{margin:14px 0 0;color:#AFBED0;font:400 9px/1.5 Inter,sans-serif}",
+      "@media(max-width:1180px){.fo-me-top{grid-template-columns:340px 1fr}.fo-me-kpis{grid-template-columns:1fr 1fr}.fo-me-levergrid{grid-template-columns:1fr 1fr}.fo-me-bottom{grid-template-columns:1fr}.fo-me-account{grid-template-columns:1fr 1fr}.fo-me-account .fo-me-health{grid-column:1/-1}}",
+      "@media(max-width:820px){.fo-fin{padding:18px 12px 88px}.fo-me-head{display:block}.fo-me-actions{margin:16px 0 0}.fo-me-top,.fo-me-data,.fo-me-bottom,.fo-me-account{display:flex;flex-direction:column}.fo-me-kpis{grid-template-columns:1fr 1fr}.fo-me-stadium{min-height:390px}.fo-me-levergrid{grid-template-columns:1fr 1fr}.fo-me-forecastbody{grid-template-columns:110px 1fr}}",
+      "@media(max-width:520px){.fo-me-head h1{font-size:40px}.fo-me-actions{display:grid;grid-template-columns:1fr 1fr}.fo-me-actions .fo-me-btn{min-width:0;width:100%}.fo-me-kpis,.fo-me-levergrid{grid-template-columns:1fr}.fo-me-mixbody,.fo-me-forecastbody{grid-template-columns:1fr}.fo-me-opp{border-right:0;border-bottom:1px solid #E5DFD4;padding-bottom:12px}.fo-me-stadfoot{grid-template-columns:82px 1fr}}"
     ].join("\n");
     document.head.appendChild(s);
   }
@@ -294,7 +351,50 @@
     return "<div class='fo-f2-card fo-f2-tx'><div class='fo-f2-sh'>Recent transactions<a href='#/statement'>View all &rsaquo;</a></div>" + rows + "</div>";
   }
 
-  function render(page, st) {
+  function foMeGateData(ticket, total) {
+    var rows = (FTX.lines || []).filter(function (l) {
+      var s = String((l && l.kind) || "") + " " + String((l && l.label) || "");
+      return Number(l && l.amount) > 0 && /gate|matchday/i.test(s);
+    }).slice(0, 6).reverse();
+    if (!rows.length && total > 0) rows = [{ amount: total, label: "Season to date" }];
+    return rows.map(function (l, i) {
+      var value = Math.round(Number(l.amount) || 0);
+      var att = Math.round(value / Math.max(1, ticket));
+      var label = "H" + (i + 1);
+      try {
+        var d = stDate(l.at); if (d && d.day) label = d.day.replace(/^\w+\s+/, "").replace(/\s+\d{4}$/, "");
+      } catch (e) {}
+      return { value: value, attendance: att, label: label };
+    });
+  }
+
+  function foMeRevenueChart(ticket, totalGate) {
+    var rows = foMeGateData(ticket, totalGate);
+    if (!rows.length) return "<section class='fo-me-card fo-me-chart'><div class='fo-me-panelhead'>Revenue by home match</div><div class='fo-me-empty'>The first home gate will appear here once the turnstiles close.</div></section>";
+    var max = Math.max.apply(null, rows.map(function (r) { return r.value; }).concat([1]));
+    var bars = rows.map(function (r) {
+      var h = Math.max(8, Math.round(100 * r.value / max));
+      return "<div class='fo-me-bar' style='--h:" + h + "%'><b>" + Mk(r.value) + "</b><span>" + E(r.label) + "</span></div>";
+    }).join("");
+    return "<section class='fo-me-card fo-me-chart'><div class='fo-me-panelhead'>Revenue by home match</div>" +
+      "<div class='fo-me-bars'>" + bars + "</div><div class='fo-me-chartleg'><span><i></i>Gate revenue</span><span><i class='nv'></i>" +
+      (rows.length === 1 ? rows[0].attendance.toLocaleString() + " attendance" : "derived from the dated gate") + "</span></div></section>";
+  }
+
+  function foMeMix(gate, sponsor, away, fees) {
+    var vals = [Math.max(0, gate), Math.max(0, sponsor), Math.max(0, away), Math.max(0, fees)];
+    var tot = vals.reduce(function (s, v) { return s + v; }, 0) || 1;
+    var ps = vals.map(function (v) { return Math.round(100 * v / tot); });
+    ps[0] += 100 - ps.reduce(function (s, v) { return s + v; }, 0);
+    var a = ps[0], b = a + ps[1], c = b + ps[2];
+    var mix = "conic-gradient(#D94716 0 " + a + "%,#102641 " + a + "% " + b + "%,#16805A " + b + "% " + c + "%,#C79A31 " + c + "% 100%)";
+    var row = function (name, p, col) { return "<div class='fo-me-mixrow'><i style='background:" + col + "'></i><span>" + name + "</span><b>" + p + "%</b></div>"; };
+    return "<section class='fo-me-card fo-me-mix'><div class='fo-me-panelhead'>Revenue mix</div><div class='fo-me-mixbody'>" +
+      "<div class='fo-me-donut' style='--mix:" + mix + "'></div><div>" + row("Gate", ps[0], "#D94716") +
+      row("Sponsor", ps[1], "#102641") + row("Away share", ps[2], "#16805A") + row("Fees", ps[3], "#C79A31") + "</div></div></section>";
+  }
+
+  function renderLegacy(page, st) {
     var f = (st && st.finance) || {}, bank = Number(st && st.bank) || 0;
     var clubNm = (st.claim && st.claim.club) || "Your club";
     var founded = Number(f.founded) || 2500000;
@@ -446,6 +546,108 @@
     html += "<a class='fo-fin-stlink' href='#/statement'>&#128220; The statement &mdash; every entry, dated, with the balance after it &rsaquo;</a>";
     html += "<div class='fo-fin-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/league'>My league &rsaquo;</a></div>";
     html += "</div>";
+
+    page.innerHTML = shell(html);
+    wire(page, f, bank, st);
+  }
+
+  function render(page, st) {
+    var f = (st && st.finance) || {}, bank = Number(st && st.bank) || 0;
+    var clubNm = (st.claim && st.claim.club) || "Your club";
+    var founded = Number(f.founded) || 2500000, rounds = Number(f.rounds) || 0;
+    var inGate = Number(f.gate) || 0, inAway = Number(f.awayCut) || 0;
+    var inSpon = Number(f.sponsor) || 0, inComp = Number(f.compensation) || 0, inFees = Number(f.feesIn) || 0;
+    var totIn = inGate + inAway + inSpon + inComp + inFees;
+    var outWage = Number(f.wages) || 0, outUp = Number(f.upkeep) || 0, outInt = Number(f.interest) || 0;
+    var outFees = Number(f.feesOut) || 0, outScout = Number(f.scouting) || 0;
+    var outAcad = Number(f.academyPaid) || 0, outSeats = Number(f.seatsPaid) || 0;
+    var totOut = outWage + outUp + outInt + outFees + outScout + outAcad + outSeats;
+    var net = totIn - totOut, perRound = rounds ? (totIn - outWage - outUp - outInt) / rounds : 0;
+    var squad = (st.squad || []).slice().filter(function (p) { return p && p.name; });
+    var billNow = squad.reduce(function (s2, p) { return s2 + (Number(p.wage) || 0); }, 0);
+    var wageShare = totIn > 0 ? pct(outWage, totIn) : 0;
+
+    var sup = Number(f.supporters) || 0, seats = Number(f.seats) || 0;
+    var lastAtt = Number(f.lastAttendance) || 0, avgAtt = Number(f.avgAttendance) || 0;
+    var mood = Math.max(0, Math.min(6, Number(f.mood) || 0));
+    var moodWord = String(f.moodWord || "patient");
+    var ticket = Number(f.ticket) || 26;
+    var full = pct(lastAtt || avgAtt, seats);
+    var gatePerSeat = seats > 0 ? inGate / seats : 0;
+    var groundNm = String(st.ground || f.ground || "The Eleven Arches");
+
+    if (jwt()) wantTx();
+
+    var nf = null;
+    try { if (typeof nextFixture === "function") nf = nextFixture(); } catch (e) {}
+    var oppNm = String((nf && nf.opp && nf.opp.name) || f.nextOpponent || "Awaiting the draw");
+    var weather = String((nf && nf.weather) || f.nextWeather || "Clear");
+    var projectedCrowd = Math.max(0, Math.min(seats || 999999, lastAtt || avgAtt || Math.round(sup * (.55 + .13 * mood))));
+    var projectedGate = projectedCrowd * ticket;
+    var confidence = lastAtt || avgAtt ? "High" : "Building";
+
+    var cap = 45000, step = 1000, atCap = seats >= cap;
+    var acad = Number(st.academy) || 1;
+    var nextSeatsCost = Number(f.nextSeatsCost) || 0, nextAcadCost = Number(f.nextAcademyCost) || acad * 60000;
+    var canSeats = !atCap && nextSeatsCost > 0 && bank >= nextSeatsCost && !f.administration;
+    var canAcad = acad < 5 && nextAcadCost > 0 && bank >= nextAcadCost && !f.administration;
+
+    var html = "<div class='fo-me'>" +
+      "<header class='fo-me-head'><div><div class='fo-me-ey'>" + E(clubNm) + " &middot; Commercial operations</div>" +
+      "<h1>Matchday Economy</h1><p>Turn support into sustainable sporting advantage.</p></div>" +
+      "<div class='fo-me-actions'><a class='fo-me-btn' href='#/statement'>View statement</a>" +
+      "<button type='button' class='fo-me-btn primary' id='fo-fin-seats'" + (canSeats ? "" : " disabled") + ">" +
+      (atCap ? "Ground at capacity" : "Expand the ground") + "</button></div></header>";
+
+    html += "<div class='fo-me-top'><section class='fo-me-card fo-me-stadium'><div class='fo-me-cardtitle'>" + E(groundNm) + "</div>" +
+      "<div class='fo-me-oval'><i class='fo-me-pitch'></i></div><div class='fo-me-stadfoot'>" +
+      "<div class='fo-me-ring' style='--fill:" + full + "%'><span>Occupancy</span><b>" + full + "%</b></div>" +
+      "<div class='fo-me-cap'><b>" + (lastAtt || avgAtt || 0).toLocaleString() + " / " + seats.toLocaleString() + "</b>" +
+      "<span>Next fixture: <em>" + E(oppNm) + "</em></span></div></div></section>" +
+      "<div class='fo-me-right'><div class='fo-me-kpis'>" +
+      "<div class='fo-me-card fo-me-kpi'><div class='ico'>$</div><div><span>Matchday revenue</span><b>" + M(inGate) + "</b></div></div>" +
+      "<div class='fo-me-card fo-me-kpi'><div class='ico'>&#9673;</div><div><span>Avg attendance</span><b>" + (avgAtt || lastAtt || 0).toLocaleString() + "</b></div></div>" +
+      "<div class='fo-me-card fo-me-kpi gold'><div class='ico'>&divide;</div><div><span>Revenue / seat</span><b>$" + gatePerSeat.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 }) + "</b></div></div>" +
+      "<div class='fo-me-card fo-me-kpi green'><div class='ico'>&#9650;</div><div><span>Supporter mood</span><b>" + E(moodWord.toUpperCase()) + "</b></div></div>" +
+      "</div><div class='fo-me-data'>" + foMeRevenueChart(ticket, inGate) + foMeMix(inGate, inSpon, inAway, inComp + inFees) + "</div></div></div>";
+
+    html += "<div class='fo-me-bottom'><section class='fo-me-card fo-me-levers'><div class='fo-me-panelhead'>Commercial levers</div>" +
+      "<div class='fo-me-levergrid'>" +
+      "<div class='fo-me-lever'><div class='top'><div class='ic'>$</div><span>Ticket price</span></div><b>" + M(ticket) + "</b><em>Set by the competition for every turnstile.</em><button type='button' disabled>League controlled</button></div>" +
+      "<div class='fo-me-lever'><div class='top'><div class='ic'>O</div><span>Stadium capacity</span></div><b>" + seats.toLocaleString() + " &middot; " + full + "% full</b><em>" +
+      (atCap ? "The ground is already at the 45,000-seat ceiling." : nextSeatsCost ? "+" + step.toLocaleString() + " seats costs " + M(nextSeatsCost) + "." : "The board is pricing the next stand.") +
+      "</em><button type='button'" + (canSeats ? " onclick=\"document.getElementById('fo-fin-seats').click()\"" : " disabled") + ">Explore expansion</button></div>" +
+      "<div class='fo-me-lever'><div class='top'><div class='ic'>S</div><span>Sponsorship</span></div><b>" + M(inSpon) + "</b><em>Commercial income banked this season.</em><button type='button' disabled>Season agreement</button></div>" +
+      "<div class='fo-me-lever'><div class='top'><div class='ic'>A</div><span>Academy</span></div><b>Level " + acad + " of 5</b><em>" +
+      (acad >= 5 ? "The academy is fully built." : nextAcadCost ? "Next level costs " + M(nextAcadCost) + "." : "The board is pricing the next level.") +
+      "</em><button type='button' id='fo-fin-acad'" + (canAcad ? "" : " disabled") + ">Invest in talent</button></div></div>" +
+      "<div class='fo-fin-msg' id='fo-fin-msg'></div></section>" +
+      "<section class='fo-me-card fo-me-forecast'><div class='fo-me-panelhead'>Next match forecast</div><div class='fo-me-forecastbody'>" +
+      "<div class='fo-me-opp'><div class='fo-me-shield'>" + E(oppNm.slice(0, 2).toUpperCase()) + "</div><b>" + E(oppNm) + "</b><span>" + (nf && nf.isHome === false ? "Away fixture" : "Next home") + "</span></div>" +
+      "<div class='fo-me-fgrid'><div class='fo-me-fstat'><span>Projected crowd</span><b>" + projectedCrowd.toLocaleString() + "</b></div>" +
+      "<div class='fo-me-fstat'><span>Projected gate</span><b>" + M(projectedGate) + "</b></div>" +
+      "<div class='fo-me-fstat'><span>Weather</span><b>" + E(weather) + "</b></div>" +
+      "<div class='fo-me-fstat green'><span>Confidence</span><b>" + confidence + "</b></div></div></div></section></div>";
+
+    var brk = function (name, val, total, cls) {
+      var share = total > 0 ? pct(Math.abs(val), total) : 0;
+      return "<div class='fo-f2-r'>" + E(name) + "<b class='" + cls + "'>" + M(val) + "</b><em>" + (share ? share + "%" : "&mdash;") + "</em></div>";
+    };
+    var wksHeld = billNow > 0 ? Math.floor(bank / billNow) : 999;
+    var grade = f.administration ? ["D", "ADMIN"] : bank < 0 ? ["C", "OVERDRAWN"] : net >= 0 ? ["A", "STRONG"] : ["B", "WATCH"];
+    html += "<div class='fo-me-account'><section class='fo-f2-card'><div class='fo-f2-sh'>Season income</div>" +
+      brk("Gate receipts", inGate, totIn, "up") + brk("Away gate share", inAway, totIn, "up") + brk("Sponsorship", inSpon, totIn, "up") + brk("International fees", inComp, totIn, "up") + brk("Transfer fees in", inFees, totIn, "up") +
+      "<div class='fo-f2-r tot'>Total income<b>" + M(totIn) + "</b><em></em></div></section>" +
+      "<section class='fo-f2-card'><div class='fo-f2-sh'>Season expenditure</div>" +
+      brk("Player wages", outWage, totOut, "dn") + brk("Upkeep", outUp, totOut, "dn") + brk("Transfer fees out", outFees, totOut, "dn") + brk("Scouting", outScout, totOut, "dn") + brk("Building & academy", outAcad + outSeats, totOut, "dn") +
+      "<div class='fo-f2-r tot'>Total spent<b>" + M(totOut) + "</b><em></em></div></section>" +
+      "<section class='fo-me-card fo-me-health'><h3>Financial health &middot; Bank " + M(bank) + "</h3><div class='grade'><b>" + grade[0] + "</b><span>" + grade[1] + "</span></div>" +
+      "<div class='stats'><div><span>Net</span><b>" + Msign(net) + "</b></div><div><span>Liquidity</span><b>" + (wksHeld > 900 ? "Untested" : wksHeld + " rounds") + "</b></div><div><span>Wage ratio</span><b>" + wageShare + "%</b></div></div>" +
+      "<p>" + (net >= 0 ? "The club is banking more than it spends. Matchday income is creating room to invest." : "Costs are running ahead of income. Protect the gate and review the wage bill before committing capital.") + "</p></section></div>";
+
+    if (f.administration) html += "<div class='fo-fin-admin'><b>The club is in administration</b><p>Building is suspended until the bank is back above the floor. Gate income and a smaller wage bill are the route out.</p></div>";
+    html += "<a class='fo-fin-stlink' href='#/statement'>&#128220; The statement &mdash; every entry, dated, with the balance after it &rsaquo;</a>" +
+      "<div class='fo-fin-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/league'>My league &rsaquo;</a></div></div>";
 
     page.innerHTML = shell(html);
     wire(page, f, bank, st);
