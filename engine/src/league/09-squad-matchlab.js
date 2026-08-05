@@ -527,93 +527,6 @@
     for (var i = 0; i < FO_SQ_COLS.length; i++) if (FO_SQ_COLS[i].k === k) return FO_SQ_COLS[i];
     return null;
   }
-  // ===========================================================================
-  //  THE ANALYST'S DESK — the grid's own masthead and its four plates.
-  //
-  //  The grid is where a manager COMPARES, and a comparison wants a starting
-  //  point. Four dark plates open the page with the men this week actually
-  //  turns on: who is scoring, who is taking wickets, who is in form, and who
-  //  is running on empty. Every figure is the season's own record (the same
-  //  foSeasonNumbers the player page prints) or the live fitness gauge - never
-  //  an invented number, and where a man has not played the plate says so
-  //  rather than dressing a rating up as a performance.
-  // ===========================================================================
-  function foSqSeasonOf(p) {
-    try { return (typeof foSeasonNumbers === "function") ? foSeasonNumbers(p.name) : null; }
-    catch (e) { return null; }
-  }
-  var FO_SQ_ROLEWORD = { bat: "Batsman", ar: "All-rounder", wk: "Wicketkeeper", bowl: "Bowler" };
-  function foSqHeroWho(p) {
-    var r = FO_SQ_ROLEWORD[foSqClass(p)] || "Player";
-    var d = "";
-    try { d = p.bowlType ? prettyType(p.bowlType) : (p.hand === "L" ? "LHB" : "RHB"); } catch (e) {}
-    return r + (d ? " · " + d : "");
-  }
-  function foSqHeroPlate(label, p, big, unit, tone) {
-    if (!p) return "";
-    var art = "";
-    try { art = FO_ART + foPkArt(p); } catch (e) {}
-    return "<div class='fo-sqa-hero" + (tone ? " " + tone : "") + "' data-n='" + E(p.name) + "'" +
-      " tabindex='0' role='link' aria-label='Open the full profile for " + E(p.name) + "'>" +
-      "<span class='hl'>" + E(label) + "</span>" +
-      "<span class='row'>" +
-      (art ? "<span class='av'><img src='" + art + "' alt='' loading='lazy' decoding='async'></span>" : "") +
-      "<span class='idb'><b>" + E(p.name) + "</b><i>" + E(foSqHeroWho(p)) + "</i></span>" +
-      "<span class='big'><b>" + big + "</b><i>" + E(unit) + "</i></span>" +
-      "</span></div>";
-  }
-  function foSqHeroes(list) {
-    if (!list || !list.length) return "";
-    var best = function (score) {
-      var top = null, tv = -Infinity;
-      list.forEach(function (p) {
-        var v = score(p);
-        if (v == null || !isFinite(v)) return;
-        if (v > tv) { tv = v; top = p; }
-      });
-      return top && tv > -Infinity ? { p: top, v: tv } : null;
-    };
-    // the bat and the arm are read off the season's record
-    var runs = best(function (p) { var n = foSqSeasonOf(p); return n && n.matches ? n.runs : null; });
-    var wkts = best(function (p) { var n = foSqSeasonOf(p); return n && n.overs ? n.wkts : null; });
-    // form is the engine's own ladder; the tie-break is the better cricketer
-    var form = best(function (p) { return (p.formIx == null ? 3 : p.formIx) * 1000 + foPkOvr(p); });
-    // and the tired man is the one with least left in his legs
-    var tired = best(function (p) {
-      try { return 1000 - foEnergyOf(p).pct; } catch (e) { return null; }
-    });
-    var plates = [];
-    if (runs) {
-      var nR = foSqSeasonOf(runs.p);
-      plates.push(foSqHeroPlate("Leading bat", runs.p, runs.v,
-        nR && nR.avg != null ? "runs at " + nR.avg.toFixed(1) : "runs this season"));
-    } else {
-      // nobody has batted yet: say so, and lead with the best bat on the books
-      var topBat = best(function (p) { return foSqClass(p) === "bowl" ? null : Math.round(aggBat(p)); });
-      if (topBat) plates.push(foSqHeroPlate("Best bat on the books", topBat.p, topBat.v, "batting rating"));
-    }
-    if (wkts) {
-      var nW = foSqSeasonOf(wkts.p);
-      plates.push(foSqHeroPlate("Leading arm", wkts.p, wkts.v,
-        nW && nW.econ != null ? "wickets at " + nW.econ.toFixed(2) : "wickets this season"));
-    } else {
-      var topArm = best(function (p) { return p.bowlType ? Math.round(aggBowl(p)) : null; });
-      if (topArm) plates.push(foSqHeroPlate("Best arm on the books", topArm.p, topArm.v, "bowling rating"));
-    }
-    if (form) {
-      var fx = form.p.formIx == null ? 3 : form.p.formIx;
-      var fw = "steady";
-      try { fw = (typeof FORMW !== "undefined" && FORMW[fx]) || "steady"; } catch (e) {}
-      plates.push(foSqHeroPlate("In form", form.p, E(fw), "form right now", "good"));
-    }
-    if (tired) {
-      var en = { pct: 100, raw: "rested" };
-      try { en = foEnergyOf(tired.p); } catch (e) {}
-      plates.push(foSqHeroPlate(en.pct >= 80 ? "Freshest legs" : "Needs a rest",
-        tired.p, en.pct + "%", E(en.raw), en.pct >= 80 ? "good" : "warn"));
-    }
-    return plates.length ? "<div class='fo-sqa-heroes'>" + plates.join("") + "</div>" : "";
-  }
   function foSqGrid(list, sv, capt, xiIx) {
     var ctx = { xiIx: xiIx };
     var cols = FO_SQ_COLS;
@@ -690,7 +603,9 @@
     };
 
     var body = rows.map(function (p) {
-      return "<tr class='fo-sqg-r" + (xiIx(p) >= 0 ? " inxi" : "") + (p.__y ? " yth" : "") + "'" +
+      // the row's own namespaced class - a bare "yth" is the kind of generic
+      // name another page's chip will happily claim
+      return "<tr class='fo-sqg-r" + (xiIx(p) >= 0 ? " inxi" : "") + (p.__y ? " fo-sqg-yth" : "") + "'" +
         " data-n='" + E(p.name) + "' tabindex='0' role='link'" +
         " aria-label='Open the full profile for " + E(p.name) + "'>" +
         cols.map(function (c) { return cell(c, p); }).join("") + "</tr>";
@@ -852,7 +767,7 @@
       "html body #page th.fo-sqg-h.c-name{position:sticky;left:0;z-index:7}",
       ".fo-sqg-r:hover td.c-name,.fo-sqg-r:focus-visible td.c-name{background:#FDF4F0 !important}",
       ".fo-sqg-nm{font-weight:600;color:#141C28}",
-      ".fo-sqg-r.yth .fo-sqg-nm{color:rgba(20,28,40,.72)}",
+      ".fo-sqg-r.fo-sqg-yth .fo-sqg-nm{color:rgba(20,28,40,.72)}",
       ".fo-sqg-c,.fo-sqg-y{display:inline-block;margin-left:6px;font-style:normal;font-family:Oswald,sans-serif;font-size:8px;letter-spacing:.1em;padding:1px 5px;border-radius:4px;vertical-align:1px}",
       ".fo-sqg-c{background:#C89A2E;color:#2E2410}",
       ".fo-sqg-y{background:rgba(20,28,40,.08);color:rgba(20,28,40,.6)}",
@@ -882,36 +797,24 @@
       ".fo-sqg-none{text-align:center;font:italic 400 13px Georgia,serif;color:rgba(20,28,40,.5);height:74px}",
       // the grid is a daylight page like the roster: no art, no veil
       // ---- THE ANALYST'S DESK (the grid view's own clothes) -----------------
-      // a gilt eyebrow, a plain masthead, the switch on the right
-      ".fo-sqx.analyst .fo-sqa-mast{display:flex;align-items:flex-end;gap:20px;max-width:1200px;margin:0 auto 18px;flex-wrap:wrap}",
+      // THE SWITCH DOES NOT MOVE. The grid borrows the roster's exact room -
+      // same max width, same 22px gutter, same top inset - and stacks the
+      // eyebrow, the title and the switch down the left, so the Roster/Grid
+      // control sits on the same spot of the page in both views and never
+      // jumps out from under the reader's finger.
+      ".fo-sqx.analyst .fo-sqx-in{max-width:1560px;padding:74px 22px 40px;display:block}",
+      ".fo-sqx.analyst .fo-sqx-park,.fo-sqx.analyst .fo-sqx-parkin{padding:0;margin:0}",
+      ".fo-sqx.analyst .fo-sqa-mast{display:block;margin:0 0 14px}",
       ".fo-sqx.analyst .fo-sqa-ttl .eb{font:600 9px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#B8933A;margin-bottom:9px}",
-      ".fo-sqx.analyst .fo-sqa-ttl h1{font:700 40px/1 Oswald,sans-serif;text-transform:uppercase;color:#14243A !important;margin:0;letter-spacing:.015em;text-shadow:none}",
+      ".fo-sqx.analyst .fo-sqa-ttl h1{font:700 40px/1 Oswald,sans-serif;text-transform:uppercase;color:#14243A !important;margin:0 0 24px;letter-spacing:.015em;text-shadow:none}",
       // the switch reads as a segmented control on paper, not a dark chip
-      ".fo-sqx.analyst .fo-sqx-vsw{margin-left:auto;background:#FFFEFC;border:1px solid rgba(27,36,50,.14);border-radius:10px;padding:3px}",
+      ".fo-sqx.analyst .fo-sqx-vsw{display:inline-flex;background:#FFFEFC;border:1px solid rgba(27,36,50,.14);border-radius:10px;padding:3px}",
       "html body #page .fo-sqx.analyst button.fo-sqx-vb{background:transparent !important;color:#67748a !important;border-radius:8px !important;padding:9px 15px !important;letter-spacing:.13em}",
       "html body #page .fo-sqx.analyst button.fo-sqx-vb:hover{background:rgba(27,36,50,.06) !important;color:#14243A !important}",
       "html body #page .fo-sqx.analyst button.fo-sqx-vb.on{background:#14243A !important;color:#F1EEE6 !important}",
-      // the four plates: dark, quiet, and each one a door to the man
-      ".fo-sqx.analyst .fo-sqa-heroes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:16px;max-width:1200px;margin:0 auto 20px}",
-      ".fo-sqa-hero{position:relative;background:linear-gradient(168deg,#182B44,#0D1C30);border-radius:14px;padding:15px 17px 14px;overflow:hidden;cursor:pointer;min-width:0;outline:none;transition:transform .14s ease,box-shadow .14s ease}",
-      ".fo-sqa-hero:after{content:'';position:absolute;right:-34px;bottom:-46px;width:130px;height:130px;border-radius:50%;border:18px solid rgba(232,185,106,.09);pointer-events:none}",
-      ".fo-sqa-hero:hover,.fo-sqa-hero:focus-visible{transform:translateY(-2px);box-shadow:0 14px 30px rgba(11,23,40,.3)}",
-      ".fo-sqa-hero .hl{display:block;font:600 7.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#E8B96A}",
-      ".fo-sqa-hero.good .hl{color:#8FD6B5} .fo-sqa-hero.warn .hl{color:#FFA870}",
-      ".fo-sqa-hero .row{display:flex;align-items:center;gap:11px;margin-top:11px;position:relative;z-index:2}",
-      ".fo-sqa-hero .av{flex:none;width:44px;height:44px;border-radius:11px;overflow:hidden;background:#1D3350}",
-      ".fo-sqa-hero .av img{width:100%;height:100%;object-fit:cover;object-position:top;display:block}",
-      ".fo-sqa-hero .idb{min-width:0;flex:1}",
-      ".fo-sqa-hero .idb b{display:block;font:600 15.5px/1.15 'Fraunces',Georgia,serif;color:#FFFDF7;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      ".fo-sqa-hero .idb i{display:block;font-style:normal;font:400 10px/1.5 Inter,sans-serif;color:rgba(246,239,223,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      ".fo-sqa-hero .big{flex:none;text-align:right}",
-      ".fo-sqa-hero .big b{display:block;font:700 26px/1 Oswald,sans-serif;color:#FFFDF7;white-space:nowrap;font-variant-numeric:tabular-nums;text-transform:capitalize}",
-      ".fo-sqa-hero .big i{display:block;font-style:normal;font:600 6.5px/1.3 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(246,239,223,.5);margin-top:5px;white-space:nowrap}",
-      // the book below runs the full width of the desk
-      ".fo-sqx.analyst .fo-sqg-outer{max-width:1200px}",
-      "@media(max-width:1080px){.fo-sqx.analyst .fo-sqa-heroes{grid-template-columns:repeat(2,minmax(0,1fr))}}",
-      "@media(max-width:600px){.fo-sqx.analyst .fo-sqa-heroes{grid-template-columns:minmax(0,1fr)}",
-      ".fo-sqx.analyst .fo-sqa-ttl h1{font-size:30px}}",
+      // the book fills the same room the roster's list does
+      ".fo-sqx.analyst .fo-sqg-outer{max-width:none;margin:0 0 34px}",
+      "@media(max-width:600px){.fo-sqx.analyst .fo-sqa-ttl h1{font-size:30px}}",
       ".fo-sqx.gridding .fo-sqx-bg,.fo-sqx.gridding .fo-sqx-veil{display:none}",
       // overflow:hidden on the park (it clips the ground art) would make the
       // park the sticky container, and a container that never scrolls cannot
@@ -1752,12 +1655,10 @@
       var gridMen = sv.who === "yth" ? youths : sv.who === "all" ? everyone : seniors;
       var gridBody = foSqGrid(gridMen, sv, capt, xiIx);
 
-      // THE ANALYST'S DESK: the grid opens on a gilt eyebrow and a plain
-      // masthead, then four dark plates naming the men this week turns on,
-      // then the book itself. The heroes read the SHOWN set (seniors, youth
-      // or everyone) and ignore the role filter, so they hold still while a
-      // manager flicks between disciplines underneath them.
-      var heroBand = foSqHeroes(gridMen);
+      // THE ANALYST'S DESK: a gilt eyebrow, a plain masthead, and then the
+      // book itself. The view switch sits below the title on the left, on
+      // the same line of the page it holds on the roster, so toggling the
+      // two views never moves the control under the reader's finger.
       var ebA = "Fifty Overs";
       try {
         var phA = window.__foPlanet.phaseOf(Date.now());
@@ -1770,7 +1671,7 @@
           "<section class='fo-sqx-park'><div class='fo-sqx-parkin'>" +
           "<header class='fo-sqa-mast'>" +
           "<div class='fo-sqa-ttl'><div class='eb'>" + ebA + "</div><h1>The squad</h1></div>" +
-          viewSwitch + "</header>" + heroBand + gridBody +
+          viewSwitch + "</header>" + gridBody +
           "</div></section></div></div>"
         : "<div class='fo-sqx listing rostering'><div class='fo-s2-in'>" + roster2Body + "</div></div>";
 
@@ -1812,8 +1713,7 @@
       });
       // every row is a door to the man's full profile
       var openMan = function (n) { if (n) location.hash = "#/player?n=" + encodeURIComponent(n); };
-      // a grid row and an analyst's plate are both doors to the same man
-      page.querySelectorAll(".fo-sqg-r,.fo-sqa-hero").forEach(function (r) {
+      page.querySelectorAll(".fo-sqg-r").forEach(function (r) {
         r.addEventListener("click", function () { openMan(r.getAttribute("data-n")); });
         r.addEventListener("keydown", function (e) {
           if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openMan(r.getAttribute("data-n")); }

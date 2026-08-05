@@ -1173,7 +1173,12 @@
       "html body #page .fo-mk-row .rail .act.ghost{margin-top:10px;font:600 9.5px/1 Oswald,sans-serif !important;letter-spacing:.14em;text-transform:uppercase;color:rgba(246,239,223,.85) !important;background:transparent !important;border:1px solid rgba(246,239,223,.35) !important;border-radius:999px !important;padding:12px 0 !important;width:100%;cursor:pointer}",
       "html body #page .fo-mk-row .rail .act.ghost:hover{background:rgba(255,255,255,.08) !important}",
       // the gold youth mark for the under-21s
-      "html body #page .yth{display:inline-flex;font:700 7.5px/1 Oswald,sans-serif;letter-spacing:.14em;color:#7A5210;background:linear-gradient(120deg,#F3DFA9,#E8B96A);border-radius:5px;padding:3.5px 6px;vertical-align:3px;margin-left:8px;text-transform:uppercase;white-space:nowrap}",
+      // SCOPED TO THE MARKET, and it must stay that way. Unscoped, this rule
+      // read "any .yth anywhere on any page" - and the squad grid marks its
+      // academy rows <tr class='fo-sqg-r yth'>, so every colt in the Youth
+      // and Everyone views became an inline-flex gold chip, fell out of the
+      // table, and took the column widths with it.
+      "html body #page .fo-mk .yth{display:inline-flex;font:700 7.5px/1 Oswald,sans-serif;letter-spacing:.14em;color:#7A5210;background:linear-gradient(120deg,#F3DFA9,#E8B96A);border-radius:5px;padding:3.5px 6px;vertical-align:3px;margin-left:8px;text-transform:uppercase;white-space:nowrap}",
       // the door to the rest of a big board
       "html body #page .fo-mk-more{display:block;width:100%;margin:2px 0 0;padding:13px !important;font:600 10px/1 Oswald,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;color:#67748a !important;background:#FFFEFC !important;border:1px dashed rgba(27,36,50,.25) !important;border-radius:12px !important;cursor:pointer}",
       "html body #page .fo-mk-more:hover{color:#B44A22 !important;border-color:rgba(201,87,31,.5) !important;background:#FFFEFC !important}",
