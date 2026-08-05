@@ -735,6 +735,27 @@
           });
         } catch (e2) {}
       }
+      if (!go) {
+        // THE WORLD'S OWN FRIENDLIES, which the ledger above never carries.
+        // The umpire banks an accepted challenge at the hour lock - status
+        // 'played', result line withheld until the last ball - so on air is:
+        // past its hour, inside the window, and either banked-and-quiet or
+        // accepted with the umpire still to catch up. world_my_friendlies
+        // only ever answers with MY club's matches, so it is a summons.
+        try {
+          var wfh2 = window.__foFriendlyHome;
+          var wr2 = (wfh2 && wfh2.rows) ? wfh2.rows() : [];
+          var nw2 = Date.now();
+          (wr2 || []).forEach(function (f2) {
+            if (go || !f2) return;
+            var t02 = +f2.playAtMs;
+            if (!(t02 > 0) || nw2 < t02 || nw2 >= t02 + 3 * 3600000) return;
+            if ((f2.status === "played" && !f2.text) || f2.status === "accepted") {
+              go = "#/feed?fr=" + f2.id; mineNow = true;
+            }
+          });
+        } catch (eW3) {}
+      }
       // "Live" alone does not tell a manager whose match is on; if it is his,
       // say so, because that is the difference between a badge and a summons
       var lbl = ml.querySelector(".live-txt");
