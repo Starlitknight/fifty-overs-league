@@ -709,7 +709,14 @@
       "</div>";
     if (page.__foMkHtml === html && page.querySelector(".fo-mk")) return;
     page.__foMkHtml = html;
+    // a sort must not snap the book back to its first column: remember how
+    // far the reader had leafed across, and put the page back exactly there
+    var oldWrap = page.querySelector(".fo-mk-tblwrap");
+    var leafX = oldWrap ? oldWrap.scrollLeft : 0;
     page.innerHTML = html;
+    if (leafX) {
+      try { var newWrap = page.querySelector(".fo-mk-tblwrap"); if (newWrap) newWrap.scrollLeft = leafX; } catch (eL) {}
+    }
     try {
       var so = document.getElementById("fo-mk-sort");
       if (so) so.addEventListener("change", function () { MK.sort = so.value; paint(); });
