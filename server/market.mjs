@@ -23,7 +23,7 @@
 // facts, so a re-run produces the same market; the money is walked out of the
 // deals by the books like every other line; and a settled transfer is a fact
 // in a table, never a number quietly written onto a club.
-import { dayIx, seedOf, nextRoundAfterDay, ROUNDS } from './clock.mjs';
+import { dayIx, seedOf, nextRoundAfterDay, ROUNDS, EPOCH, DAY } from './clock.mjs';
 import { countryConfigs } from './init-world.mjs';
 
 export const WINDOW_DAYS = 3;              // a listing stands this many world days
@@ -146,11 +146,14 @@ export async function openBotListings(pool, country, seasonNo, round, now = Date
     const ask = valueOf(cand.p);
     const r = await pool.query(
       `INSERT INTO listings(country_id, slot, player, player_json, asking, reserve,
-                            opened_day, closes_day, status, by_user)
-       VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,'open',NULL)
+                            opened_day, closes_day, closes_ms, status, by_user)
+       VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,'open',NULL)
        ON CONFLICT DO NOTHING RETURNING id`,
       [country, cl.slot, cand.p.name, JSON.stringify(cand.p), ask,
-       Math.round(ask * 0.8), today, today + WINDOW_DAYS]);
+       // the umpire's own listings close on the day boundary they always did
+       // - deterministic, so a healed day opens the same board - and the
+       // minute hand still runs: anti-snipe extensions move closes_ms out
+       Math.round(ask * 0.8), today, today + WINDOW_DAYS, EPOCH + (today + WINDOW_DAYS) * DAY]);
     if (r.rowCount) opened.push({ id: r.rows[0].id, country, slot: cl.slot, player: cand.p.name, asking: ask });
   }
   return opened;
@@ -201,11 +204,11 @@ export async function openFreeAgents(pool, host, country, seasonNo, day) {
     const ask = valueOf(man);
     const r = await pool.query(
       `INSERT INTO listings(country_id, slot, player, player_json, asking, reserve,
-                            opened_day, closes_day, status, by_user)
-       VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,'open',NULL)
+                            opened_day, closes_day, closes_ms, status, by_user)
+       VALUES ($1,$2,$3,$4::jsonb,$5,$6,$7,$8,$9,'open',NULL)
        ON CONFLICT DO NOTHING RETURNING id`,
       [country, FREE_AGENT_SLOT, man.name, JSON.stringify(man), ask,
-       Math.round(ask * 0.7), day, day + WINDOW_DAYS]);
+       Math.round(ask * 0.7), day, day + WINDOW_DAYS, EPOCH + (day + WINDOW_DAYS) * DAY]);
     if (r.rowCount) opened.push({ id: r.rows[0].id, country, player: man.name, asking: ask });
   }
   return opened;
@@ -240,7 +243,9 @@ export function botBid(listing, buyerSquad, bank, player) {
 export async function placeBotBids(pool, now = Date.now()) {
   const today = dayIx(now);
   const open = (await pool.query(
-    `SELECT * FROM listings WHERE status='open' AND closes_day > $1 ORDER BY id`, [today])).rows;
+    `SELECT * FROM listings WHERE status='open'
+      AND ((closes_ms IS NOT NULL AND closes_ms > $2) OR (closes_ms IS NULL AND closes_day > $1))
+      ORDER BY id`, [today, now])).rows;
   const placed = [];
   for (const L of open) {
     // OPEN OUTCRY. botBid() is the club's CAP, seeded once and forever. On
@@ -300,8 +305,13 @@ export function pickWinner(listing, bids) {
 
 export async function closeListings(pool, { now = Date.now() } = {}) {
   const today = dayIx(now);
+  // the minute hand rules (052): a listing with an exact closing moment is
+  // due when that moment passes - anti-snipe extensions included. Rows from
+  // before the minute hand fall back to the day boundary they always used.
   const due = (await pool.query(
-    `SELECT * FROM listings WHERE status='open' AND closes_day <= $1 ORDER BY id`, [today])).rows;
+    `SELECT * FROM listings WHERE status='open'
+      AND ((closes_ms IS NOT NULL AND closes_ms <= $2) OR (closes_ms IS NULL AND closes_day <= $1))
+      ORDER BY id`, [today, now])).rows;
   const settled = [];
   for (const L of due) {
     const bids = (await pool.query(
@@ -453,8 +463,18 @@ export async function computeMarket(pool, now = Date.now()) {
       club: L.slot === FREE_AGENT_SLOT ? 'Free agent' : L.club,
       free: L.slot === FREE_AGENT_SLOT || undefined,
       asking: L.asking, reserve: L.reserve, opened: L.opened_day, closes: L.closes_day,
+      closesMs: L.closes_ms != null ? +L.closes_ms : null,
       bids: 0, high: 0, highClub: null,
-      scout: scoutReport(L.player_json, false), fee: scoutFee(L.player_json)
+      scout: scoutReport(L.player_json, false), fee: scoutFee(L.player_json),
+      // THE OPEN CARD (052): a listed man's full skills are public - the
+      // From the Pavilion rule the owner chose. Bidding is informed
+      // strategy; the fog stays where it belongs, in the academy.
+      man: (p => p ? {
+        name: p.name, age: p.age, nat: p.nat, hand: p.hand, role: p.role,
+        bowlType: p.bowlType, bowlTypeFull: p.bowlTypeFull, keeper: p.keeper,
+        wage: p.wage, exp: p.exp, expWord: p.expWord, skills: p.skills,
+        talents: p.talents, rating: p.rating
+      } : null)(L.player_json)
     })),
     deals: done.map(d => ({
       id: d.id, player: d.player,

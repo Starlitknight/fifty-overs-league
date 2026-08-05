@@ -285,6 +285,34 @@ test('the books walk the deal, and settling twice pays once', async () => {
   assert.deepEqual(again.map(f => f.bank), fin.map(f => f.bank), 'and they never drift');
 });
 
+test('the hammer has a minute hand: exact close, and a late blow moves it back (052)', async () => {
+  await pool.query(
+    `INSERT INTO claims(user_id, display_name, country_id, slot) VALUES ($1,'Rival','eng',2)`, [U2]);
+  const squad = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  const nm = squad[squad.length - 1].name;
+  const t0 = atDay(START + 3, 9);
+  const r = (await as(U1, `SELECT public.world_market_list($1, $2) AS r`, [nm, 10000], t0)).rows[0].r;
+  assert.equal(Number(r.closesMs), t0 + 3 * DAY, 'a manager listing shuts exactly three days out, to the minute');
+  const lid = r.id, ask = Number(r.asking);
+  // a blow landed with nine minutes on the clock moves the hammer back to ten
+  const late = t0 + 3 * DAY - 9 * 60000;
+  const b = (await as(U2, `SELECT public.world_market_bid($1, $2) AS r`, [lid, ask + 5000], late)).rows[0].r;
+  assert.equal(Number(b.closesMs), late + 600000, 'going, going... and ten minutes back on the clock');
+  const shut = Number(b.closesMs);
+  // once it falls, no blow lands - however good the money
+  await assert.rejects(
+    as(U2, `SELECT public.world_market_bid($1, $2)`, [lid, ask + 50000], shut + 1),
+    /hammer has fallen/);
+  // and the umpire settles by the minute hand, not the old day boundary
+  const out = await closeListings(pool, { now: shut + 120000 });
+  const mine = out.find(x => Number(x.id) === Number(lid));
+  assert.ok(mine && mine.sold, 'settled on the umpire\'s next pass');
+  const row = (await pool.query(
+    `SELECT status, buyer_country, buyer_slot FROM listings WHERE id=$1`, [lid])).rows[0];
+  assert.equal(row.status, 'sold');
+  assert.equal(row.buyer_country + ':' + row.buyer_slot, 'eng:2', 'to the club that fought the war');
+});
+
 test('a scout is paid for, and the report is only for the club that paid', async () => {
   const L = (await pool.query(`SELECT * FROM listings WHERE status='open' ORDER BY id LIMIT 1`)).rows[0]
     || (await openBotListings(pool, 'eng', 1, 5, atDay(START + 4, 6)),
@@ -321,14 +349,21 @@ test('bot clubs shop in the open, and the bidding war ends at the caps', async (
   assert.equal(again.length, 0, 'and a settled board re-settles to itself');
 });
 
-test('the board is publishable: open prices, private skills', async () => {
+test('the board is publishable: open prices, open cards (052)', async () => {
   const body = await rebuildMarket(pool);
   assert.ok(body.listings.length >= 0 && Array.isArray(body.deals));
   assert.equal(body.windowDays, WINDOW_DAYS);
   assert.equal(body.step, BID_STEP);
   const j = JSON.stringify(body);
   assert.ok(/"reserve"/.test(j), 'the open board carries the reserve');
-  assert.ok(!/"skills"/.test(j), 'but a rival\'s skills still never leave the database');
+  // THE CARD IS OPEN (052): a listed man's full skills ride the board for
+  // everyone to read - the fog stays only on the unlisted
+  assert.ok(body.listings.length > 0, 'the suite has put names on the board by now');
+  for (const L of body.listings) {
+    assert.ok(L.man && L.man.name, 'every listing carries the man\'s own card');
+    assert.ok(L.man.skills && typeof L.man.skills === 'object', 'and the card is open: skills and all');
+    assert.ok(L.closesMs == null || L.closesMs > 0, 'the hammer carries a minute hand where the row has one');
+  }
   const bidOn = body.listings.find(x => x.bids > 0);
   if (bidOn) {
     assert.ok(bidOn.high > 0, 'the standing high is on the board');

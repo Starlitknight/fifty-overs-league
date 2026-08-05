@@ -3,10 +3,13 @@
 
    The board is the world's: free agents trickled on daily by the umpire, and
    men listed by clubs - bot clubs shedding surplus, managers naming a
-   reserve. Every listing is an open auction: the standing high bid and the
-   club holding it are public, a new offer must beat the board by the step,
-   and at the third daily settle the hammer falls - highest at or above the
-   reserve takes him, the money walks through the books, the man moves.
+   reserve. Every listing is an open auction with an OPEN CARD (the man's own
+   stars, age and wages ride the board snapshot) and an EXACT closing moment:
+   the standing high bid and the club holding it are public, a new offer must
+   beat the board by the step, and a bid landed in the final ten minutes
+   pushes the hammer back to ten minutes out (052). When it falls, the
+   umpire's next pass settles it - highest at or above the reserve takes him,
+   the money walks through the books, the man moves.
 
    Alongside the auctions a manager has two doors of his own: QUICK-SELL, the
    bank buying any of his men instantly at half valuation, and RELEASE, a
@@ -96,11 +99,25 @@
     }, function () { MK.busy = 0; MK.at = Date.now(); paint(); });
   }
 
-  function impressionOf(id) {
+  // the board snapshot's copy of a listing: the open card (man), the scout's
+  // old one-liner, the hammer moment as the umpire last published it
+  function snapOf(id) {
     try {
-      var L = ((MK.snap && MK.snap.listings) || []).filter(function (x) { return Number(x.id) === Number(id); })[0];
-      return L ? { scout: L.scout, fee: L.fee } : null;
+      return ((MK.snap && MK.snap.listings) || []).filter(function (x) { return Number(x.id) === Number(id); })[0] || null;
     } catch (e) { return null; }
+  }
+  function impressionOf(id) {
+    var L = snapOf(id);
+    return L ? { scout: L.scout, fee: L.fee } : null;
+  }
+  // a live view row knows closes_ms (052) but not the card; a snapshot row
+  // knows both but goes stale between the umpire's passes. Marry them: the
+  // view's clock wins, the snapshot's card fills in.
+  function dress(L) {
+    var sn = snapOf(L.id) || {};
+    if (L.man == null && sn.man) L.man = sn.man;
+    if (L.closesMs == null) L.closesMs = L.closes_ms != null ? +L.closes_ms : (sn.closesMs != null ? +sn.closesMs : null);
+    return L;
   }
 
   // ---- the rooms ------------------------------------------------------------
@@ -113,17 +130,60 @@
     if (/seam|fast|medium|spin|bowl/.test(r)) return "bowl";
     return "bat";
   }
+  // the shelf a man sits on, read off his OPEN card first (052), the scout's
+  // word only for boards snapshotted before the card opened
+  function bucketOf(L) {
+    var man = L.man || (snapOf(L.id) || {}).man;
+    if (man && man.role) return roleBucket({ role: man.role === "allRounder" ? "all-rounder" : man.role });
+    return roleBucket(((impressionOf(L.id) || {}).scout) || {});
+  }
+  // the hammer, as a distance: "2d 4h", "3h 05m", "8m"
+  function hammerTxt(L) {
+    var ms = +(L.closesMs != null ? L.closesMs : L.closes_ms) || 0;
+    if (!ms) return "hammer " + dayTxt(L.closes != null ? L.closes : L.closes_day);
+    var left = ms - Date.now();
+    if (left <= 0) return "hammer fallen &middot; the umpire is opening the envelopes";
+    var m = Math.floor(left / 60000), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
+    var t = d >= 1 ? d + "d " + h + "h" : h >= 1 ? h + "h " + (mm < 10 ? "0" : "") + mm + "m" : mm + "m";
+    return "hammer in " + t + (left < 3600000 ? " &middot; a late bid moves it back" : "");
+  }
+  // the open card in one line: the roster's own stars, gold bat, teal ball
+  function cardLine(man) {
+    if (!man) return "";
+    try {
+      var FS = window.foStarsFor; if (!FS) return "";
+      var out = "";
+      var cb = FS.bat(man);
+      if (cb > 0) out += "<span class='fo-mk-st bt' title='Batting'>" + FS.html(FS.stars(cb)) + "</span>";
+      var cw = man.bowlType ? FS.bowl(man) : 0;
+      if (cw > 0) out += "<span class='fo-mk-st bw' title='Bowling'>" + FS.html(FS.stars(cw)) + "</span>";
+      var ovr = null; try { ovr = window.foPkOvr ? foPkOvr(man) : null; } catch (eO) {}
+      return "<span class='fo-mk-open'>" + (ovr != null ? "<b class='ovr'>" + ovr + "</b>" : "") + out +
+        (man.wage ? "<i>" + money(man.wage) + "/rd wages</i>" : "") + "</span>";
+    } catch (e) { return ""; }
+  }
   function flagSrc() {
     try { var cl = claim(); return (typeof FO_ART !== "undefined" ? FO_ART : "client/art/") + "flags/" + window.__foCxAPI.flagFile(cl.country) + ".svg"; }
     catch (e) { return ""; }
   }
   function rowHtml(L, cl, myBids) {
+    // THE OPEN CARD (052): a listed man's own facts, straight off the board
+    // snapshot - age, hand, role, stars, wage. The paid scout is retired;
+    // the scout's one-line impression still colours the read where it rode
+    // an older snapshot.
+    var man = dress(L).man || null;
     var imp = impressionOf(L.id) || {};
     var sc = imp.scout || {};
     var meta = [];
-    if (sc.hand) meta.push(E(sc.hand));
-    if (sc.role) meta.push(E(sc.role === "allrounder" ? "all-rounder" : sc.role === "keeper" ? "wicketkeeper" : sc.role));
-    if (sc.age) meta.push(sc.age);
+    if (man) {
+      if (man.hand) meta.push(man.hand === "L" ? "left-hand" : "right-hand");
+      if (man.role) meta.push(E(man.role === "allRounder" ? "all-rounder" : man.role === "wicketkeeper" ? "wicketkeeper" : man.role));
+      if (man.age) meta.push((man.age | 0) + " yrs");
+    } else {
+      if (sc.hand) meta.push(E(sc.hand));
+      if (sc.role) meta.push(E(sc.role === "allrounder" ? "all-rounder" : sc.role === "keeper" ? "wicketkeeper" : sc.role));
+      if (sc.age) meta.push(sc.age);
+    }
     var high = +L.high || 0;
     var minBid = high ? high + STEP : Math.ceil((+L.asking || 0) * 0.55);
     var myBid = (myBids || []).filter(function (b) { return Number(b.id) === Number(L.id); })[0];
@@ -137,18 +197,18 @@
     return "<div class='fo-mk-row" + (lead ? " lead" : "") + "' data-id='" + L.id + "'>" +
       "<span class='rk" + (fa ? " fa" : "") + "'>" + (fa ? "FA" : "B") + "</span>" +
       "<span class='who'><b>" + E(L.player) + "</b>" +
-      "<i>" + (meta.length ? meta.join(" &middot; ") : "an unscouted man") + "</i>" +
+      "<i>" + (meta.length ? meta.join(" &middot; ") : "a cricketer") + "</i>" +
+      cardLine(man) +
       "<u class='" + (fa ? "" : "sell") + "'>" + (fa ? "Free agent" : "Listed by " + E(L.club || "a club")) + "</u>" +
       (sc.impression ? "<em>" + E(sc.impression) + "</em>" : "") +
       "</span>" +
       (fl ? "<span class='mid'><img src='" + fl + "' alt=''></span>" : "") +
       "<span class='pr'><b>" + money(high || L.asking) + "</b>" +
-      "<i>" + state + "</i><i>hammer " + E(dayTxt(L.closes_day)) + "</i>" +
+      "<i>" + state + "</i><i>" + hammerTxt(L) + "</i>" +
       "<span class='btns'>" +
       (mineSelling
         ? "<button class='act ghost' data-mk-withdraw='" + L.id + "'>Withdraw</button>"
         : "<button class='act' data-mk-bid='" + L.id + "' data-min='" + minBid + "'>" + (myBid ? (lead ? "Raise" : "Outbid!") : "Bid") + "</button>") +
-      "<button class='act ghost' data-mk-scout='" + L.id + "'>Scout " + money(imp.fee || 4000) + "</button>" +
       "</span></span>" +
       "</div>";
   }
@@ -160,10 +220,7 @@
     if (!MK.listings.length) return "<div class='fo-mk-none'>The board is bare today. The umpire trickles new names on daily &mdash; look in tomorrow.</div>";
     var myBids = (MK.mine && MK.mine.bids) || [];
     var rows = MK.listings.slice();
-    if (MK.role !== "all") rows = rows.filter(function (L) {
-      var b9 = roleBucket((impressionOf(L.id) || {}).scout);
-      return b9 === MK.role || (MK.role !== "all" && !b9 && false);
-    });
+    if (MK.role !== "all") rows = rows.filter(function (L) { return bucketOf(L) === MK.role; });
     if (MK.sort === "new") rows.sort(function (a, b) { return (b.id | 0) - (a.id | 0); });
     else if (MK.sort === "hi") rows.sort(function (a, b) { return (+(b.high || b.asking) || 0) - (+(a.high || a.asking) || 0); });
     else if (MK.sort === "lo") rows.sort(function (a, b) { return (+(a.high || a.asking) || 0) - (+(b.high || b.asking) || 0); });
@@ -177,7 +234,11 @@
       "<span class='cnt'>" + rows.length + " of " + MK.listings.length + " names</span></div>";
     return tabs + sortSel +
       (rows.length ? rows.map(function (L) { return rowHtml(L, cl, myBids); }).join("")
-        : "<div class='fo-mk-none'>Nobody of that kind on the board today.</div>");
+        : "<div class='fo-mk-none'>Nobody of that kind on the board today.</div>") +
+      "<p class='fo-mk-note'>Every listed man's card is open &mdash; age, stars and wages sit on the board for all to read. " +
+      "The hammer has a minute hand: a bid landed inside the final ten minutes pushes it back to ten minutes out, " +
+      "so an auction ends in a bidding war, never a snipe. The umpire settles the sale on his next pass; " +
+      "the highest offer at or above the reserve takes the man whether you are awake or not.</p>";
   }
 
   function sellHtml(cl) {
@@ -208,7 +269,7 @@
     }).join("");
     return (myBids ? "<div class='fo-mk-k'>Offers you have out</div>" + myBids : "") +
       "<div class='fo-mk-k'>Your men</div>" + rows +
-      "<p class='fo-mk-note'>Listing puts him up for three world days at a reserve you name; unsold, he simply comes home. " +
+      "<p class='fo-mk-note'>Listing puts him up for exactly three days at a reserve you name &mdash; his full card open on the board &mdash; and late bids stretch the hammer, ten minutes at a time. Unsold, he simply comes home. " +
       "A quick-sell is the bank's money, instantly, at half his valuation &mdash; it lands with the next settle of the books. A release is for nothing.</p>";
   }
 
@@ -244,7 +305,7 @@
   function mast() {
     var n = MK.listings ? MK.listings.length : null;
     return "<div class='fo-mk-hd'><div><h1>Transfer market</h1>" +
-      "<p>Open outcry, three-day windows &mdash; the hammer falls with the daily settle.</p></div>" +
+      "<p>Open outcry, open cards, a hammer with a minute hand &mdash; a bid in the final ten minutes moves it back ten.</p></div>" +
       "<div class='chip'><span>On the board</span><b>" + (n == null ? "&hellip;" : n + " name" + (n === 1 ? "" : "s")) + "</b></div></div>";
   }
   function paint() {
@@ -283,20 +344,7 @@
       amt = Math.round(+String(amt).replace(/[^0-9]/g, ""));
       if (!(amt > 0)) return;
       rpc("world_market_bid", { p_id: id, p_amount: amt }).then(function () {
-        toastMsg("Offer in: $" + amt.toLocaleString() + ". The hammer falls with the daily settle.");
-        refetch(true);
-      }).catch(sayErr);
-      return;
-    }
-    if ((b = t9.closest("[data-mk-scout]"))) {
-      var id2 = +b.getAttribute("data-mk-scout");
-      rpc("world_market_scout", { p_id: id2 }).then(function (r) {
-        var p = r && r.player;
-        if (!p) { toastMsg("The scout came back with nothing."); return; }
-        var lines = ["Age " + (p.age || "?") + " · " + (p.hand === "L" ? "left-hand bat" : "right-hand bat"),
-          p.btLabel || "", "Wage about $" + (p.wage || 0).toLocaleString() + " a day",
-          (p.talents || []).length ? "Talents: " + (p.talents || []).slice(0, 3).join(", ") : "No noted talents"];
-        alert("SCOUT'S REPORT — " + p.name + "\n\n" + lines.filter(Boolean).join("\n"));
+        toastMsg("Offer in: $" + amt.toLocaleString() + ". Highest when the hammer falls takes him.");
         refetch(true);
       }).catch(sayErr);
       return;
@@ -313,7 +361,7 @@
       res = Math.round(+String(res).replace(/[^0-9]/g, ""));
       if (!(res > 0)) return;
       rpc("world_market_list", { p_player: nm, p_reserve: res }).then(function (r) {
-        toastMsg(nm + " is on the board · hammer " + dayTxt(r && r.closes));
+        toastMsg(nm + " is on the board · the hammer falls in three days");
         refetch(true);
       }).catch(sayErr);
       return;
@@ -372,6 +420,17 @@
       "html body #page .fo-mk-row .who u{display:inline-block;text-decoration:none;font:600 8px/1 Oswald,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#1F6F4A;background:rgba(31,111,74,.08);border:1px solid rgba(31,111,74,.25);border-radius:6px;padding:4px 6px;margin-top:6px}",
       "html body #page .fo-mk-row .who u.sell{color:#7A5480;background:rgba(122,84,128,.08);border-color:rgba(122,84,128,.25)}",
       "html body #page .fo-mk-row .who em{display:block;font:italic 400 11px/1.4 Georgia,serif;color:rgba(20,28,40,.6);margin-top:5px}",
+      // THE OPEN CARD (052): OVR chip + the roster's own stars + his wages
+      "html body #page .fo-mk-open{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:6px}",
+      "html body #page .fo-mk-row .fo-mk-open b.ovr{display:inline-block;flex:none;font:700 10.5px/1 Oswald,sans-serif;color:#FFFEFC;background:#14243A;border-radius:6px;padding:4px 6px;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-row .fo-mk-open i{display:inline;font-style:normal;font:400 10px/1 Inter,sans-serif;color:#8a93a2;white-space:nowrap;margin:0;text-transform:none}",
+      "html body #page .fo-mk-st{display:inline-flex;line-height:1}",
+      "html body #page .fo-mk-st .st{display:inline-flex;text-decoration:none}",
+      "html body #page .fo-mk-row .fo-mk-st em{display:inline;font-style:normal;font-size:11.5px;line-height:1;color:#e3dccb;letter-spacing:.5px;margin:0}",
+      "html body #page .fo-mk-st.bt em.f{color:#E8B96A}",
+      "html body #page .fo-mk-st.bt em.h{color:#E8B96A;opacity:.45}",
+      "html body #page .fo-mk-st.bw em.f{color:#0FB4C4}",
+      "html body #page .fo-mk-st.bw em.h{color:#0FB4C4;opacity:.45}",
       "html body #page .fo-mk-row .mid{flex:none;margin-top:3px}",
       "html body #page .fo-mk-row .mid img{width:20px;height:14px;object-fit:cover;border-radius:2px}",
       "html body #page .fo-mk-row .pr{flex:none;text-align:right;max-width:46%}",
