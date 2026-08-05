@@ -94,11 +94,11 @@ for n in pres_names:
 pres += '\n})();\n'
 js.append(pres)
 
-# Squad Intelligence is intentionally a small, independently cached room.
-# Keeping it outside the 4 MB gameplay bundle means UI-only iterations do not
-# make managers refetch the deterministic match engine.
+# Squad Intelligence is appended after the presentation layer so its route
+# wrapper sees the final router and cold #/squad-intelligence links paint on
+# the first visible frame.
 squad_intelligence = open('engine/src/league/13-squad-intelligence.js', encoding='utf-8').read()
-open('assets/squad-intelligence.js', 'w', encoding='utf-8').write(squad_intelligence)
+js.append('/* ==== squad intelligence ==== */\n' + squad_intelligence)
 
 # the blocks were separate <script> elements sharing the global scope; joined
 # into one file the semantics are the same, and the ';' guards the seams
@@ -119,9 +119,9 @@ page = page.replace('__FO_BUILD__', build_id)
 
 # index.html sits at the root; client/game.html one level down
 open('index.html', 'w', encoding='utf-8').write(
-    page.replace('__FO_SCRIPT__', '<script src="' + asset + '"></script>\n<script src="assets/squad-intelligence.js?v=' + build_id + '"></script>\n'))
+    page.replace('__FO_SCRIPT__', '<script src="' + asset + '"></script>\n'))
 open('client/game.html', 'w', encoding='utf-8').write(
-    page.replace('__FO_SCRIPT__', '<script src="../' + asset + '"></script>\n<script src="../assets/squad-intelligence.js?v=' + build_id + '"></script>\n'))
+    page.replace('__FO_SCRIPT__', '<script src="../' + asset + '"></script>\n'))
 
 # keep the last few program files so an HTML copy a lagging cache holds for a
 # few more minutes still finds the exact program it names; prune the rest
@@ -133,7 +133,7 @@ for old in assets[:-5]:
 # headless tooling (the resolver harness, the draft-pool proof) loads ONE
 # self-contained page over file:// - keep emitting it for them; it never ships
 open('.build/page.html', 'w', encoding='utf-8').write(
-    page.replace('__FO_SCRIPT__', '<script>\n' + bundle + '\n</script>\n<script>\n' + squad_intelligence + '\n</script>\n'))
+    page.replace('__FO_SCRIPT__', '<script>\n' + bundle + '\n</script>\n'))
 PYASM
 
 printf '{"build":"%s"}\n' "$BUILD_ID" > version.json
