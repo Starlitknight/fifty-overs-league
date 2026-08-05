@@ -191,6 +191,15 @@ test('the open bid: the floor, the bank, and the board must be beaten', async ()
   await assert.rejects(
     as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, L.asking + 5000], atDay(START + 2, 11)),
     /offer at least/);
+  // THE THREE PERCENT LAW (054): matching the flat $500 step is no longer
+  // enough where 3% of the standing high runs past it
+  const high0 = L.asking + 5000;
+  const pctStep = Math.max(500, Math.ceil(high0 * 0.03));
+  if (pctStep > 500) {
+    await assert.rejects(
+      as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, high0 + 500], atDay(START + 2, 11)),
+      /offer at least/, 'a $500 nibble over a big board is refused - the law wants 3%');
+  }
   // raising replaces rather than stacks
   await as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, L.asking + 9000], atDay(START + 2, 11));
   const mine = (await pool.query('SELECT * FROM bids WHERE listing_id=$1', [L.id])).rows;

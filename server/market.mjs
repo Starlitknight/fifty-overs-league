@@ -28,7 +28,10 @@ import { countryConfigs } from './init-world.mjs';
 
 export const WINDOW_DAYS = 3;              // a listing stands this many world days
 export const MIN_BID_PCT = 0.55;           // an offer below this is not an offer
-export const BID_STEP = 500;               // the open board moves in steps of this
+export const BID_STEP = 500;               // the smallest lawful raise, in dollars
+// THE THREE PERCENT LAW (054): a raise clears the standing high by at least
+// 3%, never by less than the flat $500 floor. Same arithmetic as the RPC.
+export function bidStep(high) { return Math.max(BID_STEP, Math.ceil((+high || 0) * 0.03)); }
 export const BOT_SELL_CHANCE = 0.22;       // how often a bot club sheds somebody
 export const SQUAD_FLOOR = 13;             // nobody sells themselves short of a side
 export const SQUAD_CEILING = 18;           // and nobody hoards beyond this
@@ -269,8 +272,8 @@ export async function placeBotBids(pool, now = Date.now()) {
       const mine = board.find(b => b.country_id === cl.country_id && b.slot === cl.slot);
       const floor = Math.round((+L.asking || 0) * MIN_BID_PCT);
       let offer = 0;
-      if (!mine) offer = Math.min(cap, Math.max(floor, high ? high + BID_STEP : floor));
-      else if (+mine.amount < high && +mine.amount < cap) offer = Math.min(cap, high + BID_STEP);
+      if (!mine) offer = Math.min(cap, Math.max(floor, high ? high + bidStep(high) : floor));
+      else if (+mine.amount < high && +mine.amount < cap) offer = Math.min(cap, high + bidStep(high));
       if (!offer || offer <= (+((mine || {}).amount) || 0) || offer < floor) continue;
       await pool.query(
         `INSERT INTO bids(listing_id, country_id, slot, amount, user_id)

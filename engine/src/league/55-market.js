@@ -25,6 +25,32 @@
   var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
   var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
   var STEP = 500;
+  // THE THREE PERCENT LAW (054): a raise clears the standing high by at
+  // least 3% (never under $500); the first offer opens at 55% of asking.
+  // Mirror of world_market_bid - this must not drift from the umpire's law.
+  function minRaise(high, asking) {
+    return high ? high + Math.max(STEP, Math.ceil(high * 0.03))
+                : Math.ceil((+asking || 0) * 0.55);
+  }
+  // exact dollars, for the sums where "$1k" hides the truth of a wage or bid
+  function exact(v) { var n = Math.round(+v || 0); return (n < 0 ? "-$" : "$") + Math.abs(n).toLocaleString("en-US"); }
+  // a birthday the record keeps: a day-of-year seeded by the man's name, so
+  // his age reads the same everywhere and the days tick over with the world
+  function ageTxt(man) {
+    if (!man || !man.age) return "";
+    var h = 0, s = String(man.name || "");
+    for (var i = 0; i < s.length; i++) h = (h * 31 + s.charCodeAt(i)) >>> 0;
+    var di = 0; try { var ph = window.__foPlanet.phaseOf(Date.now()); di = (ph && ph.di) | 0; } catch (e) {}
+    return (man.age | 0) + "y " + ((h + di) % 365) + "d";
+  }
+  // a talent, in the scout's words rather than the database's
+  var TALENT_LBL = { bigMatch: "Big-match", anchor: "Anchor", finisher: "Finisher", sixMachine: "Six machine",
+    busyRunner: "Busy runner", spinKiller: "Spin killer", paceHunter: "Pace hunter", goldenArm: "Golden arm",
+    deathBowler: "Death bowler", newBall: "New-ball", partnership: "Partnership man", ironLungs: "Iron lungs" };
+  function talentLbl(t) {
+    return TALENT_LBL[t] || String(t || "").replace(/([a-z])([A-Z])/g, "$1 $2").toLowerCase()
+      .replace(/^./, function (c) { return c.toUpperCase(); });
+  }
 
   function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
   function jwt() { try { return (window.__foJWT && window.__foJWT()) || ""; } catch (e) { return ""; } }
@@ -253,11 +279,11 @@
     var meta = [];
     if (man) {
       if (man.nat) meta.push("<span class='natc'>" + natFlag(man.nat) + E(String(man.nat).toUpperCase()) + "</span>");
-      if (man.age) meta.push((man.age | 0) + " yrs");
+      if (man.age) meta.push(ageTxt(man));
       if (man.hand) meta.push(man.hand === "L" ? "left-hand" : "right-hand");
       meta.push(roleLbl(man));
       if (man.expWord) meta.push("exp " + E(man.expWord));
-      if (man.wage) meta.push(money(man.wage) + "/rd wages");
+      if (man.wage) meta.push(exact(man.wage) + "/rd wages");
     } else {
       if (sc.age) meta.push(sc.age);
       if (sc.hand) meta.push(E(sc.hand));
@@ -265,7 +291,7 @@
     }
     var ovr = null; try { ovr = (man && window.foPkOvr) ? foPkOvr(man) : null; } catch (eO) {}
     var high = +L.high || 0;
-    var minBid = high ? high + STEP : Math.ceil((+L.asking || 0) * 0.55);
+    var minBid = minRaise(high, L.asking);
     var myBid = (myBids || []).filter(function (b) { return Number(b.id) === Number(L.id); })[0];
     var lead = myBid && high && +myBid.amount >= high;
     var mineSelling = cl && L.country_id === cl.country && L.slot === cl.slot;
@@ -289,27 +315,46 @@
       (L.country_id ? " &middot; " + E(natNm(L.country_id)) : "");
     var hc = L.high_country != null ? L.high_country : L.highCountry;
     var hs = L.high_slot != null ? L.high_slot : L.highSlot;
-    var bidder = lead ? "<span class='club you'>You</span>"
+    // the lead is a name, and the name is a door - YOUR name, your club home
+    var bidder = lead ? "<a class='club you' href='#/club'>" + E((cl && cl.club) || "You") + "</a>"
       : high ? ((hc != null && hs != null && hs >= 0)
           ? "<a class='club' href='#/team?c=" + encodeURIComponent(hc) + "&s=" + (hs | 0) + "'>" + E(L.highClub || L.high_club || "a club") + "</a>"
           : "<span class='club'>" + E(L.highClub || L.high_club || "a club") + "</span>")
       : "<span class='club none'>Nobody yet</span>";
+    // THE DOSSIER FOOT: talents as gold marks, then the almanack facts that
+    // used to be dead white space - asking, reserve, exact wages, offers in
+    var talentChips = (man && man.talents && man.talents.length)
+      ? "<div class='tlts'>" + man.talents.map(function (t) {
+          return "<em title='A talent the scouts know him for'>" + E(talentLbl(t)) + "</em>";
+        }).join("") + "</div>" : "";
+    var facts = "<div class='facts'>" +
+      "<span><i>Asking</i><b>" + money(L.asking) + "</b></span>" +
+      "<span><i>Reserve</i><b>" + money(L.reserve) + "</b></span>" +
+      (man && man.wage ? "<span><i>Wages</i><b>" + exact(man.wage) + "/rd</b></span>" : "") +
+      "<span><i>Offers</i><b>" + (L.offers | 0) + "</b></span>" +
+      (man && man.expWord ? "<span><i>Experience</i><b>" + E(man.expWord) + "</b></span>" : "") +
+      "</div>";
+    // one press placed, the word lands ON the card - never a popup (MK.ok)
+    var okStrip = (MK.ok && Number(MK.ok.id) === Number(L.id) && Date.now() - MK.ok.at < 12000)
+      ? "<div class='bidok'>&#10003; Offer in: " + exact(MK.ok.amt) + " &mdash; you lead until someone answers</div>" : "";
     return "<div class='fo-mk-row" + (lead ? " lead" : "") + "' data-id='" + L.id + "'>" +
       "<div class='bd'>" +
       "<div class='tp'>" +
       (ovr != null ? "<span class='ovr' title='Overall'>" + ovr + "</span>" : "") +
       "<span class='nm'>" +
       (door ? "<a class='pdoor' href='" + door + "'><b>" + E(L.player) + (man && man.keeper ? " &dagger;" : "") + "</b></a>"
-            : "<b>" + E(L.player) + (man && man.keeper ? " &dagger;" : "") + "</b>") +
+            : "<span class='pdoor fa' data-mk-fa='" + L.id + "' title='Open his full card'><b>" + E(L.player) + (man && man.keeper ? " &dagger;" : "") + "</b></span>") +
       (man && man.age && man.age <= 21 ? "<span class='yth'>Youth &middot; " + (man.age | 0) + "</span>" : "") +
       "<span class='mt'>" + (meta.length ? meta.join(" &nbsp;&middot;&nbsp; ") : "a cricketer") + "</span></span>" +
       "</div>" +
       gaugesHtml(man) +
+      talentChips +
       (man && man.skills
         ? "<button class='fold" + (open ? " on" : "") + "' data-mk-full='" + L.id + "'>" +
           "<span>" + (open ? "Close card" : "Full card") + "</span>" + chev + "</button>" +
           (open ? fullCardHtml(man) : "")
         : "") +
+      facts +
       "<div class='prov'>" +
       (clubDoor
         ? "<a class='tag' href='" + clubDoor + "'>" + provTxt + " &rsaquo;</a>"
@@ -328,11 +373,13 @@
       (hmMs
         ? "<span class='hmwrap' data-mk-hh='" + hmMs + "'>" + hammerPlate(hmMs) + "</span>"
         : "<span class='hmwrap'><b class='clk calm'>" + E(dayTxt(L.closes != null ? L.closes : L.closes_day)) + "</b></span>") +
+      okStrip +
       (mineSelling
         ? "<button class='act ghost' data-mk-withdraw='" + L.id + "'>Withdraw</button>"
         : "<button class='go' data-mk-bid-auto='" + L.id + "' data-min='" + minBid + "' title='Bid the next minimum, " + money(minBid) + "'>Auto bid</button>" +
           "<div class='cust'><input class='fo-mk-in' id='fo-mk-in-" + L.id + "' inputmode='numeric' placeholder='or your own figure&hellip;'>" +
-          "<button class='snd' data-mk-place='" + L.id + "' data-min='" + minBid + "' aria-label='Place your bid'>&rarr;</button></div>") +
+          "<button class='snd' data-mk-place='" + L.id + "' data-min='" + minBid + "' aria-label='Place your bid'>&rarr;</button></div>" +
+          "<div class='bidmsg' id='fo-mk-msg-" + L.id + "'></div>") +
       "</div>" +
       "</div>";
   }
@@ -438,7 +485,7 @@
       var man = dress(L).man || null;
       var picks = man ? readPicks(man) : [];
       var high = +L.high || 0;
-      var minBid = high ? high + STEP : Math.ceil((+L.asking || 0) * 0.55);
+      var minBid = minRaise(high, L.asking);
       var mineSelling = cl && L.country_id === cl.country && L.slot === cl.slot;
       var myBid = (myBids || []).filter(function (x) { return Number(x.id) === Number(L.id); })[0];
       var lead = myBid && high && +myBid.amount >= high;
@@ -458,17 +505,18 @@
       if (man && man.nat) subBits.push(natFlag(man.nat) + " " + E(String(man.nat).toUpperCase()));
       if (man) subBits.push(roleLbl(man));
       subBits.push(fa ? "Free agent" : (clubDoor ? "<a class='cl' href='" + clubDoor + "'>" + E(L.club || "a club") + "</a>" : E(L.club || "a club")));
-      return "<tr>" +
-        "<td>" + (door ? "<a class='pn' href='" + door + "'>" : "<span class='pn'>") + E(L.player) +
+      var okHere = MK.ok && Number(MK.ok.id) === Number(L.id) && Date.now() - MK.ok.at < 12000;
+      return "<tr data-id='" + L.id + "'>" +
+        "<td>" + (door ? "<a class='pn' href='" + door + "'>" : "<span class='pn lk' data-mk-fa='" + L.id + "' title='Open his full card'>") + E(L.player) +
         (man && man.keeper ? " &dagger;" : "") + (door ? "</a>" : "</span>") +
         (man && man.age && man.age <= 21 ? "<span class='yth'>Youth</span>" : "") +
         "<span class='sub'>" + subBits.join(" &middot; ") + "</span></td>" +
-        "<td>" + (man && man.age ? (man.age | 0) : "&ndash;") + "</td>" +
-        "<td><b>" + (ovrOf(L) > 0 ? ovrOf(L) : "&ndash;") + "</b></td>" +
+        "<td>" + (man && man.age ? ageTxt(man) : "&ndash;") + "</td>" +
+        "<td>" + (ovrOf(L) > 0 ? "<b class='ovch'>" + ovrOf(L) + "</b>" : "&ndash;") + "</td>" +
         cells +
-        "<td>" + (man && man.wage ? money(man.wage) : "&ndash;") + "</td>" +
+        "<td>" + (man && man.wage ? exact(man.wage) : "&ndash;") + "</td>" +
         "<td><span class='hb" + (high ? "" : " dim") + "'>" + (high ? money(high) : "no bids") + "</span>" +
-        "<span class='hbc'>" + (lead ? "<span class='you'>you lead</span>"
+        "<span class='hbc'>" + (lead ? "<a class='you' href='#/club'>" + E((cl && cl.club) || "you") + " lead</a>"
           : high ? ((hc != null && hs != null && hs >= 0)
               ? "<a href='#/team?c=" + encodeURIComponent(hc) + "&s=" + (hs | 0) + "'>" + E(L.highClub || L.high_club || "a club") + "</a>"
               : E(L.highClub || L.high_club || "a club"))
@@ -478,13 +526,15 @@
           return ms ? "<span class='hmwrap tbl' data-mk-hh='" + ms + "'>" + hammerPlate(ms) + "</span>"
                     : "<b class='clk calm'>" + E(dayTxt(L.closes != null ? L.closes : L.closes_day)) + "</b>";
         })() + "</td>" +
-        "<td>" + (mineSelling
+        "<td>" + (okHere ? "<span class='qok'>&#10003; Offer in</span>"
+          : mineSelling
           ? "<button class='qb gh' data-mk-withdraw='" + L.id + "'>Withdraw</button>"
           : "<button class='qb' data-mk-bid-auto='" + L.id + "' data-min='" + minBid + "' title='Bid the next minimum, " + money(minBid) + "'>Auto bid</button>") + "</td>" +
         "</tr>";
     }).join("");
     return "<div class='fo-mk-tblwrap'><table class='fo-mk-tbl'><thead><tr>" + head + "</tr></thead>" +
-      "<tbody>" + (body || "<tr><td colspan='14' class='dim' style='text-align:center;padding:26px'>Nobody of that kind on the board today.</td></tr>") + "</tbody></table></div>";
+      "<tbody>" + (body || "<tr><td colspan='14' class='dim' style='text-align:center;padding:26px'>Nobody of that kind on the board today.</td></tr>") + "</tbody></table>" +
+      "<div class='tbf'>" + rows.length + " men on the board &middot; every column head sorts &middot; Auto bid places the lawful next raise</div></div>";
   }
 
   function sellHtml(cl) {
@@ -509,9 +559,25 @@
             "</div>") +
         "</div>";
     }).join("");
+    // OFFERS YOU HAVE OUT, told properly: the man is a door, the offer is
+    // the exact figure, the standing of it is coloured, and the hammer ticks
     var myBids = ((MK.mine && MK.mine.bids) || []).map(function (b) {
-      return "<div class='fo-mk-srow slim'><div class='fo-mk-swho'><b>" + E(b.player) + "</b>" +
-        "<span>your offer " + money(b.amount) + " &middot; hammer " + E(dayTxt(b.closes)) + "</span></div></div>";
+      var L = (MK.listings || []).filter(function (x) { return Number(x.id) === Number(b.id); })[0];
+      var high = L ? +L.high || 0 : 0;
+      var leadB = high && +b.amount >= high;
+      var door = L && L.slot >= 0 && L.country_id
+        ? "#/player?c=" + encodeURIComponent(L.country_id) + "&s=" + (L.slot | 0) + "&n=" + encodeURIComponent(b.player) : "";
+      var ms = L ? +(L.closes_ms != null ? L.closes_ms : L.closesMs) || 0 : 0;
+      var standing = !L ? "<i class='st gone'>the window has shut &mdash; the umpire settles it on his next pass</i>"
+        : leadB ? "<i class='st lead'>you lead &middot; the board stands at " + exact(high) + "</i>"
+        : high > +b.amount ? "<i class='st out'>outbid &mdash; " + E(L.highClub || L.high_club || "a rival") + " stand at " + exact(high) + "</i>"
+        : "<i class='st lead'>your offer stands</i>";
+      return "<div class='fo-mk-srow slim'><div class='fo-mk-swho'>" +
+        (door ? "<a class='bdoor' href='" + door + "'><b>" + E(b.player) + "</b></a>" : "<b>" + E(b.player) + "</b>") +
+        "<span>your offer <b class='amt2'>" + exact(b.amount) + "</b></span>" + standing + "</div>" +
+        "<div class='fo-mk-shammer'><i>Hammer</i>" +
+        (ms ? "<span class='hmwrap deal' data-mk-hh='" + ms + "'>" + hammerPlate(ms) + "</span>"
+            : "<b class='clk calm'>" + E(dayTxt(b.closes)) + "</b>") + "</div></div>";
     }).join("");
     return (myBids ? "<div class='fo-mk-k'>Offers you have out</div>" + myBids : "") +
       "<div class='fo-mk-k'>Your men</div>" + rows +
@@ -604,6 +670,18 @@
         }).join("") + "</optgroup>";
       }).join("") + "</select></span>";
   }
+  // walk to the listing a wire line spoke of and let it glow for a breath
+  function flashListing() {
+    try {
+      var lid = sessionStorage.getItem("fo_mkt_flash"); if (lid == null) return;
+      var el = document.querySelector(".fo-mk-row[data-id='" + lid + "'], .fo-mk-tbl tr[data-id='" + lid + "']");
+      if (!el) return;
+      sessionStorage.removeItem("fo_mkt_flash");
+      el.scrollIntoView({ behavior: "smooth", block: "center" });
+      el.classList.add("flash");
+      setTimeout(function () { try { el.classList.remove("flash"); } catch (e) {} }, 2600);
+    } catch (e) {}
+  }
   function paint() {
     var page = document.getElementById("page"); if (!page) return;
     if ((location.hash || "").split("?")[0] !== "#/market") return;
@@ -613,7 +691,11 @@
     if (ae && ae.classList && ae.classList.contains("fo-mk-in") && page.contains(ae)) return;
     var cl = claim();
     var t = MK.tab;
-    var html = "<div class='fo-mk'>" + mast() +
+    // the whole book needs a broadsheet: the table view widens the page -
+    // and the app's 980px #wrap girdle with it, or the wide room is a wish
+    var wide = MK.view === "table" && t === "board";
+    try { document.body.classList.toggle("fo-mk-wide", !!wide); } catch (eW) {}
+    var html = "<div class='fo-mk" + (wide ? " wide" : "") + "'>" + mast() +
       "<div class='fo-mk-deck'>" +
       "<div class='fo-mk-tabs'>" +
       "<button class='" + (t === "board" ? "on" : "") + "' data-mk-tab='board'>The board</button>" +
@@ -634,6 +716,7 @@
       var no = document.getElementById("fo-mk-nat");
       if (no) no.addEventListener("change", function () { MK.nat = no.value; MK.shown = 40; paint(); });
     } catch (e9) {}
+    setTimeout(flashListing, 60);
   }
 
   // ---- the deeds ------------------------------------------------------------
@@ -642,12 +725,22 @@
     var nm = "";
     try { nm = ((MK.listings || []).filter(function (L) { return Number(L.id) === Number(id); })[0] || {}).player || ""; } catch (e) {}
     rpc("world_market_bid", { p_id: id, p_amount: amt }).then(function () {
-      toastMsg("Offer in: $" + amt.toLocaleString() + " on " + (nm || "the man") + " &mdash; you lead until someone answers.");
-      wireAdd("in", "Your offer of " + money(amt) + " on " + (nm || "a listed man") + " is in &mdash; you lead");
+      // the word lands ON the card, not in a popup: MK.ok paints a green
+      // strip in this listing's own rail for the next few repaints
+      MK.ok = { id: id, amt: amt, at: Date.now() };
+      wireAdd("in", "Your offer of " + money(amt) + " on " + (nm || "a listed man") + " is in &mdash; you lead", { lid: id });
       if (inEl) inEl.value = "";
+      paint();
       refetch(true);
       setTimeout(wireCheck, 1500);
-    }).catch(sayErr);
+      setTimeout(function () { try { if (MK.ok && Number(MK.ok.id) === Number(id)) { MK.ok = null; paint(); } } catch (e) {} }, 12500);
+    }).catch(function (e) {
+      // refusals land inline too - under the input on the very card
+      var msg = String((e && e.message) || e).replace(/^error:\s*/i, "");
+      var el = document.getElementById("fo-mk-msg-" + id);
+      if (el) { el.textContent = msg; el.classList.add("on"); setTimeout(function () { try { el.classList.remove("on"); } catch (e2) {} }, 6000); }
+      else toastMsg(msg);
+    });
   }
 
   /* ==========================================================================
@@ -664,9 +757,14 @@
     catch (e) { return { items: [], st: {} }; }
   }
   function wireSave(w) { try { localStorage.setItem(WIRE_KEY, JSON.stringify(w)); } catch (e) {} }
-  function wireAdd(kind, text) {
+  function wireAdd(kind, text, extra) {
     var w = wireLoad();
-    w.items.unshift({ k: kind, t: text, at: Date.now(), r: false });
+    var it = { k: kind, t: text, at: Date.now(), r: false };
+    // every line on the wire knows where its story lives: a listing to
+    // flash on the board, or a page to walk to
+    if (extra && extra.lid != null) it.lid = extra.lid;
+    if (extra && extra.href) it.href = extra.href;
+    w.items.unshift(it);
     w.items = w.items.slice(0, 30);
     wireSave(w);
     bellBadge();
@@ -706,7 +804,7 @@
                 sel("world_deals?id=eq." + idb + "&select=player,fee,to_club").then(function (ds) {
                   var d = ds && ds[0];
                   if (d && d.to_club === cl.club) {
-                    wireAdd("won", "The hammer fell: " + E(d.player) + " is yours for " + money(d.fee));
+                    wireAdd("won", "The hammer fell: " + E(d.player) + " is yours for " + money(d.fee), { href: "#/squad" });
                   } else if (d) {
                     wireAdd("gone", "The hammer fell on " + E(d.player) + " &mdash; he went to " + E(d.to_club || "another club") + " for " + money(d.fee));
                   } else {
@@ -720,7 +818,7 @@
             var leadNow = +bd.amount >= +(row.high || 0);
             if (prev && prev.lead && !leadNow) {
               wireAdd("out", E(row.high_club || "A rival") + " outbid you on " + E(row.player) +
-                " &mdash; the board stands at " + money(row.high));
+                " &mdash; the board stands at " + money(row.high), { lid: idb });
             }
             st[idb] = { lead: leadNow, amt: +bd.amount };
           });
@@ -748,7 +846,10 @@
     pop.innerHTML = "<div class='ph'><b>The wire</b><span id='fo-wire-clear'>Mark all read</span></div>" +
       (w.items.length ? w.items.map(function (it) {
         var g = ic[it.k] || ic.gone;
-        return "<div class='it" + (it.r ? "" : " unread") + "'><span class='ic " + g[1] + "'>" + g[0] + "</span>" +
+        return "<div class='it" + (it.r ? "" : " unread") + "'" +
+          (it.lid != null ? " data-lid='" + it.lid + "'" : "") +
+          (it.href ? " data-href='" + E(it.href) + "'" : "") +
+          "><span class='ic " + g[1] + "'>" + g[0] + "</span>" +
           "<div class='tx'>" + it.t + "<i>" + agoTxt(it.at) + "</i></div></div>";
       }).join("") : "<div class='none'>Nothing on the wire yet. Bid on a man and word of the auction lands here.</div>");
     var mk = document.getElementById("fo-wire-clear");
@@ -764,7 +865,16 @@
       pop = document.createElement("div"); pop.id = "fo-wire-pop";
       document.body.appendChild(pop);
       pop.addEventListener("click", function (ev) {
-        if (ev.target.closest(".it")) { pop.classList.remove("on"); location.hash = "#/market"; }
+        var it = ev.target.closest(".it"); if (!it) return;
+        pop.classList.remove("on");
+        // a line on the wire walks you to its own story: the listing it
+        // speaks of (flashed on the board), or the page where it ended
+        var href = it.getAttribute("data-href"), lid = it.getAttribute("data-lid");
+        if (lid != null) {
+          try { sessionStorage.setItem("fo_mkt_flash", lid); } catch (eF) {}
+          if ((location.hash || "").split("?")[0] === "#/market") { paint(); flashListing(); }
+          else location.hash = "#/market";
+        } else location.hash = href || "#/market";
       });
       document.addEventListener("click", function (ev) {
         if (!pop.classList.contains("on")) return;
@@ -825,6 +935,16 @@
       paint(); return;
     }
     if ((b = t9.closest("[data-mk-more]"))) { MK.shown += 40; paint(); return; }
+    // a free agent has no dossier page, but his card is fully open: his
+    // name opens the full card on the board (from the table, via the cards)
+    if ((b = t9.closest("[data-mk-fa]"))) {
+      var idFa = +b.getAttribute("data-mk-fa");
+      MK.open[idFa] = 1;
+      if (MK.view === "table") { MK.view = "cards"; try { localStorage.setItem("fo_mkt_view", "cards"); } catch (eV2) {} }
+      try { sessionStorage.setItem("fo_mkt_flash", String(idFa)); } catch (eF2) {}
+      paint(); flashListing();
+      return;
+    }
     if ((b = t9.closest("[data-mk-full]"))) {
       var idF = +b.getAttribute("data-mk-full");
       MK.open[idF] = !MK.open[idF];
@@ -843,7 +963,13 @@
       if (!(amtP > 0)) { if (inEl) { inEl.classList.add("no"); setTimeout(function () { inEl.classList.remove("no"); }, 450); inEl.focus(); } return; }
       if (amtP < minP) {
         if (inEl) { inEl.classList.add("no"); setTimeout(function () { inEl.classList.remove("no"); }, 450); }
-        toastMsg("The board wants at least " + money(minP) + ".");
+        // the refusal lands on the card, under the very input (no popups)
+        var msgEl = document.getElementById("fo-mk-msg-" + idP);
+        if (msgEl) {
+          msgEl.textContent = "The law wants at least " + exact(minP) + " — 3% over the standing bid.";
+          msgEl.classList.add("on");
+          setTimeout(function () { try { msgEl.classList.remove("on"); } catch (e2) {} }, 6000);
+        }
         return;
       }
       placeBid(idP, amtP, minP, inEl);
@@ -889,6 +1015,10 @@
   setInterval(function () {
     try { if ((location.hash || "").split("?")[0] === "#/market") refetch(); } catch (e) {}
   }, 45000);
+  // leaving the market hands the room back its ordinary walls
+  window.addEventListener("hashchange", function () {
+    try { if ((location.hash || "").split("?")[0] !== "#/market") document.body.classList.remove("fo-mk-wide"); } catch (e) {}
+  });
 
   // ---- the clothes ----------------------------------------------------------
   function css() {
@@ -896,6 +1026,32 @@
     var s = document.createElement("style"); s.id = "fo-mkt-css";
     s.textContent = [
       "html body #page .fo-mk{max-width:880px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
+      // the broadsheet: table view earns the full width of the room - the
+      // app-wide 980px #wrap girdle is loosened only while the book is open
+      "html body #page .fo-mk.wide{max-width:1280px}",
+      "html body.fo-mk-wide .wrap,html body.ftpskin.fo-mk-wide .wrap{max-width:1330px !important;width:auto !important}",
+      "html body.fo-mk-wide #page{max-width:1310px !important;width:auto !important}",
+      // the flags fly at full mast - flavour first
+      "html body #page .fo-mk-row .natc img,html body #page .fo-mk-row .natc svg{width:27px;height:18px;object-fit:cover;border-radius:2.5px;vertical-align:-4px;box-shadow:0 1px 3px rgba(10,22,42,.3),0 0 0 1px rgba(27,36,50,.14);margin-right:2px}",
+      // a wire line's listing, found and lit for a breath
+      "html body #page .fo-mk-row.flash{outline:3px solid #E8B96A;outline-offset:3px;border-radius:18px;transition:outline .3s}",
+      "html body #page .fo-mk-tbl tr.flash td{background:#FBF3DF !important}",
+      // the free agent's name is a door too - it opens his card
+      "html body #page .fo-mk-row .pdoor.fa{cursor:pointer}",
+      "html body #page .fo-mk-row .pdoor.fa:hover b{color:#C9571F}",
+      // TALENTS, in gold - the marks the scouts trade in
+      "html body #page .fo-mk-row .tlts{display:flex;gap:7px;flex-wrap:wrap;margin-top:2px}",
+      "html body #page .fo-mk-row .tlts em{font-style:normal;font:700 8px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#7A5210;background:linear-gradient(120deg,#F6E7C0,#EED9A0);border:1px solid rgba(184,147,58,.35);border-radius:6px;padding:5px 8px}",
+      // THE DOSSIER FOOT: the almanack facts that fill the card's floor
+      "html body #page .fo-mk-row .facts{display:flex;gap:0;margin-top:4px;border-top:1px solid rgba(27,36,50,.08);padding-top:10px;flex-wrap:wrap}",
+      "html body #page .fo-mk-row .facts span{padding:0 18px 0 0;margin-right:18px;border-right:1px solid rgba(27,36,50,.1)}",
+      "html body #page .fo-mk-row .facts span:last-child{border-right:0}",
+      "html body #page .fo-mk-row .facts i{display:block;font:600 7px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#98a0ae;font-style:normal;margin-bottom:4px}",
+      "html body #page .fo-mk-row .facts b{font:600 13px/1 'Fraunces',Georgia,serif;color:#14243A;font-variant-numeric:tabular-nums}",
+      // the deed's word, ON the card: a green strip, never a popup
+      "html body #page .fo-mk-row .rail .bidok{margin-top:10px;font:600 11px/1.5 Inter,sans-serif;color:#8FD6B5;background:rgba(23,122,87,.22);border:1px solid rgba(143,214,181,.35);border-radius:8px;padding:9px 11px;animation:fo-mk-drop2 .2s ease}",
+      "html body #page .fo-mk-row .rail .bidmsg{display:none;font:500 10.5px/1.5 Inter,sans-serif;color:#FFB4A0;margin-top:7px}",
+      "html body #page .fo-mk-row .rail .bidmsg.on{display:block;animation:fo-mk-drop2 .2s ease}",
       // THE CATALOGUE HEAD: gilt eyebrow, title, three almanack figures,
       // one double rule - then a single deck for tabs, roles and sorts.
       "html body #page .fo-mk-hd .eb{font:600 9px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#B8933A;margin-bottom:9px}",
@@ -1015,7 +1171,23 @@
       "html body #page .fo-mk-k{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#B44A22;margin:22px 2px 9px}",
       "html body #page .fo-mk-k:after{content:'';display:block;width:34px;border-top:2px solid #C95532;margin-top:6px}",
       "html body #page .fo-mk-srow{display:flex;align-items:center;gap:12px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:12px;padding:11px 15px;margin-bottom:8px}",
-      "html body #page .fo-mk-srow.slim{border-style:dashed}",
+      "html body #page .fo-mk-srow.slim{border-style:solid;border-left:3px solid #E8B96A}",
+      // MY DEALINGS, told properly: the man is a door, the figure is exact,
+      // the standing is coloured, and the hammer ticks beside it
+      "html body #page .fo-mk-swho a.bdoor{text-decoration:none}",
+      "html body #page .fo-mk-swho a.bdoor b{border-bottom:1px dotted rgba(201,87,31,.5)}",
+      "html body #page .fo-mk-swho a.bdoor:hover b{color:#C9571F;border-bottom-color:#C9571F}",
+      "html body #page .fo-mk-swho .amt2{font:600 12.5px/1 'Fraunces',Georgia,serif;color:#14243A;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-swho .st{display:block;font:600 10px/1.5 Inter,sans-serif;font-style:normal;margin-top:3px}",
+      "html body #page .fo-mk-swho .st.lead{color:#177A57}",
+      "html body #page .fo-mk-swho .st.out{color:#8E1F13}",
+      "html body #page .fo-mk-swho .st.gone{color:#98a0ae}",
+      "html body #page .fo-mk-shammer{flex:0 0 auto;text-align:right}",
+      "html body #page .fo-mk-shammer i{display:block;font:600 7px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#98a0ae;font-style:normal;margin-bottom:4px}",
+      "html body #page .fo-mk-shammer .clk{font:600 14px/1.15 Oswald,sans-serif;letter-spacing:.05em;color:#B8933A;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-shammer .clk.soon,html body #page .fo-mk-shammer .clk.final{color:#8E1F13;animation:none}",
+      "html body #page .fo-mk-shammer .clk.gone{color:#98a0ae}",
+      "html body #page .fo-mk-shammer .hnote{display:none}",
       "html body #page .fo-mk-swho{min-width:0;flex:1}",
       "html body #page .fo-mk-swho b{font:600 14px/1.25 'Fraunces',Georgia,serif;color:#141C28}",
       "html body #page .fo-mk-swho span{display:block;font:400 11px/1.4 Inter,sans-serif;color:rgba(20,28,40,.5);margin-top:2px}",
@@ -1041,19 +1213,28 @@
       "html body #page .fo-mk-vt button svg{width:12px;height:12px}",
       "html body #page .fo-mk-vt button.on{background:#14243A !important;color:#F1EEE6 !important}",
       // THE TABLE: the whole board as one sortable page of the books
-      "html body #page .fo-mk-tblwrap{background:#FFFEFC;border:1px solid rgba(27,36,50,.12);border-radius:14px;overflow-x:auto;margin-bottom:4px}",
-      "html body #page .fo-mk-tbl{border-collapse:collapse;width:100%;min-width:1020px}",
-      "html body #page .fo-mk-tbl th{background:#14243A;color:rgba(246,239,223,.75);font:600 8.5px/1.3 Oswald,sans-serif;letter-spacing:.13em;text-transform:uppercase;padding:11px 9px;text-align:right;white-space:nowrap;cursor:pointer;position:sticky;top:0}",
-      "html body #page .fo-mk-tbl th:first-child{text-align:left;padding-left:16px}",
-      "html body #page .fo-mk-tbl th.on{color:#E8B96A}",
+      // THE BROADSHEET TABLE: navy masthead row (defended with !important -
+      // a global th skin was outbidding the plain rule), zebra paper below,
+      // roomy rows, and every number set in tabular figures
+      "html body #page .fo-mk-tblwrap{background:#FFFEFC;border:1px solid rgba(27,36,50,.14);border-radius:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:4px;box-shadow:0 22px 48px rgba(10,22,42,.09)}",
+      "html body #page .fo-mk-tbl{border-collapse:collapse;width:100%;min-width:1080px}",
+      "html body #page .fo-mk-tbl thead th{background:linear-gradient(180deg,#1A2C47,#0E1E33) !important;color:#D9CBA8 !important;font:600 9px/1.3 Oswald,sans-serif !important;letter-spacing:.15em;text-transform:uppercase;padding:14px 10px !important;text-align:right;white-space:nowrap;cursor:pointer;position:sticky;top:0;z-index:2;border:0 !important;box-shadow:inset 0 -3px 0 rgba(201,87,31,.55)}",
+      "html body #page .fo-mk-tbl thead th:first-child{text-align:left;padding-left:18px !important;border-top-left-radius:15px}",
+      "html body #page .fo-mk-tbl thead th:last-child{border-top-right-radius:15px}",
+      "html body #page .fo-mk-tbl thead th:hover{color:#F6EFDF !important}",
+      "html body #page .fo-mk-tbl thead th.on{color:#E8B96A !important;box-shadow:inset 0 -3px 0 #E8B96A}",
       "html body #page .fo-mk-tbl th .ar{font-size:8px}",
-      "html body #page .fo-mk-tbl td{padding:9px;border-top:1px solid rgba(27,36,50,.06);font:500 12.5px/1.3 Inter,sans-serif;color:#2a3444;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}",
-      "html body #page .fo-mk-tbl td:first-child{text-align:left;padding-left:16px}",
-      "html body #page .fo-mk-tbl tr:hover td{background:#FBFAF5}",
-      "html body #page .fo-mk-tbl td .pn{font:600 13.5px/1.25 'Fraunces',Georgia,serif;color:#141C28;text-decoration:none}",
-      "html body #page .fo-mk-tbl td a.pn:hover{color:#C9571F;text-decoration:underline;text-underline-offset:3px}",
-      "html body #page .fo-mk-tbl td .sub{display:block;font:400 10px/1.5 Inter,sans-serif;color:#98a0ae}",
-      "html body #page .fo-mk-tbl td .sub img{width:14px;height:10px;object-fit:cover;border-radius:1.5px;vertical-align:-1px;box-shadow:0 0 0 1px rgba(27,36,50,.12)}",
+      "html body #page .fo-mk-tbl td{padding:11px 10px;border-top:1px solid rgba(27,36,50,.06);font:500 13px/1.35 Inter,sans-serif;color:#2a3444;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}",
+      "html body #page .fo-mk-tbl td:first-child{text-align:left;padding-left:18px}",
+      "html body #page .fo-mk-tbl tbody tr:nth-child(even) td{background:#FBFAF4}",
+      "html body #page .fo-mk-tbl tbody tr:hover td{background:#F6F1E4}",
+      "html body #page .fo-mk-tbl td .ovch{display:inline-block;min-width:30px;background:#14243A;color:#F6EFDF;font:700 12.5px/1 Oswald,sans-serif;border-radius:8px;padding:6px 5px;text-align:center;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-tbl td .pn{font:600 14.5px/1.25 'Fraunces',Georgia,serif;color:#141C28;text-decoration:none}",
+      "html body #page .fo-mk-tbl td a.pn:hover,html body #page .fo-mk-tbl td .pn.lk:hover{color:#C9571F;text-decoration:underline;text-underline-offset:3px;cursor:pointer}",
+      "html body #page .fo-mk-tbl td .sub{display:block;font:400 10.5px/1.6 Inter,sans-serif;color:#8a93a2;margin-top:1px}",
+      "html body #page .fo-mk-tbl td .sub img{width:19px;height:13px;object-fit:cover;border-radius:2px;vertical-align:-2.5px;box-shadow:0 1px 2px rgba(10,22,42,.25),0 0 0 1px rgba(27,36,50,.12)}",
+      "html body #page .fo-mk-tbl .tbf,html body #page .fo-mk-tblwrap .tbf{padding:12px 18px;font:italic 400 11px/1.5 Georgia,serif;color:rgba(20,28,40,.5);border-top:1px solid rgba(27,36,50,.08)}",
+      "html body #page .fo-mk-tbl td .qok{font:700 9px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#177A57}",
       "html body #page .fo-mk-tbl td .sub a.cl{color:#7A5480;text-decoration:none;border-bottom:1px dotted rgba(122,84,128,.5)}",
       "html body #page .fo-mk-tbl td .sub a.cl:hover{color:#C9571F;border-bottom-color:#C9571F}",
       "html body #page .fo-mk-tbl td.hot{color:#14243A;font-weight:700}",
@@ -1101,7 +1282,11 @@
       "html body #page .fo-mk-row .gg .g{flex:1 1 0;width:auto}",
       "html body #page .fo-mk-full{grid-template-columns:1fr;gap:7px}",
       "html body #page .fo-mk-srow{flex-wrap:wrap}",
+      "html body #page .fo-mk-shammer{text-align:left;flex-basis:100%}",
       "html body #page .fo-mk-tabs{gap:18px}",
+      "html body #page .fo-mk-row .facts{gap:0;row-gap:10px}",
+      "html body #page .fo-mk-row .facts span{padding-right:12px;margin-right:12px}",
+      "html body #page .fo-mk-row .natc img,html body #page .fo-mk-row .natc svg{width:22px;height:15px}",
       "}"
     ].join("\n");
     document.body.appendChild(s);

@@ -301,6 +301,35 @@
       "&select=players,wage_bill,team_batting,team_bowling,team_fielding",
       function (row) { if (row) SQ_CACHE[k] = row; cb(row); });
   }
+  // THE BLOCK MARK: a club's dossier says who is up on the transfer market.
+  // One small ask of the open board per club per minute, then a gold chip
+  // pinned on each listed man's name - the roster tells you before you bid.
+  var SALE_CACHE = {};
+  function saleMarks(cid, slot) {
+    var k = cid + ":" + slot;
+    var apply = function (names) {
+      if (!names || !names.length) return;
+      [].slice.call(document.querySelectorAll(".fo-cp-row .nm b, .fo-cp-starn b")).forEach(function (el) {
+        if (el.querySelector(".fo-cp-sale")) return;
+        var nm = (el.textContent || "").trim();
+        for (var i = 0; i < names.length; i++) {
+          if (nm === names[i] || nm.indexOf(names[i]) === 0) {
+            el.insertAdjacentHTML("beforeend", "<span class='fo-cp-sale' title='Listed on the transfer market - the hammer is up'>For sale</span>");
+            return;
+          }
+        }
+      });
+    };
+    if (SALE_CACHE[k] && Date.now() - SALE_CACHE[k].at < 60000) { apply(SALE_CACHE[k].names); return; }
+    fetch(SB_URL + "/rest/v1/world_listings?country_id=eq." + encodeURIComponent(cid) + "&slot=eq." + (slot | 0) + "&select=player",
+      { headers: { apikey: SB_ANON } })
+      .then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (rows) {
+        var names = (rows || []).map(function (x) { return x.player; });
+        SALE_CACHE[k] = { names: names, at: Date.now() };
+        apply(names);
+      }).catch(function () {});
+  }
   function fetchHonours(cb) {
     if (HON_CACHE) { cb(HON_CACHE); return; }
     grab("/rest/v1/world_snapshots?key=eq.honours&select=body",
@@ -1088,6 +1117,7 @@
         var new9 = page.querySelector(".fo-cd-gr img");
         if (keep9 && new9 && keep9.src === new9.src) new9.parentNode.replaceChild(keep9, new9);
       } catch (eK8) {}
+      try { saleMarks(cid, slot); } catch (eSm) {}
 
       try {
         var sel = document.getElementById("fo-cp-sort");
@@ -1358,6 +1388,7 @@
       ".fo-cp-dots{display:inline-flex;gap:4px}",
       ".fo-cp-dots i{width:8px;height:8px;border-radius:50%;background:rgba(255,253,247,.22);display:block}",
       ".fo-cp-dots i.on{background:#4FBF85}",
+      ".fo-cp-sale{display:inline-block;font:700 7.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#7A5210;background:linear-gradient(120deg,#F3DFA9,#E8B96A);border-radius:5px;padding:3.5px 6px;vertical-align:2px;margin-left:7px;white-space:nowrap}",
       ".fo-cp-startags{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}",
       ".fo-cp-startags em{font-style:normal;font:700 9px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#BFE8CF;background:rgba(79,191,133,.18);border:1px solid rgba(79,191,133,.34);border-radius:6px;padding:5px 8px}",
       ".fo-cp-starnums{position:relative;z-index:2;margin-left:auto;display:flex;align-items:center;gap:22px;padding-left:16px}",
