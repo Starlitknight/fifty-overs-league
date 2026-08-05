@@ -215,7 +215,15 @@ export async function computeComp(pool, compId) {
     if (roundsPlayed >= (cp.rounds || 0) && table[0] && table[0].p) champion = table[0].name;
   } else {
     const fin = results.filter(x => x.round === (cp.rounds || 0));
-    if (fin.length === 1 && fin[0].winner) champion = fin[0].winner;
+    if (fin.length === 1) {
+      // the same law the bracket applies between rounds: a tie in a
+      // knockout goes to the higher seed. A cup cannot end unheld - this
+      // was unreachable while every squad was permanently rested, and the
+      // first genuinely tired final exposed it.
+      const fm = ms.find(m => m.round === (cp.rounds || 0));
+      champion = fin[0].winner ||
+        (fm ? ((seats.find(s => s.seat === Math.min(fm.a_seat, fm.b_seat)) || {}).name || null) : null);
+    }
   }
   return {
     id: cp.id, name: cp.name, format: cp.format, size: cp.size, status: cp.status,

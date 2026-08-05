@@ -61,9 +61,13 @@
   // The engine's own vocabulary survives in the tooltip.
   var FO_FAT_LADDER = ["rested", "revived", "energetic", "passable", "satisfactory", "moderate", "weary", "listless", "exhausted", "shattered", "clinically dead"];
   function foEnergyOf(p) {
-    var w = String(p.fatigue || "rested").toLowerCase();
-    var ix = FO_FAT_LADDER.indexOf(w); if (ix < 0) ix = (w === "tired" ? 7 : 0);
-    return { pct: Math.max(6, 100 - ix * 10), word: ix <= 2 ? "fresh" : ix <= 5 ? "rested" : "tired", raw: w, tired: ix >= 6 };
+    // the umpire banks the precise number (fatN, 0-80); the ladder word is
+    // the fallback for players who predate it. Same shape either way.
+    var w = String((p && p.fatigue) || "rested").toLowerCase();
+    var n;
+    if (p && p.fatN != null && isFinite(+p.fatN)) n = Math.max(0, Math.min(99, Math.round(+p.fatN)));
+    else { var ix = FO_FAT_LADDER.indexOf(w); if (ix < 0) ix = (w === "tired" ? 7 : 0); n = ix * 10; }
+    return { pct: Math.max(1, 100 - n), word: n < 24 ? "fresh" : n < 56 ? "rested" : "tired", raw: w, tired: n >= 56 };
   }
   // the safe choice, marked where the choice happens: tired players are
   // suggested Rest before any skill program

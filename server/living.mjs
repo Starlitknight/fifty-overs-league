@@ -41,15 +41,28 @@ export function expWordOf(e) {
 }
 const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 
-// A DAY'S CRICKET COSTS SOMETHING, A NIGHT'S REST PAYS MOST OF IT BACK.
-// Calibrated on the daily calendar: a batsman recovers faster than he tires,
-// so he is always fresh; a bowler who sends down his full ten every round of
-// an 18-round season drifts to 'satisfactory' and beyond, and one rest day
-// in four keeps him sharp. Rotation is an edge a manager can take, never a
-// cliff an absent one falls off - which is why it is capped well short of
-// the ladder's bottom rungs.
-const REST_PER_DAY = 17;
-const LOAD_BASE = 6, LOAD_PER_OVER = 1.3, LOAD_PER_BALL_FACED = 0.025;
+// A DAY'S CRICKET COSTS WHAT THE DAY ASKED OF THE MAN, AND EVERY NIGHT
+// REPAYS A FRACTION OF WHATEVER STANDS. The old model refunded a flat 17 a
+// night against a full bowling shift's ~19 - on a daily calendar nobody ever
+// stayed tired, and after two league matches a whole squad still read 100.
+// Now the drain is the workload itself, weighted by trade: fast and seam
+// bowling costs the most per over, spin less, a day behind the stumps has
+// its own bill, facing costs by the ball, everyone pays a base for a
+// hundred overs in the field, and the captain pays for carrying the side.
+// Recovery is PROPORTIONAL - each night takes back a third of what stands -
+// so a hammered fast bowler needs several quiet days, not one, while a
+// batsman is near-fresh by morning. Steady states on the daily calendar:
+// a seamer bowling his full ten every single day settles around 55-60
+// ('weary'), one rest day in three keeps him under 40; a specialist bat
+// hovers in the teens. Capped short of the ladder's bottom rungs so an
+// unmanaged club degrades, never dies.
+const REST_FRACTION = 0.35;
+const LOAD_BASE = 6;                       // a full day in the field
+const LOAD_PACE_PER_OVER = 2.4;            // fast and seam
+const LOAD_SPIN_PER_OVER = 1.5;
+const LOAD_PER_BALL_FACED = 0.05;
+const LOAD_KEEPING = 7;                    // a hundred overs behind the stumps
+const LOAD_CAPTAINCY = 4;                  // the armband is work too
 const FAT_CEILING = 80;
 
 // The patch also carries ABSENCE. A man away with his country was not in the
@@ -187,9 +200,17 @@ async function trainedSquad(pool, host, country, slot, squad) {
     });
     if (!here.length) continue;
     const back = Math.max(0, latest - r.season_no);
-    const crew = here.map(i => (back
-      ? Object.assign({}, men[i], { age: Math.max(16, (men[i].age || 27) - back) })
-      : men[i]));
+    // THE NETS REPLAY IS TIMELESS. The engine's nets rate reads a man's
+    // legs, and these crews would otherwise carry TODAY'S legs - a replay
+    // of last month's session re-rated by how tired he happens to be this
+    // morning, and the squad stops being a pure function of the record
+    // (harmless while everyone was always rested; fatal now that fatigue
+    // is real). Every replayed session works a rested copy of the man;
+    // the standing plan-intensity load below is where tiredness and the
+    // nets actually meet.
+    const crew = here.map(i => Object.assign({}, men[i],
+      back ? { age: Math.max(16, (men[i].age || 27) - back) } : null,
+      { fatN: 0, fatWord: 'rested', fatigue: 'rested' }));
     const worked = host.trainRound(crew, r.plan || {}, academyRate(r.academy)).players;
     // the work is his; the age he is today is still today's
     here.forEach((i, k) => { men[i] = Object.assign({}, worked[k], { age: men[i].age }); });
@@ -268,6 +289,25 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
             coalesce((fd.value->>'ro')::int, 0) AS ro
        ${from}, LATERAL jsonb_each(coalesce(inn->'fielding', '{}'::jsonb)) fd
       WHERE m.country_id = $1 AND m.result IS NOT NULL`, args)).rows;
+  // WHO WORE THE ARMBAND, match by match: the captain the banked orders name,
+  // where a manager filed one. Clubs that filed nothing fall back below to
+  // the engine's own default - the squad's best captaincy score.
+  const capOf = new Map();
+  try {
+    const caps = (await pool.query(
+      `SELECT m.season_no, m.round, m.home_slot, m.away_slot,
+              coalesce(m.home_name, h.name) AS hn, coalesce(m.away_name, a.name) AS an, m.orders
+         FROM matches m
+         JOIN clubs h ON h.country_id = m.country_id AND h.slot = m.home_slot
+         JOIN clubs a ON a.country_id = m.country_id AND a.slot = m.away_slot
+        WHERE m.country_id = $1 AND m.result IS NOT NULL AND m.orders IS NOT NULL`, args)).rows;
+    for (const r of caps) {
+      const o = r.orders || {};
+      const ho = o[r.hn], ao = o[r.an];
+      if (ho && ho.captain) capOf.set(r.season_no + '|' + r.round + '|' + r.home_slot, ho.captain);
+      if (ao && ao.captain) capOf.set(r.season_no + '|' + r.round + '|' + r.away_slot, ao.captain);
+    }
+  } catch (eCp) {}
   const today = dayIx(now);
 
   // slot -> name -> { caps, career, apps[] }
@@ -369,8 +409,11 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     c.m++; c.runs += L.runs; c.balls += L.balls; c.wkts += L.wkts; c.conc += L.conc; c.ovb += L.ovb;
     if (L.hs > c.hs) c.hs = L.hs;
     if (L.ovb > 0 && (!c.bb || L.wkts > c.bb.w || (L.wkts === c.bb.w && L.conc < c.bb.r))) c.bb = { w: L.wkts, r: L.conc };
-    e.apps.push({ day, pts: ratePerformance(L),
-      load: LOAD_BASE + (L.ovb / 6) * LOAD_PER_OVER + L.balls * LOAD_PER_BALL_FACED });
+    // the workload rides raw: the fold below prices it against the MAN -
+    // his trade sets the per-over rate, his gloves and his armband add bills
+    // the scorecard line alone cannot know
+    e.apps.push({ day, pts: ratePerformance(L), ovb: L.ovb, balls: L.balls,
+      intl: !!L.intl, captNm: L.intl ? null : (capOf.get(L.season + '|' + L.round + '|' + L.slot) || null) });
   }
 
   let touched = 0;
@@ -379,6 +422,9 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     // the nets first: skills are the baseline plus every round genuinely
     // worked, so what the man is comes before what the season did to him
     const trained = await trainedSquad(pool, host, country, club.slot, club.squad);
+    // the engine's default skipper where no orders named one (00-core picks
+    // the best captaincy score the same way)
+    const defCapt = (trained.slice().sort((x, y) => (y.capt || 0) - (x.capt || 0))[0] || {}).name || null;
     const squad = trained.map(p => {
       const q = { ...p };
       const base = q.baseExp == null ? (q.exp ?? 55) : q.baseExp;
@@ -398,16 +444,24 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
       q.expWord = expWordOf(q.exp);
       q.formIx = formIxOf(e.apps);
       q.formWord = FORMW[q.formIx];
+      // the price of each appearance, on the man's own terms
+      const spin = /spin|wrist|finger/i.test(String(q.bowlTypeFull || q.bowlType || ''));
+      const perOver = spin ? LOAD_SPIN_PER_OVER : LOAD_PACE_PER_OVER;
+      const keeps = !!(q.keeper || q.role === 'wicketkeeper');
       let fat = 0, last = null;
       for (const a of e.apps) {
-        if (last != null) fat = Math.max(0, fat - REST_PER_DAY * (a.day - last));
-        fat = Math.min(FAT_CEILING, fat + a.load);
+        if (last != null) fat *= Math.pow(1 - REST_FRACTION, Math.max(0, a.day - last));
+        let load = LOAD_BASE + (a.ovb / 6) * perOver + a.balls * LOAD_PER_BALL_FACED;
+        if (keeps) load += LOAD_KEEPING;
+        if (!a.intl && (a.captNm || defCapt) === q.name) load += LOAD_CAPTAINCY;
+        fat = Math.min(FAT_CEILING, fat + load);
         last = a.day;
       }
-      // credited to the NEXT day of cricket, because a man sleeps before he
-      // plays again - so the state we store IS the state he walks out with,
-      // and it equals what this same loop computes for that next match
-      if (last != null) fat = Math.max(0, fat - REST_PER_DAY * Math.max(0, today + 1 - last));
+      // today's match shows its drain TODAY - the manager who just watched
+      // his opening bowler send down ten wants to see it in his legs -
+      // and tonight's sleep is credited by tomorrow's settle, which redoes
+      // this same fold with one more night in it
+      if (last != null) fat *= Math.pow(1 - REST_FRACTION, Math.max(0, today - last));
       q.fatN = Math.round(clamp(fat, 0, FAT_CEILING));
       q.fatWord = fatWordOf(q.fatN); q.fatigue = q.fatWord;
       q.career = withCarry(e.car, q.carry);
