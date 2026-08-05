@@ -79,7 +79,7 @@
   }
 
   // ---- the data on the desk -------------------------------------------------
-  var MK = { listings: null, deals: null, mine: null, snap: null, at: 0, busy: 0, tab: "board", role: "all", sort: "close", nat: "all", shown: 40 };
+  var MK = { listings: null, deals: null, mine: null, snap: null, at: 0, busy: 0, tab: "board", role: "all", sort: "close", nat: "all", shown: 40, open: {} };
   function refetch(force) {
     if (MK.busy) return;
     if (!force && MK.at && Date.now() - MK.at < 30000) return;
@@ -145,8 +145,6 @@
   // plate that ticks once a second: quiet while days remain, claret inside
   // the hour, and in the final ten minutes - the anti-snipe window - a
   // filled, beating plate with the seconds running. Urgency you can feel.
-  var HM_CLOCK = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.1' " +
-    "stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='8.4'/><path d='M12 7.4V12l3.1 1.9'/></svg>";
   function hmTier(left) { return left <= 0 ? "gone" : left < 600000 ? "final" : left < 3600000 ? "soon" : "calm"; }
   // the reading: days out it says "1d 12h 05m"; inside a day the seconds
   // run - "12h 05m 33s" - so the plate reads as a LIVE clock, not a label
@@ -161,11 +159,10 @@
     var left = ms - Date.now();
     var tier = hmTier(left);
     if (tier === "gone") {
-      return "<span class='fo-mk-hmr gone'>" + HM_CLOCK + "<i>hammer</i><b>FALLEN</b></span>" +
-        "<u class='fo-mk-hnote'>the umpire is opening the envelopes</u>";
+      return "<b class='clk gone'>FALLEN</b><i class='hnote'>the umpire is opening the envelopes</i>";
     }
-    return "<span class='fo-mk-hmr " + tier + "'>" + HM_CLOCK + "<i>hammer</i><b>" + hmParts(left) + "</b></span>" +
-      (tier === "final" ? "<u class='fo-mk-hnote'>a late bid moves it back ten</u>" : "");
+    return "<b class='clk " + tier + "'>" + hmParts(left) + "</b>" +
+      (tier === "final" ? "<i class='hnote'>a late bid moves it back ten</i>" : "");
   }
   // the ticking: one clock for the whole board, updating every plate in
   // place - no repaint, so menus and selections are never yanked away
@@ -202,20 +199,42 @@
   }
   function skTone(v) { return v >= 75 ? "t4" : v >= 50 ? "t3" : v >= 30 ? "t2" : "t1"; }
   function skWord(v) { try { return (typeof word === "function" && word(v)) || ""; } catch (e) { return ""; } }
-  function statGrid(man) {
+  // THE BID RAIL CARD (the owner's pick): three role-picked gauges up front,
+  // the full seven reads behind a Full-card fold, the money in a navy rail.
+  var READ_LBL = { bat: "Batting", bowl: "Bowling", keep: "Keeping", field: "Fielding",
+    tech: "Technique", pow: "Power", end: "Endurance" };
+  // which three reads a man is BOUGHT for, by the shelf he sits on
+  function readPicks(man) {
+    var b = man ? roleBucket({ role: man.role === "allRounder" ? "all-rounder" : man.role }) : "";
+    if (b === "wk") return ["keep", "bat", "field"];
+    if (b === "bowl") return ["bowl", "end", "field"];
+    if (b === "ar") return ["bat", "bowl", "field"];
+    return ["bat", "tech", "pow"];
+  }
+  function gaugesHtml(man) {
     if (!man || !man.skills) return "";
     try {
-      var A = function (f) { try { return Math.max(0, Math.min(100, Math.round(f(man)))); } catch (e) { return 0; } };
-      var isB = man.bowlTypeFull ? man.bowlTypeFull !== "none" : !!man.bowlType;
-      var pw = Math.max(0, Math.min(100, Math.round((man.skills && man.skills.power) || 0)));
-      var cells = [["Batting", A(aggBat)], ["Bowling", isB ? A(aggBowl) : 0], ["Keeping", man.keeper ? A(aggKeep) : 0],
-        ["Fielding", A(aggField)], ["Technique", A(aggTech)], ["Power", pw], ["Endurance", A(aggEnd)]];
-      return "<div class='fo-mk-stats'>" + cells.map(function (c) {
-        var v = c[1], off = v <= 0;
-        return "<span class='cell" + (off ? " off" : "") + "' title='" + c[0] + (off ? "" : " &middot; " + E(skWord(v))) + "'>" +
-          "<span class='lb'>" + c[0] + "</span>" +
+      return "<div class='gg'>" + readPicks(man).map(function (k, i) {
+        var v = readOf(man, k), off = v < 0;
+        return "<span class='g" + (i === 0 ? " lead" : "") + (off ? " off" : "") +
+          "' title='" + READ_LBL[k] + (off ? "" : " &middot; " + E(skWord(v))) + "'>" +
+          "<span class='lb'>" + READ_LBL[k] + "</span>" +
           "<span class='vl'>" + (off ? "&ndash;" : v) + "</span>" +
-          "<span class='tr'><span class='fl " + skTone(v) + "' style='width:" + Math.max(3, v) + "%'></span></span>" +
+          "<span class='tr'><span class='fl' style='width:" + Math.max(3, Math.max(0, v)) + "%'></span></span>" +
+          "</span>";
+      }).join("") + "</div>";
+    } catch (e) { return ""; }
+  }
+  // the fold: all seven reads as toned bars, dashes for trades he lacks
+  function fullCardHtml(man) {
+    if (!man || !man.skills) return "";
+    try {
+      return "<div class='fo-mk-full'>" + ["bat", "bowl", "keep", "field", "tech", "pow", "end"].map(function (k) {
+        var v = readOf(man, k), off = v < 0;
+        return "<span class='fb" + (off ? " off" : "") + "' title='" + READ_LBL[k] + (off ? "" : " &middot; " + E(skWord(v))) + "'>" +
+          "<i>" + READ_LBL[k] + "</i>" +
+          "<u>" + (off ? "" : "<s class='" + skTone(v) + "' style='width:" + Math.max(3, v) + "%'></s>") + "</u>" +
+          "<b>" + (off ? "&ndash;" : v) + "</b>" +
           "</span>";
       }).join("") + "</div>";
     } catch (e) { return ""; }
@@ -257,30 +276,40 @@
     var door = L.slot >= 0 && L.country_id
       ? "#/player?c=" + encodeURIComponent(L.country_id) + "&s=" + (L.slot | 0) + "&n=" + encodeURIComponent(L.player)
       : "";
+    var open = !!MK.open[L.id];
+    var chev = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' " +
+      "stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>";
     return "<div class='fo-mk-row" + (lead ? " lead" : "") + "' data-id='" + L.id + "'>" +
-      "<div class='hd'>" +
-      "<span class='who'>" +
+      "<div class='bd'>" +
+      "<div class='tp'>" +
       (ovr != null ? "<span class='ovr' title='Overall'>" + ovr + "</span>" : "") +
       "<span class='nm'>" +
       (door ? "<a class='pdoor' href='" + door + "'><b>" + E(L.player) + (man && man.keeper ? " &dagger;" : "") + "</b></a>"
             : "<b>" + E(L.player) + (man && man.keeper ? " &dagger;" : "") + "</b>") +
       "<span class='mt'>" + (meta.length ? meta.join(" &nbsp;&middot;&nbsp; ") : "a cricketer") + "</span></span>" +
-      "</span>" +
-      "<span class='pr'>" +
-      "<span class='amt'>" + money(high || L.asking) + "</span>" +
-      "<span class='st" + (lead ? " ld" : "") + "'>" + state + "</span>" +
-      (hmMs
-        ? "<span class='hmwrap' data-mk-hh='" + hmMs + "'>" + hammerPlate(hmMs) + "</span>"
-        : "<span class='hmwrap'><span class='fo-mk-hmr calm'>" + HM_CLOCK + "<i>hammer</i><b>" +
-          E(dayTxt(L.closes != null ? L.closes : L.closes_day)) + "</b></span></span>") +
-      "</span>" +
       "</div>" +
-      statGrid(man) +
-      "<div class='ft'>" +
+      gaugesHtml(man) +
+      (man && man.skills
+        ? "<button class='fold" + (open ? " on" : "") + "' data-mk-full='" + L.id + "'>" +
+          "<span>" + (open ? "Close card" : "Full card") + "</span>" + chev + "</button>" +
+          (open ? fullCardHtml(man) : "")
+        : "") +
+      "<div class='prov'>" +
       "<span class='tag" + (fa ? " fa" : "") + "'>" +
       (fa ? "Free agent" : "Listed by " + E(L.club || "a club")) +
       (L.country_id ? " &middot; " + E(natNm(L.country_id)) : "") + "</span>" +
       (sc.impression ? "<span class='imp'>&ldquo;" + E(sc.impression) + "&rdquo;</span>" : "") +
+      "</div>" +
+      "</div>" +
+      "<div class='rail'>" +
+      "<span class='lb'>" + (high ? (lead ? "High bid &middot; you lead" : "High bid") : "No bids yet") + "</span>" +
+      "<span class='amt'>" + money(high || L.asking) + "</span>" +
+      "<span class='ld" + (lead ? " you" : "") + "'>" +
+      (lead ? "your offer stands" : high ? E(L.highClub || L.high_club || "a club") + " lead" : "reserve " + money(L.reserve)) +
+      "</span>" +
+      (hmMs
+        ? "<span class='hmwrap' data-mk-hh='" + hmMs + "'>" + hammerPlate(hmMs) + "</span>"
+        : "<span class='hmwrap'><b class='clk calm'>" + E(dayTxt(L.closes != null ? L.closes : L.closes_day)) + "</b></span>") +
       (mineSelling
         ? "<button class='act ghost' data-mk-withdraw='" + L.id + "'>Withdraw</button>"
         : "<button class='act" + (myBid && !lead ? " hot" : "") + "' data-mk-bid='" + L.id + "' data-min='" + minBid + "'>" +
@@ -491,6 +520,11 @@
     if ((b = t9.closest("[data-mk-tab]"))) { MK.tab = b.getAttribute("data-mk-tab"); paint(); return; }
     if ((b = t9.closest("[data-mk-role]"))) { MK.role = b.getAttribute("data-mk-role"); MK.shown = 40; paint(); return; }
     if ((b = t9.closest("[data-mk-more]"))) { MK.shown += 40; paint(); return; }
+    if ((b = t9.closest("[data-mk-full]"))) {
+      var idF = +b.getAttribute("data-mk-full");
+      MK.open[idF] = !MK.open[idF];
+      paint(); return;
+    }
     if ((b = t9.closest("[data-mk-bid]"))) {
       var id = +b.getAttribute("data-mk-bid"), min = +b.getAttribute("data-min") || STEP;
       var amt = prompt("Your offer (the board wants at least " + min + "):", String(min));
@@ -571,70 +605,75 @@
       "html body #page .fo-mk-bar .cnt{margin-left:auto;font:600 9px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8a93a2;font-variant-numeric:tabular-nums}",
       "html body #page .fo-mk-bar .dd{display:inline-flex;align-items:center;gap:7px;font:600 9px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8a93a2}",
       "html body #page .fo-mk-bar select{border:1px solid rgba(27,36,50,.14) !important;border-radius:8px !important;background:#FFFEFC !important;font:500 11px/1.4 Inter,sans-serif !important;color:#14243A !important;min-height:32px;padding:0 8px !important}",
-      // A LISTING IS A CARD LAID OPEN: name and price up top, the seven
-      // summary reads across the middle, provenance and the deed below
-      "html body #page .fo-mk-row{background:#FFFEFC;border:1px solid rgba(27,36,50,.1);border-radius:14px;padding:15px 17px 13px;margin-bottom:11px;box-shadow:0 1px 3px rgba(14,35,63,.05)}",
-      "html body #page .fo-mk-row.lead{border-color:rgba(23,122,87,.4);box-shadow:inset 3px 0 0 #177A57,0 1px 3px rgba(14,35,63,.05)}",
-      "html body #page .fo-mk-row .hd{display:flex;align-items:flex-start;gap:12px}",
-      "html body #page .fo-mk-row .who{display:flex;align-items:center;gap:11px;min-width:0;flex:1}",
-      "html body #page .fo-mk-row .ovr{flex:none;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#14243A;color:#F6EFDF;border-radius:9px;font:600 15px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums}",
+      // THE BID RAIL CARD: identity and reads on paper, the money in navy
+      "html body #page .fo-mk-row{display:grid;grid-template-columns:1fr 225px;background:#FFFEFC;border:1px solid rgba(27,36,50,.1);border-radius:16px;overflow:hidden;margin-bottom:13px;box-shadow:0 3px 12px rgba(14,35,63,.06)}",
+      "html body #page .fo-mk-row.lead{border-color:rgba(23,122,87,.4)}",
+      "html body #page .fo-mk-row .bd{padding:19px 26px 15px;min-width:0}",
+      "html body #page .fo-mk-row .tp{display:flex;align-items:center;gap:13px}",
+      "html body #page .fo-mk-row .ovr{flex:none;width:42px;height:42px;display:flex;align-items:center;justify-content:center;background:#14243A;color:#F6EFDF;border-radius:11px;font:600 17px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums}",
       "html body #page .fo-mk-row .nm{min-width:0}",
-      "html body #page .fo-mk-row .nm b{display:block;font:600 16.5px/1.15 'Fraunces',Georgia,serif;color:#141C28;letter-spacing:.005em}",
+      "html body #page .fo-mk-row .nm b{display:block;font:600 19px/1.15 'Fraunces',Georgia,serif;color:#141C28;letter-spacing:.005em}",
       "html body #page .fo-mk-row .nm a.pdoor{text-decoration:none;color:inherit}",
       "html body #page .fo-mk-row .nm a.pdoor:hover b{color:#C9571F;text-decoration:underline;text-decoration-thickness:1.5px;text-underline-offset:3px}",
-      "html body #page .fo-mk-row .nm .mt{display:block;font:400 10.5px/1.5 Inter,sans-serif;color:#7d8798;margin-top:3px}",
-      // the man's own colours: a small flag and his code, leading the meta line
-      "html body #page .fo-mk-row .mt .natc{display:inline-flex;align-items:center;gap:5px;font:600 10px/1 Inter,sans-serif;color:#4a5568;vertical-align:middle}",
-      "html body #page .fo-mk-row .mt .natc img{width:16px;height:11px;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(27,36,50,.12);display:inline-block}",
+      "html body #page .fo-mk-row .nm .mt{display:block;font:400 11px/1.6 Inter,sans-serif;color:#7d8798;margin-top:2px}",
+      "html body #page .fo-mk-row .mt .natc{display:inline-flex;align-items:center;gap:5px;font:600 10.5px/1 Inter,sans-serif;color:#4a5568;vertical-align:middle}",
+      "html body #page .fo-mk-row .mt .natc img{width:18px;height:12px;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(27,36,50,.14);display:inline-block}",
+      // three role-picked gauges: what he is BOUGHT for, big and calm
+      "html body #page .fo-mk-row .gg{display:flex;gap:34px;margin-top:16px}",
+      "html body #page .fo-mk-row .gg .g{width:96px;min-width:0}",
+      "html body #page .fo-mk-row .gg .lb{display:block;font:600 8px/1 Oswald,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:#98a0ae}",
+      "html body #page .fo-mk-row .gg .vl{display:block;font:600 26px/1.2 Oswald,sans-serif;color:#14243A;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-row .gg .g.lead .vl{color:#C9571F}",
+      "html body #page .fo-mk-row .gg .tr{display:block;height:3.5px;border-radius:2px;background:#EDE8DC;margin-top:3px;overflow:hidden}",
+      "html body #page .fo-mk-row .gg .fl{display:block;height:100%;border-radius:2px;background:#4E8A72}",
+      "html body #page .fo-mk-row .gg .g.lead .fl{background:#C9571F}",
+      "html body #page .fo-mk-row .gg .g.off .vl{color:#c3c9d2}",
+      "html body #page .fo-mk-row .gg .g.off .fl{background:#E3DECF}",
+      // the fold: Full card opens the seven reads as toned bars
+      "html body #page .fo-mk-row .fold{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:2px 0 !important;font:600 8.5px/1 Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;color:#C9571F !important;background:transparent !important;border:0 !important;border-radius:0 !important;cursor:pointer;box-shadow:none !important}",
+      "html body #page .fo-mk-row .fold:hover{color:#A64426 !important;background:transparent !important}",
+      "html body #page .fo-mk-row .fold svg{width:11px;height:11px;transition:transform .18s}",
+      "html body #page .fo-mk-row .fold.on svg{transform:rotate(180deg)}",
+      "html body #page .fo-mk-full{margin-top:11px;padding:13px 0 3px;border-top:1px dashed rgba(27,36,50,.18);display:grid;grid-template-columns:1fr 1fr;gap:7px 34px}",
+      "html body #page .fo-mk-full .fb{display:grid;grid-template-columns:72px 1fr 30px;gap:10px;align-items:center}",
+      "html body #page .fo-mk-full .fb i{font-style:normal;font:600 8px/1 Oswald,sans-serif;letter-spacing:.15em;text-transform:uppercase;color:#98a0ae}",
+      "html body #page .fo-mk-full .fb u{display:block;height:6px;background:#EDE8DC;border-radius:3px;overflow:hidden;text-decoration:none}",
+      "html body #page .fo-mk-full .fb u s{display:block;height:100%;border-radius:3px;text-decoration:none}",
+      "html body #page .fo-mk-full .fb u s.t1{background:#C05B45}",
+      "html body #page .fo-mk-full .fb u s.t2{background:#D9A441}",
+      "html body #page .fo-mk-full .fb u s.t3{background:#4E8A72}",
+      "html body #page .fo-mk-full .fb u s.t4{background:#177A57}",
+      "html body #page .fo-mk-full .fb b{font:600 12.5px/1 Inter,sans-serif;text-align:right;color:#2a3444;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-full .fb.off i,html body #page .fo-mk-full .fb.off b{color:#c9ceda}",
+      // provenance: whose man, which league, the scout's word
+      "html body #page .fo-mk-row .prov{display:flex;align-items:center;gap:11px;margin-top:13px;flex-wrap:wrap}",
+      "html body #page .fo-mk-row .prov .tag{flex:none;font:600 8px/1 Oswald,sans-serif;letter-spacing:.11em;text-transform:uppercase;color:#7A5480;background:rgba(122,84,128,.07);border:1px solid rgba(122,84,128,.22);border-radius:6px;padding:5px 8px}",
+      "html body #page .fo-mk-row .prov .tag.fa{color:#1F6F4A;background:rgba(31,111,74,.07);border-color:rgba(31,111,74,.22)}",
+      "html body #page .fo-mk-row .prov .imp{flex:1;min-width:0;font:italic 400 11px/1.5 Georgia,serif;color:rgba(20,28,40,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      // THE RAIL: one navy field holding everything about the money
+      "html body #page .fo-mk-row .rail{background:linear-gradient(170deg,#14243A,#0C1C31);color:#F6EFDF;padding:20px;display:flex;flex-direction:column;gap:7px;justify-content:center}",
+      "html body #page .fo-mk-row.lead .rail{background:linear-gradient(170deg,#14313A,#0C2420)}",
+      "html body #page .fo-mk-row .rail .lb{font:600 7.5px/1.4 Oswald,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:rgba(246,239,223,.5)}",
+      "html body #page .fo-mk-row .rail .amt{font:600 29px/1 Oswald,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-row .rail .ld{font:400 10.5px/1.5 Inter,sans-serif;color:rgba(246,239,223,.62);margin-top:-2px}",
+      "html body #page .fo-mk-row .rail .ld.you{color:#8FD6B5;font-weight:600}",
+      "html body #page .fo-mk-row .rail .hmwrap{display:block;margin-top:4px}",
+      "html body #page .fo-mk-row .rail .clk{display:block;font:600 19px/1.15 Oswald,sans-serif;letter-spacing:.07em;font-variant-numeric:tabular-nums;color:#E8B96A}",
+      "html body #page .fo-mk-row .rail .clk.soon{color:#FF9E86}",
+      "html body #page .fo-mk-row .rail .clk.final{color:#FF9E86;animation:fo-mk-beat 1.1s ease-in-out infinite}",
+      "html body #page .fo-mk-row .rail .clk.gone{color:rgba(246,239,223,.8);letter-spacing:.18em}",
+      "html body #page .fo-mk-row .rail .hnote{display:block;font:italic 400 10px/1.45 Georgia,serif;color:rgba(255,180,160,.85);margin-top:3px}",
+      "@keyframes fo-mk-beat{0%,100%{opacity:1}50%{opacity:.55}}",
+      "@media(prefers-reduced-motion:reduce){html body #page .fo-mk-row .rail .clk.final{animation:none}}",
+      "html body #page .fo-mk-row .rail .act{margin-top:10px;font:600 9.5px/1 Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;color:#FFFEFC !important;background:#C9571F !important;border:0 !important;border-radius:999px !important;padding:12px 0 !important;width:100%;cursor:pointer;transition:background .15s}",
+      "html body #page .fo-mk-row .rail .act:hover{background:#A64426 !important}",
+      "html body #page .fo-mk-row .rail .act.hot{background:#8E1F13 !important}",
+      "html body #page .fo-mk-row .rail .act.hot:hover{background:#6F160D !important}",
+      "html body #page .fo-mk-row .rail .act.ghost{color:rgba(246,239,223,.85) !important;background:transparent !important;border:1px solid rgba(246,239,223,.35) !important}",
+      "html body #page .fo-mk-row .rail .act.ghost:hover{background:rgba(255,255,255,.08) !important}",
       // the door to the rest of a big board
       "html body #page .fo-mk-more{display:block;width:100%;margin:2px 0 0;padding:13px !important;font:600 10px/1 Oswald,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;color:#67748a !important;background:#FFFEFC !important;border:1px dashed rgba(27,36,50,.25) !important;border-radius:12px !important;cursor:pointer}",
       "html body #page .fo-mk-more:hover{color:#B44A22 !important;border-color:rgba(201,87,31,.5) !important;background:#FFFEFC !important}",
-      "html body #page .fo-mk-row .pr{flex:none;text-align:right;max-width:44%}",
-      "html body #page .fo-mk-row .pr .amt{display:block;font:600 21px/1 Oswald,sans-serif;color:#C9571F;font-variant-numeric:tabular-nums;letter-spacing:.01em}",
-      "html body #page .fo-mk-row .pr .st{display:block;font:400 10px/1.4 Inter,sans-serif;color:#8a93a2;margin-top:4px}",
-      "html body #page .fo-mk-row .pr .st.ld{color:#177A57;font-weight:600}",
-      // THE HAMMER PLATE: a ticking clock, dressed by how close it is.
-      "html body #page .fo-mk-row .pr .hmwrap{display:block;margin-top:6px}",
-      "html body #page .fo-mk-row .fo-mk-hmr{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:9px;border:1px solid rgba(27,36,50,.14);background:#FBFAF5;color:#67748a}",
-      "html body #page .fo-mk-row .fo-mk-hmr svg{width:12px;height:12px;flex:none}",
-      "html body #page .fo-mk-row .fo-mk-hmr i{font-style:normal;font:600 7.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#98a0ae}",
-      "html body #page .fo-mk-row .fo-mk-hmr b{font:600 16px/1 Oswald,sans-serif;color:#C9571F;font-variant-numeric:tabular-nums;letter-spacing:.03em;min-width:88px;text-align:right}",
-      "html body #page .fo-mk-row .fo-mk-hmr.soon{border-color:rgba(142,31,19,.4);background:rgba(142,31,19,.05);color:#8E1F13}",
-      "html body #page .fo-mk-row .fo-mk-hmr.soon i{color:#B0554A}",
-      "html body #page .fo-mk-row .fo-mk-hmr.soon b{color:#8E1F13}",
-      "html body #page .fo-mk-row .fo-mk-hmr.final{border-color:#8E1F13;background:#8E1F13;color:#F6EFDF;animation:fo-mk-beat 1.1s ease-in-out infinite}",
-      "html body #page .fo-mk-row .fo-mk-hmr.final i{color:rgba(246,239,223,.7)}",
-      "html body #page .fo-mk-row .fo-mk-hmr.final b{color:#FFFEFC}",
-      "html body #page .fo-mk-row .fo-mk-hmr.gone{border-color:#14243A;background:#14243A;color:rgba(246,239,223,.75)}",
-      "html body #page .fo-mk-row .fo-mk-hmr.gone i{color:rgba(246,239,223,.55)}",
-      "html body #page .fo-mk-row .fo-mk-hmr.gone b{color:#FFFEFC}",
-      "html body #page .fo-mk-row .fo-mk-hnote{display:block;text-decoration:none;font:italic 400 10px/1.4 Georgia,serif;color:#8E1F13;margin-top:4px}",
-      "@keyframes fo-mk-beat{0%,100%{box-shadow:0 0 0 0 rgba(142,31,19,.34)}50%{box-shadow:0 0 0 5px rgba(142,31,19,0)}}",
-      "@media(prefers-reduced-motion:reduce){html body #page .fo-mk-row .fo-mk-hmr.final{animation:none}}",
-      // the seven reads: label, figure, a toned sliver of bar
-      "html body #page .fo-mk-stats{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin:13px 0 0;padding:11px 0 12px;border-top:1px solid rgba(27,36,50,.07);border-bottom:1px solid rgba(27,36,50,.07)}",
-      "html body #page .fo-mk-stats .cell{min-width:0}",
-      "html body #page .fo-mk-stats .lb{display:block;font:600 7.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#98a0ae}",
-      "html body #page .fo-mk-stats .vl{display:block;font:600 13.5px/1 Inter,sans-serif;color:#1B2432;font-variant-numeric:tabular-nums;margin:5px 0 5px}",
-      "html body #page .fo-mk-stats .tr{display:block;height:3px;border-radius:2px;background:#EDE8DC;overflow:hidden}",
-      "html body #page .fo-mk-stats .fl{display:block;height:100%;border-radius:2px}",
-      "html body #page .fo-mk-stats .fl.t1{background:#C05B45}",
-      "html body #page .fo-mk-stats .fl.t2{background:#D9A441}",
-      "html body #page .fo-mk-stats .fl.t3{background:#4E8A72}",
-      "html body #page .fo-mk-stats .fl.t4{background:#177A57}",
-      "html body #page .fo-mk-stats .cell.off .vl{color:#c3c9d2}",
-      "html body #page .fo-mk-stats .cell.off .fl{background:#E3DECF}",
-      // the foot of the card: whose man he is, the scout's word, the deed
-      "html body #page .fo-mk-row .ft{display:flex;align-items:center;gap:11px;margin-top:11px;flex-wrap:wrap}",
-      "html body #page .fo-mk-row .ft .tag{flex:none;font:600 8px/1 Oswald,sans-serif;letter-spacing:.11em;text-transform:uppercase;color:#7A5480;background:rgba(122,84,128,.07);border:1px solid rgba(122,84,128,.22);border-radius:6px;padding:5px 8px}",
-      "html body #page .fo-mk-row .ft .tag.fa{color:#1F6F4A;background:rgba(31,111,74,.07);border-color:rgba(31,111,74,.22)}",
-      "html body #page .fo-mk-row .ft .imp{flex:1;min-width:0;font:italic 400 11px/1.5 Georgia,serif;color:rgba(20,28,40,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      "html body #page .fo-mk-row .ft .act{margin-left:auto;flex:none;font:600 9.5px/1 Oswald,sans-serif !important;letter-spacing:.11em;text-transform:uppercase;color:#FFFEFC !important;background:#C9571F !important;border:0 !important;border-radius:999px !important;padding:10px 17px !important;cursor:pointer;min-height:34px;transition:background .15s}",
-      "html body #page .fo-mk-row .ft .act:hover{background:#A64426 !important}",
-      "html body #page .fo-mk-row .ft .act.hot{background:#8E1F13 !important}",
-      "html body #page .fo-mk-row .ft .act.hot:hover{background:#6F160D !important}",
-      "html body #page .fo-mk-row .ft .act.ghost{color:#67748a !important;background:#FFFEFC !important;border:1px solid rgba(27,36,50,.2) !important}",
-      "html body #page .fo-mk-row .ft .act.ghost:hover{color:#1B2432 !important;background:#FFFEFC !important}",
       // the manager's own desk + the register, kept in the same voice
       "html body #page .fo-mk-k{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#B44A22;margin:22px 2px 9px}",
       "html body #page .fo-mk-k:after{content:'';display:block;width:34px;border-top:2px solid #C95532;margin-top:6px}",
@@ -659,12 +698,13 @@
       "html body #page .fo-mk-foot{display:flex;gap:10px;justify-content:space-between;margin-top:20px;flex-wrap:wrap}",
       "html body #page .fo-mk-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
       "html body #page .fo-mk-foot a:hover{color:#B44A22;text-decoration:none}",
-      // narrower grounds: the reads wrap four-and-three, the price tucks under
+      // narrower grounds: the rail becomes the card's foot, gauges close ranks
       "@media(max-width:640px){",
-      "html body #page .fo-mk-stats{grid-template-columns:repeat(4,1fr);gap:9px 12px}",
-      "html body #page .fo-mk-row .hd{flex-wrap:wrap}",
-      "html body #page .fo-mk-row .pr{text-align:left;max-width:none;width:100%;display:flex;align-items:baseline;gap:10px;margin-top:2px;padding-left:47px}",
-      "html body #page .fo-mk-row .pr .st,html body #page .fo-mk-row .pr .hm{margin-top:0}",
+      "html body #page .fo-mk-row{grid-template-columns:1fr}",
+      "html body #page .fo-mk-row .rail{padding:16px 20px}",
+      "html body #page .fo-mk-row .gg{gap:20px}",
+      "html body #page .fo-mk-row .gg .g{flex:1 1 0;width:auto}",
+      "html body #page .fo-mk-full{grid-template-columns:1fr;gap:7px}",
       "html body #page .fo-mk-srow{flex-wrap:wrap}",
       "html body #page .fo-mk-tabs{gap:18px}",
       "}"
