@@ -318,7 +318,7 @@
       "</div>";
   }
 
-  var ROLE_TABS = [["all", "All"], ["bat", "Batsmen"], ["bowl", "Bowlers"], ["ar", "All-rounders"], ["wk", "Keepers"]];
+  var ROLE_TABS = [["all", "All"], ["bat", "Bat"], ["bowl", "Bowl"], ["ar", "AR"], ["wk", "WK"]];
   // the sort shelf: the board's own orders, then the man's, then the seven
   // reads - one dropdown, grouped like an almanack index
   var SORTS = [
@@ -385,34 +385,12 @@
       var k9 = MK.sort.slice(2);
       rows.sort(function (a, b) { return readOf(manOf(b), k9) - readOf(manOf(a), k9); });
     }
-    // the nations actually on the board today, alphabetised by name
-    var natIds = {};
-    MK.listings.forEach(function (L) { if (L.country_id) natIds[L.country_id] = 1; });
-    var natList = Object.keys(natIds).map(function (id) { return [id, natNm(id)]; })
-      .sort(function (a, b) { return a[1] < b[1] ? -1 : 1; });
-    var bar = "<div class='fo-mk-bar'>" +
-      "<div class='fo-mk-rtabs'>" + ROLE_TABS.map(function (t) {
-        return "<button class='" + (MK.role === t[0] ? "on" : "") + "' data-mk-role='" + t[0] + "'>" + t[1] + "</button>";
-      }).join("") + "</div>" +
-      "<span class='cnt'>" + rows.length + " of " + MK.listings.length + " names</span>" +
-      "<label class='dd'>League" +
-      "<select id='fo-mk-nat'><option value='all'>All nations</option>" + natList.map(function (n) {
-        return "<option value='" + E(n[0]) + "'" + (MK.nat === n[0] ? " selected" : "") + ">" + E(n[1]) + "</option>";
-      }).join("") + "</select></label>" +
-      "<label class='dd'>Sort" +
-      "<select id='fo-mk-sort'>" + SORTS.map(function (g) {
-        return "<optgroup label='" + g[0] + "'>" + g[1].map(function (s2) {
-          return "<option value='" + s2[0] + "'" + (MK.sort === s2[0] ? " selected" : "") + ">" + s2[1] + "</option>";
-        }).join("") + "</optgroup>";
-      }).join("") + "</select></label>" +
-      "</div>";
     var vis = rows.slice(0, MK.shown);
     var more = rows.length > vis.length
       ? "<button class='fo-mk-more' data-mk-more>Show " + Math.min(40, rows.length - vis.length) +
         " more &middot; " + (rows.length - vis.length) + " still on the board</button>"
       : "";
-    return bar +
-      (vis.length ? vis.map(function (L) { return rowHtml(L, cl, myBids); }).join("")
+    return (vis.length ? vis.map(function (L) { return rowHtml(L, cl, myBids); }).join("")
         : "<div class='fo-mk-none'>Nobody of that kind on the board today.</div>") +
       more +
       "<p class='fo-mk-note'>Every listed man's card is open &mdash; age, wages and all seven summary reads sit on the board for all to see. " +
@@ -482,11 +460,54 @@
       paint();
     } catch (e) { try { console.warn("foRenderMarketPage", e); } catch (e2) {} }
   }
+  // THE CATALOGUE HEAD: a gilt eyebrow, the title, and three almanack
+  // figures where a chip once floated - the numbers a manager checks before
+  // reading a single lot. One count on the whole page, and it lives here.
   function mast() {
+    var eb = "Fifty Overs &middot; the world's board";
+    try {
+      var ph = window.__foPlanet.phaseOf(Date.now());
+      if (ph && ph.season) eb = "Fifty Overs &middot; Season " + (ph.season | 0) + " &middot; Day " + ((ph.di | 0) + 1);
+    } catch (e) {}
     var n = MK.listings ? MK.listings.length : null;
-    return "<div class='fo-mk-hd'><div><h1>Transfer market</h1>" +
-      "<p>Open outcry, open cards, a hammer with a minute hand &mdash; a bid in the final ten minutes moves it back ten.</p></div>" +
-      "<div class='chip'><span>On the board</span><b>" + (n == null ? "&hellip;" : n + " name" + (n === 1 ? "" : "s")) + "</b></div></div>";
+    var soon = 0, now = Date.now();
+    (MK.listings || []).forEach(function (L) {
+      var ms = +L.closes_ms || 0;
+      if (ms && ms > now && ms - now < 86400000) soon++;
+    });
+    // the third figure is YOUR fighting money - the bank the world last
+    // served for this club (37-world-club keeps it fresh with each status)
+    var bank = null;
+    try { var wc = window.__foWorldCoach; if (wc && wc.bank != null) bank = +wc.bank; } catch (e) {}
+    return "<div class='fo-mk-hd'>" +
+      "<div class='eb'>" + eb + "</div>" +
+      "<div class='row'><h1>Transfer market</h1>" +
+      "<div class='figs'>" +
+      "<span class='f'><b>" + (n == null ? "&hellip;" : n) + "</b><i>On the board</i></span>" +
+      "<span class='f hot'><b>" + (n == null ? "&hellip;" : soon) + "</b><i>Close today</i></span>" +
+      "<span class='f you'><b>" + (bank == null ? "&mdash;" : money(bank)) + "</b><i>Your purse</i></span>" +
+      "</div></div>" +
+      "<div class='rule'></div></div>";
+  }
+  // the deck's filter half: role links + the two dressed selects, built from
+  // whatever nations actually have men up today
+  function deckFilters() {
+    var natIds = {};
+    (MK.listings || []).forEach(function (L) { if (L.country_id) natIds[L.country_id] = 1; });
+    var natList = Object.keys(natIds).map(function (id) { return [id, natNm(id)]; })
+      .sort(function (a, b) { return a[1] < b[1] ? -1 : 1; });
+    return "<span class='dv'></span>" +
+      "<div class='fo-mk-rlinks'>" + ROLE_TABS.map(function (t) {
+        return "<button class='" + (MK.role === t[0] ? "on" : "") + "' data-mk-role='" + t[0] + "'>" + t[1] + "</button>";
+      }).join("") + "</div>" +
+      "<span class='sel nat'><select id='fo-mk-nat'><option value='all'>All nations</option>" + natList.map(function (nn) {
+        return "<option value='" + E(nn[0]) + "'" + (MK.nat === nn[0] ? " selected" : "") + ">" + E(nn[1]) + "</option>";
+      }).join("") + "</select></span>" +
+      "<span class='sel'><select id='fo-mk-sort'>" + SORTS.map(function (g) {
+        return "<optgroup label='" + g[0] + "'>" + g[1].map(function (s2) {
+          return "<option value='" + s2[0] + "'" + (MK.sort === s2[0] ? " selected" : "") + ">" + s2[1] + "</option>";
+        }).join("") + "</optgroup>";
+      }).join("") + "</select></span>";
   }
   function paint() {
     var page = document.getElementById("page"); if (!page) return;
@@ -494,10 +515,13 @@
     var cl = claim();
     var t = MK.tab;
     var html = "<div class='fo-mk'>" + mast() +
+      "<div class='fo-mk-deck'>" +
       "<div class='fo-mk-tabs'>" +
-      "<button class='" + (t === "board" ? "on" : "") + "' data-mk-tab='board'>The board" + (MK.listings ? " &middot; " + MK.listings.length : "") + "</button>" +
+      "<button class='" + (t === "board" ? "on" : "") + "' data-mk-tab='board'>The board</button>" +
       "<button class='" + (t === "sell" ? "on" : "") + "' data-mk-tab='sell'>My dealings</button>" +
       "<button class='" + (t === "reg" ? "on" : "") + "' data-mk-tab='reg'>The register</button>" +
+      "</div>" +
+      (t === "board" && cl && cl.country ? deckFilters() : "") +
       "</div>" +
       (t === "board" ? boardHtml(cl) : t === "sell" ? sellHtml(cl) : registerHtml()) +
       "<div class='fo-mk-foot'><a href='#/home'>&#8592; The club</a><a href='#/squad'>The squad &rsaquo;</a><a href='#/finance'>The books &rsaquo;</a></div>" +
@@ -584,27 +608,35 @@
     var s = document.createElement("style"); s.id = "fo-mkt-css";
     s.textContent = [
       "html body #page .fo-mk{max-width:880px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
-      // the masthead: an almanack page-head, ruled off like a ledger
-      "html body #page .fo-mk-hd{display:flex;align-items:flex-end;gap:12px;padding-bottom:14px;margin-bottom:2px;border-bottom:3px double rgba(20,36,58,.22)}",
+      // THE CATALOGUE HEAD: gilt eyebrow, title, three almanack figures,
+      // one double rule - then a single deck for tabs, roles and sorts.
+      "html body #page .fo-mk-hd .eb{font:600 9px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#B8933A;margin-bottom:9px}",
+      "html body #page .fo-mk-hd .row{display:flex;align-items:flex-end;gap:30px;flex-wrap:wrap}",
       "html body #page .fo-mk-hd h1{font:700 31px/1 Oswald,sans-serif;text-transform:uppercase;color:#14243A;margin:0;letter-spacing:.015em}",
-      "html body #page .fo-mk-hd p{font:italic 400 12.5px/1.5 Georgia,serif;color:rgba(20,28,40,.55);margin:7px 0 0;max-width:56ch}",
-      "html body #page .fo-mk-hd .chip{margin-left:auto;flex:none;text-align:right;padding-bottom:2px}",
-      "html body #page .fo-mk-hd .chip span{display:block;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#8a93a2}",
-      "html body #page .fo-mk-hd .chip b{display:block;font:600 19px/1.3 'Fraunces',Georgia,serif;color:#14243A;font-variant-numeric:tabular-nums}",
-      // the rooms: ink tabs under the rule, the active one underscored in orange
-      "html body #page .fo-mk-tabs{display:flex;gap:26px;margin:0 0 16px;border-bottom:1px solid rgba(20,36,58,.12);overflow-x:auto}",
-      "html body #page .fo-mk-tabs button{font:600 10.5px/1 Oswald,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;color:#8a93a2 !important;background:transparent !important;border:0 !important;border-bottom:2px solid transparent !important;border-radius:0 !important;padding:13px 2px 12px !important;margin-bottom:-1px;cursor:pointer;white-space:nowrap;transition:color .15s}",
+      "html body #page .fo-mk-hd .figs{margin-left:auto;display:flex;text-align:right}",
+      "html body #page .fo-mk-hd .f{padding-left:26px;margin-left:26px;border-left:1px solid rgba(27,36,50,.14)}",
+      "html body #page .fo-mk-hd .f:first-child{border-left:0;margin-left:0;padding-left:0}",
+      "html body #page .fo-mk-hd .f b{display:block;font:600 21px/1 'Fraunces',Georgia,serif;color:#14243A;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-hd .f.hot b{color:#8E1F13}",
+      "html body #page .fo-mk-hd .f.you b{color:#177A57}",
+      "html body #page .fo-mk-hd .f i{display:block;font:600 7.5px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#98a0ae;font-style:normal;margin-top:5px}",
+      "html body #page .fo-mk-hd .rule{border-bottom:3px double rgba(20,36,58,.25);margin-top:14px}",
+      // the deck: rooms, shelves and sorts on one baseline, no boxes
+      "html body #page .fo-mk-deck{display:flex;align-items:center;gap:22px;padding:12px 0 14px;flex-wrap:wrap;overflow:visible}",
+      "html body #page .fo-mk-tabs{display:flex;gap:22px}",
+      "html body #page .fo-mk-tabs button{font:600 10.5px/1 Oswald,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;color:#8a93a2 !important;background:transparent !important;border:0 !important;border-radius:0 !important;padding:6px 0 !important;cursor:pointer;white-space:nowrap;box-shadow:none !important;transition:color .15s}",
       "html body #page .fo-mk-tabs button:hover{color:#1B2432 !important;background:transparent !important}",
-      "html body #page .fo-mk-tabs button.on{color:#14243A !important;border-bottom-color:#C9571F !important}",
-      // one quiet toolbar: role shelves, the count, the sort
-      "html body #page .fo-mk-bar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}",
-      "html body #page .fo-mk-rtabs{display:inline-flex;gap:0;background:#FFFEFC;border:1px solid rgba(27,36,50,.12);border-radius:999px;padding:3px;overflow-x:auto}",
-      "html body #page .fo-mk-rtabs button{padding:8px 15px !important;border:0 !important;background:transparent !important;border-radius:999px !important;font:600 9.5px/1 Oswald,sans-serif !important;letter-spacing:.1em;text-transform:uppercase;color:#67748a !important;white-space:nowrap;cursor:pointer;min-height:32px;transition:color .15s}",
-      "html body #page .fo-mk-rtabs button:hover{color:#1B2432 !important;background:transparent !important}",
-      "html body #page .fo-mk-rtabs button.on{background:#14243A !important;color:#F1EEE6 !important}",
-      "html body #page .fo-mk-bar .cnt{margin-left:auto;font:600 9px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8a93a2;font-variant-numeric:tabular-nums}",
-      "html body #page .fo-mk-bar .dd{display:inline-flex;align-items:center;gap:7px;font:600 9px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8a93a2}",
-      "html body #page .fo-mk-bar select{border:1px solid rgba(27,36,50,.14) !important;border-radius:8px !important;background:#FFFEFC !important;font:500 11px/1.4 Inter,sans-serif !important;color:#14243A !important;min-height:32px;padding:0 8px !important}",
+      "html body #page .fo-mk-tabs button.on{color:#14243A !important;box-shadow:0 2.5px 0 #C9571F !important}",
+      "html body #page .fo-mk-deck .dv{width:1px;height:20px;background:rgba(27,36,50,.14);flex:none}",
+      "html body #page .fo-mk-rlinks{display:flex;gap:18px}",
+      "html body #page .fo-mk-rlinks button{font:600 10px/1 Oswald,sans-serif !important;letter-spacing:.11em;text-transform:uppercase;color:#8a93a2 !important;background:transparent !important;border:0 !important;border-radius:0 !important;padding:6px 0 !important;cursor:pointer;box-shadow:none !important;transition:color .15s}",
+      "html body #page .fo-mk-rlinks button:hover{color:#1B2432 !important;background:transparent !important}",
+      "html body #page .fo-mk-rlinks button.on{color:#C9571F !important;box-shadow:0 2.5px 0 #C9571F !important}",
+      // the dressed select: no OS chrome, a drawn chevron
+      "html body #page .fo-mk-deck .sel{position:relative;display:inline-flex;align-items:center}",
+      "html body #page .fo-mk-deck .sel.nat{margin-left:auto}",
+      "html body #page .fo-mk-deck .sel select{appearance:none !important;-webkit-appearance:none !important;border:0 !important;background:transparent !important;font:600 11.5px/1.4 Inter,sans-serif !important;color:#14243A !important;padding:6px 16px 6px 0 !important;cursor:pointer;min-height:0 !important;box-shadow:none !important}",
+      "html body #page .fo-mk-deck .sel:after{content:'';position:absolute;right:2px;top:50%;width:7px;height:7px;border-right:1.8px solid #98a0ae;border-bottom:1.8px solid #98a0ae;transform:translateY(-70%) rotate(45deg);pointer-events:none}",
       // THE BID RAIL CARD: identity and reads on paper, the money in navy
       "html body #page .fo-mk-row{display:grid;grid-template-columns:1fr 225px;background:#FFFEFC;border:1px solid rgba(27,36,50,.1);border-radius:16px;overflow:hidden;margin-bottom:13px;box-shadow:0 3px 12px rgba(14,35,63,.06)}",
       "html body #page .fo-mk-row.lead{border-color:rgba(23,122,87,.4)}",
