@@ -282,7 +282,7 @@
           right: E((f.text || "").replace(/\s*\(.*\)$/, "")) }) });
     });
     fr.done.forEach(function (f) {
-      resItems.push({ ts: f.t0, lt: f.won ? "W" : f.tie ? "T" : "L",
+      resItems.push({ ts: f.t0, lt: f.won ? "W" : f.tie ? "T" : "L", fr: true,
         html: rowHtml({ href: (f.world ? "#/feed?fr=" : "#/friendly?id=") + f.id, dt: frDt(f.t0),
           cmp: "FR", cmpCls: "fr", chip: f.won ? "W" : f.tie ? "T" : "L", chipCls: f.won ? "w" : f.tie ? "t" : "l",
           name: (f.atHome ? "v " : "at ") + E(f.opp),
@@ -291,7 +291,10 @@
     });
     resItems.sort(function (a, b) { return a.ts - b.ts; });
     var resRows = resItems.map(function (x) { return x.html; }).join("");
-    var form = formHtml(resItems.map(function (x) { return x.lt; }));
+    // the form strip beside the league record: competitive cricket only -
+    // friendlies sit in the results list below but never colour the form
+    var form = formHtml(resItems.filter(function (x) { return !x.fr; })
+      .map(function (x) { return x.lt; }));
 
     // ---- what is still to come, off the umpire's own schedule ---------------
     var upItems = [];
