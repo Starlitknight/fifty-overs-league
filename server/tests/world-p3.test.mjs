@@ -463,9 +463,13 @@ test('011: friendlies - challenge, accept, and the umpire plays the real match',
   const PLAY = Date.now() + 3 * 3600000;
   // the league record as it stands BEFORE a ball of friendly cricket is bowled
   const lgBefore = await computeLeague(pool, 'eng', 1, EPOCH + 102 * DAY);
-  // your own club is not an opponent, and lineups need their window
+  // your own club is not an opponent; and a challenge leaves room for the
+  // ritual (049): two hours minimum - an hour to name a side, an hour under
+  // lock - so the past, half an hour out and even ninety minutes out all fail
   await assert.rejects(as(U1, `SELECT public.world_friendly_challenge('eng', 1, $1)`, [PLAY]), /your own club/);
-  await assert.rejects(as(U1, `SELECT public.world_friendly_challenge('ire', 3, $1)`, [Date.now() + 30 * 60000]), /90 minutes/);
+  await assert.rejects(as(U1, `SELECT public.world_friendly_challenge('ire', 3, $1)`, [Date.now() - 3600000]), /two hours/);
+  await assert.rejects(as(U1, `SELECT public.world_friendly_challenge('ire', 3, $1)`, [Date.now() + 30 * 60000]), /two hours/);
+  await assert.rejects(as(U1, `SELECT public.world_friendly_challenge('ire', 3, $1)`, [Date.now() + 90 * 60000]), /two hours/);
   // a bot club accepts on the spot, at the challenger's chosen time
   const bot = await as(U1, `SELECT public.world_friendly_challenge('ire', 3, $1) AS r`, [PLAY]);
   assert.equal(bot.rows[0].r.status, 'accepted');
@@ -571,7 +575,8 @@ test('012: friendly lineups - set, tweak, lock at T-1h; unanswered offers die at
   const openers = inn.bat.slice(0, 2).map(b => (b.p && b.p.name) || b.p);
   assert.ok(openers.includes(xi2[0]), 'the friendly-specific opener opened: ' + openers.join(', '));
   // an offer nobody answers dies an hour before the match and is never played
-  const T2 = Date.now() + 2 * 3600000;
+  // (three hours out, comfortably clear of the two-hour challenge floor)
+  const T2 = Date.now() + 3 * 3600000;
   const off = await as(U1, `SELECT public.world_friendly_challenge('eng', 9, $1) AS r`, [T2]);
   await runFriendlies(pool, host, { now: T2 - 30 * 60000 });
   const dead = (await pool.query(`SELECT status FROM friendlies WHERE id=$1`, [off.rows[0].r.id])).rows[0];

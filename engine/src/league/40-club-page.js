@@ -598,11 +598,13 @@
       // offered to somebody asleep in another timezone.
       var chHTML = "";
       if (canChallenge) {
-        // the earliest legal kick-off, rounded UP to a whole local hour so the
-        // picker's step and the default both sit on the same grid (a half-hour
-        // timezone would otherwise make every offered slot invalid)
-        var mn = new Date(Date.now() + 90 * 60000); mn.setMinutes(0, 0, 0);
-        if (mn.getTime() < Date.now() + 90 * 60000) mn.setTime(mn.getTime() + 3600000);
+        // the earliest legal kick-off - two hours out, because the umpire
+        // banks the match at the teamsheet lock (T-1h) and the lineup window
+        // before it must be real - rounded UP to a whole local hour so the
+        // picker's step and the default both sit on the same grid (a
+        // half-hour timezone would otherwise make every offered slot invalid)
+        var mn = new Date(Date.now() + 2 * 3600000); mn.setMinutes(0, 0, 0);
+        if (mn.getTime() < Date.now() + 2 * 3600000) mn.setTime(mn.getTime() + 3600000);
         var minMs = mn.getTime();
         chHTML = "<div class='fo-cp-ch' id='fo-cp-ch'>" +
           "<div class='fo-cp-chh'>&#9876; Challenge " + E(name) + " to a friendly</div>" +
@@ -1104,7 +1106,7 @@
           if (goEl) goEl.addEventListener("click", function () {
             var ms = NaN; try { ms = new Date(whenEl.value).getTime(); } catch (eW) {}
             if (!(ms > 0)) { chSay("Name a date and hour for the match."); return; }
-            if (ms < Date.now() + 90 * 60000) { chSay("Pick a time at least 90 minutes from now - lineups need their window."); return; }
+            if (ms < Date.now() + 2 * 3600000) { chSay("Pick a time at least two hours from now - teamsheets lock an hour before the match, and the lineup window must be real."); return; }
             if (ms > Date.now() + 7 * 86400000) { chSay("Pick a time within the next seven days."); return; }
             CH.busy = true; goEl.disabled = true; goEl.textContent = "Sending…";
             rpc("world_friendly_challenge", { p_country: cid, p_slot: slot, p_play_at_ms: ms })
