@@ -137,16 +137,46 @@
     if (man && man.role) return roleBucket({ role: man.role === "allRounder" ? "all-rounder" : man.role });
     return roleBucket(((impressionOf(L.id) || {}).scout) || {});
   }
-  // the hammer, as a distance: "2d 4h", "3h 05m", "8m"
-  function hammerTxt(L) {
-    var ms = +(L.closesMs != null ? L.closesMs : L.closes_ms) || 0;
-    if (!ms) return "hammer " + dayTxt(L.closes != null ? L.closes : L.closes_day);
-    var left = ms - Date.now();
-    if (left <= 0) return "hammer fallen &middot; the umpire is opening the envelopes";
-    var m = Math.floor(left / 60000), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mm = m % 60;
-    var t = d >= 1 ? d + "d " + h + "h" : h >= 1 ? h + "h " + (mm < 10 ? "0" : "") + mm + "m" : mm + "m";
-    return "hammer in " + t + (left < 3600000 ? " &middot; a late bid moves it back" : "");
+  // THE HAMMER IS A CLOCK YOU CAN WATCH. Every listing wears a countdown
+  // plate that ticks once a second: quiet while days remain, claret inside
+  // the hour, and in the final ten minutes - the anti-snipe window - a
+  // filled, beating plate with the seconds running. Urgency you can feel.
+  var HM_CLOCK = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.1' " +
+    "stroke-linecap='round' stroke-linejoin='round'><circle cx='12' cy='12' r='8.4'/><path d='M12 7.4V12l3.1 1.9'/></svg>";
+  function hmTier(left) { return left <= 0 ? "gone" : left < 600000 ? "final" : left < 3600000 ? "soon" : "calm"; }
+  function hmParts(left) {
+    var s = Math.max(0, Math.floor(left / 1000));
+    var d = Math.floor(s / 86400), h = Math.floor((s % 86400) / 3600), m = Math.floor((s % 3600) / 60), ss = s % 60;
+    if (d >= 1) return d + "d " + (h < 10 ? "0" : "") + h + "h";
+    if (h >= 1) return h + "h " + (m < 10 ? "0" : "") + m + "m";
+    return m + ":" + (ss < 10 ? "0" : "") + ss;
   }
+  function hammerPlate(ms) {
+    var left = ms - Date.now();
+    var tier = hmTier(left);
+    if (tier === "gone") {
+      return "<span class='fo-mk-hmr gone'>" + HM_CLOCK + "<i>hammer</i><b>FALLEN</b></span>" +
+        "<u class='fo-mk-hnote'>the umpire is opening the envelopes</u>";
+    }
+    return "<span class='fo-mk-hmr " + tier + "'>" + HM_CLOCK + "<i>hammer</i><b>" + hmParts(left) + "</b></span>" +
+      (tier === "final" ? "<u class='fo-mk-hnote'>a late bid moves it back ten</u>" : "");
+  }
+  // the ticking: one clock for the whole board, updating every plate in
+  // place - no repaint, so menus and selections are never yanked away
+  setInterval(function () {
+    try {
+      if ((location.hash || "").split("?")[0] !== "#/market") return;
+      [].slice.call(document.querySelectorAll("span[data-mk-hh]")).forEach(function (el) {
+        var ms = +el.getAttribute("data-mk-hh"); if (!ms) return;
+        el.innerHTML = hammerPlate(ms);
+        // the moment it falls, ask the world what happened - once
+        if (ms - Date.now() <= 0 && !el.__foFell) {
+          el.__foFell = 1;
+          setTimeout(function () { try { refetch(true); } catch (e2) {} }, 5000);
+        }
+      });
+    } catch (e) {}
+  }, 1000);
   // THE OPEN CARD, in full: the game's own seven summary reads (the draft
   // card's aggregates, engine/src/00-core.js), each a number and a toned bar.
   // These are the SUMMARY figures, never the raw engine skills.
@@ -215,7 +245,6 @@
       : high ? "high bid &middot; " + E(L.highClub || L.high_club || "a club") + " lead"
       : "no bids yet &middot; reserve " + money(L.reserve);
     var hmMs = +(L.closesMs != null ? L.closesMs : L.closes_ms) || 0;
-    var hmSoon = !!(hmMs && hmMs - Date.now() < 3600000);
     // EVERY NAME IS A DOOR (the feed's rule): a listed club man opens his own
     // dossier. A free agent has no club page to stand on, so he stays print.
     var door = L.slot >= 0 && L.country_id
@@ -233,7 +262,10 @@
       "<span class='pr'>" +
       "<span class='amt'>" + money(high || L.asking) + "</span>" +
       "<span class='st" + (lead ? " ld" : "") + "'>" + state + "</span>" +
-      "<span class='hm" + (hmSoon ? " soon" : "") + "'>" + hammerTxt(L) + "</span>" +
+      (hmMs
+        ? "<span class='hmwrap' data-mk-hh='" + hmMs + "'>" + hammerPlate(hmMs) + "</span>"
+        : "<span class='hmwrap'><span class='fo-mk-hmr calm'>" + HM_CLOCK + "<i>hammer</i><b>" +
+          E(dayTxt(L.closes != null ? L.closes : L.closes_day)) + "</b></span></span>") +
       "</span>" +
       "</div>" +
       statGrid(man) +
@@ -511,8 +543,24 @@
       "html body #page .fo-mk-row .pr .amt{display:block;font:600 21px/1 Oswald,sans-serif;color:#C9571F;font-variant-numeric:tabular-nums;letter-spacing:.01em}",
       "html body #page .fo-mk-row .pr .st{display:block;font:400 10px/1.4 Inter,sans-serif;color:#8a93a2;margin-top:4px}",
       "html body #page .fo-mk-row .pr .st.ld{color:#177A57;font-weight:600}",
-      "html body #page .fo-mk-row .pr .hm{display:block;font:600 9px/1.4 Oswald,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#98a0ae;margin-top:3px}",
-      "html body #page .fo-mk-row .pr .hm.soon{color:#8E1F13}",
+      // THE HAMMER PLATE: a ticking clock, dressed by how close it is.
+      "html body #page .fo-mk-row .pr .hmwrap{display:block;margin-top:6px}",
+      "html body #page .fo-mk-row .fo-mk-hmr{display:inline-flex;align-items:center;gap:7px;padding:6px 10px;border-radius:9px;border:1px solid rgba(27,36,50,.14);background:#FBFAF5;color:#67748a}",
+      "html body #page .fo-mk-row .fo-mk-hmr svg{width:12px;height:12px;flex:none}",
+      "html body #page .fo-mk-row .fo-mk-hmr i{font-style:normal;font:600 7.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#98a0ae}",
+      "html body #page .fo-mk-row .fo-mk-hmr b{font:600 14px/1 Oswald,sans-serif;color:#14243A;font-variant-numeric:tabular-nums;letter-spacing:.03em;min-width:52px;text-align:right}",
+      "html body #page .fo-mk-row .fo-mk-hmr.soon{border-color:rgba(142,31,19,.4);background:rgba(142,31,19,.05);color:#8E1F13}",
+      "html body #page .fo-mk-row .fo-mk-hmr.soon i{color:#B0554A}",
+      "html body #page .fo-mk-row .fo-mk-hmr.soon b{color:#8E1F13}",
+      "html body #page .fo-mk-row .fo-mk-hmr.final{border-color:#8E1F13;background:#8E1F13;color:#F6EFDF;animation:fo-mk-beat 1.1s ease-in-out infinite}",
+      "html body #page .fo-mk-row .fo-mk-hmr.final i{color:rgba(246,239,223,.7)}",
+      "html body #page .fo-mk-row .fo-mk-hmr.final b{color:#FFFEFC}",
+      "html body #page .fo-mk-row .fo-mk-hmr.gone{border-color:#14243A;background:#14243A;color:rgba(246,239,223,.75)}",
+      "html body #page .fo-mk-row .fo-mk-hmr.gone i{color:rgba(246,239,223,.55)}",
+      "html body #page .fo-mk-row .fo-mk-hmr.gone b{color:#FFFEFC}",
+      "html body #page .fo-mk-row .fo-mk-hnote{display:block;text-decoration:none;font:italic 400 10px/1.4 Georgia,serif;color:#8E1F13;margin-top:4px}",
+      "@keyframes fo-mk-beat{0%,100%{box-shadow:0 0 0 0 rgba(142,31,19,.34)}50%{box-shadow:0 0 0 5px rgba(142,31,19,0)}}",
+      "@media(prefers-reduced-motion:reduce){html body #page .fo-mk-row .fo-mk-hmr.final{animation:none}}",
       // the seven reads: label, figure, a toned sliver of bar
       "html body #page .fo-mk-stats{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin:13px 0 0;padding:11px 0 12px;border-top:1px solid rgba(27,36,50,.07);border-bottom:1px solid rgba(27,36,50,.07)}",
       "html body #page .fo-mk-stats .cell{min-width:0}",
