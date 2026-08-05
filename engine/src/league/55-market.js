@@ -147,43 +147,64 @@
     var t = d >= 1 ? d + "d " + h + "h" : h >= 1 ? h + "h " + (mm < 10 ? "0" : "") + mm + "m" : mm + "m";
     return "hammer in " + t + (left < 3600000 ? " &middot; a late bid moves it back" : "");
   }
-  // the open card in one line: the roster's own stars, gold bat, teal ball
-  function cardLine(man) {
-    if (!man) return "";
-    try {
-      var FS = window.foStarsFor; if (!FS) return "";
-      var out = "";
-      var cb = FS.bat(man);
-      if (cb > 0) out += "<span class='fo-mk-st bt' title='Batting'>" + FS.html(FS.stars(cb)) + "</span>";
-      var cw = man.bowlType ? FS.bowl(man) : 0;
-      if (cw > 0) out += "<span class='fo-mk-st bw' title='Bowling'>" + FS.html(FS.stars(cw)) + "</span>";
-      var ovr = null; try { ovr = window.foPkOvr ? foPkOvr(man) : null; } catch (eO) {}
-      return "<span class='fo-mk-open'>" + (ovr != null ? "<b class='ovr'>" + ovr + "</b>" : "") + out +
-        (man.wage ? "<i>" + money(man.wage) + "/rd wages</i>" : "") + "</span>";
-    } catch (e) { return ""; }
+  // THE OPEN CARD, in full: the game's own seven summary reads (the draft
+  // card's aggregates, engine/src/00-core.js), each a number and a toned bar.
+  // These are the SUMMARY figures, never the raw engine skills.
+  // the man's job, in plain words - the game's own role names (00-core ROLEN)
+  var MK_ROLE = { opener: "Opener", topOrderBat: "Top-order bat", middleOrderBat: "Middle-order bat",
+    wicketkeeper: "Wicketkeeper", keeper: "Wicketkeeper", allRounder: "All-rounder", batter: "Batsman", bowler: "Bowler",
+    seamFast: "Fast bowler", seamFastMedium: "Fast-medium bowler", seamMedium: "Medium pacer",
+    wristSpin: "Wrist spinner", fingerSpin: "Finger spinner" };
+  var MK_BT = { seamFast: "fast", seamFastMedium: "fast-medium", seamMedium: "medium",
+    wristSpin: "wrist spin", fingerSpin: "finger spin", partTimeSeam: "part-time seam", partTimeSpin: "part-time spin" };
+  function roleLbl(man) {
+    var r = MK_ROLE[man.role] || (man.role ? E(man.role) : "a cricketer");
+    var bt = MK_BT[man.bowlTypeFull];
+    // a batsman who turns his arm over is worth saying so
+    if (bt && !/bowler|pacer|spinner/i.test(r)) r += ", " + bt;
+    return r;
   }
-  function flagSrc() {
-    try { var cl = claim(); return (typeof FO_ART !== "undefined" ? FO_ART : "client/art/") + "flags/" + window.__foCxAPI.flagFile(cl.country) + ".svg"; }
-    catch (e) { return ""; }
+  function skTone(v) { return v >= 75 ? "t4" : v >= 50 ? "t3" : v >= 30 ? "t2" : "t1"; }
+  function skWord(v) { try { return (typeof word === "function" && word(v)) || ""; } catch (e) { return ""; } }
+  function statGrid(man) {
+    if (!man || !man.skills) return "";
+    try {
+      var A = function (f) { try { return Math.max(0, Math.min(100, Math.round(f(man)))); } catch (e) { return 0; } };
+      var isB = man.bowlTypeFull ? man.bowlTypeFull !== "none" : !!man.bowlType;
+      var pw = Math.max(0, Math.min(100, Math.round((man.skills && man.skills.power) || 0)));
+      var cells = [["Batting", A(aggBat)], ["Bowling", isB ? A(aggBowl) : 0], ["Keeping", man.keeper ? A(aggKeep) : 0],
+        ["Fielding", A(aggField)], ["Technique", A(aggTech)], ["Power", pw], ["Endurance", A(aggEnd)]];
+      return "<div class='fo-mk-stats'>" + cells.map(function (c) {
+        var v = c[1], off = v <= 0;
+        return "<span class='cell" + (off ? " off" : "") + "' title='" + c[0] + (off ? "" : " &middot; " + E(skWord(v))) + "'>" +
+          "<span class='lb'>" + c[0] + "</span>" +
+          "<span class='vl'>" + (off ? "&ndash;" : v) + "</span>" +
+          "<span class='tr'><span class='fl " + skTone(v) + "' style='width:" + Math.max(3, v) + "%'></span></span>" +
+          "</span>";
+      }).join("") + "</div>";
+    } catch (e) { return ""; }
   }
   function rowHtml(L, cl, myBids) {
     // THE OPEN CARD (052): a listed man's own facts, straight off the board
-    // snapshot - age, hand, role, stars, wage. The paid scout is retired;
-    // the scout's one-line impression still colours the read where it rode
-    // an older snapshot.
+    // snapshot - age, hand, role, wage, experience and the seven summary
+    // reads. The paid scout is retired; the scout's one-line impression
+    // still colours the read where it rode an older snapshot.
     var man = dress(L).man || null;
     var imp = impressionOf(L.id) || {};
     var sc = imp.scout || {};
     var meta = [];
     if (man) {
-      if (man.hand) meta.push(man.hand === "L" ? "left-hand" : "right-hand");
-      if (man.role) meta.push(E(man.role === "allRounder" ? "all-rounder" : man.role === "wicketkeeper" ? "wicketkeeper" : man.role));
       if (man.age) meta.push((man.age | 0) + " yrs");
+      if (man.hand) meta.push(man.hand === "L" ? "left-hand" : "right-hand");
+      meta.push(roleLbl(man));
+      if (man.expWord) meta.push("exp " + E(man.expWord));
+      if (man.wage) meta.push(money(man.wage) + "/rd wages");
     } else {
+      if (sc.age) meta.push(sc.age);
       if (sc.hand) meta.push(E(sc.hand));
       if (sc.role) meta.push(E(sc.role === "allrounder" ? "all-rounder" : sc.role === "keeper" ? "wicketkeeper" : sc.role));
-      if (sc.age) meta.push(sc.age);
     }
+    var ovr = null; try { ovr = (man && window.foPkOvr) ? foPkOvr(man) : null; } catch (eO) {}
     var high = +L.high || 0;
     var minBid = high ? high + STEP : Math.ceil((+L.asking || 0) * 0.55);
     var myBid = (myBids || []).filter(function (b) { return Number(b.id) === Number(L.id); })[0];
@@ -193,27 +214,34 @@
     var state = lead ? "high bid &middot; you lead"
       : high ? "high bid &middot; " + E(L.highClub || L.high_club || "a club") + " lead"
       : "no bids yet &middot; reserve " + money(L.reserve);
-    var fl = flagSrc();
+    var hmMs = +(L.closesMs != null ? L.closesMs : L.closes_ms) || 0;
+    var hmSoon = !!(hmMs && hmMs - Date.now() < 3600000);
     return "<div class='fo-mk-row" + (lead ? " lead" : "") + "' data-id='" + L.id + "'>" +
-      "<span class='rk" + (fa ? " fa" : "") + "'>" + (fa ? "FA" : "B") + "</span>" +
-      "<span class='who'><b>" + E(L.player) + "</b>" +
-      "<i>" + (meta.length ? meta.join(" &middot; ") : "a cricketer") + "</i>" +
-      cardLine(man) +
-      "<u class='" + (fa ? "" : "sell") + "'>" + (fa ? "Free agent" : "Listed by " + E(L.club || "a club")) + "</u>" +
-      (sc.impression ? "<em>" + E(sc.impression) + "</em>" : "") +
+      "<div class='hd'>" +
+      "<span class='who'>" +
+      (ovr != null ? "<span class='ovr' title='Overall'>" + ovr + "</span>" : "") +
+      "<span class='nm'><b>" + E(L.player) + (man && man.keeper ? " &dagger;" : "") + "</b>" +
+      "<span class='mt'>" + (meta.length ? meta.join(" &nbsp;&middot;&nbsp; ") : "a cricketer") + "</span></span>" +
       "</span>" +
-      (fl ? "<span class='mid'><img src='" + fl + "' alt=''></span>" : "") +
-      "<span class='pr'><b>" + money(high || L.asking) + "</b>" +
-      "<i>" + state + "</i><i>" + hammerTxt(L) + "</i>" +
-      "<span class='btns'>" +
+      "<span class='pr'>" +
+      "<span class='amt'>" + money(high || L.asking) + "</span>" +
+      "<span class='st" + (lead ? " ld" : "") + "'>" + state + "</span>" +
+      "<span class='hm" + (hmSoon ? " soon" : "") + "'>" + hammerTxt(L) + "</span>" +
+      "</span>" +
+      "</div>" +
+      statGrid(man) +
+      "<div class='ft'>" +
+      "<span class='tag" + (fa ? " fa" : "") + "'>" + (fa ? "Free agent" : "Listed by " + E(L.club || "a club")) + "</span>" +
+      (sc.impression ? "<span class='imp'>&ldquo;" + E(sc.impression) + "&rdquo;</span>" : "") +
       (mineSelling
         ? "<button class='act ghost' data-mk-withdraw='" + L.id + "'>Withdraw</button>"
-        : "<button class='act' data-mk-bid='" + L.id + "' data-min='" + minBid + "'>" + (myBid ? (lead ? "Raise" : "Outbid!") : "Bid") + "</button>") +
-      "</span></span>" +
+        : "<button class='act" + (myBid && !lead ? " hot" : "") + "' data-mk-bid='" + L.id + "' data-min='" + minBid + "'>" +
+          (myBid ? (lead ? "Raise your bid" : "Outbid them") : "Make a bid") + "</button>") +
+      "</div>" +
       "</div>";
   }
 
-  var ROLE_TABS = [["all", "All players"], ["bat", "Batters"], ["bowl", "Bowlers"], ["ar", "All-rounders"], ["wk", "Keepers"]];
+  var ROLE_TABS = [["all", "All"], ["bat", "Batsmen"], ["bowl", "Bowlers"], ["ar", "All-rounders"], ["wk", "Keepers"]];
   var SORTS = [["close", "Closing soon"], ["new", "Newest"], ["hi", "Price high"], ["lo", "Price low"]];
   function boardHtml(cl) {
     if (!MK.listings) return "<div class='fo-mk-none'>Reading the board&hellip;</div>";
@@ -224,18 +252,20 @@
     if (MK.sort === "new") rows.sort(function (a, b) { return (b.id | 0) - (a.id | 0); });
     else if (MK.sort === "hi") rows.sort(function (a, b) { return (+(b.high || b.asking) || 0) - (+(a.high || a.asking) || 0); });
     else if (MK.sort === "lo") rows.sort(function (a, b) { return (+(a.high || a.asking) || 0) - (+(b.high || b.asking) || 0); });
-    var tabs = "<div class='fo-mk-rtabs'>" + ROLE_TABS.map(function (t) {
-      return "<button class='" + (MK.role === t[0] ? "on" : "") + "' data-mk-role='" + t[0] + "'>" + t[1] + "</button>";
-    }).join("") + "</div>";
-    var sortSel = "<div class='fo-mk-ftr'><label class='dd'>Sort" +
+    var bar = "<div class='fo-mk-bar'>" +
+      "<div class='fo-mk-rtabs'>" + ROLE_TABS.map(function (t) {
+        return "<button class='" + (MK.role === t[0] ? "on" : "") + "' data-mk-role='" + t[0] + "'>" + t[1] + "</button>";
+      }).join("") + "</div>" +
+      "<span class='cnt'>" + rows.length + " of " + MK.listings.length + " names</span>" +
+      "<label class='dd'>Sort" +
       "<select id='fo-mk-sort'>" + SORTS.map(function (s2) {
         return "<option value='" + s2[0] + "'" + (MK.sort === s2[0] ? " selected" : "") + ">" + s2[1] + "</option>";
       }).join("") + "</select></label>" +
-      "<span class='cnt'>" + rows.length + " of " + MK.listings.length + " names</span></div>";
-    return tabs + sortSel +
+      "</div>";
+    return bar +
       (rows.length ? rows.map(function (L) { return rowHtml(L, cl, myBids); }).join("")
         : "<div class='fo-mk-none'>Nobody of that kind on the board today.</div>") +
-      "<p class='fo-mk-note'>Every listed man's card is open &mdash; age, stars and wages sit on the board for all to read. " +
+      "<p class='fo-mk-note'>Every listed man's card is open &mdash; age, wages and all seven summary reads sit on the board for all to see. " +
       "The hammer has a minute hand: a bid landed inside the final ten minutes pushes it back to ten minutes out, " +
       "so an auction ends in a bidding war, never a snipe. The umpire settles the sale on his next pass; " +
       "the highest offer at or above the reserve takes the man whether you are awake or not.</p>";
@@ -395,96 +425,101 @@
     if (document.getElementById("fo-mkt-css")) return;
     var s = document.createElement("style"); s.id = "fo-mkt-css";
     s.textContent = [
-      "html body #page .fo-mk{max-width:860px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
-      // the dashboard masthead + the board's list rows
-      "html body #page .fo-mk-hd{display:flex;align-items:flex-start;gap:12px;margin-bottom:14px}",
-      "html body #page .fo-mk-hd h1{font:700 30px/1 Oswald,sans-serif;text-transform:uppercase;color:#14243A;margin:0;letter-spacing:.01em}",
-      "html body #page .fo-mk-hd p{font:400 12.5px/1.4 Inter,sans-serif;color:#67748a;margin:7px 0 0}",
-      "html body #page .fo-mk-hd .chip{margin-left:auto;flex:none;background:#FFFEFC;border:1px solid rgba(27,36,50,.09);border-radius:11px;padding:10px 13px;text-align:right}",
-      "html body #page .fo-mk-hd .chip span{display:block;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#8a93a2}",
-      "html body #page .fo-mk-hd .chip b{display:block;font:700 15px/1.4 Inter,sans-serif;color:#14243A}",
-      "html body #page .fo-mk-rtabs{display:flex;gap:2px;background:#FFFEFC;border:1px solid rgba(27,36,50,.09);border-radius:12px;padding:5px;overflow-x:auto;margin-bottom:9px}",
-      "html body #page .fo-mk-rtabs button{flex:1;text-align:center;padding:11px 8px;border:0;background:transparent;border-radius:8px;font:600 10px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#67748a;white-space:nowrap;cursor:pointer;min-height:40px}",
-      "html body #page .fo-mk-rtabs button.on{background:#14243A;color:#F1EEE6}",
-      "html body #page .fo-mk-ftr{display:flex;align-items:center;gap:10px;margin-bottom:10px}",
-      "html body #page .fo-mk-ftr .dd{display:flex;align-items:center;gap:8px;background:#FFFEFC;border:1px solid rgba(27,36,50,.09);border-radius:10px;padding:6px 8px 6px 12px;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#1B2432}",
-      "html body #page .fo-mk-ftr select{border:0;background:transparent;font:600 11px/1.4 Inter,sans-serif;color:#14243A;min-height:32px}",
-      "html body #page .fo-mk-ftr .cnt{margin-left:auto;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8a93a2}",
-      "html body #page .fo-mk-row{display:flex;align-items:flex-start;gap:11px;background:#FFFEFC;border:1px solid rgba(27,36,50,.09);border-radius:12px;padding:12px 13px;margin-bottom:9px;box-shadow:0 1px 2px rgba(14,35,63,.04)}",
-      "html body #page .fo-mk-row.lead{border-color:rgba(23,122,87,.45)}",
-      "html body #page .fo-mk-row .rk{flex:none;width:24px;height:24px;border-radius:50%;background:#C9571F;color:#fff;font:700 9.5px/1 Inter,sans-serif;display:flex;align-items:center;justify-content:center;margin-top:2px}",
-      "html body #page .fo-mk-row .rk.fa{background:#1F6F4A}",
-      "html body #page .fo-mk-row .who{min-width:0;flex:1}",
-      "html body #page .fo-mk-row .who b{display:block;font:600 14px/1.2 Inter,sans-serif;color:#1B2432}",
-      "html body #page .fo-mk-row .who i{display:block;font-style:normal;font:400 10.5px/1.4 Inter,sans-serif;color:#8a93a2;margin-top:2px;text-transform:capitalize}",
-      "html body #page .fo-mk-row .who u{display:inline-block;text-decoration:none;font:600 8px/1 Oswald,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#1F6F4A;background:rgba(31,111,74,.08);border:1px solid rgba(31,111,74,.25);border-radius:6px;padding:4px 6px;margin-top:6px}",
-      "html body #page .fo-mk-row .who u.sell{color:#7A5480;background:rgba(122,84,128,.08);border-color:rgba(122,84,128,.25)}",
-      "html body #page .fo-mk-row .who em{display:block;font:italic 400 11px/1.4 Georgia,serif;color:rgba(20,28,40,.6);margin-top:5px}",
-      // THE OPEN CARD (052): OVR chip + the roster's own stars + his wages
-      "html body #page .fo-mk-open{display:flex;align-items:center;gap:9px;flex-wrap:wrap;margin-top:6px}",
-      "html body #page .fo-mk-row .fo-mk-open b.ovr{display:inline-block;flex:none;font:700 10.5px/1 Oswald,sans-serif;color:#FFFEFC;background:#14243A;border-radius:6px;padding:4px 6px;font-variant-numeric:tabular-nums}",
-      "html body #page .fo-mk-row .fo-mk-open i{display:inline;font-style:normal;font:400 10px/1 Inter,sans-serif;color:#8a93a2;white-space:nowrap;margin:0;text-transform:none}",
-      "html body #page .fo-mk-st{display:inline-flex;line-height:1}",
-      "html body #page .fo-mk-st .st{display:inline-flex;text-decoration:none}",
-      "html body #page .fo-mk-row .fo-mk-st em{display:inline;font-style:normal;font-size:11.5px;line-height:1;color:#e3dccb;letter-spacing:.5px;margin:0}",
-      "html body #page .fo-mk-st.bt em.f{color:#E8B96A}",
-      "html body #page .fo-mk-st.bt em.h{color:#E8B96A;opacity:.45}",
-      "html body #page .fo-mk-st.bw em.f{color:#0FB4C4}",
-      "html body #page .fo-mk-st.bw em.h{color:#0FB4C4;opacity:.45}",
-      "html body #page .fo-mk-row .mid{flex:none;margin-top:3px}",
-      "html body #page .fo-mk-row .mid img{width:20px;height:14px;object-fit:cover;border-radius:2px}",
-      "html body #page .fo-mk-row .pr{flex:none;text-align:right;max-width:46%}",
-      "html body #page .fo-mk-row .pr b{display:block;font:700 17px/1.1 Oswald,sans-serif;color:#C9571F;font-variant-numeric:tabular-nums}",
-      "html body #page .fo-mk-row .pr i{display:block;font-style:normal;font:400 9.5px/1.4 Inter,sans-serif;color:#8a93a2;margin-top:2px}",
-      "html body #page .fo-mk-row.lead .pr i:first-of-type{color:#177A57;font-weight:600}",
-      "html body #page .fo-mk-row .btns{display:flex;gap:6px;justify-content:flex-end;margin-top:7px}",
-      "html body #page .fo-mk-row .act{font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#C9571F;background:#FFFEFC;border:1.5px solid rgba(201,87,31,.55);border-radius:8px;padding:8px 12px;cursor:pointer;min-height:34px}",
-      "html body #page .fo-mk-row .act:hover{background:rgba(201,87,31,.06)}",
-      "html body #page .fo-mk-row .act.ghost{color:#67748a;border-color:rgba(27,36,50,.18)}",
-      "html body #page .fo-mk-tabs{display:flex;gap:8px;margin:0 0 14px}",
-      "html body #page .fo-mk-tabs button{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.14);border-radius:999px;padding:9px 16px;cursor:pointer}",
-      "html body #page .fo-mk-tabs button.on{background:#0E233F;color:#FFFEFC;border-color:#0E233F}",
-      "html body #page .fo-mk-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:10px}",
-      "html body #page .fo-mk-card{background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:14px;padding:13px 15px;box-shadow:0 4px 14px rgba(30,38,52,.06)}",
-      "html body #page .fo-mk-card.fa{border-left:4px solid #C95532}",
-      "html body #page .fo-mk-card.lead{border-color:rgba(23,122,87,.5)}",
-      "html body #page .fo-mk-top{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}",
-      "html body #page .fo-mk-who b{font:600 15px/1.2 'Fraunces',Georgia,serif;color:#141C28}",
-      "html body #page .fo-mk-who span{display:block;font:400 11px/1.4 Inter,sans-serif;color:rgba(20,28,40,.55);margin-top:3px}",
-      "html body #page .fo-mk-who i{display:block;font:italic 400 11.5px/1.4 Georgia,serif;color:rgba(20,28,40,.6);margin-top:3px}",
-      "html body #page .fo-mk-who .fatag{font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.12em;color:#B44A22;background:rgba(201,85,50,.1);border:1px solid rgba(201,85,50,.3);border-radius:6px;padding:2px 6px;text-decoration:none;font-style:normal}",
-      "html body #page .fo-mk-px{text-align:right;flex:0 0 auto}",
-      "html body #page .fo-mk-px .lb{display:block;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.45)}",
-      "html body #page .fo-mk-px b{font:700 18px/1.2 Inter,sans-serif;color:#0E233F;font-variant-numeric:tabular-nums}",
-      "html body #page .fo-mk-px .by{display:block;font:600 10px/1.3 Inter,sans-serif;color:#B44A22}",
-      "html body #page .fo-mk-card.lead .fo-mk-px .by{color:#177A57}",
-      "html body #page .fo-mk-meta{display:flex;gap:12px;margin:9px 0 10px;font:500 10.5px/1 Inter,sans-serif;color:rgba(20,28,40,.55)}",
-      "html body #page .fo-mk-meta .cl{margin-left:auto;color:#B44A22;font-weight:700}",
-      "html body #page .fo-mk-act{display:flex;gap:8px}",
-      "html body #page .fo-mk-b{font:700 11px/1 Inter,sans-serif;color:#FFFEFC;background:#C95532;border:0;border-radius:999px;padding:9px 14px;cursor:pointer}",
-      "html body #page .fo-mk-b:hover{background:#A64426}",
-      "html body #page .fo-mk-b.ghost{background:#FFFEFC;color:rgba(20,28,40,.7);border:1px solid rgba(20,28,40,.16)}",
-      "html body #page .fo-mk-b.ghost:hover{color:#B44A22;border-color:rgba(217,85,42,.5);background:#FFFEFC}",
-      "html body #page .fo-mk-b.danger{background:#FFFEFC;color:#B23230;border:1px solid rgba(200,60,58,.4)}",
-      "html body #page .fo-mk-b.danger:hover{background:rgba(200,60,58,.06)}",
-      "html body #page .fo-mk-k{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#B44A22;margin:20px 2px 8px}",
+      "html body #page .fo-mk{max-width:880px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
+      // the masthead: an almanack page-head, ruled off like a ledger
+      "html body #page .fo-mk-hd{display:flex;align-items:flex-end;gap:12px;padding-bottom:14px;margin-bottom:2px;border-bottom:3px double rgba(20,36,58,.22)}",
+      "html body #page .fo-mk-hd h1{font:700 31px/1 Oswald,sans-serif;text-transform:uppercase;color:#14243A;margin:0;letter-spacing:.015em}",
+      "html body #page .fo-mk-hd p{font:italic 400 12.5px/1.5 Georgia,serif;color:rgba(20,28,40,.55);margin:7px 0 0;max-width:56ch}",
+      "html body #page .fo-mk-hd .chip{margin-left:auto;flex:none;text-align:right;padding-bottom:2px}",
+      "html body #page .fo-mk-hd .chip span{display:block;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#8a93a2}",
+      "html body #page .fo-mk-hd .chip b{display:block;font:600 19px/1.3 'Fraunces',Georgia,serif;color:#14243A;font-variant-numeric:tabular-nums}",
+      // the rooms: ink tabs under the rule, the active one underscored in orange
+      "html body #page .fo-mk-tabs{display:flex;gap:26px;margin:0 0 16px;border-bottom:1px solid rgba(20,36,58,.12);overflow-x:auto}",
+      "html body #page .fo-mk-tabs button{font:600 10.5px/1 Oswald,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;color:#8a93a2 !important;background:transparent !important;border:0 !important;border-bottom:2px solid transparent !important;border-radius:0 !important;padding:13px 2px 12px !important;margin-bottom:-1px;cursor:pointer;white-space:nowrap;transition:color .15s}",
+      "html body #page .fo-mk-tabs button:hover{color:#1B2432 !important;background:transparent !important}",
+      "html body #page .fo-mk-tabs button.on{color:#14243A !important;border-bottom-color:#C9571F !important}",
+      // one quiet toolbar: role shelves, the count, the sort
+      "html body #page .fo-mk-bar{display:flex;align-items:center;gap:12px;margin-bottom:14px;flex-wrap:wrap}",
+      "html body #page .fo-mk-rtabs{display:inline-flex;gap:0;background:#FFFEFC;border:1px solid rgba(27,36,50,.12);border-radius:999px;padding:3px;overflow-x:auto}",
+      "html body #page .fo-mk-rtabs button{padding:8px 15px !important;border:0 !important;background:transparent !important;border-radius:999px !important;font:600 9.5px/1 Oswald,sans-serif !important;letter-spacing:.1em;text-transform:uppercase;color:#67748a !important;white-space:nowrap;cursor:pointer;min-height:32px;transition:color .15s}",
+      "html body #page .fo-mk-rtabs button:hover{color:#1B2432 !important;background:transparent !important}",
+      "html body #page .fo-mk-rtabs button.on{background:#14243A !important;color:#F1EEE6 !important}",
+      "html body #page .fo-mk-bar .cnt{margin-left:auto;font:600 9px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8a93a2;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-bar .dd{display:inline-flex;align-items:center;gap:7px;font:600 9px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8a93a2}",
+      "html body #page .fo-mk-bar select{border:1px solid rgba(27,36,50,.14) !important;border-radius:8px !important;background:#FFFEFC !important;font:500 11px/1.4 Inter,sans-serif !important;color:#14243A !important;min-height:32px;padding:0 8px !important}",
+      // A LISTING IS A CARD LAID OPEN: name and price up top, the seven
+      // summary reads across the middle, provenance and the deed below
+      "html body #page .fo-mk-row{background:#FFFEFC;border:1px solid rgba(27,36,50,.1);border-radius:14px;padding:15px 17px 13px;margin-bottom:11px;box-shadow:0 1px 3px rgba(14,35,63,.05)}",
+      "html body #page .fo-mk-row.lead{border-color:rgba(23,122,87,.4);box-shadow:inset 3px 0 0 #177A57,0 1px 3px rgba(14,35,63,.05)}",
+      "html body #page .fo-mk-row .hd{display:flex;align-items:flex-start;gap:12px}",
+      "html body #page .fo-mk-row .who{display:flex;align-items:center;gap:11px;min-width:0;flex:1}",
+      "html body #page .fo-mk-row .ovr{flex:none;width:36px;height:36px;display:flex;align-items:center;justify-content:center;background:#14243A;color:#F6EFDF;border-radius:9px;font:600 15px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-row .nm{min-width:0}",
+      "html body #page .fo-mk-row .nm b{display:block;font:600 16.5px/1.15 'Fraunces',Georgia,serif;color:#141C28;letter-spacing:.005em}",
+      "html body #page .fo-mk-row .nm .mt{display:block;font:400 10.5px/1.5 Inter,sans-serif;color:#7d8798;margin-top:3px}",
+      "html body #page .fo-mk-row .pr{flex:none;text-align:right;max-width:44%}",
+      "html body #page .fo-mk-row .pr .amt{display:block;font:600 21px/1 Oswald,sans-serif;color:#C9571F;font-variant-numeric:tabular-nums;letter-spacing:.01em}",
+      "html body #page .fo-mk-row .pr .st{display:block;font:400 10px/1.4 Inter,sans-serif;color:#8a93a2;margin-top:4px}",
+      "html body #page .fo-mk-row .pr .st.ld{color:#177A57;font-weight:600}",
+      "html body #page .fo-mk-row .pr .hm{display:block;font:600 9px/1.4 Oswald,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#98a0ae;margin-top:3px}",
+      "html body #page .fo-mk-row .pr .hm.soon{color:#8E1F13}",
+      // the seven reads: label, figure, a toned sliver of bar
+      "html body #page .fo-mk-stats{display:grid;grid-template-columns:repeat(7,1fr);gap:10px;margin:13px 0 0;padding:11px 0 12px;border-top:1px solid rgba(27,36,50,.07);border-bottom:1px solid rgba(27,36,50,.07)}",
+      "html body #page .fo-mk-stats .cell{min-width:0}",
+      "html body #page .fo-mk-stats .lb{display:block;font:600 7.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#98a0ae}",
+      "html body #page .fo-mk-stats .vl{display:block;font:600 13.5px/1 Inter,sans-serif;color:#1B2432;font-variant-numeric:tabular-nums;margin:5px 0 5px}",
+      "html body #page .fo-mk-stats .tr{display:block;height:3px;border-radius:2px;background:#EDE8DC;overflow:hidden}",
+      "html body #page .fo-mk-stats .fl{display:block;height:100%;border-radius:2px}",
+      "html body #page .fo-mk-stats .fl.t1{background:#C05B45}",
+      "html body #page .fo-mk-stats .fl.t2{background:#D9A441}",
+      "html body #page .fo-mk-stats .fl.t3{background:#4E8A72}",
+      "html body #page .fo-mk-stats .fl.t4{background:#177A57}",
+      "html body #page .fo-mk-stats .cell.off .vl{color:#c3c9d2}",
+      "html body #page .fo-mk-stats .cell.off .fl{background:#E3DECF}",
+      // the foot of the card: whose man he is, the scout's word, the deed
+      "html body #page .fo-mk-row .ft{display:flex;align-items:center;gap:11px;margin-top:11px;flex-wrap:wrap}",
+      "html body #page .fo-mk-row .ft .tag{flex:none;font:600 8px/1 Oswald,sans-serif;letter-spacing:.11em;text-transform:uppercase;color:#7A5480;background:rgba(122,84,128,.07);border:1px solid rgba(122,84,128,.22);border-radius:6px;padding:5px 8px}",
+      "html body #page .fo-mk-row .ft .tag.fa{color:#1F6F4A;background:rgba(31,111,74,.07);border-color:rgba(31,111,74,.22)}",
+      "html body #page .fo-mk-row .ft .imp{flex:1;min-width:0;font:italic 400 11px/1.5 Georgia,serif;color:rgba(20,28,40,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      "html body #page .fo-mk-row .ft .act{margin-left:auto;flex:none;font:600 9.5px/1 Oswald,sans-serif !important;letter-spacing:.11em;text-transform:uppercase;color:#FFFEFC !important;background:#C9571F !important;border:0 !important;border-radius:999px !important;padding:10px 17px !important;cursor:pointer;min-height:34px;transition:background .15s}",
+      "html body #page .fo-mk-row .ft .act:hover{background:#A64426 !important}",
+      "html body #page .fo-mk-row .ft .act.hot{background:#8E1F13 !important}",
+      "html body #page .fo-mk-row .ft .act.hot:hover{background:#6F160D !important}",
+      "html body #page .fo-mk-row .ft .act.ghost{color:#67748a !important;background:#FFFEFC !important;border:1px solid rgba(27,36,50,.2) !important}",
+      "html body #page .fo-mk-row .ft .act.ghost:hover{color:#1B2432 !important;background:#FFFEFC !important}",
+      // the manager's own desk + the register, kept in the same voice
+      "html body #page .fo-mk-k{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#B44A22;margin:22px 2px 9px}",
       "html body #page .fo-mk-k:after{content:'';display:block;width:34px;border-top:2px solid #C95532;margin-top:6px}",
-      "html body #page .fo-mk-srow{display:flex;align-items:center;gap:12px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:12px;padding:10px 14px;margin-bottom:7px}",
+      "html body #page .fo-mk-srow{display:flex;align-items:center;gap:12px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:12px;padding:11px 15px;margin-bottom:8px}",
       "html body #page .fo-mk-srow.slim{border-style:dashed}",
       "html body #page .fo-mk-swho{min-width:0;flex:1}",
-      "html body #page .fo-mk-swho b{font:600 13.5px/1.25 Inter,sans-serif;color:#141C28}",
-      "html body #page .fo-mk-swho span{display:block;font:400 11px/1.35 Inter,sans-serif;color:rgba(20,28,40,.5);margin-top:2px}",
+      "html body #page .fo-mk-swho b{font:600 14px/1.25 'Fraunces',Georgia,serif;color:#141C28}",
+      "html body #page .fo-mk-swho span{display:block;font:400 11px/1.4 Inter,sans-serif;color:rgba(20,28,40,.5);margin-top:2px}",
       "html body #page .fo-mk-sbtns{display:flex;gap:7px;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end}",
+      "html body #page .fo-mk-b{font:600 9px/1 Oswald,sans-serif !important;letter-spacing:.11em;text-transform:uppercase;color:#FFFEFC !important;background:#C9571F !important;border:1px solid #C9571F !important;border-radius:999px !important;padding:9px 14px !important;cursor:pointer;min-height:32px;transition:background .15s,color .15s}",
+      "html body #page .fo-mk-b:hover{background:#A64426 !important;border-color:#A64426 !important}",
+      "html body #page .fo-mk-b.ghost{background:#FFFEFC !important;color:#67748a !important;border-color:rgba(27,36,50,.2) !important}",
+      "html body #page .fo-mk-b.ghost:hover{color:#B44A22 !important;border-color:rgba(201,87,31,.5) !important;background:#FFFEFC !important}",
+      "html body #page .fo-mk-b.danger{background:#FFFEFC !important;color:#B23230 !important;border-color:rgba(200,60,58,.35) !important}",
+      "html body #page .fo-mk-b.danger:hover{background:rgba(200,60,58,.06) !important}",
       "html body #page .fo-mk-on{font:600 11px/1.3 Inter,sans-serif;color:#177A57}",
-      "html body #page .fo-mk-deal{background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:12px;padding:10px 14px;margin-bottom:7px;font:400 12.5px/1.5 Inter,sans-serif;color:rgba(20,28,40,.75)}",
-      "html body #page .fo-mk-deal b{color:#141C28}",
+      "html body #page .fo-mk-deal{background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:12px;padding:11px 15px;margin-bottom:8px;font:400 12.5px/1.5 Inter,sans-serif;color:rgba(20,28,40,.75)}",
+      "html body #page .fo-mk-deal b{color:#141C28;font-family:'Fraunces',Georgia,serif}",
       "html body #page .fo-mk-deal span{display:block;font-size:10.5px;color:rgba(20,28,40,.5)}",
-      "html body #page .fo-mk-note{font:italic 400 12px/1.6 Georgia,serif;color:rgba(20,28,40,.55);max-width:64ch;margin:14px 2px}",
-      "html body #page .fo-mk-none{background:#FFFEFC;border:1px dashed rgba(20,28,40,.2);border-radius:14px;padding:26px;text-align:center;font:italic 400 13px/1.5 Georgia,serif;color:rgba(20,28,40,.55)}",
-      "html body #page .fo-mk-foot{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}",
+      "html body #page .fo-mk-note{font:italic 400 12px/1.65 Georgia,serif;color:rgba(20,28,40,.52);max-width:66ch;margin:16px 2px}",
+      "html body #page .fo-mk-none{background:#FFFEFC;border:1px dashed rgba(20,28,40,.2);border-radius:14px;padding:28px;text-align:center;font:italic 400 13px/1.5 Georgia,serif;color:rgba(20,28,40,.55)}",
+      "html body #page .fo-mk-foot{display:flex;gap:10px;justify-content:space-between;margin-top:20px;flex-wrap:wrap}",
       "html body #page .fo-mk-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
       "html body #page .fo-mk-foot a:hover{color:#B44A22;text-decoration:none}",
-      "@media(max-width:560px){html body #page .fo-mk-grid{grid-template-columns:1fr}html body #page .fo-mk-srow{flex-wrap:wrap}}"
+      // narrower grounds: the reads wrap four-and-three, the price tucks under
+      "@media(max-width:640px){",
+      "html body #page .fo-mk-stats{grid-template-columns:repeat(4,1fr);gap:9px 12px}",
+      "html body #page .fo-mk-row .hd{flex-wrap:wrap}",
+      "html body #page .fo-mk-row .pr{text-align:left;max-width:none;width:100%;display:flex;align-items:baseline;gap:10px;margin-top:2px;padding-left:47px}",
+      "html body #page .fo-mk-row .pr .st,html body #page .fo-mk-row .pr .hm{margin-top:0}",
+      "html body #page .fo-mk-srow{flex-wrap:wrap}",
+      "html body #page .fo-mk-tabs{gap:18px}",
+      "}"
     ].join("\n");
     document.body.appendChild(s);
   }
