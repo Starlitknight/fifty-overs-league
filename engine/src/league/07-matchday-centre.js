@@ -1026,6 +1026,14 @@
   function foRenderFriendlyLive() {
     try {
       var mh = (location.hash || "").match(/^#\/friendly\?id=([\w-]+)/); if (!mh) return;
+      // A WORLD FRIENDLY (a numeric id from the friendlies post) is played by
+      // the umpire and watched on the feed page like every other match - this
+      // room only keeps the locally banked practice games (prac-/hist- ids).
+      if (/^\d+$/.test(mh[1])) {
+        try { location.replace("#/feed?fr=" + mh[1]); } catch (eRp) { location.hash = "#/feed?fr=" + mh[1]; }
+        if (typeof window.route === "function") try { window.route(); } catch (eRt) {}
+        return;
+      }
       var page = document.getElementById("page"); if (!page) return;
       // the engine re-renders #page on its own ticks (it does not know this
       // route): restore the cached page instantly instead of re-fetching, and

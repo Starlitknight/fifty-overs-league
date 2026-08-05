@@ -488,74 +488,16 @@
   // lineups exactly as the umpire uses them, and the kick-off; the seed is
   // FNV('friendly:'+id) on both hosts. Live it paces on the world clock
   // across a three-hour window; after stumps it replays from ball one.
+  // Every friendly is played by the UMPIRE and read on the feed page now -
+  // this door stays standing (the club home, the resume chip and the old
+  // bell all knock on it) but it opens the reader, never a browser
+  // re-simulation. The umpire banks the match at the teamsheet lock and the
+  // feed reveals his book ball by ball from the named hour (048).
   window.foWtFriendly = function (fid) {
     try {
-      if (typeof M !== "undefined" && M && !M.done && M.meta && !M.meta.__spectate) {
-        wtSay("A match of yours is in progress - finish it first."); return;
-      }
-      fetch(SB_URL + "/rest/v1/rpc/world_friendly_detail", {
-        method: "POST",
-        headers: { apikey: SB_ANON, Authorization: "Bearer " + SB_ANON, "content-type": "application/json" },
-        body: JSON.stringify({ p_id: +fid })
-      }).then(function (r) { return r.text().then(function (t) { var j = null; try { j = t ? JSON.parse(t) : null; } catch (e) {} if (!r.ok) throw new Error((j && j.message) || "HTTP " + r.status); return j; }); })
-        .then(function (d) {
-          if (!d || !d.home) return;
-          var nowT = Date.now();
-          if (nowT < d.playAtMs) {
-            var dD = new Date(d.playAtMs), p2 = function (n) { return (n < 10 ? "0" : "") + n; };
-            wtSay("The first ball is at " + p2(dD.getHours()) + ":" + p2(dD.getMinutes()) + " - the broadcast opens then.");
-            return;
-          }
-          var sqH = serverSquad(d.home.country, d.home.slot), sqA = serverSquad(d.away.country, d.away.slot);
-          if (!sqH || !sqA) { wtSay("The squads are still warming up - try again in a moment."); return; }
-          if (d.living) { sqH = applyLiving(sqH, d.living[d.home.name]); sqA = applyLiving(sqA, d.living[d.away.name]); }
-          var home = { name: d.home.name, ground: d.home.name + "'s ground", players: sqH };
-          var away = { name: d.away.name, players: sqA };
-          window.__foWtCtx = { rid: d.home.country, sides: [
-            { country: d.home.country, slot: d.home.slot, name: d.home.name },
-            { country: d.away.country, slot: d.away.slot, name: d.away.name }] };
-          var seed = h32("friendly:" + d.id) || 1;
-          window.onMatchEnd = function () {};
-          // same law as the league broadcast: the challenger's ground, its
-          // nation's weather - the identical call the umpire made
-          var fCond = { pitch: "balanced", weather: "Sunny" };
-          try { fCond = window.__foPlanet.condOf(d.home.country, d.home.slot, 0, Number(d.id) || seed % 997) || fCond; } catch (eC2) {}
-          M = newMatch(home, away, fCond.pitch, seed);
-          M.meta = { home: home.name, away: away.name, pitch: fCond.pitch, weather: fCond.weather, comp: "friendly", ground: home.ground, __spectate: 1, isUser: false };
-          M.isUserMatch = false; M.ordersMap = d.orders || {};
-          App.tossState = { stage: "x" };
-          applyToss(aiTossDecision());
-          var winStart = d.playAtMs, winLen = 3 * 3600000, BALL_MS = winLen / 600;
-          var liveBall = function (t) {
-            if (t >= winStart + winLen) return 1e9;
-            var n = Math.floor((t - winStart) / BALL_MS);
-            return n > 0 ? n : 0;
-          };
-          var isLive = nowT >= winStart && nowT < winStart + winLen;
-          window.__foWtBall = 0;
-          var target0 = isLive ? liveBall(nowT) : 0;
-          wtPump(target0, function () {
-            try { if (window.__foWtDrv) clearInterval(window.__foWtDrv); } catch (e) {}
-            window.__foWtDrv = setInterval(function () {
-              try {
-                if ((location.hash || "").split("?")[0] !== "#/match" || !M || !M.meta || !M.meta.__spectate) { clearInterval(window.__foWtDrv); return; }
-                if (M.done) { clearInterval(window.__foWtDrv); return; }
-                if (isLive) {
-                  var tb = liveBall(Date.now()), guard = 0;
-                  while (M && !M.done && window.__foWtBall < tb && guard++ < 650) { autoPick(); stepBall(); window.__foWtBall++; }
-                } else {
-                  autoPick(); stepBall(); window.__foWtBall++;
-                }
-              } catch (e) { clearInterval(window.__foWtDrv); }
-            }, isLive ? 1000 : 2200);
-            wtRemember({ k: "friendly", fid: +d.id, until: winStart + winLen });
-            location.hash = "#/match";
-            if (typeof window.route === "function") window.route();
-            setTimeout(function () { try { if (typeof renderMatch === "function") renderMatch(); } catch (eR9) {} }, 150);
-          });
-        })
-        .catch(function (e) { wtSay(String(e.message || "The world could not be reached.").slice(0, 140)); });
-    } catch (e) { wtSay("The broadcast could not start: " + String((e && e.message) || e).slice(0, 120)); try { console.warn("foWtFriendly", e); } catch (e2) {} }
+      location.hash = "#/feed?fr=" + (parseInt(fid, 10) || fid);
+      if (typeof window.route === "function") window.route();
+    } catch (e) {}
   };
 
   // where a nation's card stands right now - and the door straight into one

@@ -834,8 +834,14 @@ export async function runFriendlies(pool, host, opts = {}) {
   // an offer nobody answered dies an hour before its match - never played
   await pool.query(`UPDATE friendlies SET status='expired'
     WHERE status='offered' AND play_at_ms - 3600000 <= $1`, [now]);
+  // THE PREBANK, the league round's own ritual (task #198): lineups lock an
+  // hour before the match (010), and THAT is when the umpire plays it - the
+  // inputs are frozen, so the cricket can be banked early and the broadcast
+  // start on the named hour exactly, whatever minute the cron happens to
+  // run. The read RPCs (048) keep the clock: commentary from the first
+  // ball, the result only after the last ball has been shown.
   const due = (await pool.query(
-    `SELECT * FROM friendlies WHERE status='accepted' AND play_at_ms <= $1 ORDER BY id`, [now])).rows;
+    `SELECT * FROM friendlies WHERE status='accepted' AND play_at_ms - 3600000 <= $1 ORDER BY id`, [now])).rows;
   const played = [];
   for (const f of due) {
     const hc = (await pool.query('SELECT name, squad FROM clubs WHERE country_id=$1 AND slot=$2', [f.c_country, f.c_slot])).rows[0];
@@ -859,6 +865,18 @@ export async function runFriendlies(pool, host, opts = {}) {
     const living = { [hc.name]: livingPatch(hc.squad), [ac.name]: livingPatch(ac.squad) };
     await pool.query(`UPDATE friendlies SET status='played', result=$2::jsonb, engine_version=$3, living=$4::jsonb WHERE id=$1`,
       [f.id, resultJson, ENGINE_VERSION, JSON.stringify(living)]);
+    // the ball-by-ball rides the commentary bank under 'fr:<id>', where the
+    // feed page reads it at the same eighteen-seconds-a-delivery pace as a
+    // league round; the seven-day prune applies to it like everything else
+    try {
+      const log = host.lastMatchLog ? host.lastMatchLog() : null;
+      if (log && log.length) {
+        await pool.query(
+          `INSERT INTO match_logs(match_id, country_id, log) VALUES ($1,$2,$3::jsonb)
+           ON CONFLICT (match_id) DO NOTHING`,
+          ['fr:' + f.id, f.c_country, JSON.stringify(log)]);
+      }
+    } catch (eLg) { console.error('friendly commentary bank failed ' + f.id + ':', eLg.message); }
     played.push(f.id);
   }
   return played;

@@ -186,15 +186,19 @@
   // ball. A man the seed cannot derive (a mid-season signing on a claimed
   // club) simply shows no stars - never the wrong ones.
   function squadMap(rid, m) {
-    var key = rid + ":" + m.home.slot + ":" + m.away.slot;
+    // a league fixture's two clubs share a nation; a friendly's may not -
+    // each side carries its own country (__c) and the map remembers, per
+    // man, which flag and which slot his player page lives under
+    var key = (m.home.__c || rid) + ":" + m.home.slot + "|" + (m.away.__c || rid) + ":" + m.away.slot;
     if (T.sq && T.sqKey === key) return T.sq;
     var mp = {};
     try {
       var wt = window.__foWT;
-      [m.home.slot, m.away.slot].forEach(function (sl) {
-        ((wt && wt.serverSquad && wt.serverSquad(rid, sl)) || []).forEach(function (p) {
+      [m.home, m.away].forEach(function (side) {
+        var nat = side.__c || rid;
+        ((wt && wt.serverSquad && wt.serverSquad(nat, side.slot)) || []).forEach(function (p) {
           if (!p || !p.name) return;
-          p.__fdSlot = sl;
+          p.__fdSlot = side.slot; p.__fdNat = nat;
           mp[p.name.toLowerCase()] = p;
           var ab = (p.name[0] + ". " + surname(p.name)).toLowerCase();
           if (!mp[ab]) mp[ab] = p;
@@ -223,7 +227,7 @@
       var lbl = label != null ? label : nm;
       var p = T.args ? squadMap(T.args[3], T.args[2])[clean.toLowerCase()] : null;
       if (!p || p.__fdSlot == null) return E(lbl);
-      return "<a class='fd-plink' href='#/player?c=" + encodeURIComponent(T.args[3]) + "&s=" + p.__fdSlot + "&n=" + encodeURIComponent(p.name) + "'>" + E(lbl) + "</a>";
+      return "<a class='fd-plink' href='#/player?c=" + encodeURIComponent(p.__fdNat || T.args[3]) + "&s=" + p.__fdSlot + "&n=" + encodeURIComponent(p.name) + "'>" + E(lbl) + "</a>";
     } catch (e) { return E(nm); }
   }
   function tlink(nm, slot, rid) {
@@ -231,6 +235,72 @@
     return "<a class='fd-plink' href='#/team?c=" + encodeURIComponent(rid) + "&s=" + (slot | 0) + "'>" + E(nm) + "</a>";
   }
   var T = { id: null, timer: null, tab: "live", filter: "all", args: null, ord: {}, ordBusy: {} };
+  // ---- A FRIENDLY IS WATCHED HERE TOO (#/feed?fr=<id>) ---------------------
+  // The umpire banks the match at the teamsheet lock (tick.mjs) and its
+  // commentary rides the same bank as a league round's; this page reads it
+  // at the same eighteen-seconds-a-delivery pace from the named hour. One
+  // reader for all cricket - nothing is ever simulated in a browser again.
+  var FRS = {};
+  function frFetch(frId, fresh) {
+    var k = "fr:" + frId;
+    if (FRS[k] && !fresh) return FRS[k];
+    var pr = fetch(SB + "/rest/v1/rpc/world_friendly_log", {
+      method: "POST",
+      headers: { apikey: KEY, Authorization: "Bearer " + KEY, "content-type": "application/json" },
+      body: JSON.stringify({ p_id: +frId })
+    }).then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
+    FRS[k] = pr;
+    return pr;
+  }
+  function frSide(side) {
+    var city = null;
+    try {
+      var sides = (P() && P().sidesOf(side.country)) || [];
+      for (var i = 0; i < sides.length; i++) if ((sides[i].slot | 0) === (side.slot | 0)) { city = sides[i].city; break; }
+    } catch (e) {}
+    return { name: side.name, slot: side.slot, city: city, __c: side.country };
+  }
+  function renderFriendly(page, frId) {
+    css();
+    document.body.classList.add("fo-fd-on");
+    var id = "fr:" + frId;
+    if (T.id !== id) { T.tab = "live"; T.filter = "all"; T.full = false; }
+    T.id = id;
+    if (!page.querySelector(".fo-fd")) page.innerHTML = "<div class='fo-fd'><div class='fd-in'><p class='fd-dim'>Opening the umpire's book&hellip;</p></div></div>";
+    frFetch(frId).then(function (j) {
+      if (T.id !== id || (location.hash || "").split("?")[0] !== "#/feed") return;
+      if (!j || !j.home) {
+        page.innerHTML = "<div class='fo-fd'><div class='fd-in'><p class='fd-dim'>This friendly could not be found - it may have lapsed unanswered.</p>" +
+          "<div class='fd-foot'><a href='#/home'>&#8592; The club</a></div></div></div>";
+        return;
+      }
+      var m = { home: frSide(j.home), away: frSide(j.away) };
+      var rid = j.home.__c || j.home.country;
+      T.rid = rid;
+      var winStart = +j.playAtMs || 0, BALL_MS = 18000;
+      var cal = { round: 0, seasonNo: 0, __fr: true };
+      if (!j.log) {
+        var mins = Math.max(1, Math.ceil((winStart - Date.now()) / 60000));
+        var whenT = winStart ? new Date(winStart).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+        page.innerHTML = shell(rid, cal, "up", m,
+          stageShell(m, null, Date.now() < winStart
+            ? "Friendly &middot; the first ball at " + E(whenT) + " &mdash; about " + (mins >= 90 ? Math.round(mins / 60) + " hours" : mins + " minute" + (mins === 1 ? "" : "s")) + " away."
+            : "Friendly &middot; the umpire is walking out &mdash; the first deliveries arrive in a minute or two."));
+        clearTimeout(T.timer);
+        T.timer = setTimeout(function () { frFetch(frId, true).then(function () { window.foRenderFeedPage(); }); },
+          winStart - Date.now() > 150000 ? 60000 : 20000);
+        return;
+      }
+      T.args = [page, j.log.slice().reverse(), m, rid, cal, winStart, BALL_MS, id];
+      paint.apply(null, T.args);
+      clearTimeout(T.timer);
+      T.timer = setInterval(function () {
+        if ((location.hash || "").split("?")[0] !== "#/feed" || T.id !== id) { clearInterval(T.timer); return; }
+        paint.apply(null, T.args);
+      }, 6000);
+    });
+  }
   window.foRenderFeedPage = function () {
     var page = document.getElementById("page"); if (!page) return;
     var pl = P(), wt = window.__foWT;
@@ -238,6 +308,7 @@
     css();
     document.body.classList.add("fo-fd-on");
     var q = qs(), rid = q.n || "eng";
+    if (q.fr) { renderFriendly(page, q.fr); return; }
     var sv = wt.serverFixtures(rid, Date.now());
     var fx = sv.fx || [], cal = sv.cal;
     if (!fx.length || !cal.round) { page.innerHTML = shell(rid, cal, null, null, "<p class='fd-dim'>No round on today's card.</p>"); return; }
@@ -278,6 +349,22 @@
     // the teamsheets arrive from the World Service on first opening
     if (t === "teams" && T.args && !T.ord[T.id] && !T.ordBusy[T.id]) {
       var wt = window.__foWT, cal9 = T.args[4], rid9 = T.args[3], id9 = T.id;
+      if (cal9 && cal9.__fr) {
+        // a friendly's sheets come off its own fixture card (public from
+        // the teamsheet lock, migration 048), keyed by club name like the
+        // round's own orders
+        T.ordBusy[id9] = 1;
+        fetch(SB + "/rest/v1/rpc/world_friendly_detail", {
+          method: "POST",
+          headers: { apikey: KEY, Authorization: "Bearer " + KEY, "content-type": "application/json" },
+          body: JSON.stringify({ p_id: +String(id9).slice(3) })
+        }).then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (d) {
+            T.ord[id9] = (d && d.orders) || {};
+            if (T.id === id9 && T.tab === "teams" && T.args) paint.apply(null, T.args);
+          }).catch(function () { T.ord[id9] = {}; });
+        return;
+      }
       if (wt && wt.roundState) {
         T.ordBusy[id9] = 1;
         wt.roundState(rid9, cal9.round).then(function (st) {
@@ -369,10 +456,11 @@
       "<div class='fd-stage" + (art ? " hasart" : "") + "'" +
       (art ? " style=\"background-image:linear-gradient(90deg,rgba(10,26,48,.97) 0%,rgba(10,26,48,.9) 48%,rgba(10,26,48,.68) 100%),url('" + art + "')\"" : "") + ">" +
       "<div class='fd-stagein'>" +
-      "<div class='fd-teams'><b>" + tlink(m.home.name, m.home.slot, rid) + "</b><i>vs</i><b>" + tlink(m.away.name, m.away.slot, rid) + "</b></div>" +
+      "<div class='fd-teams'><b>" + tlink(m.home.name, m.home.slot, m.home.__c || rid) + "</b><i>vs</i><b>" + tlink(m.away.name, m.away.slot, m.away.__c || rid) + "</b></div>" +
       (condBits.length ? "<div class='fd-cond'>" + condBits.join(" &middot; ") + "</div>" : "") +
       scoreHtml + mets +
-      (done ? "<a class='fd-enter' href='#/report?n=" + encodeURIComponent(rid) + "&w=" + encodeURIComponent(id) + "'>The full report and scorecard &rsaquo;</a>" : "") +
+      (done && !cal.__fr ? "<a class='fd-enter' href='#/report?n=" + encodeURIComponent(rid) + "&w=" + encodeURIComponent(id) + "'>The full report and scorecard &rsaquo;</a>" : "") +
+      (done && cal.__fr ? "<a class='fd-enter' href='#' onclick='foFeedTab(\"card\");return false'>The full scorecard &rsaquo;</a>" : "") +
       strip +
       "</div></div>";
 
@@ -393,7 +481,9 @@
       stage +
       "<div class='fd-tabs'>" + tabs + "</div>" +
       body +
-      "<div class='fd-foot'><a href='#/league?t=fixtures'>&#8592; The round</a><a href='#/home'>The club &rsaquo;</a></div>");
+      (cal.__fr
+        ? "<div class='fd-foot'><a href='#/home'>&#8592; The club</a><a href='#/team?c=" + encodeURIComponent(m.away.__c || rid) + "&s=" + (m.away.slot | 0) + "'>The visitors &rsaquo;</a></div>"
+        : "<div class='fd-foot'><a href='#/league?t=fixtures'>&#8592; The round</a><a href='#/home'>The club &rsaquo;</a></div>"));
   }
 
   // ---- BALL-BY-BALL, a timeline of the umpire's book -----------------------
@@ -735,11 +825,11 @@
   function teamsPanel(m, rid) {
     var ord = T.ord[T.id];
     if (!ord) return "<div class='fd-panel'><div class='fd-ch'>The teamsheets</div><p class='fd-dim'>Fetching the named elevens&hellip;</p></div>";
-    var col = function (nm, slot) {
+    var col = function (nm, slot, nat) {
       var o = ord[nm];
       var list = o && (o.batOrder || o.xi);
-      if (!list || !list.length) return "<div class='c'><b>" + tlink(nm, slot, rid) + "</b><u>no sheet filed &middot; the engine names the XI at the toss</u></div>";
-      return "<div class='c'><b>" + tlink(nm, slot, rid) + "</b><u>manager&rsquo;s named order</u>" +
+      if (!list || !list.length) return "<div class='c'><b>" + tlink(nm, slot, nat || rid) + "</b><u>no sheet filed &middot; the engine names the XI at the toss</u></div>";
+      return "<div class='c'><b>" + tlink(nm, slot, nat || rid) + "</b><u>manager&rsquo;s named order</u>" +
         list.slice(0, 11).map(function (p9, k) {
           var n9 = typeof p9 === "string" ? p9 : (p9 && p9.name) || "";
           return "<span><i>" + (k + 1) + "</i>" + plink(n9) + pstar(n9, rid) + "<u class='ssin'>" + sStars(n9, "bat") + "</u>" +
@@ -749,7 +839,7 @@
         "</div>";
     };
     return "<div class='fd-panel'><div class='fd-ch'>The teamsheets &middot; public from an hour before the first ball</div>" +
-      "<div class='fd-xic'>" + col(m.home.name, m.home.slot) + col(m.away.name, m.away.slot) + "</div></div>";
+      "<div class='fd-xic'>" + col(m.home.name, m.home.slot, m.home.__c) + col(m.away.name, m.away.slot, m.away.__c) + "</div></div>";
   }
 
   function shell(rid, cal, state, m, inner) {
@@ -759,9 +849,10 @@
       : state === "fin" ? "<span class='fd-fin'>STUMPS</span>"
       : state === "up" ? "<span class='fd-fin'>FIRST BALL SOON</span>" : "";
     var ground = m && m.home ? "<span class='vd'></span><span class='gr'>" + E(m.home.name) + "&rsquo;s ground" + (m.home.city ? " &middot; " + E(m.home.city) : "") + "</span>" : "";
+    var fr = cal && cal.__fr;
     return "<div class='fo-fd'><div class='fd-in'>" +
-      "<div class='fd-meta'><a class='fd-back' href='#/league?t=fixtures'>&larr; Back to Fixtures</a>" + flag +
-      "<span class='fd-lg'>" + E(rid).toUpperCase() + (cal && cal.round ? " &middot; ROUND " + cal.round : "") + "</span>" + ground + chip + "</div>" +
+      "<div class='fd-meta'><a class='fd-back' href='" + (fr ? "#/home" : "#/league?t=fixtures") + "'>&larr; " + (fr ? "Back to the club" : "Back to Fixtures") + "</a>" + flag +
+      "<span class='fd-lg'>" + E(rid).toUpperCase() + (fr ? " &middot; FRIENDLY" : (cal && cal.round ? " &middot; ROUND " + cal.round : "")) + "</span>" + ground + chip + "</div>" +
       inner + "</div></div>";
   }
   window.addEventListener("hashchange", function () {

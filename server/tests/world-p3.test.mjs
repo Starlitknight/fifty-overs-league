@@ -500,7 +500,20 @@ test('011: friendlies - challenge, accept, and the umpire plays the real match',
   const again = await as(U1, `SELECT public.world_friendly_challenge('eng', 8, $1) AS r`, [Date.now() + 4 * 3600000]);
   const dec = await as(U2, `SELECT public.world_friendly_respond($1, false) AS r`, [again.rows[0].r.id]);
   assert.equal(dec.rows[0].r.status, 'declined');
-  const mine = await as(U1, `SELECT public.world_my_friendlies() AS f`);
+  // the result line keeps the broadcast clock (048): a played friendly's
+  // text serves only after its reveal completes - so the ledger is read
+  // from later that evening, when both broadcasts have long finished
+  const mine = await (async () => {
+    const c = await pool.connect();
+    try {
+      await c.query('BEGIN');
+      await c.query(`SELECT set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ sub: U1 })]);
+      await c.query(`SELECT set_config('world.now_ms', $1, true)`, [String(PLAY + 4 * 3600000)]);
+      const r = await c.query(`SELECT public.world_my_friendlies() AS f`);
+      await c.query('COMMIT');
+      return r;
+    } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e; } finally { c.release(); }
+  })();
   const list = mine.rows[0].f;
   assert.ok(list.length >= 3);
   assert.ok(list.some(x => x.status === 'played' && x.text), 'played friendlies carry their result');

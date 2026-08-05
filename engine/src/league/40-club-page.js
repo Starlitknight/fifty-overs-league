@@ -105,7 +105,12 @@
         state = "awaiting their reply";
       } else if (f.status === "accepted") {
         cls += " on"; state = live ? "in play" : "arranged";
-        if (live) act = "<button type='button' class='fo-cp-fwatch' data-id='" + f.id + "'>Watch</button>";
+        act = "<button type='button' class='fo-cp-fwatch' data-id='" + f.id + "'>" + (live ? "Watch" : "Match centre") + "</button>";
+      } else if (f.status === "played" && !f.text) {
+        // banked by the umpire, but the broadcast is still showing (048
+        // withholds the result line until the last ball) - it reads as live
+        cls += " on"; state = "in play";
+        act = "<button type='button' class='fo-cp-fwatch' data-id='" + f.id + "'>Watch</button>";
       } else if (f.status === "played") {
         cls += " done"; state = f.text || "played";
         act = "<button type='button' class='fo-cp-fwatch' data-id='" + f.id + "'>Watch it back</button>";
@@ -121,7 +126,12 @@
     var host = document.getElementById("fo-cp-chlist"); if (!host) return;
     host.innerHTML = tieRows();
     host.querySelectorAll(".fo-cp-fwatch").forEach(function (b) {
-      b.addEventListener("click", function () { try { window.foWtFriendly(+b.getAttribute("data-id")); } catch (e) {} });
+      // the feed page is the one reader for all cricket now - the umpire
+      // played this match; nobody's browser re-simulates it
+      b.addEventListener("click", function () {
+        location.hash = "#/feed?fr=" + (+b.getAttribute("data-id"));
+        if (typeof window.route === "function") try { window.route(); } catch (e) {}
+      });
     });
     var answer = function (b, accept) {
       b.disabled = true;
