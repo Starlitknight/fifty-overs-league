@@ -46,7 +46,7 @@ BOOT='<style id="fo-boot">html{background:#0B1322}html>body{visibility:hidden;an
 # four-megabyte bundle twice. The decision is a pure function so it can be
 # tested; the hostname guard is what makes a loop impossible, since the
 # destination host contains no "github.io" and returns the empty string.
-REDIR='<script>window.__foHome=function(h,p,s,x){try{if(String(h).indexOf("github.io")<0)return"";return"https://fifty-overs-league.s-rananaware.workers.dev/"+String(p).replace(/^\/[^\/]*\//,"")+(s||"")+(x||"")}catch(e){return""}};(function(){try{if((location.hash||"").split("?")[0]==="#/squad-intelligence")window.__foSiColdStart=1;var u=window.__foHome(location.hostname,location.pathname,location.search,location.hash);if(u)location.replace(u)}catch(e){}})();</script>'
+REDIR='<script>window.__foHome=function(h,p,s,x){try{if(String(h).indexOf("github.io")<0)return"";return"https://fifty-overs-league.s-rananaware.workers.dev/"+String(p).replace(/^\/[^\/]*\//,"")+(s||"")+(x||"")}catch(e){return""}};(function(){try{var u=window.__foHome(location.hostname,location.pathname,location.search,location.hash);if(u)location.replace(u)}catch(e){}})();</script>'
 
 # Unique build stamp (UTC time + source hash). The league layer shows it and
 # polls version.json to offer one-tap updates when a newer build is deployed.

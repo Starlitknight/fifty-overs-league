@@ -284,33 +284,10 @@
   }
   window.foRenderSquadIntelligence = foSiRender;
 
-  // The core router predates this optional room. Intercept only this exact
-  // hash and leave every existing route, including #/squad, on its old path.
-  function foSiInstallRoute() {
-    if (typeof window.route !== "function") return false;
-    if (window.route.__foSi) return true;
-    var foSiRoute0 = window.route;
-    window.route = function () {
-      var path = (location.hash || "").split("?")[0];
-      if (path === "#/squad-intelligence") {
-        try { App.page = "squad-intelligence"; foSyncMyIx(); } catch (e) {}
-        try { document.querySelectorAll("#topbar a").forEach(function (a) { a.classList.toggle("on", a.dataset.nav === "squad" || a.dataset.nav === "squad-intelligence"); }); } catch (e2) {}
-        foSiRender();
-        try { foBlankWatch("squad-intelligence"); } catch (e3) {}
-        return;
-      }
-      return foSiRoute0.apply(this, arguments);
-    };
-    window.route.__foSi = 1;
-    return true;
-  }
-  foSiInstallRoute();
-  // The legacy core resolves unknown hashes before league modules load. The
-  // head bootstrap remembers this one route so a copied deep link survives.
-  if (window.__foSiColdStart) {
-    window.__foSiColdStart = 0;
-    location.hash = "#/squad-intelligence";
-    setTimeout(function () { if (foSiInstallRoute()) window.route(); }, 0);
+  // On a cold deep link the core router deliberately keeps this hash until
+  // the league module is ready. Ask it to paint now that the renderer exists.
+  if ((location.hash || "").split("?")[0] === "#/squad-intelligence") {
+    setTimeout(function () { if (typeof window.route === "function") window.route(); }, 0);
   }
   window.addEventListener("hashchange", function () {
     if ((location.hash || "").split("?")[0] !== "#/squad-intelligence") {

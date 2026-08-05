@@ -1531,6 +1531,18 @@ function route(){
       if(App.page!=='home'){location.hash='#/home';return}
     }
   }catch(e){}
+  // Squad Intelligence is a second, read-only view of the live squad. Keep
+  // the operational #/squad room on its original renderer; this route owns
+  // only its exact hash. During cold boot the league renderer is defined a
+  // little later in the bundle, so preserve the hash and let it call us back.
+  if(App.page==='squad-intelligence'){
+    if(typeof window.foRenderSquadIntelligence==='function'){
+      try{foSyncMyIx()}catch(e){}
+      try{window.foRenderSquadIntelligence()}catch(e){foPageFailed('squad intelligence',e,'Squad Intelligence could not be drawn.')}
+      try{foBlankWatch('squad-intelligence')}catch(e){}
+    }
+    return
+  }
   document.querySelectorAll('#topbar a').forEach(a=>a.classList.toggle('on',a.dataset.nav===App.page));
   const P={club:pgClub,office:pgOffice,matches:pgMatches,squad:pgSquad,orders:pgOrders,players:pgPlayers,
     player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,editor:pgEditor};
