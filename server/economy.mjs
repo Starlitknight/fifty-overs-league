@@ -447,8 +447,18 @@ export async function computeFinance(pool, country, opts = {}) {
         writtenOff: s.writtenOff, administration: s.admin, adminRounds: s.adminRounds,
         debtLimit: DEBT_LIMIT,
         founded: FOUNDING_BANK, rounds: s.rounds,
+        // how many of those rounds were at home is exactly how many gates were
+        // counted, and it is the only honest divisor for an average gate
+        homeMatches: s.atts.length, awayMatches: Math.max(0, s.rounds - s.atts.length),
         nextSeats: s.seats < MAX_SEATS ? s.seats + 1000 : null,
-        nextSeatsCost: s.seats < MAX_SEATS ? seatBlockPrice(s.seats) : null
+        nextSeatsCost: s.seats < MAX_SEATS ? seatBlockPrice(s.seats) : null,
+        // THE PRICE OF THE NEXT LEVEL, quoted by the side that charges it.
+        // The books used to quote a ladder of their own invention and the
+        // manager found out what a level really cost when the RPC refused him.
+        academyLevel: s.academy,
+        nextAcademy: s.academy < 5 ? s.academy + 1 : null,
+        nextAcademyCost: s.academy < 5 ? academyBuild(s.academy, s.academy + 1) : null,
+        maxSeats: MAX_SEATS, seatBlock: 1000, homeCut: HOME_CUT
       }
     };
   });
