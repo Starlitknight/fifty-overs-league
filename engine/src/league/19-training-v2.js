@@ -29,6 +29,25 @@
 
   function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
   function ready() { return typeof App !== "undefined" && App && typeof userTeam === "function" && userTeam(); }
+  // the coach's prices, spoken the way the treasurer writes them
+  function t2Money(v) {
+    var n = Number(v); if (!isFinite(n)) return "—";
+    return "$" + (n >= 1000000 ? (n / 1000000).toFixed(1) + "m" : n >= 1000 ? Math.round(n / 1000) + "k" : String(Math.round(n)));
+  }
+  var T2_SB = "https://egaipdksvztqqgouriyc.supabase.co";
+  var T2_KEY = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+  function t2Rpc(fn, args) {
+    var tok = ""; try { tok = (window.__foJWT && window.__foJWT()) || ""; } catch (e) {}
+    return fetch(T2_SB + "/rest/v1/rpc/" + fn, {
+      method: "POST",
+      headers: { apikey: T2_KEY, Authorization: "Bearer " + (tok || T2_KEY), "content-type": "application/json" },
+      body: JSON.stringify(args || {})
+    }).then(function (r) { return r.text().then(function (t) {
+      var d = null; try { d = t ? JSON.parse(t) : null; } catch (e) {}
+      if (!r.ok) throw new Error((d && (d.message || d.hint)) || t || ("HTTP " + r.status));
+      return d;
+    }); });
+  }
 
   // ---- the engine's own arithmetic, quoted not re-invented -----------------
   var LADDER = ["rested", "revived", "energetic", "passable", "satisfactory", "moderate", "weary", "listless", "exhausted", "shattered", "clinically dead"];
@@ -355,14 +374,57 @@
       }
     } catch (eRp) {}
 
+    // ---- THE HEAD COACH (051): the FTP lever - a hired man whose quality
+    // multiplies every session. Level and prices are the world's own, off
+    // world_my_status; nothing here is invented on the phone.
+    var coachCard = "";
+    try {
+      var co = window.__foWorldCoach;
+      if (co) {
+        var pips9 = "";
+        for (var ci = 1; ci <= 5; ci++) pips9 += "<s class='fo-t2-cpip" + (ci <= co.level ? " on" : "") + "'></s>";
+        var pct9 = 7 * (co.level | 0);
+        coachCard = "<div class='fo-t2-card'><div class='fo-t2-ck'>The head coach</div>" +
+          "<div class='fo-t2-coach'><div class='fo-t2-cpips'>" + pips9 + "</div>" +
+          "<div class='fo-t2-cmeta'><b>" + (co.level ? "Level " + co.level + " &middot; every session +" + pct9 + "%" : "No coach on the staff") + "</b>" +
+          "<i>" + (co.level ? "Wages " + t2Money(co.upkeep) + " a round &middot; " : "") +
+          (co.nextCost != null ? (co.level ? "the next man costs " : "a level-one coach costs ") + t2Money(co.nextCost) : "the best coach in the country") + "</i></div>" +
+          (co.nextCost != null
+            ? "<button type='button' class='fo-t2-chire' id='fo-t2-chire'>" + (co.level ? "Hire better &middot; " : "Hire a coach &middot; ") + t2Money(co.nextCost) + "</button>"
+            : "") +
+          "</div>" +
+          "<p class='fo-t2-dim'>A better coach makes every man's session worth more, on top of the academy's rate. He is paid every round, and he is never let go for a lesser man.</p></div>";
+      }
+    } catch (eCo) {}
+
     page.innerHTML = "<div class='fo-t2'><div class='fo-t2-in'>" +
-      hero + band + focusCard + unitCards + projCard + roster + twin + report + attention +
+      hero + band + coachCard + focusCard + unitCards + projCard + roster + twin + report + attention +
       "<button type='button' class='fo-t2-save" + (st.dirty ? " dirty" : "") + "' id='fo-t2-save'><svg viewBox='0 0 24 24' class='pl'><path d='M2 21 L23 12 L2 3 L2 10 L17 12 L2 14 Z' fill='currentColor'/></svg>Save training plan" + (st.dirty ? " &middot; unsaved" : "") + "</button>" +
-      "<p class='fo-t2-fine'>You can review and send to the world when ready. The plan is a standing order: the umpire works it at every update until you change it.</p>" +
+      "<p class='fo-t2-fine'>You can review and send to the world when ready. The plan is a standing order: the umpire works it at every update until you change it. " +
+      "On a match day the eleven who play bank the full session and the men left out train at half pace &mdash; on rest days the whole squad trains in full.</p>" +
       "</div></div>";
 
     // ---- the hands ---------------------------------------------------------
     var rep = function () { window.foRenderNetsPage(); };
+    var chire = page.querySelector("#fo-t2-chire");
+    if (chire) chire.addEventListener("click", function () {
+      var co2 = window.__foWorldCoach || { level: 0 };
+      var to = (co2.level | 0) + 1;
+      if (!confirm(to === 1
+        ? "Hire a level-one head coach for " + t2Money(co2.nextCost) + "? He is paid every round from then on."
+        : "Replace him with a level-" + to + " coach for " + t2Money(co2.nextCost) + "?")) return;
+      chire.disabled = true; chire.textContent = "Hiring…";
+      t2Rpc("world_set_coach", { p_level: to })
+        .then(function () {
+          try { if (window.__foWorldRefreshPlan) window.__foWorldRefreshPlan(); } catch (e2) {}
+          setTimeout(rep, 900);
+        })
+        .catch(function (e) {
+          chire.disabled = false;
+          chire.textContent = "Try again";
+          try { chire.title = String((e && e.message) || e).slice(0, 160); } catch (e3) {}
+        });
+    });
     page.querySelectorAll("[data-t2f]").forEach(function (b) {
       b.addEventListener("click", function () { st.focus = b.getAttribute("data-t2f"); st.dirty = 1; rep(); });
     });
@@ -512,6 +574,15 @@
       "html body #page button.fo-t2-save:hover{background:#A64426}",
       "html body #page button.fo-t2-save.dirty{box-shadow:0 0 0 3px rgba(201,87,31,.25)}",
       ".fo-t2-fine{margin:9px 0 0;text-align:center;font:italic 400 11.5px Georgia,serif;color:#8a8272}",
+      ".fo-t2-coach{display:flex;align-items:center;gap:14px;flex-wrap:wrap;margin:4px 0 8px}",
+      ".fo-t2-cpips{display:flex;gap:5px}",
+      ".fo-t2-cpip{width:13px;height:13px;border-radius:50%;background:rgba(20,28,40,.1);border:1px solid rgba(20,28,40,.2)}",
+      ".fo-t2-cpip.on{background:#C9571F;border-color:#C9571F}",
+      ".fo-t2-cmeta{flex:1;min-width:180px;display:flex;flex-direction:column;gap:2px}",
+      ".fo-t2-cmeta b{font:600 13.5px/1.3 Inter,sans-serif;color:#14243A}",
+      ".fo-t2-cmeta i{font:500 11.5px/1.4 Inter,sans-serif;font-style:normal;color:rgba(20,28,40,.55)}",
+      "html body #page .fo-t2-chire{flex:none;font:700 10.5px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#FFFEFC !important;background:#0E233F !important;border:0 !important;border-radius:999px !important;padding:11px 16px !important;cursor:pointer}",
+      "html body #page .fo-t2-chire:hover{background:#C9571F !important}",
       "@media(max-width:560px){.fo-t2-hero h1{font-size:27px}.fo-t2-hero .cr svg{width:42px;height:55px}",
       ".fo-t2-band b{font-size:12.5px}.fo-t2-band i{font-size:7px}.fo-t2-band s,.fo-t2-band s svg{width:17px;height:17px}.fo-t2-band>div{gap:5px;padding:9px 6px}",
       ".fo-t2-row{grid-template-columns:28px minmax(0,1.3fr) minmax(62px,.7fr) minmax(86px,98px);gap:6px}",

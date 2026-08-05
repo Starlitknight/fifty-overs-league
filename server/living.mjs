@@ -174,7 +174,7 @@ function wasHere(p, r) {
 async function trainedSquad(pool, host, country, slot, squad) {
   if (!host || !host.trainRound) return squad;
   const rounds = (await pool.query(
-    `SELECT season_no, round, plan, academy FROM training_rounds WHERE country_id=$1 AND slot=$2
+    `SELECT season_no, round, plan, academy, coach, xi FROM training_rounds WHERE country_id=$1 AND slot=$2
       ORDER BY season_no, round`, [country, slot])).rows;
   // A MAN WORKS EACH ROUND AT THE AGE HE WAS THAT ROUND. The nets rate is
   // steeply age-dependent, and a cricketer ages a year at every rollover - so
@@ -211,7 +211,9 @@ async function trainedSquad(pool, host, country, slot, squad) {
     const crew = here.map(i => Object.assign({}, men[i],
       back ? { age: Math.max(16, (men[i].age || 27) - back) } : null,
       { fatN: 0, fatWord: 'rested', fatigue: 'rested' }));
-    const worked = host.trainRound(crew, r.plan || {}, academyRate(r.academy)).players;
+    const worked = host.trainRound(crew, r.plan || {},
+      academyRate(r.academy) * coachRate(r.coach),
+      Array.isArray(r.xi) ? r.xi : null).players;
     // the work is his; the age he is today is still today's
     here.forEach((i, k) => { men[i] = Object.assign({}, worked[k], { age: men[i].age }); });
   }
@@ -225,6 +227,13 @@ async function trainedSquad(pool, host, country, slot, squad) {
 export function academyRate(level) {
   const lv = Math.max(1, Math.min(5, +level || 2));
   return 1 + 0.08 * (lv - 2);
+}
+// WHAT THE HEAD COACH BUYS IN THE NETS (051). Seven per cent a level, on top
+// of the building: no coach is the unit, so every round banked before he was
+// hired replays exactly as it always did. The level in force is banked with
+// the plan in force, round by round, same as the academy.
+export function coachRate(level) {
+  return 1 + 0.07 * Math.max(0, Math.min(5, +level || 0));
 }
 
 // A CAREER FOLLOWS THE MAN. The living layer derives a cricketer's book from

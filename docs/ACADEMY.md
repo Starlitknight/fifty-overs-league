@@ -243,3 +243,34 @@ you liked it or not, and a Colts Cup played entirely by the umpire on league
 match days — is retired. `server/youth.mjs` keeps its generator and its record
 computation; everything about beds, automatic intake and automatic promotion
 goes.
+
+---
+
+## 7. The head coach (051)
+
+A hired man, not a building — the lever From the Pavilion runs its nets on.
+Five levels, bought upward only and never let go for a lesser man. What a
+level buys is the RATE: every session, every man, every programme is worth
+seven per cent more per level, multiplied with the academy's own rate. The
+level in force is banked with the plan in force in `training_rounds`, so
+history never re-rates when the coach changes.
+
+| To level | Hire cost | Wages a round |
+| -------- | --------- | ------------- |
+| 1        | $120,000  | $2,000        |
+| 2        | $260,000  | $5,000        |
+| 3        | $450,000  | $9,000        |
+| 4        | $700,000  | $14,000       |
+| 5        | $1,000,000| $20,000       |
+
+`server/migrations/051-head-coach.sql` prices the button; `server/economy.mjs`
+prices the books; the tests hold the two to the same numbers.
+
+## 8. Match-day nets (051)
+
+The rule Battrick built its training on: on a round where an XI took the
+field, the eleven on the banked teamsheet bank the full session and the men
+left out train at half pace. On rest days — and for any club that filed no
+sheet — the whole squad trains in full. The XI is banked per round in
+`training_rounds.xi`; every round banked before 051 carries null and replays
+exactly as it always did.

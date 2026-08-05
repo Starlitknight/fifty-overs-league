@@ -30,9 +30,20 @@ globalThis.__svcGenSquad = function (seed, country, arch, capt, strength) {
 // The RATE is the one thing outside the engine that moves the needle: a
 // club's academy, which is a building the manager paid for. It arrives as a
 // plain multiplier so the arithmetic below stays the shipped engine's own.
-globalThis.__svcTrain = function (playersJson, planJson, rate) {
+globalThis.__svcTrain = function (playersJson, planJson, rate, xiJson) {
   var players = JSON.parse(playersJson), plan = JSON.parse(planJson || '{}');
   var RATE = (typeof rate === 'number' && isFinite(rate) && rate > 0) ? rate : 1;
+  // THE MATCH-DAY RULE (051), the way Battrick has always run it: on a round
+  // where an XI took the field, the eleven who played bank the full session
+  // and the men left out train at half pace. xi is the banked teamsheet for
+  // that round; null (every round banked before 051, every rest day, every
+  // club that filed no sheet) means the whole squad trains in full - so
+  // history replays exactly as it always did.
+  var xiSet = null;
+  try {
+    var XI = xiJson ? JSON.parse(xiJson) : null;
+    if (XI && XI.length) { xiSet = {}; XI.forEach(function (n) { xiSet[n] = 1; }); }
+  } catch (eXi) {}
   var PROGS = (typeof FO_TRAIN_PROGS !== 'undefined' && FO_TRAIN_PROGS) || (window && window.FO_TRAIN_PROGS) || {};
   var LADDER = ['rested','revived','energetic','passable','satisfactory','moderate','weary','listless','exhausted','shattered','clinically dead'];
   var FATF = [0.35,0.45,0.55,0.68,0.78,0.86,0.93,0.97,1.00,1.02,1.04];
@@ -80,7 +91,8 @@ globalThis.__svcTrain = function (playersJson, planJson, rate) {
   players.forEach(function (p) {
     var prog = plan[p.name] || defaultProg(p);
     if (prog === 'Rest' || !PROGS[prog]) return;
-    var pts = 24 * ageFactor(p.age || 27) * potFactor(p) * fresh(p) * RATE * intensityOf(p);
+    var pts = 24 * ageFactor(p.age || 27) * potFactor(p) * fresh(p) * RATE * intensityOf(p)
+            * (xiSet ? (xiSet[p.name] ? 1 : 0.5) : 1);
     if (prog === 'All-rounder') pts *= 0.85;
     var w = PROGS[prog], total = 0;
     for (var k in w) total += w[k];
@@ -226,7 +238,10 @@ globalThis.__svcWorldCfg = function () {
     genSquad(seed, country, arch, capt, strength) { return JSON.parse(gen(seed, country, arch, capt, strength)); },
     // one round in the nets for a whole squad, by the shipped engine's numbers,
     // at the rate the club's academy buys (1 = a level-two academy)
-    trainRound(players, plan, rate) { return JSON.parse(train(JSON.stringify(players), JSON.stringify(plan || {}), rate)); },
+    trainRound(players, plan, rate, xi) {
+      return JSON.parse(train(JSON.stringify(players), JSON.stringify(plan || {}), rate,
+        (Array.isArray(xi) && xi.length) ? JSON.stringify(xi) : null));
+    },
     // recompute bat/threat/control/rating/wage from skills, engine's own map
     derive(players) { return JSON.parse(der(JSON.stringify(players))); },
     // the 0-99 card rating the club pages show, per player

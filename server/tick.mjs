@@ -656,9 +656,22 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
     // round did, banked so the squad's skills stay recomputable from genesis
     // the plan in force AND the academy in force: a building that changes the
     // rate has to be part of the record, or the squad stops being replayable
+    // the plan in force, the academy in force, the COACH in force - and the
+    // XI that took the field (051, the match-day rule): the eleven on the
+    // banked teamsheet train the full session, the men left out train at
+    // half pace. A club that filed no sheet banks null and trains in full.
     await pool.query(
-      `INSERT INTO training_rounds(country_id, slot, season_no, round, plan, academy)
-       SELECT country_id, slot, $2, $3, coalesce(training, '{}'::jsonb), academy FROM clubs WHERE country_id=$1
+      `INSERT INTO training_rounds(country_id, slot, season_no, round, plan, academy, coach, xi)
+       SELECT c.country_id, c.slot, $2, $3, coalesce(c.training, '{}'::jsonb), c.academy,
+              coalesce(c.coach, 0),
+              (SELECT CASE WHEN m.home_slot = c.slot
+                           THEN m.orders->coalesce(m.home_name, c.name)->'xi'
+                           ELSE m.orders->coalesce(m.away_name, c.name)->'xi' END
+                 FROM matches m
+                WHERE m.country_id = c.country_id AND m.season_no = $2 AND m.round = $3
+                  AND (m.home_slot = c.slot OR m.away_slot = c.slot)
+                LIMIT 1)
+         FROM clubs c WHERE c.country_id=$1
        ON CONFLICT (country_id, slot, season_no, round) DO NOTHING`,
       [country, season.season_no, round]);
     // THE ALMANACK SLIMS. Only the current round is ever replayed by a
