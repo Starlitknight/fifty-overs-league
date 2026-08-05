@@ -83,12 +83,6 @@
   // seasons of nets you are buying, and it is why a sixteen-year-old rated
   // lower than a twenty-year-old is very often the better signing.
   function yearsLeft(age) { return Math.max(0, LEAVE_AT - (+age || 18)); }
-  function yearsWord(age) {
-    var n = yearsLeft(age);
-    return n <= 0 ? "leaves at the turn of the year"
-         : n === 1 ? "one season left in the academy"
-         : n + " seasons left in the academy";
-  }
 
   // the fifteen skills, grouped the way a coach would read them out
   var SKILLS = [
@@ -315,7 +309,8 @@
       ? "<div class='fo-ac-warn'><b>" + leaving.length + (leaving.length === 1 ? " boy leaves" : " boys leave") +
         " at the turning of the year.</b> " + E(leaving.map(function (y) { return y.name; }).join(", ")) +
         " &mdash; twenty-one, and gone from the world unless you hand " +
-        (leaving.length === 1 ? "him a senior contract" : "them senior contracts") + " first.</div>"
+        (leaving.length === 1 ? "him a senior contract" : "them senior contracts") +
+        " first, from the squad page.</div>"
       : "";
 
     var shortBy = Math.max(0, floor - boys.length);
@@ -325,10 +320,14 @@
         (shortBy === 1 ? " more boy" : " more boys") + " and the tie is yours to play; short of it, it is forfeited in public.</div>"
       : "";
 
+    // THE BOYS DO NOT LIVE HERE ANY MORE. A signed colt is a squad member the
+    // way the big management games treat him: he stands in the squad room with
+    // the rest of the men, under the Youth toggle, where his shirt and his
+    // release are written. This room keeps the scout, the building, the money
+    // and the cup - and a door through to the boys.
     var list = boys.length
-      ? "<div class='fo-ac-grid'>" + boys.slice().sort(function (a, b) {
-          return (a.age || 0) - (b.age || 0) || ((ovrOf(b) || 0) - (ovrOf(a) || 0));
-        }).map(function (p) { return coltCard(p, ac); }).join("") + "</div>"
+      ? "<a class='fo-ac-sqlink' href='#/squad'><span><b>" + boys.length + (boys.length === 1 ? " boy" : " boys") +
+        " on the books</b><i>They stand with the squad now &mdash; flip Show to Youth for skills, senior shirts and releases</i></span><s>&rsaquo;</s></a>"
       : "<div class='fo-ac-note'>Nobody on the books. Scout a recruit on the next rest day.</div>";
 
     page.innerHTML = shell(
@@ -346,7 +345,7 @@
           "<div><i>Treasury</i><b>" + money(bank) + "</b><u>at the bank</u></div>" +
         "</div>" + up +
       "</div>" +
-      "<div class='fo-ac-card'><h3>On the books<span>" + boys.length + " of " + floor + "</span></h3>" + list + "</div>" +
+      (boys.length ? list : "<div class='fo-ac-card'><h3>On the books<span>0 of " + floor + "</span></h3>" + list + "</div>") +
       "<div class='fo-ac-card' id='fo-ac-cup'><h3>The Colts Cup</h3>" +
         "<div class='fo-ac-note'>Reading the boys&rsquo; table&hellip;</div></div>" +
       "");
@@ -377,22 +376,58 @@
         .then(function () { window.foRenderAcademyPage(); })
         .catch(function (e) { upBtn.disabled = false; upBtn.textContent = "Try again"; alert(String(e.message).slice(0, 200)); });
     });
-    page.querySelectorAll("[data-fo-colt]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var nm = b.getAttribute("data-fo-colt"), act = b.getAttribute("data-fo-act");
-        if (act === "release" && !confirm("Let " + nm + " go? He leaves the club for good.")) return;
-        if (act === "promote" && !confirm("Hand " + nm + " a senior contract for " + money(ac.promoteFee) + "?")) return;
-        b.disabled = true; b.textContent = act === "promote" ? "Signing…" : "Releasing…";
-        rpc("world_colt", { p_name: nm, p_action: act })
-          .then(function () {
-            // the senior squad has changed, so the world's copy of it must be
-            // re-read before any other page shows the old fifteen
-            try { if (window.__foWorldRefreshPlan) window.__foWorldRefreshPlan(); } catch (e2) {}
-            window.foRenderAcademyPage();
-          })
-          .catch(function (e) { b.disabled = false; b.textContent = act === "promote" ? "Senior shirt" : "Release"; alert(String(e.message).slice(0, 200)); });
-      });
-    });
+  }
+
+  // THE SHIRT IS WRITTEN FROM THE SQUAD PAGE. The boys stand with the rest of
+  // the squad now, but the contract is still the academy's to price: this
+  // answers the squad page's promote/release taps against the world, quoting
+  // the real fee before anything is signed. Returns false when no world club
+  // is signed in, so the caller can fall back to the local game's own books.
+  var COLT_FEE = null;
+  window.__foColtAction = function (name, action, done) {
+    var after = function () { try { if (done) done(); } catch (eD) {} };
+    try { if (!jwt()) return false; } catch (e0) { return false; }
+    var ask = function (fee) {
+      var q = action === "release"
+        ? "Let " + name + " go? He leaves the club for good."
+        : fee != null
+          ? "Hand " + name + " a senior contract for " + money(fee) + "?"
+          : "Hand " + name + " a senior contract? The fee comes out of the treasury.";
+      if (!confirm(q)) { after(); return; }
+      rpc("world_colt", { p_name: name, p_action: action })
+        .then(function () {
+          note(action === "promote" ? name + " pulls on a senior shirt." : name + " leaves the club.");
+          // the senior squad has changed, so the world's copy of it must be
+          // re-read before any other page shows the old fifteen
+          try { if (window.__foWorldRefreshPlan) window.__foWorldRefreshPlan(); } catch (e2) {}
+          after();
+        })
+        .catch(function (e) {
+          note(String((e && e.message) || e).replace(/^error:\s*/i, "").slice(0, 180));
+          after();
+        });
+    };
+    if (action !== "promote") { ask(null); return true; }
+    if (COLT_FEE != null) { ask(COLT_FEE); return true; }
+    rpc("world_my_academy").then(function (ac) {
+      COLT_FEE = (ac && ac.promoteFee != null) ? Number(ac.promoteFee) : null;
+      ask(COLT_FEE);
+    }).catch(function () { ask(null); });
+    return true;
+  };
+
+  // a small floating note in the game's own voice - a native popup would
+  // freeze the page's timers and clicks
+  function note(msg) {
+    try {
+      css();
+      var n = document.createElement("div");
+      n.className = "fo-ac-toast";
+      n.textContent = String(msg || "");
+      document.body.appendChild(n);
+      requestAnimationFrame(function () { n.classList.add("on"); });
+      setTimeout(function () { n.classList.remove("on"); setTimeout(function () { n.remove(); }, 400); }, 5200);
+    } catch (e) {}
   }
 
   // THE COLTS CUP: the boys' own competition, played in its own week.
@@ -479,24 +514,6 @@
         "<button type='button' class='fo-ac-btn' data-fo-namecolts='1'>Name this squad</button></div></div>";
   }
 
-  function coltCard(p, ac) {
-    var o = ovrOf(p), left = yearsLeft(p.age);
-    return "<div class='fo-ac-colt" + (left <= 1 ? " going" : "") + "'>" +
-      "<div class='fo-ac-ch'><b>" + E(p.name) + "</b>" + (o == null ? "" : "<u>" + o + "</u>") + "</div>" +
-      "<div class='fo-ac-cm'>" + E(roleOf(p)) + " &middot; " + E(p.age || 18) +
-        (p.from ? " &middot; " + E(p.from) : "") + "</div>" +
-      "<div class='fo-ac-cm" + (left <= 1 ? " going" : "") + "'>" + E(yearsWord(p.age)) +
-        " &middot; " + wage(p.wage) + " a round</div>" +
-      // what he has actually done in the Colts Cup, if he has done anything
-      (p.colts && p.colts.m ? "<div class='fo-ac-cm cup'>" + p.colts.m + (p.colts.m === 1 ? " cap" : " caps") +
-        " &middot; " + p.colts.runs + " runs" + (p.colts.hs ? " (" + p.colts.hs + " best)" : "") +
-        (p.colts.wkts ? " &middot; " + p.colts.wkts + " wkts" : "") + "</div>" : "") +
-      "<div class='fo-ac-cbtns'>" +
-        "<button type='button' class='fo-ac-mini' data-fo-colt='" + E(p.name) + "' data-fo-act='promote'>Senior shirt</button>" +
-        "<button type='button' class='fo-ac-mini ghost' data-fo-colt='" + E(p.name) + "' data-fo-act='release'>Release</button>" +
-      "</div></div>";
-  }
-
   // The academy was the first of the world rooms, and its plate-and-cards
   // became the house style for the rest of them. Other rooms call this and
   // add only what is their own, so there is one stylesheet, not five.
@@ -534,6 +551,13 @@
       "html body #page .fo-ac-btn{display:inline-block;font:700 10.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:linear-gradient(180deg,#E8894A,#C8542F) !important;border:0 !important;border-radius:999px !important;padding:11px 17px !important;cursor:pointer;text-decoration:none !important}",
       "html body #page .fo-ac-btn.off{background:rgba(20,28,40,.12) !important;color:rgba(20,28,40,.5) !important;cursor:default}",
       "html body #page .fo-ac-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:10px}",
+      "html body #page a.fo-ac-sqlink{display:flex;align-items:center;gap:14px;background:#FFFEFC;border:1px solid rgba(201,85,50,.42);border-left:5px solid #C95532;border-radius:16px;padding:15px 18px;margin:14px 0 0;text-decoration:none;color:#141C28;box-shadow:0 10px 26px rgba(201,85,50,.10)}",
+      "html body #page a.fo-ac-sqlink span{flex:1;min-width:0;display:flex;flex-direction:column;gap:3px}",
+      "html body #page a.fo-ac-sqlink b{font:600 14.5px/1.3 Inter,sans-serif;color:#141C28}",
+      "html body #page a.fo-ac-sqlink i{font:500 11.5px/1.5 Inter,sans-serif;font-style:normal;color:rgba(20,28,40,.55)}",
+      "html body #page a.fo-ac-sqlink s{flex:none;text-decoration:none;font:600 20px/1 Inter,sans-serif;color:#C95532}",
+      ".fo-ac-toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,14px);opacity:0;z-index:9999;background:#0E233F;color:#FFFEFC;font:600 13px/1.4 Inter,sans-serif;border-radius:12px;border-bottom:3px solid #C95532;padding:11px 16px;max-width:min(92vw,420px);box-shadow:0 14px 34px rgba(7,22,46,.35);transition:opacity .25s ease,transform .25s ease;pointer-events:none}",
+      ".fo-ac-toast.on{opacity:1;transform:translate(-50%,0)}",
       "html body #page .fo-ac-colt{background:rgba(250,246,238,.9);border:1px solid rgba(20,28,40,.12);border-radius:13px;padding:11px 12px}",
       "html body #page .fo-ac-ch{display:flex;align-items:baseline;gap:8px}",
       "html body #page .fo-ac-ch b{flex:1;min-width:0;font:600 13.5px/1.25 Inter,sans-serif;color:#141C28;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",

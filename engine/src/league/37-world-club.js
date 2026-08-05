@@ -129,6 +129,26 @@
         return (list || []).some(function (p) { return p && p.__card; });
       };
       var sameMen = names.length === have.length && names.join("|") === have.join("|");
+      // THE BOYS RIDE THE SAME STATUS. The academy's signings live on the
+      // squad page now, so the world's youth list is adopted the way the
+      // seniors are - and it must happen BEFORE the same-men early return,
+      // because a signing changes the boys without moving a single senior,
+      // and their skills grow in the nets between visits.
+      if (Array.isArray(st.youth)) {
+        try {
+          var yNew = JSON.stringify(st.youth);
+          if (JSON.stringify(t.youth || []) !== yNew) {
+            t.youth = JSON.parse(yNew);
+            try { if (typeof ensureTraining === "function") t.youth.forEach(ensureTraining); } catch (eY2) {}
+            try { if (typeof saveGame === "function") saveGame(false); } catch (eY3) {}
+            // a signing or release changes the boys without moving a senior,
+            // so the squad room repaints here or shows a ghost till next visit
+            try {
+              if ((location.hash || "").split("?")[0] === "#/squad" && typeof window.route === "function") window.route();
+            } catch (eY4) {}
+          }
+        } catch (eY) {}
+      }
       if (sameMen && !(thin(t.players) && !thin(st.squad))) {
         if (t.__worldSig != null) { try { delete t.__worldSig; saveGame(false); } catch (eD) {} }
         return false;                       // these men, known at least as well

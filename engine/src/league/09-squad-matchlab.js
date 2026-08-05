@@ -288,9 +288,25 @@
       "<span>Nationality <b>" + E(p.nat || "-") + "</b></span>" +
       (tals ? "<span>" + tals + "</span>" : "") +
       "<span class='fo-sq-train'>Training: " + E(p.trainFocus || "none") + "</span>" +
-      (isYouth ? "<button class='fo-sq-promote mini' data-n='" + E(p.name) + "'>Promote to seniors</button>" : "") +
       "</div>";
     return "<div class='fo-sq-detail'>" + bars + foot + "</div>";
+  }
+  // youth contracts: signed into the world when a world club holds the seat
+  // (the academy prices the shirt and the umpire keeps the books); the local
+  // game's own promotion stands in everywhere else
+  // a world seat is held: the live claim when the status has landed, the
+  // stored one in the seconds before it does - either way the boys' shirts
+  // are the world's to write
+  function foSqWorld() {
+    try { if (window.__foWorldClaim) return true; } catch (e) {}
+    try { return !!localStorage.getItem("fo_world_claim"); } catch (e2) { return false; }
+  }
+  function foSqYouthAct(name, action, after) {
+    try {
+      if (window.__foColtAction && window.__foColtAction(name, action, after)) return;
+    } catch (eW) {}
+    if (action === "promote") { try { promoteYouth(App.teamIx, name); } catch (eP) {} }
+    after();
   }
   // === Squad — the XI stood on the park, and whoever you tapped in the dossier ===
   // Batting style is not stored, so it is read off the skills the way a coach
@@ -1371,7 +1387,8 @@
           "<div class='fo-sqx-acts'>" +
           "<button type='button' class='fo-sqx-act ghost' id='fo-sqx-view'>View full profile</button>" +
           (sel.__y
-            ? "<button type='button' class='fo-sqx-act solid' id='fo-sqx-promote'>Promote to seniors</button>"
+            ? "<button type='button' class='fo-sqx-act solid' id='fo-sqx-promote'>Promote to seniors</button>" +
+              (foSqWorld() ? "<button type='button' class='fo-sqx-act ghost' id='fo-sqx-release'>Release</button>" : "")
             : "<button type='button' class='fo-sqx-act solid" + (sv.arm === sel.name ? " arm" : "") + "' id='fo-sqx-sub'>" + (sv.arm === sel.name ? "Cancel swap" : "Make substitution") + "</button>") +
           (sv.arm ? "<p class='fo-sqx-hint'>" + E(foSqShortName(sv.arm)) + " is ready to swap - tap the man " + (xiSet[sv.arm] ? "on the bench" : "on the park") + " who changes places with him.</p>" : "") +
           "</div></aside>";
@@ -1493,6 +1510,8 @@
             (inXi && p.name !== capt ? "<button type='button' class='fo-s2-act' data-mkc='" + E(p.name) + "'>Make captain</button>" : "") +
             (inXi && p.keeper && p.name !== kpr ? "<button type='button' class='fo-s2-act' data-mkk='" + E(p.name) + "'>Give the gloves</button>" : "") +
             (!p.__y ? "<button type='button' class='fo-s2-act" + (inXi ? "" : " solid") + "' data-xit='" + E(p.name) + "'>" + (inXi ? "Remove from XI" : "Add to XI") + "</button>" : "") +
+            (p.__y ? "<button type='button' class='fo-s2-act solid' data-ypro='" + E(p.name) + "'>Promote to seniors</button>" +
+              (foSqWorld() ? "<button type='button' class='fo-s2-act' data-yrel='" + E(p.name) + "'>Release</button>" : "") : "") +
             "</div></div>";
         }
         return "<div class='fo-s2-row" + (open ? " open" : "") + "' data-open='" + E(p.name) + "'>" +
@@ -1666,8 +1685,11 @@
       if (sb) sb.addEventListener("click", function () { sv.arm = (sv.arm === sv.sel) ? null : sv.sel; pgSquad(); });
       var pb = page.querySelector("#fo-sqx-promote");
       if (pb) pb.addEventListener("click", function () {
-        try { promoteYouth(App.teamIx, sv.sel); } catch (ePy) {}
-        sv.xi = null; sv.sel = null; pgSquad();
+        foSqYouthAct(sv.sel, "promote", function () { sv.xi = null; sv.sel = null; pgSquad(); });
+      });
+      var rb0 = page.querySelector("#fo-sqx-release");
+      if (rb0) rb0.addEventListener("click", function () {
+        foSqYouthAct(sv.sel, "release", function () { sv.xi = null; sv.sel = null; pgSquad(); });
       });
 
       // ==== SQUAD v2 wiring ==================================================
@@ -1708,6 +1730,16 @@
       });
       page.querySelectorAll("[data-goman]").forEach(function (b) {
         b.addEventListener("click", function () { location.hash = "#/player?n=" + encodeURIComponent(b.getAttribute("data-goman")); });
+      });
+      page.querySelectorAll("[data-ypro]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          foSqYouthAct(b.getAttribute("data-ypro"), "promote", function () { sv.xi = null; sv.open = null; s2Repaint(); });
+        });
+      });
+      page.querySelectorAll("[data-yrel]").forEach(function (b) {
+        b.addEventListener("click", function () {
+          foSqYouthAct(b.getAttribute("data-yrel"), "release", function () { sv.xi = null; sv.open = null; s2Repaint(); });
+        });
       });
       page.querySelectorAll("[data-mkc]").forEach(function (b) {
         b.addEventListener("click", function () {
