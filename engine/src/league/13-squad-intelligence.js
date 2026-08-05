@@ -286,7 +286,9 @@
 
   // The core router predates this optional room. Intercept only this exact
   // hash and leave every existing route, including #/squad, on its old path.
-  if (typeof window.route === "function" && !window.route.__foSi) {
+  function foSiInstallRoute() {
+    if (typeof window.route !== "function") return false;
+    if (window.route.__foSi) return true;
     var foSiRoute0 = window.route;
     window.route = function () {
       var path = (location.hash || "").split("?")[0];
@@ -300,6 +302,15 @@
       return foSiRoute0.apply(this, arguments);
     };
     window.route.__foSi = 1;
+    return true;
+  }
+  foSiInstallRoute();
+  // The legacy core resolves unknown hashes before league modules load. The
+  // head bootstrap remembers this one route so a copied deep link survives.
+  if (window.__foSiColdStart) {
+    window.__foSiColdStart = 0;
+    location.hash = "#/squad-intelligence";
+    setTimeout(function () { if (foSiInstallRoute()) window.route(); }, 0);
   }
   window.addEventListener("hashchange", function () {
     if ((location.hash || "").split("?")[0] !== "#/squad-intelligence") {

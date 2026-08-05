@@ -10,6 +10,7 @@
 10-office-settings.js
 11-chronicle.js
 12-scorecard-analysis.js
+13-squad-intelligence.js
 14-match-report.js
 15-living-season.js
 16-matchday-dress.js
