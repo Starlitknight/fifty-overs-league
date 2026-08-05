@@ -282,10 +282,17 @@
       var cal = { round: 0, seasonNo: 0, __fr: true };
       if (!j.log) {
         var mins = Math.max(1, Math.ceil((winStart - Date.now()) / 60000));
+        // BOTH CLOCKS, NAMED. The topbar speaks UTC and the phone speaks its
+        // own timezone; a kick-off printed bare read as whichever clock the
+        // manager happened to be looking at. Every friendly hour is now
+        // pinned to both, with the exact distance from this moment.
         var whenT = winStart ? new Date(winStart).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+        var utcT = winStart ? new Date(winStart).toISOString().slice(11, 16) : "";
+        var tz9 = ""; try { tz9 = (typeof foTzAbbr === "function" && foTzAbbr()) || ""; } catch (eTz9) {}
+        var dist9 = mins >= 90 ? Math.floor(mins / 60) + "h " + (mins % 60) + "m" : mins + " minute" + (mins === 1 ? "" : "s");
         page.innerHTML = shell(rid, cal, "up", m,
           stageShell(m, null, Date.now() < winStart
-            ? "Friendly &middot; the first ball at " + E(whenT) + " &mdash; about " + (mins >= 90 ? Math.round(mins / 60) + " hours" : mins + " minute" + (mins === 1 ? "" : "s")) + " away."
+            ? "Friendly &middot; first ball <b>" + E(whenT) + (tz9 ? " " + E(tz9) : "") + " your time</b> (" + E(utcT) + " UTC) &mdash; in " + dist9 + "."
             : "Friendly &middot; the umpire is walking out &mdash; the first deliveries arrive in a minute or two."));
         clearTimeout(T.timer);
         T.timer = setTimeout(function () { frFetch(frId, true).then(function () { window.foRenderFeedPage(); }); },

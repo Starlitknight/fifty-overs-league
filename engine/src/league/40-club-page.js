@@ -614,6 +614,11 @@
           " value='" + E(CH.when) + "' aria-label='Date and hour of the match'>" +
           "<button type='button' id='fo-cp-chgo'" + (CH.busy ? " disabled" : "") + ">" + (CH.busy ? "Sending&hellip;" : "Challenge") + "</button>" +
           "</div>" +
+          // WHICH CLOCK. The picker speaks the device's local time while the
+          // topbar speaks UTC, and a manager who read the two as one clock
+          // filed a challenge, then could not make sense of the countdown.
+          // This line pins the pick to both clocks and to now.
+          "<div class='fo-cp-chtz' id='fo-cp-chtz'></div>" +
           "<div class='fo-cp-chmsg' id='fo-cp-chmsg'>" + (CH.msg ? E(CH.msg)
             : (mgr ? "Their manager has until an hour before play to accept." : "Nobody manages them - they accept on the spot.") +
               " Your latest orders are the side that plays.") + "</div>" +
@@ -1102,7 +1107,25 @@
         try {
           var whenEl = document.getElementById("fo-cp-chwhen");
           var goEl = document.getElementById("fo-cp-chgo");
-          if (whenEl) whenEl.addEventListener("input", function () { CH.when = whenEl.value; });
+          // the pick, read back on both clocks - local and UTC - with the
+          // distance from now, so the two clocks can never be mistaken
+          var sayWhen = function () {
+            var el9 = document.getElementById("fo-cp-chtz"); if (!el9 || !whenEl) return;
+            var ms9 = NaN; try { ms9 = new Date(whenEl.value).getTime(); } catch (eW9) {}
+            if (!(ms9 > 0)) { el9.innerHTML = ""; return; }
+            var d9 = new Date(ms9);
+            var tz9 = ""; try { tz9 = (typeof foTzAbbr === "function" && foTzAbbr()) || ""; } catch (eT9) {}
+            var lm9 = Math.round((ms9 - Date.now()) / 60000);
+            var dist = lm9 < 0 ? "already in the past"
+              : lm9 < 120 ? "in " + lm9 + " min &mdash; too soon, two hours is the floor"
+              : "in " + Math.floor(lm9 / 60) + "h " + (lm9 % 60) + "m";
+            el9.innerHTML = "First ball <b>" +
+              E(d9.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })) + (tz9 ? " " + E(tz9) : "") +
+              " your time</b> &middot; " + E(d9.toISOString().slice(11, 16)) + " UTC &middot; " + dist +
+              " &middot; teamsheets lock an hour before.";
+          };
+          if (whenEl) whenEl.addEventListener("input", function () { CH.when = whenEl.value; sayWhen(); });
+          sayWhen();
           if (goEl) goEl.addEventListener("click", function () {
             var ms = NaN; try { ms = new Date(whenEl.value).getTime(); } catch (eW) {}
             if (!(ms > 0)) { chSay("Name a date and hour for the match."); return; }
@@ -1383,6 +1406,8 @@
       "html body #page .fo-cp-chrow button{font:700 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFDF7 !important;background:linear-gradient(180deg,#E8894A,#C8542F) !important;border:0 !important;border-radius:9px !important;padding:12px 20px !important;min-height:44px;cursor:pointer}",
       "html body #page .fo-cp-chrow button:disabled{opacity:.55;cursor:default}",
       ".fo-cp-chmsg{margin-top:8px;font:500 11.5px/1.5 Inter,sans-serif;color:rgba(12,27,51,.6)}",
+      ".fo-cp-chtz{margin-top:7px;font:600 11.5px/1.5 Inter,sans-serif;color:#14243A}",
+      ".fo-cp-chtz b{color:#C9571F}",
       ".fo-cp-fr{display:flex;align-items:center;gap:9px;flex-wrap:wrap;border-top:1px solid rgba(12,27,51,.09);margin-top:9px;padding-top:9px}",
       ".fo-cp-fr b{font:600 12.5px/1.3 Inter,sans-serif;color:var(--navy)}",
       ".fo-cp-fr i{font-style:normal;font:500 11.5px/1.3 Inter,sans-serif;color:rgba(12,27,51,.55)}",
