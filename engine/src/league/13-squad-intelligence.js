@@ -11,7 +11,7 @@
   // view switch belong to 09-squad-matchlab.js and are shared by all three.
   //
   // The dressing: the Split Desk. A navy band carries the department name,
-  // the two filters and the five headline figures; the working area below it
+  // the two filters and the three headline figures; the working area below it
   // is the same daylight paper the Grid uses, so the two read as one room.
   // =========================================================================
   if (window.__foSquadIntel) return;
@@ -118,12 +118,14 @@
       ".fo-si-actions{display:flex;align-items:center;gap:8px}",
       "html body #page .fo-si select{appearance:none;-webkit-appearance:none;min-width:118px;height:36px;border:1px solid rgba(232,185,106,.32) !important;border-radius:9px !important;background:rgba(255,253,247,.06) url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%23E8B96A' stroke-width='1.4'/%3E%3C/svg%3E\") no-repeat right 12px center/9px 6px !important;color:#F1EEE6 !important;font:600 9px Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;padding:0 32px 0 13px !important;box-shadow:none !important;cursor:pointer}",
       "html body #page .fo-si select option{color:#14243A;background:#FFFEFC}",
-      ".fo-si-kpis{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:10px}",
+      ".fo-si-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}",
       ".fo-si-kpi{border:1px solid rgba(232,185,106,.18);border-radius:11px;background:rgba(255,253,247,.05);padding:12px 13px 13px}",
       ".fo-si-kpi span{display:block;font:600 8px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(241,238,230,.5)}",
-      ".fo-si-kpi .v{display:flex;align-items:flex-end;gap:8px;margin-top:10px}",
+      ".fo-si-kpi .v{display:flex;align-items:flex-end;gap:11px;margin-top:10px}",
       ".fo-si-kpi b{font:700 25px/1 Oswald,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums}",
-      ".fo-si-kpi em{font-style:normal;font:600 8px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#5FBF98;margin-left:auto;padding-bottom:3px}",
+      // the note stays beside the figure it qualifies. Pushed to the far edge
+      // of a card this wide it read as a separate, unrelated word.
+      ".fo-si-kpi em{font-style:normal;font:600 8px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#5FBF98;padding-bottom:3px}",
       ".fo-si-kpi em.watch{color:#E0906F}",
 
       /* ---- the working area ---- */
@@ -148,8 +150,7 @@
       ".fo-si-empty{padding:22px 16px;font:italic 400 12px/1.6 Fraunces,Georgia,serif;color:var(--mut)}",
 
       /* the chart: age across, rating up */
-      ".fo-si-mid{display:grid;gap:14px;min-width:0}",
-      ".fo-si-chart{position:relative;padding:16px 16px 44px 52px;height:376px}",
+      ".fo-si-chart{position:relative;padding:16px 16px 44px 52px;height:452px}",
       ".fo-si-plot{position:relative;height:100%;border-left:1px solid rgba(27,36,50,.22);border-bottom:1px solid rgba(27,36,50,.22)}",
       ".fo-si-gl{position:absolute;background:rgba(27,36,50,.07)}",
       ".fo-si-gl.v{top:0;bottom:0;width:1px}.fo-si-gl.h{left:0;right:0;height:1px}",
@@ -175,11 +176,6 @@
       ".fo-si-key i{width:9px;height:9px;border-radius:50%;background:var(--nv)}",
       ".fo-si-key i.bat{background:#C9571F}.fo-si-key i.ar{background:#177A57}.fo-si-key i.wk{background:#B8933A}",
 
-      /* construction */
-      ".fo-si-build{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;padding:15px}",
-      ".fo-si-bb{border:1px solid var(--hair);border-radius:11px;padding:14px 14px 15px;background:var(--pp)}",
-      ".fo-si-bb span{display:block;font:600 8px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}",
-      ".fo-si-bb b{display:block;margin:10px 0 12px;font:700 27px/1 Oswald,sans-serif;color:var(--nv);font-variant-numeric:tabular-nums}",
       ".fo-si-bar{height:6px;border-radius:4px;background:#E7E1D3;overflow:hidden}",
       ".fo-si-bar i{display:block;height:100%;border-radius:4px;background:#177A57}",
       ".fo-si-bar i.t1{background:#C05B45}.fo-si-bar i.t2{background:#D9A441}.fo-si-bar i.t3{background:#4E8A72}.fo-si-bar i.t4{background:#177A57}",
@@ -199,7 +195,7 @@
       ".fo-si-st b{text-align:right;font:700 12px/1 Oswald,sans-serif;color:var(--nv);font-variant-numeric:tabular-nums}",
 
       "@media(max-width:1240px){.fo-si-work{grid-template-columns:290px minmax(0,1fr) 280px}}",
-      "@media(max-width:1040px){.fo-si-work{grid-template-columns:290px minmax(0,1fr)}.fo-si-player{grid-column:1/-1;display:grid;grid-template-columns:330px minmax(0,1fr)}.fo-si-kpis{grid-template-columns:repeat(3,1fr)}}",
+      "@media(max-width:1040px){.fo-si-work{grid-template-columns:290px minmax(0,1fr)}.fo-si-player{grid-column:1/-1;display:grid;grid-template-columns:330px minmax(0,1fr)}}",
       // THE PHONE. align-items:stretch is not decoration. The desktop grid
       // above sets align-items:start, and when this rule turns that same box
       // into a column flexbox the start makes every card shrink to its own
@@ -214,7 +210,7 @@
         ".fo-si-kpi .v{display:block;margin-top:6px}.fo-si-kpi b{font-size:19px}" +
         ".fo-si-kpi em{display:block;margin:5px 0 0;padding:0;font-size:7px}" +
         ".fo-si-work{display:flex;flex-direction:column;align-items:stretch}.fo-si-player{display:block}" +
-        ".fo-si-chart{padding:14px 14px 40px 34px;height:360px}.fo-si-build{grid-template-columns:1fr}" +
+        ".fo-si-chart{padding:14px 14px 40px 34px;height:380px}" +
         ".fo-si-tk{font-size:7.5px}.fo-si-tk.y{left:-8px}" +
         ".fo-si-axl{font-size:7.5px;letter-spacing:.16em}.fo-si-axl.y{left:9px}.fo-si-axl.x{left:34px;bottom:12px}" +
         ".fo-si-key{gap:9px;padding:0 14px 14px}.fo-si-key span{font-size:7px}" +
@@ -250,16 +246,11 @@
     if (!selected) return "<section class='fo-si'><div class='fo-si-card'><div class='fo-si-empty'>There is nobody on the books yet.</div></div></section>";
 
     // ---- the headline figures ----
-    var wage = all.reduce(function (n, p) { return n + (+p.wage || 0); }, 0);
+    // Three, and only three. Role balance and wage efficiency were invented
+    // indices - a number the manager could not check against anything in the
+    // game - so they are gone, and the squad-construction card with them.
     var age = all.length ? all.reduce(function (n, p) { return n + foSiAge(p); }, 0) / all.length : 0;
     var available = all.length ? Math.round(100 * all.filter(function (p) { return foSiEnergy(p) >= 65; }).length / all.length) : 0;
-    var counts = { bat: 0, ar: 0, bowl: 0, wk: 0 };
-    all.forEach(function (p) { counts[foSiRoleKey(p)] += 1; });
-    var balance = foSiClamp(100 - Math.max(0, 5 - counts.bat) * 7 - Math.max(0, 4 - counts.bowl) * 8 - Math.max(0, 2 - counts.ar) * 6 - (counts.wk ? 0 : 18), 30, 100);
-    var ageCurve = foSiClamp(100 - Math.abs(age - 27) * 8, 28, 100);
-    var avgOvr = all.length ? all.reduce(function (n, p) { return n + foSiOvr(p); }, 0) / all.length : 0;
-    var avgWage = all.length ? wage / all.length : 0;
-    var wageEff = foSiClamp(58 + (avgOvr - 50) * .8 - Math.max(0, avgWage - 1600) / 120, 35, 96);
     var clubLabel = (t.name || "Your club").toUpperCase();
 
     function kpi(lbl, val, note, watch) {
@@ -268,9 +259,7 @@
     }
     var kpis = kpi("Squad size", all.length, all.length >= 16 ? "Full" : "Thin", all.length < 15) +
       kpi("Availability", available + "%", available >= 90 ? "Healthy" : available >= 75 ? "Manage" : "Watch", available < 75) +
-      kpi("Role balance", balance, balance >= 85 ? "Strong" : "Review", balance < 75) +
-      kpi("Average age", age.toFixed(1), age > 31 ? "Watch" : age < 25 ? "Young" : "Balanced", age > 31) +
-      kpi("Wage efficiency", wageEff, wageEff >= 72 ? "Good" : "Review", wageEff < 60);
+      kpi("Average age", age.toFixed(1), age > 31 ? "Watch" : age < 25 ? "Young" : "Balanced", age > 31);
 
     var SEL = function (id, val, opts) {
       return "<select id='" + id + "'>" + opts.map(function (o) {
@@ -348,13 +337,6 @@
       "<div class='fo-si-key'><span><i class='bat'></i>Batter</span><span><i></i>Bowler</span>" +
       "<span><i class='ar'></i>All-rounder</span><span><i class='wk'></i>Wicketkeeper</span></div></article>";
 
-    function box(lbl, val) {
-      return "<div class='fo-si-bb'><span>" + lbl + "</span><b>" + val + "</b>" +
-        "<div class='fo-si-bar'><i class='" + foSiTone(val) + "' style='width:" + val + "%'></i></div></div>";
-    }
-    var build = "<article class='fo-si-card'><div class='fo-si-ch'><b>Squad construction</b></div>" +
-      "<div class='fo-si-build'>" + box("Role balance", balance) + box("Age curve", ageCurve) + box("Fitness", available) + "</div></article>";
-
     // ---- the selected man ----
     var keep = foSiStat(selected, "keep"), bowl = foSiStat(selected, "bowl");
     var stats = [["Batting", foSiStat(selected, "bat")], keep ? ["Keeping", keep] : ["Bowling", bowl],
@@ -378,7 +360,7 @@
       "<article class='fo-si-card'><div class='fo-si-ch'><b>Player ranking</b><span>" +
       ({ ovr: "Overall", age: "Age", wage: "Wage", fitness: "Availability" }[sv.iSort] || "Overall") + " ↓</span></div>" +
       "<div class='fo-si-list'>" + ranking + "</div></article>" +
-      "<div class='fo-si-mid'>" + map + build + "</div>" + player +
+      map + player +
       "</div></section>";
   }
 
