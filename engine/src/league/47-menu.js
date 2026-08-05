@@ -297,15 +297,23 @@
       "html body #fo-menubar button.fo-mb-t.open{color:#FFFEFC !important;background:rgba(201,85,50,.24) !important;border-bottom-color:#E8B96A !important}",
       "#fo-menubar .fo-mb-cv{width:11px;height:11px;opacity:.65;transition:transform .16s ease}",
       // Log out sits off at the end where a menu bar puts it - but ONLY when
-      // the bar has room. In a sideways-scrolling strip margin-left:auto
-      // pushes it to the end of the SCROLL, not the end of the screen, so a
-      // phone showed a permanently half-cut "LOG" that reads as breakage.
+      // the bar has room. On a phone it leaves the bar entirely (the index
+      // overlay's foot still carries it), because a strip that scrolls or
+      // clips reads as breakage, not navigation.
       "html body #fo-menubar button.fo-mb-out{color:rgba(255,254,252,.5) !important}",
       "html body #fo-menubar button.fo-mb-out:hover{color:#FFFEFC !important}",
       "@media(min-width:721px){html body #fo-menubar button.fo-mb-out{margin-left:auto}}",
-      // and when it DOES overflow, the last item fades out rather than being
-      // guillotined, so the strip reads as something you can push
-      "@media(max-width:720px){#fo-menubar .fo-mb-in{-webkit-mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent);mask-image:linear-gradient(90deg,#000 calc(100% - 26px),transparent)}}",
+      // A PHONE BAR NEVER SCROLLS. Four menus, one row, evenly set - each
+      // button takes a quarter of the width and the type is cut to fit, so
+      // nothing is ever guillotined at the edge.
+      "@media(max-width:720px){",
+      "#fo-menubar .fo-mb-in{padding:0 6px;gap:0;overflow-x:hidden}",
+      "html body #fo-menubar button.fo-mb-t{flex:1 1 0;justify-content:center;gap:4px;min-width:0;padding:13px 2px 11px !important;font:600 10px/1 Oswald,sans-serif !important;letter-spacing:.09em}",
+      "#fo-menubar button.fo-mb-t span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      "#fo-menubar .fo-mb-cv{width:9px;height:9px;flex:none}",
+      "html body #fo-menubar button.fo-mb-out{display:none !important}",
+      "}",
+      "@media(max-width:370px){html body #fo-menubar button.fo-mb-t{font:600 9.5px/1 Oswald,sans-serif !important;letter-spacing:.05em}}",
       // ONE HEADER, NOT TWO. On a desk wide enough that the masthead's empty
       // middle can hold the menus, the bar stops being its own row and rides
       // INSIDE the masthead - fixed, centred, the full height of the band -
