@@ -119,9 +119,9 @@ page = page.replace('__FO_BUILD__', build_id)
 
 # index.html sits at the root; client/game.html one level down
 open('index.html', 'w', encoding='utf-8').write(
-    page.replace('__FO_SCRIPT__', '<script src="' + asset + '"></script>\n<script src="assets/squad-intelligence.js"></script>\n'))
+    page.replace('__FO_SCRIPT__', '<script src="' + asset + '"></script>\n<script src="assets/squad-intelligence.js?v=' + build_id + '"></script>\n'))
 open('client/game.html', 'w', encoding='utf-8').write(
-    page.replace('__FO_SCRIPT__', '<script src="../' + asset + '"></script>\n<script src="../assets/squad-intelligence.js"></script>\n'))
+    page.replace('__FO_SCRIPT__', '<script src="../' + asset + '"></script>\n<script src="../assets/squad-intelligence.js?v=' + build_id + '"></script>\n'))
 
 # keep the last few program files so an HTML copy a lagging cache holds for a
 # few more minutes still finds the exact program it names; prune the rest
