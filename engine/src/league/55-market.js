@@ -249,7 +249,39 @@
   }
 
   var ROLE_TABS = [["all", "All"], ["bat", "Batsmen"], ["bowl", "Bowlers"], ["ar", "All-rounders"], ["wk", "Keepers"]];
-  var SORTS = [["close", "Closing soon"], ["new", "Newest"], ["hi", "Price high"], ["lo", "Price low"]];
+  // the sort shelf: the board's own orders, then the man's, then the seven
+  // reads - one dropdown, grouped like an almanack index
+  var SORTS = [
+    ["The board", [["close", "Closing soon"], ["new", "Newest"], ["hi", "Price high"], ["lo", "Price low"]]],
+    ["The man", [["ovr", "Overall"], ["young", "Age &middot; youngest"], ["old", "Age &middot; oldest"]]],
+    ["The reads", [["s:bat", "Batting"], ["s:bowl", "Bowling"], ["s:keep", "Keeping"], ["s:field", "Fielding"],
+      ["s:tech", "Technique"], ["s:pow", "Power"], ["s:end", "Endurance"]]]
+  ];
+  // the man behind a listing, wherever his card rides
+  function manOf(L) { return L.man || (snapOf(L.id) || {}).man || null; }
+  // one summary read off the open card; -1 where he has no such trade (or no
+  // card at all), so the unreadable sink to the bottom of any skill sort
+  function readOf(man, k) {
+    if (!man || !man.skills) return -1;
+    try {
+      if (k === "bat") return Math.round(aggBat(man));
+      if (k === "bowl") {
+        var isB = man.bowlTypeFull ? man.bowlTypeFull !== "none" : !!man.bowlType;
+        return isB ? Math.round(aggBowl(man)) : -1;
+      }
+      if (k === "keep") return man.keeper ? Math.round(aggKeep(man)) : -1;
+      if (k === "field") return Math.round(aggField(man));
+      if (k === "tech") return Math.round(aggTech(man));
+      if (k === "pow") return Math.round((man.skills && man.skills.power) || 0);
+      if (k === "end") return Math.round(aggEnd(man));
+    } catch (e) {}
+    return -1;
+  }
+  function ovrOf(L) {
+    var m = manOf(L);
+    try { return m && window.foPkOvr ? (foPkOvr(m) | 0) : -1; } catch (e) { return -1; }
+  }
+  function ageOf(L) { var m = manOf(L); return m && m.age ? +m.age : 0; }
   function boardHtml(cl) {
     if (!MK.listings) return "<div class='fo-mk-none'>Reading the board&hellip;</div>";
     if (!MK.listings.length) return "<div class='fo-mk-none'>The board is bare today. The umpire trickles new names on daily &mdash; look in tomorrow.</div>";
@@ -259,14 +291,23 @@
     if (MK.sort === "new") rows.sort(function (a, b) { return (b.id | 0) - (a.id | 0); });
     else if (MK.sort === "hi") rows.sort(function (a, b) { return (+(b.high || b.asking) || 0) - (+(a.high || a.asking) || 0); });
     else if (MK.sort === "lo") rows.sort(function (a, b) { return (+(a.high || a.asking) || 0) - (+(b.high || b.asking) || 0); });
+    else if (MK.sort === "ovr") rows.sort(function (a, b) { return ovrOf(b) - ovrOf(a); });
+    else if (MK.sort === "young") rows.sort(function (a, b) { return (ageOf(a) || 99) - (ageOf(b) || 99); });
+    else if (MK.sort === "old") rows.sort(function (a, b) { return ageOf(b) - ageOf(a); });
+    else if (MK.sort.indexOf("s:") === 0) {
+      var k9 = MK.sort.slice(2);
+      rows.sort(function (a, b) { return readOf(manOf(b), k9) - readOf(manOf(a), k9); });
+    }
     var bar = "<div class='fo-mk-bar'>" +
       "<div class='fo-mk-rtabs'>" + ROLE_TABS.map(function (t) {
         return "<button class='" + (MK.role === t[0] ? "on" : "") + "' data-mk-role='" + t[0] + "'>" + t[1] + "</button>";
       }).join("") + "</div>" +
       "<span class='cnt'>" + rows.length + " of " + MK.listings.length + " names</span>" +
       "<label class='dd'>Sort" +
-      "<select id='fo-mk-sort'>" + SORTS.map(function (s2) {
-        return "<option value='" + s2[0] + "'" + (MK.sort === s2[0] ? " selected" : "") + ">" + s2[1] + "</option>";
+      "<select id='fo-mk-sort'>" + SORTS.map(function (g) {
+        return "<optgroup label='" + g[0] + "'>" + g[1].map(function (s2) {
+          return "<option value='" + s2[0] + "'" + (MK.sort === s2[0] ? " selected" : "") + ">" + s2[1] + "</option>";
+        }).join("") + "</optgroup>";
       }).join("") + "</select></label>" +
       "</div>";
     return bar +
