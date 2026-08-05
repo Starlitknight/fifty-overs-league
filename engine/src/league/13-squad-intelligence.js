@@ -88,7 +88,7 @@
     var s = document.createElement("style"); s.id = "fo-si-css";
     s.textContent = [
       "html body.fo-si-on{background:#F1F4F8 !important}",
-      "html body.fo-si-on #page.fo-si-page{box-sizing:border-box;max-width:none !important;width:100% !important;min-height:calc(100vh - var(--fo-tbh,68px));margin:0 !important;padding:0 28px 26px !important;background:#F1F4F8 !important;color:#1B273B;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}",
+      "html body.fo-si-on #page.fo-si-page{box-sizing:border-box;max-width:none !important;width:100vw !important;min-height:calc(100vh - var(--fo-tbh,68px));margin-left:calc((100% - 100vw)/2) !important;margin-right:0 !important;padding:0 28px 26px !important;background:#F1F4F8 !important;color:#1B273B;font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif}",
       ".fo-si{max-width:1500px;margin:0 auto;padding-top:17px}",
       ".fo-si *{box-sizing:border-box}",
       ".fo-si-head{display:flex;align-items:flex-start;justify-content:space-between;gap:24px;padding:0 0 22px}",
