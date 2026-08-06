@@ -609,18 +609,20 @@
       "<s class='go'>&rsaquo;</s></a>";
 
     // ---- THE TWO CREWS ------------------------------------------------------
-    // TWO NAMES ON A RULE, not two grey buttons. The pair reads as one
-    // control - a line of type with a lit rule sliding beneath it - because
-    // that is what it is: one squad seen two ways, not two places to go.
+    // TWO NAMES, SET LIKE A CONTENTS LINE. Stretched across half a card each
+    // they were a segmented control pulled out of shape - and a full-width
+    // rule under a full-width label is a button however it is coloured. They
+    // shrink to their own words now, sit left where reading starts, and the
+    // rule that marks the live one is exactly as long as the name it marks.
+    var tab = function (id, label, n) {
+      return "<button type='button' role='tab' aria-selected='" + (crew === id) + "'" +
+        " class='fo-t2-tab" + (crew === id ? " on" : "") + "' data-t2crew='" + id + "'>" +
+        "<span>" + label + "</span><i>" + n + "</i></button>";
+    };
     var tabs = boys.length
       ? "<div class='fo-t2-tabs' role='tablist'>" +
-        "<button type='button' role='tab' aria-selected='" + (crew === "sen") + "'" +
-          " class='fo-t2-tab" + (crew === "sen" ? " on" : "") + "' data-t2crew='sen'>" +
-          "<span>Senior squad</span><i>" + seniors.length + "</i></button>" +
-        "<button type='button' role='tab' aria-selected='" + (crew === "yth") + "'" +
-          " class='fo-t2-tab" + (crew === "yth" ? " on" : "") + "' data-t2crew='yth'>" +
-          "<span>Youth squad</span><i>" + boys.length + "</i></button>" +
-        "<s class='fo-t2-ink" + (crew === "yth" ? " r" : "") + "'></s>" +
+        tab("sen", "Senior squad", seniors.length) +
+        tab("yth", "Youth squad", boys.length) +
         "</div>"
       : "";
 
@@ -775,28 +777,30 @@
       // the plan
       ".fo-t2-card{background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);padding:14px 16px;margin-bottom:12px}",
       ".fo-t2-ck{font:700 11px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#14243A;margin-bottom:8px}",
-      // THE TWO CREWS. A tab bar that is type on a rule rather than a pair of
-      // grey boxes: the labels sit on a hairline, and a lit rule slides under
-      // whichever is live. The count rides beside its name like a shirt
-      // number, gold when the crew is on and quiet when it is not.
-      ".fo-t2-tabs{position:relative;display:flex;margin:0 0 14px;border-bottom:1px solid #e3dccb}",
-      "html body #page button.fo-t2-tab{flex:1 1 0;display:flex;align-items:baseline;justify-content:center;gap:8px;",
-      "  background:none;border:none;border-radius:0;padding:2px 6px 11px;cursor:pointer;",
-      "  color:#a09781;transition:color .18s ease}",
-      ".fo-t2-tab span{font:600 12.5px/1 Oswald,sans-serif;letter-spacing:.17em;text-transform:uppercase}",
-      ".fo-t2-tab i{font:700 11px/1 Oswald,sans-serif;font-style:normal;letter-spacing:.04em;color:#c8bfa8;",
-      "  transition:color .18s ease}",
-      "html body #page button.fo-t2-tab:hover{color:#6d6455}",
+      // THE TWO CREWS, set as a contents line rather than a control. Each name
+      // is only as wide as itself, the pair sits left where reading starts,
+      // and the rule that marks the live one grows out from under its own
+      // first letter - so nothing here is ever a grey box with a word in it.
+      ".fo-t2-tabs{display:flex;align-items:baseline;gap:26px;margin:0 0 14px;border-bottom:1px solid #efe9dc}",
+      "html body #page button.fo-t2-tab,html body.ftpskin #page button.fo-t2-tab{",
+      "  position:relative;flex:0 0 auto;display:inline-flex;align-items:baseline;gap:7px;",
+      "  background:none !important;border:none !important;border-radius:0 !important;",
+      "  box-shadow:none !important;padding:0 0 11px;margin:0;cursor:pointer;",
+      "  color:#b3aa96 !important;transition:color .2s ease}",
+      ".fo-t2-tab span{font:600 11px/1 Oswald,sans-serif;letter-spacing:.185em;text-transform:uppercase}",
+      ".fo-t2-tab i{font:700 10px/1 Oswald,sans-serif;font-style:normal;letter-spacing:.02em;",
+      "  color:#d3cab5;transition:color .2s ease}",
+      "html body #page button.fo-t2-tab:hover{color:#6d6455 !important}",
       "html body #page button.fo-t2-tab:hover i{color:#B8933A}",
-      "html body #page button.fo-t2-tab.on{color:#14243A}",
-      "html body #page button.fo-t2-tab.on i{color:#C9571F}",
-      "html body #page button.fo-t2-tab:focus-visible{outline:2px solid #B8933A;outline-offset:3px;border-radius:4px}",
-      // the rule that follows the choice
-      ".fo-t2-ink{position:absolute;left:0;bottom:-1px;width:50%;height:2px;text-decoration:none;display:block;",
-      "  background:linear-gradient(90deg,#C9571F,#E8B96A);border-radius:2px;",
-      "  transform:translateX(0);transition:transform .3s cubic-bezier(.4,0,.2,1)}",
-      ".fo-t2-ink.r{transform:translateX(100%)}",
-      "@media(prefers-reduced-motion:reduce){.fo-t2-ink{transition:none}}",
+      "html body #page button.fo-t2-tab.on{color:#14243A !important}",
+      "html body #page button.fo-t2-tab.on i{color:#B8933A}",
+      "html body #page button.fo-t2-tab:focus-visible{outline:2px solid #B8933A;outline-offset:4px;border-radius:3px}",
+      // the rule is as long as the name it marks, and grows from its first letter
+      ".fo-t2-tab:after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;",
+      "  background:linear-gradient(90deg,#C9571F,#E8B96A);",
+      "  transform:scaleX(0);transform-origin:left center;transition:transform .3s cubic-bezier(.4,0,.2,1)}",
+      "html body #page button.fo-t2-tab.on:after{transform:scaleX(1)}",
+      "@media(prefers-reduced-motion:reduce){.fo-t2-tab:after{transition:none}}",
       ".fo-t2-head,.fo-t2-row{display:grid;grid-template-columns:34px minmax(0,1.15fr) minmax(104px,1fr) minmax(104px,1fr);gap:10px;align-items:center}",
       ".fo-t2-head{padding:0 9px 7px;margin:0 -9px;border-bottom:1px solid #e6dfcd}",
       ".fo-t2-head span{font:600 8.5px Oswald,sans-serif;letter-spacing:.19em;text-transform:uppercase;color:#a49b86}",

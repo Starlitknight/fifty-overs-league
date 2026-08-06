@@ -300,11 +300,18 @@ test('the two crews are two tabs, and each holds only its own men', () => {
   for (const b of BOYS) assert.ok(yth.indexOf(`data-t2f='${b.name}'`) >= 0, b.name + ' has a focus picker');
   assert.ok(yth.indexOf('>Colt</span>') >= 0, 'and the youth tab calls them colts, not players');
   assert.ok(sen.indexOf('>Player</span>') >= 0, 'while the senior tab calls them players');
-  // the lit rule follows the choice rather than the page redrawing a box
-  assert.ok(sen.indexOf("class='fo-t2-ink'") >= 0, 'the rule sits under the senior squad');
-  assert.ok(yth.indexOf("class='fo-t2-ink r'") >= 0, 'and slides under the youth squad');
-  assert.ok(yth.indexOf("aria-selected='true'") >= 0 && yth.indexOf("role='tablist'") >= 0,
+  // NEITHER NAME IS EVER A BOX. Each tab is only as wide as its own words -
+  // the lit rule is drawn by the live tab's own ::after, so it can never span
+  // half a card the way a segmented control does.
+  assert.ok(sen.indexOf(`data-t2crew='sen'`) >= 0 && sen.indexOf("class='fo-t2-tab on'") >= 0,
+    'the senior tab is the live one');
+  assert.ok(yth.indexOf(`aria-selected='true'`) >= 0 && yth.indexOf("role='tablist'") >= 0,
     'and the pair reads as a tablist to anything that is not looking at it');
+  // exactly one tab is lit at a time, on either side
+  for (const [html, who] of [[sen, 'senior'], [yth, 'youth']]) {
+    assert.equal((html.match(/class='fo-t2-tab on'/g) || []).length, 1, who + ': one tab is live');
+    assert.equal((html.match(/aria-selected='true'/g) || []).length, 1, who + ': and says so once');
+  }
 });
 
 test('a club with no boys is not shown a door to an empty room', () => {
