@@ -1,7 +1,27 @@
 // reseed-squads.mjs — REDEAL THE WORLD'S CRICKETERS, AND START THE SUMMER AGAIN.
 //
-// Two jobs, in this order, run from the world-reseed workflow behind a typed
-// confirmation:
+// Run from the world-reseed workflow behind a typed confirmation. The men are
+// DEALT first and WRITTEN last, and everything that touches the database
+// happens inside one transaction, in this order:
+//
+//   1. the world moves to a new generation;
+//   2. every ball anybody bowled is cleared and the seasons restart at round
+//      one, because a table half played by the old squads is not a table;
+//   3. and only then are the new cricketers put on the books.
+//
+// CLEARED BEFORE DEALT, AND ALL OR NOTHING. The squads used to be written
+// first, as a couple of hundred loose UPDATEs with no transaction near them,
+// while only the season reset was atomic. A run killed part-way through left
+// the OLD SEASON STILL RUNNING - standings, form and results all intact - over
+// a world where half the clubs had new cricketers and half had the old ones,
+// with nothing on any page to say which was which. Now a cancelled runner, a
+// dropped connection or a thrown error rolls the whole thing back and the
+// world is exactly as it was. There is no half-reseeded world to be in.
+//
+// The generation itself is the slow part and holds no locks: a couple of
+// hundred squads go through the engine before the transaction opens.
+//
+// WHAT THE DEAL IS:
 //
 //   1. EVERY BOT CLUB IS GIVEN A NEW SQUAD, by the rules the world now keeps:
 //      the identity its league describes and the standing its place in that
@@ -17,10 +37,6 @@
 //      fifteen it already had, so a manager could redeal the world and watch
 //      nothing change. The generation is the difference between rebuilding a
 //      club and reprinting it.
-//
-//   2. THE SEASON GOES BACK TO ROUND ONE. Every ball anybody has bowled is
-//      cleared and the first round is re-dated to today, because a table half
-//      played by the old squads is not a table at all.
 //
 // WHAT IS NEVER TOUCHED. A club a human has claimed keeps its squad: those men
 // have been trained, bought and sold by somebody, and a redeal would take that
@@ -101,12 +117,12 @@ const claimed = new Set(claims.map(c => c.country_id + ':' + c.slot));
 // what makes the cricketers below people nobody has ever seen.
 const genFrom = (await pool.query('SELECT generation FROM worlds WHERE id=1')).rows[0];
 const gen = ((genFrom && genFrom.generation) | 0 || 1) + 1;
-if (!dry) await pool.query('UPDATE worlds SET generation=$1 WHERE id=1', [gen]);
 console.log('world generation ' + (gen - 1) + ' → ' + gen +
   (dry ? ' (dry run: not written)' : '') + ' - every squad dealt below is new');
 
 let redealt = 0, kept = 0;
 const report = [];
+const deals = [];                    // every squad dealt, none of it written yet
 for (const cfg of cfgs) {
   const have = (await pool.query(
     'SELECT slot, name, is_boss FROM clubs WHERE country_id=$1 ORDER BY slot', [cfg.id])).rows;
@@ -124,15 +140,11 @@ for (const cfg of cfgs) {
     // whatever seats the auto-claim gave them. Bots keep the seat's rung.
     const isClaimed = claimed.has(cfg.id + ':' + club.slot);
     const players = squadFor(host, cfg, club, gen, isClaimed ? HUMAN_STR : null);
-    if (!dry) {
-      // the book of the nets (058) is a cache of the REPLAY, and these are
-      // different men: it is cleared with the squad rather than left to be
-      // served against a club that no longer has anyone it describes. The
-      // next settle rebuilds it whole from the record, as it always does.
-      await pool.query(
-        'UPDATE clubs SET squad=$3, nets_history=NULL, nets_report=NULL WHERE country_id=$1 AND slot=$2',
-        [cfg.id, club.slot, JSON.stringify(players)]);
-    }
+    // DEALT NOW, WRITTEN LATER. Generating a world's cricketers is the slow
+    // part - a couple of hundred squads through the engine - and it touches
+    // no database at all, so it happens out here where a long job holds no
+    // locks. Every write waits for the one transaction below.
+    deals.push({ country: cfg.id, slot: club.slot, players });
     redealt++;
     const best = players.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0));
     const xi = Math.round(best.slice(0, 11).reduce((s, p) => s + (p.rating || 0), 0) / 11);
@@ -165,9 +177,30 @@ if (dry) {
   console.log('\nDRY RUN: would clear ' + present.join(', ') +
     ' and restart every season at world day ' + startDay);
 } else {
+  // ---------------------------------------------------------------------
+  // ONE TRANSACTION, AND THE WORLD IS CLEARED BEFORE IT IS DEALT.
+  //
+  // The squads used to be written first, one loose UPDATE a club, with no
+  // transaction anywhere near them - and only the season reset below was
+  // atomic. A run killed part-way through therefore left the OLD SEASON
+  // STILL RUNNING, with its standings and its form and its results intact,
+  // over a world where half the clubs had been handed new cricketers and
+  // half had not. A live competition, corrupted in flight, and no way to
+  // tell by looking which half was which.
+  //
+  // Now every database change this script makes is one transaction, in the
+  // order that makes sense on its own terms: wipe what was played, restart
+  // the seasons, then deal the men who will play them. Killed at any point
+  // - a cancelled runner, a lost connection, a thrown error - Postgres
+  // rolls the whole thing back and the world is exactly as it was. There is
+  // no half-reseeded world to be in.
+  // ---------------------------------------------------------------------
   const c = await pool.connect();
   try {
     await c.query('BEGIN');
+    // 1. the world moves to a new generation
+    await c.query('UPDATE worlds SET generation=$1 WHERE id=1', [gen]);
+    // 2. everything anybody played is cleared
     for (const t of present) await c.query('DELETE FROM ' + t);
     const cs = (await c.query('SELECT id FROM countries ORDER BY id')).rows;
     for (const row of cs) {
@@ -179,9 +212,18 @@ if (dry) {
       await c.query('INSERT INTO seasons(country_id, season_no, start_day, schedule, divisions) VALUES ($1,1,$2,$3,$4)',
         [row.id, startDay, JSON.stringify(seasonSchedules(row.id, 1, divs)), JSON.stringify(divs)]);
     }
+    // 3. and only then are the new men put on the books. The book of the
+    //    nets goes with the old squad: it is a cache of a replay, and these
+    //    are different cricketers.
+    for (const d of deals) {
+      await c.query(
+        'UPDATE clubs SET squad=$3, nets_history=NULL, nets_report=NULL WHERE country_id=$1 AND slot=$2',
+        [d.country, d.slot, JSON.stringify(d.players)]);
+    }
     await c.query('COMMIT');
   } catch (e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); }
   console.log('\ncleared: ' + present.join(', '));
+  console.log('squads written: ' + deals.length + ' (all in one transaction with the clear)');
   console.log('every league restarts at season 1, round 1, on world day ' + startDay +
     ' (' + new Date(EPOCH + startDay * 86400000).toISOString().slice(0, 10) + ')');
   console.log('the next hourly tick plays the opening round.');
