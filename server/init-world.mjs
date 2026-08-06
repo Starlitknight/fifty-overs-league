@@ -129,23 +129,30 @@ export const STR_FALLBACK = 1;
 // ---------------------------------------------------------------------------
 // THE TEN-POINT LADDER (see 27-living-planet.js, which holds the club rungs).
 //
-// One rung is 4.5% of an XI rating. That number is MEASURED, not chosen: the
-// shipped engine was played head to head at fixed rating gaps and 1.20x is
-// already a 72% favourite, 1.35x a 90% one, and past 1.7x the match is over
-// before it starts. The whole world therefore has to live inside about 1.3x,
-// and the brief - a 9 beats a 3 about 85 times in 100 - fixes the rung at
-// 1.045, because six rungs is 1.30x and the curve puts 1.30x at 85%.
+// One rung is 10.4% of an XI rating, and it is set by how a player READS on
+// his card rather than by a win rate. The world used to live between 39 and 60
+// on the nought-to-ninety-nine scale: the top half was never used, so an
+// international looked like a slightly-better club player - which is exactly
+// what he was, because a national side is picked from clubs. Seven rungs is
+// now exactly 2x, which lands a full member's XI near 78 with a genuine 99
+// among them and a bottom second-division side near 38.
+//
+// This is close to the ceiling. Skills cap at 99, and past about 60,000 the
+// cards flatten - at 72,000 an XI averages 91 with a quarter of all skills
+// pegged, and at 90,000 every card reads 99 and the top three tiers become
+// the same team. The engine also saturates at about 1.7x for RESULTS, so the
+// span above buys separation on the card, not in the scorebook.
 //
 // Point 4 is 1.00: the old world's median club, so wages, transfer prices and
 // the books stay calibrated where they were.
-export const PT = 1.045;
+export const PT = 1.104;
 export function pt(points) { return Math.pow(PT, points - 4); }
 // THE NEWCOMER'S RUNG. Every human-claimed club is dealt (and, on a fresh
 // claim, levelled) to this strength x the nation tier: a solid Division Two
 // side - competitive at once among its own kind, with the whole pyramid still
 // to climb. The seating chart decides a bot's class; it never again decides
 // a person's.
-export const HUMAN_STR = 0.957;                // 3: a club founded this morning
+export const HUMAN_STR = 0.906;                // 3: a club founded this morning
 export const BASE_XI = 36000;                 // the old world's median XI rating
 
 // A LEAGUE IS AS STRONG AS ITS CRICKET CULTURE. Every nation's ten clubs used

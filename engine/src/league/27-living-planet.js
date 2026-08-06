@@ -266,24 +266,27 @@
   // associate's is an 8, a country's flagship club is a 7, first division 4-5,
   // second division 2-4, and a club founded this morning a 3.
   //
-  // A POINT IS 4.5% OF AN XI RATING, and that is measured, not chosen. The
-  // shipped engine was played head to head at fixed rating gaps: 1.20x is
-  // already a 72% favourite, 1.35x a 90% one, and past 1.7x the match is
-  // decided. So the whole world has to live inside about 1.3x, and the brief -
-  // a 9 beats a 3 about 85 times in 100 - fixes the rung at 1.045: six rungs
-  // is 1.30x, which the curve puts at 85%.
+  // A POINT IS 10.4% OF AN XI RATING, and the rung is set by how a player
+  // READS, not by a win rate. The whole world used to live between 39 and 60
+  // on the nought-to-ninety-nine card, so the top half of the scale was never
+  // used and an international looked like a slightly-better club player -
+  // which is what he was. Seven rungs is now exactly 2x, which puts a full
+  // member's XI around 78 on the card with a genuine 99 among them, and a
+  // bottom second-division side around 38. Skills cap at 99, so this is close
+  // to the most the engine can express before every card reads 99 and the top
+  // tiers collapse into each other.
   //
   // Point 4 is 1.00 - the old world's median club - so wages, transfer prices
   // and the whole economy stay where they were calibrated.
-  var FO_PT = 1.045;                               // one rung, in XI rating
+  var FO_PT = 1.104;                               // one rung, in XI rating
   function foStr(pt) { return Math.pow(FO_PT, pt - 4); }
-  var FO_BOSS_STR = 1.141;                         // 7: the flagship
+  var FO_BOSS_STR = 1.346;                         // 7: the flagship
   // DIVISION ONE: seven established clubs, evenly spread over 5.0 down to 4.0.
   // DIVISION TWO: the founding seats, 4.0 down to 2.0, overlapping the first
   // division's floor at the seam the way real second flights do. Both shuffled
   // per nation, pure functions of the nation.
-  var FO_STR_LADDER = [1.045, 1.037, 1.030, 1.022, 1.015, 1.007, 1.000];
-  var FO_D2_LADDER = [1.000, 0.988, 0.975, 0.963, 0.951, 0.939, 0.928, 0.916];
+  var FO_STR_LADDER = [1.104, 1.086, 1.068, 1.051, 1.034, 1.017, 1.000];
+  var FO_D2_LADDER = [1.000, 0.972, 0.945, 0.919, 0.893, 0.868, 0.844, 0.820];
 
   // England is named for its counties, not its cities (and three of them play
   // in London), so its identities are seated by slot - all sixteen of them.
