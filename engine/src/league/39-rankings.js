@@ -92,6 +92,14 @@
       var fmt = function (v) { return Math.round(Number(v) || 0).toLocaleString(); };
       // the three marks behind the figure, oldest first, so a side on the way
       // up and a side on the way down are told apart at a glance
+      // SQUAD STRENGTH, on the scale the world is read in (foRate in the core).
+      // The rank is this figure; the three marks beside it are form, which is a
+      // different question and is labelled as one.
+      var rkStr = function (c) {
+        var v = (c && (c.strength || c.rating)) || 0;
+        try { if (window.foRateTxt) return window.foRateTxt(v); } catch (e) {}
+        return fmt(v);
+      };
       var formOf = function (c) {
         var f = c.form || [];
         if (!f.length) return "<span class='frm none'>no cricket yet</span>";
@@ -104,14 +112,6 @@
         ? "<div class='fo-rk-mine'>&#127942; <b>" + E(mine.name) + "</b> stand <u>#" + mine.rank + "</u> of " + RK.clubs.length + " in the world &middot; strength " + rkStr(mine) +
           ((mine.form && mine.form.length) ? " &middot; recent form " + mine.form.map(fmt).join(", ") : " &mdash; no cricket played yet") + "</div>"
         : "";
-      // SQUAD STRENGTH, on the scale the world is read in (foRate in the core).
-      // The rank is this figure; the three marks beside it are form, which is a
-      // different question and is labelled as one.
-      var rkStr = function (c) {
-        var v = (c && (c.strength || c.rating)) || 0;
-        try { if (window.foRateTxt) return window.foRateTxt(v); } catch (e) {}
-        return fmt(v);
-      };
       var rowOf = function (c) {
         var isMine = !!(cl && c.country === cl.country && c.slot === cl.slot);
         return "<a class='fo-rk-row" + (isMine ? " mine" : "") + (c.boss ? " boss" : "") + "' href='#/team?c=" + encodeURIComponent(c.country) + "&s=" + c.slot + "'>" +
