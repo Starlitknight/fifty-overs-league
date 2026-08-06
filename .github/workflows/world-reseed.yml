@@ -111,6 +111,14 @@ jobs:
             process.exit(1);
           })();
           EOF
+      # THE SCHEMA FIRST. A redeal writes columns the migrations own - it
+      # clears each club's book of the nets as it deals new men, and that
+      # column arrives in 058 - so a reseed run against an un-migrated schema
+      # dies on its first club. The tick has always migrated before settling;
+      # this had not, because until now it only ever wrote squad.
+      - name: Migrate
+        working-directory: server
+        run: node migrate.mjs
       - name: Redeal the bot squads and restart the season
         working-directory: server
         env:
