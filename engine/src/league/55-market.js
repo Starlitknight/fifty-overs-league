@@ -635,7 +635,7 @@
     // the third figure is YOUR fighting money - the bank the world last
     // served for this club (37-world-club keeps it fresh with each status)
     var bank = null;
-    try { var wc = window.__foWorldCoach; if (wc && wc.bank != null) bank = +wc.bank; } catch (e) {}
+    try { if (window.__foWorldBank != null) bank = +window.__foWorldBank; } catch (e) {}
     return "<div class='fo-mk-hd'>" +
       "<div class='eb'>" + eb + "</div>" +
       "<div class='row'><h1>Transfer market</h1>" +

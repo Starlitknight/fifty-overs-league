@@ -59,20 +59,11 @@ export function academyBuild(from, to) {
   for (let lv = Math.max(1, from); lv < Math.min(5, to); lv++) sum += ACADEMY_BUILD[lv];
   return sum;
 }
-// THE HEAD COACH (051). Five levels, hired upward like the academy but
-// priced as a salary, not a building: what a level buys is a faster nets -
-// living.mjs turns the level into the rate. These mirror the SQL functions
-// in migration 051 and the tests hold the two to the same numbers.
-export const COACH_STEP = [120000, 260000, 450000, 700000, 1000000];   // to L1..L5
-const COACH_UPKEEP = [0, 2000, 5000, 9000, 14000, 20000];
-export function coachUpkeep(level) {
-  return COACH_UPKEEP[Math.max(0, Math.min(5, +level || 0))];
-}
-export function coachHire(from, to) {
-  let sum = 0;
-  for (let lv = Math.max(0, +from || 0); lv < Math.min(5, +to || 0); lv++) sum += COACH_STEP[lv];
-  return sum;
-}
+// THE HEAD COACH IS GONE (056). He was a second building with a different
+// name - a number bought upward, a wage line, and no decision in it. The
+// academy is the only thing that sets the rate in the nets now, and the
+// migration refunded what any club had spent, so nothing here charges for
+// him and no statement carries a line for him.
 
 // a trip abroad is paid for whether or not you sign the boy; scouting at home
 // costs nothing, so a club with no money can still run an academy
@@ -162,8 +153,7 @@ export async function computeFinance(pool, country, opts = {}) {
     });
   };
   const clubs = (await pool.query(
-    `SELECT slot, name, is_boss, squad, youth, academy, academy_paid, seats, seats_paid,
-            coalesce(coach, 0) AS coach, coalesce(coach_paid, 0) AS coach_paid
+    `SELECT slot, name, is_boss, squad, youth, academy, academy_paid, seats, seats_paid
        FROM clubs WHERE country_id=$1 ORDER BY slot`, [country])).rows;
   if (!clubs.length) return [];
   // EXTRACT IN THE DATABASE: a season of result blobs is tens of megabytes and
@@ -275,10 +265,10 @@ export async function computeFinance(pool, country, opts = {}) {
                 + (Array.isArray(c.youth) ? c.youth : []).reduce((s, p) => s + ((p && p.wage) || 0), 0);
     S[c.slot] = {
       slot: c.slot, name: c.name, is_boss: c.is_boss, wages,
-      academy: c.academy || 2, coachLv: +c.coach || 0, seats: c.seats || FOUNDING_SEATS,
+      academy: c.academy || 2, seats: c.seats || FOUNDING_SEATS,
       // what a manager has already spent is a fact; the books carry it from
       // the founding, so nobody can hide a purchase in an overdraft
-      bank: FOUNDING_BANK - (+c.academy_paid || 0) - (+c.seats_paid || 0) - (+c.coach_paid || 0),
+      bank: FOUNDING_BANK - (+c.academy_paid || 0) - (+c.seats_paid || 0),
       sup: FOUNDING_SUPPORT, mood: 3, pts: 0, played: 0, form: [],
       gate: 0, awayCut: 0, sponsor: 0, wagesPaid: 0, upkeep: 0, interest: 0,
       compensation: 0, capsAway: 0,
@@ -294,7 +284,6 @@ export async function computeFinance(pool, country, opts = {}) {
     line(c.slot, EPOCH + HOUR, 'founding', 'Founding capital from the board', FOUNDING_BANK, b0);
     if (+c.academy_paid) { b0 -= +c.academy_paid; line(c.slot, EPOCH + HOUR, 'academy', 'Academy building, to date', -(+c.academy_paid), b0); }
     if (+c.seats_paid) { b0 -= +c.seats_paid; line(c.slot, EPOCH + HOUR, 'stadium', 'Stadium building, to date', -(+c.seats_paid), b0); }
-    if (+c.coach_paid) { b0 -= +c.coach_paid; line(c.slot, EPOCH + HOUR, 'coach', 'Head coach, hired to date', -(+c.coach_paid), b0); }
   }
   // the table as it stood that morning: 1 is top
   const posMap = () => {
@@ -390,8 +379,6 @@ export async function computeFinance(pool, country, opts = {}) {
       if (comp) { c.bank += comp; line(slot, roundAt, 'compensation', 'International compensation \u00b7 ' + f.men + (f.men === 1 ? ' man' : ' men') + ' away', comp, c.bank); }
       c.bank -= c.wages; line(slot, roundAt, 'wages', 'Player wages', -c.wages, c.bank);
       c.bank -= up; line(slot, roundAt, 'upkeep', 'Academy upkeep \u00b7 level ' + c.academy, -up, c.bank);
-      const cw = coachUpkeep(c.coachLv);
-      if (cw) { c.upkeep += cw; c.bank -= cw; line(slot, roundAt, 'coach', 'Head coach \u00b7 level ' + c.coachLv, -cw, c.bank); }
       if (c.bank < 0) {
         const i = Math.round(-c.bank * DEBT_ROUND); c.interest += i; c.bank -= i;
         line(slot, roundAt, 'interest', 'Overdraft interest', -i, c.bank);
@@ -443,7 +430,6 @@ export async function computeFinance(pool, country, opts = {}) {
         sold: s.soldN, bought: s.boughtN,
         wages: s.wagesPaid, wageBill: s.wages, upkeep: s.upkeep, interest: s.interest,
         academyPaid: +c.academy_paid || 0, seatsPaid: +c.seats_paid || 0,
-        coach: s.coachLv, coachPaid: +c.coach_paid || 0, coachUpkeep: coachUpkeep(s.coachLv),
         writtenOff: s.writtenOff, administration: s.admin, adminRounds: s.adminRounds,
         debtLimit: DEBT_LIMIT,
         founded: FOUNDING_BANK, rounds: s.rounds,

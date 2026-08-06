@@ -298,7 +298,7 @@
         if (!st || !st.claim) return;
         window.__foWorldPlan = st.training || {};
         try { window.__foNetsReport = st.netsReport || null; } catch (eNR) {}
-        try { window.__foWorldCoach = { level: st.coach | 0, nextCost: st.coachNextCost, upkeep: st.coachUpkeep, bank: st.bank }; } catch (eCo) {}
+        try { window.__foWorldBank = (st.bank == null ? null : +st.bank); } catch (eCo) {}
       foWorldFinCache(st);
         window.__foWorldClaim = st.claim;
         adoptWorldSquad(st);
@@ -338,7 +338,7 @@
           try { localStorage.setItem("fo_world_claim", JSON.stringify(st.claim)); } catch (eS) {}
           window.__foWorldPlan = st.training || {};
         try { window.__foNetsReport = st.netsReport || null; } catch (eNR) {}
-        try { window.__foWorldCoach = { level: st.coach | 0, nextCost: st.coachNextCost, upkeep: st.coachUpkeep, bank: st.bank }; } catch (eCo2) {}
+        try { window.__foWorldBank = (st.bank == null ? null : +st.bank); } catch (eCo2) {}
       foWorldFinCache(st);
           adoptWorldSquad(st);
           return;

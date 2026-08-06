@@ -316,9 +316,9 @@
     var founded = Number(f.founded) || 2500000, rounds = Number(f.rounds) || 0;
     // EVERY LINE THE UMPIRE KEEPS, or the two columns do not add up to the
     // bank. The Colts Cup purse, what the academy spent on trips and senior
-    // contracts, what the head coach cost to hire, and anything written off at
-    // the floor were all missing, so "Net this season" was a number that
-    // reconciled with nothing.
+    // contracts, and anything written off at the floor were all missing, so
+    // "Net this season" was a number that reconciled with nothing. (A head
+    // coach was among them until 056 withdrew him and refunded every club.)
     var inGate = Number(f.gate) || 0, inAway = Number(f.awayCut) || 0;
     var inSpon = Number(f.sponsor) || 0, inComp = Number(f.compensation) || 0, inFees = Number(f.feesIn) || 0;
     var inPurse = Number(f.coltsPurse) || 0, inWriteOff = Number(f.writtenOff) || 0;
@@ -327,8 +327,7 @@
     var outFees = Number(f.feesOut) || 0, outScout = Number(f.scouting) || 0;
     var outAcadSpend = Number(f.academySpend) || 0;
     var outAcad = Number(f.academyPaid) || 0, outSeats = Number(f.seatsPaid) || 0;
-    var outCoach = Number(f.coachPaid) || 0;
-    var totOut = outWage + outUp + outInt + outFees + outScout + outAcadSpend + outAcad + outSeats + outCoach;
+    var totOut = outWage + outUp + outInt + outFees + outScout + outAcadSpend + outAcad + outSeats;
     var net = totIn - totOut;
     // and the proof: the bank the world holds is the founding money plus that
     // net, to the pound. A drift means a line has gone missing again.
@@ -475,7 +474,6 @@
       brk("Transfer fees out", outFees, totOut, "dn") + brk("Scouting", outScout, totOut, "dn") +
       (outAcadSpend ? brk("Academy trips & contracts", outAcadSpend, totOut, "dn") : "") +
       brk("Building", outAcad + outSeats, totOut, "dn") +
-      (outCoach ? brk("Head coach", outCoach, totOut, "dn") : "") +
       brk("Overdraft interest", outInt, totOut, "dn") +
       "<div class='fo-f2-r tot'>Total out<b>" + M(totOut) + "</b><em></em></div></section>" +
       "<section class='fo-me-card fo-me-health'><h3>Financial health &middot; Bank " + M(bank) + "</h3><div class='grade'><b>" + grade[0] + "</b><span>" + grade[1] + "</span></div>" +
@@ -588,7 +586,7 @@
     scouting: "Scouting reports", "written-off": "Written off",
     // the umpire writes these three too; without a heading each the statement
     // printed the raw slug - "coach", "contract", "colts-purse"
-    coach: "Head coach", contract: "Academy contracts", "colts-purse": "Colts Cup purse"
+    contract: "Academy contracts", "colts-purse": "Colts Cup purse"
   };
   function stDetail(type, label) {
     label = String(label || "");

@@ -656,14 +656,18 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
     // round did, banked so the squad's skills stay recomputable from genesis
     // the plan in force AND the academy in force: a building that changes the
     // rate has to be part of the record, or the squad stops being replayable
-    // the plan in force, the academy in force, the COACH in force - and the
-    // XI that took the field (051, the match-day rule): the eleven on the
-    // banked teamsheet train the full session, the men left out train at
-    // half pace. A club that filed no sheet banks null and trains in full.
+    // the plan in force, the academy in force - and the XI that took the
+    // field (051, the match-day rule): the eleven on the banked teamsheet
+    // train the full session, the men left out train at half pace. A club
+    // that filed no sheet banks null and trains in full.
+    // THE COACH IS GONE (056) and is banked as 0 from here on. The column
+    // stays because the rounds already banked still carry the level in force
+    // that week, and living.mjs must keep replaying them exactly as they were
+    // worked - a withdrawn product must never re-rate cricket already played.
     await pool.query(
       `INSERT INTO training_rounds(country_id, slot, season_no, round, plan, academy, coach, xi)
        SELECT c.country_id, c.slot, $2, $3, coalesce(c.training, '{}'::jsonb), c.academy,
-              coalesce(c.coach, 0),
+              0,
               (SELECT CASE WHEN m.home_slot = c.slot
                            THEN m.orders->coalesce(m.home_name, c.name)->'xi'
                            ELSE m.orders->coalesce(m.away_name, c.name)->'xi' END
