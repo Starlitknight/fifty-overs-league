@@ -417,6 +417,117 @@
         if (p.bowlTypeFull === "wristSpin" || p.bowlTypeFull === "fingerSpin") p.bowlTypeFull = NF.spinKind;
       });
     }
+    // ========================================================================
+    // EVERY CRICKETER LEANS. A HOME IS A KIND OF CRICKET.
+    //
+    // Until now a batter rated 42 read vsPace 42 and vsSpin 42, because
+    // foGenSkills draws both from the same mean - the comment there calls it
+    // "a tight batting cluster" and it was deliberate. It also meant no
+    // batsman in the world had a weakness worth bowling at, and no captain
+    // ever had a reason to bring on the spinner. Every squad was the same
+    // squad with different names.
+    //
+    // THIS COSTS NOTHING, and that is the whole trick. jsDerive reads
+    //     bat = 0.32 x vsPace + 0.32 x vsSpin + ...
+    // with the two weights EQUAL, and
+    //     rating = 420 x (bat + ... + (threat + control) x 0.5 + ...)
+    // with wicket and economy equal inside it. So a lean that adds to one
+    // side and takes the same off the other leaves bat, bowl, rating and
+    // wage EXACTLY where they were. A man becomes a specialist without
+    // becoming better or worse, the strength ladder never moves, and not one
+    // club's calibration target changes.
+    //
+    // THE SHAPE OF THE LEAN. Most cricketers are rounded and a few are not:
+    // roughly one man in five is a marked specialist (15-22 points either
+    // way, which is your flat-track bully or your spin merchant), and the
+    // rest lean gently (4-8). Finding the extremes is the scouting game.
+    //
+    // WHICH WAY HE LEANS IS WHERE HE LEARNED. A nation that grows up on
+    // seam turns out batters who play seam and bowlers who swing it; a
+    // nation that grows up on turn does the opposite. This tilts the ODDS,
+    // never the strength - an English batter is likelier to be a pace player
+    // than a spin player, and exactly as good either way.
+    var FO_PACE_LANDS = { England: 1, Australia: 1, "South Africa": 1, "New Zealand": 1,
+      "West Indies": 1, Ireland: 1, Scotland: 1, Netherlands: 1, Wales: 1, Canada: 1 };
+    var FO_SPIN_LANDS = { India: 1, "Sri Lanka": 1, Bangladesh: 1, Afghanistan: 1,
+      Nepal: 1, Pakistan: 1, Kenya: 1 };
+    // Zimbabwe and the United States are left genuinely in the middle: neither
+    // country's cricket is a bowling tradition anybody would name, and a world
+    // where every nation leans somewhere has no middle to lean from.
+    // AND NO TWO CLUBS ARE THE SAME CLUB. On top of the national tilt each
+    // club draws its own house style once, from its own seed - one county
+    // raises seam bowlers and plays the moving ball, the next one along
+    // raises spinners. So two sides founded the same morning in the same
+    // country are recognisably different places, which was the other half of
+    // the complaint.
+    var natTilt = FO_PACE_LANDS[country] ? 0.66 : FO_SPIN_LANDS[country] ? 0.34 : 0.50;
+    var houseTilt = Math.max(0.18, Math.min(0.82, natTilt + (rnd() - 0.5) * 0.34));
+    // a lean in points: mild for most, marked for about one man in five
+    var leanSize = function () {
+      return rnd() < 0.2 ? 15 + Math.round(rnd() * 7) : 4 + Math.round(rnd() * 4);
+    };
+    // move a pair of skills apart by n, keeping their sum - the invariant the
+    // whole idea rests on. Clamped, and the clamp is repaid to the other side
+    // so the sum survives even at the edges of the scale.
+    var split = function (p, hi, lo, n) {
+      if (p.skills[hi] == null || p.skills[lo] == null) return;
+      var a = p.skills[hi], b = p.skills[lo], sum = a + b;
+      var na = Math.max(5, Math.min(96, a + n));
+      var nb = Math.max(5, Math.min(96, sum - na));
+      na = Math.max(5, Math.min(96, sum - nb));
+      p.skills[hi] = Math.round(na); p.skills[lo] = Math.round(nb);
+    };
+    players.forEach(function (p) {
+      // A BATTER'S EYE: pace or spin. Every man who bats gets one, the
+      // captain included - his card promised a rating, and the rating is
+      // exactly what this leaves alone.
+      if (!foPureBowler(p)) {
+        var towardPace = rnd() < houseTilt;
+        var n = leanSize();
+        split(p, towardPace ? "vsPace" : "vsSpin", towardPace ? "vsSpin" : "vsPace", n);
+      }
+      // A BOWLER'S TRADE: takes wickets, or stops runs. The same arithmetic
+      // on the same terms - threat and control weigh the same in a rating,
+      // so a strike bowler and a stock bowler cost a club the same money and
+      // win it completely different matches.
+      if (isBowlP(p)) {
+        var strike = rnd() < 0.5;
+        split(p, strike ? "wicket" : "economy", strike ? "economy" : "wicket", leanSize());
+      }
+    });
+    // ---- AND THE COUNTRY'S OWN CRAFT --------------------------------------
+    // The composition already differs (an English club fields five seamers
+    // and two spinners, an Indian one the reverse - the archetypes did that
+    // long before this). What was missing is that the men themselves were
+    // interchangeable. Here the trade a nation is FOR gets the better of its
+    // own attack and the other trade gives the same ground up. calibrate()
+    // then rescales the whole squad back onto its exact rung, so this is
+    // shape and never strength: an English club's seamers out-bowl its own
+    // spinners, an Indian club's spinners out-bowl its own seamers, and the
+    // two clubs are worth precisely the same.
+    // TWO CORRECTIONS, IN ORDER. foGenSkills turns out seamers about four
+    // points better than spinners in every nation, whatever its cricket -
+    // measured on the neutral lands, which carry no tilt and still came out
+    // +2.9 (Zimbabwe) and +4.8 (West Indies). Left alone it would have made
+    // England's seam identity read twice as loudly as India's spin identity,
+    // which is a bug in the generator wearing the costume of a design.
+    // So: level the ground first, then let the nation lean on it.
+    var SEAM_BIAS = 0.14;                 // undo the generator's own seam habit
+    var CRAFT = 0.10;                     // and what a country is actually for
+    var favourSeam = natTilt > 0.50, neutral = natTilt === 0.50;
+    players.forEach(function (p) {
+      if (!isBowlP(p)) return;
+      var isSpin = /[Ss]pin/.test(p.bowlTypeFull || "");
+      var f = 1 + (isSpin ? SEAM_BIAS : 0);
+      if (!neutral) f *= (isSpin !== favourSeam) ? (1 + CRAFT) : (1 - CRAFT);
+      if (f === 1) return;
+      ["wicket", "economy", "discipline", "moveTurn", "variation"].forEach(function (k) {
+        if (p.skills[k] == null) return;
+        p.skills[k] = Math.max(5, Math.min(96, Math.round(p.skills[k] * f)));
+      });
+    });
+    players.forEach(function (p) { jsDerive(p); });
+
     // The Engine: two batters pick up honest part-time overs - everyone chips in
     if (A.partTimers) {
       players.filter(function (p) { return p !== starter && !isBowlP(p) && !p.keeper && p.role !== "allRounder"; })
