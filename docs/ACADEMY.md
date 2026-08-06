@@ -28,6 +28,19 @@ curve is the one that is already shipped and already fixed: younger men gain
 faster. A sixteen-year-old improves quickly from a low base; a twenty-year-old
 improves slowly from a higher one.
 
+**And until 059 that was a promise the umpire did not keep.** The living layer
+replayed `clubs.squad` and nothing else, so a colt aged a year at every rollover
+and walked out at twenty-one exactly the cricketer who walked in — while the
+training page took a programme for him, filed it, and the umpire threw it away
+unread. The one building whose whole purpose is developing young cricketers
+developed nobody. The boys are now replayed alongside the men, against the same
+banked rounds, at the same academy rate.
+
+Nobody was paid for work he did not do: every colt already on the books was
+stamped with the round the migration ran, so they all started on the same
+morning rather than being handed the club's entire history in a single settle.
+A boy scouted from here on is stamped at the door.
+
 **And that curve is slow on purpose.** Measured against the shipped law
 (`pts = 24 × ageFactor × potFactor × freshness × academyRate`, against a
 threshold that rises with the skill), four seasons of nets move a cricketer by
@@ -189,6 +202,13 @@ early, and the statement shows it.
 or not you sign him; scouting at home is free. A senior contract costs a flat
 **250,000** for any boy, whatever he has become. A club in the red does none of
 the three — the same floor that already stops it building a stand.
+
+**A promotion carries the academy years with him.** `clubs.youth` and
+`clubs.squad` are replayed from their own baselines, so a boy handed a senior
+shirt would otherwise be rebuilt from the skills he was *scouted* at and lose
+every session he ever did on the morning he earned the shirt. What he trained
+into becomes his senior baseline, the way the market freezes a transferred
+man's record onto him.
 
 A level does three things and no more:
 

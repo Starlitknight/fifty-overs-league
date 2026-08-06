@@ -155,6 +155,21 @@ export function makeRecruit(host, nat, arch, tier, seed) {
 // cricketer, and a nation's ARCHETYPE is its flavour - rsa turns out express
 // bowlers, sub and slk turn out wizards. Every nation still produces every
 // kind of cricketer; it only leans.
+// THE ROUND A BOY WALKED IN. living.mjs replays every banked training round
+// to rebuild a squad, and works a man only from the round he JOINED - or a
+// cricketer signed last week is handed three seasons of somebody else's nets.
+// Colts never needed one while the academy was a waiting room. Now that they
+// train (059) they do, and it is stamped at the door: the round about to be
+// banked, so a boy's first session is his first session.
+export async function joinedNow(pool, country, slot) {
+  const s = +(await pool.query(
+    'SELECT coalesce(max(season_no), 1) AS s FROM seasons WHERE country_id=$1', [country])).rows[0].s || 1;
+  const r = +(await pool.query(
+    `SELECT coalesce(max(round), 0) + 1 AS r FROM training_rounds
+      WHERE country_id=$1 AND slot=$2 AND season_no=$3`, [country, slot, s])).rows[0].r || 1;
+  return { s, r };
+}
+
 export function nationsOf(host) {
   return countryConfigs(host).map(r => ({ id: r.id, name: r.name, nat: r.nat, arch: r.arch }));
 }
@@ -215,10 +230,11 @@ export async function stockAcademies(pool, host, country, { worldDay }) {
     const youth = Array.isArray(c.youth) ? c.youth : [];
     if (youth.length >= ACADEMY_FLOOR) continue;
     let n = 0;
+    const joined = await joinedNow(pool, country, c.slot);
     while (youth.length < ACADEMY_FLOOR && n < ACADEMY_FLOOR * 3) {
       const seed = 'stock|' + country + '|' + c.slot + '|d' + worldDay + '|' + (n++);
       const boy = makeRecruit(host, cfg.nat, cfg.arch, tierOf(c.academy, seed), seed);
-      if (boy && !youth.some(y => y && y.name === boy.name)) { youth.push(boy); added++; }
+      if (boy && !youth.some(y => y && y.name === boy.name)) { boy.joined = joined; youth.push(boy); added++; }
     }
     await pool.query('UPDATE clubs SET youth=$3::jsonb WHERE country_id=$1 AND slot=$2',
       [country, c.slot, JSON.stringify(youth)]);
@@ -245,6 +261,9 @@ export async function dealYouthToAll(pool, host, country, { count = 16 } = {}) {
   for (const c of clubs) {
     const youth = Array.isArray(c.youth) ? c.youth : [];
     let n = 0;
+    // the founding gift arrives with the world, so these boys carry no joining
+    // round at all - like every cricketer the world was made with, they have
+    // been here all along and work every round the club has ever banked
     while (youth.length < count && n < count * 4) {
       const seed = 'deal16|' + country + '|' + c.slot + '|' + (n++);
       const boy = makeRecruit(host, cfg.nat, cfg.arch, tierOf(c.academy, seed), seed);
@@ -332,11 +351,14 @@ export async function redealYouth(pool, host, country, { count = 16 } = {}) {
     const taken = new Set((Array.isArray(c.squad) ? c.squad : []).map(p => p && p.name));
     const youth = [];
     let n = 0;
+    // a redeal replaces the boys mid-world, so these ones start from today:
+    // without the stamp they would be handed every round already banked
+    const joined = await joinedNow(pool, country, c.slot);
     while (youth.length < count && n < count * 4) {
       const seed = 'redeal2|' + country + '|' + c.slot + '|' + (n++);
       const boy = makeRecruit(host, cfg.nat, cfg.arch, tierOf(c.academy, seed), seed);
       if (boy && !taken.has(boy.name) && !youth.some(y => y && y.name === boy.name)) {
-        youth.push(boy); dealt++;
+        boy.joined = joined; youth.push(boy); dealt++;
       }
     }
     await pool.query('UPDATE clubs SET youth=$3::jsonb WHERE country_id=$1 AND slot=$2',

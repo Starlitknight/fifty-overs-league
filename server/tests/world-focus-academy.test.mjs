@@ -272,3 +272,117 @@ test('the book is rebuilt whole, never appended to', async () => {
     `SELECT nets_history FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].nets_history;
   assert.deepEqual(after2, before, 're-settling the same evening writes the same book');
 });
+
+// ---------------------------------------------------------------------------
+// THE BOYS TRAIN (059)
+// ---------------------------------------------------------------------------
+test('a colt goes through the nets like anybody else', async () => {
+  const before = (await pool.query(
+    `SELECT youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].youth;
+  const boys = before.filter(y => y && y.baseSkills);
+  assert.ok(boys.length >= 5, 'there are boys on the books to read (' + boys.length + ')');
+
+  // the founding sixteen arrived with the world and carry no joining round,
+  // so every one of the rounds banked above is a round they were here for
+  const moved = boys.filter(y => {
+    for (const k in (y.baseSkills || {})) {
+      if (Math.round(y.skills[k] || 0) !== Math.round(y.baseSkills[k] || 0)) return true;
+    }
+    return false;
+  });
+  assert.ok(moved.length >= 1,
+    'at least one boy has stepped up over the rounds worked (' + moved.length + ' of ' + boys.length + ')');
+  const banked = boys.filter(y => y.trainProgress && Object.keys(y.trainProgress).length);
+  assert.equal(banked.length, boys.length, 'and every boy has work banked, not just the ones who popped');
+
+  // A BOY IS NEVER STRONGER THAN THE NETS MADE HIM. His skills are his
+  // baseline plus the rounds he worked, and nothing else touches them.
+  for (const y of boys) {
+    for (const k in (y.baseSkills || {})) {
+      assert.ok(Math.round(y.skills[k] || 0) >= Math.round(y.baseSkills[k] || 0),
+        y.name + ' never went backwards in ' + k);
+    }
+  }
+});
+
+test('a boy signed today is not handed the seasons before he arrived', async () => {
+  // THE WHOLE POINT OF THE JOINING STAMP. Drop a fresh colt onto the books
+  // with a joining round of NOW, settle, and he must have done nothing - the
+  // club has forty-six rounds banked and not one of them is his.
+  const club = (await pool.query(
+    `SELECT youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
+  const s = +(await pool.query(
+    `SELECT coalesce(max(season_no),1) s FROM seasons WHERE country_id='eng'`)).rows[0].s;
+  const r = +(await pool.query(
+    `SELECT coalesce(max(round),0)+1 r FROM training_rounds WHERE country_id='eng' AND slot=1 AND season_no=$1`,
+    [s])).rows[0].r;
+  const fresh = JSON.parse(JSON.stringify(club.youth[0]));
+  fresh.name = 'Newcomer Lad';
+  fresh.skills = JSON.parse(JSON.stringify(fresh.baseSkills));
+  delete fresh.trainProgress;
+  fresh.joined = { s, r };
+  await pool.query(
+    `UPDATE clubs SET youth = youth || $2::jsonb WHERE country_id='eng' AND slot=$1`,
+    [1, JSON.stringify([fresh])]);
+  await evolveCountry(pool, 'eng', EPOCH + START * DAY + 20 * 3600000, host);
+
+  const after = (await pool.query(
+    `SELECT youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].youth
+    .find(y => y.name === 'Newcomer Lad');
+  assert.ok(after, 'he is on the books');
+  const banked = Object.values(after.trainProgress || {}).reduce((a, b) => a + b, 0);
+  assert.equal(banked, 0, 'and has done not one session of work he was not there for');
+  for (const k in (after.baseSkills || {})) {
+    assert.equal(Math.round(after.skills[k] || 0), Math.round(after.baseSkills[k] || 0),
+      'his ' + k + ' is exactly what he walked in with');
+  }
+});
+
+test('a club nobody manages has its boys trained too', async () => {
+  // an offline club must never be a worse club for being offline: the umpire
+  // runs its nets whether anyone is watching or not
+  const other = (await pool.query(
+    `SELECT youth FROM clubs WHERE country_id='eng' AND slot=2`)).rows[0].youth;
+  const worked = (other || []).filter(y => y.trainProgress && Object.keys(y.trainProgress).length);
+  assert.ok(worked.length >= 5, 'slot 2 has boys with work banked (' + worked.length + ')');
+});
+
+test('the promoted boy keeps every session he ever did', async () => {
+  // THE TRAP. A promotion moves him from clubs.youth to clubs.squad, and the
+  // two are replayed separately from their own baselines. Without freezing
+  // what the academy made of him, three seasons of nets vanish on the morning
+  // he is handed a shirt - the club's reward for developing him being to
+  // undevelop him.
+  const club = (await pool.query(
+    `SELECT youth, squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
+  const boy = club.youth.find(y => {
+    for (const k in (y.baseSkills || {})) {
+      if (Math.round(y.skills[k] || 0) > Math.round(y.baseSkills[k] || 0)) return true;
+    }
+    return false;
+  });
+  assert.ok(boy, 'found a boy the academy actually improved');
+  const grown = JSON.parse(JSON.stringify(boy.skills));
+
+  await pool.query(`UPDATE clubs SET bank=9000000 WHERE country_id='eng' AND slot=1`);
+  await pool.query(`SELECT world_colt($1,'promote')`, [boy.name]);
+
+  const man = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad
+    .find(p => p.name === boy.name);
+  assert.ok(man, 'he is in the senior squad');
+  assert.ok(man.joined, 'with the round he first wore the shirt');
+  for (const k in grown) {
+    assert.equal(Math.round(man.baseSkills[k] || 0), Math.round(grown[k] || 0),
+      'his senior baseline in ' + k + ' is what the academy made of him, not what he was scouted at');
+  }
+  // and a settle does not undo it
+  await evolveCountry(pool, 'eng', EPOCH + START * DAY + 20 * 3600000, host);
+  const after = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad
+    .find(p => p.name === boy.name);
+  for (const k in grown) {
+    assert.ok(Math.round(after.skills[k] || 0) >= Math.round(grown[k] || 0),
+      'he did not get weaker overnight in ' + k + ' (' + after.skills[k] + ' vs ' + grown[k] + ')');
+  }
+});

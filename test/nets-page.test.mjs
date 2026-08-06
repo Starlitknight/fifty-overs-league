@@ -48,13 +48,19 @@ const SQUAD = [
   man('Dai Pemberton', 31, { bowlTypeFull: 'seamFast', bowlType: 'seamFast' }),
   man('Eli Sarkar', 22, { bowlTypeFull: 'wristSpin', bowlType: 'wristSpin' })
 ];
+const BOYS = [
+  man('Rory Vane', 16, { colt: true }),
+  man('Sam Kettleby', 18, { colt: true, bowlTypeFull: 'seamMedium', bowlType: 'seamMedium' }),
+  man('Tobias Ng', 20, { colt: true, keeper: true, role: 'wicketkeeper' })
+];
 
 /** Seat the harness in a club whose squad is the men above. */
-function seat() {
+function seat(withYouth) {
   run(`GD.teams = ${JSON.stringify([{
     name: 'Mashed Potatoes', ground: 'The Field', founded: true, bank: 400000, seats: 15000,
-    supporters: 12000, mood: 3, homePitch: 'balanced', youth: [], players: SQUAD
-  }])}; App.teamIx = 0;`);
+    supporters: 12000, mood: 3, homePitch: 'balanced', youth: BOYS, players: SQUAD
+  }])}; App.teamIx = 0;`).toString();
+  if (withYouth === false) run(`GD.teams[0].youth = [];`);
   try { run(`foSetMyClub("Mashed Potatoes")`); } catch (e) {}
 }
 /** A book of the nets: three rounds, with real steps in it. */
@@ -73,8 +79,9 @@ function book() {
     ]
   };
 }
-function draw(chart, hist) {
+function draw(chart, hist, crew) {
   seat();
+  run(`window.__foNetsCrew = ${JSON.stringify(crew || 'sen')};`);
   run(`window.__foNetsHistory = ${hist === undefined ? JSON.stringify(book()) : JSON.stringify(hist)};`);
   run(`window.__foWorldAcademy = 7;`);
   run(`window.__foNetsChart = ${JSON.stringify(chart || 'climb')};`);
@@ -247,4 +254,88 @@ test('the focus arithmetic the page quotes is the engine\'s own', () => {
   // and the reader takes both shapes
   assert.equal(run(`JSON.stringify(window.FO_PLAN_ENTRY('Batting'))`), '{"p":"Batting","f":null}');
   assert.equal(run(`JSON.stringify(window.FO_PLAN_ENTRY({p:'Batting',f:'vsSpin'}))`), '{"p":"Batting","f":"vsSpin"}');
+});
+
+test('the two crews are two tabs, and each holds only its own men', () => {
+  const sen = draw('climb', undefined, 'sen');
+  assert.ok(sen.indexOf("data-t2crew='sen'") >= 0 && sen.indexOf("data-t2crew='yth'") >= 0,
+    'both tabs are offered');
+  assert.ok(sen.indexOf('Senior staff<i>' + SQUAD.length + '<') >= 0, 'the senior tab counts the five men');
+  assert.ok(sen.indexOf('The academy<i>' + BOYS.length + '<') >= 0, 'and the academy tab counts the three boys');
+  for (const p of SQUAD) assert.ok(sen.indexOf(`data-t2p='${p.name}'`) >= 0, p.name + ' is on the senior tab');
+  for (const b of BOYS) assert.ok(sen.indexOf(`data-t2p='${b.name}'`) < 0, b.name + ' is not');
+
+  const yth = draw('climb', undefined, 'yth');
+  for (const b of BOYS) assert.ok(yth.indexOf(`data-t2p='${b.name}'`) >= 0, b.name + ' is on the academy tab');
+  for (const p of SQUAD) assert.ok(yth.indexOf(`data-t2p='${p.name}'`) < 0, p.name + ' is not');
+  // and each boy gets the same two decisions a senior gets
+  for (const b of BOYS) assert.ok(yth.indexOf(`data-t2f='${b.name}'`) >= 0, b.name + ' has a focus picker');
+  assert.ok(yth.indexOf('steepest part of the curve') >= 0, 'and the academy tab says why it matters');
+});
+
+test('a club with no boys is not shown a door to an empty room', () => {
+  seat(false);
+  run(`window.__foNetsCrew = "yth"; window.__foNetsHistory = null;`);
+  const html = run(`String(foRenderNetsPage() || '')`);
+  assert.ok(html.indexOf('data-t2crew') < 0, 'no tabs at all');
+  for (const p of SQUAD) assert.ok(html.indexOf(`data-t2p='${p.name}'`) >= 0,
+    p.name + ' is on the page - the seniors are never hidden behind a tab that is not there');
+  run(`window.__foNetsCrew = "sen";`);
+});
+
+test('saving from one tab never files a plan with the other half missing', () => {
+  // THE BUG THIS LOCKS DOWN. The page draws one crew at a time. A save that
+  // walked only the VISIBLE rows files a plan naming three men out of eight,
+  // and the umpire puts every unnamed man back on the programme his trade
+  // implies - so a manager who sets his seamer to work on his batting, then
+  // flips to the academy tab and presses save, silently loses it.
+  //
+  // Read the plan that actually goes to the world, which is the only thing
+  // that decides what the umpire works.
+  seat();
+  const filed = run(`(function(){
+    // a club in the served world, so the save goes through the world push
+    window.__foWorldClaim = { country: 'eng', slot: 1, club: 'Mashed Potatoes' };
+    window.__foWorldPlan = {};
+    window.__foNetsHistory = null;
+    var pushed = null;
+    window.__foWorldPushTraining = function (plan) { pushed = plan; };
+
+    var page = { innerHTML: '', classList: { add: function () {}, remove: function () {} },
+      querySelector: function (sel) {
+        if (sel === '#fo-t2-save') return { addEventListener: function (_, fn) { page.__save = fn; } };
+        return null;
+      },
+      querySelectorAll: function () { return []; } };
+    var realGet = document.getElementById;
+    document.getElementById = function (id) { return id === 'page' ? page : realGet.call(document, id); };
+    try {
+      // a deliberate, non-default choice for a senior seamer, made on his tab
+      window.__foNetsCrew = 'sen';
+      foRenderNetsPage();
+      window.__foWorldPlan = { 'Dai Pemberton': { p: 'Power hitting', f: 'power' } };
+      window.__foNetsWho = null;
+      // walk away to the academy tab and save from there
+      window.__foNetsCrew = 'yth';
+      foRenderNetsPage();
+      if (page.__save) page.__save();
+    } finally {
+      document.getElementById = realGet;
+      window.__foWorldClaim = null;
+      window.__foNetsCrew = 'sen';
+    }
+    return JSON.stringify(pushed);
+  })()`);
+  const plan = JSON.parse(filed);
+  assert.ok(plan, 'a plan was filed with the world');
+  const named = Object.keys(plan);
+  for (const p of SQUAD) assert.ok(named.indexOf(p.name) >= 0,
+    p.name + ' is missing from a plan filed off the academy tab: ' + named.join(', '));
+  for (const b of BOYS) assert.ok(named.indexOf(b.name) >= 0,
+    b.name + ' is missing from the plan: ' + named.join(', '));
+  assert.equal(named.length, SQUAD.length + BOYS.length, 'the whole club is filed, not the visible half');
+  // the colt keeper is filed as a keeper, same law as the senior one
+  const read = n => (typeof plan[n] === 'string' ? plan[n] : plan[n] && plan[n].p);
+  assert.equal(read('Tobias Ng'), 'Keeping', 'the colt keeper is filed as a keeper');
+  assert.equal(read('Cass Iremonger'), 'Keeping', 'and so is the senior one');
 });

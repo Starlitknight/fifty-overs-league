@@ -192,8 +192,20 @@ function wasHere(p, r) {
 // move and a session banks about twenty-four - so a club's whole book is a
 // few hundred entries, not tens of thousands.
 const HIST_STEPS = 4000;                       // a hard ceiling, oldest dropped
-async function trainedSquad(pool, host, country, slot, squad, hist = null) {
-  if (!host || !host.trainRound) return squad;
+//
+// AND THE BOYS TRAIN TOO (059). The academy was a waiting room: the umpire
+// replayed club.squad and nothing else, so a colt aged a year at every
+// rollover and walked out at twenty-one exactly the cricketer who walked in -
+// while the training page happily took a programme for him and filed it, and
+// the umpire silently threw it away. docs/ACADEMY.md always said a boy
+// becomes what the ordinary training curve makes of him. Now he does.
+//
+// Both crews are replayed against the SAME banked rounds, in one pass, so a
+// boy's academy years and a man's senior years are the same nets by the same
+// arithmetic - and the boys, being sixteen to twenty, sit on the steepest part
+// of the age curve, which is the whole reason to own an academy.
+async function trainedSquad(pool, host, country, slot, squad, hist = null, youth = null) {
+  if (!host || !host.trainRound) return { squad: squad, youth: youth || [] };
   const rounds = (await pool.query(
     `SELECT season_no, round, plan, academy, coach, xi FROM training_rounds WHERE country_id=$1 AND slot=$2
       ORDER BY season_no, round`, [country, slot])).rows;
@@ -214,12 +226,8 @@ async function trainedSquad(pool, host, country, slot, squad, hist = null) {
       .rows.map(r => r.season_no + '|' + r.round + '|' + r.player));
   } catch (eC) { away = new Set(); }             // pre-023 database: nobody has been called up
   let men = (squad || []).map(baseline);
+  let boys = (youth || []).map(baseline);
   for (const r of rounds) {
-    const here = [];
-    men.forEach((p, i) => {
-      if (wasHere(p, r) && !away.has(r.season_no + '|' + r.round + '|' + p.name)) here.push(i);
-    });
-    if (!here.length) continue;
     const back = Math.max(0, latest - r.season_no);
     // THE NETS REPLAY IS TIMELESS. The engine's nets rate reads a man's
     // legs, and these crews would otherwise carry TODAY'S legs - a replay
@@ -229,18 +237,34 @@ async function trainedSquad(pool, host, country, slot, squad, hist = null) {
     // is real). Every replayed session works a rested copy of the man;
     // the standing plan-intensity load below is where tiredness and the
     // nets actually meet.
-    const crew = here.map(i => Object.assign({}, men[i],
-      back ? { age: Math.max(16, (men[i].age || 27) - back) } : null,
-      { fatN: 0, fatWord: 'rested', fatigue: 'rested' }));
-    const out = host.trainRound(crew, r.plan || {},
-      academyRate(r.academy) * coachRate(r.coach),
-      Array.isArray(r.xi) ? r.xi : null);
-    const worked = out.players;
-    // the work is his; the age he is today is still today's
-    here.forEach((i, k) => { men[i] = Object.assign({}, worked[k], { age: men[i].age }); });
+    // ONE ROUND, RUN FOR A CREW. The men and the boys are two crews because
+    // the match-day rule is a fact about SELECTION: a senior left out of the
+    // eleven trained at half pace that day, and a sixteen-year-old was never
+    // in contention to be left out of anything. So the boys are worked with
+    // no teamsheet at all - full session, every round they were here for.
+    const runCrew = (pool2, xi) => {
+      const here = [];
+      pool2.forEach((p, i) => {
+        if (wasHere(p, r) && !away.has(r.season_no + '|' + r.round + '|' + p.name)) here.push(i);
+      });
+      if (!here.length) return null;
+      const crew = here.map(i => Object.assign({}, pool2[i],
+        back ? { age: Math.max(16, (pool2[i].age || 27) - back) } : null,
+        { fatN: 0, fatWord: 'rested', fatigue: 'rested' }));
+      const res = host.trainRound(crew, r.plan || {},
+        academyRate(r.academy) * coachRate(r.coach), xi);
+      // the work is his; the age he is today is still today's
+      here.forEach((i, k) => { pool2[i] = Object.assign({}, res.players[k], { age: pool2[i].age }); });
+      return res;
+    };
+    const out = runCrew(men, Array.isArray(r.xi) ? r.xi : null);
+    const outY = boys.length ? runCrew(boys, null) : null;
+    if (!out && !outY) continue;
     if (hist) {
-      for (const g of (out.gains || [])) {
-        hist.steps.push({ s: r.season_no, r: r.round, n: g.name, k: g.skill, to: g.to });
+      for (const res of [out, outY]) {
+        for (const g of ((res && res.gains) || [])) {
+          hist.steps.push({ s: r.season_no, r: r.round, n: g.name, k: g.skill, to: g.to });
+        }
       }
       // and what the squad was set to that round, so "where the work went" is
       // read off the sessions actually worked. The engine REPORTS this rather
@@ -248,15 +272,17 @@ async function trainedSquad(pool, host, country, slot, squad, hist = null) {
       // man, and re-deriving the fallback here would be a second copy of the
       // engine's defaultProg waiting to disagree with the first.
       const tally = {};
-      for (const nm in (out.worked || {})) {
-        const pg = out.worked[nm] && out.worked[nm].p;
-        if (pg) tally[pg] = (tally[pg] || 0) + 1;
+      for (const res of [out, outY]) {
+        for (const nm in ((res && res.worked) || {})) {
+          const pg = res.worked[nm] && res.worked[nm].p;
+          if (pg) tally[pg] = (tally[pg] || 0) + 1;
+        }
       }
       if (Object.keys(tally).length) hist.rounds.push({ s: r.season_no, r: r.round, p: tally, a: r.academy });
     }
   }
   if (hist && hist.steps.length > HIST_STEPS) hist.steps = hist.steps.slice(-HIST_STEPS);
-  return men;
+  return { squad: men, youth: boys };
 }
 // WHAT THE ACADEMY BUYS IN THE NETS. Level two is the rate the world was
 // founded at, so it is the unit; every level either side is eight per cent.
@@ -301,7 +327,7 @@ export function withCarry(book, carry) {
 // EVERY MAN'S LIFE, RECOMPUTED FROM THE WHOLE RECORD OF ONE COUNTRY.
 export async function evolveCountry(pool, country, now = Date.now(), host = null) {
   const clubs = (await pool.query(
-    'SELECT slot, name, squad, training FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
+    'SELECT slot, name, squad, youth, training FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
   if (!clubs.length) return 0;
   // whose clubs are managed - the nets report is written for them alone
   let claimedSlots = new Set();
@@ -478,7 +504,9 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     // a managed club's replay collects its book of the nets on the way past;
     // an unmanaged one has nobody to read a chart, so it costs nothing
     const hist = claimedSlots.has(club.slot) ? { steps: [], rounds: [] } : null;
-    const trained = await trainedSquad(pool, host, country, club.slot, club.squad, hist);
+    const worked = await trainedSquad(pool, host, country, club.slot, club.squad, hist,
+      Array.isArray(club.youth) ? club.youth : []);
+    const trained = worked.squad;
     // the engine's default skipper where no orders named one (00-core picks
     // the best captaincy score the same way)
     const defCapt = (trained.slice().sort((x, y) => (y.capt || 0) - (x.capt || 0))[0] || {}).name || null;
@@ -624,8 +652,13 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
         takenNo[v] = q.name; q.no = v;
       });
     } catch (eNo) {}
-    await pool.query('UPDATE clubs SET squad=$3::jsonb WHERE country_id=$1 AND slot=$2',
-      [country, club.slot, JSON.stringify(squad)]);
+    // AND THE BOYS GO BACK TOO. A colt has no career, no form and no tired
+    // legs - he plays one competition a season and it keeps its own book - so
+    // he carries nothing the fold above adds to a senior. What the academy
+    // changes about him is the nets, and that is what is written here.
+    await pool.query(
+      'UPDATE clubs SET squad=$3::jsonb, youth=$4::jsonb WHERE country_id=$1 AND slot=$2',
+      [country, club.slot, JSON.stringify(squad), JSON.stringify(worked.youth || [])]);
     touched++;
   }
   return touched;

@@ -127,6 +127,10 @@
   // the umpire works, with nothing left to a default the manager cannot see.
   // A man on auto files the bare string, which is the shape every round
   // before this one banked: no focus, no new key, nothing to replay wrong.
+  // THE FILED PLAN COVERS THE WHOLE CLUB, whichever crew is on screen. The
+  // page shows the men or the boys, never both; a save that walked only the
+  // visible rows would file a plan with half the club missing, and the umpire
+  // puts every unnamed man back on his default programme.
   function buildPlan(squad) {
     var plan = {};
     squad.forEach(function (p) {
@@ -522,6 +526,17 @@
   // whole on every keystroke - a plan saved, a picker moved. The choice lives
   // on the window and is read fresh each render, so it survives a rebuild
   // without surviving a change of club.
+  // WHICH SIDE OF THE CLUB. The men and the boys are two crews - the umpire
+  // replays them separately, they answer to different laws (a colt is never
+  // left out of an eleven, so the match-day half-rate never touches him), and
+  // they are read for different reasons: you check the seniors before a round
+  // and the boys once a season. Held on the window, like the chart choice,
+  // because the page rebuilds itself whole on every keystroke.
+  function crewId() {
+    var c = "sen";
+    try { if (window.__foNetsCrew === "yth") c = "yth"; } catch (e) {}
+    return c;
+  }
   function chartId() {
     var ch = "climb";
     try { if (window.__foNetsChart) ch = String(window.__foNetsChart); } catch (e) {}
@@ -550,7 +565,11 @@
     foT2Css();
     try { document.body.classList.add("fo-nets-on"); } catch (eB) {}
     var st = loadState(), me = userTeam();
-    var squad = (me.players || []).concat(me.youth || []);
+    var seniors = (me.players || []).slice();
+    var boys = (me.youth || []).slice();
+    // a club with no academy at all is not shown a door to an empty room
+    var crew = boys.length ? crewId() : "sen";
+    var squad = crew === "yth" ? boys : seniors;
     var bk = bookOf();
     var chart = chartId(), who = whoFor(squad, bk);
 
@@ -574,10 +593,21 @@
              : "<span class='nx'><b>Top</b><i>nowhere further to go</i></span>") +
       "<s class='go'>&rsaquo;</s></a>";
 
+    // ---- THE TWO CREWS ------------------------------------------------------
+    var tabs = boys.length
+      ? "<div class='fo-t2-tabs'>" +
+        "<button type='button' class='fo-t2-tab" + (crew === "sen" ? " on" : "") + "' data-t2crew='sen'>" +
+          "Senior staff<i>" + seniors.length + "</i></button>" +
+        "<button type='button' class='fo-t2-tab" + (crew === "yth" ? " on" : "") + "' data-t2crew='yth'>" +
+          "The academy<i>" + boys.length + "</i></button>" +
+        "</div>"
+      : "";
+
     // ---- THE TRAINING PLAN, man by man --------------------------------------
     var nos = squadNumbers(squad);
-    var roster = "<div class='fo-t2-card'><div class='fo-t2-ck'>Training plan</div>" +
-      "<div class='fo-t2-head'><span></span><span>Player</span><span>Programme</span><span>Focus</span></div>" +
+    var roster = "<div class='fo-t2-card'>" + tabs +
+      "<div class='fo-t2-head'><span></span><span>" +
+        (crew === "yth" ? "Colt" : "Player") + "</span><span>Programme</span><span>Focus</span></div>" +
       squad.map(function (p) {
         var e = entryFor(p);
         var foc = focusOptions(e.p);
@@ -599,7 +629,14 @@
           "<i>" + (p.age | 0) + " &middot; " + (p.hand === "L" ? "LH" : "RH") + " Bat &middot; " + E(abbrevOf(p)) + "</i></span>" +
           progSel + focSel +
           "</div>";
-      }).join("") + "</div>";
+      }).join("") +
+      (squad.length ? "" : "<div class='fo-t2-empty'>Nobody here to train. Scout a boy on the next rest day.</div>") +
+      (crew === "yth"
+        ? "<p class='fo-t2-cnote'>A boy is sixteen to twenty, which is the steepest part of the curve there is: " +
+          "a session is worth half again to him what it is worth to a man of twenty-five, and five times what it " +
+          "is worth to a man of thirty-three. He works every round in full &mdash; the match-day half-rate is " +
+          "about being left out of an eleven, and he was never in contention for one.</p>"
+        : "") + "</div>";
 
     // TODAY AT THE NETS - the umpire's own report from the last settle
     var report = "";
@@ -652,6 +689,14 @@
         st.dirty = 1; rep();
       });
     });
+    page.querySelectorAll("button[data-t2crew]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        try { window.__foNetsCrew = b.getAttribute("data-t2crew"); } catch (eC1) {}
+        // the charts are about a man, and that man is on the other crew now
+        try { window.__foNetsWho = null; } catch (eC2) {}
+        rep();
+      });
+    });
     var chartSel = page.querySelector("#fo-t2-chart");
     if (chartSel) chartSel.addEventListener("change", function () {
       try { window.__foNetsChart = chartSel.value; } catch (eS1) {}
@@ -666,12 +711,12 @@
     var save = page.querySelector("#fo-t2-save");
     if (save) save.addEventListener("click", function () {
       try {
-        var plan = buildPlan(squad);
+        var plan = buildPlan(seniors.concat(boys));
         if (served()) {
           if (window.__foWorldPushTraining) window.__foWorldPushTraining(plan);
           window.__foWorldPlan = plan;
         } else {
-          squad.forEach(function (p) {
+          seniors.concat(boys).forEach(function (p) {
             if (!p.training || typeof p.training !== "object") p.training = { progressBySkill: {} };
             var e = readEntry(plan[p.name]) || { p: defaultProg(p), f: null };
             p.training.program = e.p;
@@ -716,6 +761,13 @@
       // the plan
       ".fo-t2-card{background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);padding:14px 16px;margin-bottom:12px}",
       ".fo-t2-ck{font:700 11px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#14243A;margin-bottom:8px}",
+      // the two crews
+      ".fo-t2-tabs{display:flex;gap:6px;margin:0 0 12px}",
+      "html body #page button.fo-t2-tab{flex:1 1 0;display:flex;align-items:center;justify-content:center;gap:7px;font:700 10px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#6d6455;background:#F6F2E8;border:1px solid #e3dccb;border-radius:10px;padding:10px 8px;cursor:pointer}",
+      "html body #page button.fo-t2-tab:hover{border-color:#B8933A;color:#14243A}",
+      "html body #page button.fo-t2-tab.on{background:#14243A;border-color:#14243A;color:#FFFEFC}",
+      ".fo-t2-tab i{font:700 10px Oswald,sans-serif;font-style:normal;letter-spacing:.05em;color:#B8933A}",
+      "html body #page button.fo-t2-tab.on i{color:#E8B96A}",
       ".fo-t2-head,.fo-t2-row{display:grid;grid-template-columns:38px minmax(0,1.15fr) minmax(104px,1fr) minmax(104px,1fr);gap:10px;align-items:center}",
       ".fo-t2-head{padding:0 0 6px;border-bottom:1px solid #e3dccb}",
       ".fo-t2-head span{font:700 8.5px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#8a8272}",
