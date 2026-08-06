@@ -3826,14 +3826,27 @@ function runTour(){
     'All-rounder':{vsPace:15,vsSpin:15,wicket:15,economy:15,fielding:20,stamina:20},
     'Rest':{}
   };
+  // WHAT A MANAGER IS OFFERED, as against what the table can price. From the
+  // Pavilion runs training on one programme per trainable skill plus Rest -
+  // eight - and names each after the skill it works hardest. This had fifteen,
+  // ten of them batting-or-bowling variants, so a seamer's picker offered five
+  // bowling options whose differences were a weight table nobody can see.
+  // The seven specialists below are RETIRED FROM THE PICKER AND KEPT IN THE
+  // TABLE: training_rounds banks the programme name and living.mjs replays
+  // every round to rebuild a squad, so deleting a name would send its rounds
+  // through the default instead and silently re-rate work already done. New
+  // plans only ever use the eight; the old names still price the old sessions.
+  const TRAIN_OFFERED = ['Batting', 'Bowling', 'Keeping', 'Fielding',
+                         'Fitness', 'Power hitting', 'All-rounder', 'Rest'];
   window.FO_TRAIN_PROGS=TRAIN_PROGS;
+  window.FO_TRAIN_OFFERED=TRAIN_OFFERED;
   function potentialFor(p){
     if(p.training&&p.training.potential)return p.training.potential;
     let v=(p.talent==='gifted'||(p.talents||[]).length>=2?2:0)+(p.age<=20?2:p.age<=24?1:0)+(p.rating>3600?1:0);
     return v>=4?'Star':v>=3?'High':v>=1?'Useful':'Limited';
   }
   function potentialRead(p){return {Limited:'Limited ceiling',Useful:'Useful squad player',High:'Young players',Star:'Strong profile'}[potentialFor(p)]}
-  function defaultProgram(p){if(p.keeper)return 'Keeping'; if(p.role==='allRounder')return 'All-rounder'; if(isPace(p))return 'New-ball seam'; if(isSpin(p))return 'Spin bowling'; return p.role==='middleOrderBat'?'Finishing':'Batting'}
+  function defaultProgram(p){if(p.keeper)return 'Keeping'; if(p.role==='allRounder')return 'All-rounder'; if(isPace(p)||isSpin(p))return 'Bowling'; return 'Batting'}
   function ensureTraining(p){
     if(!p.training)p.training={program:p.trainFocus&&p.trainFocus!=='none'?p.trainFocus:defaultProgram(p),intensity:'Normal',progressBySkill:{},potential:null};
     if(!p.training.program||!TRAIN_PROGS[p.training.program])p.training.program=defaultProgram(p);
@@ -3851,11 +3864,11 @@ function runTour(){
   function trainProgressPct(p){ensureTraining(p);let best=0,bestSkill='';for(const sk in (p.training.progressBySkill||{})){const th=skillThreshold(p.skills[sk]||0), pc=100*(p.training.progressBySkill[sk]||0)/th;if(pc>best){best=pc;bestSkill=sk}}
     return {skill:bestSkill||Object.keys(TRAIN_PROGS[p.training.program]||{})[0]||'stamina',pct:Math.min(99,best)};
   }
-  function trainOptions(cur){return Object.keys(TRAIN_PROGS).map(k=>`<option value="${k}" ${cur===k?'selected':''}>${k}</option>`).join('')}
+  function trainOptions(cur){return TRAIN_OFFERED.concat(TRAIN_OFFERED.indexOf(cur)<0&&TRAIN_PROGS[cur]?[cur]:[]).map(k=>`<option value="${k}" ${cur===k?'selected':''}>${k}</option>`).join('')}
   function intensityOptions(cur){return ['Light','Normal','Intense','Rest'].map(k=>`<option value="${k}" ${cur===k?'selected':''}>${k}</option>`).join('')}
   setTrain=function(name,focus){const pl=findPlayer(name);if(pl){ensureTraining(pl.p).program=focus==='none'?defaultProgram(pl.p):focus;pl.p.trainFocus=ensureTraining(pl.p).program;saveGame(false)}};
   window.foSetIntensity=function(name,intensity){const pl=findPlayer(name);if(pl){ensureTraining(pl.p).intensity=intensity;saveGame(false)}};
-  window.foBulkTrain=function(mode){const t=userTeam();for(const p of (t.players||[]).concat(t.youth||[])){const tr=ensureTraining(p);if(mode==='batters'&&!p.bowlType&&!p.keeper)tr.program='Batting';if(mode==='bowlers'&&p.bowlType)tr.program=isSpin(p)?'Spin bowling':'New-ball seam';if(mode==='keepers'&&p.keeper)tr.program='Keeping';if(mode==='role')tr.program=defaultProgram(p);if(mode==='restTired'&&fatigueScore(p)<=5)tr.program='Rest',tr.intensity='Rest';if(mode==='light')tr.intensity='Light';if(mode==='normal')tr.intensity='Normal';}saveGame(false);route()};
+  window.foBulkTrain=function(mode){const t=userTeam();for(const p of (t.players||[]).concat(t.youth||[])){const tr=ensureTraining(p);if(mode==='batters'&&!p.bowlType&&!p.keeper)tr.program='Batting';if(mode==='bowlers'&&p.bowlType)tr.program='Bowling';if(mode==='keepers'&&p.keeper)tr.program='Keeping';if(mode==='role')tr.program=defaultProgram(p);if(mode==='restTired'&&fatigueScore(p)<=5)tr.program='Rest',tr.intensity='Rest';if(mode==='light')tr.intensity='Light';if(mode==='normal')tr.intensity='Normal';}saveGame(false);route()};
   function recover(p,steps){let r=fatigueScore(p);p.fatigue=fatNames[Math.min(6,r+steps)]||'rested'}
   applyTraining=function(){
     econInit();let h=((App.season?App.season.round:0)*77797+(App.seasonNo||1)*13)>>>0;const rnd=()=>((h=(h*1103515245+12345)>>>0)/4294967296);
@@ -4036,8 +4049,8 @@ try{window.foRate=foRate;window.foRateTxt=foRateTxt}catch(e){}
 function pct(n){return Math.round(Math.max(0,Math.min(100,n||0)))+'%'}
 function safeName(s){return String(s||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;')}
 function playerKind(p){return p.keeper?'Keeper':p.role==='allRounder'?'All-rounder':p.bowlTypeFull&&p.bowlTypeFull!=='none'?'Bowler':'Batter'}
-function foProgramNames(){return Object.keys(window.FO_TRAIN_PROGS||{'Batting':{},'New-ball seam':{},'Spin bowling':{},'All-rounder':{},'Keeping':{},'Fielding':{},'Rest':{}})}
-function foDefaultProgram(p){if(p.keeper)return 'Keeping'; if(p.role==='allRounder')return 'All-rounder'; if(p.bowlTypeFull&&String(p.bowlTypeFull).toLowerCase().includes('spin'))return 'Spin bowling'; if(p.bowlTypeFull&&p.bowlTypeFull!=='none')return 'New-ball seam'; return 'Batting'}
+function foProgramNames(){return (window.FO_TRAIN_OFFERED||['Batting','Bowling','Keeping','Fielding','Fitness','Power hitting','All-rounder','Rest']).slice()}
+function foDefaultProgram(p){if(p.keeper)return 'Keeping'; if(p.role==='allRounder')return 'All-rounder'; if(p.bowlTypeFull&&p.bowlTypeFull!=='none')return 'Bowling'; return 'Batting'}
 function foEnsureTraining(p){if(!p.training)p.training={program:p.trainFocus&&p.trainFocus!=='none'?p.trainFocus:foDefaultProgram(p),intensity:'Normal',progressBySkill:{}}; if(!p.training.program)p.training.program=foDefaultProgram(p); if(!p.training.intensity)p.training.intensity='Normal'; p.trainFocus=p.training.program; return p.training}
 function foTrainOptions(cur){return foProgramNames().map(k=>`<option value="${esc(k)}" ${cur===k?'selected':''}>${esc(k)}</option>`).join('')}
 function foSetTrainSafe(nm,val){if(typeof setTrain==='function')setTrain(nm,val);else{const pl=findPlayer(nm);if(pl){foEnsureTraining(pl.p).program=val;pl.p.trainFocus=val;saveGame(false)}}}

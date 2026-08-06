@@ -57,9 +57,8 @@
     if (p.keeper || p.role === "wicketkeeper") return "Keeping";
     if (p.role === "allRounder") return "All-rounder";
     var bt = p.bowlTypeFull || p.bowlType || "";
-    if (PACE_T[bt] || /seam/i.test(bt)) return "New-ball seam";
-    if (/spin|wrist|finger/i.test(bt)) return "Spin bowling";
-    return p.role === "middleOrderBat" ? "Finishing" : "Batting";
+    if (PACE_T[bt] || /seam/i.test(bt) || /spin|wrist|finger/i.test(bt)) return "Bowling";
+    return "Batting";
   }
   function progsOf() { try { return window.FO_TRAIN_PROGS || {}; } catch (e) { return {}; } }
   // a programme's headline skill: the one it works hardest
@@ -82,19 +81,22 @@
       pct: Math.max(0, Math.min(99, Math.round(100 * have / th))) };
   }
 
-  // ---- THE PROGRAMMES, grouped only so a long list can be read ------------
-  // Every programme is offered to every man, exactly as FTP does it: a seamer
-  // may be sent to work on his batting, a batter may be put in the gloves. It
-  // is the manager's call and the engine prices it honestly either way.
-  var PROG_GROUPS = [
-    ["Batting", ["Batting", "New-ball batting", "Spin batting", "Power hitting", "Finishing"]],
-    ["Bowling", ["Bowling", "New-ball seam", "Spin bowling", "Death bowling", "Control bowling"]],
-    ["All round", ["All-rounder"]],
-    ["Behind the stumps", ["Keeping"]],
-    ["In the field", ["Fielding"]],
-    ["Conditioning", ["Fitness"]],
-    ["Recovery", ["Rest"]]
-  ];
+  // ---- THE PROGRAMMES: ONE A SKILL, PLUS REST -----------------------------
+  // From the Pavilion offers one programme per trainable skill and names each
+  // after the skill it works hardest. This offered fifteen, ten of them
+  // batting-or-bowling variants, so a seamer's picker held five bowling
+  // options whose differences were a weight table nobody could see - a choice
+  // with no way to make it well. Eight now, flat, no grouping needed.
+  // The seven specialists are retired from the picker and KEPT in the engine's
+  // table (FO_TRAIN_PROGS), because banked rounds are replayed by their
+  // programme name - see 00-core.js. A man still on one keeps working it until
+  // his manager moves him, and the picker shows it while he is.
+  // Every programme is offered to every man, as FTP does it: a seamer may be
+  // sent to work on his batting. The engine prices it honestly either way.
+  function offered() {
+    try { if (window.FO_TRAIN_OFFERED) return window.FO_TRAIN_OFFERED.slice(); } catch (e) {}
+    return ["Batting", "Bowling", "Keeping", "Fielding", "Fitness", "Power hitting", "All-rounder", "Rest"];
+  }
 
   // ---- the plan: a name, a programme, and nothing else ---------------------
   // ONE PAGE, TWO HOMES. A club held in the served world files its plan with
@@ -217,13 +219,12 @@
           "<span class='fo-t2-work'>" + (ses
             ? "<i>" + ses.done + " / " + ses.of + " &middot; " + E(SKILL_NM[ses.sk] || ses.sk) + "</i><u><b style='width:" + ses.pct + "%'></b></u>"
             : "<i>resting</i><u><b style='width:0'></b></u>") + "</span>" +
-          "<select data-t2p='" + E(p.name) + "'>" + PROG_GROUPS.map(function (g) {
-            var opts = g[1].filter(function (pg) { return progsOf()[pg] || pg === "Rest"; });
-            if (!opts.length) return "";
-            return "<optgroup label='" + E(g[0]) + "'>" + opts.map(function (pg) {
-              return "<option value='" + E(pg) + "'" + (prog === pg ? " selected" : "") + ">" + E(pg) + "</option>";
-            }).join("") + "</optgroup>";
-          }).join("") + "</select>" +
+          "<select data-t2p='" + E(p.name) + "'>" + offered()
+            .concat(offered().indexOf(prog) < 0 && progsOf()[prog] ? [prog] : [])
+            .map(function (pg) {
+              return "<option value='" + E(pg) + "'" + (prog === pg ? " selected" : "") + ">" + E(pg) +
+                (offered().indexOf(pg) < 0 ? " &middot; retired" : "") + "</option>";
+            }).join("") + "</select>" +
           "</div>";
       }).join("") + "</div>";
 
