@@ -63,6 +63,11 @@ academy turns out; the ladder is:
 | 3 | 0.9% | 5.0% | 47% | 47.1% |
 | 4 | 1.5% | 7.0% | 51% | 40.5% |
 | 5 | 2.5% | 10.0% | 55% | 32.5% |
+| 6 | 3.5% | 12.5% | 57% | 27.0% |
+| 7 | 4.8% | 15.0% | 58.5% | 21.7% |
+| 8 | 6.2% | 17.8% | 59.5% | 16.5% |
+| 9 | 7.8% | 20.6% | 60.1% | 11.5% |
+| 10 | 9.5% | 23.5% | 60.5% | 6.5% |
 
 **What a tier is worth**, measured against a real generated senior squad whose
 median man rates about 41,000:
@@ -140,18 +145,40 @@ squad (subject to the 20-man cap), selectable, and on a senior wage.
 
 ## 4. The levels
 
-Five. Bought outright from the Books with a single large payment per step, and
-the steps get steeper. Once bought it is yours forever; the round-by-round
-upkeep rises with it, so a club that overbuilds and is then relegated carries a
-stone.
+Ten (058; it was five until then). Bought outright from the Books with a single
+large payment per step, and the steps get steeper. Once bought it is yours
+forever; the round-by-round upkeep rises with it, so a club that overbuilds and
+is then relegated carries a stone.
 
-| level | to build | upkeep, a round |
-|-------|----------|-----------------|
-| 1 | — | 6,000 |
-| 2 | 400,000 | 14,000 |
-| 3 | 900,000 | 26,000 |
-| 4 | 1,800,000 | 44,000 |
-| 5 | 3,200,000 | 70,000 |
+**One to five have never moved and never will.** Clubs have stood on them,
+banks were settled at them and rounds were worked at them, and the whole world
+recomputes from genesis — so re-pricing a rung anybody has already climbed
+would rewrite money and cricket that are already in the record.
+
+| level | to build | upkeep, a round | the nets |
+|-------|----------|-----------------|----------|
+| 1 | — | 6,000 | ×0.92 |
+| 2 | 400,000 | 14,000 | ×1.00 |
+| 3 | 900,000 | 26,000 | ×1.08 |
+| 4 | 1,800,000 | 44,000 | ×1.16 |
+| 5 | 3,200,000 | 70,000 | ×1.24 |
+| 6 | 3,600,000 | 90,000 | ×1.29 |
+| 7 | 4,200,000 | 112,000 | ×1.34 |
+| 8 | 4,900,000 | 136,000 | ×1.39 |
+| 9 | 5,700,000 | 162,000 | ×1.44 |
+| 10 | 6,600,000 | 190,000 | ×1.49 |
+
+("to build" is the price of the step INTO that level, so climbing from two to
+ten costs the sum of rows three to ten: 31,000,000.)
+
+**Why the top of the ladder is a project and not a purchase.** A founding club
+clears about 138,000 a round — roughly 150,000 of gate and sponsor against a
+22,000 wage bill — and a strong one with a full ground about four times that.
+So twenty-five million to climb from five to ten is three or four seasons of a
+good club's entire surplus. But the fee is the smaller brake. The UPKEEP is the
+real one: a level ten academy costs 190,000 a round, which is more than a
+founding club takes in a round at all. Overbuild and it is not a slow season,
+it is administration.
 
 A club is founded at level two. Note that the books **recompute from genesis**:
 buying a level does not only cost the lump, it re-charges every round already
@@ -163,10 +190,16 @@ or not you sign him; scouting at home is free. A senior contract costs a flat
 **250,000** for any boy, whatever he has become. A club in the red does none of
 the three — the same floor that already stops it building a stand.
 
-A level does two things and no more:
+A level does three things and no more:
 
 1. it shifts the quality lottery of §1 toward the top;
-2. it raises the upkeep the Books take every round.
+2. it raises the rate of every session in the nets, for the whole senior squad
+   and the boys alike — one academy, one building, both jobs;
+3. it raises the upkeep the Books take every round.
+
+The rate is banked with the plan in `training_rounds` every round, which is the
+only reason a building may touch training at all and a squad still be a pure
+function of the record.
 
 ## 5. The Colts Cup
 

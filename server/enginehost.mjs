@@ -87,14 +87,39 @@ globalThis.__svcTrain = function (playersJson, planJson, rate, xiJson) {
     var u = V2.units[unitKey(p)];
     return (u && INT_F[u.i]) || 1;
   };
+  // THE PLAN ENTRY, old shape or new. A bare programme name is every plan
+  // ever banked; { p, f } is one with a focus. The reader and the focus
+  // arithmetic both belong to the shipped engine (00-core.js), so the umpire
+  // and the phone can never price a focus two different ways.
+  var ENT = (typeof FO_PLAN_ENTRY !== 'undefined' && FO_PLAN_ENTRY) || (window && window.FO_PLAN_ENTRY);
+  var FOC = (typeof FO_TRAIN_FOCUS !== 'undefined' && FO_TRAIN_FOCUS) || (window && window.FO_TRAIN_FOCUS);
+  var readEntry = (typeof ENT === 'function') ? ENT : function (v) {
+    return typeof v === 'string' ? { p: v, f: null }
+      : (v && typeof v === 'object' && typeof v.p === 'string')
+        ? { p: v.p, f: (typeof v.f === 'string' && v.f) ? v.f : null } : null;
+  };
+  var focusWeights = (typeof FOC === 'function') ? FOC : function (pg, f) {
+    var w0 = PROGS[pg]; if (!w0) return null;
+    if (!f || w0[f] === undefined) return w0;
+    var o = {}; for (var k in w0) o[k] = w0[k];
+    o[f] = w0[f] * 2; return o;
+  };
   var gains = [];
+  // WHAT EACH MAN ACTUALLY WORKED, reported rather than inferred. A plan need
+  // not name every man - an unmanaged club files nothing at all - and the
+  // engine falls back to the programme his trade implies. Anything outside
+  // wanting to know what a round consisted of has to be TOLD, or it grows a
+  // second copy of defaultProg and the two drift.
+  var worked = {};
   players.forEach(function (p) {
-    var prog = plan[p.name] || defaultProg(p);
+    var ent = readEntry(plan[p.name]) || { p: defaultProg(p), f: null };
+    var prog = ent.p;
+    worked[p.name] = { p: prog, f: (ent.f && PROGS[prog] && PROGS[prog][ent.f] !== undefined) ? ent.f : null };
     if (prog === 'Rest' || !PROGS[prog]) return;
     var pts = 24 * ageFactor(p.age || 27) * potFactor(p) * fresh(p) * RATE * intensityOf(p)
             * (xiSet ? (xiSet[p.name] ? 1 : 0.5) : 1);
     if (prog === 'All-rounder') pts *= 0.85;
-    var w = PROGS[prog], total = 0;
+    var w = focusWeights(prog, ent.f) || PROGS[prog], total = 0;
     for (var k in w) total += w[k];
     if (!total) return;
     p.trainProgress = p.trainProgress || {};
@@ -111,7 +136,7 @@ globalThis.__svcTrain = function (playersJson, planJson, rate, xiJson) {
       }
     }
   });
-  return JSON.stringify({ players: players, gains: gains });
+  return JSON.stringify({ players: players, gains: gains, worked: worked });
 };
 // WHAT A DAY WAS WORTH, by the shipped client's own arithmetic. server/
 // ratings.mjs carries a port of this because the living layer needs it

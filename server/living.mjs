@@ -171,7 +171,28 @@ function wasHere(p, r) {
   if (!j) return true;
   return r.season_no > j.s || (r.season_no === j.s && r.round >= j.r);
 }
-async function trainedSquad(pool, host, country, slot, squad) {
+// THE BOOK OF THE NETS, kept without keeping anything.
+//
+// The charts on the training page want a man's whole past: what he was ten
+// rounds ago, who has grown this season, where the work actually went. The
+// obvious build is a new table the umpire writes to every round - and it
+// would have no past in it on the day it shipped, and would be a second
+// record of something the first record already determines.
+//
+// It does not need one. The replay below ALREADY walks every round this club
+// has ever trained, in order, from the founding. Every step up a man ever
+// took passes through it. So the history is collected on the way past: a step
+// is { s, r, n, k, to } - season, round, man, skill, the figure he reached -
+// and the programme each man worked that round is tallied alongside. From the
+// baseline skills plus the steps, any round's squad can be reconstructed
+// exactly, which means every chart draws from genesis on the day it ships and
+// nothing new is stored that a re-run could not rebuild.
+//
+// Steps are sparse by nature - a skill needs eighty to two hundred points to
+// move and a session banks about twenty-four - so a club's whole book is a
+// few hundred entries, not tens of thousands.
+const HIST_STEPS = 4000;                       // a hard ceiling, oldest dropped
+async function trainedSquad(pool, host, country, slot, squad, hist = null) {
   if (!host || !host.trainRound) return squad;
   const rounds = (await pool.query(
     `SELECT season_no, round, plan, academy, coach, xi FROM training_rounds WHERE country_id=$1 AND slot=$2
@@ -211,12 +232,30 @@ async function trainedSquad(pool, host, country, slot, squad) {
     const crew = here.map(i => Object.assign({}, men[i],
       back ? { age: Math.max(16, (men[i].age || 27) - back) } : null,
       { fatN: 0, fatWord: 'rested', fatigue: 'rested' }));
-    const worked = host.trainRound(crew, r.plan || {},
+    const out = host.trainRound(crew, r.plan || {},
       academyRate(r.academy) * coachRate(r.coach),
-      Array.isArray(r.xi) ? r.xi : null).players;
+      Array.isArray(r.xi) ? r.xi : null);
+    const worked = out.players;
     // the work is his; the age he is today is still today's
     here.forEach((i, k) => { men[i] = Object.assign({}, worked[k], { age: men[i].age }); });
+    if (hist) {
+      for (const g of (out.gains || [])) {
+        hist.steps.push({ s: r.season_no, r: r.round, n: g.name, k: g.skill, to: g.to });
+      }
+      // and what the squad was set to that round, so "where the work went" is
+      // read off the sessions actually worked. The engine REPORTS this rather
+      // than the walk inferring it from the plan: a plan need not name every
+      // man, and re-deriving the fallback here would be a second copy of the
+      // engine's defaultProg waiting to disagree with the first.
+      const tally = {};
+      for (const nm in (out.worked || {})) {
+        const pg = out.worked[nm] && out.worked[nm].p;
+        if (pg) tally[pg] = (tally[pg] || 0) + 1;
+      }
+      if (Object.keys(tally).length) hist.rounds.push({ s: r.season_no, r: r.round, p: tally, a: r.academy });
+    }
   }
+  if (hist && hist.steps.length > HIST_STEPS) hist.steps = hist.steps.slice(-HIST_STEPS);
   return men;
 }
 // WHAT THE ACADEMY BUYS IN THE NETS. Level two is the rate the world was
@@ -224,9 +263,15 @@ async function trainedSquad(pool, host, country, slot, squad) {
 // The level in force is banked with the plan in force, round by round, which
 // is the only reason a building can change training and the squad still be a
 // pure function of the record.
+// THE LADDER RUNS TO TEN. One to five keep their exact former rates - not a
+// courtesy, a requirement: every round already banked carries the level in
+// force that week and is replayed through this function, so moving any rung
+// below six would silently re-price sessions worked months ago. Six upward is
+// new ground nobody has stood on, and each is five per cent on the one below.
+export const ACADEMY_MAX = 10;
 export function academyRate(level) {
-  const lv = Math.max(1, Math.min(5, +level || 2));
-  return 1 + 0.08 * (lv - 2);
+  const lv = Math.max(1, Math.min(ACADEMY_MAX, +level || 2));
+  return lv <= 5 ? 1 + 0.08 * (lv - 2) : 1.24 + 0.05 * (lv - 5);
 }
 // WHAT THE HEAD COACH BUYS IN THE NETS (051). Seven per cent a level, on top
 // of the building: no coach is the unit, so every round banked before he was
@@ -430,7 +475,10 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     const men = book.get(club.slot) || new Map();
     // the nets first: skills are the baseline plus every round genuinely
     // worked, so what the man is comes before what the season did to him
-    const trained = await trainedSquad(pool, host, country, club.slot, club.squad);
+    // a managed club's replay collects its book of the nets on the way past;
+    // an unmanaged one has nobody to read a chart, so it costs nothing
+    const hist = claimedSlots.has(club.slot) ? { steps: [], rounds: [] } : null;
+    const trained = await trainedSquad(pool, host, country, club.slot, club.squad, hist);
     // the engine's default skipper where no orders named one (00-core picks
     // the best captaincy score the same way)
     const defCapt = (trained.slice().sort((x, y) => (y.capt || 0) - (x.capt || 0))[0] || {}).name || null;
@@ -548,6 +596,17 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
         }
       }
     } catch (eRp) {}
+    // THE BOOK OF THE NETS, banked for the charts. Rebuilt whole from the
+    // replay every settle, so it is never appended to and never drifts: it is
+    // a cache of a derivation, not a second record. A database that has not
+    // had 058 yet simply has nowhere to put it, and the page draws nothing.
+    if (hist) {
+      try {
+        await pool.query(
+          `UPDATE clubs SET nets_history = $3::jsonb WHERE country_id=$1 AND slot=$2`,
+          [country, club.slot, JSON.stringify(hist)]);
+      } catch (eHs) { /* pre-058 database: no book yet */ }
+    }
     // EVERY MAN GETS A SHIRT NUMBER, once, and keeps it. Assigned from a hash
     // of his name with linear probing over the squad (name order), so every
     // device computes the same number the umpire banks. A number already on a

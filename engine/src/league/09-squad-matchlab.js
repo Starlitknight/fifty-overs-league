@@ -262,6 +262,19 @@
   // ---- the squad page itself ----
   var FO_BATROLES = { opener: 1, topOrderBat: 1, middleOrderBat: 1 };
   var FO_BOWLROLES = { seamFast: 1, seamFastMedium: 1, seamMedium: 1, wristSpin: 1, fingerSpin: 1 };
+  // THE MASTHEAD IS ONE MASTHEAD. Roster, Grid and Int are three lights on in
+  // one room, not three pages, so they wear the same gilt eyebrow and the
+  // same heavy uppercase title. Written once here because it was written
+  // twice before and the two copies said different things.
+  function foSqEyebrow(sv) {
+    var eb = "Fifty Overs";
+    try {
+      var ph = window.__foPlanet.phaseOf(Date.now());
+      if (ph && ph.season) eb += " &middot; Season " + (ph.season | 0) + " &middot; Day " + ((ph.di | 0) + 1);
+    } catch (e) {}
+    return eb + " &middot; " + (sv.view === "int" ? "the analyst&#39;s read"
+      : sv.who === "yth" ? "the academy" : sv.who === "all" ? "every man on the books" : "the playing staff");
+  }
   function foSqClass(p) {
     if (p.role === "wicketkeeper" || p.keeper) return "wk";
     if (p.role === "allRounder") return "ar";
@@ -1000,8 +1013,8 @@
     s.textContent = [
       "#page .fo-s2-in{max-width:1560px;margin:0 auto;padding:74px 22px 40px;font-family:Inter,-apple-system,'Segoe UI',sans-serif;color:#14243A}",
       ".fo-s2-hd{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:16px}",
-      ".fo-s2-hd h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-style:italic;font-size:clamp(38px,4.6vw,58px);line-height:.95;margin:0;color:#14243A}",
-      ".fo-s2-tag{font-family:Georgia,serif;font-style:italic;font-size:15px;color:#C9571F;margin-top:6px}",
+      ".fo-s2-ttl .eb{font:600 9px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#B8933A;margin-bottom:9px}",
+      ".fo-s2-hd h1{font:700 40px/1 Oswald,sans-serif;text-transform:uppercase;color:#14243A !important;margin:0;letter-spacing:.015em;text-shadow:none}",
       ".fo-s2-club{display:flex;align-items:center;gap:12px}",
       ".fo-s2-club .cr{width:52px;height:52px}",
       ".fo-s2-club b{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:21px;color:#14243A}",
@@ -1144,7 +1157,7 @@
       "@media(max-width:820px){",
       ".fo-s2-in{padding:60px 8px 30px}",
       ".fo-s2-hd{align-items:flex-start;flex-direction:column;gap:3px;margin-bottom:8px}",
-      ".fo-s2-tag{margin-top:2px;font-size:13px}",
+      ".fo-s2-hd h1{font-size:30px}.fo-s2-ttl .eb{margin-bottom:6px}",
       ".fo-s2-club{margin-top:2px;margin-bottom:6px}",
       // the crest SVG ships its own width/height attributes (px by 1.32 tall);
       // pin it to the box or it overflows down into the Roster switch
@@ -1505,7 +1518,7 @@
 
       var header =
         "<header class='fo-s2-hd'>" +
-        "<div><h1>Squad</h1><div class='fo-s2-tag'>Select your XI. Shape your legacy.</div></div>" +
+        "<div class='fo-s2-ttl'><div class='eb'>" + foSqEyebrow(sv) + "</div><h1>The squad</h1></div>" +
         "<div class='fo-s2-club'>" + crest + "<div><b>" + E(t.name) + "</b><span>" + estBits.join(" &middot; ") + "</span></div></div>" +
         "</header>";
 
@@ -1665,13 +1678,7 @@
       // book itself. The view switch sits below the title on the left, on
       // the same line of the page it holds on the roster, so toggling the
       // two views never moves the control under the reader's finger.
-      var ebA = "Fifty Overs";
-      try {
-        var phA = window.__foPlanet.phaseOf(Date.now());
-        if (phA && phA.season) ebA += " &middot; Season " + (phA.season | 0) + " &middot; Day " + ((phA.di | 0) + 1);
-      } catch (eEb) {}
-      ebA += " &middot; " + (sv.view === "int" ? "the analyst&#39;s read"
-        : sv.who === "yth" ? "the academy" : sv.who === "all" ? "every man on the books" : "the playing staff");
+      var ebA = foSqEyebrow(sv);
 
       // Int borrows the Grid's shell whole - the same eyebrow, the same
       // masthead, the same switch on the same line - so the three views are

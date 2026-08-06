@@ -48,15 +48,32 @@ export const ADMIN_SPONSOR = 0.5;
 //              of them is about what a senior staff costs, which is the brake
 //              on signing everybody.
 // ---------------------------------------------------------------------------
-const UPKEEP_BY_LEVEL = [0, 6000, 14000, 26000, 44000, 70000];
+// THE LADDER RUNS TO TEN (058). One to five are UNTOUCHED, and have to be:
+// the walk below charges upkeep at the level a club holds and the founding
+// bank is reduced by every pound it ever spent building, so moving a rung
+// anybody has already stood on rewrites banks that were settled seasons ago.
+// Six to ten are new ground, priced against what a club actually banks. A
+// founding club clears about 138k a round - roughly 150k of gate and sponsor
+// against a 22k wage bill - and a strong one with a full ground four times
+// that. So:
+//   BUILDING is the project. Twenty-five million to climb from five to ten,
+//   on top of the six the first four rungs cost: three or four seasons of a
+//   good club's whole surplus, and out of reach of anyone else for ever.
+//   UPKEEP is the brake, and the harsher of the two. A level ten academy
+//   costs 190k a round - MORE than a founding club makes in a round, and a
+//   third of what a great one does. Overbuild and it is not a slow season,
+//   it is administration.
+export const ACADEMY_MAX = 10;
+const UPKEEP_BY_LEVEL = [0, 6000, 14000, 26000, 44000, 70000, 90000, 112000, 136000, 162000, 190000];
 export function academyUpkeep(level) {
-  return UPKEEP_BY_LEVEL[Math.max(1, Math.min(5, +level || 2))];
+  return UPKEEP_BY_LEVEL[Math.max(1, Math.min(ACADEMY_MAX, +level || 2))];
 }
 // what it costs to go from level n to level n+1
-export const ACADEMY_BUILD = [0, 400000, 900000, 1800000, 3200000];
+export const ACADEMY_BUILD = [0, 400000, 900000, 1800000, 3200000,
+                              3600000, 4200000, 4900000, 5700000, 6600000];
 export function academyBuild(from, to) {
   let sum = 0;
-  for (let lv = Math.max(1, from); lv < Math.min(5, to); lv++) sum += ACADEMY_BUILD[lv];
+  for (let lv = Math.max(1, from); lv < Math.min(ACADEMY_MAX, to); lv++) sum += ACADEMY_BUILD[lv];
   return sum;
 }
 // THE HEAD COACH IS GONE (056). He was a second building with a different
@@ -442,8 +459,8 @@ export async function computeFinance(pool, country, opts = {}) {
         // The books used to quote a ladder of their own invention and the
         // manager found out what a level really cost when the RPC refused him.
         academyLevel: s.academy,
-        nextAcademy: s.academy < 5 ? s.academy + 1 : null,
-        nextAcademyCost: s.academy < 5 ? academyBuild(s.academy, s.academy + 1) : null,
+        nextAcademy: s.academy < ACADEMY_MAX ? s.academy + 1 : null,
+        nextAcademyCost: s.academy < ACADEMY_MAX ? academyBuild(s.academy, s.academy + 1) : null,
         maxSeats: MAX_SEATS, seatBlock: 1000, homeCut: HOME_CUT
       }
     };

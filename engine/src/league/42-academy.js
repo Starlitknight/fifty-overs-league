@@ -53,8 +53,15 @@
   // THE UMPIRE'S OWN RULES, mirrored so the page can say them out loud before
   // the manager spends anything. docs/ACADEMY.md is the authority and
   // server/economy.mjs is the arithmetic; these must not drift from either.
-  var UPKEEP = [0, 6000, 14000, 26000, 44000, 70000];   // by level, a round
-  var BUILD = [0, 400000, 900000, 1800000, 3200000];    // from level n to n+1
+  // THE LADDER RUNS TO TEN (058). One to five keep their exact former prices
+  // - rounds were worked and banks were settled at them - and six upward is
+  // new ground: dearer to build every rung, and dear enough to RUN that the
+  // upkeep, not the fee, is what stops a small club overreaching.
+  var ACAD_MAX = 10;
+  var UPKEEP = [0, 6000, 14000, 26000, 44000, 70000,
+                90000, 112000, 136000, 162000, 190000];      // by level, a round
+  var BUILD = [0, 400000, 900000, 1800000, 3200000,
+               3600000, 4200000, 4900000, 5700000, 6600000]; // from level n to n+1
   var LEAVE_AT = 21;
 
   // A WAGE IS PRINTED IN FULL. money() rounds to the nearest thousand, which is
@@ -249,7 +256,7 @@
     // the scout's report (050): ranges, not numbers - the signature is the reveal
     if (p && p.scouted) {
       var rb = p.ratingBand;
-      var lvl9 = Math.max(1, Math.min(5, +p.level || +ac.level || 1));
+      var lvl9 = Math.max(1, Math.min(ACAD_MAX, +p.level || +ac.level || 1));
       return "<div class='fo-ac-offer'>" +
         "<div class='fo-ac-oh'><div><b>" + E(p.name) + "</b>" +
           "<i>" + E(roleOf(p)) + " &middot; " + E(p.age) + " years old &middot; found in " + E((nat && nat.name) || pend.nation) + "</i></div>" +
@@ -283,15 +290,17 @@
   }
 
   function render(page, ac) {
-    var lv = Math.max(1, Math.min(5, +ac.level || 2));
+    var top = Math.max(5, Math.min(ACAD_MAX, +ac.maxLevel || ACAD_MAX));
+    var lv = Math.max(1, Math.min(top, +ac.level || 2));
     var boys = ac.youth || [];
     var bank = Number(ac.bank || 0);
     var floor = +ac.floor || 15;
     var pips = "";
-    for (var i = 1; i <= 5; i++) pips += "<s class='fo-ac-pip" + (i <= lv ? " on" : "") + "'></s>";
+    for (var i = 1; i <= top; i++) pips += "<s class='fo-ac-pip" + (i <= lv ? " on" : "") + "'></s>";
 
-    var up = lv >= 5
-      ? "<div class='fo-ac-note'>Level five. There is nowhere further to go; the county sends people to look at yours now.</div>"
+    var up = lv >= top
+      ? "<div class='fo-ac-note'>Level " + top + ". There is nowhere further to go; the country sends people to look at yours now &mdash; and it costs " +
+        money(UPKEEP[top]) + " a round to keep the lights on.</div>"
       : (function () {
           var cost = Number(ac.nextCost || BUILD[lv]), can = bank >= cost && bank >= 0;
           return "<div class='fo-ac-uprow'>" +
@@ -534,8 +543,8 @@
       "html body #page .fo-ac-p:last-child{margin-bottom:0}",
       "html body #page .fo-ac-note{font:italic 400 12.5px/1.5 'Fraunces',Georgia,serif;color:rgba(20,28,40,.55);margin-top:10px}",
       "html body #page .fo-ac-lvl{display:flex;align-items:center;gap:12px;flex-wrap:wrap}",
-      "html body #page .fo-ac-pips{display:flex;gap:5px}",
-      "html body #page .fo-ac-pip{display:block;width:18px;height:18px;border-radius:5px;background:rgba(20,28,40,.1);border:1px solid rgba(20,28,40,.14)}",
+      "html body #page .fo-ac-pips{display:flex;flex-wrap:wrap;gap:4px}",
+      "html body #page .fo-ac-pip{display:block;width:15px;height:15px;border-radius:5px;background:rgba(20,28,40,.1);border:1px solid rgba(20,28,40,.14)}",
       "html body #page .fo-ac-pip.on{background:linear-gradient(180deg,#E8B96A,#C08A2E);border-color:rgba(138,106,31,.6)}",
       "html body #page .fo-ac-lvt b{display:block;font:700 17px/1.1 Oswald,sans-serif;color:#141C28}",
       "html body #page .fo-ac-lvt i{display:block;font-style:normal;font:500 11.5px/1.4 Inter,sans-serif;color:rgba(20,28,40,.55);margin-top:2px}",

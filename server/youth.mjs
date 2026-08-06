@@ -56,14 +56,27 @@ const rnd01 = s => h32(s) / 4294967296;
 // level buys you besides the bill.
 // ---------------------------------------------------------------------------
 export const TIERS = ['jewel', 'good', 'average', 'poor'];
+//
+// SIX TO TEN (058) are the same ladder carried on. A boy is a pure function
+// of (country, slot, season, index, level), and no club has ever held a level
+// above five, so no recruit who has ever walked through a door is re-dealt by
+// these rows existing. At ten, one boy in ten is a jewel and only one in
+// fifteen is never worth a shirt - which, against an upkeep of 190k a round,
+// is the trade the whole building is for.
+export const ACADEMY_MAX = 10;
 const TIER_ODDS = {
-  1: [0.002, 0.020, 0.380],
-  2: [0.005, 0.035, 0.430],
-  3: [0.009, 0.050, 0.470],
-  4: [0.015, 0.070, 0.510],
-  5: [0.025, 0.100, 0.550]
+  1:  [0.002, 0.020, 0.380],
+  2:  [0.005, 0.035, 0.430],
+  3:  [0.009, 0.050, 0.470],
+  4:  [0.015, 0.070, 0.510],
+  5:  [0.025, 0.100, 0.550],
+  6:  [0.035, 0.125, 0.570],
+  7:  [0.048, 0.150, 0.585],
+  8:  [0.062, 0.178, 0.595],
+  9:  [0.078, 0.206, 0.601],
+  10: [0.095, 0.235, 0.605]
 };
-export function tierOdds(level) { return TIER_ODDS[Math.max(1, Math.min(5, +level || 2))]; }
+export function tierOdds(level) { return TIER_ODDS[Math.max(1, Math.min(ACADEMY_MAX, +level || 2))]; }
 export function tierOf(level, seed) {
   const [jewel, good, average] = tierOdds(level);
   const r = rnd01(seed + '|tier');

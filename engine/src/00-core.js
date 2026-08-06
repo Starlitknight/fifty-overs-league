@@ -3840,6 +3840,36 @@ function runTour(){
                          'Fitness', 'Power hitting', 'All-rounder', 'Rest'];
   window.FO_TRAIN_PROGS=TRAIN_PROGS;
   window.FO_TRAIN_OFFERED=TRAIN_OFFERED;
+  // ---- THE FOCUS -----------------------------------------------------------
+  // A programme spreads a session over several skills by the weights above.
+  // A FOCUS names one of them and DOUBLES ITS SHARE; because a session is
+  // still one session, the total is renormalised and every other skill in the
+  // programme gives up ground proportionally. Batting focused on playing spin
+  // sends 40% there instead of 25%, and the other four fall from 25/20/20/10
+  // to 20/16/16/8. A broad programme skews gently, a narrow one skews hard,
+  // and nothing anywhere gets faster.
+  //
+  // A PLAN ENTRY IS A STRING OR A PAIR. Every plan ever filed says
+  // { "<player>": "<programme>" }; a plan with a focus says
+  // { "<player>": { "p": "<programme>", "f": "<skill>" } }. The old shape is
+  // read unchanged, which is the whole reason banked rounds keep their value:
+  // living.mjs replays training_rounds from genesis, so a stored plan must
+  // never come to mean something new.
+  function foPlanEntry(v){
+    if(typeof v==='string')return {p:v,f:null};
+    if(v&&typeof v==='object'&&typeof v.p==='string')
+      return {p:v.p,f:(typeof v.f==='string'&&v.f)?v.f:null};
+    return null;
+  }
+  function foFocusWeights(prog,focus){
+    var w=TRAIN_PROGS[prog]; if(!w)return null;
+    if(!focus||w[focus]===undefined)return w;
+    var out={}; for(var k in w)out[k]=w[k];
+    out[focus]=w[focus]*2;
+    return out;
+  }
+  window.FO_PLAN_ENTRY=foPlanEntry;
+  window.FO_TRAIN_FOCUS=foFocusWeights;
   function potentialFor(p){
     if(p.training&&p.training.potential)return p.training.potential;
     let v=(p.talent==='gifted'||(p.talents||[]).length>=2?2:0)+(p.age<=20?2:p.age<=24?1:0)+(p.rating>3600?1:0);
@@ -3852,6 +3882,7 @@ function runTour(){
     if(!p.training.program||!TRAIN_PROGS[p.training.program])p.training.program=defaultProgram(p);
     if(!p.training.intensity)p.training.intensity='Normal';
     if(!p.training.progressBySkill)p.training.progressBySkill={};
+    if(p.training.focus&&!(TRAIN_PROGS[p.training.program]||{})[p.training.focus])p.training.focus=null;
     if(!p.training.potential)p.training.potential=potentialFor(p);
     p.trainFocus=p.training.program;
     return p.training;
@@ -3866,9 +3897,9 @@ function runTour(){
   }
   function trainOptions(cur){return TRAIN_OFFERED.concat(TRAIN_OFFERED.indexOf(cur)<0&&TRAIN_PROGS[cur]?[cur]:[]).map(k=>`<option value="${k}" ${cur===k?'selected':''}>${k}</option>`).join('')}
   function intensityOptions(cur){return ['Light','Normal','Intense','Rest'].map(k=>`<option value="${k}" ${cur===k?'selected':''}>${k}</option>`).join('')}
-  setTrain=function(name,focus){const pl=findPlayer(name);if(pl){ensureTraining(pl.p).program=focus==='none'?defaultProgram(pl.p):focus;pl.p.trainFocus=ensureTraining(pl.p).program;saveGame(false)}};
+  setTrain=function(name,focus){const pl=findPlayer(name);if(pl){const tr=ensureTraining(pl.p);tr.program=focus==='none'?defaultProgram(pl.p):focus;tr.focus=null;pl.p.trainFocus=tr.program;saveGame(false)}};
   window.foSetIntensity=function(name,intensity){const pl=findPlayer(name);if(pl){ensureTraining(pl.p).intensity=intensity;saveGame(false)}};
-  window.foBulkTrain=function(mode){const t=userTeam();for(const p of (t.players||[]).concat(t.youth||[])){const tr=ensureTraining(p);if(mode==='batters'&&!p.bowlType&&!p.keeper)tr.program='Batting';if(mode==='bowlers'&&p.bowlType)tr.program='Bowling';if(mode==='keepers'&&p.keeper)tr.program='Keeping';if(mode==='role')tr.program=defaultProgram(p);if(mode==='restTired'&&fatigueScore(p)<=5)tr.program='Rest',tr.intensity='Rest';if(mode==='light')tr.intensity='Light';if(mode==='normal')tr.intensity='Normal';}saveGame(false);route()};
+  window.foBulkTrain=function(mode){const t=userTeam();for(const p of (t.players||[]).concat(t.youth||[])){const tr=ensureTraining(p);if(mode==='batters'&&!p.bowlType&&!p.keeper)tr.program='Batting',tr.focus=null;if(mode==='bowlers'&&p.bowlType)tr.program='Bowling',tr.focus=null;if(mode==='keepers'&&p.keeper)tr.program='Keeping',tr.focus=null;if(mode==='role')tr.program=defaultProgram(p),tr.focus=null;if(mode==='restTired'&&fatigueScore(p)<=5)tr.program='Rest',tr.focus=null,tr.intensity='Rest';if(mode==='light')tr.intensity='Light';if(mode==='normal')tr.intensity='Normal';}saveGame(false);route()};
   function recover(p,steps){let r=fatigueScore(p);p.fatigue=fatNames[Math.min(6,r+steps)]||'rested'}
   applyTraining=function(){
     econInit();let h=((App.season?App.season.round:0)*77797+(App.seasonNo||1)*13)>>>0;const rnd=()=>((h=(h*1103515245+12345)>>>0)/4294967296);
@@ -3879,13 +3910,13 @@ function runTour(){
         const pool=pair[0], isYouth=pair[1], overLimit=Math.max(0,pool.length-(isYouth?18:24));
         const squadEff=Math.max(.65,1-overLimit*.03), acad=1+(isYouth?.10*(t.acadY||0):.08*(t.acadS||0));
         for(const p of pool){const tr=ensureTraining(p);
-          if(!isMe){tr.program=defaultProgram(p);tr.intensity='Normal'}
+          if(!isMe){tr.program=defaultProgram(p);tr.focus=null;tr.intensity='Normal'}
           if(tr.program==='Rest'||tr.intensity==='Rest'){const before=p.fatigue||'rested';recover(p,2);if(isMe&&before!==p.fatigue)report.recovery.push(`${p.name}: ${before} to ${p.fatigue}`);continue}
           const base=isYouth?34:24;
           let pts=base*ageFactor(p.age)*potFactor(p)*acad*fatigueFactor(p)*intensityFactor(p)*squadEff;
           if(tr.program==='All-rounder')pts*=.85;
           if(isMe&&fatigueScore(p)<=2)report.slowed.push(`${p.name}: fatigue slowed training`);
-          const weights=TRAIN_PROGS[tr.program]||TRAIN_PROGS[defaultProgram(p)]; const total=Object.values(weights).reduce((a,b)=>a+b,0)||1;
+          const weights=foFocusWeights(tr.program,tr.focus)||TRAIN_PROGS[defaultProgram(p)]; const total=Object.values(weights).reduce((a,b)=>a+b,0)||1;
           for(const sk in weights){if(p.skills[sk]===undefined)continue;tr.progressBySkill[sk]=(tr.progressBySkill[sk]||0)+pts*weights[sk]/total;let th=skillThreshold(p.skills[sk]);
             while(tr.progressBySkill[sk]>=th&&p.skills[sk]<96){tr.progressBySkill[sk]-=th;const oldW=p.wage||0;p.skills[sk]++;jsDerive(p);const dw=(p.wage||0)-oldW;if(isMe)report.gains.push(`${p.name}: ${sk} +1${dw?` (wage ${dw>0?'+':''}${money(dw)})`:''}`);report.wages+=dw;th=skillThreshold(p.skills[sk]);}
           }

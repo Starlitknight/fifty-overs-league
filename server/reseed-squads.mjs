@@ -125,7 +125,12 @@ for (const cfg of cfgs) {
     const isClaimed = claimed.has(cfg.id + ':' + club.slot);
     const players = squadFor(host, cfg, club, gen, isClaimed ? HUMAN_STR : null);
     if (!dry) {
-      await pool.query('UPDATE clubs SET squad=$3 WHERE country_id=$1 AND slot=$2',
+      // the book of the nets (058) is a cache of the REPLAY, and these are
+      // different men: it is cleared with the squad rather than left to be
+      // served against a club that no longer has anyone it describes. The
+      // next settle rebuilds it whole from the record, as it always does.
+      await pool.query(
+        'UPDATE clubs SET squad=$3, nets_history=NULL, nets_report=NULL WHERE country_id=$1 AND slot=$2',
         [cfg.id, club.slot, JSON.stringify(players)]);
     }
     redealt++;

@@ -1100,7 +1100,8 @@ test('018: the academy is paid for, and it recomputes', async () => {
   assert.ok(bank0 > 300000, 'a season of gate money covers an academy');
 
   await assert.rejects(pool.query(`SELECT public.world_set_academy(3)`), /sign in/);
-  await assert.rejects(as(U1, `SELECT public.world_set_academy(9)`), /1 to 5/);
+  // 058 took the ladder to ten. Nine is now a real rung; eleven is not.
+  await assert.rejects(as(U1, `SELECT public.world_set_academy(11)`), /1 to 10/);
   await assert.rejects(as(U1, `SELECT public.world_set_academy(1)`), /never sold back/);
   const up = await as(U1, `SELECT public.world_set_academy(4) AS r`);
   assert.equal(up.rows[0].r.academy, 4);
