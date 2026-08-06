@@ -1451,7 +1451,7 @@ function playerTip(p){
   const bowl=p.bowlType?word(aggBowl(p)):'does not bowl';
   const keep=p.keeper?(' · keeping '+word(aggKeep(p))):'';
   const tals=(p.talents&&p.talents.length)?(' · Talents: '+p.talents.map(ptal).join(', ')):'';
-  return `${p.name}\nTeam: ${team||'-'}\n${p.hand==='L'?'Left':'Right'} hand bat · ${p.btLabel||'does not bowl'}\nAge: ${p.age} · Nat: ${p.nat} · Form: ${p.formWord||'-'} · Fatigue: ${p.fatigue||'-'}\nBatting: ${bat} · Bowling: ${bowl}${keep}\nExp: ${p.expWord||p.exp||'-'} · Captaincy: ${word(p.capt||30)} · Rating: ${foRateTxt(p.rating)}${tals}`;
+  return `${p.name}\nTeam: ${team||'-'}\n${p.hand==='L'?'Left':'Right'} hand bat · ${p.btLabel||'does not bowl'}\nAge: ${p.age} · Nat: ${p.nat} · Form: ${p.formWord||'-'} · Fatigue: ${p.fatigue||'-'}\nBatting: ${bat} · Bowling: ${bowl}${keep}\nExp: ${p.expWord||p.exp||'-'} · Captaincy: ${word(p.capt||30)} · Rating: ${p.rating}${tals}`;
 }
 function playerMini(p){return `<span class="player-hoverable" title="${esc(playerTip(p))}">${esc(p.name)}</span>`}
 function playerLink(p){return `<a href="#/player?n=${encodeURIComponent(p.name)}" title="${esc(playerTip(p))}">${esc(p.name)}</a>`}
@@ -1607,7 +1607,7 @@ function pgClub(){
   </div><div class="col">
     <div class="panel"><h4>League table</h4><div class="pad"><table><tr><th>#</th><th>Club</th><th class="n">P</th><th class="n">W</th><th class="n">L</th><th class="n">NRR</th><th class="n">Pts</th></tr>${tbl}</table></div></div>
     <div class="panel"><h4>Projected XI</h4><div class="pad"><table><tr><th>#</th><th>Player</th><th>Role</th><th class="n">Rating</th></tr>
-    ${xi.map((p,i)=>`<tr><td>${i+1}</td><td>${playerLink(p)}${p.keeper?' \u2020':''}</td><td>${prole(p.role)}</td><td class="n">${foRateTxt(p.rating)}</td></tr>`).join('')}</table></div></div>
+    ${xi.map((p,i)=>`<tr><td>${i+1}</td><td>${playerLink(p)}${p.keeper?' \u2020':''}</td><td>${prole(p.role)}</td><td class="n">${p.rating}</td></tr>`).join('')}</table></div></div>
   </div></div>`;
   const tick=()=>{const el=document.getElementById('clock');if(!el)return false;
     el.textContent=new Date().toLocaleString('en-GB',{weekday:'short',day:'2-digit',month:'short',hour:'2-digit',minute:'2-digit',second:'2-digit'});return true};
@@ -1735,7 +1735,7 @@ function cardsView(ps){
       <span class="pcol" title="Bowling: ${p.bowlType?word(aggBowl(p)):'does not bowl'}\n${SKILLTIP}"><span class="collbl">BWL</span>${p.bowlType?miniBar(aggBowl(p),'Bowling'):'<span class="small" style="opacity:.35">-</span>'}</span>
       <span class="pcol" title="Fielding: ${word(aggField(p))}\n${SKILLTIP}"><span class="collbl">FLD</span>${miniBar(aggField(p),'Fielding')}</span>
       <span class="ptal">${tchips}</span>
-      <span class="n prat" title="overall rating">${foRateTxt(p.rating)}</span>
+      <span class="n prat" title="overall rating">${p.rating}</span>
       <span class="caret">${isOpen?'▾':'▸'}</span>
      </div>
      ${isOpen?`<div class="pcard-detail">${summaryBlock(p)}${p.__y?`<div class="pad"><button onclick="promoteYouth(App.teamIx,'${esc(p.name)}')">Promote to seniors</button></div>`:''}</div>`:''}
@@ -1744,7 +1744,7 @@ function cardsView(ps){
 }
 function summaryBlock(p){
   return `<div class="pblock">
-    <div class="hd">${playerLink(p)}${p.__y?`<span class="phasechip" title="Youth squad"> U20</span> <button style="font-size:9px;padding:1px 5px" onclick="promoteYouth(App.teamIx,&quot;${esc(p.name)}&quot;)">promote</button>`:''} <span class="meta">(${esc(p.nat)}) · ${prole(p.role)} · age ${p.age} · rating <b>${foRateTxt(p.rating)}</b></span></div>
+    <div class="hd">${playerLink(p)}${p.__y?`<span class="phasechip" title="Youth squad"> U20</span> <button style="font-size:9px;padding:1px 5px" onclick="promoteYouth(App.teamIx,&quot;${esc(p.name)}&quot;)">promote</button>`:''} <span class="meta">(${esc(p.nat)}) · ${prole(p.role)} · age ${p.age} · rating <b>${p.rating}</b></span></div>
     <div class="meta">${p.hand==='R'?'Right':'Left'} hand batsman | ${esc(p.btLabel)} · exp ${esc(p.expWord||p.exp)} · form ${esc(p.formWord)} · ${esc(p.fatigue)} · capt ${esc(p.capt)}${(p.talents&&p.talents.length)?' &nbsp;'+p.talents.map(t=>`<span class="talchip" title="${TALTIPS[t]||''}">${ptal(t)}</span>`).join(' '):''}</div>
     <div class="cols">
       <div>${bar(aggBat(p),'Batting')}<br>${bar(aggBowl(p),'Bowling')}<br>${bar(aggKeep(p),'Keeping')}</div>
@@ -1763,7 +1763,7 @@ function gridTable(ps){
   <tr>${['Player','Age','Nat','BT','Role','End','Bat','Bowl','Tech','Power','Keep','Field'].map(H).join('')}<th>Capt</th>${['Exp','Fatg','Form','Rating'].map(H).join('')}</tr>
   ${ps.map(p=>`<tr><td>${playerLink(p)}</td><td>${p.age}</td><td>${esc(p.nat)}</td><td>${esc(shortBT(p))}</td><td>${prole(p.role)}</td>
    <td>${abbr(aggEnd(p))}</td><td>${abbr(aggBat(p))}</td><td>${abbr(aggBowl(p))}</td><td>${abbr(aggTech(p))}</td><td>${abbr(S(p).power)}</td><td>${abbr(aggKeep(p))}</td><td>${abbr(aggField(p))}</td>
-   <td title="${TIPS.Capt}">${abbr(p.capt||30)}</td><td>${esc(p.expWord||p.exp)}</td><td>${esc(p.fatigue)}</td><td>${esc(p.formWord)}</td><td class="n">$${(p.wage||0).toLocaleString()}</td><td class="n">${foRateTxt(p.rating)}</td></tr>`).join('')}
+   <td title="${TIPS.Capt}">${abbr(p.capt||30)}</td><td>${esc(p.expWord||p.exp)}</td><td>${esc(p.fatigue)}</td><td>${esc(p.formWord)}</td><td class="n">$${(p.wage||0).toLocaleString()}</td><td class="n">${p.rating}</td></tr>`).join('')}
   </table></div></div>`;
 }
 function shortBT(p){const m={'none':'-','seamFast':'RF','seamFastMedium':'RFM','seamMedium':'RM','wristSpin':'WS','fingerSpin':'FS','partTimeSeam':'pt-S','partTimeSpin':'pt-Sp'};
@@ -1811,7 +1811,7 @@ function pgPlayer(q){
   $('#page').innerHTML=crumb(team.name,p.name,'Details')+
   `<div class="grid2"><div class="col">
     <div class="panel"><h4>Player info</h4><div class="pad"><table class="kv">
-     <tr><td>Age</td><td>${p.age}</td></tr><tr><td>Rating</td><td><b>${foRateTxt(p.rating)}</b></td></tr>
+     <tr><td>Age</td><td>${p.age}</td></tr><tr><td>Rating</td><td><b>${p.rating}</b></td></tr>
      <tr><td>Hand</td><td>${p.hand==='R'?'Right':'Left'} hand batsman</td></tr>
      <tr><td>Bowling</td><td>${esc(p.btLabel)}</td></tr><tr><td>Role</td><td>${prole(p.role)}</td></tr>
      <tr><td>Talents</td><td>${(p.talents&&p.talents.length)?p.talents.map(t=>`<span title="${TALTIPS[t]||''}">${ptal(t)}</span>`).join(', '):'-'}</td></tr><tr><td>Nationality</td><td>${esc(p.nat)}</td></tr>
@@ -2978,7 +2978,7 @@ function pgEditor(){
       <div class="ctlrow" style="flex-wrap:wrap">${SKEYS.map(k=>`<label class="small">${k} <input type="number" min="1" max="99" value="${p.skills[k]}" style="width:44px" onchange="GD.teams[${edState.team}].players[${i}].skills['${k}']=+this.value;jsDerive(GD.teams[${edState.team}].players[${i}])"></label>`).join('')}</div>
       <div class="ctlrow"><button onclick="jsDerive(GD.teams[${edState.team}].players[${i}]);pgEditor()">Apply</button></div>
     </div></td></tr>`;
-    return `<tr class="rowlink" onclick="edState.open=edState.open===${i}?null:${i};pgEditor()"><td>${esc(p.name)}</td><td>${prole(p.role)}</td><td>${esc(p.btLabel)}</td><td class="n">${foRateTxt(p.rating)}</td><td>${open?'▲':'▼'}</td></tr>${editor}`;
+    return `<tr class="rowlink" onclick="edState.open=edState.open===${i}?null:${i};pgEditor()"><td>${esc(p.name)}</td><td>${prole(p.role)}</td><td>${esc(p.btLabel)}</td><td class="n">${p.rating}</td><td>${open?'▲':'▼'}</td></tr>${editor}`;
   }).join('');
   $('#page').innerHTML=crumb('Team editor',t.name)+
   `<div class="ctlrow"><span>Team:</span><select onchange="edState.team=+this.value;edState.open=null;pgEditor()">${GD.teams.map((x,i)=>`<option value="${i}" ${i===edState.team?'selected':''}>${esc(x.name)}</option>`).join('')}</select>
@@ -3524,7 +3524,7 @@ function draftBlock(p,picked,afford,spent){
   return `<div class="pblock" style="${picked?'background:#eef6ec;border-left:3px solid #5a9a52':''}">
     <div class="hd" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span>${flag(p.nat)} <b style="font-size:13px">${esc(p.name)}</b>${p.keeper?' †':''}</span>
-      <span class="meta">${prole(p.role)} · age ${p.age} · rating <b>${foRateTxt(p.rating)}</b></span>
+      <span class="meta">${prole(p.role)} · age ${p.age} · rating <b>${p.rating}</b></span>
       <span style="flex:1"></span>
       <span style="font-size:13px"><b>$${p.fee.toLocaleString()}</b></span>
       <button class="${picked?'':'primary'}" ${(!picked&&!afford)?'disabled title="over budget"':''} onclick="founderTake('${esc(p.name)}')">${picked?'Drop':'Sign'}</button>
@@ -3919,14 +3919,14 @@ function runTour(){
   window.foRoleNoteObj=roleNoteObj;
   function roleNoteHtml(p){const n=roleNoteObj(p);return `<div class="manager-note"><b>Role note:</b> ${esc(n.note)}<br><span class="small"><b>Best:</b> ${esc(n.best)} · <b>Secondary:</b> ${esc(n.secondary)} · <b>Best conditions:</b> ${esc(n.conditions)}</span></div>`}
   function trainingMini(p){const tr=ensureTraining(p), pr=trainProgressPct(p);return `<div class="small"><b>${esc(tr.program)}</b> · ${esc(tr.intensity)} · next ${esc(pr.skill||'-')} <span class="progress-bar mini"><i style="width:${pct(pr.pct)}"></i></span> ${Math.round(pr.pct)}%</div>`}
-  summaryBlock=function(p){ensureTraining(p);return `<div class="pblock"><div class="hd">${playerLink(p)}${p.__y?`<span class="tag talent">U20</span> <button style="font-size:9px;padding:1px 5px" onclick="promoteYouth(App.teamIx,&quot;${esc(p.name)}&quot;)">promote</button>`:''} <span class="meta">(${esc(p.nat)}) · ${prole(p.role)} · age ${p.age} · rating <b>${foRateTxt(p.rating)}</b> · wage ${money(p.wage)}</span></div>
+  summaryBlock=function(p){ensureTraining(p);return `<div class="pblock"><div class="hd">${playerLink(p)}${p.__y?`<span class="tag talent">U20</span> <button style="font-size:9px;padding:1px 5px" onclick="promoteYouth(App.teamIx,&quot;${esc(p.name)}&quot;)">promote</button>`:''} <span class="meta">(${esc(p.nat)}) · ${prole(p.role)} · age ${p.age} · rating <b>${p.rating}</b> · wage ${money(p.wage)}</span></div>
     <div class="meta">${p.hand==='R'?'Right':'Left'} hand batsman | ${esc(p.btLabel)} · form ${esc(p.formWord)} · fatigue ${esc(p.fatigue)} · potential ${esc(potentialRead(p))}${(p.talents&&p.talents.length)?' &nbsp;'+p.talents.map(t=>`<span class="talchip" title="${TALTIPS[t]||''}">${ptal(t)}</span>`).join(' '):''}</div>
     <div class="cols"><div>${bar(aggBat(p),'Batting')}<br>${bar(aggBowl(p),'Bowling')}<br>${bar(aggKeep(p),'Keeping')}</div><div>${bar(aggEnd(p),'Endurance')}<br>${bar(aggTech(p),'Technique')}<br>${bar(S(p).power,'Power')}</div><div>${bar(aggField(p),'Fielding')}<br><span class="sklbl">Training</span><select onchange="setTrain('${safeName(p.name)}',this.value)" style="font-size:10px">${trainOptions(ensureTraining(p).program)}</select><br>${trainingMini(p)}</div></div>${roleNoteHtml(p)}</div>`};
 
   draftBlock=function(p,picked,afford,spent){
     const note=roleNoteObj(p);const scout=(p.age<=22?'':p.age>=33?'Veteran value, but the clock is ticking. ':'Prime-age professional. ')+note.note;
     return `<div class="dcard ${picked?'picked':''}"><div class="dcard-head" onclick="draftView('${safeName(p.name)}')">
-      <span class="dnat">${flag(p.nat)}</span><span><b class="dname">${esc(p.name)}</b>${p.keeper?' †':''}<br><span class="small">age ${p.age} · ${esc(potentialRead(p))}</span></span><span class="drole">${playerKind(p)}</span><span class="dprim">${esc(note.best)}</span><span class="prat">${foRateTxt(p.rating)}</span><span class="dfee">${money(p.fee)}</span><span class="dcaret">›</span></div>
+      <span class="dnat">${flag(p.nat)}</span><span><b class="dname">${esc(p.name)}</b>${p.keeper?' †':''}<br><span class="small">age ${p.age} · ${esc(potentialRead(p))}</span></span><span class="drole">${playerKind(p)}</span><span class="dprim">${esc(note.best)}</span><span class="prat">${p.rating}</span><span class="dfee">${money(p.fee)}</span><span class="dcaret">›</span></div>
       <div class="dscout">${esc(scout)} ${(p.talents||[]).map(t=>`<span class="talchip" title="${TALTIPS[t]||''}">${ptal(t)}</span>`).join(' ')}</div>
       <div class="action-row" style="padding:0 9px 8px 41px"><button class="${picked?'':'primary'}" ${(!picked&&!afford)?'disabled title="over budget"':''} onclick="event.stopPropagation();founderTake('${safeName(p.name)}')">${picked?'Drop':'Sign'}</button><span class="small">Bat ${Math.round(aggBat(p))} · Bowl ${Math.round(aggBowl(p))} · Field ${Math.round(aggField(p))}</span></div></div>`
   };
@@ -4022,18 +4022,15 @@ function runTour(){
 // ===== User-requested FTP-style UI behavior overrides =====
 // Small global helpers needed by the classic UI overrides.
 function money(n){return '$'+Math.round(n||0).toLocaleString()}
-// THE RATING A MANAGER READS. The engine's own number lives between about
-// 18,000 and 54,000 - that is the band where a rating gap still decides
-// cricket (below ~26,000 calibrate pegs skills at 2 and the ladder actually
-// inverts; above ~47,500 run-scoring saturates). It is a true number and
-// wages are derived from it, so it cannot move. But it is a cramped thing to
-// READ: the whole world inside one narrow decade.
-// So the number on screen is stretched onto 10,000-100,000, exactly as the
-// card is stretched onto 1-99. Same cricket, same odds, a scale a person can
-// hold: a second-division club man is a 10k, a county professional a 40k, a
-// Test nation's best a 100k. Nothing downstream reads this - it is display
-// only, and sorting still uses the engine's own figure.
-function foRate(r){return Math.max(1000,Math.min(100000,Math.round(2.5*(+r||0)-35000)))}
+// TEAM STRENGTH, THE NUMBER A MANAGER READS. The card (foPkOvr, 1-99) is the
+// PLAYER's number; this is the SIDE's. The engine's own XI rating runs from
+// about 28,300 - the weakest club in the world - to 47,500, where a national
+// XI is capped because run-scoring saturates. That is a true figure and the
+// economy is derived from it, so it cannot move; it is also a cramped decade
+// to read. Stretched onto 10,000-100,000 it says what it means: a club
+// founded this morning is a 10k, an England flagship a 60k, Australia a 100k.
+// Display only - nothing downstream reads it, and it is NOT a player figure.
+function foRate(r){return Math.max(1000,Math.min(100000,Math.round(4.69*(+r||0)-122700)))}
 function foRateTxt(r){return foRate(r).toLocaleString()}
 try{window.foRate=foRate;window.foRateTxt=foRateTxt}catch(e){}
 function pct(n){return Math.round(Math.max(0,Math.min(100,n||0)))+'%'}
@@ -4045,7 +4042,7 @@ function foEnsureTraining(p){if(!p.training)p.training={program:p.trainFocus&&p.
 function foTrainOptions(cur){return foProgramNames().map(k=>`<option value="${esc(k)}" ${cur===k?'selected':''}>${esc(k)}</option>`).join('')}
 function foSetTrainSafe(nm,val){if(typeof setTrain==='function')setTrain(nm,val);else{const pl=findPlayer(nm);if(pl){foEnsureTraining(pl.p).program=val;pl.p.trainFocus=val;saveGame(false)}}}
 function foNoPotentialMeta(p){return `${p.hand==='R'?'Right':'Left'} hand batsman | ${esc(p.btLabel)} · exp ${esc(p.expWord||p.exp)}`}
-function foSummaryBlock(p){foEnsureTraining(p);return `<div class="pblock"><div class="hd">${playerLink(p)}${p.__y?` <span class="tag talent">U20</span> <button style="font-size:9px;padding:1px 5px" onclick="promoteYouth(App.teamIx,&quot;${esc(p.name)}&quot;)">promote</button>`:''} <span class="meta">(${esc(p.nat)}) · ${prole(p.role)} · age ${p.age} · rating <b>${foRateTxt(p.rating)}</b></span></div>
+function foSummaryBlock(p){foEnsureTraining(p);return `<div class="pblock"><div class="hd">${playerLink(p)}${p.__y?` <span class="tag talent">U20</span> <button style="font-size:9px;padding:1px 5px" onclick="promoteYouth(App.teamIx,&quot;${esc(p.name)}&quot;)">promote</button>`:''} <span class="meta">(${esc(p.nat)}) · ${prole(p.role)} · age ${p.age} · rating <b>${p.rating}</b></span></div>
   <div class="meta">${foNoPotentialMeta(p)} · form ${esc(p.formWord||'undefined')} · fatigue ${esc(p.fatigue||'rested')}${(p.talents&&p.talents.length)?' &nbsp;'+p.talents.map(t=>`<span class="talchip" title="${TALTIPS[t]||''}">${ptal(t)}</span>`).join(' '):''}</div>
   <div class="cols"><div>${bar(aggBat(p),'Batting')}<br>${bar(aggBowl(p),'Bowling')}<br>${bar(aggKeep(p),'Keeping')}</div><div>${bar(aggEnd(p),'Endurance')}<br>${bar(aggTech(p),'Technique')}<br>${bar(S(p).power,'Power')}</div><div>${bar(aggField(p),'Fielding')}<br><span class="sklbl">Training</span> <select onchange="foSetTrainSafe('${safeName(p.name)}',this.value);saveGame(false)" style="font-size:11px">${foTrainOptions(foEnsureTraining(p).program)}</select></div></div></div>`}
 summaryBlock=foSummaryBlock;
@@ -4054,7 +4051,7 @@ draftBlock=function(p,picked,afford,spent){
   return `<div class="pblock" style="${picked?'background:#eef6ec;border-left:3px solid #5a9a52':''}">
     <div class="hd" style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
       <span>${flag(p.nat)} <b>${esc(p.name)}</b>${p.keeper?' †':''}</span>
-      <span class="meta">${prole(p.role)} · age ${p.age} · rating <b>${foRateTxt(p.rating)}</b></span>
+      <span class="meta">${prole(p.role)} · age ${p.age} · rating <b>${p.rating}</b></span>
       <span style="flex:1"></span>
       <span style="font-size:14px"><b>${money(p.fee)}</b></span>
       <button class="${picked?'':'primary'}" ${(!picked&&!afford)?'disabled title="over budget"':''} onclick="founderTake('${safeName(p.name)}')">${picked?'Drop':'Sign'}</button>
@@ -4120,7 +4117,7 @@ pgOrders=function(){
   if(!App.orders.batOrder.length)App.orders.batOrder=xi.map(p=>p.name); if(!App.orders.captain)App.orders.captain=xi.slice().sort((a,b)=>(b.capt||0)-(a.capt||0))[0].name; if(!App.orders.keeper||!xi.some(p=>p.name===App.orders.keeper))App.orders.keeper=(xi.find(p=>p.keeper)||xi[0]).name;
   const allBowlers=t.players.filter(p=>p.bowlType&&(App.orders.showPT||!isPT(p))).sort((a,b)=>aggBowl(b)-aggBowl(a)); const v=compilePlan(); const dupes={};App.orders.batOrder.slice(0,11).forEach(n=>dupes[n]=(dupes[n]||0)+1);
   const batRows=Array.from({length:11},(_,i)=>{const nm=App.orders.batOrder[i]||names[i]||'';const bad=dupes[nm]>1;return `<p class="draggable"><span class="battingorder">${i+1}</span><select class="batsmen" style="${bad?'border-color:#b23a33;background:#fff0ee':''}" onchange="App.orders.batOrder[${i}]=this.value;pgOrders()"><option value="">-----------select----------</option>${foPlayerOptions(nm,names)}</select>${foTacticButtons(`App.orders.batTactics[${i}]`,'',App.orders.batTactics[i]??0)} <label class="small" title="captain"><input type="radio" name="capt" ${App.orders.captain===nm?'checked':''} onchange="App.orders.captain='${esc(nm)}';pgOrders()">C</label> <label class="small" title="wicketkeeper"><input type="radio" name="wkpr" ${App.orders.keeper===nm?'checked':''} onchange="App.orders.keeper='${esc(nm)}';pgOrders()">WK</label></p>`}).join('');
-  const poolRows=xi.slice().sort((a,b)=>b.rating-a.rating).map(p=>`<tr><td>${playerLink(p)}${p.keeper?' †':''}</td><td>${playerKind(p)}</td><td class="n">${foRateTxt(p.rating)}</td><td class="n">${Math.round(aggBat(p))}</td><td class="n">${p.bowlType?Math.round(aggBowl(p)):'-'}</td></tr>`).join('');
+  const poolRows=xi.slice().sort((a,b)=>b.rating-a.rating).map(p=>`<tr><td>${playerLink(p)}${p.keeper?' †':''}</td><td>${playerKind(p)}</td><td class="n">${p.rating}</td><td class="n">${Math.round(aggBat(p))}</td><td class="n">${p.bowlType?Math.round(aggBowl(p)):'-'}</td></tr>`).join('');
   $('#page').innerHTML=crumb(opp.home+' v '+opp.away,'Orders')+`<div class="orders-helpbox"><b>Conditions:</b> ${esc(opp.ground)} · ${esc(opp.pitch)} pitch · ${esc(opp.weather)}. Orders are saved before the match; the match centre then auto-plays from these choices.</div><div class="ftp-orders"><div class="orders-left"><div class="panel"><h4>Batting Order</h4><div class="pad ftp-lineup">${batRows}<div class="small">D defensive · N normal · A attacking · L launch. Main match intent is still set by phase below.</div>${Object.values(dupes).some(n=>n>1)?'<div class="warntxt">Duplicate player in batting order.</div>':''}</div></div><div class="panel"><h4>Batting tactics</h4><div class="pad">${['pp','mid','death'].map(ph=>{const lbl={pp:'Powerplay 1-10',mid:'Middle 11-40',death:'Death 41-50'}[ph];return `<div class="ctlrow"><span style="min-width:115px">${lbl}</span><select onchange="App.orders.phaseIntent['${ph}']=+this.value;pgOrders()">${[[-1,'Defensive'],[0,'Normal'],[1,'Aggressive'],[2,'Launch']].map(([v,l])=>`<option value="${v}" ${App.orders.phaseIntent[ph]===v?'selected':''}>${l}</option>`).join('')}</select></div>`}).join('')}<div class="ctlrow"><span>Toss call</span><select onchange="App.orders.tossCall=this.value"><option value="">auto</option><option ${App.orders.tossCall==='H'?'selected':''} value="H">Heads</option><option ${App.orders.tossCall==='T'?'selected':''} value="T">Tails</option></select><span>If won</span><select onchange="App.orders.tossDecision=this.value"><option ${App.orders.tossDecision==='bat'?'selected':''} value="bat">Bat</option><option ${App.orders.tossDecision==='bowl'?'selected':''} value="bowl">Bowl</option></select></div></div></div></div><div class="orders-main"><div class="panel"><h4>Bowling Orders</h4><div class="pad"><div class="ctlrow"><button onclick="applyPreset('best');pgOrders()">Best five</button><button onclick="applyPreset('pace');pgOrders()">Pace-led</button><button onclick="applyPreset('spin');pgOrders()">Spin-led</button><label class="small"><input type="checkbox" ${App.orders.showPT?'checked':''} onchange="App.orders.showPT=this.checked;pgOrders()"> show part-timers</label><b class="${v.covered===50&&!v.warns.length?'oktxt':'warntxt'}" style="margin-left:auto">${v.covered}/50 overs</b></div><div class="ftp-bowling-ends">${foOrdersEnd('north','Northern End',[1,3,5,7,9,11,13,15,17,19],allBowlers)}${foOrdersEnd('south','Southern End',[2,4,6,8,10,12,14,16,18,20],allBowlers)}</div>${v.warns.length?`<div style="margin-top:6px">${v.warns.map(w=>`<div class="warntxt">⚠ ${esc(w)}</div>`).join('')}</div>`:'<div class="oktxt" style="margin-top:6px">Bowling plan is legal.</div>'}</div></div><div class="ctlrow"><button class="primary big" onclick="App.orders.saved=true;App.defaults=JSON.parse(JSON.stringify(App.orders));if(App.pending){location.hash='#/match'}else{pgOrders()}">Save orders${App.pending?' → match':''}</button><button onclick="suggestOrders();pgOrders()">Suggest all</button><button onclick="App.orders.batOrder=[];App.orders.spells={north:[],south:[]};pgOrders()">Clear</button><button onclick="if(App.defaults){App.orders=JSON.parse(JSON.stringify(App.defaults));pgOrders()}">Load previous</button></div>${App.orders.saved?'<div class="oktxt">Orders saved.</div>':''}</div><div class="orders-side"><div class="panel"><h4>Available players</h4><div class="pad pool-mini"><div class="player-pool-tabs"><button class="on">Batsmen</button><button>Bowlers</button><button>Keepers</button></div><table><tr><th>Name</th><th>Role</th><th class="n">Rat</th><th class="n">Bat</th><th class="n">Bowl</th></tr>${poolRows}</table></div></div><div class="panel"><h4>Match details</h4><div class="pad"><table class="kv"><tr><td>Fixture</td><td>${esc(opp.home)} v ${esc(opp.away)}</td></tr><tr><td>Ground</td><td>${esc(opp.ground)}</td></tr><tr><td>Weather</td><td>${esc(opp.weather)}</td></tr><tr><td>Pitch</td><td>${esc(opp.pitch)}</td></tr></table></div></div></div></div>`;
 };
 
