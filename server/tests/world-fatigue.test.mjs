@@ -53,6 +53,24 @@ async function bowledIn(seasonNo, round) {
       GROUP BY 1, 2`, [seasonNo, round])).rows;
   return new Map(rows.filter(r => r.slot != null).map(r => [r.slot + '|' + r.name, +r.b]));
 }
+async function facedIn(seasonNo, round) {
+  // slot|name -> balls FACED. The fold prices a day by overs bowled AND balls
+  // faced, so a twin who batted through the innings can out-tire a captain
+  // who bowled the same and got out first - the armband is only worth four.
+  // Any comparison that means to hold workload still has to hold both.
+  const rows = (await pool.query(
+    `SELECT CASE WHEN inn->>'batTeam' = coalesce(m.home_name, h.name) THEN m.home_slot
+                 WHEN inn->>'batTeam' = coalesce(m.away_name, a.name) THEN m.away_slot END AS slot,
+            b->'p'->>'name' AS name, sum(coalesce((b->>'b')::int, 0)) AS f
+       FROM matches m
+       JOIN clubs h ON h.country_id = m.country_id AND h.slot = m.home_slot
+       JOIN clubs a ON a.country_id = m.country_id AND a.slot = m.away_slot,
+            LATERAL jsonb_array_elements(m.result->'innings') inn,
+            LATERAL jsonb_array_elements(inn->'bat') b
+      WHERE m.country_id='eng' AND m.season_no=$1 AND m.round=$2 AND m.result IS NOT NULL
+      GROUP BY 1, 2`, [seasonNo, round])).rows;
+  return new Map(rows.filter(r => r.slot != null).map(r => [r.slot + '|' + r.name, +r.f]));
+}
 
 before(async () => {
   try { execSync('dropdb --if-exists ' + DBNAME); } catch {}
@@ -111,16 +129,19 @@ test('the armband costs: the default skipper outweighs an identical workload', a
   // would carry without the surcharge, which we bound by comparing him with
   // any non-captain teammate of identical workload class where one exists.
   const bowled = await bowledIn(1, 1);
+  const faced = await facedIn(1, 1);
   const clubs = await squads();
   let checked = 0;
   for (const c of clubs) {
     const capt = c.squad.slice().sort((x, y) => (y.capt || 0) - (x.capt || 0))[0];
     if (!capt || capt.fatN == null) continue;
-    // find a teammate of the same broad trade with workload no greater
+    // find a teammate of the same broad trade with workload no greater - BOTH
+    // halves of it, ball bowled and ball faced, or the twin is not a twin
     const twin = c.squad.find(p => p !== capt && p.fatN != null &&
       !!p.keeper === !!capt.keeper && isSpin(p) === isSpin(capt) &&
       isBowlerType(p) === isBowlerType(capt) &&
       (bowled.get(c.slot + '|' + p.name) || 0) <= (bowled.get(c.slot + '|' + capt.name) || 0) &&
+      (faced.get(c.slot + '|' + p.name) || 0) <= (faced.get(c.slot + '|' + capt.name) || 0) &&
       (bowled.has(c.slot + '|' + p.name) === bowled.has(c.slot + '|' + capt.name)));
     if (!twin) continue;
     if (bowled.has(c.slot + '|' + capt.name) || (capt.fatN || 0) > 0) {

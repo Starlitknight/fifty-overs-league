@@ -145,14 +145,18 @@ export const STR_FALLBACK = 1;
 //
 // Point 4 is 1.00: the old world's median club, so wages, transfer prices and
 // the books stay calibrated where they were.
-export const PT = 1.104;
-export function pt(points) { return Math.pow(PT, points - 4); }
+export const PT = 1.093;
+// what point 4 is worth against BASE_XI. The ladder no longer hangs off 1.00
+// at the median, because the band the engine still answers in tops out near
+// 39,000 for a club - see 27-living-planet.js for the measurement.
+export const PT4 = 0.8296;
+export function pt(points) { return PT4 * Math.pow(PT, points - 4); }
 // THE NEWCOMER'S RUNG. Every human-claimed club is dealt (and, on a fresh
 // claim, levelled) to this strength x the nation tier: a solid Division Two
 // side - competitive at once among its own kind, with the whole pyramid still
 // to climb. The seating chart decides a bot's class; it never again decides
 // a person's.
-export const HUMAN_STR = 0.906;                // 3: a club founded this morning
+export const HUMAN_STR = pt(3);                // 0.759: a club founded this morning
 export const BASE_XI = 36000;                 // the old world's median XI rating
 
 // A LEAGUE IS AS STRONG AS ITS CRICKET CULTURE. Every nation's ten clubs used
@@ -168,17 +172,26 @@ export const BASE_XI = 36000;                 // the old world's median XI ratin
 // order from the domestic talent they are picked from.
 // FULL MEMBERS AND ASSOCIATES. Two bands, not nineteen rungs: a nation is
 // either one of the ten countries that have always played the long form or it
-// is an associate, and the difference is worth a rung and a half - so a
-// flagship is a 7 in a full member and a 5.5 in an associate, and every other
-// club in the league moves with it. It is deliberately MODEST at club level:
-// the gap the world was missing is between a national side and a club, not
-// between two clubs a continent apart.
+// is an associate. The difference is three and a half rungs of the club
+// ladder, so the best club in the Netherlands is about a mid-table Division
+// One side in England - which is what it is. The size is not a taste call: a
+// national XI is capped near 47,500 because run-scoring saturates above that,
+// so the only way an associate's own country can out-rank its own best club
+// is for the associate's clubs to sit further down. At a rung and a half the
+// Dutch national side beat the best Dutch club 53 times in 100 - a coin toss
+// between a country and a club. At three and a half it is 71, the same real
+// contest Australia's country gives Australia's best club (69).
 export const FULL_MEMBERS = ['eng', 'aus', 'sub', 'pak', 'rsa', 'nzl', 'slk', 'bgd', 'win', 'zim'];
 const FULL = new Set(FULL_MEMBERS);
 export const isFullMember = id => FULL.has(id);
+// The tier is a MULTIPLIER on the club's own rung, not a rung of its own, so
+// it is a RATIO between two points on the ladder and never the ladder's base.
+// (It was once written pt(2.5), which silently folded PT4 in and moved every
+// associate club whenever the club ladder was re-anchored.)
+export const ASSOC_STR = Math.pow(PT, -3.5);   // 0.733
 export const NAT_STR = Object.fromEntries(
   ['eng', 'ire', 'ned', 'win', 'rsa', 'zim', 'aus', 'nzl', 'slk', 'sub', 'pak', 'afg',
-   'bgd', 'nep', 'sco', 'wal', 'ken', 'usa', 'can'].map(id => [id, FULL.has(id) ? 1 : pt(2.5)]));
+   'bgd', 'nep', 'sco', 'wal', 'ken', 'usa', 'can'].map(id => [id, FULL.has(id) ? 1 : ASSOC_STR]));
 
 // AND WHAT A COUNTRY IS WORTH WHEN IT PLAYS AS A COUNTRY. A national side used
 // to have no strength of its own at all: nations.mjs picks the best fifteen
@@ -186,8 +199,15 @@ export const NAT_STR = Object.fromEntries(
 // clubs it came from - which is exactly why a second-division side from a
 // small nation read as the near-equal of a great one. Pulling on the shirt is
 // now worth something, and what it is worth is the nation's own rung.
-export const NAT_TEAM_PT = { full: 9, assoc: 8 };
-export function nationTeamStr(id) { return pt(FULL.has(id) ? NAT_TEAM_PT.full : NAT_TEAM_PT.assoc); }
+// A NATION IS NOT ON THE CLUB LADDER. The band the engine answers in is only
+// so wide, and it has to hold a second division, a first, a flagship and two
+// tiers of country. Placing the countries on the club ladder made Australia
+// and Canada a coin toss; they are placed directly instead, far enough apart
+// that a rung converts - 47,500 against 38,000, which measures 91 wins in 100
+// over 100 matches. A flagship at 39,000 still gets a real game against
+// either: it takes 31 off Australia's country and 29 off the Netherlands'.
+export const NAT_TEAM = { full: 47500 / 36000, assoc: 38000 / 36000 };
+export function nationTeamStr(id) { return FULL.has(id) ? NAT_TEAM.full : NAT_TEAM.assoc; }
 
 const xiOf = sq => {
   const best = sq.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 11);

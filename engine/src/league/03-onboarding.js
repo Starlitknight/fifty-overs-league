@@ -2821,8 +2821,20 @@
     else if (p.role === "allRounder") { var hi = Math.max(batScore, bowl), lo = Math.min(batScore, bowl); ovr = 1.04 * (0.60 * hi + 0.28 * lo + 0.12 * fld); }
     else if (bowl > batScore) ovr = 1.5 * (0.74 * bowl + 0.12 * tech + 0.14 * fld) - 14;
     else ovr = 0.60 * batScore + 0.12 * bat + 0.14 * pow + 0.14 * fld;
-    return Math.max(1, Math.min(99, Math.round(ovr)));
+    // THE CARD IS A LABEL, NOT THE ENGINE'S NUMBER, and it should use the
+    // range it is drawn on. The cricket has to live between about 18,000 and
+    // 47,000 because that is the band where the engine still answers a rating
+    // gap - past it, run-scoring saturates near 290 and extra rating buys
+    // nothing. Left alone that band prints as 16 to 74, so the top quarter of
+    // the scale went unused and an international read like a good club player.
+    // Stretched, the same cricket reads 23 to 99 across the whole world: a
+    // full member's national XI averages 77 with a 99 among them, its flagship
+    // 67, a bottom second-division associate 28 - and nothing about what
+    // happens on the field has changed. A public card already carries a
+    // stretched figure and returns above, so this is applied exactly once.
+    return Math.max(1, Math.min(99, Math.round(FO_CARD_A * ovr + FO_CARD_B)));
   }
+  var FO_CARD_A = 1.32, FO_CARD_B = -1;
   // test-harness hook: lets the Playwright probes generate players and read
   // OVRs without reaching into the closure (never used by the game itself)
   try { window.__foTest = { gen: foQsPlayer, ovr: foPkOvr, hash: foHash32 }; } catch (eT) {}

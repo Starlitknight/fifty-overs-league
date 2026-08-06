@@ -266,27 +266,30 @@
   // associate's is an 8, a country's flagship club is a 7, first division 4-5,
   // second division 2-4, and a club founded this morning a 3.
   //
-  // A POINT IS 10.4% OF AN XI RATING, and the rung is set by how a player
-  // READS, not by a win rate. The whole world used to live between 39 and 60
-  // on the nought-to-ninety-nine card, so the top half of the scale was never
-  // used and an international looked like a slightly-better club player -
-  // which is what he was. Seven rungs is now exactly 2x, which puts a full
-  // member's XI around 78 on the card with a genuine 99 among them, and a
-  // bottom second-division side around 38. Skills cap at 99, so this is close
-  // to the most the engine can express before every card reads 99 and the top
-  // tiers collapse into each other.
+  // THE LADDER LIVES WHERE THE ENGINE STILL ANSWERS. Measured on the shipped
+  // engine: the same rating gap is worth far less the higher up you apply it.
+  // A 1.10x edge is 63% at a 36,000 centre, 60% at 47,000 and 43% at 55,000 -
+  // the stronger side actually LOSES more up there - because run-scoring
+  // saturates near 290 and extra rating stops buying runs. So a full member's
+  // club ladder sits between about 25,000 and 39,000, where a rung still
+  // converts, and an associate's hangs three and a half rungs under it, from
+  // about 18,000 to 28,000 (NAT_STR in server/init-world.mjs). The card a
+  // manager reads is stretched separately (foPkOvr), so a small internal
+  // number can still print as a 90-something player.
   //
-  // Point 4 is 1.00 - the old world's median club - so wages, transfer prices
-  // and the whole economy stay where they were calibrated.
-  var FO_PT = 1.104;                               // one rung, in XI rating
+  // Point 4 was once 1.00 - the old world's median club. The whole ladder has
+  // since dropped to 0.83 x that so it fits under the national sides, and
+  // calibrate() re-derives wages from the skills it lands on, so the economy
+  // moves with it rather than being re-tuned by hand.
+  var FO_PT = 1.093;                               // one rung, in XI rating
   function foStr(pt) { return Math.pow(FO_PT, pt - 4); }
-  var FO_BOSS_STR = 1.346;                         // 7: the flagship
+  var FO_BOSS_STR = 1.083;                         // 7: the flagship
   // DIVISION ONE: seven established clubs, evenly spread over 5.0 down to 4.0.
   // DIVISION TWO: the founding seats, 4.0 down to 2.0, overlapping the first
   // division's floor at the seam the way real second flights do. Both shuffled
   // per nation, pure functions of the nation.
-  var FO_STR_LADDER = [1.104, 1.086, 1.068, 1.051, 1.034, 1.017, 1.000];
-  var FO_D2_LADDER = [1.000, 0.972, 0.945, 0.919, 0.893, 0.868, 0.844, 0.820];
+  var FO_STR_LADDER = [0.907, 0.892, 0.878, 0.864, 0.851, 0.837, 0.824];
+  var FO_D2_LADDER = [0.824, 0.803, 0.783, 0.764, 0.745, 0.726, 0.708, 0.691];
 
   // England is named for its counties, not its cities (and three of them play
   // in London), so its identities are seated by slot - all sixteen of them.
