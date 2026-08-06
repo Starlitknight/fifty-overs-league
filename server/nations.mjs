@@ -53,6 +53,15 @@ export const FEE_SENIOR = 50000;
 export const FEE_U21 = 20000;
 export const U21_AGE = 21;
 export const BOWLERS_WANTED = 6;
+// AND THE SAME PROMISE TO THE BATTING. The squad used to be filled on rating
+// once the keeper and the six bowlers were in, which is only safe if bowlers
+// and batters rate alike - and they do not. In a nation whose bowlers out-rate
+// its batters the fill was more bowlers, and the country turned out THIRTEEN
+// of fifteen: a national side that could not bat. It showed up as India losing
+// 77-23 to an equally-rated Australia, and the Netherlands splitting with its
+// own flagship club. Five specialist batters are named before the fill, so
+// every country takes a side that can make a score.
+export const BATTERS_WANTED = 5;
 
 export function feeFor(age) { return (+age || 99) < U21_AGE ? FEE_U21 : FEE_SENIOR; }
 // a tour is identified by the WORLD DAY it was played on, not by anybody's
@@ -94,6 +103,8 @@ export function selectSquad(men, { size = SQUAD_SIZE, clubLimit = CLUB_LIMIT, mi
   for (const p of ranked) if (p.keeper) { if (take(p)) break; }
   let bowlers = 0;
   for (const p of ranked) { if (bowlers >= BOWLERS_WANTED) break; if (isBowler(p) && take(p)) bowlers++; }
+  let batters = 0;
+  for (const p of ranked) { if (batters >= BATTERS_WANTED) break; if (!isBowler(p) && take(p)) batters++; }
   for (const p of ranked) { if (picked.length >= size) break; take(p); }
   return picked;
 }
