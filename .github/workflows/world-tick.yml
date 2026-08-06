@@ -33,7 +33,22 @@ concurrency:
 jobs:
   tick:
     runs-on: ubuntu-latest
-    timeout-minutes: 15
+    # FIFTEEN MINUTES WAS A TRAP, and it sprang on 6 August. GitHub held a
+    # scheduled firing for one hour and forty-three minutes - the comment
+    # above already warned it does this - and by the time the run started
+    # there were hours of world to heal. runDue heals every missed day, so a
+    # late run has MORE to do than an on-time one, and this one needed longer
+    # than fifteen minutes. It was killed at the cap. The next firing found
+    # the same backlog, needed the same time, and was killed at the same cap.
+    # Every run for six hours died at exactly 15:0x having settled nothing:
+    # the catch-up could never fit inside the window the catch-up was given.
+    #
+    # An hour, then. A steady-state settle is one to three minutes, so this
+    # ceiling is never touched on a normal day; it exists so that the one
+    # abnormal day can dig the world out instead of timing out forever. The
+    # tick is idempotent and the concurrency group serialises it, so a long
+    # run costs nothing but the minutes it uses.
+    timeout-minutes: 60
     env:
       WORLD_SCHEMA: world
     steps:
