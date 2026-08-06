@@ -156,7 +156,7 @@
       ".fo-me-cardtitle{display:flex;align-items:center;gap:12px;margin:0;padding:16px 18px 14px;background:var(--navy);color:#F8F3E8;font:700 12px/1 Oswald,sans-serif;letter-spacing:.13em;text-transform:uppercase}",
       ".fo-me-cardtitle:before,.fo-me-cardtitle:after{content:'';height:1px;flex:1;background:#D7A837}.fo-me-cardtitle:before{max-width:40px}",
       ".fo-me-groundwrap{position:relative;background:var(--navy);padding:0 10px 8px;overflow:hidden}",
-      ".fo-me-ground{display:block;width:100%;height:auto;filter:drop-shadow(0 12px 17px rgba(3,15,29,.24))}",
+      ".fo-me-ground{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:10px;filter:drop-shadow(0 12px 17px rgba(3,15,29,.24))}",
       ".fo-me-stadfoot{display:grid;grid-template-columns:92px minmax(0,1fr);gap:18px;align-items:center;margin-top:auto;padding:14px 18px 16px;background:var(--paper)}",
       ".fo-me-occ{text-align:center}.fo-me-occ>span{display:block;margin-top:6px;color:var(--mut);font:700 8px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase}",
       ".fo-me-ring{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;position:relative;background:conic-gradient(var(--green) var(--fill),#E6E2DA 0);margin:auto}",
@@ -251,32 +251,14 @@
     return "<svg class='fo-me-svgico' viewBox='0 0 24 24' aria-hidden='true' fill='none' stroke='currentColor' stroke-width='1.65' stroke-linecap='round' stroke-linejoin='round'>" + (p[kind] || p.revenue) + "</svg>";
   }
 
-  // A proper little ground, drawn as an architectural top-down illustration:
-  // pavilion, tiered stands, floodlights, tunnels, mowing stripes, boundary,
-  // pitch, creases and wickets. SVG keeps it clean on a retina phone without
-  // adding a heavy image to the production bundle.
+  // Matchday Economy gets a purpose-built editorial ground painting rather
+  // than a diagram. Keep the venue name as real UI text above it so the same
+  // artwork can frame every club without baking a fictional label into it.
   function foMeGroundArt(name) {
-    return "<svg class='fo-me-ground' viewBox='0 0 720 410' role='img' aria-label='" + E(name) + " cricket ground'>" +
-      "<defs><linearGradient id='meg-bg' x1='0' y1='0' x2='0' y2='1'><stop offset='0' stop-color='#173B61'/><stop offset='1' stop-color='#0A203A'/></linearGradient>" +
-      "<linearGradient id='meg-grass' x1='0' y1='0' x2='1' y2='1'><stop stop-color='#4D9564'/><stop offset='1' stop-color='#226743'/></linearGradient>" +
-      "<linearGradient id='meg-roof' x1='0' y1='0' x2='1' y2='1'><stop stop-color='#F9F4E8'/><stop offset='1' stop-color='#CFC3AE'/></linearGradient>" +
-      "<filter id='meg-shadow' x='-20%' y='-30%' width='140%' height='170%'><feDropShadow dx='0' dy='11' stdDeviation='11' flood-color='#03101E' flood-opacity='.4'/></filter>" +
-      "<clipPath id='meg-field'><ellipse cx='360' cy='230' rx='231' ry='118'/></clipPath></defs>" +
-      "<rect width='720' height='410' rx='22' fill='url(#meg-bg)'/>" +
-      "<g opacity='.16' fill='none' stroke='#8AA5C1'><path d='M35 331Q360 444 685 331'/><path d='M48 103Q360-16 672 103'/></g>" +
-      "<g stroke='#D3B05B' stroke-width='3' opacity='.9'><path d='M80 108v46M67 108h26M72 116h16M640 108v46M627 108h26M632 116h16M66 278v47M53 278h26M58 286h16M654 278v47M641 278h26M646 286h16'/></g>" +
-      "<g filter='url(#meg-shadow)'>" +
-      "<ellipse cx='360' cy='232' rx='310' ry='163' fill='#E9E0CE' stroke='#F7F2E7' stroke-width='10'/><ellipse cx='360' cy='232' rx='284' ry='145' fill='#132F4E' stroke='#D1A23B' stroke-width='5'/>" +
-      "<ellipse cx='360' cy='232' rx='267' ry='135' fill='none' stroke='#E5C66F' stroke-width='22' stroke-dasharray='36 11'/><ellipse cx='360' cy='232' rx='247' ry='124' fill='#F6F0E4' stroke='#C89C37' stroke-width='3'/>" +
-      "<path d='M104 212h43v39h-43M616 212h-43v39h43' fill='#0B223A' stroke='#E6D7B5' stroke-width='3'/><path d='M339 99h42v31h-42M339 334h42v31h-42' fill='#0B223A' stroke='#E6D7B5' stroke-width='3'/>" +
-      "<path d='M255 73h210l21 52H234l21-52Z' fill='url(#meg-roof)' stroke='#D4A83E' stroke-width='3'/><path d='M274 89h172v35H274Z' fill='#102D4C' stroke='#E8DAB8' stroke-width='2'/><path d='M290 97h30v19h-30Zm44 0h30v19h-30Zm44 0h30v19h-30Zm44 0h12v19h-12Z' fill='#D9B14B' opacity='.92'/>" +
-      "<ellipse cx='360' cy='230' rx='231' ry='118' fill='url(#meg-grass)' stroke='#DCE8D7' stroke-width='7'/>" +
-      "<g clip-path='url(#meg-field)' opacity='.12' fill='#F7FFF2'><path d='M125 100h55v260h-55Zm110 0h55v260h-55Zm110 0h55v260h-55Zm110 0h55v260h-55Zm110 0h55v260h-55Z'/></g>" +
-      "<ellipse cx='360' cy='230' rx='218' ry='106' fill='none' stroke='#F4FAEF' stroke-width='2.5' opacity='.75'/>" +
-      "<rect x='333' y='150' width='54' height='160' rx='3' fill='#CBB783' stroke='#EFE4C5' stroke-width='3'/><path d='M322 174h76M322 286h76' stroke='#FFF9E9' stroke-width='3'/><path d='M345 165v16m8-16v16m14-16v16m8-16v16M345 279v16m8-16v16m14-16v16m8-16v16' stroke='#FFF9E9' stroke-width='2'/>" +
-      "<circle cx='190' cy='164' r='3.5' fill='#F6E0A2'/><circle cx='538' cy='170' r='3.5' fill='#F6E0A2'/><circle cx='210' cy='294' r='3.5' fill='#F6E0A2'/><circle cx='517' cy='291' r='3.5' fill='#F6E0A2'/>" +
-      "</g><g transform='translate(552 88)'><rect width='83' height='43' rx='5' fill='#07192C' stroke='#D5A83B' stroke-width='2'/><circle cx='16' cy='15' r='3' fill='#70D4A8'/><circle cx='27' cy='15' r='3' fill='#F3C657'/><circle cx='38' cy='15' r='3' fill='#EF7547'/><path d='M15 28h53' stroke='#8DA2B9' stroke-width='2'/></g>" +
-      "</svg>";
+    var base = (typeof FO_ART !== "undefined") ? FO_ART :
+      ((location.pathname.indexOf("/client/") !== -1) ? "art/" : "client/art/");
+    return "<img class='fo-me-ground' src='" + base + "home/matchday-economy-ground.webp' " +
+      "width='1440' height='810' alt='" + E(name) + " cricket ground at golden hour' decoding='async'>";
   }
 
   // THE HOME GATES, and only those. This used to match on the word "gate"
