@@ -2818,7 +2818,18 @@
     // generator's whole quality range), so a 70 bowler and a 70 batter are
     // genuinely the same class of player
     if (p.keeper || p.role === "wicketkeeper") ovr = 1.07 * (0.46 * (aggKeep(p) || 0) + 0.40 * batScore + 0.14 * fld) - 1;
-    else if (p.role === "allRounder") { var hi = Math.max(batScore, bowl), lo = Math.min(batScore, bowl); ovr = 1.04 * (0.60 * hi + 0.28 * lo + 0.12 * fld); }
+    // THE ALL-ROUNDER WAS READING 65% OF WHAT HE IS. A man who bats and bowls
+    // splits his skills across two trades, so neither aggregate is a
+    // specialist's - and this branch then blended the two and scaled the
+    // result by only 1.04, where the bowler's branch stretches by 1.5 and
+    // shifts by -14. He was penalised twice: once in the skills, once in the
+    // arithmetic. Measured over 1,440 cricketers, all-rounders carried the
+    // HIGHEST mean rating in the world (36,014) and the LOWEST cards (42.8),
+    // while seamers and spinners sat at 105% of a specialist batter and
+    // keepers at 93%. The scale and shift below are fitted so an all-rounder
+    // lands on the same card-against-rating line as everybody else, in spread
+    // as well as in mean.
+    else if (p.role === "allRounder") { var hi = Math.max(batScore, bowl), lo = Math.min(batScore, bowl); ovr = 1.269 * (0.60 * hi + 0.28 * lo + 0.12 * fld) + 9.57; }
     else if (bowl > batScore) ovr = 1.5 * (0.74 * bowl + 0.12 * tech + 0.14 * fld) - 14;
     else ovr = 0.60 * batScore + 0.12 * bat + 0.14 * pow + 0.14 * fld;
     // THE CARD IS A LABEL, NOT THE ENGINE'S NUMBER, and it should use the
