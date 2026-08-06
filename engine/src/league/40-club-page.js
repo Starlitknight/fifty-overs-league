@@ -944,7 +944,10 @@
           (ident && ident.motto ? "<div class='fo-cp-sub'>The motto</div><div class='fo-cp-note'>&ldquo;" + E(ident.motto) + "&rdquo;</div>" : "") +
           "<div class='fo-cp-sub'>Standing</div>" +
           "<div class='fo-cp-note'>World rank <b>" + (rkRow ? "#" + rkRow.rank : "unrated") + "</b>" +
-          (rkRow ? " &middot; " + num(rkRow.rating) + " rating &middot; " + rkRow.w + "-" + rkRow.l + (rkRow.t ? "-" + rkRow.t : "") + " all competitions" : "") + "</div>" +
+          (rkRow ? " &middot; strength " + (function (v) {
+              try { if (window.foRateTxt) return window.foRateTxt(v); } catch (e) {}
+              return num(v);
+            })(rkRow.strength || rkRow.rating) + " &middot; " + rkRow.w + "-" + rkRow.l + (rkRow.t ? "-" + rkRow.t : "") + " all competitions" : "") + "</div>" +
           "</div>";
       } else if (tab === "ground") {
         var gname = (info && info.ground) || (name + " Ground");

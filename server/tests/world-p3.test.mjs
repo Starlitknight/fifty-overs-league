@@ -320,7 +320,7 @@ test('009: season leaders come straight from the banked scorecards', async () =>
     'a completed season is written into the book');
 });
 
-test('010: the world rankings ladder stands on the last three match ratings', async () => {
+test('010: the world rankings stand on squad strength, with form beside them', async () => {
   const rk = await computeRankings(pool, EPOCH + 102 * DAY);
   assert.equal(rk.clubs.length, 256, 'every club in the world is ranked');
   assert.equal(rk.countries.length, 16, 'every country is ranked');
@@ -330,10 +330,13 @@ test('010: the world rankings ladder stands on the last three match ratings', as
   const played = rk.clubs.filter(c => c.p > 0);
   assert.ok(played.length >= 10, 'the clubs that have played are ranked: ' + played.length);
   if (played.length === 16) played.forEach(c => assert.equal(c.country, 'eng', 'only England has played'));
-  // a club that has not played is presumed ordinary, and says so with an empty form
+  // A CLUB THAT HAS NOT PLAYED IS NOT "ORDINARY" - it is whatever its squad
+  // says it is. That is the whole point of ranking on strength: the ladder can
+  // answer on day one, before a ball is bowled, which a form table cannot.
   const idle = rk.clubs.filter(c => c.p === 0);
   idle.forEach(c => {
-    assert.equal(c.rating, RANK_BASE, c.name + ' has played nothing and stands on the middle of the scale');
+    assert.ok(c.strength > 0, c.name + ' has a strength before it has a record');
+    assert.equal(c.formRating, RANK_BASE, c.name + ' has played nothing, so its FORM is the middle');
     assert.deepEqual(c.form, [], c.name + ' has no marks behind it');
   });
   // the figure is exactly the mean of the marks behind it once the unplayed ones
@@ -341,11 +344,18 @@ test('010: the world rankings ladder stands on the last three match ratings', as
   // winner outranks a loser. The game's match rating marks how a side PLAYED,
   // not whether it won, so a side can be beaten and still have had the better
   // day - which is the point of ranking on it.
+  // THE HEADLINE FIGURE IS THE SIDE, NOT THE WEEK. rating and strength are the
+  // same number - the mean rating of the best eleven - and form is carried
+  // separately, still on the three-match window it was always for.
   played.forEach(c => {
+    assert.equal(c.rating, c.strength, c.name + ' is ranked on its strength');
     assert.ok(c.form.length && c.form.length <= 3, c.name + ' carries up to three marks');
     const want = +((c.form.reduce((s, x) => s + x, 0) + (3 - c.form.length) * RANK_BASE) / 3).toFixed(1);
-    assert.equal(c.rating, want, c.name + ' stands on the mean of its last three');
+    assert.equal(c.formRating, want, c.name + ' form is still the mean of its last three');
   });
+  // and the strength is a real XI rating, in the band the engine ranks in
+  rk.clubs.forEach(c => assert.ok(c.strength >= 15000 && c.strength <= 60000,
+    c.name + ' strength on the XI scale: ' + c.strength));
   // every mark is on the club rating scale, and every match a club played is
   // accounted for in its won-lost-tied
   played.forEach(c => {
@@ -356,10 +366,14 @@ test('010: the world rankings ladder stands on the last three match ratings', as
   assert.equal(rk.clubs[0].rank, 1);
   assert.ok(rk.clubs[0].rating >= rk.clubs[189].rating);
   assert.ok(rk.clubs[0].rating > rk.clubs[189].rating, 'the ladder has actually separated');
-  // ONLY THE LAST THREE COUNT: the ladder is a form table, so a club is judged
-  // on what it has just done and not on everything it ever did
+  // ONLY THE LAST THREE COUNT, in the FORM figure: that window is what a
+  // manager wants before Saturday, and it is no longer what seats the world.
   const busiest = rk.clubs.slice().sort((a, b) => b.p - a.p)[0];
   if (busiest.p > 3) assert.equal(busiest.form.length, 3, 'a long record is still read three matches deep');
+  // THE FLAGSHIP IS THE BEST SIDE IN ITS COUNTRY, which a form table could not
+  // promise and a strength table can - it is the one thing the ladder is for.
+  const engClubs = rk.clubs.filter(c => c.country === 'eng').sort((a, b) => b.strength - a.strength);
+  assert.ok(engClubs[0].boss, "England's strongest side is its flagship, got " + engClubs[0].name);
   // REBUILT FROM GENESIS, TWICE, THE SAME: nothing about the ladder is stored
   const again = await computeRankings(pool, EPOCH + 102 * DAY);
   assert.deepEqual(again.clubs, rk.clubs, 'the same record gives the same ladder');

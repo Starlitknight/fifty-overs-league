@@ -101,9 +101,17 @@
         }).join("") + "</span>";
       };
       var mineChip = mine
-        ? "<div class='fo-rk-mine'>&#127942; <b>" + E(mine.name) + "</b> stand <u>#" + mine.rank + "</u> of " + RK.clubs.length + " in the world &middot; rated " + fmt(mine.rating) +
-          ((mine.form && mine.form.length) ? " from " + mine.form.map(fmt).join(", ") : " &mdash; no cricket played yet") + "</div>"
+        ? "<div class='fo-rk-mine'>&#127942; <b>" + E(mine.name) + "</b> stand <u>#" + mine.rank + "</u> of " + RK.clubs.length + " in the world &middot; strength " + rkStr(mine) +
+          ((mine.form && mine.form.length) ? " &middot; recent form " + mine.form.map(fmt).join(", ") : " &mdash; no cricket played yet") + "</div>"
         : "";
+      // SQUAD STRENGTH, on the scale the world is read in (foRate in the core).
+      // The rank is this figure; the three marks beside it are form, which is a
+      // different question and is labelled as one.
+      var rkStr = function (c) {
+        var v = (c && (c.strength || c.rating)) || 0;
+        try { if (window.foRateTxt) return window.foRateTxt(v); } catch (e) {}
+        return fmt(v);
+      };
       var rowOf = function (c) {
         var isMine = !!(cl && c.country === cl.country && c.slot === cl.slot);
         return "<a class='fo-rk-row" + (isMine ? " mine" : "") + (c.boss ? " boss" : "") + "' href='#/team?c=" + encodeURIComponent(c.country) + "&s=" + c.slot + "'>" +
@@ -113,7 +121,7 @@
           "<u>" + E(natName(c.country)) + "</u>" +
           formOf(c) +
           "<span class='rec'>" + c.w + "-" + c.l + (c.t ? "-" + c.t : "") + "</span>" +
-          "<span class='pts'>" + fmt(c.rating) + "</span></a>";
+          "<span class='pts' title='Squad strength'>" + rkStr(c) + "</span></a>";
       };
       // one nation at a time when asked: the same world ranks, one league's
       // clubs - the dropdown narrows the ladder, it never re-ranks it

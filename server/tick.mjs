@@ -384,11 +384,24 @@ export async function computeLeague(pool, country, seasonNo, now) {
 // So it can never drift, and a club rename never costs a point - histories key
 // by country:slot.
 export async function computeRankings(pool, now) {
-  const clubs = (await pool.query('SELECT country_id, slot, name, is_boss FROM clubs ORDER BY country_id, slot')).rows;
+  const clubs = (await pool.query(
+    'SELECT country_id, slot, name, is_boss, squad FROM clubs ORDER BY country_id, slot')).rows;
   const key = (c, s) => c + ':' + s;
+  // HOW GOOD THE SIDE IS, as against how it has been going. The mean rating of
+  // a club's best eleven - the engine's own figure for each man, which is what
+  // decides the cricket. It answers a different question from the form ladder
+  // below and it answers it on day one, before a ball is bowled, which the form
+  // ladder cannot: a club with no record is not "ordinary", it is whatever its
+  // squad says it is.
+  const xiStrength = squad => {
+    const men = (squad || []).filter(p => p && p.rating).sort((a, b) => b.rating - a.rating).slice(0, 11);
+    if (!men.length) return 0;
+    return Math.round(men.reduce((t, p) => t + p.rating, 0) / men.length);
+  };
   const R = {};
   clubs.forEach(c => R[key(c.country_id, c.slot)] = {
-    country: c.country_id, slot: c.slot, name: c.name, boss: c.is_boss, hist: [], p: 0, w: 0, l: 0, t: 0
+    country: c.country_id, slot: c.slot, name: c.name, boss: c.is_boss,
+    strength: xiStrength(c.squad), hist: [], p: 0, w: 0, l: 0, t: 0
   });
   // ONE CLOCK FOR THE WHOLE WORLD. A season is a thousand ticks wide: league
   // round r sits at r, and the cup ties that close that season sit above 500,
@@ -479,12 +492,22 @@ export async function computeRankings(pool, now) {
   events.sort(byClock).forEach(ev => mark(R, ev));
   natEvents.sort(byClock).forEach(ev => mark(N, ev));
 
+  // THE WORLD ORDER IS THE SIDES, NOT THE RESULTS. The ladder used to seat
+  // every club in the world by its last three marks, which is form: a strong
+  // side that has just lost twice sank below a weak one on a good week, and a
+  // club that had never played sat at RANK_BASE beside everybody else. That is
+  // a useful figure - it is what a manager wants to know before Saturday - but
+  // it is the wrong answer to "who is the best side in the world".
+  // The rank is now STRENGTH, the mean rating of the best eleven. Form travels
+  // alongside as its own number and is what the three-match window is for.
   const rate = x => ladderRating(x.hist);
   const clubList = Object.values(R)
-    .map(x => Object.assign({}, x, { rating: rate(x), form: x.hist.slice(-RANK_WINDOW) }))
-    .sort((x, y) => y.rating - x.rating || y.p - x.p || x.country.localeCompare(y.country) || x.slot - y.slot)
+    .map(x => Object.assign({}, x, { form5: rate(x), form: x.hist.slice(-RANK_WINDOW) }))
+    .sort((x, y) => y.strength - x.strength || y.form5 - x.form5 ||
+                    x.country.localeCompare(y.country) || x.slot - y.slot)
     .map((x, i) => ({ rank: i + 1, country: x.country, slot: x.slot, name: x.name, boss: x.boss,
-                      rating: x.rating, form: x.form, p: x.p, w: x.w, l: x.l, t: x.t }));
+                      rating: x.strength, strength: x.strength, formRating: x.form5,
+                      form: x.form, p: x.p, w: x.w, l: x.l, t: x.t }));
   // THE NATIONS ARE COMPARED ON STRENGTH, NOT FORM. Ten clubs' three-match form
   // averages straight back to fifty, so the club ladder's window is the wrong
   // lens on a whole league: here every mark a nation's clubs have ever earned
