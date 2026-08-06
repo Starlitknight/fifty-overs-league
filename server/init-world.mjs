@@ -125,12 +125,27 @@ export function countryConfigs(host) {
 // planet forgot to grade, so a missing row degrades to "ordinary" rather
 // than to luck.
 export const STR_FALLBACK = 1;
+
+// ---------------------------------------------------------------------------
+// THE TEN-POINT LADDER (see 27-living-planet.js, which holds the club rungs).
+//
+// One rung is 4.5% of an XI rating. That number is MEASURED, not chosen: the
+// shipped engine was played head to head at fixed rating gaps and 1.20x is
+// already a 72% favourite, 1.35x a 90% one, and past 1.7x the match is over
+// before it starts. The whole world therefore has to live inside about 1.3x,
+// and the brief - a 9 beats a 3 about 85 times in 100 - fixes the rung at
+// 1.045, because six rungs is 1.30x and the curve puts 1.30x at 85%.
+//
+// Point 4 is 1.00: the old world's median club, so wages, transfer prices and
+// the books stay calibrated where they were.
+export const PT = 1.045;
+export function pt(points) { return Math.pow(PT, points - 4); }
 // THE NEWCOMER'S RUNG. Every human-claimed club is dealt (and, on a fresh
 // claim, levelled) to this strength x the nation tier: a solid Division Two
 // side - competitive at once among its own kind, with the whole pyramid still
 // to climb. The seating chart decides a bot's class; it never again decides
 // a person's.
-export const HUMAN_STR = 0.78;
+export const HUMAN_STR = 0.957;                // 3: a club founded this morning
 export const BASE_XI = 36000;                 // the old world's median XI rating
 
 // A LEAGUE IS AS STRONG AS ITS CRICKET CULTURE. Every nation's ten clubs used
@@ -144,11 +159,28 @@ export const BASE_XI = 36000;                 // the old world's median XI ratin
 // Cup windows, a friendly across borders - there an Australian club really
 // does outgun a Canadian one, and national sides inherit their true pecking
 // order from the domestic talent they are picked from.
-export const NAT_STR = {
-  sub: 1.10, aus: 1.08, eng: 1.07, pak: 1.05, rsa: 1.05, nzl: 1.04, slk: 1.02,
-  afg: 1.00, bgd: 0.98, win: 0.97, zim: 0.93, ire: 0.92, sco: 0.90, ned: 0.89,
-  wal: 0.88, ken: 0.87, usa: 0.87, nep: 0.86, can: 0.85
-};
+// FULL MEMBERS AND ASSOCIATES. Two bands, not nineteen rungs: a nation is
+// either one of the ten countries that have always played the long form or it
+// is an associate, and the difference is worth a rung and a half - so a
+// flagship is a 7 in a full member and a 5.5 in an associate, and every other
+// club in the league moves with it. It is deliberately MODEST at club level:
+// the gap the world was missing is between a national side and a club, not
+// between two clubs a continent apart.
+export const FULL_MEMBERS = ['eng', 'aus', 'sub', 'pak', 'rsa', 'nzl', 'slk', 'bgd', 'win', 'zim'];
+const FULL = new Set(FULL_MEMBERS);
+export const isFullMember = id => FULL.has(id);
+export const NAT_STR = Object.fromEntries(
+  ['eng', 'ire', 'ned', 'win', 'rsa', 'zim', 'aus', 'nzl', 'slk', 'sub', 'pak', 'afg',
+   'bgd', 'nep', 'sco', 'wal', 'ken', 'usa', 'can'].map(id => [id, FULL.has(id) ? 1 : pt(2.5)]));
+
+// AND WHAT A COUNTRY IS WORTH WHEN IT PLAYS AS A COUNTRY. A national side used
+// to have no strength of its own at all: nations.mjs picks the best fifteen
+// men out of that country's clubs, so an XI could never be better than the
+// clubs it came from - which is exactly why a second-division side from a
+// small nation read as the near-equal of a great one. Pulling on the shirt is
+// now worth something, and what it is worth is the nation's own rung.
+export const NAT_TEAM_PT = { full: 9, assoc: 8 };
+export function nationTeamStr(id) { return pt(FULL.has(id) ? NAT_TEAM_PT.full : NAT_TEAM_PT.assoc); }
 
 const xiOf = sq => {
   const best = sq.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 11);

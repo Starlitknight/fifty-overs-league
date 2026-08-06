@@ -33,6 +33,8 @@
 import { dayIx, seedOf, isWindowRound, WINDOWS, WINDOW_DAYS, windowRoundOfDay,
          INTL_HOUR, hourSettled, ROUNDS, isWorldCupSeason, cupDraw } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
+import { makeHost } from './enginehost.mjs';
+import { calibrate, nationTeamStr, BASE_XI } from './init-world.mjs';
 
 export const SQUAD_SIZE = 15;
 // THE BOARD WILL NOT GUT A CLUB. However many of a nation's best play for one
@@ -357,6 +359,34 @@ export function tiesOnDay(plan, inWindow) {
 
 // a banked list of {slot, player} as MEN, looked up in the squads they came
 // from. A man who has since left cricket simply is not there.
+// THE BADGE.
+//
+// A national side used to have no strength of its own: these fifteen are
+// looked up in the club squads they were picked from, so an XI could never be
+// better than the clubs it came out of. That is the whole reason a second
+// division side from a small nation read as the near-equal of a great one -
+// the great one WAS its clubs. Pulling on the shirt is now worth something,
+// and what it is worth is the nation's own rung on the ten-point ladder: a 9
+// for a full member, an 8 for an associate, against a flagship club's 7.
+//
+// It is applied here because this is the one place an international XI is ever
+// assembled - the tours, the World Cup and every page that shows a squad all
+// come through it, so what a phone displays is what the umpire plays.
+let BADGE_HOST = null;
+function badgeHost() { return (BADGE_HOST = BADGE_HOST || makeHost()); }
+export function badgeUp(country, men) {
+  if (!men || men.length < 11) return men;
+  try {
+    const best = men.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 11);
+    const have = best.reduce((s, p) => s + (p.rating || 0), 0) / Math.max(1, best.length);
+    const want = BASE_XI * nationTeamStr(country);
+    if (!(have > 0) || Math.abs(want / have - 1) < 0.01) return men;
+    // the men are copied first: these objects are the club's own players, and
+    // a country lifting them must not lift the club they go back to
+    return calibrate(badgeHost(), men.map(p => ({ ...p, skills: { ...(p.skills || {}) } })), want);
+  } catch (e) { return men; }
+}
+
 async function menFor(pool, country, named) {
   if (!named || !named.length) return [];
   const clubs = (await pool.query(
@@ -367,7 +397,7 @@ async function menFor(pool, country, named) {
     const p = (bySlot[r.slot] || []).find(x => x && x.name === r.player);
     if (p) out.push(p);
   }
-  return out;
+  return badgeUp(country, out);
 }
 
 // the fifteen as men, not names: the banked squad looked up in the squads

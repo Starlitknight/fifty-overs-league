@@ -147,8 +147,15 @@ test('a strong cricket nation out-rates a weak one; every league stays as compet
              spread: Math.max(...rs) / Math.min(...rs) };
   };
   const aus = meanOf('aus'), ned = meanOf('ned'), engL = meanOf('eng'), nep = meanOf('nep');
-  assert.ok(aus.mean > ned.mean * 1.15, 'an Australian league day is harder than a Dutch one');
-  assert.ok(engL.mean > nep.mean * 1.2, 'and an English one than a Nepali one');
+  // A FULL MEMBER'S LEAGUE IS HARDER THAN AN ASSOCIATE'S, BUT ONLY MODESTLY.
+  // This used to demand 15% and 20% - the old design, where the nation tier
+  // did most of the work at club level. It is now worth a rung and a half
+  // (about 7%): a flagship is a 7 in a full member and a 5.5 in an associate,
+  // and the gap the world was missing is between a NATIONAL side and a club,
+  // not between two clubs a continent apart.
+  assert.ok(aus.mean > ned.mean * 1.04, 'an Australian league day is harder than a Dutch one');
+  assert.ok(engL.mean > nep.mean * 1.04, 'and an English one than a Nepali one');
+  assert.ok(aus.mean < ned.mean * 1.12, 'but only by the rung and a half it is designed to be');
   // the tier is the DESIGNED ratio, not an accident
   assert.ok(Math.abs(aus.mean / ned.mean - NAT_STR.aus / NAT_STR.ned) < 0.06,
     'the gap between leagues is the calibrated tier');
