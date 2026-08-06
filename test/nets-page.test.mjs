@@ -132,6 +132,34 @@ test('the four things the redesign removed are gone', () => {
   assert.ok(!/>\s*\d+\s*\/\s*\d+\s*&middot;/.test(html), 'no man carries a session count');
 });
 
+test('the page explains itself with nothing but the numbers', () => {
+  // EVERY REMOVAL ASKED FOR, IN ONE PLACE. The nets are a chore you visit to
+  // set a squad and leave; each of these was a paragraph standing between the
+  // manager and that job, and none of them is coming back by accident.
+  const gone = [
+    'a session is always a session',
+    'the eleven who play bank the full session',
+    'Captaincy and experience are never trained',
+    'The book of the nets is written by the world update',
+    'One man, skill by skill, round by round',
+    'steepest part of the curve',
+    'Every man works the programme you set him',
+    'One programme a man'
+  ];
+  for (const crew of ['sen', 'yth']) {
+    for (const view of ['climb', 'thenNow', 'growing', 'work', 'age']) {
+      const html = draw(view, undefined, crew);
+      for (const g of gone) {
+        assert.ok(html.indexOf(g) < 0, crew + '/' + view + ' has grown the sermon back: "' + g + '"');
+      }
+      // and nothing anywhere is a NaN, which is what a mangled concatenation
+      // looks like on a page that is otherwise all numbers
+      assert.ok(html.indexOf('NaN') < 0, crew + '/' + view + ' printed a NaN');
+      assert.ok(html.indexOf('undefined') < 0, crew + '/' + view + ' printed an undefined');
+    }
+  }
+});
+
 test('a focus offers exactly the skills his programme trains, and no others', () => {
   const html = draw(null);
   // Alan Frost is a specialist bat, so he opens on Batting:
@@ -169,13 +197,13 @@ test('every chart view draws, on a full book and on none at all', () => {
     ['thenNow', 'Then &amp; now', 'fo-t2-radar'],
     ['growing', 'Who is growing', 'fo-t2-bars'],
     ['work', 'Where the work went', 'fo-t2-svg flat'],
-    ['age', 'Growth against age', 'plotted on the age']
+    ['age', 'Growth against age', "fill-opacity='.55'"]
   ];
   for (const [v, title, mark] of VIEWS) {
     const full = draw(v);
     assert.ok(typeof full === 'string' && full.length > 500, v + ': the page drew with a book');
     assert.ok(full.indexOf('fo-t2-bay') >= 0, v + ': the bay is on the page');
-    assert.ok(full.indexOf(title) >= 0, v + ': the bay is titled "' + title + '"');
+    assert.ok(full.indexOf('>' + title + '<') >= 0, v + ': the picker names the view "' + title + '"');
     assert.ok(full.indexOf(mark) >= 0, v + ': it drew ' + v + ' and not another chart');
     assert.ok(full.indexOf(`value='${v}' selected`) >= 0, v + ': the picker stands on it');
     // AND NOTHING FORECASTS. Read the bay's own body, not the page: a
@@ -260,8 +288,8 @@ test('the two crews are two tabs, and each holds only its own men', () => {
   const sen = draw('climb', undefined, 'sen');
   assert.ok(sen.indexOf("data-t2crew='sen'") >= 0 && sen.indexOf("data-t2crew='yth'") >= 0,
     'both tabs are offered');
-  assert.ok(sen.indexOf('Senior staff<i>' + SQUAD.length + '<') >= 0, 'the senior tab counts the five men');
-  assert.ok(sen.indexOf('The academy<i>' + BOYS.length + '<') >= 0, 'and the academy tab counts the three boys');
+  assert.ok(sen.indexOf('Senior squad</span><i>' + SQUAD.length + '<') >= 0, 'the senior tab counts the five men');
+  assert.ok(sen.indexOf('Youth squad</span><i>' + BOYS.length + '<') >= 0, 'and the youth tab counts the three boys');
   for (const p of SQUAD) assert.ok(sen.indexOf(`data-t2p='${p.name}'`) >= 0, p.name + ' is on the senior tab');
   for (const b of BOYS) assert.ok(sen.indexOf(`data-t2p='${b.name}'`) < 0, b.name + ' is not');
 
@@ -270,7 +298,13 @@ test('the two crews are two tabs, and each holds only its own men', () => {
   for (const p of SQUAD) assert.ok(yth.indexOf(`data-t2p='${p.name}'`) < 0, p.name + ' is not');
   // and each boy gets the same two decisions a senior gets
   for (const b of BOYS) assert.ok(yth.indexOf(`data-t2f='${b.name}'`) >= 0, b.name + ' has a focus picker');
-  assert.ok(yth.indexOf('steepest part of the curve') >= 0, 'and the academy tab says why it matters');
+  assert.ok(yth.indexOf('>Colt</span>') >= 0, 'and the youth tab calls them colts, not players');
+  assert.ok(sen.indexOf('>Player</span>') >= 0, 'while the senior tab calls them players');
+  // the lit rule follows the choice rather than the page redrawing a box
+  assert.ok(sen.indexOf("class='fo-t2-ink'") >= 0, 'the rule sits under the senior squad');
+  assert.ok(yth.indexOf("class='fo-t2-ink r'") >= 0, 'and slides under the youth squad');
+  assert.ok(yth.indexOf("aria-selected='true'") >= 0 && yth.indexOf("role='tablist'") >= 0,
+    'and the pair reads as a tablist to anything that is not looking at it');
 });
 
 test('a club with no boys is not shown a door to an empty room', () => {
