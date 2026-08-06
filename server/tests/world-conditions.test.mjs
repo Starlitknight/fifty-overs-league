@@ -147,16 +147,15 @@ test('a strong cricket nation out-rates a weak one; every league stays as compet
              spread: Math.max(...rs) / Math.min(...rs) };
   };
   const aus = meanOf('aus'), ned = meanOf('ned'), engL = meanOf('eng'), nep = meanOf('nep');
-  // A FULL MEMBER'S LEAGUE IS HARDER THAN AN ASSOCIATE'S. Three and a half
-  // rungs of the club ladder, about 36%: the best club in the Netherlands is
-  // a mid-table Division One side in England. It is bounded on BOTH sides
-  // because the number is load-bearing - too small and a country cannot
-  // out-rank its own best club (a national XI is capped near 47,500, where
-  // run-scoring saturates), too large and an associate's league stops being
-  // cricket. See ASSOC_STR in init-world.mjs.
-  assert.ok(aus.mean > ned.mean * 1.20, 'an Australian league day is harder than a Dutch one');
-  assert.ok(engL.mean > nep.mean * 1.20, 'and an English one than a Nepali one');
-  assert.ok(aus.mean < ned.mean * 1.55, 'but only by the three and a half rungs it is designed to be');
+  // A FULL MEMBER'S LEAGUE IS HARDER THAN AN ASSOCIATE'S, by about an eighth.
+  // It is bounded on BOTH sides because the number is load-bearing, and the
+  // FLOOR is the binding one: the engine stops ranking sides below about
+  // 26,000 (calibrate pegs skills at 2 and the ladder inverts), so an
+  // associate's second division has to stay above it. That caps the tier at
+  // roughly a rung and a quarter. See ASSOC_STR in init-world.mjs.
+  assert.ok(aus.mean > ned.mean * 1.08, 'an Australian league day is harder than a Dutch one');
+  assert.ok(engL.mean > nep.mean * 1.08, 'and an English one than a Nepali one');
+  assert.ok(aus.mean < ned.mean * 1.25, 'but only by the rung and a quarter the floor affords');
   // the tier is the DESIGNED ratio, not an accident
   assert.ok(Math.abs(aus.mean / ned.mean - NAT_STR.aus / NAT_STR.ned) < 0.06,
     'the gap between leagues is the calibrated tier');

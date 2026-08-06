@@ -149,14 +149,17 @@ export const PT = 1.093;
 // what point 4 is worth against BASE_XI. The ladder no longer hangs off 1.00
 // at the median, because the band the engine still answers in tops out near
 // 39,000 for a club - see 27-living-planet.js for the measurement.
-export const PT4 = 0.8296;
+// Re-anchored when the ladder was lifted off the floor: point 4 is now the
+// seam between the two divisions, which is where the club ladder's own
+// FO_D2_LADDER[0] sits. pt() stays the documented points-to-strength mapping.
+export const PT4 = 0.950;
 export function pt(points) { return PT4 * Math.pow(PT, points - 4); }
 // THE NEWCOMER'S RUNG. Every human-claimed club is dealt (and, on a fresh
 // claim, levelled) to this strength x the nation tier: a solid Division Two
 // side - competitive at once among its own kind, with the whole pyramid still
 // to climb. The seating chart decides a bot's class; it never again decides
 // a person's.
-export const HUMAN_STR = pt(3);                // 0.759: a club founded this morning
+export const HUMAN_STR = pt(3);                // 0.869: a club founded this morning
 export const BASE_XI = 36000;                 // the old world's median XI rating
 
 // A LEAGUE IS AS STRONG AS ITS CRICKET CULTURE. Every nation's ten clubs used
@@ -188,7 +191,12 @@ export const isFullMember = id => FULL.has(id);
 // it is a RATIO between two points on the ladder and never the ladder's base.
 // (It was once written pt(2.5), which silently folded PT4 in and moved every
 // associate club whenever the club ladder was re-anchored.)
-export const ASSOC_STR = Math.pow(PT, -3.5);   // 0.733
+// AND IT CANNOT BE BIG, because the whole world has to fit above the floor.
+// Three and a half rungs put an associate's second division at 18,200 with its
+// skills pegged at 2 - inside the band where the ladder inverts (see
+// 27-living-planet.js). One and a quarter rungs is what the band affords: it
+// keeps the weakest club in the world at 28,400, where a rung still converts.
+export const ASSOC_STR = 0.885;                // ~1.25 rungs
 export const NAT_STR = Object.fromEntries(
   ['eng', 'ire', 'ned', 'win', 'rsa', 'zim', 'aus', 'nzl', 'slk', 'sub', 'pak', 'afg',
    'bgd', 'nep', 'sco', 'wal', 'ken', 'usa', 'can'].map(id => [id, FULL.has(id) ? 1 : ASSOC_STR]));
@@ -206,8 +214,23 @@ export const NAT_STR = Object.fromEntries(
 // that a rung converts - 47,500 against 38,000, which measures 91 wins in 100
 // over 100 matches. A flagship at 39,000 still gets a real game against
 // either: it takes 31 off Australia's country and 29 off the Netherlands'.
-export const NAT_TEAM = { full: 47500 / 36000, assoc: 38000 / 36000 };
-export function nationTeamStr(id) { return FULL.has(id) ? NAT_TEAM.full : NAT_TEAM.assoc; }
+// EVERY COUNTRY ITS OWN RUNG, not two bands. The full members used to share
+// one number, so Australia against India was a coin toss decided by which
+// squad the generator happened to deal - a pecking order the world implied
+// and never expressed. They are placed directly, loosely against real one-day
+// standing. The spread is DELIBERATELY NARROW: a national XI is capped near
+// 47,500 (run-scoring saturates above it) and has to stay above its own best
+// club at 39,000, so the ten of them share about 44,000 to 47,500. That buys
+// roughly 55-60% for the top nation over the bottom one - a real edge, not a
+// procession, which is as much as the band allows.
+export const NAT_TEAM_XI = {
+  sub: 47500, aus: 47500, rsa: 46500, eng: 46500, nzl: 46000,
+  pak: 45500, slk: 45000, win: 44500, bgd: 44000, zim: 44000
+};
+export const ASSOC_TEAM_XI = 41000;
+export function nationTeamStr(id) {
+  return (FULL.has(id) ? (NAT_TEAM_XI[id] || 44000) : ASSOC_TEAM_XI) / BASE_XI;
+}
 
 const xiOf = sq => {
   const best = sq.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 11);

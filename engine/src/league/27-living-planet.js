@@ -288,8 +288,22 @@
   // DIVISION TWO: the founding seats, 4.0 down to 2.0, overlapping the first
   // division's floor at the seam the way real second flights do. Both shuffled
   // per nation, pure functions of the nation.
-  var FO_STR_LADDER = [0.907, 0.892, 0.878, 0.864, 0.851, 0.837, 0.824];
-  var FO_D2_LADDER = [0.824, 0.803, 0.783, 0.764, 0.745, 0.726, 0.708, 0.691];
+  //
+  // THE FLOOR IS NOT A TASTE CALL - IT IS WHERE THE ENGINE STOPS RANKING.
+  // Measured on the shipped build, one 1.19x pair of real squads moved up and
+  // down the scale with the ratio held fixed:
+  //     18,000 -> 41%   22,000 -> 36%   26,000 -> 57%   30,000 -> 67%
+  //     34,000 -> 69%   39,000 -> 78%   44,000 -> 74%
+  // Below about 26,000 the LADDER INVERTS - the better side loses more often
+  // than it wins - because calibrate() clamps a skill at 2 and at those targets
+  // it pegs three dozen of them, squashing the two squads into the same team.
+  // Run totals barely move down there either (255-262 against 247-265), so
+  // rating has stopped buying runs at all. The old ladder put a second-division
+  // associate club at 18,200 with its skills on the floor, which is why an
+  // associate's flagship could finish bottom two of its own league.
+  // Every club in the world now sits at 28,000 or above.
+  var FO_STR_LADDER = [1.020, 1.008, 0.997, 0.985, 0.973, 0.962, 0.950];
+  var FO_D2_LADDER = [0.950, 0.941, 0.933, 0.924, 0.916, 0.907, 0.899, 0.890];
 
   // England is named for its counties, not its cities (and three of them play
   // in London), so its identities are seated by slot - all sixteen of them.
