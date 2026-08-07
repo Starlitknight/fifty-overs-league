@@ -777,6 +777,29 @@ test('015: watched IS recorded - the banked living patch replays the same match'
     { name: m.home_name, players: applyLiving(await squadOf(m.home_slot), m.living[m.home_name], host) },
     { name: m.away_name, players: applyLiving(await squadOf(m.away_slot), m.living[m.away_name], host) },
     cond.pitch, Number(m.seed), m.orders, cond.weather);
+  if (facts(replay) !== facts(m.result_canonical)) {
+    // DIAGNOSTIC: say WHAT differs about the two sides, not just that the
+    // cricket did. Talent state is the newest thing that can leak across a
+    // match boundary and it has leaked twice already.
+    const patchH = m.living[m.home_name], patchA = m.living[m.away_name];
+    for (const [nm, slot, patch] of [[m.home_name, m.home_slot, patchH], [m.away_name, m.away_slot, patchA]]) {
+      const now = await squadOf(slot);
+      const lines = [];
+      for (const p of now) {
+        const L = patch[p.name];
+        const bits = [];
+        if (!L) bits.push('NOT IN PATCH');
+        if (p.talEarned) bits.push('earned=' + p.talEarned);
+        if (p.talProg) bits.push('prog=' + JSON.stringify(p.talProg));
+        if (p.talCarry) bits.push('carry=' + JSON.stringify(p.talCarry));
+        if (L && L.te) bits.push('patch.te=' + L.te);
+        if (L && L.tp) bits.push('patch.tp=' + JSON.stringify(L.tp));
+        if (bits.length) lines.push('   ' + p.name + ': ' + bits.join(' | '));
+      }
+      console.log('### ' + nm + ' (slot ' + slot + '), squad ' + now.length + ', patch ' + Object.keys(patch).length);
+      lines.slice(0, 12).forEach(l => console.log(l));
+    }
+  }
   assert.equal(facts(replay), facts(m.result_canonical), 'the broadcast is the match the world recorded');
 
   // and the patch is what makes it so: the pristine GENERATED squads, same
