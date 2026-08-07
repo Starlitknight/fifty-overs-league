@@ -778,6 +778,25 @@ test('015: watched IS recorded - the banked living patch replays the same match'
     { name: m.away_name, players: applyLiving(await squadOf(m.away_slot), m.living[m.away_name], host) },
     cond.pitch, Number(m.seed), m.orders, cond.weather);
   if (facts(replay) !== facts(m.result_canonical)) {
+    // WHICH SIDE OF THE WIRE IS WRONG? Replay the same match twice more: once
+    // with every trace of talent learning removed, and once with the patch's
+    // own numbers. Whichever reproduces the book is the state the match was
+    // actually played in.
+    const bare = sq => sq.map(p => { const q = { ...p };
+      if (q.talEarned && Array.isArray(q.talents)) q.talents = q.talents.filter(t => t !== q.talEarned);
+      delete q.talEarned; delete q.talProg; delete q.talCarry; return q; });
+    const noTal = host.runMatch(
+      { name: m.home_name, players: bare(await squadOf(m.home_slot)) },
+      { name: m.away_name, players: bare(await squadOf(m.away_slot)) },
+      cond.pitch, Number(m.seed), m.orders, cond.weather);
+    console.log('### replay with NO talent state matches the book? ' +
+      (facts(noTal) === facts(m.result_canonical)));
+    const asIs = host.runMatch(
+      { name: m.home_name, players: await squadOf(m.home_slot) },
+      { name: m.away_name, players: await squadOf(m.away_slot) },
+      cond.pitch, Number(m.seed), m.orders, cond.weather);
+    console.log("### replay with TODAY's squads untouched matches the book? " +
+      (facts(asIs) === facts(m.result_canonical)));
     // DIAGNOSTIC: say WHAT differs about the two sides, not just that the
     // cricket did. Talent state is the newest thing that can leak across a
     // match boundary and it has leaked twice already.
