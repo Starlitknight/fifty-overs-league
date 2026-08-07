@@ -85,7 +85,12 @@ const PLAY_TABLES = [
 ];
 // the world itself: its countries, its clubs, who has claimed them, the
 // calendar, and the migration ledger. These are not play and are left alone.
-const WORLD_TABLES = ['countries', 'clubs', 'claims', 'seasons', 'worlds', 'schema_migrations'];
+//   notif_seen is a PERSON'S state, not the world's: how far through his own
+//   news a manager has read. A redeal gives him a new club to read about; it
+//   does not un-read what he read yesterday, and wiping it would spring every
+//   old notification back into his bell as unread.
+const WORLD_TABLES = ['countries', 'clubs', 'claims', 'seasons', 'worlds', 'schema_migrations',
+  'notif_seen'];
 
 const pool = makePool();
 

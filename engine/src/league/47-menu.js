@@ -27,6 +27,7 @@
   // idiom rather than a grid of colour emoji, because a painted cricket
   // almanack should not look like a phone's app drawer.
   var G = {
+    bell: "<path d='M18 8.4a6 6 0 1 0-12 0c0 6.6-2.8 8.8-2.8 8.8h17.6S18 15 18 8.4z'/><path d='M13.7 20.6a2 2 0 0 1-3.4 0'/>",
     house: "<path d='M3.6 10.4 12 3.6l8.4 6.8'/><path d='M5.6 9.2V20a.6.6 0 0 0 .6.6h11.6a.6.6 0 0 0 .6-.6V9.2'/><path d='M9.8 20.6V15h4.4v5.6'/>",
     people: "<circle cx='9.4' cy='8' r='3.2'/><path d='M3.8 20c0-3 2.5-5 5.6-5s5.6 2 5.6 5'/><path d='M15.6 5.2a3.2 3.2 0 0 1 0 5.6'/><path d='M17 15.4c2.2.5 3.7 2.2 3.7 4.6'/>",
     net: "<rect x='3.6' y='5.2' width='16.8' height='13.6' rx='1.6'/><path d='M9.2 5.4v13.2M14.8 5.4v13.2'/><path d='M3.8 9.6h16.4M3.8 14.4h16.4'/>",
@@ -58,6 +59,7 @@
   var MAP = [
     { k: "Your club", rooms: [
       ["home", "house", "Home ground"],
+      ["news", "bell", "News"],
       ["squad", "people", "The squad"],
       ["training", "net", "The nets"],
       ["academy", "star", "Youth Academy"],
