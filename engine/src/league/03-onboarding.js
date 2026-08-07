@@ -615,9 +615,26 @@
     (starter.talents || []).forEach(function (t) { held[t] = (held[t] || 0) + 1; });
     players.forEach(function (p) {
       if (p === starter) return;   // the captain's talents were set with his flavour
+      // A TALENT IS A GIFT, AND A GIFT THREE MEN IN FOUR HAVE IS NOT ONE.
+      //
+      // The old odds handed a talent to 75.3% of the world - 1.12 per man
+      // across 3,840 cricketers - so the chip on the roster row said almost
+      // nothing about a player except which of the seventeen he happened to
+      // draw. What is rare is what gets scouted, bought and talked about.
+      //
+      // About one man in ten is born with one now, and a second is genuinely
+      // exceptional. The odds lean with quality, because the gift and the
+      // cricketer tend to arrive together.
+      //
+      // talentExtra WEIGHTS the draw, it no longer guarantees it. As a flat +1
+      // it handed a talent to every single man at a Prodigy club - a hundred
+      // per cent of a squad, which is the opposite of rare and was on its own
+      // most of the overshoot. The archetype is still unmistakably the one full
+      // of gifted boys; it is just no longer certain about every one of them.
       var q = qOf[p.name] || 0.4;
-      var n = q > 0.55 ? (rnd() < 0.6 ? 2 : 1) : (rnd() < 0.45 ? 1 : 0);
-      if (A.talentExtra) n = Math.min(3, n + A.talentExtra);
+      var odds = 0.045 + 0.075 * Math.max(0, Math.min(1, (q - 0.25) / 0.7));
+      if (A.talentExtra) odds *= (1 + 1.6 * A.talentExtra);
+      var n = rnd() < odds ? (rnd() < 0.05 ? 2 : 1) : 0;
       var rank = {};
       (A.talents || []).forEach(function (t, i) { rank[t] = i; });
       var score = function (t) {
