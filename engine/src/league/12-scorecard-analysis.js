@@ -2647,7 +2647,7 @@
       // to the true screen edges, so lift the clip while it is up
       "html body.fo-home-on #page,html body.ftpskin.fo-home-on #page{overflow:visible !important}" +
       "body.fo-home-on #fo-clock{display:none}" +
-      ".fo-hg2 .hg-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 42%;animation:foHgIn .9s ease-out}" +
+      ".fo-hg2 .hg-bg{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 42%;transform:scale(1.18);animation:foHgIn .9s ease-out}" +
       "@keyframes foHgIn{from{opacity:0}to{opacity:1}}" +
       "@keyframes foHgUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}" +
       ".fo-hg2 .hg-id{animation:foHgUp .7s .15s both}" +
@@ -2707,8 +2707,27 @@
       // the whole painting visibly jumped. Fixed, it cannot be moved by
       // anything the topbar does.
       "html body #page .fo-hg2.fo-home2{position:fixed;top:0;left:0;right:0;bottom:0;height:100dvh;margin:0 !important;z-index:1}" +
-      ".fo-home2 .hg-bg{animation:foHgIn 1.4s ease-out,foHgDrift 34s ease-in-out 1.4s infinite alternate;object-position:50% 46%}" +
-      "@keyframes foHgDrift{from{transform:scale(1.06) translate3d(0,0,0)}to{transform:scale(1.13) translate3d(-2.2%,-1.4%,0)}}" +
+      // THE PAINTING HAS A VIGNETTE, SO THE PAINTED EDGE NEVER REACHES THE GLASS.
+      //
+      // Nearly every home ground painting is darkened toward its edges - it is
+      // in the art, not in the CSS. Measured across all 33: the outer two per
+      // cent of the left edge runs 37 against 94 in the middle for the sunbreak
+      // match, 36 against 85 for the late afternoon, 58 against 114 at summer
+      // noon. On a phone this is invisible, because a tall viewport makes
+      // object-fit:cover crop the sides away anyway. On a desktop the image is
+      // scaled to exactly the viewport width, nothing is cropped, and the
+      // painted vignette lands hard against the left of the screen where it
+      // reads - correctly - as a great shadow down the side of the page.
+      //
+      // So the image is always held wider than its frame. A scale of 1.18
+      // crops nine per cent off each side, which is where the vignette lives,
+      // and the drift runs above that rather than through it. The floor is on
+      // the ELEMENT and not only in the keyframes, so a reader who has asked
+      // for no motion - the rule below turns the animation off entirely - is
+      // not the one person shown the edge. Source art is 3344px wide against a
+      // 1912px frame, so even at the top of the drift it is still oversampled.
+      ".fo-home2 .hg-bg{animation:foHgIn 1.4s ease-out,foHgDrift 34s ease-in-out 1.4s infinite alternate;object-position:50% 46%;transform:scale(1.18)}" +
+      "@keyframes foHgDrift{from{transform:scale(1.18) translate3d(0,0,0)}to{transform:scale(1.26) translate3d(-1.8%,-1.2%,0)}}" +
       "@media(prefers-reduced-motion:reduce){.fo-home2 .hg-bg{animation:foHgIn .9s ease-out !important}}" +
       ".fo-home2 .hg-scrim{background:linear-gradient(to top,rgba(9,14,24,.44),rgba(9,14,24,.09) 32%,transparent 58%)}" +
       ".fo-home2 .hg-bloom{position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:screen;opacity:0;background:radial-gradient(58% 42% at 76% 4%,color-mix(in srgb,#ffe0a0 55%,transparent),transparent 60%),radial-gradient(70% 46% at 12% 108%,color-mix(in srgb,var(--lac,#EBC271) 34%,transparent),transparent 62%)}" +

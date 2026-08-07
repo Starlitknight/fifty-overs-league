@@ -281,12 +281,20 @@
           .then(function (rows) {
             var g = rows && rows[0] && (rows[0].generation | 0);
             if (!g) return;
+            var wasGuessing = false;
+            try { wasGuessing = !!(window.__foWT && window.__foWT.guessedSquad); } catch (eG) {}
             window.__foWorldGen = g;
             // every squad derived before this answer came back was derived from
             // the wrong hand, so nothing may be cached across it
             try { if (window.__foWT && window.__foWT.forgetSquads) window.__foWT.forgetSquads(); } catch (eF) {}
             if (cb) cb(g);
-            try { if (typeof window.route === "function") window.route(); } catch (eR) {}
+            // AND ONLY REPAINT A PAGE THAT WAS ACTUALLY GUESSING. Routing on
+            // every cold load put a second full rebuild in front of every
+            // manager to correct a page that, nine times out of ten, had not
+            // derived a foreign squad at all - the club home does not, the
+            // squad does not, the books do not. A blink is a real cost and it
+            // is not worth paying on the pages that were already right.
+            if (wasGuessing) { try { if (typeof window.route === "function") window.route(); } catch (eR) {} }
           })
           .catch(function () { asked = false; });
       } catch (e) { asked = false; }

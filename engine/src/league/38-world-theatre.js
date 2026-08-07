@@ -102,11 +102,15 @@
   // of fifteen cricketers who do not exist anywhere. It arrives asynchronously
   // (52-served-truth fetches it), so anything derived before it lands is
   // provisional - which is why the cache is dropped when it does.
-  var SQ_CACHE = {}, SQ_GEN = null;
-  function forgetSquads() { SQ_CACHE = {}; SQ_GEN = null; }
+  var SQ_CACHE = {}, SQ_GEN = null, GUESSED = false;
+  function forgetSquads() { SQ_CACHE = {}; SQ_GEN = null; GUESSED = false; }
   function serverSquad(rid, slot) {
     var cfg = regionCfg(rid); if (!cfg) return null;
     try {
+      // a squad derived before the world has said which hand it is playing is
+      // a GUESS, and the page that drew it is the only page worth repainting
+      // when the answer lands
+      if (window.__foWorldGen == null) GUESSED = true;
       var gen = (window.__foWorldGen | 0) || 1;
       if (gen !== SQ_GEN) { SQ_CACHE = {}; SQ_GEN = gen; }
       var key = rid + "|" + slot;
@@ -677,7 +681,8 @@
 
   // the server mirror, exported: nation pages list the same fixtures, the
   // same calendar and the same live states the theatre plays from
-  window.__foWT = { flagOf: flagOf, forgetSquads: forgetSquads, serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror, divMembers: divMembers,
+  window.__foWT = { flagOf: flagOf, forgetSquads: forgetSquads,
+    get guessedSquad() { return GUESSED; }, serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror, divMembers: divMembers,
     serverSquad: serverSquad, applyLiving: applyLiving,
     // THE MATCH ON RECORD IS NOT THE MATCH FROM A CLEAN SEED. The umpire plays
     // each round with the men as they were that day - the experience, the
