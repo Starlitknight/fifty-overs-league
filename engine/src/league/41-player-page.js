@@ -552,7 +552,6 @@
             "<i>" + E(talNm(L.t)) + "</i>" +
             "<em>" + chN + "%</em>" +
             "<u><b style='width:" + Math.max(2, pctN) + "%'></b></u>" +
-            "<s>" + L.n.toLocaleString() + " of " + L.cap.toLocaleString() + " balls that suited it</s>" +
             "</div>";
         }).join("");
       }
@@ -565,11 +564,6 @@
         "<div class='fo-pp-card'><h3>On his way to" +
           (top ? "<span>" + Math.round(top.ch * 100) + "% &middot; " + E(talNm(top.t)) + "</span>" : "") +
         "</h3>" + learnBody +
-        (learning.length && !earned
-          ? "<p class='fo-pp-dim'>The number is how often he already does it: six tenths means six balls in ten " +
-            "that suit it. It moves a tenth at a time, so the bar runs ahead of it between steps. " +
-            "At the end of the bar it stops being a chance and is his for good.</p>"
-          : "") +
         "</div></div>" +
         "<div class='fo-pp-rail'>" +
         "<div class='fo-pp-card'><h3>What he has" + (has.length ? "<span>" + has.length + "</span>" : "") + "</h3>" +
@@ -1170,12 +1164,11 @@
     // read straight off, the chance the talent fires on the next ball that
     // suits it. The count underneath is there so it reads as cricket he has
     // played rather than a loading bar.
-    "html body #page .fo-pp-learn{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin:0 0 13px}",
+    "html body #page .fo-pp-learn{display:grid;grid-template-columns:1fr auto;gap:3px 10px;margin:0 0 11px}",
     "html body #page .fo-pp-learn i{font:600 12.5px/1.3 Inter,sans-serif;font-style:normal;color:#141C28}",
     "html body #page .fo-pp-learn em{font:700 12.5px/1.3 Oswald,sans-serif;font-style:normal;color:#B08409;font-variant-numeric:tabular-nums;text-align:right}",
     "html body #page .fo-pp-learn u{grid-column:1/-1;display:block;height:5px;border-radius:3px;background:rgba(20,28,40,.09);text-decoration:none;overflow:hidden}",
     "html body #page .fo-pp-learn u b{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#E8B96A,#C9A24B)}",
-    "html body #page .fo-pp-learn s{grid-column:1/-1;font:400 10.5px/1.3 Inter,sans-serif;color:rgba(20,28,40,.46);text-decoration:none;font-variant-numeric:tabular-nums}",
     // a talent he EARNED is not a talent he was dealt, and the card says which
     "html body #page .fo-pp-talk.won{background:#14243A;color:#E8B96A}",
     "html body #page .fo-pp-body{display:block}",
@@ -1208,10 +1201,21 @@
     "html body #page .fo-pp-bar em{text-align:right;font:600 11.5px/1 Oswald,sans-serif;font-style:normal;color:#141C28;font-variant-numeric:tabular-nums}",
     "html body #page .fo-pp-adv{margin-top:12px}",
     "html body #page .fo-pp-adv summary{font:600 11.5px/1 Inter,sans-serif;color:var(--nac);cursor:pointer}",
-    "html body #page .fo-pp-advg{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:5px;margin-top:9px}",
-    "html body #page .fo-pp-advg span{display:flex;justify-content:space-between;gap:6px;font:500 11px/1.4 Inter,sans-serif;color:rgba(20,28,40,.6);border-bottom:1px solid rgba(20,28,40,.06);padding:3px 0}",
+    // WHICH NUMBER BELONGS TO WHICH LABEL.
+    //
+    // The pairs were ruled rows in a two-column grid with five pixels between
+    // the columns, and the value was pushed hard to the right of its own cell -
+    // so on a phone "vsPace 50" sat flush against "vsSpin", and the 50 read as
+    // the spin figure. Reported from a phone, and it was right: nothing in the
+    // layout said where one pair ended and the next began.
+    //
+    // Each pair is a block of its own now, with its own ground and its own
+    // border. The reading is unambiguous however many columns the width
+    // happens to give, which a wider gutter alone could not promise.
+    "html body #page .fo-pp-advg{display:grid;grid-template-columns:repeat(auto-fit,minmax(128px,1fr));gap:6px;margin-top:9px}",
+    "html body #page .fo-pp-advg span{display:flex;justify-content:space-between;align-items:baseline;gap:12px;font:500 11px/1.4 Inter,sans-serif;color:rgba(20,28,40,.62);background:rgba(20,28,40,.04);border:1px solid rgba(20,28,40,.08);border-radius:8px;padding:5px 10px}",
     "html body #page .fo-pp-advg.rest{margin:9px 0 4px}",
-    "html body #page .fo-pp-advg.rest span{color:#141C28;border-bottom-color:rgba(201,162,75,.4)}",
+    "html body #page .fo-pp-advg.rest span{color:#141C28;background:rgba(201,162,75,.13);border-color:rgba(201,162,75,.42)}",
     "html body #page .fo-pp-advg.rest i{color:rgba(20,28,40,.5)}",
     "html body #page .fo-pp-advg b{color:#141C28;font-variant-numeric:tabular-nums}",
     // mini career, meters, story, positions
