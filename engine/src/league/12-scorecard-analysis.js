@@ -2729,9 +2729,10 @@
       // for no motion - the rule below turns the animation off entirely - is
       // not the one person shown the edge. Source art is 3344px wide against a
       // 1912px frame, so even at the top of the drift it is still oversampled.
-      ".fo-home2 .hg-bg{animation:foHgIn 1.4s ease-out,foHgDrift 34s ease-in-out 1.4s infinite alternate;object-position:50% 46%;transform:scale(1.18)}" +
+      ".fo-home2 .hg-bg{animation:foHgDrift 34s ease-in-out infinite alternate;object-position:50% 46%;transform:scale(1.18);opacity:0;transition:opacity .34s ease-out}" +
+      ".fo-home2 .hg-bg.hg-lit{opacity:1}" +
       "@keyframes foHgDrift{from{transform:scale(1.18) translate3d(0,0,0)}to{transform:scale(1.26) translate3d(-1.8%,-1.2%,0)}}" +
-      "@media(prefers-reduced-motion:reduce){.fo-home2 .hg-bg{animation:foHgIn .9s ease-out !important}}" +
+      "@media(prefers-reduced-motion:reduce){.fo-home2 .hg-bg{animation:none !important;transition:none !important}}" +
       ".fo-home2 .hg-scrim{background:linear-gradient(to top,rgba(9,14,24,.44),rgba(9,14,24,.09) 32%,transparent 58%)}" +
       ".fo-home2 .hg-bloom{position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:screen;opacity:0;background:radial-gradient(58% 42% at 76% 4%,color-mix(in srgb,#ffe0a0 55%,transparent),transparent 60%),radial-gradient(70% 46% at 12% 108%,color-mix(in srgb,var(--lac,#EBC271) 34%,transparent),transparent 62%)}" +
       ".fo-home2 .hg-id{left:34px;bottom:96px;max-width:64%}" +
@@ -5476,9 +5477,26 @@
         // starts when the PAINTING ARRIVES, not when the element is made -
         // a fade that starts against an empty box makes a slow-loading
         // painting pop in abruptly at whatever opacity the clock reached
-        var anim0 = window.__foHgShown
-          ? " style='animation:foHgDrift 34s ease-in-out infinite alternate'"
-          : " style='animation:none;opacity:0' onload=\"this.style.cssText=''\"";
+        // THE ONE-FRAME FLASH OF THE FINISHED PAINTING.
+        //
+        // This is the blink on a first load and a hard refresh, and it is the
+        // reveal itself. The image was written with opacity:0 and animation
+        // suppressed, and its onload cleared style.cssText WHOLESALE - which
+        // drops the zero opacity and the suppression in the same instant. The
+        // element's opacity reverts to its CSS value of 1 immediately, while
+        // the fade-in keyframes only take effect on the next style resolution.
+        // So for one frame the finished painting is on the wall at full
+        // strength; then the animation starts from nothing and washes it in
+        // again. Appear, vanish, fade back: exactly one blink, on exactly the
+        // path that builds the element - which is why navigating to the page
+        // was already clean and arriving at it was not.
+        //
+        // There is no clearing of styles now and no keyframed entrance. The
+        // painting is hung at zero and lit by adding a class once the frame is
+        // decoded, so opacity only ever travels one way. A browser without
+        // decode() falls back to load, and a painting that never arrives is
+        // lit anyway rather than left invisible.
+        var anim0 = window.__foHgShown ? " class='hg-bg hg-lit'" : " class='hg-bg'";
         // THE HOME PAGE IS NEVER REBUILT, ONLY CORRECTED.
         //
         // It is drawn twice on purpose: once immediately from what the device
@@ -5501,13 +5519,25 @@
         window.__foHgShown = true;
         page.innerHTML =
           "<div class='fo-hg2 fo-home2" + (seen ? " hg-seen" : "") + "' data-hgv='" + E(v) + "' style='--lac:" + (region.ac || "#EBC271") + "'>" +
-          "<img class='hg-bg'" + anim0 + " src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
+          "<img" + anim0 + " src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
           "<div class='hg-grain'></div><div class='hg-scrim'></div><div class='hg-bloom'></div>" +
           "<div class='hg-id'>" + idHtml + "</div>" +
           "<div class='hg-bar'>" + barHtml + "</div></div>";
         // KEPT, NOT JUST DRAWN. The node itself is remembered so that the next
         // render can re-hang THIS painting rather than build another one.
         FO_HG_KEPT = page.querySelector(".fo-hg2.fo-home2");
+        (function () {
+          var bg0 = FO_HG_KEPT && FO_HG_KEPT.querySelector(".hg-bg");
+          if (!bg0 || bg0.classList.contains("hg-lit")) return;
+          var lit = false;
+          var light = function () { if (lit) return; lit = true; bg0.classList.add("hg-lit"); };
+          try {
+            if (bg0.decode) bg0.decode().then(light, light);
+            else if (bg0.complete) light();
+            else { bg0.addEventListener("load", light); bg0.addEventListener("error", light); }
+          } catch (eD0) { light(); }
+          setTimeout(light, 3000);          // never leave the wall bare
+        })();
       }
       try { document.body.classList.add("fo-home-on"); document.body.classList.remove("fo-boss-on"); document.body.classList.remove("fo-ov-on"); } catch (eBc) {}
       try { foHgFit(page.querySelector(".fo-hg2")); } catch (eF) {}
