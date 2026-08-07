@@ -105,7 +105,7 @@
         (window.__foPlanet.sidesOf(rid) || []).forEach(function (x) { if (x.slot === slot) sd = x; });
       } catch (eS) {}
       var g = __foGenArchetypeSquad("world1|" + rid + "|" + slot, cfg.nat,
-        (sd && sd.arch) || cfg.arch, slot === 0 ? cfg.capt : "general", null, (sd && sd.str) || 1);
+        (sd && sd.arch) || cfg.arch, null, (sd && sd.str) || 1);
       return (g && g.players) || null;
     } catch (e) { return null; }
   }

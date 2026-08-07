@@ -119,7 +119,7 @@ function makeTeam(seed, region, kind, name, idx, season) {
   // `gen` is the deterministic recipe for this team's REAL engine squad: the
   // world-timeline stays engine-free (just strings + a seed); the match adapter
   // materialises the full squad from it on demand.
-  const gen = { country: region.name, archId, captId: "general", seed: hash32(teamId + "|s" + season) };
+  const gen = { country: region.name, archId, seed: hash32(teamId + "|s" + season) };
   return { id: teamId, regionId: region.id, kind, name, human: false, strength: teamStrength(roster, kind === "boss" ? 6 : 0), roster, gen };
 }
 

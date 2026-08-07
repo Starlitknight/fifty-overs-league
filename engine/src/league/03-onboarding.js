@@ -116,58 +116,12 @@
       starter: { role: "allRounder", age: 27, talents: ["goldenArm", "busyRunner"] } }
   ];
 
-  // ---- the captain pool: six candidates, six characters -------------------
-  // Every candidate is franchise-grade in the squad's chosen mould, aged
-  // 24-31, with genuinely high captaincy (85-96). The differences are REAL
-  // trade-offs the engine reads: personal brilliance vs leadership aura,
-  // stamina vs experience, growth ahead vs wisdom now.
-  var FO_CAPT_FLAVOURS = [
-    { id: "general", nm: "The General", age: 29, capt: 96, q: 0.93, expAdj: 8 },
-    { id: "talisman", nm: "The Talisman", age: 26, capt: 85, q: 1.00 },
-    { id: "ironman", nm: "The Iron Man", age: 27, capt: 88, q: 0.95, stamMult: 1.3 },
-    { id: "clutch", nm: "The Big Occasion", age: 28, capt: 90, q: 0.94, tempMult: 1.12, expAdj: 12 },
-    { id: "younggun", nm: "The Young Marshal", age: 24, capt: 87, q: 0.96, expAdj: -8, talentExtra: 1 },
-    { id: "master", nm: "The Old Master", age: 31, capt: 94, q: 0.95, expAdj: 16, stamMult: 0.8 }
-  ];
-  function foCaptFlavourById(id) { for (var i = 0; i < FO_CAPT_FLAVOURS.length; i++) if (FO_CAPT_FLAVOURS[i].id === id) return FO_CAPT_FLAVOURS[i]; return FO_CAPT_FLAVOURS[0]; }
-  // Six deterministic candidates in the archetype's franchise mould. The
-  // squad generator re-derives this same pool, so the card a manager taps is
-  // byte-for-byte the captain who leads the squad out.
-  function foGenCaptainPool(seed, country, archId) {
-    var A = foArchById(archId), st = A.starter || {};
-    var firsts = {}, lasts = {};
-    var out = FO_CAPT_FLAVOURS.map(function (F) {
-      var rnd = window.rng(foHash32(String(seed) + "|cap|" + archId + "|" + F.id));
-      var p = foQsPlayer({ role: st.role || "topOrderBat", age: F.age, q: Math.min(0.99, 0.30 * (F.q || 1)) }, country, rnd, firsts, lasts);
-      p.capt = F.capt;
-      p.exp = Math.max(2, Math.min(99, Math.round(p.exp + (F.expAdj || 0)))); p.expWord = foExpWordOf(p.exp);
-      if (F.stamMult) p.skills.stamina = Math.max(4, Math.min(96, Math.round(p.skills.stamina * F.stamMult)));
-      if (F.tempMult && !foPureBowler(p)) p.skills.temperament = Math.max(4, Math.min(96, Math.round(p.skills.temperament * F.tempMult)));
-      var want = (st.talents || []).concat(A.talents || []);
-      var nT = 2 + (F.talentExtra || 0);
-      var poolT = Object.keys(TALN).sort(function (a, b) { return foHash32(p.name + a) - foHash32(p.name + b); });
-      want.concat(poolT).forEach(function (t) { if (p.talents.length >= nT || p.talents.indexOf(t) >= 0) return; if (foQsElig(p, t)) p.talents.push(t); });
-      // a pure-bowler captain bats at the top of the specialist band ("average":
-      // as good as a specialist gets, stable under the game-wide repair rule) -
-      // set HERE so the picker card already shows his real batting
-      if (foPureBowler(p)) { p.skills.vsPace = 31; p.skills.vsSpin = 30; p.skills.rotation = 27; p.skills.temperament = 35; p.skills.power = 29; }
-      jsDerive(p);
-      p.captFlavour = F.id;
-      return p;
-    });
-    // The Talisman's whole pitch is "the squad's outright best player" -
-    // per-candidate sampling noise must never contradict the card
-    var tal = null, best = 0;
-    out.forEach(function (p) { if (p.captFlavour === "talisman") tal = p; else best = Math.max(best, p.rating || 0); });
-    for (var g = 0; tal && g < 8 && (tal.rating || 0) <= best * 1.03; g++) {
-      for (var k in tal.skills) tal.skills[k] = Math.max(4, Math.min(96, Math.round(tal.skills[k] * 1.04)));
-      if (foPureBowler(tal)) { tal.skills.vsPace = 31; tal.skills.vsSpin = 30; tal.skills.rotation = 27; tal.skills.temperament = 35; tal.skills.power = 29; }
-      jsDerive(tal);
-    }
-    return out;
-  }
-  window.__foGenCaptainPool = foGenCaptainPool;
-  window.__foCaptFlavours = FO_CAPT_FLAVOURS;
+  // The captain pool - six named candidates a founding manager chose between -
+  // is gone with the founding screens that showed it. It was the last place a
+  // cricketer was built to be a club's captain for all time: frozen numbers, a
+  // guaranteed pair of talents, and a "Talisman" loop that kept lifting one
+  // man's skills until he outrated everybody. Captaincy is a match decision
+  // and a skill on the card; it is not a kind of player.
   function foArchById(id) { for (var i = 0; i < FO_ARCHETYPES.length; i++) if (FO_ARCHETYPES[i].id === id) return FO_ARCHETYPES[i]; return FO_ARCHETYPES[0]; }
 
   // quality ladder for the 14 players behind the starter - the SAME multiset
@@ -281,18 +235,17 @@
   }
   // Generate a squad for one archetype, led by the chosen captain flavour,
   // shaped by the manager's composition (counts INCLUDE the captain).
-  // Deterministic from (seed, country, archId, captId, comp) - every client
+  // Deterministic from (seed, country, archId, comp) - every client
   // and the resolver agree exactly.
   // `strength` (optional, default 1) scales the squad's whole standing. A human's
   // founding squad never passes it, so every manager still starts on the one
   // shared budget - the balance the archetypes were tuned against. The World
   // Service passes each bot club's standing from the planet's own table, which is
   // how a flagship comes out the strongest side in its league.
-  function foGenArchetypeSquad(seed, country, archId, captId, comp, strength) {
+  function foGenArchetypeSquad(seed, country, archId, comp, strength) {
     var A = foArchById(archId);
     var STR = (typeof strength === "number" && isFinite(strength) && strength > 0)
       ? Math.max(0.7, Math.min(1.4, strength)) : 1;
-    var CF = foCaptFlavourById(captId || "general");
     var rnd = window.rng(foHash32(String(seed) + "|" + archId));
     var firsts = {}, lasts = {};
     comp = comp || foQsDefaultComp(archId);
@@ -748,7 +701,7 @@
         App.founder.picked = _picked;
       }
     }
-    ({ create: foOnbCreate, charter: foOnbCharter, money: foOnbMoney, sponsor: foOnbSponsor, team: foObTeam, draft: foOnbDraft, report: foOnbReport }[step || "create"] || foOnbCreate)();
+    ({ create: foOnbCreate, charter: foOnbCharter, money: foOnbMoney, sponsor: foOnbSponsor, deal: foObDeal, draft: foOnbDraft, report: foOnbReport }[step || "create"] || foOnbCreate)();
   } catch (e) { console.warn("onb preview", e); } };   // debug/test hook (harmless)
 
   // Draft happens in the game's OWN founder screen (pgFounder). We hand it a
@@ -1105,7 +1058,7 @@
     host.querySelector("#fo-ob-b").addEventListener("click", foOnbMoney);
     host.querySelector("#fo-ob-c").addEventListener("click", function () {
       if (!FO_ONB.sponsor) { say("Pick a sponsor first. This deal pays you every matchday all season."); return; }
-      if (LG && LG.full_draft) foOnbDraft(); else foObTeam();
+      if (LG && LG.full_draft) foOnbDraft(); else foObDeal();
     });
   }
 
@@ -1166,145 +1119,38 @@
     if (!FO_ONB.genSeed) FO_ONB.genSeed = (FO_ONB.team && FO_ONB.team.draft_seed) || FO_ONB.clubName || "fo";
     return FO_ONB.genSeed;
   }
-  // ---- 1 of 3 · the team's identity -----------------------------------------
-  function foObTeam() {
-    FO_ONB.step = 7;
-    var cards = FO_ARCHETYPES.map(function (a) {
-      return "<button type='button' class='fo-qs-arch" + (FO_ONB.arch === a.id ? " on" : "") + "' data-a='" + a.id + "'>" +
-        "<span class='fo-qs-aic'>" + foQsIcon(a.ic) + "</span>" +
-        "<b class='fo-qs-anm'>" + a.nm + "</b>" +
-        "<span class='fo-qs-arole'>" + a.role + "</span>" +
-        "<span class='fo-qs-aline'>" + a.line + "</span>" +
-        "<span class='fo-qs-chips'>" + a.chips.map(function (s) { return "<i class='fo-qs-chip g'>" + s + "</i>"; }).join("") +
-        "<i class='fo-qs-chip w'>" + a.weak + "</i></span>" +
-        "</button>";
-    }).join("");
-    var body =
-      "<div class='fo-ob-card fo-ob-mid'>" +
-      "<div class='fo-ob-eyebrow'>Build your squad &middot; 1 of 3</div>" +
-      "<h1 class='fo-ob-h1'>What kind of team do you want?</h1>" +
-      "<p class='fo-ob-lead'>Each card is a different style of squad, with real strengths and a real weakness. Your whole squad gets built in this style, so pick the one that suits how you like to play.</p>" +
-      "<div class='fo-qs-grid'>" + cards + "</div>" +
-      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'" + (FO_ONB.arch ? "" : " disabled") + ">Continue</button></div></div>";
-    var host = foOnbMount(4, body);
-    host.querySelectorAll(".fo-qs-arch").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var prev = FO_ONB.arch;
-        FO_ONB.arch = b.getAttribute("data-a");
-        // a new archetype means a new squad: the insolvency acknowledgement
-        // given for the OLD squad must not silence the risk screen for this one
-        if (prev !== FO_ONB.arch) { FO_ONB.capt = null; FO_ONB.pool = null; FO_ONB.comp = null; FO_ONB.riskAck = false; }
-        host.querySelectorAll(".fo-qs-arch").forEach(function (x) { x.classList.toggle("on", x === b); });
-        var c = host.querySelector("#fo-ob-c"); if (c) c.disabled = false;
-      });
-    });
-    host.querySelector("#fo-ob-b").addEventListener("click", foOnbSponsor);
-    host.querySelector("#fo-ob-c").addEventListener("click", function () { if (FO_ONB.arch) foObCaptain(); });
+  // ---- THE SQUAD YOU ARE GIVEN ----------------------------------------------
+  //
+  // Founding used to be three squad decisions: pick a style of side, pick a
+  // captain from six cards, then set the size and shape of the roster. All
+  // three are gone.
+  //
+  // The captaincy went first, because there is no such thing as a club's
+  // captain - it is a decision made per match, in the orders room, and a man
+  // built differently for all time because a card said "The Talisman" was the
+  // last of that idea. The other two go with it for a plainer reason: a
+  // manager choosing his own squad's style and shape before he has watched a
+  // ball is choosing between things he has no way to judge, and every world
+  // club is dealt its side without being asked. A new manager now names his
+  // club and is dealt one, the same way, out of the same generator.
+  //
+  // The style is still real - it is simply the club's own, derived from its
+  // name rather than chosen from a grid, so two clubs are no more alike than
+  // any two in the world. The shape is the archetype's own default.
+  function foObDealtArch(seed) {
+    var ids = FO_ARCHETYPES.map(function (a) { return a.id; });
+    return ids[foHash32("arch|" + String(seed)) % ids.length];
   }
-  // ---- 2 of 3 · the captain (full draft-card stat read-out) -----------------
-  function foObCaptain() {
-    FO_ONB.step = 7;
-    var A = foArchById(FO_ONB.arch);
-    if (!FO_ONB.pool) FO_ONB.pool = foGenCaptainPool(foObSeed(), FO_ONB.country, FO_ONB.arch);
-    var cards = FO_ONB.pool.map(function (pl, i) {
-      var F = FO_CAPT_FLAVOURS[i];
-      return "<div class='pkm-cell pk-capt-cell" + (FO_ONB.capt === F.id ? " on" : "") + "' data-c='" + F.id + "'>" +
-        "<div class='pk-capt-flav'>" + E(F.nm) + "</div>" +
-        foPkCard(pl, { roleLbl: A.starRole || A.role, cta: (FO_ONB.capt === F.id ? "✓ Captain" : "Make captain") }) +
-        "</div>";
-    }).join("");
-    var body =
-      "<div class='fo-ob-card fo-ob-mid'>" +
-      "<div class='fo-ob-eyebrow'>Build your squad &middot; 2 of 3</div>" +
-      "<h1 class='fo-ob-h1'>Choose your captain</h1>" +
-      "<p class='fo-ob-lead'>Six candidates for the captaincy. The stats on each card are exactly what you get, and the rest of the squad is signed around whoever you pick.</p>" +
-      "<div class='pk-row pk-capt-row'>" + cards + "</div>" +
-      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'" + (FO_ONB.capt ? "" : " disabled") + ">Continue</button></div></div>";
-    var host = foOnbMount(4, body);
-    host.querySelectorAll(".pk-capt-cell").forEach(function (b) {
-      b.addEventListener("click", function () {
-        FO_ONB.capt = b.getAttribute("data-c");
-        foObCaptain();
-      });
-    });
-    host.querySelector("#fo-ob-b").addEventListener("click", foObTeam);
-    host.querySelector("#fo-ob-c").addEventListener("click", function () { if (FO_ONB.capt) foObComp(); });
+  function foObDeal() {
+    try {
+      FO_ONB.arch = FO_ONB.arch || foObDealtArch(foObSeed());
+      FO_ONB.gen = foGenArchetypeSquad(foObSeed(), FO_ONB.country, FO_ONB.arch, null);
+      App.founder.picked = FO_ONB.gen.players.slice();
+      foOnbAfterDraft();
+    } catch (e) { say(e); }
   }
-  // ---- 3 of 3 · size and composition ----------------------------------------
-  var FO_COMP_ROWS = [["bat", "Batters"], ["pace", "Seam bowlers"], ["spin", "Spinners"], ["ar", "All-rounders"], ["wk", "Wicketkeepers"]];
-  function foObCompTotal(c) { return (c.bat || 0) + (c.pace || 0) + (c.spin || 0) + (c.ar || 0) + (c.wk || 0); }
-  // hard legality only - never advice
-  function foObCompLegal(c, capB) {
-    var n = foObCompTotal(c);
-    if (n < 11) return "A squad needs at least 11 players.";
-    if (n > 18) return "The board caps the roster at 18 players.";
-    if ((c.wk || 0) < 1) return "An XI must field a wicketkeeper.";
-    if ((c.pace || 0) + (c.spin || 0) + (c.ar || 0) < 5) return "Fifty overs need at least 5 bowling options (seam, spin or all-round).";
-    if ((c[capB] || 0) < 1) return "Your captain holds one of these spots.";
-    return null;
-  }
-  function foObComp() {
-    FO_ONB.step = 7;
-    var A = foArchById(FO_ONB.arch);
-    if (!FO_ONB.comp) FO_ONB.comp = foQsDefaultComp(FO_ONB.arch);
-    var capB = foQsBucketOf((A.starter || {}).role || "topOrderBat");
-    var rows = FO_COMP_ROWS.map(function (r) {
-      return "<div class='fo-comp-row'><span class='fo-comp-lbl'>" + r[1] + (r[0] === capB ? " <i class='fo-comp-cap'>incl. your captain</i>" : "") + "</span>" +
-        "<span class='fo-comp-ctl'><button type='button' class='fo-comp-btn' data-k='" + r[0] + "' data-d='-1'>&minus;</button>" +
-        "<b class='fo-comp-n' id='fo-comp-" + r[0] + "'>" + (FO_ONB.comp[r[0]] || 0) + "</b>" +
-        "<button type='button' class='fo-comp-btn' data-k='" + r[0] + "' data-d='1'>+</button></span></div>";
-    }).join("");
-    var body =
-      "<div class='fo-ob-card fo-ob-mid'>" +
-      "<div class='fo-ob-eyebrow'>Build your squad &middot; 3 of 3</div>" +
-      "<h1 class='fo-ob-h1'>How big, and what shape?</h1>" +
-      "<p class='fo-ob-lead'>Anywhere from <b>11 to 18</b> players. Every signing takes a fee out of your <b>$1,000,000</b> and adds a matchday wage, so a bigger squad costs more - but a small one leaves you thin when someone is tired or injured. You need at least one wicketkeeper and five bowling options.</p>" +
-      "<div class='fo-comp-grid'>" + rows + "</div>" +
-      "<div class='fo-comp-note' id='fo-comp-note'></div>" +
-      "<div class='fo-comp-money' id='fo-comp-money'></div>" +
-      "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back</button><button class='fo-ob-cta' id='fo-ob-c'>Sign the squad &#9654;</button></div></div>";
-    var host = foOnbMount(4, body);
-    var recalcT = null;
-    var money = function () {
-      try {
-        var gen = foGenArchetypeSquad(foObSeed(), FO_ONB.country, FO_ONB.arch, FO_ONB.capt, FO_ONB.comp);
-        var fees = 0, wages = 0;
-        gen.players.forEach(function (p) { fees += p.fee || 0; wages += p.wage || 0; });
-        var el = host.querySelector("#fo-comp-money");
-        if (el) el.innerHTML =
-          "<span><i>Squad</i><b>" + gen.players.length + " players</b></span>" +
-          "<span><i>Signing fees</i><b>" + FO$(fees) + "</b></span>" +
-          "<span><i>Bank on day one</i><b>" + FO$(1000000 - fees) + "</b></span>" +
-          "<span><i>Wage bill</i><b>" + FO$(wages) + "</b><em>/ matchday</em></span>";
-      } catch (e) {}
-    };
-    var recalc = function () { clearTimeout(recalcT); recalcT = setTimeout(money, 120); };
-    host.querySelectorAll(".fo-comp-btn").forEach(function (b) {
-      b.addEventListener("click", function () {
-        var k = b.getAttribute("data-k"), d = +b.getAttribute("data-d");
-        var next = {}; for (var kk in FO_ONB.comp) next[kk] = FO_ONB.comp[kk];
-        next[k] = Math.max(0, (next[k] || 0) + d);
-        var bad = foObCompLegal(next, capB);
-        var note = host.querySelector("#fo-comp-note");
-        if (bad) { if (note) { note.textContent = bad; note.style.opacity = 1; setTimeout(function () { note.style.opacity = 0; }, 2400); } return; }
-        FO_ONB.comp = next;
-        var nEl = host.querySelector("#fo-comp-" + k); if (nEl) nEl.textContent = next[k];
-        recalc();
-      });
-    });
-    money();
-    host.querySelector("#fo-ob-b").addEventListener("click", foObCaptain);
-    host.querySelector("#fo-ob-c").addEventListener("click", function () {
-      try {
-        var bad = foObCompLegal(FO_ONB.comp, capB);
-        if (bad) { say(bad); return; }
-        FO_ONB.gen = foGenArchetypeSquad(foObSeed(), FO_ONB.country, FO_ONB.arch, FO_ONB.capt, FO_ONB.comp);
-        App.founder.picked = FO_ONB.gen.players.slice();
-        foOnbAfterDraft();
-      } catch (e) { say(e); }
-    });
-  }
-  window.__foQs = { team: function () { return foObTeam(); }, captain: function () { return foObCaptain(); }, comp: function () { return foObComp(); },
+
+  window.__foQs = { deal: function () { return foObDeal(); }, dealtArch: foObDealtArch,
     state: function () { return FO_ONB; }, gen: foGenArchetypeSquad,
     golden: function (nxt, oi, t) { return foQsGolden(nxt, oi, t); }, goldenWire: function (pg) { return foQsGoldenWire(pg); },
     goldenTest: function (opp) {   // headless probe: render the real golden card on the current page
@@ -2186,7 +2032,7 @@
     ack.addEventListener("change", sync); sync();
     host.querySelector("#fo-ob-revise").addEventListener("click", function () {
       FO_ONB.riskAck = false;   // revising withdraws the acknowledgement - the next squad gets its own warning
-      if (LG && LG.full_draft) foOnbDraft(); else foObComp();
+      if (LG && LG.full_draft) foOnbDraft(); else foOnbSponsor();
     });
     cont.addEventListener("click", function () { FO_ONB.riskAck = true; foOnbReport(); });
   }
@@ -2233,7 +2079,7 @@
       "</aside></div>" +
       "<div class='fo-ob-act fo-ob-act-c'><button class='fo-ob-ghost' id='fo-ob-b'>Back to the squad</button><button class='fo-ob-cta' id='fo-ob-done'>Enter the League</button></div></div>";
     var host = foOnbMount(5, body);
-    host.querySelector("#fo-ob-b").addEventListener("click", function () { if (LG && LG.full_draft) foOnbDraft(); else foObComp(); });
+    host.querySelector("#fo-ob-b").addEventListener("click", function () { if (LG && LG.full_draft) foOnbDraft(); else foOnbSponsor(); });
     host.querySelector("#fo-ob-done").addEventListener("click", foOnbCommit);
   }
 
@@ -2553,9 +2399,6 @@
       ".pkm-chip{display:inline-block;font-size:10.5px;font-weight:600;color:#5b6472;background:rgba(20,33,61,.07);border-radius:6px;padding:1px 7px;margin:2px 4px 0 0}" +
       ".pkm-chip-lo{color:#b02a1e;background:rgba(220,38,38,.1)}" +
       ".pkm-energy{display:flex;align-items:center;gap:5px;font-size:11px;color:#8a90a0}.pkm-energy i{font-style:normal;font-family:Oswald,sans-serif;letter-spacing:.5px}.pkm-energy u{width:46px;height:6px;border-radius:99px;background:rgba(20,33,61,.1);overflow:hidden;text-decoration:none}.pkm-energy u b{display:block;height:100%;border-radius:99px}" +
-      ".pk-capt-row{align-items:stretch}.pk-capt-cell{cursor:pointer;position:relative}.pk-capt-cell .pk-frame{transition:box-shadow .15s}" +
-      ".pk-capt-cell.on .pk-frame{box-shadow:0 0 0 4px rgba(200,103,74,.6),0 8px 22px rgba(16,27,45,.22)}" +
-      ".pk-capt-flav{text-align:center;font-family:Oswald,sans-serif;font-size:12px;letter-spacing:2px;text-transform:uppercase;font-weight:600;color:#C8674A;margin-bottom:6px}" +
       // player-page hero strip (art + card-consistent OVR / role label)
       ".fo-plh{display:flex;align-items:center;gap:16px;background:linear-gradient(180deg,#FDFAF1,#F7F2E4);border:2px solid var(--tc);border-radius:14px;padding:11px 18px;margin:0 0 14px;box-shadow:0 3px 10px rgba(16,27,45,.1)}" +
       ".fo-plh-art{width:72px;height:78px;flex:0 0 72px;display:grid;place-items:end center;background:radial-gradient(ellipse at 50% 92%,rgba(20,33,61,.13),transparent 62%)}" +
@@ -2796,7 +2639,9 @@
   }
   function foJReveal() {
     var gen;
-    try { gen = foGenArchetypeSquad(foObSeed(), FO_ONB.country, FO_ONB.arch, "talisman", foQsDefaultComp(FO_ONB.arch)); }
+    // the same deal the commit gate makes, so the squad a manager watches
+    // reveal is the squad he is signed to - no captain flavour, no shape
+    try { gen = foGenArchetypeSquad(foObSeed(), FO_ONB.country, FO_ONB.arch, null); }
     catch (e) { foJCommitGate(); return; }
     var ordIx = { bat: 0, wk: 1, ar: 2, bowl: 3 };
     var ps = gen.players.slice().sort(function (a, b2) {
@@ -3100,10 +2945,9 @@
   // there is no lever left to pull, and so nothing left to warn about.
   function foJCommitGate() {
     try {
-      FO_ONB.capt = FO_ONB.capt || "talisman";
       FO_ONB.sponsor = "community";
-      FO_ONB.comp = foQsDefaultComp(FO_ONB.arch);
-      FO_ONB.gen = foGenArchetypeSquad(foObSeed(), FO_ONB.country, FO_ONB.arch, FO_ONB.capt, FO_ONB.comp);
+      FO_ONB.arch = FO_ONB.arch || foObDealtArch(foObSeed());
+      FO_ONB.gen = foGenArchetypeSquad(foObSeed(), FO_ONB.country, FO_ONB.arch, null);
       App.founder.picked = FO_ONB.gen.players.slice();
       foOnbCommit();
       // commit success is recorded by the done-flag; on failure stay put so

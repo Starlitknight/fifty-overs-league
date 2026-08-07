@@ -18,7 +18,10 @@ globalThis.__svcGenSquad = function (seed, country, arch, capt, strength) {
   // strength is the club's standing in its league: the flagship's is the highest
   // in the nation, and the rest spread below it. Omitted means the one shared
   // budget every human manager founds on.
-  var g = __foGenArchetypeSquad(seed, country, arch, capt || 'general', null,
+  // capt is vestigial - a club has no pre-set captain and the generator no
+  // longer takes one. It stays in THIS wrapper's signature only because
+  // callers pass strength positionally after it; nothing reads it.
+  var g = __foGenArchetypeSquad(seed, country, arch, null,
     (typeof strength === 'number' && strength > 0) ? strength : 1);
   return JSON.stringify((g && g.players) || []);
 };

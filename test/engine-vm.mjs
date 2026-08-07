@@ -155,11 +155,11 @@ export function makeEngine() {
   // (window.__foGame.simWorld). Objects cross the realm boundary as JSON so all
   // engine values stay VM-realm. This is the pure-Node bot-match path.
   const worldFns = vm.runInContext(`(function(){
-    function __vmGen(seed, country, archId, captId){
+    function __vmGen(seed, country, archId){
       var f = (typeof __foGenArchetypeSquad==='function') ? __foGenArchetypeSquad
             : (window.__foGame && window.__foGame.squad) || null;
       if(!f) return null;
-      var sq = f(seed, country, archId, captId);
+      var sq = f(seed, country, archId);
       return sq ? JSON.stringify(sq) : null;
     }
     function __vmSim(taJson, tbJson, pitch, weather, seed, ordersJson){
@@ -181,8 +181,8 @@ export function makeEngine() {
     },
     setTuning: on => { ctx.__foTuneOff = on ? 0 : 1; },
     // Living World: seed -> engine-native squad {players, starter, arch}
-    genSquad: (seed, country, archId, captId) => {
-      const s = worldFns.gen((seed >>> 0) || 1, country || 'England', archId || 'balanced', captId || 'general');
+    genSquad: (seed, country, archId) => {
+      const s = worldFns.gen((seed >>> 0) || 1, country || 'England', archId || 'balanced');
       return s ? JSON.parse(s) : null;
     },
     // Living World: play two team objects ({name, players}) -> real result

@@ -1856,9 +1856,7 @@
         var bi = -1; (r.clubs || []).forEach(function (c, i) { if (c.boss) bi = i; });
         if (bi >= 0) { try { var t = foCxTeam(hit.ri, bi); return t.players || []; } catch (eB) {} }
       }
-      var capts = ["general", "talisman", "clutch", "ironman", "younggun"];
-      var capt = capts[foHash32(side.seed + "|c") % capts.length];
-      var gen = foGenArchetypeSquad(side.seed, r.cty, r.arch || "engine", capt);
+      var gen = foGenArchetypeSquad(side.seed, r.cty, r.arch || "engine");
       return (gen.players || []).map(function (p0) {
         var p = JSON.parse(JSON.stringify(p0)); delete p.fee; p.fatigue = "rested"; p.formIx = 3;
         try { jsDerive(p); } catch (e) {}
@@ -2124,7 +2122,7 @@
   // favourites, and later regions run hotter.
   function foCxTeam(ri, ci) {
     var r = FO_CX_REGIONS[ri], c = r.clubs[ci];
-    var gen = foGenArchetypeSquad("cx|" + r.id + "|" + c.nm, r.cty, r.arch, c.capt || "talisman");
+    var gen = foGenArchetypeSquad("cx|" + r.id + "|" + c.nm, r.cty, r.arch);
     var players = (gen.players || []).map(function (p0) {
       var p = JSON.parse(JSON.stringify(p0)); delete p.fee;
       p.fatigue = "rested"; p.formIx = 3;

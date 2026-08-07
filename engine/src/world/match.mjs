@@ -34,7 +34,7 @@ function scaleSquad(base, team) {
   return { name: team.name, players };
 }
 function genOf(team) {
-  return team.gen || { country: "England", archId: "balanced", captId: "general", seed: hash32(team.id) };
+  return team.gen || { country: "England", archId: "balanced", seed: hash32(team.id) };
 }
 
 // Build a result function of the shape the timeline expects:
@@ -46,7 +46,7 @@ export function makeWorldResultFn(engine, opts = {}) {
   function baseSquad(team) {
     const g = genOf(team);
     if (cache.has(g.seed)) return cache.get(g.seed);
-    const sq = engine.genSquad(g.seed, g.country, g.archId, g.captId);
+    const sq = engine.genSquad(g.seed, g.country, g.archId);
     const base = (sq && sq.players && sq.players.length) ? { players: sq.players } : null;
     cache.set(g.seed, base);
     return base;
@@ -71,6 +71,6 @@ export function makeWorldResultFn(engine, opts = {}) {
 // Materialise one team's real (strength-scaled) squad — for previews/lineups.
 export function materialiseSquad(engine, team) {
   const g = genOf(team);
-  const sq = engine.genSquad(g.seed, g.country, g.archId, g.captId);
+  const sq = engine.genSquad(g.seed, g.country, g.archId);
   return sq && sq.players ? scaleSquad({ players: sq.players }, team) : null;
 }
