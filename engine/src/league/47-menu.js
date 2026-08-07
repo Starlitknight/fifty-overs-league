@@ -65,7 +65,7 @@
     { k: "Your club", rooms: [
       ["home", "house", "Home ground"],
       ["squad", "people", "The squad"],
-      ["training", "net", "The nets"],
+      ["training", "net", "Training"],
       ["academy", "star", "Youth Academy"],
       ["market", "coin", "The transfer market"],
       ["finance", "coin", "Finances"],

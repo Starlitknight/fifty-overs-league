@@ -182,7 +182,7 @@
       "<div class='fo-ac-hero'><div class='fo-ac-k'>Your club</div>" +
       "<h1>Youth Academy</h1></div>" +
       body +
-      "<div class='fo-ac-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/training'>The nets &rsaquo;</a></div>" +
+      "<div class='fo-ac-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/training'>Training &rsaquo;</a></div>" +
       "</div></div>";
   }
 

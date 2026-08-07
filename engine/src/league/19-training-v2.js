@@ -591,7 +591,7 @@
     var crest = ""; try { crest = window.foClubCrest ? foClubCrest(me.name, 56) : ""; } catch (eCr) {}
     var hero = "<div class='fo-t2-hero'><div>" +
       "<i>" + E(String(me.name || "").toUpperCase()) + " &middot; THE TRAINING GROUND</i>" +
-      "<h1>The Nets</h1></div>" +
+      "<h1>Training</h1></div>" +
       "<span class='cr'>" + crest + "</span></div>";
 
     // ---- THE ACADEMY STRIP --------------------------------------------------

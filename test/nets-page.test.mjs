@@ -95,7 +95,10 @@ test('the nets renderer ships and draws a page', () => {
   assert.equal(run('typeof foRenderNetsPage'), 'function', 'the renderer is missing from the built game');
   const html = draw(null);
   assert.ok(html.length > 500, 'the page drew something (' + html.length + ' chars)');
-  assert.ok(html.indexOf('The Nets') >= 0, 'with its own name on it');
+  // the room is called Training now, not The Nets. Pinned to the H1 rather
+  // than anywhere on the page: the masthead eyebrow says "THE TRAINING
+  // GROUND", so a bare substring test would pass without a title at all.
+  assert.ok(html.indexOf('<h1>Training</h1>') >= 0, 'with its own name on it');
 });
 
 test('every man gets a row, a programme picker and a focus picker', () => {

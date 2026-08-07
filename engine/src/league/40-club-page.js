@@ -1194,7 +1194,7 @@
           } catch (eT) {}
           if (host) {
             host.className = "fo-cp-mineact";
-            host.innerHTML = "<a href='#/training'>The nets &rsaquo;</a><a href='#/academy'>The academy &rsaquo;</a><a href='#/orders'>The orders &rsaquo;</a><a href='#/squad'>Your squad &rsaquo;</a>";
+            host.innerHTML = "<a href='#/training'>Training &rsaquo;</a><a href='#/academy'>The academy &rsaquo;</a><a href='#/orders'>The orders &rsaquo;</a><a href='#/squad'>Your squad &rsaquo;</a>";
           }
         } catch (eMine) {}
       }

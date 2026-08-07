@@ -170,7 +170,7 @@
        ["Ten reliable habits", "tips", "tip habit advice strategy"]].forEach(function (tp) { ix.push({ k: "guide", n: tp[0], sec: tp[1], kw: tp[2] }); });
       [["Squad", "#/squad"], ["Matches", "#/matches"], ["Stats & records", "#/stats"], ["Training centre", "#/training"],
        ["Transfer market", "#/transfers"], ["Office", "#/office"], ["Club museum", "#/museum"], ["Almanac", "#/almanac"],
-       ["Match Lab", "#/nets"], ["Manual", "#/guide"]].forEach(function (pg) { ix.push({ k: "page", n: pg[0], go: pg[1] }); });
+       ["Manual", "#/guide"]].forEach(function (pg) { ix.push({ k: "page", n: pg[0], go: pg[1] }); });
     } catch (e) {}
     var go = function (r) {
       drop.style.display = "none"; inp.value = "";
@@ -802,7 +802,7 @@
       var qk = function (href, ic, lbl) { return "<a href='" + href + "'><i>" + FO_I(ic, 18) + "</i><span>" + lbl + "</span></a>"; };
       var quick = "<div class='fo-ch-quick fo-ch-quick2'>" +
         qk("#/matches", "calendar", "Fixtures &amp; results") +
-        qk("#/nets", "bat", "Match Lab") + qk("#/guide", "info", "Manual") + "</div>";
+        qk("#/training", "bat", "Training") + qk("#/guide", "info", "Manual") + "</div>";
       // upcoming fixtures card: league rounds + accepted friendlies in time order
       var fxItems = [];
       var fxAt = function (rn) {

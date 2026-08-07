@@ -403,7 +403,14 @@
       "<div class='fo-pp-cardart'>" + (art ? "<img src='" + E(art) + "' alt='' onerror=\"this.style.display='none'\">" : "") +
       "<span class='fo-pp-no'>No. " + no + "/199</span></div>" +
       "<div class='fo-pp-id'>" +
-      "<div class='fo-pp-k'>" + E(kindLbl(p).toUpperCase()) + " &middot; " + (p.hand === "L" ? "LHB" : "RHB") + " &middot; " + E(String(p.nat || "").toUpperCase()) + "</div>" +
+      // WHAT HE BOWLS, ON THE CARD. It was shown in exactly one place - the
+      // Role in the XI card on the Overview - and when that card went, a
+      // cricketer's own page stopped saying whether he was seam or spin at
+      // all. It belongs in this line, beside the hand he bats with: those two
+      // facts are what the eyebrow is for.
+      "<div class='fo-pp-k'>" + E(kindLbl(p).toUpperCase()) + " &middot; " + (p.hand === "L" ? "LHB" : "RHB") +
+      (p.btLabel && !/does not bowl/i.test(p.btLabel) ? " &middot; " + E(String(p.btLabel).toUpperCase()) : "") +
+      " &middot; " + E(String(p.nat || "").toUpperCase()) + "</div>" +
       "<h1>" + E(p.name) + natStar(p.name, (hit.world && hit.world.rid) || null, (hit.world && hit.world.slot), true) +
       (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
       "<p class='fo-pp-prov'>" + E(pv.how) + pv.born + "</p>" +
@@ -1112,8 +1119,22 @@
     "html body #page a.fo-pp-back{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;margin:0 -12px 6px;border-radius:12px;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--nac);text-decoration:none}",
     // ---- the hero -----------------------------------------------------------
     "html body #page .fo-pp-plate{position:relative;display:grid;grid-template-columns:236px minmax(0,1fr) auto;gap:20px;align-items:start;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:18px;padding:16px 18px;box-shadow:0 10px 30px rgba(30,38,52,.07)}",
+    // THE HEAD IS NEVER CROPPED, WHATEVER SHAPE THE ART IS.
+    //
+    // The player art arrives in two families - 74 tall portraits (556x941 and
+    // near, aspect 0.55-0.62) and 54 squares (512x512) - and one rule with one
+    // object-position was serving both through a LANDSCAPE window. Cover scales
+    // to the width, so a 0.55 portrait shows only 41% of its own height in a
+    // 4:3 frame and 34% in the 16:10 phone banner; pushing that band DOWN by
+    // 12% and 22% respectively started it below the chin. Rendered all twelve
+    // sample crops side by side: heads cut on the portraits at both settings,
+    // and worst on the phone - which is exactly the card that was reported.
+    //
+    // The band is anchored to the TOP instead. The head is at the top of every
+    // one of these paintings, so 0% is the one position that cannot cut it, in
+    // either family, at any frame ratio.
     "html body #page .fo-pp-cardart{position:relative;border-radius:12px;overflow:hidden;background:linear-gradient(160deg,#12294A,#0A1526 70%);box-shadow:inset 0 0 0 2px rgba(201,162,75,.55);aspect-ratio:4/3}",
-    "html body #page .fo-pp-cardart img{width:100%;height:100%;object-fit:cover;object-position:50% 12%;display:block}",
+    "html body #page .fo-pp-cardart img{width:100%;height:100%;object-fit:cover;object-position:50% 0%;display:block}",
     "html body #page .fo-pp-no{position:absolute;z-index:2;left:9px;bottom:7px;text-shadow:0 1px 4px rgba(6,12,24,.9);font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;color:rgba(232,214,168,.85)}",
     "html body #page .fo-pp-id{min-width:0}",
     "html body #page .fo-pp-k{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:var(--nac)}",
@@ -1295,8 +1316,10 @@
     // the phone reads the card as a poster: the painted man across the top,
     // his name and numbers under him
     "html body #page .fo-pp-plate{grid-template-columns:minmax(0,1fr);gap:13px;padding:0 0 14px;overflow:hidden}",
-    "html body #page .fo-pp-cardart{aspect-ratio:16/10;border-radius:17px 17px 0 0}",
-    "html body #page .fo-pp-cardart img{object-position:50% 22%}",
+    // the phone banner was the shallowest frame of all and took the most off
+    // the top; it stands a little taller now and anchors to the head like the rest
+    "html body #page .fo-pp-cardart{aspect-ratio:4/3;border-radius:17px 17px 0 0}",
+    "html body #page .fo-pp-cardart img{object-position:50% 0%}",
     "html body #page .fo-pp h1{font-size:27px}",
     "html body #page .fo-pp-ovr{position:absolute;right:11px;top:11px;padding:5px 10px 4px}",
     "html body #page .fo-pp-ovr b{font-size:23px}",
