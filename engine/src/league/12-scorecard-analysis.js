@@ -5272,6 +5272,8 @@
       return arr.slice(-6).map(function (x) { var tie = x.w < 0, win = x.w === 0; return "<em class='" + (tie ? "hg-t" : win ? "hg-w" : "hg-l") + "'>" + (tie ? "T" : win ? "W" : "L") + "</em>"; }).join("");
     } catch (e) { return ""; }
   }
+  // the home ground painting, kept between renders so it is never built twice
+  var FO_HG_KEPT = null;
   function foRenderHome() {
     try {
       try { foCxNav(); } catch (eN) {}
@@ -5419,6 +5421,31 @@
       // shell and its art stay on the wall while only the words change; the
       // page is torn down solely when the painting itself must change.
       var shell = page.querySelector(".fo-hg2.fo-home2");
+      // THE PAINTING OUTLIVES THE PAGE.
+      //
+      // The in-place update below already spares a repaint that finds its own
+      // shell still hanging. What it could not help was a render that arrives
+      // to an EMPTY page - and #page is emptied by every other room in the
+      // game on the way past, by the base engine's own club render before the
+      // overlay takes over, and by anything else that writes innerHTML. Then
+      // the whole hero was built again: a new <img>, a fresh decode, a fresh
+      // layout. That is the blink, and chasing each thing that empties the
+      // page is a game with no last move.
+      //
+      // So the shell is not rebuilt, it is RE-HUNG. The very element - the
+      // same decoded painting, mid-drift - is put back on the wall. It cannot
+      // flash because it never stopped existing; the browser has nothing to
+      // fetch, decode or lay out again. Only a genuinely different painting
+      // builds a new one.
+      if (!shell && FO_HG_KEPT && FO_HG_KEPT.getAttribute("data-hgv") === String(v)
+          && FO_HG_KEPT.querySelector(".hg-bg")) {
+        try {
+          page.textContent = "";
+          page.appendChild(FO_HG_KEPT);
+          FO_HG_KEPT.classList.add("hg-seen");
+          shell = FO_HG_KEPT;
+        } catch (eRh) { shell = null; }
+      }
       if (shell) {
         shell.style.setProperty("--lac", region.ac || "#EBC271");
         // the weather caption chip is gone by decree: the painting says it all
@@ -5472,21 +5499,15 @@
         // different painting, is a real arrival and gets the full build.
         var seen = !!window.__foHgShown;
         window.__foHgShown = true;
-        var live = page.querySelector(".fo-hg2.fo-home2");
-        if (live && live.getAttribute("data-hgv") === String(v) && live.querySelector(".hg-bg")) {
-          var idEl = live.querySelector(".hg-id"), barEl = live.querySelector(".hg-bar");
-          if (idEl && idEl.innerHTML !== idHtml) idEl.innerHTML = idHtml;
-          if (barEl && barEl.innerHTML !== barHtml) barEl.innerHTML = barHtml;
-          live.style.setProperty("--lac", region.ac || "#EBC271");
-          live.classList.add("hg-seen");
-        } else {
-          page.innerHTML =
-            "<div class='fo-hg2 fo-home2" + (seen ? " hg-seen" : "") + "' data-hgv='" + E(v) + "' style='--lac:" + (region.ac || "#EBC271") + "'>" +
-            "<img class='hg-bg'" + anim0 + " src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
-            "<div class='hg-grain'></div><div class='hg-scrim'></div><div class='hg-bloom'></div>" +
-            "<div class='hg-id'>" + idHtml + "</div>" +
-            "<div class='hg-bar'>" + barHtml + "</div></div>";
-        }
+        page.innerHTML =
+          "<div class='fo-hg2 fo-home2" + (seen ? " hg-seen" : "") + "' data-hgv='" + E(v) + "' style='--lac:" + (region.ac || "#EBC271") + "'>" +
+          "<img class='hg-bg'" + anim0 + " src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
+          "<div class='hg-grain'></div><div class='hg-scrim'></div><div class='hg-bloom'></div>" +
+          "<div class='hg-id'>" + idHtml + "</div>" +
+          "<div class='hg-bar'>" + barHtml + "</div></div>";
+        // KEPT, NOT JUST DRAWN. The node itself is remembered so that the next
+        // render can re-hang THIS painting rather than build another one.
+        FO_HG_KEPT = page.querySelector(".fo-hg2.fo-home2");
       }
       try { document.body.classList.add("fo-home-on"); document.body.classList.remove("fo-boss-on"); document.body.classList.remove("fo-ov-on"); } catch (eBc) {}
       try { foHgFit(page.querySelector(".fo-hg2")); } catch (eF) {}
