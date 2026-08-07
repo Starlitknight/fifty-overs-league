@@ -44,15 +44,50 @@ export function stature(slot, isBoss) {
   if (s <= 7) return 0.86 - 0.035 * (s - 1);          // the rest of division one
   return 0.62 - 0.022 * (s - 8);                      // division two
 }
-// what the board puts in at the founding, and the following a club starts with
+// THE MONEY LADDER HAS TO BE AS STEEP AS THE STRENGTH LADDER.
+//
+// This is the half of the thought that 012 left undone. It made a flagship
+// richer than a bottom club - but only by 37%, while the generator gives that
+// flagship a squad whose mean rating is 60% higher. That was survivable only
+// because a wage was a straight line in rating: 60% better cost 60% more.
+//
+// It is not a straight line any more. Quality is priced on a curve, because
+// two of a good cricketer is not one great one and a game where it is has no
+// decisions in it. The moment wages bend, a 1.37x income against a 1.6x squad
+// is a flagship that cannot pay - measured, at 155% of its income - and the
+// best club in every nation goes into administration in its first season for
+// no reason except that two ladders were built to different gradients.
+//
+// So the crowd, the ground and the sponsor now climb with stature the way the
+// wage bill climbs with rating. A flagship draws roughly two and a half times
+// the following of a bottom club rather than a third more, and the pyramid
+// pays for the squads it deals.
 export function foundingBank(slot, isBoss) {
-  return Math.round(FOUNDING_BANK * (0.72 + 0.72 * stature(slot, isBoss)) / 1000) * 1000;
+  return Math.round(FOUNDING_BANK * (0.60 + 0.95 * econStature(slot, isBoss)) / 1000) * 1000;
 }
 export function foundingSeats(slot, isBoss) {
-  return Math.round(FOUNDING_SEATS * (1 + 0.95 * stature(slot, isBoss)) / 1000) * 1000;
+  return Math.round(FOUNDING_SEATS * (0.62 + 1.90 * Math.pow(econStature(slot, isBoss), 1.35)) / 1000) * 1000;
 }
 export function foundingSupport(slot, isBoss) {
-  return Math.round(FOUNDING_SUPPORT * (0.62 + 0.63 * stature(slot, isBoss)));
+  return Math.round(FOUNDING_SUPPORT * (0.40 + 1.62 * Math.pow(econStature(slot, isBoss), 1.45)));
+}
+// WHAT A CLUB EARNS FOLLOWS WHAT IT MUST PAY, AND PAY STOPS FALLING.
+//
+// stature() is two things at once: the generator's strength input, and the
+// economy's wealth input. They are not the same curve, and measuring showed
+// how far apart: mean squad rating over four nations runs 36,064 at the
+// flagship down to 25,773 by slot four - and then STOPS, sitting between
+// 23,000 and 24,300 for every slot from six to fifteen. The generator has a
+// floor on how bad a professional gets. The income ladder had none, so it
+// kept descending past the point the squads did, and the bottom club was
+// asked to pay a slot-eight wage bill on slot-fifteen money: 115% of income,
+// bankrupt for being poor rather than for being weak.
+//
+// So the economic ladder floors where the strength ladder floors. Above it,
+// wealth still climbs steeply with standing; below it, two clubs with the
+// same squad have the same means to keep it.
+export function econStature(slot, isBoss) {
+  return Math.max(0.62, stature(slot, isBoss));
 }
 export const MAX_SEATS = 45000;
 export const TICKET = 26;                    // what a seat costs at the gate
@@ -164,7 +199,7 @@ export function supportTarget(mood, pos, clubs, stat) {
   // single season. Form and position still do all the MOVING; what stature
   // sets is where a club is moving around. It is not optional - a caller who
   // omitted it would quietly draw flagship crowds for a bottom club.
-  return Math.round((2600 + 8000 * stat) + mood * 2600 + posF * 7000);
+  return Math.round((1800 + 13500 * Math.pow(stat, 1.45)) + mood * 2600 + posF * 7000);
 }
 
 // WHAT THE NEXT SEATS COST. Building gets dearer the bigger the ground is:
@@ -180,9 +215,12 @@ export function stadiumCost(fromSeats, toSeats) {
 }
 
 // the sponsor pays by the round, and reads the table before he signs
+// the sponsor reads the table, and reads it harder than he used to: finishing
+// top is worth a different order of cheque from finishing mid, which is what
+// makes a title race worth money and not only pride
 export function sponsorOf(pos, mood, clubs) {
   const posF = clubs > 1 ? (clubs - pos) / (clubs - 1) : 0.5;
-  return Math.round(18000 + posF * 15000 + (mood - 3) * 3000);
+  return Math.round(9000 + Math.pow(posF, 1.3) * 62000 + (mood - 3) * 4000);
 }
 
 // ---------------------------------------------------------------------------

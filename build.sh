@@ -62,7 +62,15 @@ REDIR='<script>window.__foHome=function(h,p,s,x){try{if(String(h).indexOf("githu
 
 # Unique build stamp (UTC time + source hash). The league layer shows it and
 # polls version.json to offer one-tap updates when a newer build is deployed.
-BUILD_ID="$(date -u +%Y%m%d-%H%M)-$(cat engine/src/league/*.js engine/src/presentation/*.js engine/src/skin/*.css | sha256sum | cut -c1-6)"
+# THE FINGERPRINT HAS TO COVER THE ENGINE, NOT ONLY THE ROOMS. It hashed
+# league, presentation and skin - so a change to engine/src/00-core.js, which
+# is the cricket and the economy, left the six-character suffix identical. The
+# minute stamp in front has been quietly saving it: two builds a minute apart
+# differ anyway. Two builds in the SAME minute with different core would have
+# collided on one filename, and a CDN would then serve whichever it cached
+# first under a name that promises the other. Everything the page runs is in
+# the hash now.
+BUILD_ID="$(date -u +%Y%m%d-%H%M)-$(cat engine/src/*.js engine/src/league/*.js engine/src/presentation/*.js engine/src/skin/*.css | sha256sum | cut -c1-6)"
 
 mkdir -p .build assets
 # THE WORKER CARRIES THE BUILD. Its shell cache is named after it, so shipping

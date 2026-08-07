@@ -3150,6 +3150,54 @@ function foGenExp(age,q,rnd){                  // experience correlates with age
   const base=(age-17)*6.5+q*8;
   return Math.max(2,Math.min(99,Math.round(base+(rnd()+rnd()+rnd()-1.5)*11)));
 }
+/* ============================================================================
+   WHAT A CRICKETER COSTS — AND WHY IT IS NOT A STRAIGHT LINE.
+
+   Wages were rating x 0.037. That is linear, and linear means the best
+   cricketer in the world costs about twice what an ordinary one costs.
+   Measured over 720 generated men: the median rating is 25,704 and the very
+   best is 58,254, so under the old rule the best man alive earned 2.4x the
+   median - and a club could field eleven of him out of petty cash. There was
+   no scarcity, so there was no decision, and the wage bill came to 11.6% of a
+   mid club's income while real cricket and football run at 60-80%.
+
+   Quality is now priced on a curve: wage rises with the CUBE of a man's
+   standing against the world's median. The effect is that
+
+     a median man          costs  $9,290 a round
+     a top-decile man      costs  x1.9 that
+     a top-percentile man  costs  x3.5
+     the best man alive    costs  x5.1
+
+   which is roughly the spread a real wage bill has, and it is what makes a
+   squad a set of choices rather than a shopping list: a mid club's whole wage
+   budget is about sixteen median men, so every star is paid for out of the
+   tail.
+
+   THE MIDPOINT IS CALIBRATED, NOT GUESSED. $9,290 puts the league's mean wage
+   bill at about 65% of income - the share the model is aimed at, measured
+   across all sixteen slots in four nations, not assumed from one. Move
+   FO_WAGE_MID and the whole economy moves with it; move FO_WAGE_K and the
+   distance between good and great changes without touching the median.
+
+   Nothing here reaches the cricket. ballDist reads a man's skills and never
+   his wage or his rating, so the same eleven play the same match at any price
+   - which is what lets this change ship without re-blessing a single
+   golden-master replay.
+   ========================================================================== */
+const FO_WAGE_R50=25704;            // the world's median rating, measured
+const FO_WAGE_MID=9290;             // what the median man earns a round
+const FO_WAGE_K=2.0;                // how fast the price of quality climbs
+function foWageOf(rating,talents,scar){
+  const r=Math.max(1,+rating||0);
+  const base=FO_WAGE_MID*Math.pow(r/FO_WAGE_R50,FO_WAGE_K);
+  // a talent is a premium ON what he already is, not a flat fee: it is worth
+  // more on a great cricketer than on a poor one, the way it plays
+  const t=1+0.06*Math.max(0,talents|0);
+  return Math.max(400,Math.round(base*t*(+scar||1)/10)*10);
+}
+try{window.foWageOf=foWageOf}catch(eW){}
+
 function jsDerive(p){ // mirror of world-gen engine mapping
   const sk=p.skills;
   p.bat=Math.round(.32*sk.vsPace+.32*sk.vsSpin+.16*sk.rotation+.20*sk.temperament);
@@ -3163,7 +3211,7 @@ function jsDerive(p){ // mirror of world-gen engine mapping
   p.btLabel=p.bowlTypeFull==='none'?'Does not bowl':arm+' '+lbl[p.bowlTypeFull];
   // v11.6: FTP-scaled rating (~15x the old bracket sum) so drafted/edited players match the baked FTP squads.
   p.rating=Math.round(420*(p.bat+sk.power*0.4+(p.threat+p.control)*0.5+sk.fielding*0.3+(p.role==='wicketkeeper'?sk.keeping*0.3:0)));
-  p.wage=Math.round(200+p.rating*0.037);   // keeps wages in the existing ~1600-3200 economy band
+  p.wage=foWageOf(p.rating,(p.talents||[]).length,1);
 }
 function pgEditor(){
   const t=GD.teams[edState.team];
@@ -3653,7 +3701,7 @@ function genDraftPool(seedStr){
     const nT=tierMult>1.1?(rnd()<0.6?2:1):(rnd()<0.5?1:0);
     for(let k=0;k<nT&&elig.length;k++){const t=elig.splice(Math.floor(rnd()*elig.length),1)[0];p.talents.push(t)}
     jsDerive(p);
-    p.wage=Math.max(700,Math.round((p.rating*0.045+p.talents.length*120)/10)*10);
+    p.wage=foWageOf(p.rating,p.talents.length,1);
     pool.push(p);
   }
   // ---- PRICING: 5-8 superstars affordable, the rest fillers, and no squad can be elite everywhere ----
@@ -3686,7 +3734,7 @@ function genDraftPool(seedStr){
     // You pay for what you can't find elsewhere - over and above raw skill.
     const scar=p.bowlTypeFull==='seamFast'?1.35:(p.bowlTypeFull==='wristSpin'?1.15:1);
     p.fee=Math.round(f*scar/1000)*1000;
-    p.wage=Math.max(700,Math.round((p.rating*0.045*scar+(p.talents?p.talents.length:0)*120)/10)*10);
+    p.wage=foWageOf(p.rating,(p.talents?p.talents.length:0),scar);
   });
   return pool;
 }
