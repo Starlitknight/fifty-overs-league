@@ -22,15 +22,50 @@ import { seedOf, dayOfRound, natHour, EPOCH, DAY, COLTS_DAYS } from './clock.mjs
 export const FOUNDING_BANK = 2500000;
 export const FOUNDING_SUPPORT = 12000;
 export const FOUNDING_SEATS = 15000;
+
+// A BIG CLUB IS BIG BEFORE IT IS GOOD, AND THAT IS WHERE THE GOOD COMES FROM.
+//
+// The world differentiated STRENGTH and left WEALTH flat. Every one of the 256
+// clubs was founded on the same 2.5m, the same 12,000 supporters and the same
+// 15,000 seats - while the flagship's dealt squad already cost 22% more in
+// wages than the weakest club's out of that identical income. The ladder was
+// asserted by the generator and funded by nobody, which is why a flagship had
+// no reason to be strong beyond the fact that the code said so.
+//
+// Stature is what a club IS: the crowd it draws, the ground it fills and the
+// capital its board carries. It is derived, not stored - a club's seat in the
+// league is already in the row, and slot 0 is a nation's flagship the same way
+// it always was. So a bigger club is founded with more money and more people,
+// earns more every matchday, and can carry the wage bill of a better squad.
+// The strength ladder stops being a decree and becomes a consequence.
+export function stature(slot, isBoss) {
+  if (isBoss || (slot | 0) === 0) return 1;          // the nation's flagship
+  const s = slot | 0;
+  if (s <= 7) return 0.86 - 0.035 * (s - 1);          // the rest of division one
+  return 0.62 - 0.022 * (s - 8);                      // division two
+}
+// what the board puts in at the founding, and the following a club starts with
+export function foundingBank(slot, isBoss) {
+  return Math.round(FOUNDING_BANK * (0.72 + 0.72 * stature(slot, isBoss)) / 1000) * 1000;
+}
+export function foundingSeats(slot, isBoss) {
+  return Math.round(FOUNDING_SEATS * (1 + 0.95 * stature(slot, isBoss)) / 1000) * 1000;
+}
+export function foundingSupport(slot, isBoss) {
+  return Math.round(FOUNDING_SUPPORT * (0.62 + 0.63 * stature(slot, isBoss)));
+}
 export const MAX_SEATS = 45000;
 export const TICKET = 26;                    // what a seat costs at the gate
 export const HOME_CUT = 2 / 3;               // the old two-thirds, one-third split
 export const DEBT_ROUND = 0.03;              // what an overdraft costs a round
-// THE HARD CAP. A club may not sink further than the money it was founded
-// with. Reach that floor and it is in ADMINISTRATION: the losses below the
-// line are written off - there is no deeper hole to dig - but the sponsor
-// halves his cheque while the club is under, and nothing gets built. It is a
-// floor with a price, not a forgiveness.
+// THE HARD CAP. A club may not sink further than two and a half million into
+// the red. Founding capital varies with a club's standing; the hole does NOT.
+// One depth for everybody, so a rich club's bigger bank buys it a longer fall
+// and not a deeper one, and ruin costs the same wherever you sit. Reach that
+// floor and the club is in ADMINISTRATION: the losses below the line are
+// written off - there is no deeper hole to dig - but the sponsor halves his
+// cheque while the club is under, and nothing gets built. It is a floor with
+// a price, not a forgiveness.
 export const DEBT_LIMIT = 2500000;
 export const ADMIN_SPONSOR = 0.5;
 // ---------------------------------------------------------------------------
@@ -121,9 +156,15 @@ const drawMult = (opp, oppPos) => (opp.is_boss ? 1.22 : 1) * (oppPos <= 3 ? 1.09
 // WHAT A CROWD BECOMES. Support drifts toward what the club deserves rather
 // than jumping to it, so a good season builds a following and a bad one
 // costs you one slowly enough to hurt.
-export function supportTarget(mood, pos, clubs) {
+export function supportTarget(mood, pos, clubs, stat) {
   const posF = clubs > 1 ? (clubs - pos) / (clubs - 1) : 0.5;
-  return Math.round(7000 + mood * 2600 + posF * 7000);
+  // STATURE IS THE FLOOR THE CROWD FALLS BACK TO. Without it a big club that
+  // has a bad year converges on exactly the following of a small club having
+  // the same bad year, and the difference between the two is erased inside a
+  // single season. Form and position still do all the MOVING; what stature
+  // sets is where a club is moving around. It is not optional - a caller who
+  // omitted it would quietly draw flagship crowds for a bottom club.
+  return Math.round((2600 + 8000 * stat) + mood * 2600 + posF * 7000);
 }
 
 // WHAT THE NEXT SEATS COST. Building gets dearer the bigger the ground is:
@@ -282,11 +323,13 @@ export async function computeFinance(pool, country, opts = {}) {
                 + (Array.isArray(c.youth) ? c.youth : []).reduce((s, p) => s + ((p && p.wage) || 0), 0);
     S[c.slot] = {
       slot: c.slot, name: c.name, is_boss: c.is_boss, wages,
-      academy: c.academy || 2, seats: c.seats || FOUNDING_SEATS,
+      academy: c.academy || 2, seats: c.seats || foundingSeats(c.slot, c.is_boss),
+      stature: stature(c.slot, c.is_boss),
       // what a manager has already spent is a fact; the books carry it from
       // the founding, so nobody can hide a purchase in an overdraft
-      bank: FOUNDING_BANK - (+c.academy_paid || 0) - (+c.seats_paid || 0),
-      sup: FOUNDING_SUPPORT, mood: 3, pts: 0, played: 0, form: [],
+      bank: foundingBank(c.slot, c.is_boss) - (+c.academy_paid || 0) - (+c.seats_paid || 0),
+      sup: foundingSupport(c.slot, c.is_boss),
+      mood: 3, pts: 0, played: 0, form: [],
       gate: 0, awayCut: 0, sponsor: 0, wagesPaid: 0, upkeep: 0, interest: 0,
       compensation: 0, capsAway: 0,
       feesIn: 0, feesOut: 0, scouting: 0, soldN: 0, boughtN: 0, academySpend: 0, coltsPurse: 0,
@@ -297,8 +340,8 @@ export async function computeFinance(pool, country, opts = {}) {
     // and the academy are running totals in the register with no dates behind
     // them, so they can only be stated as what has been spent to date - the
     // one place this statement cannot say WHEN.
-    let b0 = FOUNDING_BANK;
-    line(c.slot, EPOCH + HOUR, 'founding', 'Founding capital from the board', FOUNDING_BANK, b0);
+    let b0 = foundingBank(c.slot, c.is_boss);
+    line(c.slot, EPOCH + HOUR, 'founding', 'Founding capital from the board', b0, b0);
     if (+c.academy_paid) { b0 -= +c.academy_paid; line(c.slot, EPOCH + HOUR, 'academy', 'Academy building, to date', -(+c.academy_paid), b0); }
     if (+c.seats_paid) { b0 -= +c.seats_paid; line(c.slot, EPOCH + HOUR, 'stadium', 'Stadium building, to date', -(+c.seats_paid), b0); }
   }
@@ -424,7 +467,7 @@ export async function computeFinance(pool, country, opts = {}) {
     for (const slot of playing) {
       const c = S[slot];
       c.mood = moodOf(c.form, pos2[slot], N);
-      const t = supportTarget(c.mood, pos2[slot], N);
+      const t = supportTarget(c.mood, pos2[slot], N, c.stature);
       c.sup = clamp(Math.round(c.sup + (t - c.sup) * 0.18), 4000, 60000);
     }
   }
@@ -449,7 +492,9 @@ export async function computeFinance(pool, country, opts = {}) {
         academyPaid: +c.academy_paid || 0, seatsPaid: +c.seats_paid || 0,
         writtenOff: s.writtenOff, administration: s.admin, adminRounds: s.adminRounds,
         debtLimit: DEBT_LIMIT,
-        founded: FOUNDING_BANK, rounds: s.rounds,
+        // what THIS club's board put in, not the world's flat figure - the
+        // ledger identity is checked against it
+        founded: foundingBank(s.slot, s.is_boss), rounds: s.rounds,
         // how many of those rounds were at home is exactly how many gates were
         // counted, and it is the only honest divisor for an average gate
         homeMatches: s.atts.length, awayMatches: Math.max(0, s.rounds - s.atts.length),

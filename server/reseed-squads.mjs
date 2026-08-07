@@ -52,6 +52,7 @@ import { makePool } from './db.mjs';
 import { makeHost } from './enginehost.mjs';
 import { countryConfigs, squadFor, HUMAN_STR, foundingDivisions } from './init-world.mjs';
 import { EPOCH, dayIx, scheduleOf, seasonSchedules } from './clock.mjs';
+import { foundingSeats } from './economy.mjs';
 
 const confirm = (process.env.CONFIRM || '').trim();
 if (confirm !== 'YES-RESEED') {
@@ -149,7 +150,7 @@ for (const cfg of cfgs) {
     // part - a couple of hundred squads through the engine - and it touches
     // no database at all, so it happens out here where a long job holds no
     // locks. Every write waits for the one transaction below.
-    deals.push({ country: cfg.id, slot: club.slot, players });
+    deals.push({ country: cfg.id, slot: club.slot, players, seats: foundingSeats(club.slot, !!club.boss) });
     redealt++;
     const best = players.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0));
     const xi = Math.round(best.slice(0, 11).reduce((s, p) => s + (p.rating || 0), 0) / 11);
@@ -220,10 +221,18 @@ if (dry) {
     // 3. and only then are the new men put on the books. The book of the
     //    nets goes with the old squad: it is a cache of a replay, and these
     //    are different cricketers.
+    //    THE GROUND COMES UP TO THE CLUB'S STANDING, and never comes down. A
+    //    world founded before stature existed gave all 256 clubs the same
+    //    fifteen thousand seats, which is below what every one of them is now
+    //    worth; a redeal is the refounding that corrects it. GREATEST is the
+    //    whole of the care here - a manager who has already built a stand
+    //    keeps every seat he paid for, and seats_paid is left alone so his
+    //    statement still says what he spent. Nobody's ground shrinks.
     for (const d of deals) {
       await c.query(
-        'UPDATE clubs SET squad=$3, nets_history=NULL, nets_report=NULL WHERE country_id=$1 AND slot=$2',
-        [d.country, d.slot, JSON.stringify(d.players)]);
+        'UPDATE clubs SET squad=$3, nets_history=NULL, nets_report=NULL, seats=GREATEST(seats, $4)'
+        + ' WHERE country_id=$1 AND slot=$2',
+        [d.country, d.slot, JSON.stringify(d.players), d.seats]);
     }
     await c.query('COMMIT');
   } catch (e) { await c.query('ROLLBACK'); throw e; } finally { c.release(); }

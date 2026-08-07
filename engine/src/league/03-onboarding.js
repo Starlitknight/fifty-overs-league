@@ -767,8 +767,9 @@
   // and crowds follow its attendance() = supporters x (0.55 + 0.13 x mood),
   // capped by seats. Change one here and you must change it there.
   //
-  // The World Service is a SEPARATE economy - server/economy.mjs, founding
-  // bank 2.5m, ticket 26, academy upkeep by the round - and a club is founded
+  // The World Service is a SEPARATE economy - server/economy.mjs, where the
+  // founding bank, the ground and the following all follow a club's standing,
+  // ticket 26, academy upkeep by the round - and a club is founded
   // there through #/worldclub, which never comes past this screen. The two
   // sets of figures are meant to differ; neither is a stale copy of the other.
   var FO_FIN = {

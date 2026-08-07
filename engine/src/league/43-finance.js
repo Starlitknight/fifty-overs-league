@@ -2,7 +2,9 @@
    THE BOOKS (#/finance) — where every pound came from, and where it went.
 
    The umpire keeps a real ledger. He walks it from the day the club was founded
-   ($2.5m in the treasury), round by round, and every line of it is DERIVED from
+   - with whatever capital a club of that standing was founded on, which is not
+   the same figure for a nation's flagship as for the bottom of the second
+   division - round by round, and every line of it is DERIVED from
    the record: who played whom, who won, where the club stood that morning, how
    many people fancied going, what the weather did, who was sold, who was called
    up by his country. Nothing is incremented and nothing is stored that a re-run
@@ -723,8 +725,8 @@
       }
       if (!st.claim) {
         page.innerHTML = shell(head("The books",
-          "You don&rsquo;t hold a club in the served world yet. One is claimed for you on the next load, and it comes with " +
-          M(2500000) + " in the treasury."));
+          "You don&rsquo;t hold a club in the served world yet. One is claimed for you on the next load, " +
+          "and it comes with a ground, a following and whatever capital a club of that standing was founded on."));
         return;
       }
       FST.st = st; FST.at = Date.now();

@@ -8,6 +8,7 @@ import { initWorld, countryConfigs, squadFor } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { runDue } from '../tick.mjs';
 import { EPOCH, DAY, dayIx } from '../clock.mjs';
+import { foundingSeats } from '../economy.mjs';
 
 const DBNAME = 'foworld_reseed_test';
 let pool, host;
@@ -81,6 +82,12 @@ test('the reseed redeals the bots, spares a claimed club, and restarts the seaso
   await pool.query(`INSERT INTO ticks(key, status) VALUES ('eng:day:101','done')`);
   assert.equal((await pool.query('SELECT count(*)::int n FROM matches')).rows[0].n, 1, 'a card is on the book');
 
+  // a ground somebody has already built on, to prove a redeal cannot take it
+  // down: slot 5 has a forty-thousand-seat stadium and slot 15 has whatever
+  // the world handed it
+  await pool.query(`UPDATE clubs SET seats=40000 WHERE country_id='eng' AND slot=5`);
+  await pool.query(`UPDATE clubs SET seats=15000 WHERE country_id='eng' AND slot=15`);
+
   // the reseed, in-process, exactly as the workflow runs it
   process.env.CONFIRM = 'YES-RESEED';
   delete process.env.RESEED_CLAIMED; delete process.env.DRY_RUN;
@@ -107,6 +114,16 @@ test('the reseed redeals the bots, spares a claimed club, and restarts the seaso
   assert.equal(
     (await pool.query('SELECT generation FROM worlds WHERE id=1')).rows[0].generation, 2,
     'the world moved to its second generation, which is what made them new');
+
+  // THE GROUND COMES UP, AND NEVER DOWN. A redeal is a refounding, so a club
+  // whose ground is below what its standing is worth is given the difference -
+  // but a stand a manager paid for outlasts the world it was built in.
+  const grounds = (await pool.query(
+    `SELECT slot, seats FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows;
+  const seatOf = s => Number(grounds.find(g => g.slot === s).seats);
+  assert.equal(seatOf(5), 40000, 'a stand that was built is not taken down by a redeal');
+  assert.equal(seatOf(15), foundingSeats(15, false), 'and a small club is refounded on the ground its standing is worth');
+  assert.ok(seatOf(0) > seatOf(15), 'the flagship plays in the bigger ground');
 
   // the record is clear and the season is back at the top
   assert.equal((await pool.query('SELECT count(*)::int n FROM matches')).rows[0].n, 0, 'no cricket in the book');
