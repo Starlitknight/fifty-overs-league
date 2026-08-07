@@ -184,32 +184,44 @@ test('the open bid: the floor, the bank, and the board must be beaten', async ()
   await assert.rejects(
     as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, 900000000], atDay(START + 2, 10)),
     /bank will not cover/);
+  // THE RAISE IS THREE PER CENT OR $500, WHICHEVER IS MORE (054). A flat
+  // +5,000 used to clear that because a listing was tens of thousands; a fee
+  // is a season of wages now, so an asking price runs into the millions and
+  // three per cent of it is tens of thousands on its own. The bid is computed
+  // from the law rather than from a number that happened to beat it once.
+  // A bid comfortably clear of every floor - the reserve, the asking price and
+  // the three-per-cent raise - so what this test is actually about (the floor,
+  // the bank and the board) is not decided by arithmetic that moves whenever
+  // the fee scale does. It is read back afterwards rather than assumed.
+  const first = Math.ceil(L.asking * 1.25);
   const ok = await as(U1, `SELECT public.world_market_bid($1, $2) AS r`,
-    [L.id, L.asking + 5000], atDay(START + 2, 10));
+    [L.id, first], atDay(START + 2, 10));
   assert.equal(ok.rows[0].r.ok, true);
   // the board stands: an offer that does not beat it by the step is refused
   await assert.rejects(
-    as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, L.asking + 5000], atDay(START + 2, 11)),
+    as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, first], atDay(START + 2, 11)),
     /offer at least/);
-  // THE THREE PERCENT LAW (054): matching the flat $500 step is no longer
-  // enough where 3% of the standing high runs past it
-  const high0 = L.asking + 5000;
+  const high0 = first;
   const pctStep = Math.max(500, Math.ceil(high0 * 0.03));
   if (pctStep > 500) {
     await assert.rejects(
       as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, high0 + 500], atDay(START + 2, 11)),
       /offer at least/, 'a $500 nibble over a big board is refused - the law wants 3%');
   }
-  // raising replaces rather than stacks
-  await as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, L.asking + 9000], atDay(START + 2, 11));
+  // raising replaces rather than stacks. The raise has to clear the board this
+  // club already holds, which is `first` and not the asking price - a flat
+  // asking+9000 was below its own standing bid once a fee became a season of
+  // wages, and the umpire rightly refused it.
+  const second = Math.ceil(high0 * 1.05);
+  await as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, second], atDay(START + 2, 11));
   const mine = (await pool.query('SELECT * FROM bids WHERE listing_id=$1', [L.id])).rows;
   assert.equal(mine.length, 1);
-  assert.equal(mine[0].amount, L.asking + 9000);
+  assert.equal(mine[0].amount, second);
   // and the board is OPEN by decree: the standing high, its holder, and the
   // reserve are all public - only skills stay the scout's trade
   const board = (await pool.query('SELECT * FROM world_listings WHERE id=$1', [L.id])).rows[0];
   assert.equal(board.offers, 1);
-  assert.equal(Number(board.high), L.asking + 9000, 'the high bid is on the board');
+  assert.equal(Number(board.high), second, 'the high bid is on the board');
   assert.ok(board.high_club, 'and so is who holds it');
   // 053: the bidder's ADDRESS is public too, so his name can be a door
   assert.equal(board.high_country, 'eng');
