@@ -17,6 +17,12 @@
 /version.json
   Cache-Control: no-cache
 
+# THE WORKER ITSELF IS NEVER CACHED. It is the thing that decides what else may
+# be, so a stale copy of it is the one cache that cannot be corrected by
+# shipping a new build - every load must ask the origin for this file.
+/sw.js
+  Cache-Control: no-cache
+
 /client/game.html
   Cache-Control: no-cache
 

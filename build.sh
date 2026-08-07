@@ -58,7 +58,7 @@ cd "$(dirname "$0")"
 # showing the previous page until the real picture is ready. The navy is there
 # only for the first-ever visit, when there is no last painting to hang - which
 # is the one load that has nothing to blink away from.
-BOOT='<style id="fo-boot">html{background:#0B1322 no-repeat center/cover}html>body{visibility:hidden;animation:fo-boot-reveal .01s 4s forwards}@keyframes fo-boot-reveal{to{visibility:visible}}</style><script>try{var _a=localStorage.getItem("fo_hg_last");if(_a&&/^[a-z0-9-]+$/i.test(_a)){var _u="client/art/home/"+_a+".webp",_l=document.createElement("link");_l.rel="preload";_l.as="image";_l.href=_u;document.head.appendChild(_l);var _h=document.documentElement.style;_h.backgroundImage="url("+_u+")";_h.backgroundColor="transparent"}}catch(e){}</script>'
+BOOT='<style id="fo-boot">html{background:#0B1322 no-repeat center/cover}html>body{visibility:hidden;animation:fo-boot-reveal .01s 4s forwards}@keyframes fo-boot-reveal{to{visibility:visible}}</style><script>try{var _a=localStorage.getItem("fo_hg_last");if(_a&&/^[a-z0-9-]+$/i.test(_a)){var _u="client/art/home/"+_a+".webp",_l=document.createElement("link");_l.rel="preload";_l.as="image";_l.href=_u;document.head.appendChild(_l);var _h=document.documentElement.style;_h.backgroundImage="url("+_u+")";_h.backgroundColor="transparent"}}catch(e){}try{if("serviceWorker"in navigator){if(/[?&]nosw=1/.test(location.search)){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})});if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){if(k.indexOf("fo-")===0)caches.delete(k)})})}else if(location.protocol.indexOf("http")===0){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}}}catch(e){}</script>'
 
 # ONE GAME, ONE ADDRESS. The site is published twice - GitHub Pages, which
 # still serves the old bookmarks, and the host below, which is the real one.
@@ -79,6 +79,15 @@ REDIR='<script>window.__foHome=function(h,p,s,x){try{if(String(h).indexOf("githu
 BUILD_ID="$(date -u +%Y%m%d-%H%M)-$(cat engine/src/league/*.js engine/src/presentation/*.js engine/src/skin/*.css | sha256sum | cut -c1-6)"
 
 mkdir -p .build assets
+# THE WORKER CARRIES THE BUILD. Its shell cache is named after it, so shipping
+# a new build retires the old shell on activation rather than hoping it expires.
+# The source is engine/sw.js and the root sw.js is an OUTPUT - stamping the
+# source in place would freeze the cache name at whatever build ran first.
+python3 - "$BUILD_ID" <<'PYSW'
+import sys
+src = open('engine/sw.js', encoding='utf-8').read()
+open('sw.js', 'w', encoding='utf-8').write(src.replace('__FO_BUILD__', sys.argv[1], 1))
+PYSW
 FO_BUILD_ID="$BUILD_ID" FO_BOOT="$BOOT" FO_REDIR="$REDIR" python3 - <<'PYASM'
 import os, re
 build_id = os.environ['FO_BUILD_ID']
