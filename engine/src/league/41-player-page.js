@@ -620,7 +620,28 @@
     } else {
       var ms = moments(p);
       var adv = "";
-      if (mine) {
+      // A CARD DOES NOT HAVE FIFTEEN NUMBERS, SO THE PAGE MUST NOT PRINT FIFTEEN.
+      //
+      // The world describes a cricketer at two resolutions. world_my_status
+      // sends the engine player - the real fifteen-facet skills block.
+      // world_squads sends the PUBLIC CARD: batting, bowling, fielding and
+      // nothing else. A card is turned into an engine player by spreading each
+      // aggregate flat across its group, which is right for sorting and for
+      // the aggregate bars - they give the published figures back exactly -
+      // but it is NOT fifteen measurements, and the advanced view was showing
+      // it as though it were. That is why every batting facet read the same
+      // number and every bowling facet read another: the flat spread, printed
+      // as engine truth.
+      //
+      // The man is stamped __card when that happens, so the view says what it
+      // actually knows rather than inventing a shape he does not have.
+      if (mine && p.__card) {
+        adv = "<details class='fo-pp-adv'><summary>Advanced engine view</summary>" +
+          "<p class='fo-pp-dim'>Only this man&rsquo;s published card has reached this device &mdash; his batting, " +
+          "his bowling and his fielding, which are the three figures above. The fifteen engine facets behind them " +
+          "are not in the card, so they are not shown rather than guessed at. They arrive with the club&rsquo;s own " +
+          "squad; reload once you are signed in and they will be here.</p></details>";
+      } else if (mine) {
         var sk = skills(p);
         adv = "<details class='fo-pp-adv'><summary>Advanced engine view</summary>" +
           "<div class='fo-pp-advg rest'>" + restFacets(p).map(function (f) {
