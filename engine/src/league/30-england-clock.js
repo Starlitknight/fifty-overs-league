@@ -134,7 +134,30 @@
     var t = DOW[n.getUTCDay()] + " " + n.getUTCDate() + " " + MON[n.getUTCMonth()] +
       " · " + (n.getUTCHours() < 10 ? "0" : "") + n.getUTCHours() + ":" + (n.getUTCMinutes() < 10 ? "0" : "") + n.getUTCMinutes() + " UTC";
     var dayLn = "";
-    try { var ph = P().phaseOf(Date.now()); dayLn = "DAY " + (ph.day + 1) + " · SEASON " + ph.season; } catch (eD) {}
+    // THE DAY IS THE SEASON'S DAY, NOT THE WORLD'S.
+    //
+    // This counted ph.day + 1, which is the day since the world's EPOCH. That
+    // is only ever the same number as the season's day while the season happens
+    // to have opened on day zero - true of the founding season and of nothing
+    // else. Restart the world on a Monday three days out, as a redeal does, and
+    // the header would announce DAY 8 on the very morning the season bowled its
+    // first ball. ph.di is the day WITHIN the cycle, which is the number the
+    // sentence is actually claiming.
+    //
+    // And a world that has been dealt but has not started yet is a real state -
+    // it is exactly what the three days after a redeal are - so it gets a real
+    // line instead of counting down from DAY 0.
+    try {
+      var ph = P().phaseOf(Date.now());
+      if (ph.preseason) {
+        var away = ((P().anchorOf() || {}).start | 0) - ph.day;
+        dayLn = away > 0
+          ? "SEASON " + ph.season + " · IN " + away + (away === 1 ? " DAY" : " DAYS")
+          : "SEASON " + ph.season + " · FIRST BALL TODAY";
+      } else {
+        dayLn = "DAY " + (ph.di + 1) + " · SEASON " + ph.season;
+      }
+    } catch (eD) {}
     var live = 0;
     try {
       var pl = P();
