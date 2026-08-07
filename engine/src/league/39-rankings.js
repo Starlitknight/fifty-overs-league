@@ -112,10 +112,20 @@
         ? "<div class='fo-rk-mine'>&#127942; <b>" + E(mine.name) + "</b> stand <u>#" + mine.rank + "</u> of " + RK.clubs.length + " in the world &middot; strength " + rkStr(mine) +
           ((mine.form && mine.form.length) ? " &middot; recent form " + mine.form.map(fmt).join(", ") : " &mdash; no cricket played yet") + "</div>"
         : "";
-      var rowOf = function (c) {
+      // WHEN THE LADDER IS ONE LEAGUE, THE NUMBER IS THAT LEAGUE'S.
+      // Narrowing to England used to keep the WORLD rank on every row, so the
+      // page read 4, 19, 30, 34 ... 190 - a column of numbers that answers a
+      // question nobody asked while it is showing sixteen clubs and no others.
+      // Filtered, the figure is the club's place in its own league, 1 to 16,
+      // which is the thing a manager is looking at the list to find out. The
+      // world rank is not lost: it is the row's tooltip, and the ladder is
+      // still ORDERED by it, so the two readings never disagree.
+      var rowOf = function (c, iRow) {
         var isMine = !!(cl && c.country === cl.country && c.slot === cl.slot);
-        return "<a class='fo-rk-row" + (isMine ? " mine" : "") + (c.boss ? " boss" : "") + "' href='#/team?c=" + encodeURIComponent(c.country) + "&s=" + c.slot + "'>" +
-          "<i>" + c.rank + "</i>" +
+        var num = (natPick && iRow != null) ? (iRow + 1) : c.rank;
+        var tip = natPick ? " title='World rank #" + c.rank + "'" : "";
+        return "<a class='fo-rk-row" + (isMine ? " mine" : "") + (c.boss ? " boss" : "") + "' href='#/team?c=" + encodeURIComponent(c.country) + "&s=" + c.slot + "'" + tip + ">" +
+          "<i>" + num + "</i>" +
           "<img src='" + flagOf(c.country) + "' alt='' onerror=\"this.style.display='none'\">" +
           "<b>" + E(c.name) + (isMine ? " <em>YOU</em>" : (c.boss ? " <em class='bs'>FLAGSHIP</em>" : "")) + "</b>" +
           "<u>" + E(natName(c.country)) + "</u>" +
@@ -135,22 +145,39 @@
         return "<option value='" + E(n.id) + "'" + (natPick === n.id ? " selected" : "") + ">" + E(n.name) + "</option>";
       }).join("");
       var natSel = "<label class='fo-rk-natf'>League <select id='fo-rk-nat'>" + natOpts + "</select></label>";
+      // A LIST IN ALPHABETICAL ORDER IS NOT A RANKING, AND MUST NOT LOOK LIKE ONE.
+      //
+      // Nations are rated on MATCH ratings, and a world that has just been dealt
+      // has played none - every nation sits on 3,500, the neutral middle. With
+      // every rating tied the sort falls back on insertion order, so the table
+      // came out Afghanistan 1, Australia 2, Bangladesh 3, England 4: a column
+      // of ranks that is really the alphabet. The "unproven" note that said so
+      // lives in <u>, which the phone hides to make room - so on the device most
+      // of this is read on, 3,500 looked like a considered figure.
+      //
+      // Until somebody has played, the numerals go and the card says plainly
+      // that nobody has bowled a ball yet. The moment a match is banked the
+      // ranks mean something and they come straight back.
+      var natsPlayed = (RK.countries || []).some(function (n) { return (n.natP | 0) || (n.clubP | 0); });
       var natRows = (RK.countries || []).map(function (n) {
         var isMineN = !!(cl && cl.country === n.id);
         return "<a class='fo-rk-row nat" + (isMineN ? " mine" : "") + "' href='#/nation?n=" + encodeURIComponent(n.id) + "'>" +
-          "<i>" + n.rank + "</i>" +
+          "<i>" + (natsPlayed ? n.rank : "&ndash;") + "</i>" +
           "<img src='" + flagOf(n.id) + "' alt='' onerror=\"this.style.display='none'\">" +
           "<b>" + E(n.name) + "</b>" +
           "<u>XI " + fmt(n.natRating) + (n.natP ? "" : " &middot; unproven") + "</u>" +
           "<span class='pts'>" + fmt(n.clubRating) + "</span></a>";
       }).join("");
+      var natNote = natsPlayed ? "" :
+        "<p class='fo-rk-note'>No international cricket has been played in this world yet, so every nation stands level on <b>3,500</b> " +
+        "&mdash; the middle of the match scale, not a verdict. These are listed alphabetically until the first ball is bowled.</p>";
       body = mineChip +
         (moved ? "" : "<div class='fo-rk-card'><p class='fo-rk-note'>Every club on earth stands level on <b>3,500</b>. The ladder first moves the night the world plays its opening round.</p></div>") +
         "<div class='fo-rk-card'><h3>The club ladder <span>" +
-        (natPick ? E(natName(natPick)) + " &middot; all " + shown.length + " clubs &middot; world ranks" : "top 30 of " + RK.clubs.length + " &middot; last three match ratings") +
+        (natPick ? E(natName(natPick)) + " &middot; all " + shown.length + " clubs &middot; league order" : "top 30 of " + RK.clubs.length + " &middot; last three match ratings") +
         "</span>" + natSel + "</h3>" + top + mineExtra + "</div>" +
         "<div class='fo-rk-card'><h3>The nations <span>league strength &middot; national XI</span></h3>" +
-        natRows + "</div>";
+        natNote + natRows + "</div>";
     }
     page.innerHTML = "<div class='fo-rk'><div class='fo-rk-in'>" +
       "<div class='fo-rk-hero'><div class='fo-rk-k'>World cricket &middot; the ladder</div>" +
@@ -186,19 +213,26 @@
       ".fo-rk-note{font:italic 400 13px/1.6 'Fraunces',Georgia,serif;color:rgba(20,28,40,.6);margin:2px 0 6px}",
       "html body #page .fo-rk-row{display:flex;align-items:center;gap:9px;padding:8px 6px;border-top:1px solid rgba(20,28,40,.07);text-decoration:none !important;color:#141C28 !important}",
       ".fo-rk-row:first-of-type{border-top:none}",
-      ".fo-rk-row i{font:700 11px/1 Oswald,sans-serif;font-style:normal;color:rgba(20,28,40,.4);width:24px;text-align:right;flex:none}",
+      // TWO COLUMNS OF FIGURES, AND BOTH OF THEM LINE UP.
+      // The rank sat in a 24px box that a three-figure world rank overflowed,
+      // and the strength was pushed along by whatever the club was called - so
+      // 60,313 and 45,896 ended in different places down the page and the eye
+      // had nothing to run down. The rank box now fits three figures, the NAME
+      // takes the slack so everything after it is pinned to the right edge, and
+      // both columns are tabular so a 1 occupies exactly what a 9 does.
+      ".fo-rk-row i{font:700 11px/1 Oswald,sans-serif;font-style:normal;color:rgba(20,28,40,.4);width:30px;text-align:right;flex:none;font-variant-numeric:tabular-nums}",
       ".fo-rk-row img{width:22px;height:15px;object-fit:cover;border-radius:2px;flex:none}",
-      ".fo-rk-row b{font:600 13px/1.25 Inter,sans-serif;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".fo-rk-row b{font:600 13px/1.25 Inter,sans-serif;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       ".fo-rk-row b em{font-style:normal;font:700 8px/1 Oswald,sans-serif;letter-spacing:.12em;color:#C8542F;border:1px solid rgba(200,84,47,.45);border-radius:999px;padding:2px 6px;vertical-align:1px}",
       ".fo-rk-row b em.bs{color:#8a6d3b;border-color:rgba(138,109,59,.4)}",
-      ".fo-rk-row u{text-decoration:none;font:400 10.5px/1 Inter,sans-serif;color:rgba(20,28,40,.45);flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}",
+      ".fo-rk-row u{text-decoration:none;font:400 10.5px/1 Inter,sans-serif;color:rgba(20,28,40,.45);flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}",
       ".fo-rk-row .rec{font:500 10.5px/1 Inter,sans-serif;color:rgba(20,28,40,.45);flex:none;font-variant-numeric:tabular-nums}",
       // the three marks behind the figure - oldest on the left, as a scorebook reads
       "html body #page .fo-rk-row .frm{display:flex;gap:3px;flex:none}",
       "html body #page .fo-rk-row .frm em{font:600 9.5px/1 Oswald,sans-serif;font-style:normal;font-variant-numeric:tabular-nums;border-radius:4px;padding:3px 4px;min-width:26px;text-align:center;background:rgba(20,28,40,.06);color:rgba(20,28,40,.55)}",
       "html body #page .fo-rk-row .frm em.g{background:rgba(22,140,99,.14);color:#12684A}",
       "html body #page .fo-rk-row .frm em.b{background:rgba(176,58,42,.12);color:#9C3324}",
-      "html body #page .fo-rk-row .frm.none{font:italic 400 10px/1 'Fraunces',Georgia,serif;color:rgba(20,28,40,.35);display:block}",
+      "html body #page .fo-rk-row .frm.none{font:italic 400 10px/1 'Fraunces',Georgia,serif;color:rgba(20,28,40,.35);display:block;flex:none}",
       // A phone has room for the club's NAME or for its whole record, not both -
       // four figures on the club scale are wide. The name wins, the won-lost is on
       // the club's own page, and the form drops to the last two marks: anything
@@ -208,9 +242,9 @@
         "html body #page .fo-rk-row .rec{display:none}" +
         "html body #page .fo-rk-row .frm em:not(:nth-last-child(-n+2)){display:none}" +
         "html body #page .fo-rk-row .frm em{min-width:0;padding:3px 4px;font-size:9px}" +
-        "html body #page .fo-rk-row .pts{width:38px;font-size:13px}" +
+        "html body #page .fo-rk-row .pts{width:52px;font-size:13px}" +
       "}",
-      ".fo-rk-row .pts{font:700 14px/1 Oswald,sans-serif;color:#141C28;width:44px;text-align:right;flex:none;font-variant-numeric:tabular-nums}",
+      ".fo-rk-row .pts{font:700 14px/1 Oswald,sans-serif;color:#141C28;width:58px;text-align:right;flex:none;font-variant-numeric:tabular-nums}",
       ".fo-rk-row.mine{background:rgba(217,85,42,.07);border-radius:10px}",
       ".fo-rk-row.mine .pts{color:#B44A22}",
       ".fo-rk-gap{text-align:center;color:rgba(20,28,40,.35);font:700 12px/1 Oswald,sans-serif;padding:4px 0}",
