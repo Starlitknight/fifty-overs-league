@@ -25,7 +25,7 @@ import { academyRate } from '../living.mjs';
 import { fantasyPoints, unitRatings, matchRatings, teamRatings, matchRating,
          ladderRating, strengthRating, RATING_UNITS, RANK_BASE } from '../ratings.mjs';
 import { roundRobin, bracket, roundsOf, closeEnrolment, playComps, computeComp, rebuildComps } from '../comps.mjs';
-import { academyUpkeep, academyBuild, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, DEBT_LIMIT, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance } from '../economy.mjs';
+import { academyUpkeep, academyBuild, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, DEBT_LIMIT, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance, supportTarget, FOUNDING_SUPPORT } from '../economy.mjs';
 import { EPOCH, DAY, seedOf, dayOfRound } from '../clock.mjs';
 import { seasonTourPlan } from '../nations.mjs';
 
@@ -1330,13 +1330,43 @@ test('020: the books are a ledger, and they recompute from the record', async ()
     `SELECT bank FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows.map(r => Number(r.bank));
   assert.deepEqual(after, before, 'the ledger never drifts');
 
-  // WINNING PAYS. The club at the top of the table draws a bigger crowd, is in
-  // a better mood and is richer than the club at the bottom.
+  // WINNING PAYS - BUT IT PAYS THROUGH A FILTER, AND THAT IS THE POINT.
+  //
+  // This used to assert that the club finishing first out-draws the club
+  // finishing eighth. That is not something the model promises. A following
+  // moves eighteen per cent of the way toward its target each round, and the
+  // target is set by mood and position AT THAT ROUND - so after a short season
+  // the ORDER of followings is the order of the table THROUGH the season, not
+  // the table on the closing day. A leader caught on the last afternoon still
+  // carries the crowd it drew all summer, and the club that caught it is still
+  // climbing toward the one it has just earned. Both are mid-transition and
+  // neither is wrong. The old assertion held only while the table never
+  // shuffled late, which is a fact about the weather, not about the books.
+  //
+  // What the model DOES promise is checked instead, in two parts: that mood
+  // answers the table immediately, and that the rule underneath the crowd is
+  // the right way round - proven from the rule itself rather than from one
+  // season's lagged state, so no shuffle can ever flake it.
   const lg = (await pool.query(`SELECT body FROM snapshots WHERE key='league/eng'`)).rows[0].body;
   const top = rows.find(r => r.slot === lg.table[0].slot), bot = rows.find(r => r.slot === lg.table[7].slot);
-  assert.ok(top.finance.supporters > bot.finance.supporters,
-    'the champions have the bigger following (' + top.finance.supporters + ' v ' + bot.finance.supporters + ')');
-  assert.ok(top.finance.mood >= bot.finance.mood, 'and the happier one');
+  assert.ok(top.finance.mood >= bot.finance.mood,
+    'the champions are the happier club (' + top.finance.mood + ' v ' + bot.finance.mood + ')');
+  const N = lg.table.length;
+  assert.ok(supportTarget(top.finance.mood, 1, N) > supportTarget(bot.finance.mood, N, N),
+    'winning first place is worth more crowd than finishing last');
+  assert.ok(supportTarget(5, 1, N) > supportTarget(3, 1, N), 'and a happier club out-draws a flat one');
+  // and the crowd is genuinely LIVE and genuinely DRIVEN: nobody is still
+  // sitting on the founding number, and nobody has drifted outside the band the
+  // rule can produce. A following that stopped answering results would fail the
+  // first; one being moved by something other than mood and position would fail
+  // the second.
+  const lo = supportTarget(0, N, N), hi = supportTarget(5, 1, N);
+  rows.forEach(r => {
+    const s = r.finance.supporters;
+    assert.notEqual(s, FOUNDING_SUPPORT, r.name + ' is still on the founding figure');
+    assert.ok(s >= lo && s <= hi,
+      r.name + ' has a following of ' + s + ', outside anything the rule can reach (' + lo + '-' + hi + ')');
+  });
 
   // THE GATE SPLIT: two thirds to the home club, one third to the visitors
   const cash = await computeFinance(pool, 'eng');

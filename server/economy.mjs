@@ -121,7 +121,7 @@ const drawMult = (opp, oppPos) => (opp.is_boss ? 1.22 : 1) * (oppPos <= 3 ? 1.09
 // WHAT A CROWD BECOMES. Support drifts toward what the club deserves rather
 // than jumping to it, so a good season builds a following and a bad one
 // costs you one slowly enough to hurt.
-function supportTarget(mood, pos, clubs) {
+export function supportTarget(mood, pos, clubs) {
   const posF = clubs > 1 ? (clubs - pos) / (clubs - 1) : 0.5;
   return Math.round(7000 + mood * 2600 + posF * 7000);
 }
