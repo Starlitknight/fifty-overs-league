@@ -312,18 +312,70 @@
     var spinStyles = ["fingerSpin", "wristSpin", "fingerSpin", "fingerSpin"];
     for (var iP = 0; iP < want.pace; iP++) slots.push({ role: paceStyles[iP % paceStyles.length], g: "pace" });
     for (var iS = 0; iS < want.spin; iS++) slots.push({ role: spinStyles[iS % spinStyles.length], g: "spin" });
-    // hand the quality ladder out by the archetype's focus order (stable sort
-    // keeps each group's internal order); flat archetypes squash the ladder
-    // quality ladder stretched over however many slots the manager chose
-    var ladder = [];
-    for (var iL = 0; iL < slots.length; iL++) ladder.push(slots.length <= 1 ? 0.55 : 0.80 - 0.49 * (iL / (slots.length - 1)));
-    if (A.flatQ) {
-      var avgQ = ladder.reduce(function (s, v) { return s + v; }, 0) / Math.max(1, ladder.length);
-      ladder = ladder.map(function (v) { return avgQ + (v - avgQ) * 0.25; });
-    }
+    // ONE LADDER ACROSS THE WHOLE SQUAD MADE EVERY DEPARTMENT FLAT.
+    //
+    // The rungs used to be a single straight line from 0.80 down to 0.31 with
+    // no randomness in it at all, handed out in the archetype's focus order.
+    // Two things followed, and together they are the whole "I got dealt the
+    // same player four times".
+    //
+    // Every club of a given size got the IDENTICAL shape - the fourth man
+    // always exactly the same distance below the third, everywhere in the
+    // world.
+    //
+    // And a DEPARTMENT only ever occupied a short consecutive slice of that
+    // line. Six batsmen sat on six neighbouring rungs, so the gap between a
+    // club's best batsman and its sixth was a couple of points of quality.
+    // Measured: six batsmen inside two points of overall, at every club.
+    //
+    // Now every department carries its OWN ladder. The archetype's focus
+    // decides where a department sits - a Pace Battery's quicks centre high,
+    // its batting lower - and inside it the men run from a genuine first
+    // choice down to a genuine fringe player. Jitter stops two clubs of one
+    // archetype being the same club. The squad's total is normalised by the
+    // budget pass afterwards, so the spread costs the club no strength at all:
+    // it buys SHAPE, not power.
     var pr = {}; (A.focus || []).forEach(function (gname, i2) { pr[gname] = i2; });
-    var order = slots.slice().sort(function (a, b) { return (pr[a.g] == null ? 9 : pr[a.g]) - (pr[b.g] == null ? 9 : pr[b.g]); });
-    order.forEach(function (sl, i3) { sl.q = ladder[i3] != null ? ladder[i3] : 0.33; });
+    var Q_FLOOR = 0.16;
+    var UP = A.flatQ ? 0.11 : 0.41, DOWN = A.flatQ ? 0.11 : 0.39;
+    var byG = {};
+    slots.forEach(function (sl) { (byG[sl.g] = byG[sl.g] || []).push(sl); });
+    Object.keys(byG).forEach(function (gname) {
+      var rank = pr[gname] == null ? 2.4 : pr[gname];
+      var mid = 0.68 - 0.085 * rank;                       // where this department sits
+      var men = byG[gname];
+      men.forEach(function (sl, iG) {
+        var t = men.length <= 1 ? 0.5 : iG / (men.length - 1);   // 0 first choice .. 1 fringe
+        sl.q = Math.max(Q_FLOOR, Math.min(0.96,
+          mid + UP - (UP + DOWN) * t + (rnd() - 0.5) * 0.11));
+      });
+    });
+    // AGE MUST NOT CANCEL THE LADDER, WHICH IS EXACTLY WHAT IT WAS DOING.
+    //
+    // A man's level is foSkillLevel(q, age): his own ceiling, approached as he
+    // ages and reached at 27. Age was then drawn UNIFORMLY AT RANDOM from the
+    // archetype's range, with no knowledge of where the ladder had placed him -
+    // and the age swing is the bigger of the two. So a squad's best prospect,
+    // drawn at twenty, came out BELOW its ninth man drawn at twenty-eight.
+    // Measured before this: quality 0.941 produced an overall of 67 while
+    // quality 0.437 produced 68. The ladder was real, and a dice roll erased it.
+    //
+    // Age now follows the rung, the way a squad actually looks: the men at the
+    // top are in their prime, the tail is where the colts and the veterans are.
+    // Jitter keeps it from being a formula, and the archetype's own range still
+    // bounds it, so The Prodigy stays young and The Old Guard stays old.
+    (function () {
+      var lo = (A.ages && A.ages[0]) || 21, hi = (A.ages && A.ages[1]) || 30;
+      var qs = slots.map(function (sl) { return sl.q; });
+      var qLo = Math.min.apply(null, qs), qHi = Math.max.apply(null, qs);
+      slots.forEach(function (sl) {
+        var rung = qHi > qLo ? 1 - (sl.q - qLo) / (qHi - qLo) : 0.5;   // 0 = best
+        var want = 28 - 7.5 * rung + (rnd() - 0.5) * 5;
+        // a fringe man is as likely to be a veteran on the way down as a colt
+        if (rung > 0.62 && rnd() < 0.34) want = 32 + rnd() * 5;
+        sl.age = Math.max(lo, Math.min(hi, Math.round(want)));
+      });
+    })();
     // the captain first (from the same pool the picker showed), then the squad
     var st = A.starter || {};
     var players = [];
@@ -346,7 +398,7 @@
       jsDerive(starter);
     }
     players.push(starter);
-    slots.forEach(function (sl) { players.push(foQsPlayer({ role: sl.role, ages: A.ages, q: sl.q }, country, rnd, firsts, lasts)); });
+    slots.forEach(function (sl) { players.push(foQsPlayer({ role: sl.role, ages: A.ages, q: sl.q, age: sl.age }, country, rnd, firsts, lasts)); });
     var qOf = {}; qOf[starter.name] = 0.97 * (CF.q || 1); slots.forEach(function (sl, i5) { qOf[players[i5 + 1].name] = sl.q; });
     // archetype flavour: real multipliers on the raw skills, BEFORE the
     // equal-budget pass, so the weakness survives normalisation as SHAPE

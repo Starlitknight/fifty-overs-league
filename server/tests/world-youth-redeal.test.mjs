@@ -26,13 +26,35 @@ before(async () => {
 });
 after(async () => { if (pool) await pool.end(); });
 
-test('no boy the hat can deal out-rates the weakest senior of any generated squad', () => {
-  // the floor: the weakest senior across a spread of generated squads
+test('the best boy can push out a fringe man, and cannot walk into the first XI', () => {
+  // WHAT THIS RULE USED TO SAY, AND WHY IT CHANGED.
+  //
+  // It used to demand that the strongest boy an academy can produce rate below
+  // the WEAKEST senior anywhere in the world - the youth and senior
+  // distributions were not allowed to touch at any point. That reads as
+  // prudence, and it quietly cost the game the thing a squad is for.
+  //
+  // A squad's total strength is normalised to its budget, so ANY widening of
+  // the spread inside a squad lowers its tail: lifting a first choice pulls
+  // everyone else down. A no-overlap rule therefore pins the tail, and pinning
+  // the tail flattens the squad. Measured under the old rule: six batsmen
+  // inside two points of overall, at every club in the world, which is exactly
+  // how it read - the same player, dealt four times.
+  //
+  // The rule now says what it always meant. A jewel is exciting because he can
+  // displace your fifteenth man, not because he is instantly your best: he may
+  // out-rate a fringe senior - a real club's fifteenth man IS comparable to a
+  // top academy graduate - and he must still rate below the MEDIAN senior, so
+  // no boy walks straight into a first XI.
+  const medians = [];
   let minSenior = Infinity;
   for (let s = 0; s < 12; s++) {
     const sq = host.genSquad('rdl|club' + s, 'England', 'balanced', 'general');
-    minSenior = Math.min(minSenior, ...sq.map(p => p.rating || Infinity));
+    const r = sq.map(p => p.rating || 0).sort((a, b) => a - b);
+    medians.push(r[Math.floor(r.length / 2)]);
+    minSenior = Math.min(minSenior, r[0]);
   }
+  const minMedian = Math.min(...medians);
   // the ceiling: full level-5 academies (best tier odds) plus forced jewels
   // at every age - the strongest boys the generator can produce
   let maxBoy = 0;
@@ -44,8 +66,13 @@ test('no boy the hat can deal out-rates the weakest senior of any generated squa
     const b = makeRecruit(host, 'England', 'balanced', 'jewel', 'rdlj|' + s);
     if (b) maxBoy = Math.max(maxBoy, b.rating || 0);
   }
-  assert.ok(maxBoy < minSenior,
-    'strongest possible boy (' + maxBoy + ') must rate below the weakest senior (' + minSenior + ')');
+  assert.ok(maxBoy < minMedian,
+    'strongest possible boy (' + maxBoy + ') must rate below the median senior (' + minMedian + ')');
+  // and the overlap is deliberate, not accidental: if the squads ever go flat
+  // again the tail will climb back above the academy and this will say so.
+  assert.ok(minSenior < maxBoy,
+    'a fringe senior (' + minSenior + ') is meant to be reachable by the best boy (' + maxBoy +
+    ') - if it is not, the squad spread has collapsed again');
 });
 
 test('the redeal replaces every list, clears the old paperwork, and fires once', async () => {
