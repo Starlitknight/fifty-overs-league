@@ -66,7 +66,18 @@ export function foundingBank(slot, isBoss) {
   return Math.round(FOUNDING_BANK * (0.60 + 0.95 * econStature(slot, isBoss)) / 1000) * 1000;
 }
 export function foundingSeats(slot, isBoss) {
-  return Math.round(FOUNDING_SEATS * (0.62 + 1.90 * Math.pow(econStature(slot, isBoss), 1.35)) / 1000) * 1000;
+  // THE GROUND IS NOT THE LEVER, AND MAKING IT ONE COSTS A CLUB ITS FUTURE.
+  // Steepening this with the crowd looked consistent and was measured to be
+  // useless: a full house never happens - at every slot the crowd a club can
+  // draw is below the seats it already has, so capacity is a ceiling nobody
+  // touches and support alone decides the gate. What the bigger ground DID do
+  // was break building. seatBlockPrice indexes the next thousand off a
+  // constant 15,000, so a flagship founded on 38,000 was charged as though it
+  // had already built twenty-three blocks: $2.94m for its first expansion,
+  // more than it could hold. p3's ledger test caught it as a club unable to
+  // afford a stand. The ground goes back to what it was; the crowd, the
+  // sponsor and the bank carry the standing.
+  return Math.round(FOUNDING_SEATS * (1 + 0.95 * econStature(slot, isBoss)) / 1000) * 1000;
 }
 export function foundingSupport(slot, isBoss) {
   return Math.round(FOUNDING_SUPPORT * (0.40 + 1.62 * Math.pow(econStature(slot, isBoss), 1.45)));
