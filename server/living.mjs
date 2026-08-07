@@ -116,12 +116,21 @@ export function applyLiving(squad, patch, host) {
     if (L.f != null) { p.formIx = L.f; p.formWord = FORMW[L.f] || 'steady'; }
     if (L.n != null) { p.fatN = L.n; p.fatWord = fatWordOf(L.n); p.fatigue = p.fatWord; }
     if (L.s) { skilled = true; for (const k in L.s) if (p.skills) p.skills[k] = L.s[k]; }
+    // THE PATCH IS THE AUTHORITY ON WHAT HE HAD LEARNED THAT DAY, in both
+    // directions. Adding a talent back is the easy half; the half that matters
+    // is taking one AWAY. A replay is laid over the club's squad AS IT STANDS
+    // NOW, and a man who has earned a talent since carries it in his list - so
+    // without this he bowls the replay with a gift he had not yet been given,
+    // and the recorded card and the broadcast disagree. p3 said so: five
+    // wickets in the replay against four in the book.
     if (L.tp) p.talProg = L.tp; else delete p.talProg;
+    if (p.talEarned && p.talEarned !== L.te && Array.isArray(p.talents))
+      p.talents = p.talents.filter(t => t !== p.talEarned);
     if (L.te) {
       p.talEarned = L.te;
       if (!Array.isArray(p.talents)) p.talents = [];
       if (p.talents.indexOf(L.te) < 0) p.talents = p.talents.concat([L.te]);
-    }
+    } else delete p.talEarned;
   });
   if (skilled && host && host.derive) {
     const out = host.derive(squad);

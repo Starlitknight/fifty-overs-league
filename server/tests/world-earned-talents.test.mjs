@@ -208,3 +208,34 @@ test('a cup tie and a week with his country count, and a friendly does not', asy
   assert.equal((after.talProg || {}).anchor, before + 65,
     'the cup tie and the tour both counted: ' + before + ' + 40 + 25');
 });
+
+test('a replay fields the man as he was, not as he has since become', async () => {
+  // The half that is easy to get wrong. A broadcast lays the banked patch over
+  // the club's squad AS IT STANDS NOW; a man who has earned a talent since the
+  // match carries it in his list, and without the patch being authoritative in
+  // BOTH directions he replays with a gift he had not yet been given.
+  const club = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
+  const earner = club.squad.find(p => p.talEarned);
+  assert.ok(earner, 'somebody at this club has earned one by now');
+
+  // the patch as it stood BEFORE he earned it: same men, no mention of it
+  const asWas = JSON.parse(JSON.stringify(club.squad)).map(p => {
+    const q = { ...p };
+    if (q.talEarned) { q.talents = (q.talents || []).filter(t => t !== q.talEarned); delete q.talEarned; }
+    delete q.talProg;
+    return q;
+  });
+  const patch = livingPatch(asWas, []);
+  assert.ok(!patch[earner.name].te, 'the old patch does not name a talent he had not earned');
+
+  // laid over TODAY's squad, which does have it
+  const today = JSON.parse(JSON.stringify(club.squad));
+  applyLiving(today, patch, host);
+  const back = today.find(p => p.name === earner.name);
+  assert.ok(!back.talEarned, 'the replay does not know about a talent he earned later');
+  assert.ok((back.talents || []).indexOf(earner.talEarned) < 0,
+    'and it is off his card for the replay, or the broadcast is a different match');
+  // what he was BORN with is never touched - only the earned one moves
+  const born = (earner.talents || []).filter(t => t !== earner.talEarned);
+  born.forEach(t => assert.ok((back.talents || []).indexOf(t) >= 0, t + ' is his and stays his'));
+});
