@@ -2651,6 +2651,9 @@
       "@keyframes foHgIn{from{opacity:0}to{opacity:1}}" +
       "@keyframes foHgUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}" +
       ".fo-hg2 .hg-id{animation:foHgUp .7s .15s both}" +
+      // a repaint is not an arrival: nothing rises or fades the second time
+      ".fo-hg2.hg-seen .hg-id,.fo-hg2.hg-seen .hg-gaff,.fo-hg2.hg-seen .hg-next," +
+      ".fo-hg2.hg-seen .hg-bar,.fo-hg2.hg-seen .hg-wx{animation:none !important}" +
       ".fo-hg2 .hg-gaff{animation:foHgUp .7s .34s both}" +
       ".fo-hg2 .hg-next{animation:foHgUp .7s .5s both}" +
       ".fo-hg2 .hg-bar{animation:foHgUp .6s .72s both}" +
@@ -5449,9 +5452,23 @@
         var anim0 = window.__foHgShown
           ? " style='animation:foHgDrift 34s ease-in-out infinite alternate'"
           : " style='animation:none;opacity:0' onload=\"this.style.cssText=''\"";
+        // THE ENTRANCE PLAYS ONCE, NOT ON EVERY REBUILD.
+        //
+        // The painting was already spared this - it does not fade in a second
+        // time - but the club name, the standing and the buttons each carry
+        // their own staggered rise, and those replayed in full every time the
+        // page was rebuilt. The home page IS rebuilt after its first paint, on
+        // purpose: the served status and the squad arrive a moment later and
+        // the page has to say the true thing rather than the cached one. So a
+        // manager refreshing saw the whole billing slide up and fade in twice,
+        // which is exactly one blink, every time - which is what it was
+        // reported as.
+        //
+        // The same flag the image uses decides it, read BEFORE it is set.
+        var seen = !!window.__foHgShown;
         window.__foHgShown = true;
         page.innerHTML =
-          "<div class='fo-hg2 fo-home2' data-hgv='" + E(v) + "' style='--lac:" + (region.ac || "#EBC271") + "'>" +
+          "<div class='fo-hg2 fo-home2" + (seen ? " hg-seen" : "") + "' data-hgv='" + E(v) + "' style='--lac:" + (region.ac || "#EBC271") + "'>" +
           "<img class='hg-bg'" + anim0 + " src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
           "<div class='hg-grain'></div><div class='hg-scrim'></div><div class='hg-bloom'></div>" +
           "<div class='hg-id'>" + idHtml + "</div>" +
