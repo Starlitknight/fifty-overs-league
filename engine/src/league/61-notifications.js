@@ -151,6 +151,15 @@
       (x.body ? "<i>" + E(x.body) + "</i>" : "") + "</span>" +
       "<span class='wh'>" + (isAsk ? (urgent ? "Now" : "Waiting") : E(ago(x.at))) + "</span></a>";
   }
+  // THE ROUTER MUST KNOW THIS ROOM EXISTS. route() dispatches a page either
+  // from P (a pgX function) or from OV (a window.foRenderXPage name), and its
+  // last line is `else { location.hash = '#/home'; return }`. A hash it has
+  // never heard of is therefore not an empty page - it is a REDIRECT. So
+  // #/news went to the bell, the bell went to route(), route() sent the hash
+  // home, and the wrapper below then read location.hash, found '#/home', and
+  // correctly declined to draw the news. The bell led nowhere, on every
+  // device. Registering the renderer under the name OV expects is what makes
+  // #/news an address instead of a typo.
   function draw() {
     var page = document.getElementById("page"); if (!page) return;
     css();
