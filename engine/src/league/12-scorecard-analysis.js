@@ -5568,7 +5568,11 @@
                 cv.width = 16; cv.height = 10;
                 cv.getContext("2d").drawImage(bgT, 0, 0, 16, 10);
                 var u = cv.toDataURL("image/jpeg", 0.5);
-                if (u && u.length < 3000) localStorage.setItem("fo_hg_lqip", u);
+                // STAMPED WITH THE PAINTING IT IS A THUMBNAIL OF. The name is
+                // written the moment the hero is built; the thumbnail cannot be
+                // until the image has decoded. A refresh in between would
+                // otherwise hang today's painting over yesterday's colours.
+                if (u && u.length < 3000) localStorage.setItem("fo_hg_lqip", v + "|" + u);
               } catch (eTh) {}          // a tainted canvas on file:// - no matter
             };
             if (bgT.complete && bgT.naturalWidth) thumb();
