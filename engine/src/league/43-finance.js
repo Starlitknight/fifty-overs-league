@@ -230,8 +230,12 @@
   function shell(body) {
     return "<div class='fo-fin'>" + body + "</div>";
   }
+  // The eyebrow says which room you are standing in, so it cannot be the word
+  // "books" any more: three rooms share this masthead - Finances, the ground
+  // and the statement - and two of them are not the books. It takes the title
+  // it is given, which is the only thing that knows.
   function head(clubNm, sub) {
-    return "<header class='fo-nvmast'><div class='k'>The books</div>" +
+    return "<header class='fo-nvmast'><div class='k'>Fifty Overs</div>" +
       "<h1>" + E(clubNm || "Your club") + "</h1>" +
       (sub ? "<p>" + sub + "</p>" : "") + "</header>";
   }
