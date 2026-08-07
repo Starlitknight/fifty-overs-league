@@ -35,7 +35,7 @@
  * its caches, so a bad deploy is one URL away from being undone rather than
  * needing a fix shipped through the very thing that is broken.
  */
-const BUILD = '20260807-2033-40baa1';
+const BUILD = '20260807-2055-e6358d';
 const SHELL = 'fo-shell-' + BUILD;
 const LONG = 'fo-long-v1';
 const SHELL_URLS = ['./', './index.html', './client/game.html'];

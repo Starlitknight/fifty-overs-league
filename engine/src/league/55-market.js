@@ -917,11 +917,12 @@
         "stroke-linecap='round' stroke-linejoin='round'><path d='M6 8.6a6 6 0 0 1 12 0c0 6 2.4 7.4 2.4 7.4H3.6S6 14.6 6 8.6'/><path d='M10.2 20a2 2 0 0 0 3.6 0'/></svg>" +
         "<span id='fo-wire-bdg' style='display:none'></span>";
       btn.addEventListener("click", function (ev) { ev.preventDefault(); ev.stopPropagation(); bellToggle(btn); });
-      // beside the menu button, well clear of the clock chip that owns the
-      // masthead's right edge
-      var mn = document.getElementById("fo-mnav-btn");
-      if (mn && mn.parentNode) mn.parentNode.insertBefore(btn, mn.nextSibling);
-      else tb.insertBefore(btn, tb.firstChild);
+      // the masthead's right edge is a group, and the bell belongs in it, just
+      // to the left of the date and time; the group asserts the order itself,
+      // so this only has to get the bell into the right box
+      var rt = document.getElementById("fo-hdr-right");
+      if (rt) rt.insertBefore(btn, rt.firstChild); else tb.appendChild(btn);
+      try { if (typeof foHdrRight === "function") foHdrRight(tb); } catch (eH) {}
       bellBadge();
     } catch (e) {}
   }

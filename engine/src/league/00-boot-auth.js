@@ -631,49 +631,70 @@
       window.updateTopbarStatus.__fo = 1;
     }
   } catch (e) {}
-  // the mobile drawer: rebuilt from the live nav on every open, so it always
-  // mirrors exactly what the pill row would have shown (state, Live pill, Admin)
-  function foMnavClose() {
+  // The mobile drawer is gone with the hamburger that opened it: the menu
+  // bar under the masthead is the one index, at every width.
+
+  /* THE RIGHT EDGE OF THE MASTHEAD IS ONE GROUP.
+   *
+   * The world clock pins itself to the corner with position:absolute, which
+   * means anything that wants to sit BESIDE it cannot simply be put next to
+   * it in the flow - the clock is not in the flow. That is why the bells ended
+   * up at the far left, beside the old menu button: it was the only place in
+   * the masthead where their position was knowable.
+   *
+   * Rather than have each bell guess an offset from a clock whose width
+   * changes with the date, one absolutely-positioned box owns the right edge
+   * and everything in it lays out normally inside. The clock goes back to
+   * being an ordinary element, and a bell is placed by putting it before the
+   * clock - which is exactly what "just to the left of the date and time"
+   * means, and it stays true at any width and in any language.
+   *
+   * Order is asserted on every pass because the bells mount on their own
+   * timers and may arrive after the clock; a node already in the right place
+   * is left alone, so this does not churn the DOM once it has settled.
+   */
+  var FO_HDR_RIGHT = ["#fo-bell", "#fo-wire-btn", "#fo-clock", "#fo-wclock"];
+  function foHdrRight(tb) {
     try {
-      var d = document.getElementById("fo-mdrawer");
-      if (d) d.classList.remove("open");
-      document.body.classList.remove("fo-mnav-lock");
-    } catch (e) {}
-  }
-  function foMnavToggle() {
-    try {
-      var d = document.getElementById("fo-mdrawer");
-      if (d && d.classList.contains("open")) { foMnavClose(); return; }
-      if (!d) {
-        d = document.createElement("div"); d.id = "fo-mdrawer";
-        document.body.appendChild(d);
-        window.addEventListener("hashchange", foMnavClose);
-        window.addEventListener("keydown", function (ev) { if (ev.key === "Escape") foMnavClose(); });
+      if (!tb) tb = document.getElementById("topbar");
+      if (!tb) return;
+      var rt = tb.querySelector("#fo-hdr-right");
+      if (!rt) {
+        rt = document.createElement("div"); rt.id = "fo-hdr-right";
+        tb.appendChild(rt);
       }
-      d.innerHTML = "<div class='fo-mdk'></div><div class='fo-mdp'><div class='fo-mdh'><img src='" + APPICON + "' alt=''> Fifty Overs" +
-        "<button class='fo-mdx' aria-label='Close menu'>&#10005;</button></div><nav class='fo-mdn'></nav><div class='fo-mdf'></div></div>";
-      d.querySelector(".fo-mdk").addEventListener("click", foMnavClose);
-      d.querySelector(".fo-mdx").addEventListener("click", foMnavClose);
-      var nav = d.querySelector(".fo-mdn"), foot = d.querySelector(".fo-mdf");
-      var tb = document.getElementById("topbar");
-      [].slice.call(tb ? tb.querySelectorAll(".fo-nav-scroll a") : []).forEach(function (a) {
-        // skip links the topbar itself hides (engine's retired pages)
-        var nv = a.getAttribute("data-nav");
-        if (nv === "reports" || nv === "manual" || nv === "orders") return;
-        if (a.style && a.style.display === "none") return;
-        if (!/\S/.test(a.textContent || "")) return;
-        var row = document.createElement("a");
-        row.className = "fo-mdl" + (a.classList.contains("on") ? " on" : "");
-        row.href = a.getAttribute("href") || "#";
-        row.textContent = (a.textContent || "").trim();
-        row.addEventListener("click", function (ev) { ev.preventDefault(); foMnavClose(); a.click(); });
-        // Log out anchors to the bottom, past a divider, away from the nav
-        (a.classList.contains("fo-logout") ? foot : nav).appendChild(row);
+      var want = [];
+      FO_HDR_RIGHT.forEach(function (sel) {
+        var el = tb.querySelector(sel) || document.querySelector(sel);
+        if (el) want.push(el);
       });
-      d.classList.add("open");
-      document.body.classList.add("fo-mnav-lock");
+      var have = [].slice.call(rt.children);
+      var same = have.length === want.length && want.every(function (el, i) { return have[i] === el; });
+      if (!same) want.forEach(function (el) { rt.appendChild(el); });
     } catch (e) {}
   }
+  try {
+    if (!document.getElementById("fo-hdr-right-css")) {
+      var hrS = document.createElement("style"); hrS.id = "fo-hdr-right-css";
+      hrS.textContent = [
+        "html body #topbar #fo-hdr-right{position:absolute;right:10px;top:50%;transform:translateY(-50%);" +
+          "display:flex;align-items:center;gap:9px;z-index:5}",
+        // the clock stops pinning itself now that the box it sits in does
+        "html body #topbar#topbar #fo-hdr-right #fo-wclock{position:static;transform:none;right:auto;top:auto;margin:0}",
+        "html body #topbar #fo-hdr-right #fo-wire-btn,html body #topbar #fo-hdr-right #fo-bell{position:relative;margin:0;flex:none}",
+        "html body #topbar #fo-hdr-right:empty{display:none}",
+        // THE MASTHEAD KEEPS ITS HEIGHT. Its 46px came from nothing but the
+        // 44px menu button standing in it; with the button gone the bar
+        // collapsed to 42 on a desktop and 28 on a phone, and the world clock
+        // - which is taller than either - hung out of the top and bottom of
+        // it. The height is stated now rather than being a side effect of
+        // whichever child happened to be tallest.
+        "html body #topbar,html body.ftpskin #topbar{min-height:46px}"
+      ].join("\n");
+      document.head.appendChild(hrS);
+    }
+  } catch (eHr) {}
+  try { setInterval(function () { foHdrRight(null); }, 1200); } catch (eHr2) {}
   // phones: the topbar's Next chip gives way to a red Live button whenever
   // something is actually on air (own live match, or the broadcast hour)
   function foMliveTick() {
@@ -820,15 +841,11 @@
       [].slice.call(tb.children).forEach(function (el) {
         if (el.tagName === "A" && !KEEP_IN_HEADER[el.id] && !/\bbrand\b/.test(el.className || "")) wrap.appendChild(el);
       });
-      // phones: the pill row is hidden and a hamburger opens a drawer that
-      // proxies every nav link (originals keep their handlers and state)
+      // NO HAMBURGER. The menu bar under the masthead carries every room at
+      // every width, so a second way in was the same building with two front
+      // doors. Anything left over from an older build goes.
       var mbtn = tb.querySelector("#fo-mnav-btn");
-      if (!mbtn) {
-        mbtn = document.createElement("button"); mbtn.id = "fo-mnav-btn"; mbtn.setAttribute("aria-label", "Menu");
-        mbtn.innerHTML = "<svg width='22' height='22' viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2.4' stroke-linecap='round'><path d='M4 7h16M4 12h16M4 17h16'/></svg>";
-        tb.insertBefore(mbtn, tb.firstChild);
-        mbtn.addEventListener("click", foMnavToggle);
-      }
+      if (mbtn && mbtn.parentNode) mbtn.parentNode.removeChild(mbtn);
       var ml = tb.querySelector("#fo-mlive");
       if (!ml) {
         ml = document.createElement("a"); ml.id = "fo-mlive"; ml.href = "#";
@@ -878,6 +895,7 @@
       var ck = tb.querySelector("#fo-clock");
       if (!ck) { ck = document.createElement("span"); ck.id = "fo-clock"; tickClock(); }
       tb.appendChild(ck);
+      foHdrRight(tb);
       // active-pill marking for overlay-added links (engine handles its own via data-nav)
       try {
         var route0 = (location.hash || "#/club").split("?")[0];
