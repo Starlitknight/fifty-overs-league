@@ -14,6 +14,11 @@ export function makeHost() {
   const eng = makeEngine();
   eng.setTuning(true);
   vm.runInContext(`
+// THIS IS THE SERVED WORLD, so the served world's money applies. foWageOf
+// prices quality on a curve calibrated to THIS economy's income; a browser
+// playing a solo career never sets this and keeps its own flat wages, which
+// its $9 ticket and $25,000 sponsor are calibrated to.
+globalThis.__foServedEcon = true;
 globalThis.__svcGenSquad = function (seed, country, arch, capt, strength) {
   // strength is the club's standing in its league: the flagship's is the highest
   // in the nation, and the rest spread below it. Omitted means the one shared

@@ -1511,7 +1511,19 @@ function econInit(){
   for(const t of GD.teams){t.acadY=t.acadY||2;t.acadS=t.acadS||2;t.seats=t.seats||9000;
     t.supporters=t.supporters||2600;t.mood=t.mood??3;t.homePitch=t.homePitch||groundPitch(t.ground);t.bank=t.bank||500000;}
 }
-function playerValue(p){return Math.max(8000,Math.round(p.wage*34+(p.rating-3200)*18))}
+// WHAT HE IS WORTH, ON THE SAME CURVE AS EVERYTHING ELSE.
+// This was wage x 34 plus a linear term in rating - an independent third
+// valuation, written when both wages and fees were straight lines. It sets the
+// asking price and the AI's bids in the solo market, so leaving it behind
+// meant the offline game priced cricketers by a rule the served world had
+// stopped using. A fee is a season of wages times the buyer's multiple, bent
+// by the years he has left, here as everywhere.
+const FO_AGE_CURVE=a=>{a=+a||27;return a<=21?1.18:a<=25?1.12:a<=28?1.0:a<=31?0.82:a<=33?0.6:0.4};
+function playerValue(p){
+  if(!p)return 5000;
+  const w=+p.wage>0?+p.wage:foWageOf(p.rating,(p.talents||[]).length,1);
+  return Math.max(5000,Math.round(w*18*2.4*FO_AGE_CURVE(p.age)/500)*500);
+}
 function roleClass(p){return p.bowlType?(p.role==='allRounder'?'ar':'bowl'):(p.role==='wicketkeeper'?'wk':'bat')}
 function clubNeed(t,rc){ // weaker area = bigger need multiplier
   const xi=pickXI(t);
@@ -3188,9 +3200,31 @@ function foGenExp(age,q,rnd){                  // experience correlates with age
 const FO_WAGE_R50=25704;            // the world's median rating, measured
 const FO_WAGE_MID=9290;             // what the median man earns a round
 const FO_WAGE_K=2.0;                // how fast the price of quality climbs
-const FO_DRAFT_SCALE=6;             // draft money, in market money
+// THE DRAFT IS SOLO MONEY, AND SOLO MONEY DID NOT MOVE. Scaling it by six put
+// it in step with the served market, which the draft never touches: a served
+// club is DEALT its fifteen, it does not draft them. All the six did was set a
+// $6m budget against a solo bank of $1m. One.
+const FO_DRAFT_SCALE=1;
+// TWO ECONOMIES, AND THIS CURVE BELONGS TO ONE OF THEM.
+//
+// The solo career and a friends league are settled in the browser against
+// their own constants - a $9 ticket, a $25,000 sponsor, a bank of a million -
+// and 03-onboarding says it plainly: the two sets of figures are meant to
+// differ, and neither is a stale copy of the other. The curve below is
+// calibrated to the SERVED world's income and nothing else.
+//
+// jsDerive is shared by both, so applying it everywhere quietly multiplied a
+// solo club's wage bill by five while its gate stayed at nine pounds a head -
+// a squad that cost $459k a season now costing $2.43m against unchanged
+// income, which is every offline career bankrupt on the day it is founded.
+//
+// The service sets __foServedEcon when it loads this engine; a browser playing
+// solo never does. One function, two calibrations, chosen by which world is
+// asking.
 function foWageOf(rating,talents,scar){
   const r=Math.max(1,+rating||0);
+  let served=false; try{served=!!globalThis.__foServedEcon}catch(eS){}
+  if(!served) return Math.round(200+r*0.037);      // the solo economy, untouched
   const base=FO_WAGE_MID*Math.pow(r/FO_WAGE_R50,FO_WAGE_K);
   // a talent is a premium ON what he already is, not a flat fee: it is worth
   // more on a great cricketer than on a poor one, the way it plays
@@ -3730,12 +3764,6 @@ function genDraftPool(seedStr){
     else if(pct>=0.42){band='mid';t=(pct-0.42)/0.30}
     else{band='filler';t=pct/0.42}
     p.band=band;
-    // THE DRAFT IS PRICED IN THE SAME MONEY AS THE MARKET. Its bands were
-    // calibrated when a fee was rating/9 and a whole squad cost a million; a
-    // fee is a season of wages now, so a man who costs $62,000 here and
-    // $400,000 the moment the window opens is two games with one currency.
-    // The bands and the budget are scaled by the same six, so the draft plays
-    // exactly as it did and its prices mean something afterwards.
     const f=(band==='star'?105000+t*55000:band==='mid'?38000+t*24000:14000+t*10000)*FO_DRAFT_SCALE;
     // Scarcity premium: genuine pace is the rarest commodity in the game, wrist spin the rarest spin.
     // You pay for what you can't find elsewhere - over and above raw skill.

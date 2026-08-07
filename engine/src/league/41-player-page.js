@@ -65,7 +65,13 @@
   function artOf(p) { try { return window.foPkArt ? (ART() + window.foPkArt(p)) : ""; } catch (e) { return ""; } }
   function agg(fn, p) { try { return Math.round(fn(p) || 0); } catch (e) { return 0; } }
   function skills(p) { try { return S(p) || {}; } catch (e) { return (p && p.skills) || {}; } }
-  function wageOf(p) { return (p && p.wage != null) ? p.wage : Math.max(700, Math.round(((p && p.fee) || 40000) * 0.028 / 10) * 10); }
+  // the fallback derives from the same curve the world does, not from a fee
+  // times 0.028 - a ratio that was true when both were straight lines
+  function wageOf(p) {
+    if (p && p.wage != null) return p.wage;
+    try { if (window.foWageOf) return window.foWageOf((p && p.rating) || 25704, ((p && p.talents) || []).length, 1); } catch (e) {}
+    return 9290;
+  }
   function myClub() { try { return userTeam(); } catch (e) { return null; } }
   function isMine(name) {
     var t = myClub(); if (!t) return false;

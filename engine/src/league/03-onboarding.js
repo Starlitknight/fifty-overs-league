@@ -776,7 +776,13 @@
     var styleF = { seamFast: 1.30, wristSpin: 1.20, seamFastMedium: 1.08 }[p.bowlTypeFull] || 1;
     return Math.max(8000, Math.round(base * ageF * talF * roleF * styleF / 500) * 500);
   }
-  function foDailyWage(p) { return (p && p.wage != null) ? p.wage : Math.max(700, Math.round(((p && p.fee) || 40000) * 0.028 / 10) * 10); }
+  // the fallback derives from the same curve the world does, not from a fee
+  // times 0.028 - a ratio that was true when both were straight lines
+  function foDailyWage(p) {
+    if (p && p.wage != null) return p.wage;
+    try { if (window.foWageOf) return window.foWageOf((p && p.rating) || 25704, ((p && p.talents) || []).length, 1); } catch (e) {}
+    return 9290;
+  }
   function foSeasonCost(p) { return foDraftPrice(p) + foDailyWage(p) * FO_FIN.seasonLength; }
   function foSponsorById(id) { for (var i = 0; i < FO_FIN.sponsors.length; i++) if (FO_FIN.sponsors[i].id === id) return FO_FIN.sponsors[i]; return FO_FIN.sponsors[0]; }
   function foStyleById(id) { for (var i = 0; i < FO_FIN.styles.length; i++) if (FO_FIN.styles[i].id === id) return FO_FIN.styles[i]; return FO_FIN.styles[0]; }
