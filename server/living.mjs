@@ -84,6 +84,14 @@ export function livingPatch(squad, absent) {
       for (const k in p.skills) if (p.skills[k] !== p.baseSkills[k]) s[k] = p.skills[k];
       if (Object.keys(s).length) rec.s = s;
     }
+    // AND WHAT HE IS PART OF THE WAY TO. A half-learnt talent fires on a
+    // fraction of the balls it suits, so it is part of the cricket that was
+    // played: a replay without it is a different match, and the almanack's
+    // "every ball of the replay is the banked match" says so at once. The
+    // earned one rides in p.talents already, but it is named here too so a
+    // broadcast can show the man who has just come by his.
+    if (p.talProg && Object.keys(p.talProg).length) rec.tp = p.talProg;
+    if (p.talEarned) rec.te = p.talEarned;
     o[p.name] = rec;
   });
   return o;
@@ -108,6 +116,12 @@ export function applyLiving(squad, patch, host) {
     if (L.f != null) { p.formIx = L.f; p.formWord = FORMW[L.f] || 'steady'; }
     if (L.n != null) { p.fatN = L.n; p.fatWord = fatWordOf(L.n); p.fatigue = p.fatWord; }
     if (L.s) { skilled = true; for (const k in L.s) if (p.skills) p.skills[k] = L.s[k]; }
+    if (L.tp) p.talProg = L.tp; else delete p.talProg;
+    if (L.te) {
+      p.talEarned = L.te;
+      if (!Array.isArray(p.talents)) p.talents = [];
+      if (p.talents.indexOf(L.te) < 0) p.talents = p.talents.concat([L.te]);
+    }
   });
   if (skilled && host && host.derive) {
     const out = host.derive(squad);
@@ -325,6 +339,42 @@ export function withCarry(book, carry) {
 }
 
 // EVERY MAN'S LIFE, RECOMPUTED FROM THE WHOLE RECORD OF ONE COUNTRY.
+// WHAT HE HAS LEARNED, AND WHETHER HE HAS LEARNED IT.
+//
+// Progress is a pure fold of the record - the triggers this club's matches
+// credited him with - so it is recomputed from nothing on every settle and a
+// re-settle lands on the same figure. Crossing a threshold turns the talent
+// from a chance into his: it joins the list on his card, and the ball engine
+// stops rolling for it because he simply has it.
+//
+// ONE A CAREER. A man accrues toward several at once - an opener is inside
+// the first twelve balls, playing pace, and running singles, all on the same
+// delivery - and the one he earns is the one he crossed most decisively.
+// After that the engine stops counting for him entirely, so the second is
+// never in reach: what is rare has to stay rare to be worth anything.
+function talentsEarned(q, prog, talT) {
+  if (!prog || !Object.keys(prog).length) { delete q.talProg; return q; }
+  const own = Array.isArray(q.talents) ? q.talents : [];
+  const kept = {};
+  for (const t of Object.keys(prog)) if (own.indexOf(t) < 0) kept[t] = prog[t] | 0;
+  if (!Object.keys(kept).length) { delete q.talProg; return q; }
+  q.talProg = kept;
+  if (q.talEarned) return q;                     // he has had his
+  let best = null, bestR = 1;
+  for (const t of Object.keys(kept)) {
+    const T = talT[t] || 0; if (!T) continue;
+    const r = kept[t] / T;
+    if (r >= 1 && r > bestR - 1e-9 && (best === null || r > bestR || (r === bestR && t < best))) { best = t; bestR = r; }
+  }
+  if (!best) return q;
+  q.talEarned = best;
+  q.talents = own.concat([best]);
+  // the progress that earned it stops being progress - it is a talent now
+  delete q.talProg[best];
+  if (!Object.keys(q.talProg).length) delete q.talProg;
+  return q;
+}
+
 export async function evolveCountry(pool, country, now = Date.now(), host = null) {
   const clubs = (await pool.query(
     'SELECT slot, name, squad, youth, training FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
@@ -344,6 +394,10 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
   const args = [country];
   const teamSlot = which => `CASE WHEN inn->>'${which}' = coalesce(m.home_name, h.name) THEN m.home_slot
                                   WHEN inn->>'${which}' = coalesce(m.away_name, a.name) THEN m.away_slot END`;
+  // the same resolution for a key that is already a side's name rather than a
+  // field inside the innings blob
+  const teamSlot2 = expr => `CASE WHEN ${expr} = coalesce(m.home_name, h.name) THEN m.home_slot
+                                  WHEN ${expr} = coalesce(m.away_name, a.name) THEN m.away_slot END`;
   const from = `FROM matches m
       JOIN clubs h ON h.country_id = m.country_id AND h.slot = m.home_slot
       JOIN clubs a ON a.country_id = m.country_id AND a.slot = m.away_slot,
@@ -369,6 +423,20 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
             coalesce((fd.value->>'ro')::int, 0) AS ro
        ${from}, LATERAL jsonb_each(coalesce(inn->'fielding', '{}'::jsonb)) fd
       WHERE m.country_id = $1 AND m.result IS NOT NULL`, args)).rows;
+  // WHAT THE MEN LEARNED, match by match. The card carries a tally keyed by
+  // side and then by man - the same side key the innings use, so a slot
+  // resolves the same way and a transfer between the match and this settle
+  // cannot credit the wrong club. Cards banked before earned talents existed
+  // have no tally at all, which folds to no progress: the truth about them.
+  const tals = (await pool.query(
+    `SELECT ${teamSlot2('side.key')} AS slot, man.key AS name, man.value AS tal
+       FROM matches m
+       JOIN clubs h ON h.country_id = m.country_id AND h.slot = m.home_slot
+       JOIN clubs a ON a.country_id = m.country_id AND a.slot = m.away_slot,
+       LATERAL jsonb_each(coalesce(m.result->'tal', '{}'::jsonb)) side,
+       LATERAL jsonb_each(side.value) man
+      WHERE m.country_id = $1 AND m.result IS NOT NULL`, args)).rows;
+
   // WHO WORE THE ARMBAND, match by match: the captain the banked orders name,
   // where a manager filed one. Clubs that filed nothing fall back below to
   // the engine's own default - the squad's best captaincy score.
@@ -389,6 +457,9 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     }
   } catch (eCp) {}
   const today = dayIx(now);
+  // the thresholds come off the shipped engine, never a copy: the ball loop
+  // and the umpire have to agree about when a man has crossed
+  const talT = host && host.talThresholds ? host.talThresholds() : {};
 
   // slot -> name -> { caps, career, apps[] }
   const book = new Map();
@@ -425,6 +496,19 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
   for (const r of bowls) {
     const L = at(r); if (!L) continue;
     L.wkts += r.wkts; L.conc += r.conc; L.ovb += r.ovb;
+  }
+  // TRIGGERS, summed over everything he has played for this club. This is the
+  // whole of "he is learning it": no state is carried forward, the record is
+  // added up again from scratch on every settle, and a re-settle lands on the
+  // identical number.
+  const talBook = new Map();          // slot -> name -> {talent: triggers}
+  for (const r of tals) {
+    if (r.slot == null || !r.name || !r.tal) continue;
+    if (!talBook.has(r.slot)) talBook.set(r.slot, new Map());
+    const m = talBook.get(r.slot);
+    const cur = m.get(r.name) || {};
+    for (const t of Object.keys(r.tal)) cur[t] = (cur[t] | 0) + (r.tal[t] | 0);
+    m.set(r.name, cur);
   }
 
   // THE WEEK HE SPENT WITH HIS COUNTRY counts too. A cap is a different book
@@ -553,7 +637,7 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
       const iBook = withCarry(e.intl, q.carryIntl);
       if (iBook.m) q.intl = iBook; else delete q.intl;
       return q;
-    });
+    }).map(q => talentsEarned(q, (talBook.get(club.slot) || new Map()).get(q.name), talT));
     // THE STANDING LOAD OF THE NETS (training v2). A unit training light
     // freshens; high and intensive bank more work but carry load into the
     // next morning. Recomputed from the CURRENT plan on every settle, so it

@@ -221,6 +221,13 @@ globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson, wea
 // and without touching the canonical result - the log is banked BESIDE the
 // card (match_logs, kept a week), never inside it, so nothing about the
 // canonical shape or the golden-master replays moves an inch.
+// THE THRESHOLDS, read off the shipped engine rather than copied beside it.
+// The umpire folds talent progress out of the record and has to know when a
+// man has crossed; if this were a second table it would drift from the one the
+// ball loop actually uses, and a page would promise a talent the engine never
+// gave him.
+globalThis.__svcTalT = function () { return JSON.stringify(FO_TAL_T); };
+globalThis.__svcTalElig = function (pJson, t) { return foTalElig(JSON.parse(pJson), t) ? 1 : 0; };
 globalThis.__svcLastLog = function () {
   try { return JSON.stringify((typeof M !== 'undefined' && M && M.log) || []); }
   catch (e) { return '[]'; }
@@ -261,6 +268,8 @@ globalThis.__svcWorldCfg = function () {
   const gen = vm.runInContext('__svcGenSquad', eng.ctx);
   const run = vm.runInContext('__svcRun', eng.ctx);
   const lastLog = vm.runInContext('__svcLastLog', eng.ctx);
+  const talT = vm.runInContext('__svcTalT', eng.ctx);
+  const talElig = vm.runInContext('__svcTalElig', eng.ctx);
   const cfg = vm.runInContext('__svcWorldCfg', eng.ctx);
   const cond = vm.runInContext('__svcCond', eng.ctx);
   const doct = vm.runInContext('__svcDoctrine', eng.ctx);
@@ -290,6 +299,10 @@ globalThis.__svcWorldCfg = function () {
       return run(JSON.stringify(homeTeam), JSON.stringify(awayTeam), pitch, seed,
         ordersMap ? JSON.stringify(ordersMap) : null, weather || 'Sunny');
     },
+    // how many triggers each talent takes to earn, straight off the engine
+    talThresholds() { return JSON.parse(talT()); },
+    // and whether a given man could ever develop a given talent
+    talElig(player, t) { return !!talElig(JSON.stringify(player), t); },
     // the ball-by-ball of the match runMatch JUST played, read from the vm's
     // finished state - no re-simulation, no change to the canonical card
     lastMatchLog() { return JSON.parse(lastLog()); },

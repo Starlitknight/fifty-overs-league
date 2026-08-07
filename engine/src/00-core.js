@@ -126,6 +126,10 @@ function foTalElig(p,t){
   if(t==='busyRunner'||t==='spinKiller'||t==='paceHunter')return isBat||isAR||isWK;
   return true;   // safeHands, rocketArm
 }
+// the thresholds and the eligibility table are read by the pages as well as by
+// the ball loop - one table, so a roster can never promise a talent the engine
+// would not give him
+try{window.FO_TAL_T=FO_TAL_T;window.foTalElig=foTalElig;window.foTalProgress=foTalProgress}catch(eTw){}
 // how close a man is to a talent, 0..1. Public because three pages draw it.
 function foTalProgress(p,t){
   const n=((p&&p.talProg)||{})[t]|0,T=FO_TAL_T[t]||2000;

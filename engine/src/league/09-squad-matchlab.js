@@ -1070,6 +1070,9 @@
       // and the men without one hold the column with a mark that is plainly
       // not a badge
       ".fo-s2-trait.none{background:none;border:0;color:#cfc7b5;padding:4px 0;letter-spacing:0}",
+      // on his way to one: hollow, and carrying the number that says so
+      ".fo-s2-trait.learn{background:none;border:1px dashed #cbbf9f;color:#8a8272}",
+      ".fo-s2-trait.learn em{font-style:normal;color:#b08409;margin-left:5px;font-variant-numeric:tabular-nums}",
       ".fo-s2-stars{white-space:nowrap;font-size:13px;letter-spacing:1px}",
       ".fo-s2-stars .f{color:#E8B96A}.fo-s2-stars .e{color:#e3dccb}",
       ".fo-s2-stars .h{background:linear-gradient(90deg,#E8B96A 50%,#e3dccb 50%);-webkit-background-clip:text;background-clip:text;color:transparent}",
@@ -1173,6 +1176,10 @@
       // the short name below fits the column, so the chip never ellipses
       ".fo-s2-trait{font-size:7.5px;letter-spacing:.04em;padding:3px 4px}",
       ".fo-s2-trait .lg{display:none}.fo-s2-trait .sm{display:inline}",
+      // the learning chip carries a name AND a number in the same column, so
+      // it gets the tighter setting or the name ellipses away to nothing
+      ".fo-s2-trait.learn{font-size:6.5px;letter-spacing:0;padding:3px 3px}",
+      ".fo-s2-trait.learn em{margin-left:3px}",
       ".fo-s2-st10 .st{font-size:10px;letter-spacing:.5px}",
       ".fo-s2-ovr{font-size:15px}",
       ".fo-s2-car{font-size:9px}",
@@ -1239,6 +1246,32 @@
       try { tip = (typeof TALTIPS !== "undefined" && TALTIPS[t]) || ""; } catch (eT) {}
       return tip ? nm + " - " + tip : nm;
     } catch (e) { return ""; }
+  }
+  // WHAT HE IS ON HIS WAY TO. A talent can be earned: keep finding yourself in
+  // the situation one describes and doing the job, and eventually it is yours.
+  // The roster says so, because a manager who cannot see it happening has no
+  // reason to keep picking the man. It must never be mistaken for the real
+  // thing though - that was the whole of the last mistake here - so it is a
+  // hollow chip with a number on it, next to nothing that looks like a badge.
+  function foS2Learning(p) {
+    try {
+      var prog = p && p.talProg; if (!prog) return null;
+      var T = window.FO_TAL_T || {};
+      var best = null, bestR = 0;
+      for (var t in prog) {
+        var cap = T[t] || 0; if (!cap) continue;
+        var r = Math.max(0, Math.min(0.99, (prog[t] | 0) / cap));
+        if (r > bestR) { bestR = r; best = t; }
+      }
+      return best ? { t: best, r: bestR } : null;
+    } catch (e) { return null; }
+  }
+  function foS2LearnTip(L) {
+    if (!L) return "";
+    var nm = (typeof TALN !== "undefined" && TALN[L.t]) || L.t;
+    return "Learning " + nm + " \u00b7 " + Math.round(L.r * 100) + "% of the way. " +
+      "He is already doing it on about " + Math.round(L.r * 100) + " balls in a hundred that suit it; " +
+      "at a hundred it is his for good.";
   }
   function foS2Trait(p, short) {
     try {
@@ -1592,10 +1625,15 @@
           "<span class='fo-s2-id'><b>" + E(p.name) + foSqStar(p) + "</b><span>" + roleNm + " &middot; " + E(det) + (p.__y ? " &middot; Youth" : "") + "</span></span>" +
           "<span class='fo-s2-hand'>" + (p.hand === "L" ? "Left Hand" : "Right Hand") + "</span>" +
           "<span class='fo-s2-age'><i>Age</i> " + (p.age | 0) + "</span>" +
-          ((p.talents || []).length
-            ? "<span class='fo-s2-trait' title='" + E(foS2TraitTip(p)) + "'>" +
-              "<i class='lg'>" + E(foS2Trait(p)) + "</i><i class='sm'>" + E(foS2Trait(p, 1)) + "</i></span>"
-            : "<span class='fo-s2-trait none'>&ndash;</span>") +
+          (function () {
+            if ((p.talents || []).length)
+              return "<span class='fo-s2-trait' title='" + E(foS2TraitTip(p)) + "'>" +
+                "<i class='lg'>" + E(foS2Trait(p)) + "</i><i class='sm'>" + E(foS2Trait(p, 1)) + "</i></span>";
+            var L = foS2Learning(p);
+            if (L) return "<span class='fo-s2-trait learn' title='" + E(foS2LearnTip(L)) + "'>" +
+              "<i>" + E(FO_TAL_SHORT[L.t] || L.t) + "</i><em>" + Math.round(L.r * 100) + "%</em></span>";
+            return "<span class='fo-s2-trait none'>&ndash;</span>";
+          })() +
           foS2RoleStars(p, rCls, ovr) +
           "<b class='fo-s2-ovr' style='color:" + foSqQCol(ovr) + "'>" + ovr + "</b>" +
           (p.__y ? "<span></span>" : "<button type='button' class='fo-s2-xibtn" + (inXi ? " out" : "") + "' data-xit='" + E(p.name) + "'>" + (inXi ? "&#10005; XI" : "+ XI") + "</button>") +
