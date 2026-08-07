@@ -290,6 +290,18 @@
     var st = document.createElement("style"); st.id = "fo-mb-css";
     st.textContent = [
       "#fo-menubar{position:sticky;top:var(--fo-tbh,52px);z-index:310;background:rgba(9,25,50,.96);-webkit-backdrop-filter:blur(18px) saturate(1.3);backdrop-filter:blur(18px) saturate(1.3);border-bottom:1px solid rgba(255,255,255,.1);box-shadow:0 6px 18px rgba(7,22,46,.18)}",
+      // THE HOME GROUND PAINTING RUNS UNDER THE MENU, NOT UP TO IT. The hero is
+      // already fixed to all four corners behind the chrome; what stopped it
+      // reading as one image was the menu sitting on top of it with a drop
+      // shadow and a hairline, which drew a lid across the top of the art. Both
+      // go on that page only - everywhere else the bar is over a cream page and
+      // the lift is what keeps it legible.
+      //
+      // :has() looks upward, which is the only way a bar can know what page it
+      // is over without a class somebody has to remember to take off again. A
+      // browser too old for it ignores the rule and keeps today's shadow, which
+      // is the right way for this to fail.
+      "body:has(#page .fo-home2) #fo-menubar{box-shadow:none;border-bottom-color:transparent}",
       "#fo-menubar.off{display:none}",
       "#fo-menubar .fo-mb-in{display:flex;align-items:stretch;gap:2px;max-width:1120px;margin:0 auto;padding:0 8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}",
       "#fo-menubar .fo-mb-in::-webkit-scrollbar{display:none}",
