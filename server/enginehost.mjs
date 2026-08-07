@@ -200,13 +200,20 @@ globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson, wea
       }),
       bowlers: inn.bowlers, fielding: inn.fielding || {} };
   };
-  // canonical result: fixed key order, no floats beyond engine output
+  // canonical result: fixed key order, no floats beyond engine output.
+  // tal is what the men LEARNED in this match - name -> talent -> triggers -
+  // and it belongs in the card rather than beside it. Talent progress is
+  // derived from the record on every settle, so if it lived in a side table
+  // with a retention window it would evaporate; the card is the only thing
+  // that keeps forever. Cards banked before this simply have no tal, which
+  // folds to no progress, which is the truth about them.
   return JSON.stringify({
     winner: M.result ? M.result.winner : null,
     text: M.result ? M.result.text : '',
     mom: M.result ? M.result.mom : null,
     innings: [slim(M.innings[0]), slim(M.innings[1])],
-    worm: M.worm
+    worm: M.worm,
+    tal: M._tal || {}
   });
 };
 // THE COMMENTARY OF THE MATCH JUST PLAYED. __svcRun leaves the finished match

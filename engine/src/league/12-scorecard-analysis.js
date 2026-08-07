@@ -7347,8 +7347,11 @@
           // the log and the worm come back too: a match report wants the
           // ball-by-ball and the run chart, and a replayed world match is the
           // only place they exist for a fixture this device never played
+          // AND WHAT THE MEN LEARNED. name -> talent -> triggers, for this match
+          // only. The World Service folds it out of the record with the runs
+          // and the wickets; nothing is carried across a match in memory.
           return ok ? { innings: M.innings, result: M.result, batFirstTeam: M.batFirstTeam,
-            log: M.log || [], worm: M.worm || [[], []] } : null;
+            log: M.log || [], worm: M.worm || [[], []], tal: M._tal || {} } : null;
         } catch (eSim) { return null; }
         finally {
           try { window.onMatchEnd = prevOME; } catch (e2) {}

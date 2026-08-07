@@ -34,13 +34,158 @@ function foKeeperQuality(p){
   if(!p)return 50;const s=p.skills||{};
   return foClamp((s.keeping||p.keeping||50)*0.50+(s.stumping||p.stumping||50)*0.26+(s.catching||p.catching||50)*0.24,15,95);
 }
+// ===========================================================================
+// EARNED TALENTS. A talent is rare and it is cherished, and it is also not the
+// only way to get one: a cricketer who keeps finding himself in the situation
+// a talent describes, and keeps doing the job, eventually acquires it.
+//
+// THE SHAPE. Every ball a man plays is checked against every talent he is
+// ELIGIBLE for and does not own. Where the talent's own condition holds - the
+// ball was new, the stand had passed fifty, it was the death - that is one
+// TRIGGER, and it is counted. The more he has, the likelier the talent is to
+// actually fire on the next ball that suits it; at his threshold it stops
+// being a chance and becomes his, permanently, listed on his card like any
+// other. One earned per career, on top of anything he was born with.
+//
+// The chance is the plain fraction n/T, so "two thirds of the way there" and
+// "fires two balls in three" are the same sentence. Nothing else would be
+// explainable on a page.
+//
+// THE THRESHOLDS ARE NOT ONE NUMBER. A new-ball bowler meets his condition in
+// the first overs of every spell he opens; a partnership breaker needs a stand
+// past fifty to exist first. Counting to the same total would make one a
+// season's work and the other a career's. Each threshold is instead set from
+// the MEASURED rate at which that condition actually occurs in this engine
+// (tools/talent-rates.mjs), so every talent is about the same span of regular
+// cricket - two to three seasons - whatever it is.
+//
+// THE LAW. Nothing here is stored that the record could not rebuild. The
+// counts are emitted with the scorecard, ball by ball, and the World Service
+// folds them out of the match record the same way it folds runs and wickets -
+// so a re-settle re-derives the same progress, and a man who never played
+// never earns anything.
+// MEASURED, not chosen: tools/talent-rates.mjs plays a real season of league
+// cricket and reports how often each condition actually comes up for a man
+// eligible for it. Every number below is that rate x 14 matches x 2.5 seasons,
+// so a finisher (5.4 death balls a match) and a keeper (288 - he is behind the
+// stumps for all of them) are the same span of regular cricket apart.
+const FO_TAL_T={fastStarter:300,anchor:900,finisher:200,sixMachine:275,
+  spinKiller:375,paceHunter:850,busyRunner:1200,newBallSpecialist:825,
+  deathSpecialist:425,partnershipBreaker:675,bouncer:2025,miser:2000,
+  goldenArm:425,mysteryBall:550,lightningHands:10100,safeHands:25,rocketArm:800};
+// what has to be true of a ball for it to count. c is the ball's own context,
+// assembled once by the delivery loop; the same predicates decide whether a
+// PARTIAL talent is allowed to fire, so the thing being counted and the thing
+// being earned can never drift apart.
+const FO_TAL_WHEN={
+  // batting
+  fastStarter:c=>c.faced<12,
+  anchor:c=>c.rrDef<=0,
+  finisher:c=>c.ph==='death',
+  sixMachine:c=>c.intent>=1||c.ph==='death',
+  spinKiller:c=>c.tc==='spin',
+  paceHunter:c=>c.tc==='pace',
+  busyRunner:c=>true,
+  // bowling
+  newBallSpecialist:c=>c.over<10,
+  deathSpecialist:c=>c.ph==='death',
+  partnershipBreaker:c=>c.pship>=40,
+  bouncer:c=>c.tc==='pace',
+  miser:c=>true,
+  goldenArm:c=>c.bballs<12,
+  mysteryBall:c=>c.faced<16&&c.tc==='spin',
+  // in the field: these are earned by the men doing the work, and the work is
+  // every ball they are standing there for
+  lightningHands:c=>true,
+  safeHands:c=>true,
+  rocketArm:c=>true
+};
+const FO_TAL_SIDE={fastStarter:'bat',anchor:'bat',finisher:'bat',sixMachine:'bat',
+  spinKiller:'bat',paceHunter:'bat',busyRunner:'bat',
+  newBallSpecialist:'bowl',deathSpecialist:'bowl',partnershipBreaker:'bowl',
+  bouncer:'bowl',miser:'bowl',goldenArm:'bowl',mysteryBall:'bowl',
+  lightningHands:'field',safeHands:'field',rocketArm:'field'};
+// THE ONE ELIGIBILITY TABLE. A keeper's hands, a quick's bouncer, an opener's
+// fast start: what a man could plausibly develop is what he could plausibly
+// have been dealt, so the draft and the nets read the same list. The league
+// layer's foQsElig delegates here rather than keeping a second copy.
+function foTalElig(p,t){
+  if(!p)return false;
+  const bt=p.bowlTypeFull||p.bowlType||'none';
+  const isB=bt&&bt!=='none'&&!/^partTime/.test(bt);
+  const isAR=p.role==='allRounder',isWK=!!(p.keeper||p.role==='wicketkeeper');
+  const isBat=!isB&&!isWK&&!isAR;
+  if(t==='lightningHands')return isWK;
+  if(t==='bouncer')return bt==='seamFast'||bt==='seamFastMedium';
+  if(t==='mysteryBall')return bt==='wristSpin'||bt==='fingerSpin';
+  if(t==='newBallSpecialist'||t==='deathSpecialist'||t==='miser'||t==='goldenArm'||t==='partnershipBreaker')return isB||isAR;
+  if(t==='fastStarter')return p.role==='opener';
+  if(t==='anchor')return p.role==='opener'||p.role==='topOrderBat';
+  if(t==='finisher')return p.role==='middleOrderBat'||isAR;
+  if(t==='sixMachine')return p.role==='middleOrderBat'||isAR||isWK;
+  if(t==='busyRunner'||t==='spinKiller'||t==='paceHunter')return isBat||isAR||isWK;
+  return true;   // safeHands, rocketArm
+}
+// how close a man is to a talent, 0..1. Public because three pages draw it.
+function foTalProgress(p,t){
+  const n=((p&&p.talProg)||{})[t]|0,T=FO_TAL_T[t]||2000;
+  return Math.max(0,Math.min(1,n/T));
+}
+// THE GATE the ball engine asks. Owned: always. Part-learnt: this ball, maybe.
+// A man with no progress at all takes the first branch and nothing else runs,
+// which is why a squad that has never played bowls exactly the cricket it
+// bowled before any of this existed.
+function foTalHas(p,ctx){
+  const own=(p&&p.talents)||[],prog=p&&p.talProg;
+  // no progress, or not a real delivery in a real match (the nets call
+  // ballDist too, and a net is practice): owned talents only
+  if(!prog||!ctx||!ctx.key)return t=>own.indexOf(t)>=0;
+  return t=>{
+    if(own.indexOf(t)>=0)return true;
+    const n=prog[t]|0; if(!n)return false;
+    const T=FO_TAL_T[t]||2000;
+    if(n>=T)return true;
+    // deterministic from the ball's own identity, so a part-learnt talent
+    // never disturbs the shared stream - the same match replays the same way
+    return (foHashStr(ctx.key+'|'+(p.name||'')+'|'+t)%100000)/100000 < n/T;
+  };
+}
+function foHashStr(s){let h=2166136261>>>0;s=String(s);
+  for(let i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619)>>>0}
+  return h>>>0;}
+// COUNTING, once per delivery. Only what a man is eligible for, only what he
+// has not already got, and only until he has earned his one.
+const FO_TAL_BAT=Object.keys(FO_TAL_SIDE).filter(t=>FO_TAL_SIDE[t]==='bat');
+const FO_TAL_BOWL=Object.keys(FO_TAL_SIDE).filter(t=>FO_TAL_SIDE[t]==='bowl');
+// Keyed by SIDE first, then man: two cricketers in one league can share a name,
+// and a squad changes hands between the match and the settle that reads it, so
+// the record has to say which side he was on. It is the same key the scorecard
+// uses for batTeam and bowlTeam, so the fold resolves a slot the same way.
+function foTalCount(tally,team,p,c,list){
+  if(!tally||!team||!p||!p.name)return;
+  if(p.talEarned)return;                       // one a career, and he has his
+  const own=p.talents||[];
+  for(const t of list){
+    if(own.indexOf(t)>=0)continue;
+    if(!FO_TAL_WHEN[t](c))continue;
+    if(!foTalElig(p,t))continue;
+    const side=tally[team]||(tally[team]={});
+    const m=side[p.name]||(side[p.name]={});
+    m[t]=(m[t]|0)+1;
+  }
+}
 function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
-  ctx=ctx||{weather:'sunny',pship:0,chase:false,bballs:12};const TB=bat.talents||[],TW=bowl.talents||[];
+  ctx=ctx||{weather:'sunny',pship:0,chase:false,bballs:12};
+  // OWNED, OR PART-LEARNT AND FIRING THIS BALL. TB/TW used to be the raw
+  // arrays; they are now the gate, which answers the same question and also
+  // knows about a talent a man is halfway to earning. Every condition below
+  // is untouched - the gate only says whether he has the talent at all.
+  const TB=foTalHas(bat,ctx),TW=foTalHas(bowl,ctx);
   const B=BASE[ph];let L=Object.assign({},B.sc);let w=B.w;
   const tc0=typeClass(bowl.bowlType||'fastMedium');
   let lean=((tc0==='pace'?(bat.vsPace??50):(bat.vsSpin??50))-50);
-  if(tc0==='spin'&&TB.includes('spinKiller'))lean+=8;if(tc0==='pace'&&TB.includes('paceHunter'))lean+=8;
-  let s=Math.exp(-faced/CAL.setness_scale);if(TB.includes('fastStarter'))s*=0.5;
+  if(tc0==='spin'&&TB('spinKiller'))lean+=8;if(tc0==='pace'&&TB('paceHunter'))lean+=8;
+  let s=Math.exp(-faced/CAL.setness_scale);if(TB('fastStarter'))s*=0.5;
   // DIMINISHING RETURNS FAR FROM AVERAGE. Every skill term below is a distance
   // from the league mean, and it used to enter the per-ball odds LINEARLY - a
   // straight line fitted in the middle of the skill range and extrapolated to
@@ -126,17 +271,17 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   else if(wx==='scorching'){W-=0.05;L['4']+=0.05;L['6']+=0.04}
   else if(wx==='misty'){if(tc0==='pace')W+=0.23*nb;L['4']-=0.055;L.dot+=0.025*nb}
   else if(wx==='chilly'){L['4']-=0.04;L['6']-=0.05;L.dot+=0.03}
-  if(TB.includes('anchor')&&rrDef<=0){W-=0.085;L.dot+=0.012;L['1']+=0.014}
-  if(TB.includes('finisher')&&ph==='death'){L['4']+=0.145;L['6']+=0.185;L.dot-=0.026;W-=0.025}
-  if(TB.includes('sixMachine')){L['6']+=0.090+(intent>=1?0.145:0)+(ph==='death'?0.045:0);L.dot-=0.010}
-  if(TB.includes('busyRunner')){L['1']+=0.05;L['2']+=0.06}
-  if(TW.includes('newBallSpecialist')){W+=0.23*nb;L.dot+=0.028*nb;L['4']-=0.020*nb}
-  if(TW.includes('deathSpecialist')&&ph==='death'){W+=0.105;L.dot+=0.135;L['4']-=0.090;L['6']-=0.085}
-  if(TW.includes('partnershipBreaker')&&ctx.pship>=40){W+=0.170+Math.min(0.070,(ctx.pship-40)/220);L.dot+=0.018}
-  if(TW.includes('bouncer')&&tc0==='pace'){W+=0.075+Math.max(0,(55-(bat.vsPace??50))*0.006);L.dot+=0.014;L['4']+=0.008}
-  if(TW.includes('miser'))L.dot+=0.05;
-  if(TW.includes('goldenArm')&&ctx.bballs<12)W+=0.10;
-  if(TW.includes('mysteryBall')&&faced<16&&tc0==='spin'){W+=0.140;L.dot+=0.018}
+  if(TB('anchor')&&rrDef<=0){W-=0.085;L.dot+=0.012;L['1']+=0.014}
+  if(TB('finisher')&&ph==='death'){L['4']+=0.145;L['6']+=0.185;L.dot-=0.026;W-=0.025}
+  if(TB('sixMachine')){L['6']+=0.090+(intent>=1?0.145:0)+(ph==='death'?0.045:0);L.dot-=0.010}
+  if(TB('busyRunner')){L['1']+=0.05;L['2']+=0.06}
+  if(TW('newBallSpecialist')){W+=0.23*nb;L.dot+=0.028*nb;L['4']-=0.020*nb}
+  if(TW('deathSpecialist')&&ph==='death'){W+=0.105;L.dot+=0.135;L['4']-=0.090;L['6']-=0.085}
+  if(TW('partnershipBreaker')&&ctx.pship>=40){W+=0.170+Math.min(0.070,(ctx.pship-40)/220);L.dot+=0.018}
+  if(TW('bouncer')&&tc0==='pace'){W+=0.075+Math.max(0,(55-(bat.vsPace??50))*0.006);L.dot+=0.014;L['4']+=0.008}
+  if(TW('miser'))L.dot+=0.05;
+  if(TW('goldenArm')&&ctx.bballs<12)W+=0.10;
+  if(TW('mysteryBall')&&faced<16&&tc0==='spin'){W+=0.140;L.dot+=0.018}
   if(ctx.mixed){L.dot-=0.03;L['1']+=0.03}
   const bF=Math.min(1,ctx.batFat||0),wF=Math.min(1,ctx.bowlFat||0);
   if(bF>0.4){W+=0.18*(bF-0.4);L['4']-=0.10*(bF-0.4);L['6']-=0.09*(bF-0.4);L.dot+=0.04*(bF-0.4)}
@@ -160,8 +305,8 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   const midWindow=(over>=10&&over<40);
   if(tc==='pace'&&midWindow){W-=0.045;if(['dry','slow','twoPaced'].includes(pitch))W-=0.045}
   if(tc==='pace'&&over>=10)W-=0.025;
-  if(tc==='pace'&&ph==='death'&&!TW.includes('deathSpecialist'))W-=0.025;
-  if(tc==='pace'&&ph==='death'&&TW.includes('deathSpecialist'))W+=0.060;
+  if(tc==='pace'&&ph==='death'&&!TW('deathSpecialist'))W-=0.025;
+  if(tc==='pace'&&ph==='death'&&TW('deathSpecialist'))W+=0.060;
   if(tc==='spin'&&over>=10&&over<45)W+=0.040;
   if(tc==='spin'&&midWindow){
     if(pitch==='dry'){W+=0.115;L.dot+=0.034;L['4']-=0.006}
@@ -457,7 +602,12 @@ function pickXI(team){
 let M=null,UI={intent:0,field:'bal',userBowler:null};
 function newMatch(userTeam,aiTeam,pitch,seed){
   return{user:userTeam,ai:aiTeam,pitch,seed,rand:rng(seed),inns:0,innings:[null,null],target:null,done:false,fat:{},fatWarned:{},
-    log:[],worm:[[],[]],tossWinner:null,batFirstTeam:null,userBatting:null};
+    log:[],worm:[[],[]],tossWinner:null,batFirstTeam:null,userBatting:null,
+    // WHAT THE MEN LEARNED FROM THIS MATCH: name -> talent -> triggers. It
+    // travels out with the scorecard, because the record is the only thing
+    // allowed to remember it. seedKey makes a part-learnt talent's firing
+    // reproducible from the match's own identity rather than the dice.
+    _tal:{},seedKey:String(seed)};
 }
 function fhash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
 function withForm(p){const r=rng(fhash(p.name)^((M?M.seed:0)>>>0))();
@@ -643,6 +793,14 @@ function groundFieldingAdjust(inn,out,bowler){
   const manAt=near=>(A&&near&&A.byLbl[near.spot.label])||null;
   M._fieldingEvent=null;
   const prox=n=>n?Math.max(0,1-n.ang/16):0;   // 1 on the line, 0 at 16 deg
+  // THE BALL CAME TO HIM. An arm is earned by balls fielded, not by run-outs
+  // completed - the run-out is the rare OUTCOME, and counting only those would
+  // put a rocket arm four or five triggers from a career. Whoever the ball
+  // actually went to is credited, whatever he then does with it.
+  (function(){
+    const near=foNearestFielder(FS,dir,false,false),pick=manAt(near);
+    if(near&&pick&&near.ang<=16)foTalCount(M._tal,inn.bowlTeam,pick,{},['rocketArm']);
+  })();
   if(out==='4'){
     const near=foNearestFielder(FS,dir,true,false),pick=manAt(near);
     const fs=pick?(pick.field||((pick.skills&&pick.skills.fielding)||50)):0;
@@ -656,7 +814,7 @@ function groundFieldingAdjust(inn,out,bowler){
   if(out==='2'){
     const near=foNearestFielder(FS,dir,false,false),pick=manAt(near);
     const fs=pick?(pick.field||((pick.skills&&pick.skills.fielding)||50)):0;
-    const isRocket=pick?(pick.talents||[]).includes('rocketArm'):false;
+    const isRocket=pick?foTalHas(pick,{key:M._talKey})('rocketArm'):false;
     if(near&&pick&&near.ang<=11&&fs>=64&&M.rand()<0.26*prox(near)*Math.min(1,(fs-60)/50)){
       M._fielder=pick;M._fieldPos=near.spot.label;
       M._fieldingEvent=(isRocket?'Rocket Arm! ':'')+pick.name+' attacks the ball at '+near.spot.label+' and keeps it to one.';
@@ -717,7 +875,16 @@ function stepBall(){
   const keeperTalent=keeperObj.talents||[];
   const keeperQuality=foKeeperQuality(keeperObj);
   const remBalls=Math.max(0,foBallCap()-inn.legal),reqRate=(M.target?(M.target-inn.runs)/Math.max(0.5,remBalls/6):0);
-  const d=ballDist(batP,bowler,phaseOf(over),faced,intent,rrDef,M.pitch,field,over,{freeHit:!!inn.freeHit,weather:((M.meta&&M.meta.weather)||'sunny').toLowerCase(),pship:inn.pshipR,chase:M.inns===1,bballs:brec?brec.b:0,ballsThisSpell:brec?brec.spellB||0:0,wkts:inn.wkts,ballsLeft:remBalls,reqRate,fieldAvg,keeperQuality,rocketArms:inn.bxi.filter(p=>(p.talents||[]).includes('rocketArm')).length,lightningKeeper:keeperTalent.includes('lightningHands'),mixed:!!(inn.bat[inn.nonstriker]&&!inn.bat[inn.nonstriker].out&&batP.hand!==inn.bat[inn.nonstriker].p.hand),batFat:M.fat[batP.name]||0,bowlFat:M.fat[bowler.name]||0,captBowl:inn.captBowl,captBat:inn.captBat});
+  // THIS BALL, FOR THE TWO MEN IN THE CONTEST. The context the counter reads is
+  // the same context the gate reads, so what a man is credited for is exactly
+  // what a talent would have fired on.
+  const _talKey=M._talKey=(M.seedKey||'')+'|'+M.inns+'|'+inn.legal;
+  const _talC={faced,ph:phaseOf(over),over,intent,rrDef,pship:inn.pshipR,
+    bballs:brec?brec.b:0,tc:typeClass(bowler.bowlType||'fastMedium')};
+  foTalCount(M._tal,inn.batTeam,batP,_talC,FO_TAL_BAT);
+  foTalCount(M._tal,inn.bowlTeam,bowler,_talC,FO_TAL_BOWL);
+  if(keeperObj&&keeperObj.name)foTalCount(M._tal,inn.bowlTeam,keeperObj,_talC,['lightningHands']);
+  const d=ballDist(batP,bowler,phaseOf(over),faced,intent,rrDef,M.pitch,field,over,{freeHit:!!inn.freeHit,weather:((M.meta&&M.meta.weather)||'sunny').toLowerCase(),pship:inn.pshipR,chase:M.inns===1,bballs:brec?brec.b:0,ballsThisSpell:brec?brec.spellB||0:0,wkts:inn.wkts,ballsLeft:remBalls,reqRate,fieldAvg,keeperQuality,rocketArms:inn.bxi.filter(p=>(p.talents||[]).includes('rocketArm')).length,lightningKeeper:keeperTalent.includes('lightningHands'),mixed:!!(inn.bat[inn.nonstriker]&&!inn.bat[inn.nonstriker].out&&batP.hand!==inn.bat[inn.nonstriker].p.hand),batFat:M.fat[batP.name]||0,bowlFat:M.fat[bowler.name]||0,captBowl:inn.captBowl,captBat:inn.captBat,key:_talKey});
   const r=M.rand();let c=0,out='dot';
   for(const k in d){c+=d[k];if(r<=c){out=k;break}}
   M._fielder=null;M._dropped=false;M._fieldingEvent=null;M._fieldPos=null;
@@ -743,15 +910,19 @@ function stepBall(){
     if(!f){f=inn.bxi.find(p=>p.keeper)||inn.bxi[0];M._ballDir=null;}
     const cat=f.keeper?foKeeperQuality(f):(f.skills?f.skills.catching:55);
     const wxd=((M.meta&&M.meta.weather)||'').toLowerCase();
-    let pDrop=Math.min(0.36,Math.max(0.009,0.215-0.0048*(cat-55)-((f.talents||[]).includes('safeHands')?0.052:0)-((f.talents||[]).includes('lightningHands')&&f.keeper?0.050:0)+(wxd==='chilly'?0.045:0)+(wxd==='misty'?0.030:0)));
+    // the chance came to him: that is what a fielding talent applies to, so it
+    // is both what counts toward earning one and what a part-learnt one fires on
+    const TF=foTalHas(f,{key:_talKey});
+    foTalCount(M._tal,inn.bowlTeam,f,{},['safeHands']);   // the keeper's gloves are counted every ball, above
+    let pDrop=Math.min(0.36,Math.max(0.009,0.215-0.0048*(cat-55)-(TF('safeHands')?0.052:0)-(TF('lightningHands')&&f.keeper?0.050:0)+(wxd==='chilly'?0.045:0)+(wxd==='misty'?0.030:0)));
     if(M.rand()<pDrop){M._dropped={by:f.name};M._fieldPos=null;out=(M.rand()<0.65?'dot':'1');}
     else M._fielder=f;
   }else if(out==='wST'){M._fielder=inn.bxi.find(p=>p.keeper)||inn.bxi[0];
     const kq=foKeeperQuality(M._fielder), miss=foClamp(0.20-0.0038*(kq-55),0.014,0.30);
     if(M.rand()<miss){M._dropped={by:M._fielder.name};out='dot';M._fieldingEvent='Stumping chance missed by '+M._fielder.name+'.';}
-    else if(M._fielder&&(M._fielder.talents||[]).includes('lightningHands'))M._fieldingEvent='Lightning Hands from '+M._fielder.name+' - the bails are gone in a blur.';}
+    else if(M._fielder&&foTalHas(M._fielder,{key:_talKey})('lightningHands'))M._fieldingEvent='Lightning Hands from '+M._fielder.name+' - the bails are gone in a blur.';}
   else if(out==='wRO'){
-    const cands=inn.bxi.map(p=>({p,w:(p.field||50)*((p.talents||[]).includes('rocketArm')?1.5:1)}));
+    const cands=inn.bxi.map(p=>({p,w:(p.field||50)*(foTalHas(p,{key:_talKey})('rocketArm')?1.5:1)}));
     let tot=cands.reduce((a,x)=>a+x.w,0),pick=M.rand()*tot,f=cands[0].p;
     for(const x of cands){pick-=x.w;if(pick<=0){f=x.p;break}}
     M._fielder=f;
