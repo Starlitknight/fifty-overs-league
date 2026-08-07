@@ -63,7 +63,14 @@ export function stature(slot, isBoss) {
 // the following of a bottom club rather than a third more, and the pyramid
 // pays for the squads it deals.
 export function foundingBank(slot, isBoss) {
-  return Math.round(FOUNDING_BANK * (0.60 + 0.95 * econStature(slot, isBoss)) / 1000) * 1000;
+  // AND THE CAPITAL IS SIZED FOR THE BILL IT HAS TO CARRY. A founding bank
+  // was set when a squad cost a fifth of what it costs now; leaving it there
+  // meant a club spent its first season solvent but illiquid - earning a fair
+  // surplus and still unable to put up a stand, which p3's ledger test caught
+  // as a strong club 400k short of 3,000 seats. The ongoing share is right
+  // (slot one runs at 73% of income); it was the money in the drawer on day
+  // one that was still priced in the old world.
+  return Math.round(FOUNDING_BANK * (0.80 + 0.95 * econStature(slot, isBoss)) / 1000) * 1000;
 }
 export function foundingSeats(slot, isBoss) {
   // THE GROUND IS NOT THE LEVER, AND MAKING IT ONE COSTS A CLUB ITS FUTURE.
