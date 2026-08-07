@@ -182,11 +182,46 @@
     // the world clock owns the header's top-right corner on every screen:
     // world day + season above, real date and UTC time below; tap for the planet
     "#topbar#topbar{position:sticky}",
-    "#topbar#topbar #fo-wclock{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-end;gap:2px;text-decoration:none;background:rgba(255,254,252,.08);border:1px solid rgba(255,254,252,.16);border-radius:11px;padding:5px 10px;cursor:pointer;z-index:5}",
-    "#topbar#topbar #fo-wclock b{font:700 9px/1 Oswald,sans-serif;letter-spacing:.12em;color:#E8B96A;white-space:nowrap}",
-    "#topbar#topbar #fo-wclock span{font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.08em;color:#E8DFCE;white-space:nowrap}",
-    "#topbar#topbar #fo-wclock i{font:800 8.5px/1 Oswald,sans-serif;letter-spacing:.04em;color:#FF6B5E;font-style:normal;white-space:nowrap}",
-    "@media(max-width:400px){#topbar#topbar #fo-wclock{padding:4px 8px}#topbar#topbar #fo-wclock b{font-size:8px}#topbar#topbar #fo-wclock span{font-size:7.5px}}",
+    // THE DATELINE. This was a filled, bordered pill - a box sitting inside a
+    // box, when everything else in the header is typography, so it read as
+    // furniture competing with the wordmark rather than as part of it. Its two
+    // lines were also nearly the same weight (9px and 8.5px letterspaced Oswald
+    // caps), so neither led and the whole thing landed as one dense block.
+    //
+    // The container becomes a single gold hairline, the way a newspaper
+    // masthead rules off its dateline, and the two lines are given a real
+    // difference: the world's own calendar in gold Oswald caps above, the real
+    // date and hour well back from it in quiet Inter below. Same facts, same
+    // corner, one of them clearly first.
+    // border-radius:0 IS LEAD, NOT POLISH. The clock is an <a>, and the topbar
+    // rounds every anchor in it to 999px so the nav pills are pills. A straight
+    // hairline inherited that radius and was drawn as a great gold ARC sweeping
+    // through the header - invisible until now only because the old filled pill
+    // had the same radius and wore it as a pill. The rule that made the box
+    // work is the rule that breaks the line.
+    "#topbar#topbar #fo-wclock{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-end;gap:3px;text-decoration:none;padding:2px 0 2px 13px;border:0;border-left:1px solid rgba(232,185,106,.34);border-radius:0;background:none;cursor:pointer;z-index:5}",
+    "#topbar#topbar #fo-wclock b{font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.18em;color:#E8B96A;white-space:nowrap;text-transform:uppercase}",
+    // Inter, not Oswald: the second line is a real date and a real clock, and
+    // tabular figures stop the minutes shuffling the line every sixty seconds
+    "#topbar#topbar #fo-wclock span{font:400 9.5px/1 Inter,-apple-system,sans-serif;letter-spacing:.02em;color:rgba(241,238,230,.46);white-space:nowrap;font-variant-numeric:tabular-nums}",
+    "#topbar#topbar #fo-wclock i{font:700 9px/1 Oswald,sans-serif;letter-spacing:.06em;color:#FF6B5E;font-style:normal;white-space:nowrap}",
+    "@media(max-width:400px){#topbar#topbar #fo-wclock{padding-left:10px;gap:2.5px}#topbar#topbar #fo-wclock b{font-size:8.5px;letter-spacing:.14em}#topbar#topbar #fo-wclock span{font-size:8.5px}}",
+    // THE CLOCK IS ABSOLUTE, SO NOTHING IN THE ROW KNOWS IT IS THERE.
+    // The wordmark simply ran underneath it - by seventy pixels at 320, and
+    // touching at 390. The old pill hid that because it was opaque and painted
+    // over the top; a hairline hides nothing, so a collision that was always
+    // there becomes visible the moment the fill goes.
+    //
+    // Reserving space with padding does not work twice over: the header's own
+    // padding is !important elsewhere, and the wordmark is nowrap, so its
+    // min-content width will not shrink for a narrower content box - it just
+    // overflows. The honest fix is to give the header less to say. Under 430
+    // the wordmark steps down; under 372 there is genuinely no room for both,
+    // and the mark alone carries the identity - as it already does on every
+    // app icon. The wordmark returns the moment the screen can hold it.
+    "@media(max-width:430px){#topbar#topbar .brand{font-size:15px !important;letter-spacing:0 !important}}",
+    "@media(max-width:404px){#topbar#topbar .brand{font-size:13.5px !important}}",
+    "@media(max-width:372px){#topbar#topbar .brand{font-size:0 !important}#topbar#topbar .brand .fo-brandicon{margin-right:0}}",
     "html body #fo-eng-live{position:fixed;left:50%;transform:translateX(-50%);bottom:86px;z-index:1200;display:inline-flex;align-items:center;gap:8px;background:#B23230;color:#FFFEFC !important;font:800 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;border-radius:999px;padding:12px 18px;text-decoration:none;box-shadow:0 14px 34px rgba(178,50,48,.45)}",
     "html body #fo-eng-live i{width:8px;height:8px;border-radius:50%;background:#FFFEFC;animation:foEngPulse 1.2s ease-in-out infinite}",
     "@keyframes foEngPulse{0%,100%{opacity:1}50%{opacity:.25}}"
