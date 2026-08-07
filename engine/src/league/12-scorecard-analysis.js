@@ -2639,6 +2639,10 @@
       // toolbar collapse, rubber-band overscroll) must read as night, never
       // as the cream document background
       "html body.fo-home-on,html body.ftpskin.fo-home-on{background:#0B1322 !important;margin:0 !important;padding:0 !important;overflow-x:hidden !important}" +
+      // and neither does the body or its wrapper: the document background IS
+      // the painting on this page, so everything above it stays out of the way
+      "html body.fo-home-on,html body.ftpskin.fo-home-on{background:transparent !important}" +
+      "html body.fo-home-on #page,html body.ftpskin.fo-home-on #page{background:transparent !important}" +
       "html body.fo-home-on .wrap,html body.ftpskin.fo-home-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important;border:0 !important}" +
       "html body.fo-home-on #page{padding:0 !important;margin:0 !important;background:transparent !important}" +
       "html body.fo-home-on #topbar,html body.ftpskin.fo-home-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(4,10,20,.6),rgba(4,10,20,.24) 60%,transparent) !important;border-bottom:none !important;box-shadow:none !important}" +
@@ -2709,7 +2713,15 @@
       // webfont, a banner) re-anchored it with a fresh negative margin and
       // the whole painting visibly jumped. Fixed, it cannot be moved by
       // anything the topbar does.
-      "html body #page .fo-hg2.fo-home2{position:fixed;top:0;left:0;right:0;bottom:0;height:100dvh;margin:0 !important;z-index:1}" +
+      // AND THE HERO DOES NOT PAINT OVER THE FIRST FRAME. .fo-hg2 carries an
+      // opaque navy so a painting that has not arrived has something behind
+      // it. On the home page that is now the wrong thing to want: the document
+      // background already holds the inlined thumbnail AND the real painting,
+      // hung by the boot script before the program ran, and an opaque box laid
+      // on top of them replaces a picture with a flat colour for as long as it
+      // takes the <img> to light. Which is the blink, measured: the screen
+      // collapsed 87% at the moment this element appeared.
+      "html body #page .fo-hg2.fo-home2{position:fixed;top:0;left:0;right:0;bottom:0;height:100dvh;margin:0 !important;z-index:1;background:transparent}" +
       // THE PAINTING HAS A VIGNETTE, SO THE PAINTED EDGE NEVER REACHES THE GLASS.
       //
       // Nearly every home ground painting is darkened toward its edges - it is
@@ -5530,6 +5542,39 @@
         // painting as the document background before any script runs, so a
         // refresh never shows a blank screen over the top of it.
         try { localStorage.setItem("fo_hg_last", String(v)); } catch (eLs) {}
+        // AND A THUMBNAIL OF IT, SMALL ENOUGH TO INLINE.
+        //
+        // The blank frame on a refresh is four hundred milliseconds of parsing
+        // and running four and a half megabytes of JavaScript - measured: the
+        // document arrives in 8ms and the bundle is local, and the screen is
+        // still empty until the program finishes. Nothing that runs AFTER the
+        // program can help, and neither can a background image, because a URL
+        // is a fetch and a decode and the first frame comes before both.
+        //
+        // So the painting is reduced to a sixteen-by-ten JPEG - a few hundred
+        // bytes - and kept. The boot script hangs it as the document
+        // background before the parser has reached the program, where the
+        // browser blows it up to fill the screen and the interpolation does
+        // the blurring for nothing. It is not the painting, but it is the
+        // painting's light and colour in the right places, on the first frame,
+        // and the real one lands on top of it a moment later.
+        try {
+          var bgT = FO_HG_KEPT && FO_HG_KEPT.querySelector(".hg-bg");
+          if (bgT) {
+            var thumb = function () {
+              try {
+                if (!bgT.naturalWidth) return;
+                var cv = document.createElement("canvas");
+                cv.width = 16; cv.height = 10;
+                cv.getContext("2d").drawImage(bgT, 0, 0, 16, 10);
+                var u = cv.toDataURL("image/jpeg", 0.5);
+                if (u && u.length < 3000) localStorage.setItem("fo_hg_lqip", u);
+              } catch (eTh) {}          // a tainted canvas on file:// - no matter
+            };
+            if (bgT.complete && bgT.naturalWidth) thumb();
+            else bgT.addEventListener("load", thumb);
+          }
+        } catch (eTh2) {}
         (function () {
           var bg0 = FO_HG_KEPT && FO_HG_KEPT.querySelector(".hg-bg");
           if (!bg0 || bg0.classList.contains("hg-lit")) return;

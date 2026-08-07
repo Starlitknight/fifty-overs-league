@@ -50,7 +50,16 @@ cd "$(dirname "$0")"
 # and is revealed onto the same picture. Nothing to see, because nothing
 # changes.
 #
-# Two details make it work rather than nearly work. The painting is PRELOADED
+# AND THE FIRST FRAME CARRIES PIXELS, NOT A PROMISE. A URL is a fetch and a
+# decode, and the first frame comes before both - which is why hanging the
+# full painting here narrowed the gap without closing it. So a sixteen-by-ten
+# JPEG of the same painting, a few hundred bytes, is kept in localStorage and
+# inlined as a data URI UNDER the real one. It needs no network and no decode
+# worth the name; the browser blows it up to fill the screen and the
+# interpolation blurs it for free. The real painting is layered on top and
+# covers it the moment it is ready.
+#
+# Two more details make it work rather than nearly work. The painting is PRELOADED
 # from the same first script, so the fetch starts before the parser has reached
 # anything else. And where a painting is hung the background COLOUR is dropped:
 # a document whose first paint would be a solid colour ends the browser's paint
@@ -58,7 +67,7 @@ cd "$(dirname "$0")"
 # showing the previous page until the real picture is ready. The navy is there
 # only for the first-ever visit, when there is no last painting to hang - which
 # is the one load that has nothing to blink away from.
-BOOT='<style id="fo-boot">html{background:#0B1322 no-repeat center/cover}html>body{visibility:hidden;animation:fo-boot-reveal .01s 4s forwards}@keyframes fo-boot-reveal{to{visibility:visible}}</style><script>try{var _a=localStorage.getItem("fo_hg_last");if(_a&&/^[a-z0-9-]+$/i.test(_a)){var _u="client/art/home/"+_a+".webp",_l=document.createElement("link");_l.rel="preload";_l.as="image";_l.href=_u;document.head.appendChild(_l);var _h=document.documentElement.style;_h.backgroundImage="url("+_u+")";_h.backgroundColor="transparent"}}catch(e){}try{if("serviceWorker"in navigator){if(/[?&]nosw=1/.test(location.search)){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})});if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){if(k.indexOf("fo-")===0)caches.delete(k)})})}else if(location.protocol.indexOf("http")===0){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}}}catch(e){}</script>'
+BOOT='<style id="fo-boot">html{background:#0B1322 no-repeat center/cover}html>body{visibility:hidden;animation:fo-boot-reveal .01s 4s forwards}@keyframes fo-boot-reveal{to{visibility:visible}}</style><script>try{var _a=localStorage.getItem("fo_hg_last");if(_a&&/^[a-z0-9-]+$/i.test(_a)){var _u="client/art/home/"+_a+".webp",_l=document.createElement("link");_l.rel="preload";_l.as="image";_l.href=_u;document.head.appendChild(_l);var _q=localStorage.getItem("fo_hg_lqip");var _h=document.documentElement.style;_h.backgroundImage=_q&&_q.indexOf("data:image/")===0?"url("+_u+"),url("+_q+")":"url("+_u+")";_h.backgroundColor="transparent"}}catch(e){}try{if("serviceWorker"in navigator){if(/[?&]nosw=1/.test(location.search)){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})});if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){if(k.indexOf("fo-")===0)caches.delete(k)})})}else if(location.protocol.indexOf("http")===0){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}}}catch(e){}</script>'
 
 # ONE GAME, ONE ADDRESS. The site is published twice - GitHub Pages, which
 # still serves the old bookmarks, and the host below, which is the real one.
