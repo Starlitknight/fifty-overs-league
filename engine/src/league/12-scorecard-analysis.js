@@ -5526,6 +5526,10 @@
         // KEPT, NOT JUST DRAWN. The node itself is remembered so that the next
         // render can re-hang THIS painting rather than build another one.
         FO_HG_KEPT = page.querySelector(".fo-hg2.fo-home2");
+        // REMEMBERED FOR THE NEXT FIRST PAINT. The boot veil hangs this same
+        // painting as the document background before any script runs, so a
+        // refresh never shows a blank screen over the top of it.
+        try { localStorage.setItem("fo_hg_last", String(v)); } catch (eLs) {}
         (function () {
           var bg0 = FO_HG_KEPT && FO_HG_KEPT.querySelector(".hg-bg");
           if (!bg0 || bg0.classList.contains("hg-lit")) return;
