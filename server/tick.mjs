@@ -1254,7 +1254,7 @@ export async function runColtsCup(pool, host, { now = Date.now() } = {}) {
         `INSERT INTO snapshots(key, body) VALUES ($1, $2::jsonb)
          ON CONFLICT (key) DO UPDATE SET body=EXCLUDED.body, updated_at=now()`,
         ['colts/' + s.country_id, JSON.stringify(colts)]);
-      await coltRecords(pool, s.country_id, s.season_no);
+      await coltRecords(pool, s.country_id, s.season_no, host);
     } catch (eC) { console.error('colts board ' + s.country_id + ': ' + eC.message); }
   }
   return out;

@@ -367,6 +367,17 @@ async function moveMan(pool, L, win, today) {
   const prior = man.career || null, priorI = man.intl || null;
   man.carry = addCarry(man.carry, prior);
   if (priorI) man.carryIntl = addCarry(man.carryIntl, priorI);
+  // AND WHAT HE WAS PART OF THE WAY TO. Talent progress is folded from the
+  // matches a man's CURRENT club has played, so without freezing it here a
+  // cricketer two seasons into learning something would arrive at his new club
+  // having forgotten it - the same blank page the career carry exists to
+  // prevent. Added to any carry he already had, so a man sold twice keeps both.
+  if (man.talProg && Object.keys(man.talProg).length) {
+    const c = Object.assign({}, man.talCarry || {});
+    for (const t of Object.keys(man.talProg)) c[t] = (c[t] | 0) + (man.talProg[t] | 0);
+    man.talCarry = c;
+  }
+  delete man.talProg;
   man.joined = { s: season ? season.season_no : 1, r: round };
   man.from = { country: L.country_id, slot: L.slot, day: today };
   delete man.career; delete man.intl;

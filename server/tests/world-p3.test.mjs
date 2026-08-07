@@ -1261,7 +1261,7 @@ test('019: youth cricket stays out of the seniors\' book, and the academy sets t
     p.name + ' carries a Colts record without ever having been a colt'));
   // and recomputing the boys' records over an empty cup writes nothing rather
   // than throwing - the umpire runs this on every nation, cup or no cup
-  await coltRecords(pool, 'eng', seas);
+  await coltRecords(pool, 'eng', seas, host);
   const after = (await pool.query(
     `SELECT youth FROM clubs WHERE country_id='eng'`)).rows.flatMap(r => r.youth || []).filter(y => y.colts);
   assert.equal(after.length, 0, 'no ties played, so no boy carries a Colts record');

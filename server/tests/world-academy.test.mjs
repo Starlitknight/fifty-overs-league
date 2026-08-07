@@ -102,6 +102,29 @@ test('a senior shirt costs the same flat fee for every boy', async () => {
   assert.equal(bank0 - Number(after.bank), PROMOTE_FEE, 'and it was paid for');
   assert.ok(!after.youth.some(y => y.name === boy.name), 'and he is out of the academy');
   assert.ok(after.squad.some(p => p.name === boy.name && !p.colt), 'no longer a colt');
+
+  // AND WHAT HE LEARNED IN THE ACADEMY COMES WITH HIM. Talent progress is a
+  // fold of the matches a man's CURRENT club has played, so a promotion would
+  // otherwise wipe two or three seasons of Colts Cup on the morning he signs -
+  // the same problem a transfer has, and the same answer: freeze it as a carry
+  // the senior fold adds to.
+  const boy2 = (await pool.query(
+    `SELECT youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].youth[0];
+  await pool.query(
+    `UPDATE clubs SET youth = (
+       SELECT jsonb_agg(CASE WHEN y->>'name' = $1
+                             THEN y || $2::jsonb ELSE y END)
+         FROM jsonb_array_elements(youth) y)
+      WHERE country_id='eng' AND slot=1`,
+    [boy2.name, JSON.stringify({ talProg: { busyRunner: 400 }, talCarry: { busyRunner: 100, anchor: 60 } })]);
+  await pool.query(`SELECT world_colt($1,'promote')`, [boy2.name]);
+  const promoted = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad
+    .find(p => p.name === boy2.name);
+  assert.ok(promoted, 'he is a senior');
+  assert.deepEqual(promoted.talCarry, { busyRunner: 500, anchor: 60 },
+    'the academy book is added to whatever he already carried, not replaced');
+  assert.ok(!promoted.talProg, 'and it stops being live progress - it is what he brought');
 });
 
 test('the SQL and the JavaScript quote the same prices', async () => {

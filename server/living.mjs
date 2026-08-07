@@ -104,6 +104,19 @@ export function livingPatch(squad, absent) {
 export function applyLiving(squad, patch, host) {
   if (!squad || !patch) return squad;
   let skilled = false;
+  // THE PATCH IS THE WHOLE TRUTH ABOUT TALENT STATE THAT DAY, for every man in
+  // the side and not only the ones it happens to mention. A replay is laid over
+  // the club's squad AS IT STANDS NOW: a man may have earned a talent since, or
+  // have progress the record has credited him since, or have joined after the
+  // match and have no patch entry at all. Any of those puts a cricketer on the
+  // field who is not the one who played. So everything talent is stripped first
+  // and then restored from the patch - it is the only version that cannot leak.
+  squad.forEach(p => {
+    if (!p) return;
+    if (p.talEarned && Array.isArray(p.talents))
+      p.talents = p.talents.filter(t => t !== p.talEarned);
+    delete p.talEarned; delete p.talProg;
+  });
   // anyone the patch marks as away was not available to be picked
   const away = squad.filter(p => p && patch[p.name] && patch[p.name].a);
   if (away.length) {
@@ -123,14 +136,12 @@ export function applyLiving(squad, patch, host) {
     // without this he bowls the replay with a gift he had not yet been given,
     // and the recorded card and the broadcast disagree. p3 said so: five
     // wickets in the replay against four in the book.
-    if (L.tp) p.talProg = L.tp; else delete p.talProg;
-    if (p.talEarned && p.talEarned !== L.te && Array.isArray(p.talents))
-      p.talents = p.talents.filter(t => t !== p.talEarned);
+    if (L.tp) p.talProg = L.tp;
     if (L.te) {
       p.talEarned = L.te;
       if (!Array.isArray(p.talents)) p.talents = [];
       if (p.talents.indexOf(L.te) < 0) p.talents = p.talents.concat([L.te]);
-    } else delete p.talEarned;
+    }
   });
   if (skilled && host && host.derive) {
     const out = host.derive(squad);
@@ -361,7 +372,18 @@ export function withCarry(book, carry) {
 // delivery - and the one he earns is the one he crossed most decisively.
 // After that the engine stops counting for him entirely, so the second is
 // never in reach: what is rare has to stay rare to be worth anything.
-function talentsEarned(q, prog, talT) {
+export function talentsEarned(q, prog, talT) {
+  // WHAT HE BROUGHT WITH HIM. A club's fold only sees the matches THIS club
+  // has played, so a man who was bought, or a boy who was handed a senior
+  // shirt, would arrive with his progress wiped - exactly the reason a career
+  // is frozen onto a transfer as a carry. talCarry is that same freeze: it is
+  // added to the fold, never recomputed, and it is what makes two seasons of
+  // Colts Cup mean something on the morning he is promoted.
+  const carry = (q.talCarry && typeof q.talCarry === 'object') ? q.talCarry : null;
+  if (carry) {
+    prog = Object.assign({}, prog || {});
+    for (const t of Object.keys(carry)) prog[t] = (prog[t] | 0) + (carry[t] | 0);
+  }
   if (!prog || !Object.keys(prog).length) { delete q.talProg; return q; }
   const own = Array.isArray(q.talents) ? q.talents : [];
   const kept = {};
@@ -529,7 +551,8 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
   try {
     cupRows = (await pool.query(
       `SELECT a, b, result->'tal' AS tal FROM cup_matches
-        WHERE result IS NOT NULL AND (a->>'country' = $1 OR b->>'country' = $1)`, args)).rows;
+        WHERE result IS NOT NULL AND comp NOT LIKE 'colts:%'
+          AND (a->>'country' = $1 OR b->>'country' = $1)`, args)).rows;
   } catch (eCu) { cupRows = []; }   // pre-cup database
   for (const r of cupRows) {
     if (!r.tal) continue;

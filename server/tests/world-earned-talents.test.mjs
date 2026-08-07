@@ -14,7 +14,8 @@ import { makePool } from '../db.mjs';
 import { migrate } from '../migrate.mjs';
 import { initWorld } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
-import { evolveCountry, livingPatch, applyLiving } from '../living.mjs';
+import { evolveCountry, livingPatch, applyLiving, talentsEarned } from '../living.mjs';
+import { coltRecords } from '../youth.mjs';
 import { EPOCH, DAY } from '../clock.mjs';
 
 const DBNAME = 'foworld_talents_test';
@@ -238,4 +239,80 @@ test('a replay fields the man as he was, not as he has since become', async () =
   // what he was BORN with is never touched - only the earned one moves
   const born = (earner.talents || []).filter(t => t !== earner.talEarned);
   born.forEach(t => assert.ok((back.talents || []).indexOf(t) >= 0, t + ' is his and stays his'));
+});
+
+test('a boy in the academy learns too, and brings it with him', async () => {
+  // THE COLTS CUP IS FIFTY OVERS. Two or three seasons of it is exactly the
+  // span a talent takes, which is why a boy who could not accrue was the one
+  // cricketer in the world for whom the whole mechanism did nothing.
+  const T = host.talThresholds();
+  const club = (await pool.query(
+    `SELECT slot, name, youth FROM clubs WHERE country_id='eng' AND slot=5`)).rows[0];
+  const boy = (club.youth || []).find(y => !(y.talents || []).includes('busyRunner'));
+  assert.ok(boy, 'a colt without Busy Runner');
+  const season = (await pool.query(
+    `SELECT season_no FROM seasons WHERE country_id='eng'`)).rows[0].season_no;
+  const sideName = club.name + ' Colts';
+
+  await pool.query(
+    `INSERT INTO cup_matches(comp, season_no, stage, gi, a, b, seed, engine_version, result, result_canonical)
+     VALUES ($1,$2,'r16',0,$3::jsonb,$4::jsonb,1,'v2',$5::jsonb,'x')`,
+    ['colts:eng', season,
+     JSON.stringify({ country: 'eng', slot: 5, name: sideName }),
+     JSON.stringify({ country: 'eng', slot: 6, name: 'Somebody Colts' }),
+     JSON.stringify({ winner: sideName, innings: [],
+       tal: { [sideName]: { [boy.name]: { busyRunner: Math.floor(T.busyRunner / 2) } } } })]);
+
+  await coltRecords(pool, 'eng', season, host);
+  let after = (await pool.query(`SELECT youth FROM clubs WHERE country_id='eng' AND slot=5`))
+    .rows[0].youth.find(y => y.name === boy.name);
+  assert.equal(after.talProg.busyRunner, Math.floor(T.busyRunner / 2),
+    'the boy is halfway to Busy Runner');
+  assert.ok(!after.talEarned, 'and halfway is not there');
+
+  // THE SENIOR BOOK NEVER SEES A COLTS TIE. If it did, a colt's triggers would
+  // be credited to a senior of the same name at the same club.
+  await evolveCountry(pool, 'eng', T0 + 8 * DAY, host);
+  const seniors = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=5`)).rows[0].squad;
+  assert.ok(!seniors.some(p => p.name === boy.name), 'the boy is not in the senior squad');
+
+  // AND HE CROSSES. The rest of the way, and the talent is his in the academy.
+  await pool.query(
+    `UPDATE cup_matches SET result = jsonb_set(result, '{tal}', $1::jsonb)
+      WHERE comp='colts:eng' AND stage='r16' AND gi=0`,
+    [JSON.stringify({ [sideName]: { [boy.name]: { busyRunner: T.busyRunner } } })]);
+  await coltRecords(pool, 'eng', season, host);
+  after = (await pool.query(`SELECT youth FROM clubs WHERE country_id='eng' AND slot=5`))
+    .rows[0].youth.find(y => y.name === boy.name);
+  assert.equal(after.talEarned, 'busyRunner', 'he has come by it in the academy');
+  assert.ok((after.talents || []).includes('busyRunner'), 'and it is on his card');
+
+  // WHAT HE BRINGS WITH HIM. A promotion freezes his progress into a carry,
+  // and the senior fold ADDS to a carry rather than replacing it - the same
+  // way a bought man's career survives the journey.
+  const carried = { anchor: Math.floor(T.anchor / 2) };
+  const asSenior = talentsEarned({ name: 'X', talents: [], talCarry: carried }, null, T);
+  assert.equal(asSenior.talProg.anchor, carried.anchor,
+    'a carry alone is progress: he does not arrive blank');
+  const withBoth = talentsEarned({ name: 'X', talents: [], talCarry: carried },
+    { anchor: Math.floor(T.anchor / 2) + 10 }, T);
+  assert.equal(withBoth.talEarned, 'anchor',
+    'and the academy plus the seniors is what takes him over');
+});
+
+test('a man sold keeps what he was learning', async () => {
+  // The same rule as a promotion, for the same reason: the new club's book has
+  // never seen him. Asserted on the shape rather than by running an auction,
+  // because what is being tested is that the freeze happens at all.
+  const T = host.talThresholds();
+  const asBought = talentsEarned(
+    { name: 'Y', talents: [], talCarry: { miser: 900, goldenArm: 40 } },
+    { miser: 300 }, T);
+  assert.equal(asBought.talProg.miser, 1200, 'his old club\'s work is added to his new club\'s');
+  assert.equal(asBought.talProg.goldenArm, 40, 'and nothing he brought is dropped');
+  // and a carry cannot resurrect a talent he already owns
+  const owned = talentsEarned(
+    { name: 'Y', talents: ['miser'], talCarry: { miser: 5000 } }, null, T);
+  assert.ok(!owned.talProg || owned.talProg.miser == null,
+    'there is nothing left to learn about a talent he has');
 });

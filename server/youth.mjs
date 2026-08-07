@@ -22,6 +22,9 @@
 // twenty-year-old of the same tier and is the better prospect, because he has
 // five seasons of academy in front of him rather than one.
 import { countryConfigs } from './init-world.mjs';
+// the same derivation the seniors use - one rule about when a man has crossed,
+// so a boy and the man he becomes are never judged by two different tables
+import { talentsEarned } from './living.mjs';
 
 // a boy is sixteen to twenty when he is found, and he is gone at twenty-one
 export const RECRUIT_MIN_AGE = 16;
@@ -671,7 +674,8 @@ export async function computeColts(pool, country, seasonNo) {
 // EVERY BOY'S OWN RECORD, recomputed from the same banked cards and written
 // back onto the colt so his card can show what he has actually done. Pure
 // function of the banked ties; running it twice writes the same numbers.
-export async function coltRecords(pool, country, seasonNo) {
+export async function coltRecords(pool, country, seasonNo, host) {
+  const talT = host && host.talThresholds ? host.talThresholds() : {};
   const ms = (await pool.query(
     'SELECT a, b, result FROM cup_matches WHERE comp=$1 AND season_no=$2',
     ['colts:' + country, seasonNo])).rows;
@@ -682,6 +686,26 @@ export async function coltRecords(pool, country, seasonNo) {
     if (!m.has(name)) m.set(name, { m: 0, runs: 0, hs: 0, wkts: 0, conc: 0 });
     return m.get(name);
   };
+  // AND WHAT THE BOYS LEARNED. The Colts Cup is fifty overs of real cricket -
+  // the rule the manager set was "everything except a friendly" - so a boy is
+  // credited for the situations he keeps finding himself in exactly as a
+  // senior is. It matters more for him than for anybody: two seasons of colts
+  // cricket is how a nineteen-year-old turns up to his senior shirt with
+  // something the draft never gave him.
+  const talBook = new Map();                                  // slot -> name -> {talent: n}
+  for (const mt of ms) {
+    const tal = (mt.result || {}).tal || {};
+    for (const side of [mt.a, mt.b]) {
+      const men = side && tal[side.name]; if (!men || side.slot == null) continue;
+      if (!talBook.has(side.slot)) talBook.set(side.slot, new Map());
+      const bk = talBook.get(side.slot);
+      for (const nm of Object.keys(men)) {
+        const cur = bk.get(nm) || {};
+        for (const t of Object.keys(men[nm])) cur[t] = (cur[t] | 0) + (men[nm][t] | 0);
+        bk.set(nm, cur);
+      }
+    }
+  }
   for (const mt of ms) {
     const slotOf = nm => nm === mt.a.name ? mt.a.slot : nm === mt.b.name ? mt.b.slot : null;
     const capped = new Set();                       // one cap a man a match, however many innings
@@ -706,10 +730,13 @@ export async function coltRecords(pool, country, seasonNo) {
   let touched = 0;
   for (const c of clubs) {
     const men = book.get(c.slot) || new Map();
+    const boysTal = talBook.get(c.slot) || new Map();
     const youth = (Array.isArray(c.youth) ? c.youth : []).map(y => {
       const q = Object.assign({}, y), r = men.get(y.name);
       if (r && r.m) q.colts = r; else delete q.colts;
-      return q;
+      // a boy can cross a threshold and come by a talent in the academy, and
+      // the same fold decides it: summed from the record, never incremented
+      return talentsEarned(q, boysTal.get(y.name), talT);
     });
     await pool.query('UPDATE clubs SET youth=$3::jsonb WHERE country_id=$1 AND slot=$2',
       [country, c.slot, JSON.stringify(youth)]);
