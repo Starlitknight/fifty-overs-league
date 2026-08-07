@@ -450,12 +450,22 @@
         var when = "", ts = null;
         try { if (typeof window.foRoundTimeTxt === "function") when = window.foRoundTimeTxt(u.r) || ""; } catch (eW) {}
         try { if (typeof window.foRoundTime === "function") ts = window.foRoundTime(u.r); } catch (eT) {}
+        // the row goes to the match preview, not to the retired Matchday room,
+        // and its right-hand cell carries the start time rather than a button:
+        // a list of twenty fixtures with twenty identical buttons on it is a
+        // column of orange, not a fixture list
+        var pvU = "#/fixtures";
+        try { pvU = window.foPreviewHref ? (window.foPreviewHref(null, u.r + 1) || pvU) : pvU; } catch (ePv2) {}
         return { ts: ts != null ? ts : Date.now() + (u.r + 1) * 86400000,
-          html: rowHtml({ href: "#/matchday?r=" + u.r, dt: null,
+          html: rowHtml({ href: pvU, dt: null,
             cmp: "R" + (u.r + 1), cmpCls: "lg", chip: u.isHome ? "H" : "A", chipCls: "n", cls: "up",
             name: (u.isHome ? "v " : "at ") + E(u.opp.name),
-            sub: (when ? E(when) + " &middot; " : "") + E(u.ground) + " &middot; " + E(PITCH_NM[u.pitch] || u.pitch) + " pitch &middot; " + E(u.wx),
-            right: "Matchday &rsaquo;", rightCls: "act" }) };
+            // the when belongs in one place. It was printed in the detail line
+            // AND again on the right, so every row said its date twice; the
+            // right-hand column owns it and the detail line carries the
+            // conditions - where, what surface, what sky.
+            sub: E(u.ground) + " &middot; " + E(PITCH_NM[u.pitch] || u.pitch) + " pitch &middot; " + E(u.wx),
+            right: when ? E(when) : "", rightCls: "time" }) };
       });
       fr.up.forEach(function (f) {
         upItems.push({ ts: f.t0,
@@ -526,7 +536,12 @@
   window.addEventListener("hashchange", function () { setTimeout(ensureNavLink, 90); });
 
   var CSS = [
-    "html body #page .fo-fl{max-width:760px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
+    // A RESULTS SERVICE, NOT A LETTER. Eighteen fixtures set in a 760px column
+    // on a 1440px screen is a ribbon of cards down the middle of an empty page,
+    // and every row wraps its detail line because there is nowhere to put it.
+    // The page runs wide and the rows read as a table: fixed columns, aligned
+    // dates, the opponent in one place on every line.
+    "html body #page .fo-fl{max-width:1120px;margin:22px auto 44px;padding:0 18px;color:#141C28}",
     // ---- the masthead: navy, gold eyebrow, the record worn like a scorebug --
     "html body #page .fo-fl-hero{position:relative;overflow:hidden;background:linear-gradient(132deg,#0B1D33,#122C4B 55%,#1B3A5F);border-radius:22px;padding:26px 28px 22px;box-shadow:0 22px 50px rgba(11,29,51,.38)}",
     "html body #page .fo-fl-hero:before{content:'';position:absolute;inset:0;background:radial-gradient(120% 90% at 85% -10%,rgba(235,194,113,.14),transparent 55%);pointer-events:none}",
@@ -557,13 +572,19 @@
     "html body #page a.fo-fl-next.live .nk{color:#C22823}",
     "html body #page a.fo-fl-next.live .ncta{background:#C22823}",
     // ---- section kickers ----------------------------------------------------
-    "html body #page .fo-fl-k{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.22em;text-transform:uppercase;color:#B44A22;margin:22px 2px 8px}",
-    "html body #page .fo-fl-k:after{content:'';display:block;width:34px;border-top:2px solid #C95532;margin-top:6px}",
+    "html body #page .fo-fl-k{display:flex;align-items:center;gap:12px;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#0E2246;margin:26px 2px 9px}",
+    "html body #page .fo-fl-k:after{content:'';flex:1;border-top:1px solid rgba(20,28,40,.14)}",
     // ---- the rows: date block, competition pill, verdict, the match ---------
-    "html body #page .fo-fl-list{display:flex;flex-direction:column;gap:7px}",
-    "html body #page .fo-fl-row{display:grid;grid-template-columns:50px 40px 26px minmax(0,1fr) auto 12px;gap:10px;align-items:center;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:14px;padding:10px 14px;text-decoration:none;color:#141C28;box-shadow:0 4px 14px rgba(30,38,52,.06);transition:border-color .15s ease,transform .12s ease}",
-    "html body #page .fo-fl-row.nodt{grid-template-columns:40px 26px minmax(0,1fr) auto 12px}",
-    "html body #page a.fo-fl-row:hover{border-color:rgba(217,85,42,.5);transform:translateY(-1px);text-decoration:none}",
+    "html body #page .fo-fl-list{display:flex;flex-direction:column;gap:0;background:#FFFEFC;border:1px solid rgba(20,28,40,.11);border-radius:14px;overflow:hidden;box-shadow:0 6px 20px rgba(30,38,52,.055)}",
+    "html body #page .fo-fl-row{display:grid;grid-template-columns:74px 44px 26px minmax(0,1fr) minmax(0,auto) 14px;gap:14px;align-items:center;background:transparent;border:0;border-top:1px solid rgba(20,28,40,.08);border-radius:0;padding:11px 18px;text-decoration:none;color:#141C28;box-shadow:none;transition:background .13s ease}",
+    "html body #page .fo-fl-list>.fo-fl-row:first-child{border-top:0}",
+    "html body #page .fo-fl-row.nodt{grid-template-columns:44px 26px minmax(0,1fr) minmax(0,auto) 14px}",
+    // the accent lives in a rule down the left edge on hover, so a pointer
+    // moving through eighteen rows does not make the whole page jump
+    "html body #page a.fo-fl-row{position:relative}",
+    "html body #page a.fo-fl-row:before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#C95532;opacity:0;transition:opacity .13s ease}",
+    "html body #page a.fo-fl-row:hover{background:rgba(201,85,50,.045);text-decoration:none}",
+    "html body #page a.fo-fl-row:hover:before{opacity:1}",
     "html body #page .fo-fl-row.live{border-color:rgba(194,40,35,.45)}",
     "html body #page .fo-fl-dt{display:flex;flex-direction:column;gap:2px;min-width:0}",
     "html body #page .fo-fl-dt b{font:700 9px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.42)}",
@@ -587,9 +608,11 @@
     "html body #page .fo-fl-row.live .fo-fl-who>span{color:#C22823;font-weight:600}",
     "html body #page .fo-fl-res{font:italic 400 12px/1.35 Georgia,serif;color:rgba(20,28,40,.6);text-align:right;white-space:nowrap}",
     "html body #page .fo-fl-row s{text-decoration:none;color:rgba(20,28,40,.35)}",
-    "html body #page .fo-fl-act{font:700 11px/1 Inter,sans-serif;font-style:normal;color:#FFFEFC;background:#C95532;border-radius:999px;padding:8px 13px;text-decoration:none;white-space:nowrap}",
-    "html body #page .fo-fl-row.live .fo-fl-act{background:#C22823}",
-    "html body #page a.fo-fl-row:hover .fo-fl-act{background:#A64426}",
+    // WHAT USED TO BE A BUTTON IS NOW A TIME. Every upcoming row carried an
+    // identical orange pill, which made a fixture list read as a column of
+    // buttons with some cricket behind it. The row itself is the link.
+    "html body #page .fo-fl-time{font:600 12px/1 Inter,sans-serif;font-style:normal;color:rgba(20,28,40,.62);font-variant-numeric:tabular-nums;white-space:nowrap;text-align:right}",
+    "html body #page .fo-fl-row.live .fo-fl-time{color:#C22823;font-weight:700}",
     "html body #page .fo-fl-none{background:#FFFEFC;border:1px dashed rgba(20,28,40,.2);border-radius:14px;padding:22px;text-align:center;font:italic 400 13px/1.5 Georgia,serif;color:rgba(20,28,40,.55)}",
     "html body #page .fo-fl-foot{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}",
     "html body #page .fo-fl-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
