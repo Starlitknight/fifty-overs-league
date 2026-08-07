@@ -269,7 +269,10 @@
   // A CAP KEEPS ITS OWN BOOK. International runs never swell a club record, so
   // they were a four-figure footnote at the bottom of somebody else's page.
   // They get a page.
-  var TABS = [["overview", "Overview"], ["career", "Career"], ["country", "Country"], ["matches", "Matches"], ["dev", "Development"]];
+  // Talents sits second, not last: it is about the cricketer himself rather
+  // than his record, and a sixth tab appended to this bar falls off the right
+  // of a phone into a scroll nobody goes looking for.
+  var TABS = [["overview", "Overview"], ["talents", "Talents"], ["career", "Career"], ["country", "Country"], ["matches", "Matches"], ["dev", "Development"]];
   var TAB = "overview";
   function qp(k) { var m = new RegExp("[?&]" + k + "=([^&]*)").exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : ""; }
 
@@ -484,6 +487,81 @@
         "<div class='fo-pp-card'><h3>What is tracked</h3><div class='fo-pp-track'>" +
         ["Runs", "Strike rate", "Wickets", "Catches", "Milestones"].map(function (t) { return "<span>" + t + "</span>"; }).join("") +
         "</div><p class='fo-pp-dim'>Every league innings is banked by the umpire and joins the record above.</p></div>" +
+        "</div>";
+    } else if (TAB === "talents") {
+      // WHAT HE HAS, AND WHAT HE IS ON HIS WAY TO.
+      //
+      // A talent is rare - about one man in nine is dealt one - and it is also
+      // earnable: a cricketer who keeps finding himself in the situation one
+      // describes, and keeps doing the job, eventually comes by it. That is a
+      // slow thing, two or three seasons of regular cricket, and a manager who
+      // cannot watch it happening has no reason to keep picking the man for the
+      // job that is teaching him. This room is the watching.
+      var T9 = {}; try { T9 = window.FO_TAL_T || {}; } catch (eT9) {}
+      var talNm = function (t) { try { return (typeof TALN !== "undefined" && TALN[t]) || t; } catch (e) { return t; } };
+      var talTip = function (t) { try { return (typeof TALTIPS !== "undefined" && TALTIPS[t]) || ""; } catch (e) { return ""; } };
+      var has = (p.talents || []).slice();
+      var earned = p.talEarned || null;
+      var hasRows = has.length ? has.map(function (t) {
+        return "<div class='fo-pp-tal'><span class='fo-pp-talk" + (t === earned ? " won" : "") + "'>" +
+          (t === earned ? "Earned" : "Born with") + "</span><div><b>" + E(talNm(t)) + "</b>" +
+          (talTip(t) ? "<p>" + E(talTip(t)) + "</p>" : "") + "</div></div>";
+      }).join("") : "<p class='fo-pp-dim'>He was dealt none. Most cricketers are - roughly one man in nine arrives with one, which is what makes them worth having.</p>";
+
+      // everything he is part of the way to, closest first
+      var prog = (p.talProg && typeof p.talProg === "object") ? p.talProg : {};
+      var carr = (p.talCarry && typeof p.talCarry === "object") ? p.talCarry : {};
+      var all = {}, k9;
+      for (k9 in prog) all[k9] = (all[k9] | 0) + (prog[k9] | 0);
+      for (k9 in carr) all[k9] = (all[k9] | 0) + (carr[k9] | 0);
+      var learning = Object.keys(all).filter(function (t) {
+        return has.indexOf(t) < 0 && (T9[t] || 0) > 0;
+      }).map(function (t) {
+        return { t: t, n: all[t] | 0, cap: T9[t] | 0, r: Math.min(1, (all[t] | 0) / (T9[t] | 1)) };
+      }).sort(function (x, y) { return y.r - x.r; });
+
+      var learnBody;
+      if (earned) {
+        // he has had his, and the counting stopped: saying otherwise would be
+        // drawing a bar that can never fill
+        learnBody = "<p class='fo-pp-dim'>He has earned his one. A cricketer comes by a talent once in a career - " +
+          "what is rare has to stay rare to be worth anything - so nothing he does now adds to another.</p>";
+      } else if (!learning.length) {
+        learnBody = "<p class='fo-pp-dim'>Nothing yet. He starts a talent the first time he is put in the situation it describes " +
+          "and does the job - opening the batting, bowling at the death, standing where the ball goes.</p>";
+      } else {
+        learnBody = learning.slice(0, 8).map(function (L) {
+          var pctN = Math.round(L.r * 100);
+          return "<div class='fo-pp-learn' title='" + E(talTip(L.t)) + "'>" +
+            "<i>" + E(talNm(L.t)) + "</i>" +
+            "<em>" + pctN + "%</em>" +
+            "<u><b style='width:" + Math.max(2, pctN) + "%'></b></u>" +
+            "<s>" + L.n.toLocaleString() + " of " + L.cap.toLocaleString() + " balls that suited it</s>" +
+            "</div>";
+        }).join("");
+      }
+
+      // once he has had his, the counting has stopped: a percentage in the
+      // heading would be advertising a bar that can never fill
+      var top = earned ? null : learning[0];
+      room =
+        "<div class='fo-pp-col'>" +
+        "<div class='fo-pp-card'><h3>On his way to" +
+          (top ? "<span>" + Math.round(top.r * 100) + "% &middot; " + E(talNm(top.t)) + "</span>" : "") +
+        "</h3>" + learnBody +
+        (learning.length && !earned
+          ? "<p class='fo-pp-dim'>The chance is the number: two thirds of the way there means he already does it on " +
+            "about two balls in three that suit it. At a hundred it stops being a chance and is his for good.</p>"
+          : "") +
+        "</div></div>" +
+        "<div class='fo-pp-rail'>" +
+        "<div class='fo-pp-card'><h3>What he has" + (has.length ? "<span>" + has.length + "</span>" : "") + "</h3>" +
+        hasRows + "</div>" +
+        (Object.keys(carr).length
+          ? "<div class='fo-pp-card'><h3>Brought with him</h3>" +
+            "<p class='fo-pp-dim'>Work he did at another club, or in the academy before he was signed. It counts " +
+            "toward what he is learning here - a move does not make a cricketer forget.</p></div>"
+          : "") +
         "</div>";
     } else if (TAB === "dev" && mine) {
       var pops = []; try { pops = (window.__foPops && window.__foPops.forPlayer(p.name)) || []; } catch (eP) {}
@@ -1069,6 +1147,19 @@
     "html body #page .fo-pp-tabs{display:flex;gap:2px;margin:14px 0 14px;border-bottom:1px solid rgba(20,28,40,.12);overflow-x:auto}",
     "html body #page .fo-pp-tabs a{flex:0 0 auto;padding:9px 15px 10px;font:700 10px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.46);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer}",
     "html body #page .fo-pp-tabs a.on{color:#141C28;border-bottom-color:#177A57}",
+    // THE TALENTS ROOM. A bar per talent he is on his way to, because the one
+    // number that matters is how close he is - it is both the progress and,
+    // read straight off, the chance the talent fires on the next ball that
+    // suits it. The count underneath is there so it reads as cricket he has
+    // played rather than a loading bar.
+    "html body #page .fo-pp-learn{display:grid;grid-template-columns:1fr auto;gap:2px 10px;margin:0 0 13px}",
+    "html body #page .fo-pp-learn i{font:600 12.5px/1.3 Inter,sans-serif;font-style:normal;color:#141C28}",
+    "html body #page .fo-pp-learn em{font:700 12.5px/1.3 Oswald,sans-serif;font-style:normal;color:#B08409;font-variant-numeric:tabular-nums;text-align:right}",
+    "html body #page .fo-pp-learn u{grid-column:1/-1;display:block;height:5px;border-radius:3px;background:rgba(20,28,40,.09);text-decoration:none;overflow:hidden}",
+    "html body #page .fo-pp-learn u b{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#E8B96A,#C9A24B)}",
+    "html body #page .fo-pp-learn s{grid-column:1/-1;font:400 10.5px/1.3 Inter,sans-serif;color:rgba(20,28,40,.46);text-decoration:none;font-variant-numeric:tabular-nums}",
+    // a talent he EARNED is not a talent he was dealt, and the card says which
+    "html body #page .fo-pp-talk.won{background:#14243A;color:#E8B96A}",
     "html body #page .fo-pp-body{display:block}",
     "html body #page .fo-pp-rail{margin-top:12px}",
     "html body #page .fo-pp-card{background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:14px;padding:15px 16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(30,38,52,.05)}",
