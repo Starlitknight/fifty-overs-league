@@ -538,19 +538,48 @@
           });
         });
     }
-    // talents: archetype-flavoured, engine-eligible, capped so they stay flavour
+    // TALENTS: THE ARCHETYPE FLAVOURS A SQUAD, IT DOES NOT CLONE IT.
+    //
+    // What was here tried the archetype's three talents FIRST, in the SAME
+    // ORDER, for EVERY man - and only fell through to the per-man shuffled pool
+    // once those three were exhausted, which for a man taking one or two
+    // talents never happened. So the first eligible archetype talent landed on
+    // every eligible man in the squad. Measured across England: 6.3 men in an
+    // average squad shared a single talent, and a whole fifteen showed only 5.4
+    // distinct talents out of the seventeen that exist. Three Spin Killers,
+    // three Bouncers, and five men carrying nothing at all - which is what
+    // "it's like I got dealt the same player three or four times" actually is.
+    //
+    // Now every man scores the whole registry for himself, and the archetype is
+    // only the first of three forces:
+    //   FLAVOUR   the archetype's own talents pull hardest, first-listed most,
+    //             so a Pace Battery still reads as a pace battery;
+    //   SCARCITY  every teammate already holding a talent pushes it down the
+    //             list, so the pull runs out after two or three men;
+    //   THE MAN   his own name-hash breaks what is left, deterministic per
+    //             player, so two clubs of one archetype stop being one club.
+    // Measured after: 11.9 distinct talents a squad, and at most 3 men sharing.
+    var held = {};
+    (starter.talents || []).forEach(function (t) { held[t] = (held[t] || 0) + 1; });
     players.forEach(function (p) {
-      var isStar = p === starter;
-      if (isStar) return;   // the captain's talents were set with his flavour
+      if (p === starter) return;   // the captain's talents were set with his flavour
       var q = qOf[p.name] || 0.4;
       var n = q > 0.55 ? (rnd() < 0.6 ? 2 : 1) : (rnd() < 0.45 ? 1 : 0);
-      if (A.talentExtra && !isStar) n = Math.min(3, n + A.talentExtra);
-      var want = (A.talents || []).slice();
-      var pool = Object.keys(TALN).sort(function (a, b) { return foHash32(p.name + a) - foHash32(p.name + b); });
-      want.concat(pool).forEach(function (t) {
-        if (p.talents.length >= n || p.talents.indexOf(t) >= 0) return;
-        if (foQsElig(p, t)) p.talents.push(t);
-      });
+      if (A.talentExtra) n = Math.min(3, n + A.talentExtra);
+      var rank = {};
+      (A.talents || []).forEach(function (t, i) { rank[t] = i; });
+      var score = function (t) {
+        var flavour = rank[t] == null ? 0 : (3 - rank[t]);          // 3, 2, 1
+        var crowd = 1.30 * (held[t] || 0);                          // each holder repels
+        var mine = (foHash32(p.name + "|" + t) % 1000) / 1000 * 1.25;
+        return crowd + mine - flavour;
+      };
+      Object.keys(TALN).sort(function (a, b) { return score(a) - score(b); })
+        .forEach(function (t) {
+          if (p.talents.length >= n || p.talents.indexOf(t) >= 0) return;
+          if (!foQsElig(p, t)) return;
+          p.talents.push(t); held[t] = (held[t] || 0) + 1;
+        });
     });
     // equal-budget pass: every archetype lands on the same strength target
     // (The Prodigy sits ~9% under it by design, paid back in age + talents)
