@@ -160,3 +160,51 @@ test('a half-learnt talent is part of the cricket, so a replay carries it', asyn
   assert.deepEqual(back.talProg || null, man.talProg || null, 'his progress comes back');
   if (man.talEarned) assert.equal(back.talEarned, man.talEarned, 'and so does what he earned');
 });
+
+test('a cup tie and a week with his country count, and a friendly does not', async () => {
+  const T = host.talThresholds();
+  const club = (await pool.query(
+    `SELECT slot, name, squad FROM clubs WHERE country_id='eng' AND slot=3`)).rows[0];
+  const man = club.squad.find(p => p.role === 'opener' && !(p.talents || []).includes('anchor'));
+  assert.ok(man, 'an opener without Anchor');
+  const season = (await pool.query(
+    `SELECT season_no FROM seasons WHERE country_id='eng'`)).rows[0].season_no;
+
+  const before = ((await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=3`))
+    .rows[0].squad.find(p => p.name === man.name).talProg || {}).anchor || 0;
+
+  // A CUP TIE. The side blob names a country and a slot, so the credit lands
+  // on the club without going near a name.
+  await pool.query(
+    `INSERT INTO cup_matches(comp, season_no, stage, gi, a, b, seed, engine_version, result, result_canonical)
+     VALUES ('wcl',$1,'qf',0,$2::jsonb,$3::jsonb,1,'v2',$4::jsonb,'x')`,
+    [season,
+     JSON.stringify({ country: 'eng', slot: 3, name: club.name }),
+     JSON.stringify({ country: 'aus', slot: 0, name: 'Somebody Else' }),
+     JSON.stringify({ winner: club.name, innings: [],
+       tal: { [club.name]: { [man.name]: { anchor: 40 } } } })]);
+
+  // A WEEK WITH HIS COUNTRY, credited from the callup that produced it.
+  await pool.query(
+    `INSERT INTO callups(country_id, season_no, round, pick, slot, player, fee)
+     VALUES ('eng',$1,4,1,3,$2,0) ON CONFLICT DO NOTHING`, [season, man.name]);
+  await pool.query(
+    `INSERT INTO nat_matches(id, world_day, season_no, round, a_country, b_country, a_name, b_name,
+       seed, engine_version, result, result_canonical)
+     VALUES ('eng-tour-1',110,$1,4,'eng','aus','England','Australia',1,'v2',$2::jsonb,'x')`,
+    [season, JSON.stringify({ winner: 'England', innings: [],
+       tal: { England: { [man.name]: { anchor: 25 } } } })]);
+
+  // A FRIENDLY. Kept in its own table, never read here, and that is the whole
+  // of how "everything except friendlies" is enforced - not a flag that can be
+  // set wrong, but a source this fold does not look at.
+  const friendlyCols = (await pool.query(
+    `SELECT count(*)::int AS n FROM information_schema.tables WHERE table_name='friendlies'`)).rows[0].n;
+  assert.equal(friendlyCols, 1, 'friendlies really are a separate table');
+
+  await evolveCountry(pool, 'eng', T0 + 7 * DAY, host);
+  const after = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=3`))
+    .rows[0].squad.find(p => p.name === man.name);
+  assert.equal((after.talProg || {}).anchor, before + 65,
+    'the cup tie and the tour both counted: ' + before + ' + 40 + 25');
+});

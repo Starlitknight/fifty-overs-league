@@ -97,16 +97,29 @@
   // sharing one archetype: this asked for the NATION's identity on the shared
   // budget while the umpire generated the club's own identity at the club's own
   // standing. The side record from the planet's table carries both.
+  // THE GENERATION IS PART OF THE ADDRESS. A redeal bumps it and every club on
+  // earth gets men it has never had; deriving from a stale one produces a squad
+  // of fifteen cricketers who do not exist anywhere. It arrives asynchronously
+  // (52-served-truth fetches it), so anything derived before it lands is
+  // provisional - which is why the cache is dropped when it does.
+  var SQ_CACHE = {}, SQ_GEN = null;
+  function forgetSquads() { SQ_CACHE = {}; SQ_GEN = null; }
   function serverSquad(rid, slot) {
     var cfg = regionCfg(rid); if (!cfg) return null;
     try {
+      var gen = (window.__foWorldGen | 0) || 1;
+      if (gen !== SQ_GEN) { SQ_CACHE = {}; SQ_GEN = gen; }
+      var key = rid + "|" + slot;
+      if (SQ_CACHE[key]) return SQ_CACHE[key];
       var sd = null;
       try {
         (window.__foPlanet.sidesOf(rid) || []).forEach(function (x) { if (x.slot === slot) sd = x; });
       } catch (eS) {}
-      var g = __foGenArchetypeSquad("world1|" + rid + "|" + slot, cfg.nat,
+      var g = __foGenArchetypeSquad("world" + gen + "|" + rid + "|" + slot, cfg.nat,
         (sd && sd.arch) || cfg.arch, null, (sd && sd.str) || 1);
-      return (g && g.players) || null;
+      var men = (g && g.players) || null;
+      if (men) SQ_CACHE[key] = men;
+      return men;
     } catch (e) { return null; }
   }
   // The server's calendar for a world day. It used to do the arithmetic itself
@@ -664,7 +677,7 @@
 
   // the server mirror, exported: nation pages list the same fixtures, the
   // same calendar and the same live states the theatre plays from
-  window.__foWT = { flagOf: flagOf, serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror, divMembers: divMembers,
+  window.__foWT = { flagOf: flagOf, forgetSquads: forgetSquads, serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror, divMembers: divMembers,
     serverSquad: serverSquad, applyLiving: applyLiving,
     // THE MATCH ON RECORD IS NOT THE MATCH FROM A CLEAN SEED. The umpire plays
     // each round with the men as they were that day - the experience, the

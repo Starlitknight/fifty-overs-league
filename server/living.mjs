@@ -511,6 +511,33 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     m.set(r.name, cur);
   }
 
+  // AND THE CUPS. The Champions Cup and every nation's knockout are the same
+  // fifty overs as a league round - the rule the manager was given is
+  // "everything except a friendly" - and a cup tie names its two sides with a
+  // country and a slot, so the credit lands on the right club without going
+  // near a name.
+  let cupRows = [];
+  try {
+    cupRows = (await pool.query(
+      `SELECT a, b, result->'tal' AS tal FROM cup_matches
+        WHERE result IS NOT NULL AND (a->>'country' = $1 OR b->>'country' = $1)`, args)).rows;
+  } catch (eCu) { cupRows = []; }   // pre-cup database
+  for (const r of cupRows) {
+    if (!r.tal) continue;
+    for (const side of [r.a, r.b]) {
+      if (!side || side.country !== country || side.slot == null) continue;
+      const men = r.tal[side.name]; if (!men) continue;
+      if (!talBook.has(side.slot)) talBook.set(side.slot, new Map());
+      const bk = talBook.get(side.slot);
+      for (const nm of Object.keys(men)) {
+        const cur = bk.get(nm) || {};
+        for (const t of Object.keys(men[nm])) cur[t] = (cur[t] | 0) + (men[nm][t] | 0);
+        bk.set(nm, cur);
+      }
+    }
+  }
+
+
   // THE WEEK HE SPENT WITH HIS COUNTRY counts too. A cap is a different book
   // from a club career - a man's county record is not swollen by a tour - but
   // it is the same fifty overs: it tires his legs and it moves his form,
@@ -540,6 +567,19 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
         runs: 0, balls: 0, hs: 0, wkts: 0, conc: 0, ovb: 0, f4: 0, f6: 0, out: null, ct: 0, st: 0, ro: 0 });
       return seen.get(k);
     };
+    // A WEEK WITH HIS COUNTRY IS STILL FIFTY OVERS. It counts toward a talent
+    // exactly as a league round does - everything except a friendly does - and
+    // the credit goes to the CLUB he was called up from, which the callup row
+    // names. A tour cannot teach a man something on somebody else's books.
+    for (const nm of Object.keys((m.result && m.result.tal && m.result.tal[mine]) || {})) {
+      const slot = fromSlot.get(m.season_no + '|' + m.round + '|' + nm);
+      if (slot == null) continue;
+      if (!talBook.has(slot)) talBook.set(slot, new Map());
+      const bk = talBook.get(slot), cur = bk.get(nm) || {};
+      const add = m.result.tal[mine][nm] || {};
+      for (const t of Object.keys(add)) cur[t] = (cur[t] | 0) + (add[t] | 0);
+      bk.set(nm, cur);
+    }
     for (const inn of ((m.result && m.result.innings) || [])) {
       if (!inn) continue;
       if (inn.batTeam === mine) for (const b of (inn.bat || [])) {

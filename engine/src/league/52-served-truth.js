@@ -259,6 +259,41 @@
   window.foNatStar = star;
   window.__foServed.star = star;
 
+  // ---- WHICH HAND THE WORLD IS PLAYING --------------------------------------
+  // A foreign club's squad is DERIVED on this device from the seed the umpire
+  // dealt it with, and that seed carries the world's generation. The browser
+  // used to hardcode the string 'world1' - right on the day the generation was
+  // added, wrong from the first redeal onward, and silently: it derived fifteen
+  // cricketers who do not exist, so an international squad list could not open
+  // a single one of its men. The generation is published now (migration 063);
+  // this fetches it once and repaints, because until it lands every derivation
+  // is guessing.
+  window.__foWorldGen = window.__foWorldGen || null;
+  (function () {
+    var asked = false;
+    window.__foWantWorldGen = function (cb) {
+      if (window.__foWorldGen != null) { if (cb) cb(window.__foWorldGen); return; }
+      if (asked) return; asked = true;
+      try {
+        fetch("https://egaipdksvztqqgouriyc.supabase.co/rest/v1/world_world?id=eq.1&select=generation",
+              { headers: { apikey: "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc" } })
+          .then(function (r) { return r.ok ? r.json() : null; })
+          .then(function (rows) {
+            var g = rows && rows[0] && (rows[0].generation | 0);
+            if (!g) return;
+            window.__foWorldGen = g;
+            // every squad derived before this answer came back was derived from
+            // the wrong hand, so nothing may be cached across it
+            try { if (window.__foWT && window.__foWT.forgetSquads) window.__foWT.forgetSquads(); } catch (eF) {}
+            if (cb) cb(g);
+            try { if (typeof window.route === "function") window.route(); } catch (eR) {}
+          })
+          .catch(function () { asked = false; });
+      } catch (e) { asked = false; }
+    };
+    try { window.__foWantWorldGen(); } catch (e) {}
+  })();
+
   // ---- ANY CRICKETER IN THE WORLD, BY NAME ----------------------------------
   // findPlayer searches the clubs THIS DEVICE holds - the ten of its own
   // league. That is the right scope for training, orders and the market, which
