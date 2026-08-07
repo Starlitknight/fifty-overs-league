@@ -164,53 +164,16 @@
         return;
       }
       render(page, ac);
-      // the Colts Cup arrives a beat later; the room does not wait for it
-      snapshot("colts/" + ac.country).then(function (cup) {
-        var box = document.getElementById("fo-ac-cup");
-        if (box) box.innerHTML = cupHTML(cup, ac.slot);
-        // and the squad panel behind it: who you could send out, and who you
-        // said you would
-        rpc("world_my_colts_squad", {}).then(function (sq) {
-          var slot = document.getElementById("fo-ac-name");
-          if (!slot) return;
-          slot.innerHTML = nameHTML(sq);
-          wireSquad(slot, sq);
-        }).catch(function () { /* not signed in, or no season yet: the bracket stands alone */ });
-      });
+      // The Colts Cup bracket and the squad-naming panel used to be fetched
+      // here and hung at the foot of the page. Both belong to the competition,
+      // which has a room of its own; the academy no longer waits on a request
+      // it has nowhere to put.
     }).catch(function (e) {
       page.innerHTML = shell("<div class='fo-ac-note'>The world could not be reached (" + E(String(e.message).slice(0, 90)) +
         "). The boys are training regardless - try again in a minute.</div>");
     });
   };
 
-  // ticking a boy in or out is only arithmetic until you press the button; the
-  // count in the footer is what tells you whether the side is legal yet
-  function wireSquad(root, sq) {
-    var floor = sq.floor || 15, ceil = sq.ceiling || 18;
-    var boxes = function () { return [].slice.call(root.querySelectorAll("[data-fo-colt]")); };
-    var count = function () { return boxes().filter(function (b) { return b.checked; }).length; };
-    var out = root.querySelector("#fo-ac-sqn");
-    var btn = root.querySelector("[data-fo-namecolts]");
-    var paint = function () {
-      var n = count(), ok = n >= floor && n <= ceil;
-      if (out) out.innerHTML = n + " picked &middot; " +
-        (ok ? "a legal squad" : n < floor ? "need " + (floor - n) + " more" : (n - ceil) + " too many");
-      if (btn) { btn.disabled = !ok; btn.className = "fo-ac-btn" + (ok ? "" : " off"); }
-      boxes().forEach(function (b) {
-        var lab = b.parentNode; if (lab) lab.className = "fo-ac-sqp" + (b.checked ? " on" : "");
-      });
-    };
-    boxes().forEach(function (b) { b.addEventListener("change", paint); });
-    if (btn) btn.addEventListener("click", function () {
-      var names = boxes().filter(function (b) { return b.checked; })
-        .map(function (b) { return b.getAttribute("data-fo-colt"); });
-      btn.disabled = true;
-      rpc("world_set_colts_squad", { p_names: names })
-        .then(function () { window.foRenderAcademyPage(); })
-        .catch(function (e) { btn.disabled = false; alert(String(e.message).slice(0, 200)); });
-    });
-    paint();
-  }
 
   function shell(body) {
     // the room keeps its own table: the club that matters here is the one in
@@ -310,24 +273,11 @@
               (can ? "Build it &middot; " + money(cost) : "Needs " + money(cost)) + "</button></div>";
         })();
 
-    // WHO IS ABOUT TO WALK. The warning the design promised, a week out - except
-    // it is shown every day he is twenty, because a page a manager may not open
-    // is not a warning at all.
-    var leaving = boys.filter(function (y) { return yearsLeft(y.age) <= 1; });
-    var warn = leaving.length
-      ? "<div class='fo-ac-warn'><b>" + leaving.length + (leaving.length === 1 ? " boy leaves" : " boys leave") +
-        " at the turning of the year.</b> " + E(leaving.map(function (y) { return y.name; }).join(", ")) +
-        " &mdash; twenty-one, and gone from the world unless you hand " +
-        (leaving.length === 1 ? "him a senior contract" : "them senior contracts") +
-        " first, from the squad page.</div>"
-      : "";
-
+    // The leavers notice and the Colts Cup shortfall bar are both gone. Each
+    // boy's row already carries his age, and the Colts Cup has a room of its
+    // own under Tournaments; the academy is about who is on the books and what
+    // they cost, not about a competition read somewhere else.
     var shortBy = Math.max(0, floor - boys.length);
-    var bar = shortBy
-      ? "<div class='fo-ac-warn cup'><b>You cannot field a Colts Cup side.</b> The competition asks for " + floor +
-        " men under twenty-one and you have " + boys.length + ". " + shortBy +
-        (shortBy === 1 ? " more boy" : " more boys") + " and the tie is yours to play; short of it, it is forfeited in public.</div>"
-      : "";
 
     // THE BOYS DO NOT LIVE HERE ANY MORE. A signed colt is a squad member the
     // way the big management games treat him: he stands in the squad room with
@@ -340,13 +290,12 @@
       : "<div class='fo-ac-note'>Nobody on the books. Scout a recruit on the next rest day.</div>";
 
     page.innerHTML = shell(
-      warn + bar +
       "<div class='fo-ac-card'><h3>The scout<span>" + ((ac.restDays || []).length) + " rest days a season</span></h3>" +
         scoutHTML(ac) + "</div>" +
       "<div class='fo-ac-card'><h3>" + E(ac.club || "Your club") + "<span>Level " + lv + "</span></h3>" +
         "<div class='fo-ac-lvl'><div class='fo-ac-pips'>" + pips + "</div>" +
           "<div class='fo-ac-lvt'><b>Level " + lv + "</b><i>" + boys.length + " on the books &middot; " +
-          (shortBy ? shortBy + " short of a Colts Cup side" : "a Colts Cup side and " + (boys.length - floor) + " to spare") +
+          (boys.length === 1 ? "one boy" : boys.length + " boys") + " on the books" +
           "</i></div></div>" +
         "<div class='fo-ac-money'>" +
           "<div><i>Upkeep</i><b>" + money(ac.upkeep || UPKEEP[lv]) + "</b><u>a round</u></div>" +
@@ -355,8 +304,6 @@
         "</div>" + up +
       "</div>" +
       (boys.length ? list : "<div class='fo-ac-card'><h3>On the books<span>0 of " + floor + "</span></h3>" + list + "</div>") +
-      "<div class='fo-ac-card' id='fo-ac-cup'><h3>The Colts Cup</h3>" +
-        "<div class='fo-ac-note'>Reading the boys&rsquo; table&hellip;</div></div>" +
       "");
 
     var go = document.getElementById("fo-ac-go");
@@ -474,54 +421,10 @@
       side(t.away, t.awaySlot, t.winnerSlot === t.awaySlot) + ff + "</div>";
   }
 
-  function cupHTML(cup, mySlot) {
-    var done = cup && cup.stagesDone ? cup.stagesDone : 0;
-    var head = "<h3>The Colts Cup<span>" +
-      (cup && cup.champion ? "won" : done ? STAGE_NM[STAGE_ORDER[done - 1]] + " played" : "not started") +
-      "</span></h3>";
-    if (!cup || !done) {
-      return head + "<div class='fo-ac-note'>Week four of the season belongs to the academies: the league stands down and every club in the country goes into one hat. You must be able to name fifteen men under twenty-one, or the tie is forfeited.</div>" +
-        "<div id='fo-ac-name'></div>";
-    }
-    var champ = cup.champion
-      ? "<div class='fo-ac-champ'><i>&#9733;</i><b>" + E(cup.champion) + "</b><em>Colts Cup champions</em></div>" : "";
-    var cols = STAGE_ORDER.filter(function (k) { return (cup.stages[k] || []).length; }).map(function (k) {
-      return "<div class='fo-ac-bcol'><h4>" + STAGE_NM[k] + "</h4>" +
-        cup.stages[k].map(function (t) { return tieHTML(t, mySlot); }).join("") + "</div>";
-    }).join("");
-    var lead = (cup.runs && cup.runs[0])
-      ? "<div class='fo-ac-note'>Leading the cup: <b>" + E(cup.runs[0].name) + "</b> " + cup.runs[0].runs + " runs" +
-        (cup.wickets && cup.wickets[0] ? ", <b>" + E(cup.wickets[0].name) + "</b> " + cup.wickets[0].wkts + " wickets" : "") + ".</div>"
-      : "";
-    return head + champ + "<div id='fo-ac-name'></div>" +
-      "<div class='fo-ac-bracket'>" + cols + "</div>" + lead;
-  }
 
   // WHO YOU WOULD SEND OUT. The squad is fifteen to eighteen men under
   // twenty-one, and the umpire names it for you if you do not - so this panel
   // is never a task, only an edge. It says plainly which it currently is.
-  function nameHTML(sq) {
-    if (!sq || !sq.men) return "";
-    var n = sq.men.length, floor = sq.floor || 15, ceil = sq.ceiling || 18;
-    if (n < floor) {
-      return "<div class='fo-ac-warn'><b>You cannot field a Colts Cup side.</b> " +
-        n + " under twenty-one on the books, and a side is " + floor +
-        ". A tie played now would be forfeited &mdash; scout, and sign what you find.</div>";
-    }
-    var named = sq.named && sq.named.length;
-    return "<div class='fo-ac-sqd'>" +
-      "<div class='fo-ac-sqh'><b>Your Colts Cup squad</b>" +
-        "<i>" + (named ? named + " named" : "not named &mdash; the umpire will send out the youngest " +
-          Math.min(ceil, n)) + "</i></div>" +
-      "<div class='fo-ac-sqm'>" + sq.men.map(function (m) {
-        var on = !named || sq.named.indexOf(m.name) >= 0;
-        return "<label class='fo-ac-sqp" + (on ? " on" : "") + "'>" +
-          "<input type='checkbox' data-fo-colt='" + E(m.name) + "'" + (on ? " checked" : "") + ">" +
-          "<b>" + E(m.name) + "</b><i>" + (+m.age) + "</i><u>" + Math.round(+m.rating || 0) + "</u></label>";
-      }).join("") + "</div>" +
-      "<div class='fo-ac-sqf'><span id='fo-ac-sqn'></span>" +
-        "<button type='button' class='fo-ac-btn' data-fo-namecolts='1'>Name this squad</button></div></div>";
-  }
 
   // The academy was the first of the world rooms, and its plate-and-cards
   // became the house style for the rest of them. Other rooms call this and

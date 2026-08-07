@@ -1015,7 +1015,7 @@
       ".fo-s2-hd h1{font:700 40px/1 Oswald,sans-serif;text-transform:uppercase;color:#14243A !important;margin:0;letter-spacing:.015em;text-shadow:none}",
       // ---- the stat band (view switch attached at its left on desktop) ----
       ".fo-s2-bandwrap{display:flex;align-items:stretch;margin-bottom:14px}",
-      ".fo-s2-band{display:flex;flex:1;align-items:stretch;background:#FFFEFC;border:1px solid #e3dccb;border-radius:0 14px 14px 0;border-left:none;box-shadow:0 2px 10px rgba(20,36,58,.05);overflow:hidden;min-width:0}",
+      ".fo-s2-band{display:flex;flex:1;align-items:stretch;background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);overflow:hidden;min-width:0}",
       ".fo-s2-vsw{display:flex;align-items:center;gap:4px;padding:12px 16px;background:#F6F3EB;border:1px solid #e3dccb;border-radius:14px 0 0 14px}",
       ".fo-s2-vb{font:700 10.5px Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;border:1px solid #d9d0bc;background:#FFFEFC;color:#6d6455;border-radius:999px;padding:8px 14px;cursor:pointer}",
       ".fo-s2-vb.on{background:#C9571F;border-color:#C9571F;color:#fff}",
@@ -1029,7 +1029,7 @@
       ".fo-s2-cell.wage b{color:#C9571F}",
       ".fo-s2-cell.xi b{color:#177A57}",
       // ---- main columns ----
-      ".fo-s2-main{display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:16px;align-items:start}",
+      ".fo-s2-main{display:block}",
       // ---- tools ----
       ".fo-s2-tools{display:flex;align-items:center;gap:8px;flex-wrap:wrap;background:#FFFEFC;border:1px solid #e3dccb;border-radius:12px;padding:10px 12px;margin-bottom:10px}",
       ".fo-s2-q{flex:1 1 170px;min-width:150px;border:1px solid #d9d0bc;border-radius:9px;background:#FBF9F3;padding:8px 12px;font:500 12.5px Inter,sans-serif;color:#14243A}",
@@ -1045,8 +1045,20 @@
       ".fo-s2-seck{display:flex;align-items:center;justify-content:space-between;background:#14243A;color:#F6F3EB;border-radius:9px 9px 0 0;padding:7px 14px;font:700 10.5px Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase}",
       ".fo-s2-seck em{font-style:normal;color:#E8B96A}",
       // ---- rows ----
-      ".fo-s2-row{display:grid;grid-template-columns:44px minmax(150px,1.4fr) 92px 62px minmax(96px,.9fr) 128px 44px 58px 26px;gap:10px;align-items:center;background:#FFFEFC;border:1px solid #eee7d9;border-top:none;padding:8px 14px;cursor:pointer}",
-      ".fo-s2-xibtn{font:800 10px Inter,sans-serif;letter-spacing:.06em;border:1px solid #d9d0bc;background:#FFFEFC;color:#177A57;border-radius:999px;padding:6px 0;cursor:pointer;white-space:nowrap;text-align:center}",
+      ".fo-s2-row{display:grid;grid-template-columns:44px minmax(170px,1.5fr) 92px 58px minmax(104px,.9fr) 136px 74px 78px 46px 26px;gap:10px;align-items:center;background:#FFFEFC;border:1px solid #eee7d9;border-top:none;padding:8px 14px;cursor:pointer}",
+      // the standing switch sits above the band, where Grid and Int show it
+      ".fo-s2-swrap{margin:0 0 12px}",
+      // FORM AND FITNESS, set to read down the column rather than across the
+      // row: the word under the arrow and the number beside the gauge, so a
+      // reader scanning for a tired man finds him without stopping.
+      ".fo-s2-form{display:flex;align-items:center;justify-content:center;min-width:0}",
+      ".fo-s2-form .fo-sqt-frm{display:flex;align-items:center;gap:5px}",
+      ".fo-s2-form .fo-sqt-frm b{font-size:13px;line-height:1}",
+      ".fo-s2-form .fo-sqt-frm .w{font:600 9px Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase}",
+      ".fo-s2-fit{display:flex;align-items:center;gap:7px;min-width:0}",
+      ".fo-s2-fit i{flex:1;display:block;height:5px;border-radius:3px;background:#EDE7DA;overflow:hidden;min-width:22px}",
+      ".fo-s2-fit i u{display:block;height:100%;border-radius:3px}",
+      ".fo-s2-fit b{font:700 11.5px Inter,sans-serif;font-variant-numeric:tabular-nums}",
       ".fo-s2-xibtn:hover{border-color:#177A57}",
       ".fo-s2-xibtn.out{color:#B23230}",
       ".fo-s2-xibtn.out:hover{border-color:#B23230}",
@@ -1168,7 +1180,7 @@
       ".fo-s2-cell b{font-size:14px}.fo-s2-cell b i{display:none}",
       ".fo-s2-tools{display:none}",
       ".fo-s2-row{grid-template-columns:30px minmax(74px,1.25fr) 34px minmax(42px,.7fr) auto 24px 10px;gap:4px;padding:8px 6px}",
-      ".fo-s2-xibtn,.fo-s2-hand{display:none}",
+      ".fo-s2-hand,.fo-s2-form,.fo-s2-fit{display:none}",
       ".fo-s2-pic{width:30px;height:30px}.fo-s2-pic img.face{width:30px;height:30px}",
       ".fo-s2-flag{width:13px;height:9px;left:-4px;bottom:-2px}",
       ".fo-s2-id b{font-size:11.5px}.fo-s2-id span{font-size:9px}",
@@ -1554,17 +1566,18 @@
       var homeNat = t.country || (seniors[0] && seniors[0].nat) || "";
       var overseas = seniors.filter(function (p) { return p.nat && homeNat && p.nat !== homeNat; });
 
+      // ONE SWITCH, IN ONE STYLE. The roster used to carry its own compact
+      // switch tucked inside the stat band while Grid and Int used the standing
+      // one below the title - the same three words in two different shapes,
+      // moving as you toggled. There is one switch now, the Grid/Int one, and
+      // the roster shows it where the other two do.
       var band =
         "<div class='fo-s2-bandwrap'>" +
-        "<div class='fo-s2-vsw'>" + VIEWLBL.map(function (v) {
-          return "<button type='button' class='fo-s2-vb" + (sv.view === v[0] ? " on" : "") + "' data-view='" + v[0] + "'>" + v[1] + "</button>";
-        }).join("") + "</div>" +
         "<div class='fo-s2-band'>" +
         "<div class='fo-s2-cell'><span>Total players</span><b>" + seniors.length + (youths.length ? "<i> +" + youths.length + " youth</i>" : "") + "</b></div>" +
         "<div class='fo-s2-cell'><span>Avg age</span><b>" + ageAvg.toFixed(1) + "</b></div>" +
         "<div class='fo-s2-cell'><span>Overseas</span><b>" + overseas.length + "</b></div>" +
         "<div class='fo-s2-cell wage'><span>Weekly wages</span><b>" + foS2Money(wageSum) + "</b></div>" +
-        "<div class='fo-s2-cell xi'><span>First XI</span><b" + (xi.length < 11 ? " style='color:#C0392E'" : "") + ">" + xi.length + " / 11</b></div>" +
         "</div></div>";
 
       var header =
@@ -1614,7 +1627,6 @@
             "<button type='button' class='fo-s2-act' data-goman='" + E(p.name) + "'>Full profile &rsaquo;</button>" +
             (inXi && p.name !== capt ? "<button type='button' class='fo-s2-act' data-mkc='" + E(p.name) + "'>Make captain</button>" : "") +
             (inXi && p.keeper && p.name !== kpr ? "<button type='button' class='fo-s2-act' data-mkk='" + E(p.name) + "'>Give the gloves</button>" : "") +
-            (!p.__y ? "<button type='button' class='fo-s2-act" + (inXi ? "" : " solid") + "' data-xit='" + E(p.name) + "'>" + (inXi ? "Remove from XI" : "Add to XI") + "</button>" : "") +
             (p.__y ? "<button type='button' class='fo-s2-act solid' data-ypro='" + E(p.name) + "'>Promote to seniors</button>" +
               (foSqWorld() ? "<button type='button' class='fo-s2-act' data-yrel='" + E(p.name) + "'>Release</button>" : "") : "") +
             "</div></div>";
@@ -1635,8 +1647,21 @@
             return "<span class='fo-s2-trait none'>&ndash;</span>";
           })() +
           foS2RoleStars(p, rCls, ovr) +
+          // FORM AND FITNESS READ ON THE ROW. They are the two things that
+          // decide whether a man is worth picking this week, and they were
+          // only in the Grid - so choosing a side meant reading one view and
+          // remembering it in the other. Same glyph and same gauge as the
+          // Grid uses, so the two views agree at a glance.
+          "<span class='fo-s2-form'>" + foSqFormGlyph(p) + "</span>" +
+          (function () {
+            var en = { pct: 100, raw: "rested", tired: false };
+            try { en = foEnergyOf(p); } catch (eEn) {}
+            var fc = en.tired ? "#B23230" : en.pct >= 80 ? "#177A57" : "#C9A24B";
+            return "<span class='fo-s2-fit' title='" + E("Fitness: " + en.raw + " (" + en.pct + "%)") + "'>" +
+              "<i><u style='width:" + en.pct + "%;background:" + fc + "'></u></i>" +
+              "<b style='color:" + fc + "'>" + en.pct + "</b></span>";
+          })() +
           "<b class='fo-s2-ovr' style='color:" + foSqQCol(ovr) + "'>" + ovr + "</b>" +
-          (p.__y ? "<span></span>" : "<button type='button' class='fo-s2-xibtn" + (inXi ? " out" : "") + "' data-xit='" + E(p.name) + "'>" + (inXi ? "&#10005; XI" : "+ XI") + "</button>") +
           "<span class='fo-s2-car'>&#9660;</span>" +
           "</div>" + xd;
       };
@@ -1662,72 +1687,23 @@
       }
       listBody = listBody || "<div class='fo-s2-sec'><div class='fo-s2-row' style='border-top:1px solid #eee7d9;border-radius:9px;cursor:default'>Nobody matches that search.</div></div>";
 
-      // ---- the rail: the First XI, in batting order, managed in place ----
-      var xiRows = sv.xi.map(function (n, i) {
-        var p = byName[n]; if (!p) return "";
-        return "<div class='fo-s2-xirow' draggable='true' data-xi='" + i + "'>" +
-          "<span class='grip' title='Drag to reorder'>&#8942;&#8942;</span>" +
-          "<span class='no'>" + (i + 1) + "</span>" +
-          "<span class='nm'><u class='full'>" + E(p.name) + "</u><u class='sh'>" + E(foSqShortName(p.name)) + "</u></span>" +
-          "<span class='ab'>" + foS2Abbr(p) + "</span>" +
-          "<span class='bdg'>" + (n === kpr ? "<span class='wk' title='Keeper'>WK</span>" : "") + "</span>" +
-          "<span class='mv'><button type='button' data-up='" + i + "' title='Up'>&#9650;</button><button type='button' data-dn='" + i + "' title='Down'>&#9660;</button></span>" +
-          "<button type='button' class='xrm' data-xrm='" + i + "' title='Remove from the XI'>&#10005;</button>" +
-          "</div>";
-      }).join("");
-      if (xi.length < 11) xiRows += "<div class='fo-s2-xislot'>" + (11 - xi.length) + " place" + (xi.length === 10 ? "" : "s") + " open &middot; add from the roster</div>";
-      var rbCols = [["bat", "Batters", "#D9A21B", bal.bat || 0], ["ar", "All-rounders", "#177A57", bal.ar || 0], ["bowl", "Bowlers", "#C0392E", bal.bowl || 0], ["wk", "WK", "#3f6f96", bal.wk || 0]];
-      var roleBal = "<div class='fo-s2-rb'>" + rbCols.map(function (c) {
-        return "<div><span>" + c[1] + "</span><b>" + c[3] + "</b><i style='background:" + c[2] + ";width:" + Math.min(100, c[3] * 18) + "%'></i></div>";
-      }).join("") + "</div>";
+      // THE RAIL IS GONE, AND WITH IT THE WHOLE FIRST XI APPARATUS.
+      //
+      // It carried the XI in batting order, role balance, squad composition, a
+      // team-balance gauge, a chemistry-and-form gauge, Save First XI and
+      // Suggest best XI. Naming a side belongs to the match orders, which is
+      // where it is actually done and where it can be checked against an
+      // opponent; a second place to do it half-way meant two answers to one
+      // question. Squad composition went with it because the band above the
+      // list already states every figure it held - the count, the average age,
+      // the overseas players and the wage bill.
+      //
+      // What the reader gets back is the width. The list runs the full page
+      // now, which is what makes room for form and fitness on every row.
 
-      // TEAM BALANCE, scored from the XI's real shape: five bowling options,
-      // one keeper, at least one all-rounder is the textbook eleven
-      var balScore = 100;
-      if (bowlOpts < 5) balScore -= (5 - bowlOpts) * 15;
-      if (!bal.wk) balScore -= 25; else if (bal.wk > 1) balScore -= (bal.wk - 1) * 8;
-      if (!bal.ar) balScore -= 8;
-      if ((bal.bat || 0) < 4) balScore -= 10;
-      balScore = Math.max(0, Math.min(100, balScore));
-      var balWord = balScore >= 75 ? "Good Balance" : balScore >= 50 ? "Fair Balance" : "Needs Work";
-      var balCol = balScore >= 75 ? "#177A57" : balScore >= 50 ? "#D9A21B" : "#C0392E";
-
-      // CHEMISTRY & FORM: the XI's real form, man by man
-      var fSum = 0, spark = "";
-      xi.forEach(function (p) {
-        var f = p.formIx == null ? 3 : p.formIx;
-        fSum += f;
-        spark += "<i class='" + (f >= 4 ? "" : f <= 2 ? "lo" : "md") + "' style='height:" + Math.max(10, Math.round(f / 6 * 100)) + "%'></i>";
-      });
-      var formPct = xi.length ? Math.round(fSum / (xi.length * 6) * 100) : 0;
-      var formWord = formPct >= 62 ? "Good Form" : formPct >= 45 ? "Steady" : "Out of Sorts";
-
-      var natFlag = "";
-      try {
-        var hf = FO_ART + "flags/" + ((typeof FO_FLAG_FILE !== "undefined" && FO_FLAG_FILE[foSqNatId(homeNat)]) || foSqNatId(homeNat)) + ".svg";
-        natFlag = "<span class='fl'><img src='" + hf + "' alt='' onerror=\"this.parentNode.style.display='none'\"></span>";
-      } catch (eNf) {}
-
-      var rail =
-        "<aside class='fo-s2-rail'>" +
-        "<div class='fo-s2-card fo-s2-xicard'><div class='fo-s2-ck'><span>First XI</span><em" + (xi.length < 11 ? " style='color:#C0392E'" : "") + ">" + xi.length + "/11</em></div><div class='fo-s2-xilist'>" + xiRows + "</div></div>" +
-        "<div class='fo-s2-card'><div class='fo-s2-ck'><span>Role balance</span><a id='fo-s2-fullstats'>View full stats</a></div>" + roleBal + "</div>" +
-        "<div class='fo-s2-card'><div class='fo-s2-ck'><span>Squad composition</span></div>" +
-        "<div class='fo-s2-kv'><span>" + natFlag + E(homeNat || "Home") + "</span><b>" + (seniors.length - overseas.length) + "</b></div>" +
-        "<div class='fo-s2-kv'><span>Overseas</span><b>" + overseas.length + "</b></div>" +
-        "<div class='fo-s2-kv'><span>Avg age</span><b>" + ageAvg.toFixed(1) + "</b></div>" +
-        "<div class='fo-s2-kv'><span>Weekly wages</span><b>" + foS2Money(wageSum) + "</b></div>" +
-        "</div>" +
-        "<div class='fo-s2-duo'>" +
-        "<div class='fo-s2-card'><div class='fo-s2-ck'><span>Team balance</span></div><div class='fo-s2-gauge'>" + foS2Donut(balScore, balCol) + "<span>" + balWord + "</span></div></div>" +
-        "<div class='fo-s2-card'><div class='fo-s2-ck'><span>Chem &amp; form</span></div><div class='fo-s2-gauge'><div class='fo-s2-spark'>" + spark + "</div><span><b style='font-size:15px'>" + formPct + "</b><br>" + formWord + "</span></div></div>" +
-        "</div>" +
-        "<button type='button' class='fo-s2-save" + (sv.xiDirty ? " dirty" : "") + "' id='fo-s2-save'>Save First XI" + (sv.xiDirty ? " &middot; unsaved" : "") + "</button>" +
-        "<button type='button' class='fo-s2-sugg' id='fo-s2-sugg'>&#10022; Suggest best XI</button>" +
-        "</aside>";
-
-      var roster2Body = header + band +
-        "<div class='fo-s2-main'><section>" + tools + listBody + "</section>" + rail + "</div>";
+      var roster2Body = header +
+        "<div class='fo-s2-swrap'>" + viewSwitch + "</div>" + band +
+        "<div class='fo-s2-main'><section>" + tools + listBody + "</section></div>";
 
       var gridMen = sv.who === "yth" ? youths : sv.who === "all" ? everyone : seniors;
       var gridBody = sv.view === "grid" ? foSqGrid(gridMen, sv, xiIx) : "";

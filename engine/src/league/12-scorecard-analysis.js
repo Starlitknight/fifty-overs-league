@@ -4286,31 +4286,6 @@
     });
     return out;
   }
-  // The season writes its own pages. Every finished match already has a report
-  // waiting to be read, so the issue opens with the latest of them rather than
-  // pretending the Journal is only ever about the nineteen bosses.
-  function foLoreReports() {
-    try {
-      var res = (typeof App !== "undefined" && App.results) || [];
-      if (!res.length) return "";
-      var recent = res.slice(-4).reverse();
-      var rows = recent.map(function (r) {
-        var head = "";
-        try {
-          var f = window.foMatchFacts && window.foMatchFacts(r);
-          if (f && window.foMatchHeadline) head = window.foMatchHeadline(f).head;
-        } catch (eH) {}
-        if (!head) head = (r.result && r.result.text) || (r.home + " v " + r.away);
-        return "<a class='fo-lx-rep' href='#/report?i=" + r.ix + "'>" +
-          "<i class='fo-lx-repd'>" + E(r.date || "") + "</i>" +
-          "<b class='fo-lx-reph'>" + E(head) + "</b>" +
-          "<span class='fo-lx-repm'>" + E(r.home) + " v " + E(r.away) + "</span></a>";
-      }).join("");
-      return "<section class='fo-lx-sec'>" +
-        "<div class='fo-lx-rule reveal'><span>From the season</span></div>" +
-        "<div class='fo-lx-reps reveal'>" + rows + "</div></section>";
-    } catch (e) { return ""; }
-  }
   function foRenderLore() {
     try {
       try { foCxNav(); } catch (eN) {}
@@ -4335,19 +4310,6 @@
         return cast.some(function (c) { return c.id === id; });
       }).slice(0, 5).map(function (id, i) {
         return "<img class='fo-lx-face f" + i + "' src='" + cutOf(id) + "' alt='' aria-hidden='true' loading='eager' decoding='async' onerror=\"this.onerror=null;this.src='" + artOf(id) + "'\">";
-      }).join("");
-
-      // ---- the contents page: nineteen features is a long read, so the issue
-      // opens the way a magazine does, with somewhere to jump from ----------
-      var tocHTML = feat.map(function (c, i) {
-        var F = FO_LORE_FEATURE[c.id];
-        return "<button type='button' class='fo-lx-toc' data-lx-jump='" + c.id + "' style='--lac:" + c.ac + "'>" +
-          "<i class='fo-lx-tno'>" + no(i) + "</i>" +
-          "<span class='fo-lx-tmain'>" +
-          "<b class='fo-lx-tname'>" + E(c.leader) + "</b>" +
-          "<span class='fo-lx-tdek'>" + F.dek + "</span></span>" +
-          "<span class='fo-lx-tnat'>" + E(c.nm) + "<em>Iss. " + F.iss + "</em></span>" +
-          "</button>";
       }).join("");
 
       var featHTML = function (list, from) {
@@ -4419,12 +4381,11 @@
         "</div></div>" +
         "<div class='fo-lx-scroll' aria-hidden='true'><span></span>Read on</div>" +
         "</header>" +
-        // ---- the season's own pages, written as the matches finish ----
-        foLoreReports() +
-        // ---- contents ----
-        (feat.length ? "<section class='fo-lx-sec fo-lx-contents'>" +
-          "<div class='fo-lx-rule reveal'><span>In this issue</span></div>" +
-          "<div class='fo-lx-toclist reveal'>" + tocHTML + "</div></section>" : "") +
+        // The season's own match pages and the table of contents both went:
+        // the reader arrives at the Journal for the features, and two lists
+        // standing in front of them - one of matches already read elsewhere,
+        // one naming the pieces that follow immediately below - were furniture
+        // between the cover and the writing.
         // ---- the features, in the order you meet them ----
         (feat.length ? "<section class='fo-lx-sec'>" +
           "<div class='fo-lx-rule reveal'><span>The Features</span></div>" +
