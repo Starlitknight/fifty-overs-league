@@ -1,104 +1,57 @@
-/* sw.js — THE APP SHELL, SO A REFRESH HAS SOMETHING TO PAINT.
+/* sw.js — A WORKER WHOSE ONLY JOB IS TO REMOVE ITSELF.
  *
- * THE PROBLEM THIS EXISTS FOR. On a reload the browser throws away the pixels
- * of the page you are looking at and shows whatever the new document paints
- * first. Measured on a screencast of this game: 180,032 bytes of painting, then
- * one frame of 16,408 bytes of nearly nothing, then 205,808 bytes of painting
- * again. That frame is the blink. It cannot be fixed by anything the page does
- * once it is running, because it happens before the page is running - the only
- * cure is for the document to arrive already painted, and the only way to do
- * that at zero latency is to answer the navigation from a local cache.
+ * There was an app-shell worker here. It answered navigations from a cache so
+ * that a reload had something to paint on its first frame, and it worked: the
+ * document came back in 8ms. It did not fix the blink - measurement said the
+ * blink was 690ms of parsing four and a half megabytes of program, which no
+ * cache in front of the document can help - and it brought a fault of its own.
+ * Its navigation handler ended in
  *
- * THE DANGER, WHICH IS REAL AND HAS BITTEN THIS PROJECT BEFORE. build.sh says
- * it plainly: one self-contained page meant "every CDN cache hit was a chance
- * to serve a stale GAME, and nobody could say which build a stuck screen was
- * running". A service worker is another cache in front of the document, and a
- * careless one is exactly that bug with a longer memory. So the rules here are
- * narrow on purpose:
+ *     return hit || (await live) || new Response('', { status: 504 });
  *
- *   THE SHELL (index.html, client/game.html) is answered from cache so the
- *   first frame is instant - and then re-fetched in the background on every
- *   single navigation. A visitor is at most ONE load behind, and the game
- *   already polls version.json and offers a one-tap update, so being one load
- *   behind is a state it knows how to announce and repair.
+ * so a reader with no cached shell yet and one failed request got an empty 504,
+ * which a browser renders as "this site can't be reached". On a connection that
+ * drops even occasionally that is a front door that sometimes is not there. It
+ * also answered EVERY navigation from './index.html', so client/game.html was
+ * served the wrong document.
  *
- *   THE PROGRAM (assets/fo-<build>.js) is safe to keep forever because its
- *   name contains its build. A new build is a new URL; there is no such thing
- *   as a stale hit.
+ * A worker cannot be withdrawn by deleting it. Once installed it lives in the
+ * browser and keeps serving; a 404 for its URL is treated as a network problem
+ * and the old copy stays. The only way to take one back is to ship a new
+ * version that stands down. So this file is kept and served, and it:
  *
- *   THE PAINTINGS (client/art/**, client/fonts/**) are immutable by name too.
+ *   - claims immediately, so it replaces the old worker rather than waiting
+ *     behind it for every tab to close,
+ *   - deletes every cache the old one created,
+ *   - unregisters itself,
+ *   - and registers NO fetch handler at all, so from the moment it activates
+ *     nothing on this origin is intercepted, cached, or answered from a copy.
  *
- *   EVERYTHING ELSE - the World Service, auth, every API call - is not touched.
- *   No caching, no interception, no offline guesswork about live cricket.
+ * The page also unregisters any worker it finds on every load (see BOOT in
+ * build.sh), which covers the reader whose browser never gets as far as
+ * fetching this file. Belt and braces, because the failure it undoes is the
+ * site not loading at all.
  *
- * AND A KILL SWITCH. ?nosw=1 on any load unregisters this worker and empties
- * its caches, so a bad deploy is one URL away from being undone rather than
- * needing a fix shipped through the very thing that is broken.
+ * Do not add caching back here. If the first frame needs pixels, that is a
+ * question about the size of the program, not about where the document came
+ * from.
  */
-const BUILD = '20260807-2055-e6358d';
-const SHELL = 'fo-shell-' + BUILD;
-const LONG = 'fo-long-v1';
-const SHELL_URLS = ['./', './index.html', './client/game.html'];
+const BUILD = '20260807-2111-806f92';
 
 self.addEventListener('install', e => {
-  // take the new shell down at once; the page decides when to use it
-  e.waitUntil((async () => {
-    const c = await caches.open(SHELL);
-    await Promise.all(SHELL_URLS.map(u => c.add(new Request(u, { cache: 'reload' })).catch(() => {})));
-    await self.skipWaiting();
-  })());
+  e.waitUntil(self.skipWaiting());
 });
 
 self.addEventListener('activate', e => {
   e.waitUntil((async () => {
-    // every shell but this build's goes; the long cache is keyed by URL and
-    // its entries are immutable, so it survives
-    const keys = await caches.keys();
-    await Promise.all(keys.filter(k => k.startsWith('fo-shell-') && k !== SHELL).map(k => caches.delete(k)));
-    await self.clients.claim();
+    try {
+      const keys = await caches.keys();
+      await Promise.all(keys.filter(k => k.indexOf('fo-') === 0).map(k => caches.delete(k)));
+    } catch (err) {}
+    try { await self.registration.unregister(); } catch (err) {}
+    try { await self.clients.claim(); } catch (err) {}
   })());
 });
 
-const isLong = u =>
-  /\/assets\/fo-[\w.-]+\.js$/.test(u.pathname) ||
-  /\/client\/(art|fonts)\//.test(u.pathname);
-
-self.addEventListener('fetch', e => {
-  const req = e.request;
-  if (req.method !== 'GET') return;
-  let u;
-  try { u = new URL(req.url); } catch (err) { return; }
-  // OUR ORIGIN ONLY. The World Service, Supabase, auth and every other host go
-  // straight to the network with this worker not in the conversation at all.
-  if (u.origin !== self.location.origin) return;
-
-  // THE NAVIGATION: cache first, so the document paints on the first frame,
-  // then refresh the cached copy behind it for next time.
-  if (req.mode === 'navigate') {
-    e.respondWith((async () => {
-      const c = await caches.open(SHELL);
-      const hit = await c.match('./index.html') || await c.match(req);
-      const live = fetch(req).then(r => {
-        if (r && r.ok) c.put('./index.html', r.clone()).catch(() => {});
-        return r;
-      }).catch(() => null);
-      // a cached shell answers now; without one, wait for the network
-      return hit || (await live) || new Response('', { status: 504 });
-    })());
-    return;
-  }
-
-  // THE PROGRAM AND THE PAINTINGS: named by build or immutable by nature.
-  if (isLong(u)) {
-    e.respondWith((async () => {
-      const c = await caches.open(LONG);
-      const hit = await c.match(req);
-      if (hit) return hit;
-      const r = await fetch(req).catch(() => null);
-      if (r && r.ok) c.put(req, r.clone()).catch(() => {});
-      return r || new Response('', { status: 504 });
-    })());
-    return;
-  }
-  // anything else on this origin: the network, untouched
-});
+// NO fetch listener. Every request goes to the network exactly as it would
+// with no worker installed at all.

@@ -2639,10 +2639,6 @@
       // toolbar collapse, rubber-band overscroll) must read as night, never
       // as the cream document background
       "html body.fo-home-on,html body.ftpskin.fo-home-on{background:#0B1322 !important;margin:0 !important;padding:0 !important;overflow-x:hidden !important}" +
-      // and neither does the body or its wrapper: the document background IS
-      // the painting on this page, so everything above it stays out of the way
-      "html body.fo-home-on,html body.ftpskin.fo-home-on{background:transparent !important}" +
-      "html body.fo-home-on #page,html body.ftpskin.fo-home-on #page{background:transparent !important}" +
       "html body.fo-home-on .wrap,html body.ftpskin.fo-home-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important;border:0 !important}" +
       "html body.fo-home-on #page{padding:0 !important;margin:0 !important;background:transparent !important}" +
       "html body.fo-home-on #topbar,html body.ftpskin.fo-home-on #topbar{position:fixed;top:0;left:0;right:0;z-index:60;background:linear-gradient(180deg,rgba(4,10,20,.6),rgba(4,10,20,.24) 60%,transparent) !important;border-bottom:none !important;box-shadow:none !important}" +
@@ -2655,9 +2651,6 @@
       "@keyframes foHgIn{from{opacity:0}to{opacity:1}}" +
       "@keyframes foHgUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:none}}" +
       ".fo-hg2 .hg-id{animation:foHgUp .7s .15s both}" +
-      // a repaint is not an arrival: nothing rises or fades the second time
-      ".fo-hg2.hg-seen .hg-id,.fo-hg2.hg-seen .hg-gaff,.fo-hg2.hg-seen .hg-next," +
-      ".fo-hg2.hg-seen .hg-bar,.fo-hg2.hg-seen .hg-wx{animation:none !important}" +
       ".fo-hg2 .hg-gaff{animation:foHgUp .7s .34s both}" +
       ".fo-hg2 .hg-next{animation:foHgUp .7s .5s both}" +
       ".fo-hg2 .hg-bar{animation:foHgUp .6s .72s both}" +
@@ -2713,15 +2706,7 @@
       // webfont, a banner) re-anchored it with a fresh negative margin and
       // the whole painting visibly jumped. Fixed, it cannot be moved by
       // anything the topbar does.
-      // AND THE HERO DOES NOT PAINT OVER THE FIRST FRAME. .fo-hg2 carries an
-      // opaque navy so a painting that has not arrived has something behind
-      // it. On the home page that is now the wrong thing to want: the document
-      // background already holds the inlined thumbnail AND the real painting,
-      // hung by the boot script before the program ran, and an opaque box laid
-      // on top of them replaces a picture with a flat colour for as long as it
-      // takes the <img> to light. Which is the blink, measured: the screen
-      // collapsed 87% at the moment this element appeared.
-      "html body #page .fo-hg2.fo-home2{position:fixed;top:0;left:0;right:0;bottom:0;height:100dvh;margin:0 !important;z-index:1;background:transparent}" +
+      "html body #page .fo-hg2.fo-home2{position:fixed;top:0;left:0;right:0;bottom:0;height:100dvh;margin:0 !important;z-index:1}" +
       // THE PAINTING HAS A VIGNETTE, SO THE PAINTED EDGE NEVER REACHES THE GLASS.
       //
       // Nearly every home ground painting is darkened toward its edges - it is
@@ -2741,10 +2726,11 @@
       // for no motion - the rule below turns the animation off entirely - is
       // not the one person shown the edge. Source art is 3344px wide against a
       // 1912px frame, so even at the top of the drift it is still oversampled.
-      ".fo-home2 .hg-bg{animation:foHgDrift 34s ease-in-out infinite alternate;object-position:50% 46%;transform:scale(1.18);opacity:0;transition:opacity .34s ease-out}" +
-      ".fo-home2 .hg-bg.hg-lit{opacity:1}" +
+      ".fo-home2 .hg-bg{animation:foHgIn 1.4s ease-out,foHgDrift 34s ease-in-out 1.4s infinite alternate;object-position:50% 46%;transform:scale(1.18)}" +
       "@keyframes foHgDrift{from{transform:scale(1.18) translate3d(0,0,0)}to{transform:scale(1.26) translate3d(-1.8%,-1.2%,0)}}" +
-      "@media(prefers-reduced-motion:reduce){.fo-home2 .hg-bg{animation:none !important;transition:none !important}}" +
+      // no motion still keeps the 1.18 floor from the element rule above, so
+      // the vignette stays off the glass for a reader who has asked for stillness
+      "@media(prefers-reduced-motion:reduce){.fo-home2 .hg-bg{animation:foHgIn .9s ease-out !important}}" +
       ".fo-home2 .hg-scrim{background:linear-gradient(to top,rgba(9,14,24,.44),rgba(9,14,24,.09) 32%,transparent 58%)}" +
       ".fo-home2 .hg-bloom{position:absolute;inset:0;z-index:1;pointer-events:none;mix-blend-mode:screen;opacity:0;background:radial-gradient(58% 42% at 76% 4%,color-mix(in srgb,#ffe0a0 55%,transparent),transparent 60%),radial-gradient(70% 46% at 12% 108%,color-mix(in srgb,var(--lac,#EBC271) 34%,transparent),transparent 62%)}" +
       ".fo-home2 .hg-id{left:34px;bottom:96px;max-width:64%}" +
@@ -5285,8 +5271,6 @@
       return arr.slice(-6).map(function (x) { var tie = x.w < 0, win = x.w === 0; return "<em class='" + (tie ? "hg-t" : win ? "hg-w" : "hg-l") + "'>" + (tie ? "T" : win ? "W" : "L") + "</em>"; }).join("");
     } catch (e) { return ""; }
   }
-  // the home ground painting, kept between renders so it is never built twice
-  var FO_HG_KEPT = null;
   function foRenderHome() {
     try {
       try { foCxNav(); } catch (eN) {}
@@ -5434,31 +5418,6 @@
       // shell and its art stay on the wall while only the words change; the
       // page is torn down solely when the painting itself must change.
       var shell = page.querySelector(".fo-hg2.fo-home2");
-      // THE PAINTING OUTLIVES THE PAGE.
-      //
-      // The in-place update below already spares a repaint that finds its own
-      // shell still hanging. What it could not help was a render that arrives
-      // to an EMPTY page - and #page is emptied by every other room in the
-      // game on the way past, by the base engine's own club render before the
-      // overlay takes over, and by anything else that writes innerHTML. Then
-      // the whole hero was built again: a new <img>, a fresh decode, a fresh
-      // layout. That is the blink, and chasing each thing that empties the
-      // page is a game with no last move.
-      //
-      // So the shell is not rebuilt, it is RE-HUNG. The very element - the
-      // same decoded painting, mid-drift - is put back on the wall. It cannot
-      // flash because it never stopped existing; the browser has nothing to
-      // fetch, decode or lay out again. Only a genuinely different painting
-      // builds a new one.
-      if (!shell && FO_HG_KEPT && FO_HG_KEPT.getAttribute("data-hgv") === String(v)
-          && FO_HG_KEPT.querySelector(".hg-bg")) {
-        try {
-          page.textContent = "";
-          page.appendChild(FO_HG_KEPT);
-          FO_HG_KEPT.classList.add("hg-seen");
-          shell = FO_HG_KEPT;
-        } catch (eRh) { shell = null; }
-      }
       if (shell) {
         shell.style.setProperty("--lac", region.ac || "#EBC271");
         // the weather caption chip is gone by decree: the painting says it all
@@ -5483,114 +5442,22 @@
           im9.src = FO_ART + "home/" + v + ".webp";
         }
       } else {
-        // the entrance fade plays once per sitting: a shell rebuilt on the
-        // way back from another room re-hangs the already-decoded painting
-        // instantly instead of fading in from nothing again. And the fade
-        // starts when the PAINTING ARRIVES, not when the element is made -
-        // a fade that starts against an empty box makes a slow-loading
-        // painting pop in abruptly at whatever opacity the clock reached
-        // THE ONE-FRAME FLASH OF THE FINISHED PAINTING.
-        //
-        // This is the blink on a first load and a hard refresh, and it is the
-        // reveal itself. The image was written with opacity:0 and animation
-        // suppressed, and its onload cleared style.cssText WHOLESALE - which
-        // drops the zero opacity and the suppression in the same instant. The
-        // element's opacity reverts to its CSS value of 1 immediately, while
-        // the fade-in keyframes only take effect on the next style resolution.
-        // So for one frame the finished painting is on the wall at full
-        // strength; then the animation starts from nothing and washes it in
-        // again. Appear, vanish, fade back: exactly one blink, on exactly the
-        // path that builds the element - which is why navigating to the page
-        // was already clean and arriving at it was not.
-        //
-        // There is no clearing of styles now and no keyframed entrance. The
-        // painting is hung at zero and lit by adding a class once the frame is
-        // decoded, so opacity only ever travels one way. A browser without
-        // decode() falls back to load, and a painting that never arrives is
-        // lit anyway rather than left invisible.
-        var anim0 = window.__foHgShown ? " class='hg-bg hg-lit'" : " class='hg-bg'";
-        // THE HOME PAGE IS NEVER REBUILT, ONLY CORRECTED.
-        //
-        // It is drawn twice on purpose: once immediately from what the device
-        // holds, then again a moment later when the served status and squad
-        // land and it has to say the true thing rather than the cached one.
-        // That second draw is right. What was wrong is that it threw the whole
-        // page away and built it again - a new <img>, a new billing, every
-        // entrance animation from the top - and a manager refreshing saw the
-        // lot flash. Suppressing the animations was not enough, because
-        // replacing the DOM is itself the flash: for a frame there is nothing
-        // there, and the browser re-decodes and re-lays-out what follows.
-        //
-        // So a repaint of a page that is ALREADY showing this club's hero
-        // touches only the two blocks that can have changed, and only when
-        // their markup actually differs. The painting is never re-created: the
-        // same <img> element stays in the document from the first paint to the
-        // last, which is why nothing can blink. A different club, or a
-        // different painting, is a real arrival and gets the full build.
-        var seen = !!window.__foHgShown;
+        // The painting is hung with the entrance suppressed and no opacity, and
+        // its own onload clears both the moment the frame is actually decoded -
+        // so the fade starts when the PAINTING ARRIVES rather than when the
+        // element is made. A fade timed from element creation makes a
+        // slow-loading painting pop in abruptly at whatever opacity the clock
+        // had reached.
+        var anim0 = window.__foHgShown
+          ? " style='animation:foHgDrift 34s ease-in-out infinite alternate'"
+          : " style='animation:none;opacity:0' onload=\"this.style.cssText=''\"";
         window.__foHgShown = true;
         page.innerHTML =
-          "<div class='fo-hg2 fo-home2" + (seen ? " hg-seen" : "") + "' data-hgv='" + E(v) + "' style='--lac:" + (region.ac || "#EBC271") + "'>" +
-          "<img" + anim0 + " src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
+          "<div class='fo-hg2 fo-home2' data-hgv='" + E(v) + "' style='--lac:" + (region.ac || "#EBC271") + "'>" +
+          "<img class='hg-bg'" + anim0 + " src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
           "<div class='hg-grain'></div><div class='hg-scrim'></div><div class='hg-bloom'></div>" +
           "<div class='hg-id'>" + idHtml + "</div>" +
           "<div class='hg-bar'>" + barHtml + "</div></div>";
-        // KEPT, NOT JUST DRAWN. The node itself is remembered so that the next
-        // render can re-hang THIS painting rather than build another one.
-        FO_HG_KEPT = page.querySelector(".fo-hg2.fo-home2");
-        // REMEMBERED FOR THE NEXT FIRST PAINT. The boot veil hangs this same
-        // painting as the document background before any script runs, so a
-        // refresh never shows a blank screen over the top of it.
-        try { localStorage.setItem("fo_hg_last", String(v)); } catch (eLs) {}
-        // AND A THUMBNAIL OF IT, SMALL ENOUGH TO INLINE.
-        //
-        // The blank frame on a refresh is four hundred milliseconds of parsing
-        // and running four and a half megabytes of JavaScript - measured: the
-        // document arrives in 8ms and the bundle is local, and the screen is
-        // still empty until the program finishes. Nothing that runs AFTER the
-        // program can help, and neither can a background image, because a URL
-        // is a fetch and a decode and the first frame comes before both.
-        //
-        // So the painting is reduced to a sixteen-by-ten JPEG - a few hundred
-        // bytes - and kept. The boot script hangs it as the document
-        // background before the parser has reached the program, where the
-        // browser blows it up to fill the screen and the interpolation does
-        // the blurring for nothing. It is not the painting, but it is the
-        // painting's light and colour in the right places, on the first frame,
-        // and the real one lands on top of it a moment later.
-        try {
-          var bgT = FO_HG_KEPT && FO_HG_KEPT.querySelector(".hg-bg");
-          if (bgT) {
-            var thumb = function () {
-              try {
-                if (!bgT.naturalWidth) return;
-                var cv = document.createElement("canvas");
-                cv.width = 16; cv.height = 10;
-                cv.getContext("2d").drawImage(bgT, 0, 0, 16, 10);
-                var u = cv.toDataURL("image/jpeg", 0.5);
-                // STAMPED WITH THE PAINTING IT IS A THUMBNAIL OF. The name is
-                // written the moment the hero is built; the thumbnail cannot be
-                // until the image has decoded. A refresh in between would
-                // otherwise hang today's painting over yesterday's colours.
-                if (u && u.length < 3000) localStorage.setItem("fo_hg_lqip", v + "|" + u);
-              } catch (eTh) {}          // a tainted canvas on file:// - no matter
-            };
-            if (bgT.complete && bgT.naturalWidth) thumb();
-            else bgT.addEventListener("load", thumb);
-          }
-        } catch (eTh2) {}
-        (function () {
-          var bg0 = FO_HG_KEPT && FO_HG_KEPT.querySelector(".hg-bg");
-          if (!bg0 || bg0.classList.contains("hg-lit")) return;
-          var lit = false;
-          var light = function () { if (lit) return; lit = true; bg0.classList.add("hg-lit"); };
-          try {
-            if (bg0.decode) bg0.decode().then(light, light);
-            else if (bg0.complete) light();
-            else { bg0.addEventListener("load", light); bg0.addEventListener("error", light); }
-          } catch (eD0) { light(); }
-          setTimeout(light, 3000);          // never leave the wall bare
-        })();
       }
       try { document.body.classList.add("fo-home-on"); document.body.classList.remove("fo-boss-on"); document.body.classList.remove("fo-ov-on"); } catch (eBc) {}
       try { foHgFit(page.querySelector(".fo-hg2")); } catch (eF) {}

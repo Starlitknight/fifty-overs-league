@@ -32,42 +32,19 @@ cd "$(dirname "$0")"
 # Boot veil, injected into <head>: hides the page in brand navy while the
 # document parses so the base teal UI never flashes before the skin lands.
 # The league layer removes the veil; a 4s CSS failsafe reveals regardless.
-# THE VEIL PAINTS THE PICTURE THE PAGE IS ABOUT TO SHOW.
 #
-# The veil hides the body so the raw engine render never flashes before the
-# league overlay skins it. That was right, and it was also the blink on a hard
-# refresh: measured on a screencast, the composited frame went from 204,292
-# bytes of painting to 10,416 bytes of flat navy and back inside 300ms. A
-# browser holds the OLD page on screen during a reload until the new document
-# paints - and a page whose very first paint is a solid colour throws that away
-# and shows a blank screen over the top of what the reader was already looking
-# at.
-#
-# So the first paint is no longer a solid colour. The home ground painting a
-# manager last saw is remembered by name, and the veil hangs it as the document
-# background before a line of the program has run. The reader's own club ground
-# is on screen from the first frame to the last; the page assembles behind it
-# and is revealed onto the same picture. Nothing to see, because nothing
-# changes.
-#
-# AND THE FIRST FRAME CARRIES PIXELS, NOT A PROMISE. A URL is a fetch and a
-# decode, and the first frame comes before both - which is why hanging the
-# full painting here narrowed the gap without closing it. So a sixteen-by-ten
-# JPEG of the same painting, a few hundred bytes, is kept in localStorage and
-# inlined as a data URI UNDER the real one. It needs no network and no decode
-# worth the name; the browser blows it up to fill the screen and the
-# interpolation blurs it for free. The real painting is layered on top and
-# covers it the moment it is ready.
-#
-# Two more details make it work rather than nearly work. The painting is PRELOADED
-# from the same first script, so the fetch starts before the parser has reached
-# anything else. And where a painting is hung the background COLOUR is dropped:
-# a document whose first paint would be a solid colour ends the browser's paint
-# holding immediately, whereas one with nothing opaque to paint lets it keep
-# showing the previous page until the real picture is ready. The navy is there
-# only for the first-ever visit, when there is no last painting to hang - which
-# is the one load that has nothing to blink away from.
-BOOT='<style id="fo-boot">html{background:#0B1322 no-repeat center/cover}html>body{visibility:hidden;animation:fo-boot-reveal .01s 4s forwards}@keyframes fo-boot-reveal{to{visibility:visible}}</style><script>try{var _a=localStorage.getItem("fo_hg_last");if(_a&&/^[a-z0-9-]+$/i.test(_a)){var _u="client/art/home/"+_a+".webp",_l=document.createElement("link");_l.rel="preload";_l.as="image";_l.href=_u;document.head.appendChild(_l);var _q=localStorage.getItem("fo_hg_lqip"),_i=_q?_q.indexOf("|"):-1;_q=_i>0&&_q.slice(0,_i)===_a?_q.slice(_i+1):"";var _h=document.documentElement.style;_h.backgroundImage=_q&&_q.indexOf("data:image/")===0?"url("+_u+"),url("+_q+")":"url("+_u+")";_h.backgroundColor="transparent"}}catch(e){}try{if("serviceWorker"in navigator){if(/[?&]nosw=1/.test(location.search)){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})});if(window.caches)caches.keys().then(function(ks){ks.forEach(function(k){if(k.indexOf("fo-")===0)caches.delete(k)})})}else if(location.protocol.indexOf("http")===0){addEventListener("load",function(){navigator.serviceWorker.register("sw.js").catch(function(){})})}}}catch(e){}</script>'
+# IT DOES NOTHING ELSE. It briefly also hung the last home-ground painting -
+# and a tiny inlined thumbnail of it - as the document background, to try to
+# put pixels on the first frame of a refresh. It went with a service worker
+# that answered navigations from a cache. Together they made the thing they
+# were built to fix worse: the reader got a blurred thumbnail sharpening into
+# the painting instead of a clean load, and the worker turned every cache miss
+# on a flaky connection into a "site cannot be reached" page. Both are gone.
+# The kill script below is what remains of the worker: it exists to uninstall
+# the copies already sitting in readers' browsers, because a worker that is
+# merely deleted from the server keeps running forever in the clients that
+# already have it.
+BOOT='<style id="fo-boot">html{background:#0B1322}html>body{visibility:hidden;animation:fo-boot-reveal .01s 4s forwards}@keyframes fo-boot-reveal{to{visibility:visible}}</style><script>try{if("serviceWorker"in navigator&&navigator.serviceWorker.getRegistrations){navigator.serviceWorker.getRegistrations().then(function(rs){rs.forEach(function(r){r.unregister()})}).catch(function(){})}if(window.caches&&caches.keys){caches.keys().then(function(ks){ks.forEach(function(k){if(k.indexOf("fo-")===0)caches.delete(k)})}).catch(function(){})}}catch(e){}try{localStorage.removeItem("fo_hg_lqip");localStorage.removeItem("fo_hg_last")}catch(e){}</script>'
 
 # ONE GAME, ONE ADDRESS. The site is published twice - GitHub Pages, which
 # still serves the old bookmarks, and the host below, which is the real one.
