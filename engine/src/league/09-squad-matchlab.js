@@ -542,7 +542,7 @@
     for (var i = 0; i < FO_SQ_COLS.length; i++) if (FO_SQ_COLS[i].k === k) return FO_SQ_COLS[i];
     return null;
   }
-  function foSqGrid(list, sv, capt, xiIx) {
+  function foSqGrid(list, sv, xiIx) {
     var ctx = { xiIx: xiIx };
     var cols = FO_SQ_COLS;
     // the role filter: a keeper (or any discipline) can be read on his own
@@ -570,7 +570,6 @@
       var v = c.v(p, ctx);
       if (c.k === "name") {
         return "<td class='c-name'><span class='fo-sqg-nm'>" + E(p.name) + foSqStar(p) + "</span>" +
-          (p.name === capt ? "<em class='fo-sqg-c' title='Captain'>C</em>" : "") +
           (p.__y ? "<em class='fo-sqg-y' title='Youth player'>U20</em>" : "") +
           "<i class='fo-sqg-go' aria-hidden='true'>&#8250;</i></td>";
       }
@@ -783,9 +782,7 @@
       ".fo-sqg-r:hover td.c-name,.fo-sqg-r:focus-visible td.c-name{background:#FDF4F0 !important}",
       ".fo-sqg-nm{font-weight:600;color:#141C28}",
       ".fo-sqg-r.fo-sqg-yth .fo-sqg-nm{color:rgba(20,28,40,.72)}",
-      ".fo-sqg-c,.fo-sqg-y{display:inline-block;margin-left:6px;font-style:normal;font-family:Oswald,sans-serif;font-size:8px;letter-spacing:.1em;padding:1px 5px;border-radius:4px;vertical-align:1px}",
-      ".fo-sqg-c{background:#C89A2E;color:#2E2410}",
-      ".fo-sqg-y{background:rgba(20,28,40,.08);color:rgba(20,28,40,.6)}",
+      ".fo-sqg-y{display:inline-block;margin-left:6px;font-style:normal;font-family:Oswald,sans-serif;font-size:8px;letter-spacing:.1em;padding:1px 5px;border-radius:4px;vertical-align:1px;background:rgba(20,28,40,.08);color:rgba(20,28,40,.6)}",
       ".fo-sqg-go{float:right;font-style:normal;color:rgba(20,28,40,.28);opacity:0;transition:opacity .14s,transform .14s;padding-left:8px}",
       ".fo-sqg-r:hover .fo-sqg-go,.fo-sqg-r:focus-visible .fo-sqg-go{opacity:1;transform:translateX(2px);color:#C95532}",
       // the XI carries its batting number in gold; everyone else a quiet dash
@@ -1672,7 +1669,7 @@
         "<div class='fo-s2-main'><section>" + tools + listBody + "</section>" + rail + "</div>";
 
       var gridMen = sv.who === "yth" ? youths : sv.who === "all" ? everyone : seniors;
-      var gridBody = sv.view === "grid" ? foSqGrid(gridMen, sv, capt, xiIx) : "";
+      var gridBody = sv.view === "grid" ? foSqGrid(gridMen, sv, xiIx) : "";
 
       // THE ANALYST'S DESK: a gilt eyebrow, a plain masthead, and then the
       // book itself. The view switch sits below the title on the left, on
