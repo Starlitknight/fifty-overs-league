@@ -296,10 +296,11 @@
     var rnd = window.rng(foHash32(String(seed) + "|" + archId));
     var firsts = {}, lasts = {};
     comp = comp || foQsDefaultComp(archId);
-    // the captain fills one slot of his own bucket
+    // EVERY MAN IN THE SQUAD IS NOW A SLOT. This used to knock one off the
+    // standout's own bucket because the pre-set captain filled it from outside
+    // the ladder; with him generated like everybody else, taking that slot away
+    // would deal a fourteen-man squad where fifteen was asked for.
     var want = { bat: comp.bat || 0, pace: comp.pace || 0, spin: comp.spin || 0, ar: comp.ar || 0, wk: comp.wk || 0 };
-    var capB = foQsBucketOf((A.starter || {}).role || "topOrderBat");
-    want[capB] = Math.max(0, want[capB] - 1);
     var slots = [];
     // batting order shape: two openers first, then top/middle alternating
     var batRoles = ["opener", "opener", "topOrderBat", "middleOrderBat", "topOrderBat", "middleOrderBat", "topOrderBat", "middleOrderBat"];
@@ -337,7 +338,7 @@
     // it buys SHAPE, not power.
     var pr = {}; (A.focus || []).forEach(function (gname, i2) { pr[gname] = i2; });
     var Q_FLOOR = 0.16;
-    var UP = A.flatQ ? 0.11 : 0.41, DOWN = A.flatQ ? 0.11 : 0.39;
+    var UP = A.flatQ ? 0.11 : 0.18, DOWN = A.flatQ ? 0.11 : 0.15;
     var byG = {};
     slots.forEach(function (sl) { (byG[sl.g] = byG[sl.g] || []).push(sl); });
     Object.keys(byG).forEach(function (gname) {
@@ -376,30 +377,34 @@
         sl.age = Math.max(lo, Math.min(hi, Math.round(want)));
       });
     })();
-    // the captain first (from the same pool the picker showed), then the squad
+    // THERE IS NO SUCH THING AS A CAPTAIN, AND THERE NEVER SHOULD HAVE BEEN.
+    //
+    // A squad used to be built around one pre-set man drawn from a pool of six
+    // captain cards. He was frozen at those numbers, lifted clear of the budget
+    // pass, had every teammate who came near him trimmed back, and was handed
+    // two talents outright. A cricketer with a permanent title, decided before
+    // a ball was bowled.
+    //
+    // The captaincy is a MATCH decision - who leads the side today, changeable
+    // every game - and that is untouched: App.orders.captain still names him and
+    // Make captain still moves it. What goes is the idea that one man is the
+    // club's captain for all time and is built differently because of it.
+    //
+    // The archetype's standout ROLE survives, because that is the club's
+    // cricket rather than a person: a Pace Battery is still led by a genuine
+    // quick. He is simply generated like everybody else, on the top rung of his
+    // department's ladder, and he can be caught, sold, or out-grown by the boy
+    // behind him. His talent he draws like everybody else - only likelier,
+    // because the best player in a side plausibly arrives with a gift.
     var st = A.starter || {};
     var players = [];
-    var pool6 = foGenCaptainPool(seed, country, archId);
-    var starter = pool6[FO_CAPT_FLAVOURS.indexOf(CF)] || pool6[0];
-    // the captain's name is taken: squad names must not clash with it
-    (function () {
-      var sp = starter.name.split(/\s+/);
-      firsts[(sp[0] || "").toLowerCase()] = 1;
-      lasts[((sp.slice(1).join(" ") || sp[0]) + "").toLowerCase()] = 1;
-    })();
-    // A STRONGER CLUB HAS A STRONGER CAPTAIN. The budget pass below deliberately
-    // leaves the captain's card alone, and the crowding rules trim any teammate
-    // who gets near him - so lifting the budget without lifting HIM would just
-    // push the squad into his ceiling and stop. He moves by less than the budget
-    // does (a good club is not one man), but he does move.
-    if (STR !== 1) {
-      var fCap = Math.pow(STR, 0.55);
-      for (var kC in starter.skills) starter.skills[kC] = Math.max(4, Math.min(96, Math.round(starter.skills[kC] * fCap)));
-      jsDerive(starter);
-    }
-    players.push(starter);
     slots.forEach(function (sl) { players.push(foQsPlayer({ role: sl.role, ages: A.ages, q: sl.q, age: sl.age }, country, rnd, firsts, lasts)); });
-    var qOf = {}; qOf[starter.name] = 0.97 * (CF.q || 1); slots.forEach(function (sl, i5) { qOf[players[i5 + 1].name] = sl.q; });
+    var qOf = {}; slots.forEach(function (sl, i5) { qOf[players[i5].name] = sl.q; });
+    // the standout is whoever the ladder put on top - a fact about the squad,
+    // not a title granted to a man
+    var starter = players.reduce(function (b, p) {
+      return (qOf[p.name] || 0) > (qOf[b.name] || 0) ? p : b;
+    }, players[0]);
     // archetype flavour: real multipliers on the raw skills, BEFORE the
     // equal-budget pass, so the weakness survives normalisation as SHAPE
     var isBowlP = function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none"; };
@@ -416,7 +421,7 @@
     // below shape his teammates only
     (A.bias || []).forEach(function (rule) {
       players.forEach(function (p) {
-        if (p === starter || !inGroup(p, rule[0])) return;
+        if (!inGroup(p, rule[0])) return;
         for (var k in rule[1]) {
           if (p.skills[k] == null) continue;
           if (BATSK[k] && foPureBowler(p)) continue;   // a specialist bowler's batting stays a bowler's
@@ -424,8 +429,8 @@
         }
       });
     });
-    if (A.expAdj) players.forEach(function (p) { if (p === starter) return; p.exp = Math.max(2, Math.min(99, Math.round(p.exp + A.expAdj))); p.expWord = foExpWordOf(p.exp); });
-    if (A.captAdj) players.forEach(function (p) { if (p === starter) return; p.capt = Math.max(5, Math.min(96, Math.round(p.capt * A.captAdj))); });
+    if (A.expAdj) players.forEach(function (p) { p.exp = Math.max(2, Math.min(99, Math.round(p.exp + A.expAdj))); p.expWord = foExpWordOf(p.exp); });
+    if (A.captAdj) players.forEach(function (p) { p.capt = Math.max(5, Math.min(96, Math.round(p.capt * A.captAdj))); });
     // ---- SAME ARCHETYPE, NATIONAL ACCENT ----------------------------------
     // A Spin Circus is not one thing the world over: in India it is finger
     // spin and strangling control, in Afghanistan wrist spin and chaos. Each
@@ -456,7 +461,7 @@
     if (NF) {
       (NF.bias || []).forEach(function (rule) {
         players.forEach(function (p) {
-          if (p === starter || !inGroup(p, rule[0])) return;
+          if (!inGroup(p, rule[0])) return;
           for (var k in rule[1]) {
             if (p.skills[k] == null) continue;
             if (BATSK[k] && foPureBowler(p)) continue;
@@ -465,7 +470,6 @@
         });
       });
       if (NF.spinKind) players.forEach(function (p) {
-        if (p === starter) return;
         if (p.bowlTypeFull === "wristSpin" || p.bowlTypeFull === "fingerSpin") p.bowlTypeFull = NF.spinKind;
       });
     }
@@ -582,7 +586,7 @@
 
     // The Engine: two batters pick up honest part-time overs - everyone chips in
     if (A.partTimers) {
-      players.filter(function (p) { return p !== starter && !isBowlP(p) && !p.keeper && p.role !== "allRounder"; })
+      players.filter(function (p) { return !isBowlP(p) && !p.keeper && p.role !== "allRounder"; })
         .slice(0, A.partTimers).forEach(function (p, i4) {
           p.bowlTypeFull = i4 % 2 ? "partTimeSpin" : "partTimeSeam";
           [["wicket", 30], ["economy", 34], ["discipline", 32], ["moveTurn", 28], ["variation", 26], ["stamina", 40]].forEach(function (kv) {
@@ -612,9 +616,7 @@
     //             player, so two clubs of one archetype stop being one club.
     // Measured after: 11.9 distinct talents a squad, and at most 3 men sharing.
     var held = {};
-    (starter.talents || []).forEach(function (t) { held[t] = (held[t] || 0) + 1; });
     players.forEach(function (p) {
-      if (p === starter) return;   // the captain's talents were set with his flavour
       // A TALENT IS A GIFT, AND A GIFT THREE MEN IN FOUR HAVE IS NOT ONE.
       //
       // The old odds handed a talent to 75.3% of the world - 1.12 per man
@@ -634,6 +636,9 @@
       var q = qOf[p.name] || 0.4;
       var odds = 0.045 + 0.075 * Math.max(0, Math.min(1, (q - 0.25) / 0.7));
       if (A.talentExtra) odds *= (1 + 1.6 * A.talentExtra);
+      // the best player in a side plausibly arrives with a gift - likelier,
+      // never certain, and it is the only thing left that marks him out
+      if (p === starter) odds = Math.min(0.72, odds * 5);
       var n = rnd() < odds ? (rnd() < 0.05 ? 2 : 1) : 0;
       var rank = {};
       (A.talents || []).forEach(function (t, i) { rank[t] = i; });
@@ -655,67 +660,17 @@
     players.forEach(function (p) { jsDerive(p); });
     // pure bowlers bat by the game-wide name-derived rule, like every squad
     // (the franchise bowler got his specialist band in the captain pool)
-    players.forEach(function (p) { if (p !== starter && foPureBowler(p)) foApplyBowlerBat(p); });
-    // the franchise captain is unmistakably the squad's best: instead of the
-    // old boost-the-captain loop (which rewrote the card's numbers) any
-    // teammate who crowds him is trimmed to ~93% of his value
-    var vStar = foSkillValue(starter);
-    var capTeammates = function () {
-      players.forEach(function (p) {
-        if (p === starter) return;
-        var v = foSkillValue(p);
-        if (v > vStar * 0.93) {
-          // foSkillValue is ~linear^2.2 in the skills - take the matching root
-          var fc = Math.pow((vStar * 0.93) / Math.max(1, v), 1 / 2.2);
-          for (var k3 in p.skills) p.skills[k3] = Math.max(4, Math.min(96, Math.round(p.skills[k3] * fc)));
-          if (foPureBowler(p)) foApplyBowlerBat(p); else jsDerive(p);
-        }
-        // ...and on the DISPLAYED rating too: the squad page must show the
-        // captain on top, not just the internal value metric. The factor is
-        // fed back from the measured rating each pass (a fixed x0.975 could
-        // need 17+ passes after a full budget-pass inflation), and floor -
-        // not round - so low skills (<=20, where round(v*0.975)===v) still
-        // actually shrink.
-        for (var g3 = 0; g3 < 12 && (p.rating || 0) > (starter.rating || 0) * 0.96; g3++) {
-          var fcR = Math.max(0.8, Math.min(0.99, Math.pow(((starter.rating || 1) * 0.955) / Math.max(1, p.rating), 0.6)));
-          for (var k5 in p.skills) p.skills[k5] = Math.max(4, Math.min(96, Math.floor(p.skills[k5] * fcR)));
-          if (foPureBowler(p)) foApplyBowlerBat(p); else jsDerive(p);
-        }
-      });
-    };
-    // WHO GIVES WAY, THE SQUAD OR THE CAPTAIN. capTeammates() keeps the captain
-    // on top by trimming anyone who crowds him - right for a founding squad,
-    // where his card is the promise the manager was shown. It is wrong for a
-    // world club: the captain's FLAVOUR then decides the club's level, because
-    // every teammate is capped at his rating. That is how a flagship led by a
-    // twenty-four-year-old came out weaker than the ninth side in its league,
-    // whose thirty-year-old general rated 65,000 on his own.
+    players.forEach(function (p) { if (foPureBowler(p)) foApplyBowlerBat(p); });
+    // THE SQUAD IS NO LONGER BENT AROUND ONE MAN. Two passes used to run here.
+    // capTeammates() trimmed any teammate who came within 93% of the captain,
+    // and capLead() shoved the captain upward until he cleared the field. Both
+    // existed only to guarantee that a pre-set man finished on top, and both
+    // did real damage doing it: the trim squashed a squad's best players onto a
+    // single ceiling, which is a large part of why every side used to read as
+    // the same player over and over.
     //
-    // So when a standing is stated, the standing decides the level and the
-    // captain is lifted to the front of his own side instead of the side being
-    // dragged back to him. He still leads; he no longer caps.
-    var capLead = function () {
-      var bestR = 0, bestV = 0;
-      players.forEach(function (p) {
-        if (p === starter) return;
-        if ((p.rating || 0) > bestR) bestR = p.rating || 0;
-        var v = foSkillValue(p); if (v > bestV) bestV = v;
-      });
-      for (var gL = 0; gL < 16; gL++) {
-        if ((starter.rating || 0) >= bestR * 1.04 && foSkillValue(starter) >= bestV * 1.05) break;
-        var moved = false;
-        for (var kL in starter.skills) {
-          var was = starter.skills[kL];
-          var now = Math.max(4, Math.min(96, Math.ceil(was * 1.03)));
-          if (now !== was) moved = true;
-          starter.skills[kL] = now;
-        }
-        if (!moved) break;              // already at the ceiling; nothing more to give
-        jsDerive(starter);
-      }
-    };
-    var settleLead = (STR === 1) ? capTeammates : capLead;
-    settleLead();
+    // With no captain to protect, the best player is whoever the ladder and the
+    // budget actually produced.
     // When a STANDING is stated, it IS the standing. The archetype's own budget
     // dial (spin costs a little more, a stonewall a little less) is a balance
     // knob for the one shared budget every manager founds on - so it must not
@@ -729,11 +684,9 @@
       if (Math.abs(f - 1) < 0.008) break;
       f = Math.max(0.8, Math.min(1.25, f));
       players.forEach(function (p) {
-        if (p === starter) return;   // frozen at his pool-card numbers
         for (var k2 in p.skills) p.skills[k2] = Math.max(4, Math.min(96, Math.round(p.skills[k2] * f)));
         if (foPureBowler(p)) foApplyBowlerBat(p); else jsDerive(p);
       });
-      settleLead();
     }
     // fees: value-proportional inside the squad, on a size-priced schedule.
     // The same composition costs every archetype the same, and every extra
@@ -750,13 +703,21 @@
     // the chosen captain leads, whatever the archetype: re-assert his exact
     // captaincy after the archetype-wide adjustments, and no teammate outranks him
     var seasonNow = (typeof App !== "undefined" && App.seasonNo) || 1;
-    starter.capt = CF.capt;
-    players.slice(1).forEach(function (p) { if ((p.capt || 0) > CF.capt - 8) p.capt = CF.capt - 8; });
-    starter.origin_tag = "Franchise captain - " + CF.nm + " of the founding squad";
-    starter.archetype = A.id;
-    starter.captFlavour = CF.id;
-    starter._prov = { how: "draft", s: seasonNow, founding: 1 };
-    return { players: players, starter: starter.name, captFlavour: CF.id, arch: A.id };
+    // THE ARCHETYPE IS THE CLUB'S CRICKET, SO EVERY MAN CARRIES IT.
+    // It used to be stamped on the captain alone, which made the club's
+    // identity a property of one player - readable only while that player
+    // existed and sat first in the array. Anything asking a squad what kind of
+    // side it is (the reseed's own identity test does exactly this, off
+    // squad[0]) got undefined the moment he stopped being dealt. Every man is
+    // generated under the archetype; every man now says so.
+    //
+    // Captaincy as a SKILL stays on the card - it is what the match captain is
+    // chosen on - but nobody is stamped as the captain any more.
+    players.forEach(function (p) {
+      p.archetype = A.id;
+      p._prov = { how: "draft", s: seasonNow, founding: 1 };
+    });
+    return { players: players, arch: A.id };
   }
   window.__foArchetypes = FO_ARCHETYPES;
   window.__foSkillValue = foSkillValue;
