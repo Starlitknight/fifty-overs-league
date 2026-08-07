@@ -1156,6 +1156,24 @@
     // either family, at any frame ratio.
     "html body #page .fo-pp-cardart{position:relative;border-radius:12px;overflow:hidden;background:linear-gradient(160deg,#12294A,#0A1526 70%);box-shadow:inset 0 0 0 2px rgba(201,162,75,.55);aspect-ratio:4/3}",
     "html body #page .fo-pp-cardart img{width:100%;height:100%;object-fit:cover;object-position:50% 0%;display:block}",
+    // THREE PAINTINGS ARE COMPOSED THE OTHER WAY UP.
+    //
+    // "The head is at the top" holds for 126 of the 129: the batting, bowling
+    // and national keeper arts all put the man's face in the top of the frame,
+    // and anchoring there is what stopped them being cropped. These three do
+    // not. leg_wk, vb_wk and vc_wk hang a great chalk glove across the upper
+    // two thirds and put the keeper crouching UNDER it, so the one anchor that
+    // saves every other painting is the one that frames a glove and squeezes
+    // the man off the bottom edge - which is exactly what was reported.
+    //
+    // Rendered all fifteen keeper arts at five anchors to find out which ones
+    // actually needed it rather than moving the whole family: the twelve
+    // national ones are right at the top and only these three are not. Named
+    // individually, because a rule that moved all of them would break twelve
+    // to fix three.
+    "html body #page .fo-pp-cardart img[src$='leg_wk.webp']," +
+    "html body #page .fo-pp-cardart img[src$='vb_wk.webp']," +
+    "html body #page .fo-pp-cardart img[src$='vc_wk.webp']{object-position:50% 38%}",
     "html body #page .fo-pp-no{position:absolute;z-index:2;left:9px;bottom:7px;text-shadow:0 1px 4px rgba(6,12,24,.9);font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;color:rgba(232,214,168,.85)}",
     "html body #page .fo-pp-id{min-width:0}",
     "html body #page .fo-pp-k{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:var(--nac)}",
