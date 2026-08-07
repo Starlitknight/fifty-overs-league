@@ -1011,10 +1011,6 @@
       ".fo-s2-hd{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:16px}",
       ".fo-s2-ttl .eb{font:600 9px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#B8933A;margin-bottom:9px}",
       ".fo-s2-hd h1{font:700 40px/1 Oswald,sans-serif;text-transform:uppercase;color:#14243A !important;margin:0;letter-spacing:.015em;text-shadow:none}",
-      ".fo-s2-club{display:flex;align-items:center;gap:12px}",
-      ".fo-s2-club .cr{width:52px;height:52px}",
-      ".fo-s2-club b{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:21px;color:#14243A}",
-      ".fo-s2-club span{font:500 11.5px Inter,sans-serif;color:#8a8272}",
       // ---- the stat band (view switch attached at its left on desktop) ----
       ".fo-s2-bandwrap{display:flex;align-items:stretch;margin-bottom:14px}",
       ".fo-s2-band{display:flex;flex:1;align-items:stretch;background:#FFFEFC;border:1px solid #e3dccb;border-radius:0 14px 14px 0;border-left:none;box-shadow:0 2px 10px rgba(20,36,58,.05);overflow:hidden;min-width:0}",
@@ -1145,20 +1141,14 @@
       "html body.ftpskin button.fo-s2-sugg{background:#FFFEFC !important;color:#14243A !important;border-color:#d9d0bc !important}",
       // ---- responsive ----
       "@media(max-width:1100px){.fo-s2-main{grid-template-columns:1fr}.fo-s2-rail{position:static}}",
-      // THE PHONE SHEET: a reading page. The crest sits close under the title,
-      // the search/sort card and the First XI apparatus stay on the desk at
-      // the club - the phone shows the roster (bigger stars), the read-outs,
-      // and the tap-open detail. XI editing is desktop-only.
+      // THE PHONE SHEET: a reading page. The search/sort card and the First XI
+      // apparatus stay on the desk at the club - the phone shows the roster
+      // (bigger stars), the read-outs, and the tap-open detail. XI editing is
+      // desktop-only.
       "@media(max-width:820px){",
       ".fo-s2-in{padding:60px 8px 30px}",
       ".fo-s2-hd{align-items:flex-start;flex-direction:column;gap:3px;margin-bottom:8px}",
       ".fo-s2-hd h1{font-size:30px}.fo-s2-ttl .eb{margin-bottom:6px}",
-      ".fo-s2-club{margin-top:2px;margin-bottom:6px}",
-      // the crest SVG ships its own width/height attributes (px by 1.32 tall);
-      // pin it to the box or it overflows down into the Roster switch
-      ".fo-s2-club .cr{width:36px;height:47px;display:flex}",
-      ".fo-s2-club .cr svg{width:36px;height:47px}",
-      ".fo-s2-club b{font-size:17px}.fo-s2-club span{font-size:10px}",
       ".fo-s2-bandwrap{flex-direction:column;gap:8px;margin-bottom:10px}",
       ".fo-s2-vsw{background:transparent;border:none;border-radius:0;padding:0}",
       ".fo-s2-band{border-left:1px solid #e3dccb;border-radius:14px}",
@@ -1475,20 +1465,12 @@
       try { kpr = (App.orders && App.orders.keeper) || null; } catch (eK) {}
       if (!kpr || !xiSet[kpr]) kpr = (xi.filter(function (p) { return p.keeper; })[0] || {}).name || null;
 
-      // the identity in the masthead: crest, name, the world's own facts
-      var crest = "";
-      try { crest = "<span class='cr'>" + (window.foClubCrest ? foClubCrest(t.name, 52) : "") + "</span>"; } catch (eCr) {}
-      var estBits = [];
-      try {
-        var P9 = window.__foPlanet;
-        if (P9 && P9.EPOCH) estBits.push("Est. " + new Date(P9.EPOCH).getUTCFullYear());
-      } catch (eEs) {}
-      try {
-        var cl9 = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
-        if (cl9 && cl9.country != null && cl9.slot != null)
-          estBits.push("Club ID: " + String(cl9.country).toUpperCase() + "-" + ("0" + (cl9.slot | 0)).slice(-2));
-      } catch (eCl) {}
-      estBits.push("Season " + (App.seasonNo || 1));
+      // THE MASTHEAD CARRIES NO CREST. It used to hold the club's badge, its
+      // name, and a line of provenance - Est. 2026, Club ID, the season - all
+      // of which the page already answers: the eyebrow above the title names
+      // the season and the day, and a manager on his own squad page knows
+      // whose squad it is. A crest here was decoration standing where the
+      // reading starts.
 
       // the band's figures, straight off the men
       var wageSum = seniors.reduce(function (s2, p) { return s2 + (+p.wage || 0); }, 0);
@@ -1512,7 +1494,6 @@
       var header =
         "<header class='fo-s2-hd'>" +
         "<div class='fo-s2-ttl'><div class='eb'>" + foSqEyebrow(sv) + "</div><h1>The squad</h1></div>" +
-        "<div class='fo-s2-club'>" + crest + "<div><b>" + E(t.name) + "</b><span>" + estBits.join(" &middot; ") + "</span></div></div>" +
         "</header>";
 
       // ---- tools ----
