@@ -517,7 +517,9 @@
       var learning = Object.keys(all).filter(function (t) {
         return has.indexOf(t) < 0 && (T9[t] || 0) > 0;
       }).map(function (t) {
-        return { t: t, n: all[t] | 0, cap: T9[t] | 0, r: Math.min(1, (all[t] | 0) / (T9[t] | 1)) };
+        var n9 = all[t] | 0, cap9 = T9[t] | 0;
+        var ch = window.foTalChance ? window.foTalChance(n9, cap9) : Math.min(1, n9 / (cap9 || 1));
+        return { t: t, n: n9, cap: cap9, r: Math.min(1, n9 / (cap9 || 1)), ch: ch };
       }).sort(function (x, y) { return y.r - x.r; });
 
       var learnBody;
@@ -531,10 +533,12 @@
           "and does the job - opening the batting, bowling at the death, standing where the ball goes.</p>";
       } else {
         learnBody = learning.slice(0, 8).map(function (L) {
-          var pctN = Math.round(L.r * 100);
+          // the BAR is how far along he is; the number is what that is worth
+          // on the field this week, which moves a tenth at a time
+          var pctN = Math.round(L.r * 100), chN = Math.round(L.ch * 100);
           return "<div class='fo-pp-learn' title='" + E(talTip(L.t)) + "'>" +
             "<i>" + E(talNm(L.t)) + "</i>" +
-            "<em>" + pctN + "%</em>" +
+            "<em>" + chN + "%</em>" +
             "<u><b style='width:" + Math.max(2, pctN) + "%'></b></u>" +
             "<s>" + L.n.toLocaleString() + " of " + L.cap.toLocaleString() + " balls that suited it</s>" +
             "</div>";
@@ -547,11 +551,12 @@
       room =
         "<div class='fo-pp-col'>" +
         "<div class='fo-pp-card'><h3>On his way to" +
-          (top ? "<span>" + Math.round(top.r * 100) + "% &middot; " + E(talNm(top.t)) + "</span>" : "") +
+          (top ? "<span>" + Math.round(top.ch * 100) + "% &middot; " + E(talNm(top.t)) + "</span>" : "") +
         "</h3>" + learnBody +
         (learning.length && !earned
-          ? "<p class='fo-pp-dim'>The chance is the number: two thirds of the way there means he already does it on " +
-            "about two balls in three that suit it. At a hundred it stops being a chance and is his for good.</p>"
+          ? "<p class='fo-pp-dim'>The number is how often he already does it: six tenths means six balls in ten " +
+            "that suit it. It moves a tenth at a time, so the bar runs ahead of it between steps. " +
+            "At the end of the bar it stops being a chance and is his for good.</p>"
           : "") +
         "</div></div>" +
         "<div class='fo-pp-rail'>" +

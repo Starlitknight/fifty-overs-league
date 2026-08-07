@@ -5452,27 +5452,41 @@
         var anim0 = window.__foHgShown
           ? " style='animation:foHgDrift 34s ease-in-out infinite alternate'"
           : " style='animation:none;opacity:0' onload=\"this.style.cssText=''\"";
-        // THE ENTRANCE PLAYS ONCE, NOT ON EVERY REBUILD.
+        // THE HOME PAGE IS NEVER REBUILT, ONLY CORRECTED.
         //
-        // The painting was already spared this - it does not fade in a second
-        // time - but the club name, the standing and the buttons each carry
-        // their own staggered rise, and those replayed in full every time the
-        // page was rebuilt. The home page IS rebuilt after its first paint, on
-        // purpose: the served status and the squad arrive a moment later and
-        // the page has to say the true thing rather than the cached one. So a
-        // manager refreshing saw the whole billing slide up and fade in twice,
-        // which is exactly one blink, every time - which is what it was
-        // reported as.
+        // It is drawn twice on purpose: once immediately from what the device
+        // holds, then again a moment later when the served status and squad
+        // land and it has to say the true thing rather than the cached one.
+        // That second draw is right. What was wrong is that it threw the whole
+        // page away and built it again - a new <img>, a new billing, every
+        // entrance animation from the top - and a manager refreshing saw the
+        // lot flash. Suppressing the animations was not enough, because
+        // replacing the DOM is itself the flash: for a frame there is nothing
+        // there, and the browser re-decodes and re-lays-out what follows.
         //
-        // The same flag the image uses decides it, read BEFORE it is set.
+        // So a repaint of a page that is ALREADY showing this club's hero
+        // touches only the two blocks that can have changed, and only when
+        // their markup actually differs. The painting is never re-created: the
+        // same <img> element stays in the document from the first paint to the
+        // last, which is why nothing can blink. A different club, or a
+        // different painting, is a real arrival and gets the full build.
         var seen = !!window.__foHgShown;
         window.__foHgShown = true;
-        page.innerHTML =
-          "<div class='fo-hg2 fo-home2" + (seen ? " hg-seen" : "") + "' data-hgv='" + E(v) + "' style='--lac:" + (region.ac || "#EBC271") + "'>" +
-          "<img class='hg-bg'" + anim0 + " src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
-          "<div class='hg-grain'></div><div class='hg-scrim'></div><div class='hg-bloom'></div>" +
-          "<div class='hg-id'>" + idHtml + "</div>" +
-          "<div class='hg-bar'>" + barHtml + "</div></div>";
+        var live = page.querySelector(".fo-hg2.fo-home2");
+        if (live && live.getAttribute("data-hgv") === String(v) && live.querySelector(".hg-bg")) {
+          var idEl = live.querySelector(".hg-id"), barEl = live.querySelector(".hg-bar");
+          if (idEl && idEl.innerHTML !== idHtml) idEl.innerHTML = idHtml;
+          if (barEl && barEl.innerHTML !== barHtml) barEl.innerHTML = barHtml;
+          live.style.setProperty("--lac", region.ac || "#EBC271");
+          live.classList.add("hg-seen");
+        } else {
+          page.innerHTML =
+            "<div class='fo-hg2 fo-home2" + (seen ? " hg-seen" : "") + "' data-hgv='" + E(v) + "' style='--lac:" + (region.ac || "#EBC271") + "'>" +
+            "<img class='hg-bg'" + anim0 + " src='" + FO_ART + "home/" + v + ".webp' alt=''>" +
+            "<div class='hg-grain'></div><div class='hg-scrim'></div><div class='hg-bloom'></div>" +
+            "<div class='hg-id'>" + idHtml + "</div>" +
+            "<div class='hg-bar'>" + barHtml + "</div></div>";
+        }
       }
       try { document.body.classList.add("fo-home-on"); document.body.classList.remove("fo-boss-on"); document.body.classList.remove("fo-ov-on"); } catch (eBc) {}
       try { foHgFit(page.querySelector(".fo-hg2")); } catch (eF) {}

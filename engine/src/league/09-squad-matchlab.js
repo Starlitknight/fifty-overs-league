@@ -1260,7 +1260,8 @@
       var best = null, bestR = 0;
       for (var t in prog) {
         var cap = T[t] || 0; if (!cap) continue;
-        var r = Math.max(0, Math.min(0.99, (prog[t] | 0) / cap));
+        var r = window.foTalChance ? window.foTalChance(prog[t] | 0, cap)
+                                   : Math.max(0, Math.min(0.99, (prog[t] | 0) / cap));
         if (r > bestR) { bestR = r; best = t; }
       }
       return best ? { t: best, r: bestR } : null;
@@ -1269,9 +1270,8 @@
   function foS2LearnTip(L) {
     if (!L) return "";
     var nm = (typeof TALN !== "undefined" && TALN[L.t]) || L.t;
-    return "Learning " + nm + " \u00b7 " + Math.round(L.r * 100) + "% of the way. " +
-      "He is already doing it on about " + Math.round(L.r * 100) + " balls in a hundred that suit it; " +
-      "at a hundred it is his for good.";
+    return "Learning " + nm + " \u00b7 he already does it on " + Math.round(L.r * 100) +
+      " balls in a hundred that suit it. It moves a tenth at a time; at a hundred it is his for good.";
   }
   function foS2Trait(p, short) {
     try {

@@ -129,7 +129,31 @@ function foTalElig(p,t){
 // the thresholds and the eligibility table are read by the pages as well as by
 // the ball loop - one table, so a roster can never promise a talent the engine
 // would not give him
-try{window.FO_TAL_T=FO_TAL_T;window.foTalElig=foTalElig;window.foTalProgress=foTalProgress}catch(eTw){}
+try{window.FO_TAL_T=FO_TAL_T;window.foTalElig=foTalElig;window.foTalProgress=foTalProgress;
+  window.foTalChance=foTalChance}catch(eTw){}
+// THE CHANCE MOVES IN TENTHS, NOT BY THE BALL.
+//
+// It used to be the raw fraction n/T, which tied every delivery to a counter
+// that ticks all match. That is a very fine joint: reproduce a man's progress
+// one trigger out and the ball he would have fired on he now does not, and
+// from there the two innings are different cricket. A replay has to rebuild
+// that counter exactly, forever, for a broadcast to agree with the card it
+// came from - and p3 spent a long time telling me they did not.
+//
+// Ten steps is enough resolution for a manager to watch himself getting there
+// and coarse enough that the cricket does not hang on a single trigger. It
+// also reads better: a man is six tenths of the way, and he does it six balls
+// in ten that suit it, rather than 0.6237 of them.
+//
+// A man under the first tenth does nothing yet, which is honest - he has
+// barely started - and the last step is a real jump, because crossing the
+// threshold is meant to feel like arriving.
+const FO_TAL_STEPS=10;
+function foTalChance(n,T){
+  if(!T||n<=0)return 0;
+  if(n>=T)return 1;
+  return Math.floor(n/T*FO_TAL_STEPS)/FO_TAL_STEPS;
+}
 // how close a man is to a talent, 0..1. Public because three pages draw it.
 function foTalProgress(p,t){
   const n=((p&&p.talProg)||{})[t]|0,T=FO_TAL_T[t]||2000;
@@ -151,7 +175,7 @@ function foTalHas(p,ctx){
     if(n>=T)return true;
     // deterministic from the ball's own identity, so a part-learnt talent
     // never disturbs the shared stream - the same match replays the same way
-    return (foHashStr(ctx.key+'|'+(p.name||'')+'|'+t)%100000)/100000 < n/T;
+    return (foHashStr(ctx.key+'|'+(p.name||'')+'|'+t)%100000)/100000 < foTalChance(n,T);
   };
 }
 function foHashStr(s){let h=2166136261>>>0;s=String(s);
