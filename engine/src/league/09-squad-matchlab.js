@@ -697,7 +697,6 @@
       "html body #page button.fo-sqx-man.sel{outline:2px solid var(--gold);box-shadow:0 0 0 4px rgba(235,194,113,.16),0 14px 30px rgba(0,0,0,.55);transform:translateY(-4px)}",
       ".fo-sqx-man .pic{display:block;width:100%;aspect-ratio:1/1;object-fit:cover;object-position:50% 12%;border-radius:11px 11px 0 0;background:#0d1626}",
       ".fo-sqx-man .no{position:absolute;top:5px;left:5px;font-family:Oswald,sans-serif;font-weight:700;font-size:11px;line-height:1;color:#0d1526;background:rgba(235,194,113,.95);border-radius:5px;padding:2px 5px}",
-      ".fo-sqx-man .cap{position:absolute;top:4px;right:4px;width:19px;height:19px;border-radius:50%;background:var(--gold);color:#0d1526;font-family:Oswald,sans-serif;font-weight:700;font-size:11px;line-height:19px;text-align:center}",
       // hot and cold streaks read from the park itself: a small trend mark on
       // the shoulder, and an amber outline on anyone playing on empty legs
       ".fo-sqx-man .frm{position:absolute;top:25px;left:6px;font-size:10px;line-height:1;text-shadow:0 1px 4px rgba(0,0,0,.85)}",
@@ -1110,7 +1109,6 @@
       ".fo-s2-xirow .nm .sh{display:none}",
       ".fo-s2-xirow .ab{font:600 10.5px Inter,sans-serif;color:#8a8272;text-align:right}",
       ".fo-s2-xirow .bdg{text-align:center}",
-      ".fo-s2-xirow .bdg .crown{color:#D9A21B;font-size:13px}",
       ".fo-s2-xirow .bdg .wk{display:inline-block;font:800 8.5px Inter,sans-serif;background:#E4EEF6;color:#1f4e6b;border:1px solid #bcd3e4;border-radius:5px;padding:2px 4px}",
       ".fo-s2-xirow .mv{display:flex;flex-direction:column;gap:0}",
       ".fo-s2-xirow .mv button{border:none;background:none;color:#b0a794;font-size:8.5px;line-height:1;height:11px;min-height:0;cursor:pointer;padding:0 3px}",
@@ -1340,7 +1338,6 @@
         return "<button type='button' class='fo-sqx-man" + (p.name === sv.sel ? " sel" : "") + (swap ? " tgt" : "") + (en.tired ? " wkn" : "") + "' data-n='" + E(p.name) + "'>" +
           (n ? "<span class='no'>" + n + "</span>" : "") +
           (fIx >= 5 ? "<span class='frm hi' title='In form'>&#9650;</span>" : fIx <= 2 ? "<span class='frm lo' title='Out of form'>&#9660;</span>" : "") +
-          (p.name === capt ? "<span class='cap'>C</span>" : "") +
           "<img class='pic' src='" + FO_ART + foPkArt(p) + "' alt='' loading='lazy' decoding='async'>" + extra +
           "<span class='nm'>" + E(foSqShortName(p.name)) + foSqStar(p) + "</span>" +
           "<span class='rl " + cls + "'>" + E(sub) + "</span></button>";
@@ -1426,8 +1423,7 @@
           (selIx >= 0 ? "<div class='fo-sqx-dno'>" + ("0" + (selIx + 1)).slice(-2) + "</div>" : "<div class='fo-sqx-dno'>&mdash;</div>") +
           "<h2 class='fo-sqx-dnm'>" + E(sel.name) + "</h2>" +
           "<div class='fo-sqx-drole'>" + E(foPkRoleLbl(sel) || "Player") + " (" + (sel.hand === "L" ? "LHB" : "RHB") + ")</div>" +
-          (sel.name === capt ? "<div class='fo-sqx-dcap'><u>C</u>Captain</div>"
-            : sel.__y ? "<div class='fo-sqx-dcap'><u>Y</u>Youth</div>"
+          (sel.__y ? "<div class='fo-sqx-dcap'><u>Y</u>Youth</div>"
             : selIx < 0 ? "<div class='fo-sqx-dcap'><u>B</u>Bench</div>" : "") +
           "</div>" + facts +
           "</div>" +
@@ -1609,7 +1605,7 @@
           "<span class='no'>" + (i + 1) + "</span>" +
           "<span class='nm'><u class='full'>" + E(p.name) + "</u><u class='sh'>" + E(foSqShortName(p.name)) + "</u></span>" +
           "<span class='ab'>" + foS2Abbr(p) + "</span>" +
-          "<span class='bdg'>" + (n === capt ? "<span class='crown' title='Captain'>&#9812;&#xFE0E;</span>" : n === kpr ? "<span class='wk' title='Keeper'>WK</span>" : "") + "</span>" +
+          "<span class='bdg'>" + (n === kpr ? "<span class='wk' title='Keeper'>WK</span>" : "") + "</span>" +
           "<span class='mv'><button type='button' data-up='" + i + "' title='Up'>&#9650;</button><button type='button' data-dn='" + i + "' title='Down'>&#9660;</button></span>" +
           "<button type='button' class='xrm' data-xrm='" + i + "' title='Remove from the XI'>&#10005;</button>" +
           "</div>";
