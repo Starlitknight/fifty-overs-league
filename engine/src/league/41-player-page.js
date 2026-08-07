@@ -272,7 +272,7 @@
   // Talents sits second, not last: it is about the cricketer himself rather
   // than his record, and a sixth tab appended to this bar falls off the right
   // of a phone into a scroll nobody goes looking for.
-  var TABS = [["overview", "Overview"], ["talents", "Talents"], ["career", "Career"], ["country", "Country"], ["matches", "Matches"], ["dev", "Development"]];
+  var TABS = [["overview", "Overview"], ["story", "Story"], ["talents", "Talents"], ["career", "Career"], ["country", "Country"], ["matches", "Matches"], ["dev", "Development"]];
   var TAB = "overview";
   function qp(k) { var m = new RegExp("[?&]" + k + "=([^&]*)").exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : ""; }
 
@@ -418,9 +418,10 @@
       "<div><b>" + E(cap((typeof word === "function" ? word(p.capt || 30) : "steady"))) + "</b><i>Leadership</i></div>" +
       "<div><b class='fo-pp-fat " + fat0.tone + "'><s></s>" + E(cap(fat0.word)) + "</b><i>Fatigue</i></div>" +
       "</div>" +
-      "<div class='fo-pp-sc'>" + sc.map(function (x) {
-        return "<div class='fo-pp-scv'><i>" + E(x[0].toUpperCase()) + "</i><em>" + x[1] + "</em><u><b style='width:" + num(x[1]) + "%'></b></u></div>";
-      }).join("") + "</div>" +
+      // The batting/bowling/fielding bars that used to sit under this strip
+      // are gone: The player card on the Overview states the same three
+      // numbers a few inches below, in a shape you can actually read them
+      // against. Two printings of one fact is one too many.
       (talents ? "<div class='fo-pp-tals'>" + talents + "</div>" : "") +
       "</div>" +
       "<div class='fo-pp-ovr'><b>" + ovr + "</b><i>OVR</i></div>" +
@@ -443,17 +444,12 @@
         "<div class='fo-pp-col'>" +
         "<div class='fo-pp-slot' data-slot='record'></div>" +
         "<div class='fo-pp-slot' data-slot='career'></div>" +
-        "<div class='fo-pp-card'><h3>Club history</h3>" +
-        "<div class='fo-pp-hist'><span class='se'>Season " + (App.seasonNo || 1) + "</span>" +
-        "<span class='cl'>" + E(team.name || "") + "</span>" +
-        "<span class='st'>" + E(pv.how) + "</span></div>" +
-        "<p class='fo-pp-dim'>Signed " + E(pv.signed || "on founding day") + (team.ground ? " &middot; home at " + E(team.ground) : "") + ".</p></div>" +
         "</div>" +
+        // Club history said one club and one season - the club is in the
+        // masthead - and career identity was a row of chips repeating the
+        // provenance line under his name. Honours is the record here.
         "<div class='fo-pp-rail'>" +
         "<div class='fo-pp-card'><h3>Honours</h3>" + honoursHtml(p, team) + "</div>" +
-        "<div class='fo-pp-card'><h3>Career identity</h3><div class='fo-pp-chips'>" +
-        idChips.map(function (c) { return "<span><i>" + c[1] + "</i>" + E(c[0]) + "</span>"; }).join("") +
-        "<span><i>&#9734;</i>No. " + no + "/199</span></div></div>" +
         "</div>";
     } else if (TAB === "country") {
       var myCid = "";
@@ -514,25 +510,41 @@
       var all = {}, k9;
       for (k9 in prog) all[k9] = (all[k9] | 0) + (prog[k9] | 0);
       for (k9 in carr) all[k9] = (all[k9] | 0) + (carr[k9] | 0);
-      var learning = Object.keys(all).filter(function (t) {
-        return has.indexOf(t) < 0 && (T9[t] || 0) > 0;
+      // EVERY TALENT HE COULD EVER EARN, NOT ONLY THE ONES HE HAS STARTED.
+      //
+      // Listing only the talents already counting answered "what is he close
+      // to" but never "what is he FOR" - a keeper could not see that Lightning
+      // Hands was his to chase, and a man with an empty page was told "nothing
+      // yet" with no hint of what nothing was measured against. So the room
+      // lists the whole set he is eligible for, at zero or otherwise.
+      //
+      // Eligibility is not decided here. foTalElig is the engine's own table,
+      // read by the ball loop that awards these talents, so a page can never
+      // promise a man something the match would refuse him.
+      var elig = function (t) {
+        try { return window.foTalElig ? window.foTalElig(p, t) : true; } catch (eE9) { return true; }
+      };
+      var learning = Object.keys(T9).filter(function (t) {
+        return has.indexOf(t) < 0 && (T9[t] || 0) > 0 && elig(t);
       }).map(function (t) {
         var n9 = all[t] | 0, cap9 = T9[t] | 0;
         var ch = window.foTalChance ? window.foTalChance(n9, cap9) : Math.min(1, n9 / (cap9 || 1));
         return { t: t, n: n9, cap: cap9, r: Math.min(1, n9 / (cap9 || 1)), ch: ch };
-      }).sort(function (x, y) { return y.r - x.r; });
+      }).sort(function (x, y) {
+        if (y.r !== x.r) return y.r - x.r;               // closest first
+        return talNm(x.t) < talNm(y.t) ? -1 : 1;          // then alphabetical, so nothing jumps about
+      });
 
       var learnBody;
-      if (earned) {
-        // he has had his, and the counting stopped: saying otherwise would be
-        // drawing a bar that can never fill
-        learnBody = "<p class='fo-pp-dim'>He has earned his one. A cricketer comes by a talent once in a career - " +
-          "what is rare has to stay rare to be worth anything - so nothing he does now adds to another.</p>";
-      } else if (!learning.length) {
-        learnBody = "<p class='fo-pp-dim'>Nothing yet. He starts a talent the first time he is put in the situation it describes " +
-          "and does the job - opening the batting, bowling at the death, standing where the ball goes.</p>";
+      var earnedNote = earned
+        ? "<p class='fo-pp-dim'>He has earned his one. A cricketer comes by a talent once in a career - what is rare " +
+          "has to stay rare to be worth anything - so these stand where they stopped.</p>"
+        : "";
+      if (!learning.length) {
+        learnBody = earnedNote || "<p class='fo-pp-dim'>There is nothing here he is eligible for - his role puts every " +
+          "remaining talent out of reach.</p>";
       } else {
-        learnBody = learning.slice(0, 8).map(function (L) {
+        learnBody = earnedNote + learning.map(function (L) {
           // the BAR is how far along he is; the number is what that is worth
           // on the field this week, which moves a tenth at a time
           var pctN = Math.round(L.r * 100), chN = Math.round(L.ch * 100);
@@ -588,8 +600,24 @@
         "<div class='fo-pp-card dark'><h3>The training ground</h3>" +
         "<a class='fo-pp-more' href='#/training'>Set this week's work &rsaquo;</a></div>" +
         "</div>";
+    } else if (TAB === "story") {
+      // THE STORY HAS ITS OWN TAB. It is the one part of the page that is read
+      // rather than scanned, and it was sharing a column with a batting-order
+      // picker. Its own moments are fetched here rather than borrowed from the
+      // Overview's scope, so the tab stands on its own.
+      var ms1 = moments(p);
+      room =
+        "<div class='fo-pp-col fo-pp-wide'>" +
+        "<div class='fo-pp-card'><h3>The story so far</h3>" +
+        (ms1.length ? "<div class='fo-pp-story'>" + ms1.map(function (m) {
+          return "<div class='fo-pp-ev done'><i></i><span><u>" + E(m.when) + "</u>" + E(m.txt) + "</span></div>";
+        }).join("") + "</div>"
+          : "<div class='fo-pp-story'><div class='fo-pp-ev'><i></i><span><u>Next match</u>League debut</span></div></div>" +
+            "<p class='fo-pp-dim'>His first page is unwritten.</p>") +
+        "</div>" +
+        "</div>";
     } else {
-      var spot0 = xiSpot(p, team), ms = moments(p);
+      var ms = moments(p);
       var adv = "";
       if (mine) {
         var sk = skills(p);
@@ -611,28 +639,11 @@
         "</div>" +
         "<div class='fo-pp-card'><h3>Career record</h3><div class='fo-pp-mini' data-mini='1'>" + miniCareer(p) + "</div></div>" +
         "</div>" +
-        "<div class='fo-pp-rail'>" +
-        "<div class='fo-pp-card'><h3>" + (mine ? "Role in the XI" : "Role") + "</h3>" +
-        // a rival's batting order is his teamsheet, and teamsheets go public an
-        // hour before the match - not on his page the night before
-        (mine ? "<div class='fo-pp-pos'>" + Array.from({ length: 11 }, function (_, i) {
-          var on = spot0 && spot0.n === i + 1;
-          return "<span class='" + (on ? "on" : "") + "'>" + (i + 1) + "</span>";
-        }).join("") + "</div>" : "") +
-        "<div class='fo-pp-role'><img src='" + ART() + iconOf(p) + "' alt='' onerror=\"this.style.display='none'\">" +
-        "<div><b>" + E(roleLbl(p)) + "</b><i>" + (p.hand === "L" ? "Left-hand bat" : "Right-hand bat") + "</i>" +
-        "<i>" + E(p.btLabel && !/does not bowl/i.test(p.btLabel) ? p.btLabel : "Does not bowl") + "</i></div></div>" +
-        (mine ? "<a class='fo-pp-more' href='#/orders'>Set the teamsheet &rsaquo;</a>"
-          : "") +
-        "</div>" +
-        "<div class='fo-pp-card'><h3>The story so far</h3>" +
-        (ms.length ? "<div class='fo-pp-story'>" + ms.map(function (m) {
-          return "<div class='fo-pp-ev done'><i></i><span><u>" + E(m.when) + "</u>" + E(m.txt) + "</span></div>";
-        }).join("") + "</div>"
-          : "<div class='fo-pp-story'><div class='fo-pp-ev'><i></i><span><u>Next match</u>League debut</span></div></div>" +
-            "<p class='fo-pp-dim'>His first page is unwritten.</p>") +
-        "</div>" +
-        "</div>";
+        "";
+      // ROLE IN THE XI IS GONE. It printed the batting order twice - once as a
+      // row of eleven numbers, once as a label - for a decision made on the
+      // orders page and true only until the next teamsheet. His role is already
+      // the first line of this page, above his name.
     }
 
     // keep whatever the engine and the chronicle rendered: the attic holds it
@@ -1150,6 +1161,8 @@
     "html body #page .fo-pp-tal p{margin:2px 0 0;font:400 11px/1.4 Inter,sans-serif;color:rgba(20,28,40,.55)}",
     // ---- the rooms ----------------------------------------------------------
     "html body #page .fo-pp-tabs{display:flex;gap:2px;margin:14px 0 14px;border-bottom:1px solid rgba(20,28,40,.12);overflow-x:auto}",
+    // a tab with no rail beside it: the column takes the whole width
+    "html body #page .fo-pp-wide{grid-column:1 / -1}",
     "html body #page .fo-pp-tabs a{flex:0 0 auto;padding:9px 15px 10px;font:700 10px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.46);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px;cursor:pointer}",
     "html body #page .fo-pp-tabs a.on{color:#141C28;border-bottom-color:#177A57}",
     // THE TALENTS ROOM. A bar per talent he is on his way to, because the one
