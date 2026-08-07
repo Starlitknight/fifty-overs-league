@@ -3188,6 +3188,7 @@ function foGenExp(age,q,rnd){                  // experience correlates with age
 const FO_WAGE_R50=25704;            // the world's median rating, measured
 const FO_WAGE_MID=9290;             // what the median man earns a round
 const FO_WAGE_K=2.0;                // how fast the price of quality climbs
+const FO_DRAFT_SCALE=6;             // draft money, in market money
 function foWageOf(rating,talents,scar){
   const r=Math.max(1,+rating||0);
   const base=FO_WAGE_MID*Math.pow(r/FO_WAGE_R50,FO_WAGE_K);
@@ -3729,7 +3730,13 @@ function genDraftPool(seedStr){
     else if(pct>=0.42){band='mid';t=(pct-0.42)/0.30}
     else{band='filler';t=pct/0.42}
     p.band=band;
-    const f=band==='star'?105000+t*55000:band==='mid'?38000+t*24000:14000+t*10000;
+    // THE DRAFT IS PRICED IN THE SAME MONEY AS THE MARKET. Its bands were
+    // calibrated when a fee was rating/9 and a whole squad cost a million; a
+    // fee is a season of wages now, so a man who costs $62,000 here and
+    // $400,000 the moment the window opens is two games with one currency.
+    // The bands and the budget are scaled by the same six, so the draft plays
+    // exactly as it did and its prices mean something afterwards.
+    const f=(band==='star'?105000+t*55000:band==='mid'?38000+t*24000:14000+t*10000)*FO_DRAFT_SCALE;
     // Scarcity premium: genuine pace is the rarest commodity in the game, wrist spin the rarest spin.
     // You pay for what you can't find elsewhere - over and above raw skill.
     const scar=p.bowlTypeFull==='seamFast'?1.35:(p.bowlTypeFull==='wristSpin'?1.15:1);
@@ -3739,7 +3746,7 @@ function genDraftPool(seedStr){
   return pool;
 }
 function founderStart(){
-  App.founder={name:'',budget:1000000,pool:null,picked:[]};
+  App.founder={name:'',budget:1000000*FO_DRAFT_SCALE,pool:null,picked:[]};
   $('#page').innerHTML=`<div class="crumb">Found your club</div>
     <div class="panel"><h4>Create your franchise</h4><div class="pad">
       <table class="kv" style="max-width:430px">
@@ -4231,7 +4238,7 @@ function runTour(){
     updateTopbarStatus();
   };
   founderStart=function(){
-    App.founder={name:'',budget:1000000,pool:null,picked:[],identity:store('fo_identity')||'Balanced XI'};
+    App.founder={name:'',budget:1000000*FO_DRAFT_SCALE,pool:null,picked:[],identity:store('fo_identity')||'Balanced XI'};
     $('#page').innerHTML=`<div class="page-head"><div><div class="eyebrow">Founding paperwork</div><h1>Create your franchise</h1><p>Name the club, choose the manager identity, then walk into the draft room with $1,000,000 and several problems to solve.</p></div></div>
     <div class="page-grid-2"><div class="card"><div class="card-title">Club identity</div><div class="card-body"><table class="kv"><tr><td>Club name</td><td><input id="fname" type="text" placeholder="e.g. Meow Monks" style="width:260px" maxlength="28"></td></tr><tr><td>Your manager name</td><td><input id="mgrname" type="text" placeholder="e.g. Santosh" style="width:260px" maxlength="24" value="${esc(store('fo_mgr')||'')}"></td></tr><tr><td>Soft identity</td><td><select id="identity">${['Pace Battery','Spin Trap','Batting Machine','Balanced XI','Youth Project','Moneyball Squad'].map(x=>`<option ${App.founder.identity===x?'selected':''}>${x}</option>`).join('')}</select></td></tr></table><div class="action-row"><button class="primary big" onclick="const v=document.getElementById('fname').value.trim();const m=document.getElementById('mgrname').value.trim();if(v.length<2){alert('Give the club a name.');return}if(m.length<1){alert('Enter your manager name.');return}store('fo_mgr',m);App.founder.name=v;App.founder.mgr=m;App.founder.identity=document.getElementById('identity').value;store('fo_identity',App.founder.identity);App.founder.pool=genDraftPool(v);pgFounder()">Open the draft ▸</button></div></div></div>
     <div class="card"><div class="card-title">How the draft works</div><div class="card-body checklist"><div>✓ Spend up to <b>$1,000,000</b> on 11-16 players.</div><div>✓ You need a keeper and at least five bowling options.</div><div>✓ Expensive stars create match-winning peaks and depth problems.</div><div>✓ The unused budget becomes operating money only partly: $150,000 + 40% of the unused draft cash.</div><div>✓ Export a club file only if you are playing a friends league.</div></div></div></div>`;

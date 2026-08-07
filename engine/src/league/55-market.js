@@ -102,9 +102,19 @@
     a = +a || 27;
     return a <= 21 ? 1.18 : a <= 25 ? 1.12 : a <= 28 ? 1.0 : a <= 31 ? 0.82 : a <= 33 ? 0.6 : 0.4;
   }
+  // A FEE IS PRICED IN WAGES NOW, so this mirrors that and not the old
+  // rating/9. server/market.mjs (valueOf) and the migration below it are the
+  // authorities; a quicksell is half what he is worth.
+  var FEE_ROUNDS = 18, FEE_MULT = 2.4, W_R50 = 25704, W_MID = 9290, W_K = 2.0;
+  function wageOfMan(p) {
+    if (p && +p.wage > 0) return +p.wage;
+    var r = Math.max(1, (p && +p.rating) || W_R50);
+    var t = (p && p.talents && p.talents.length) | 0;
+    return Math.max(400, Math.round(W_MID * Math.pow(r / W_R50, W_K) * (1 + 0.06 * t) / 10) * 10);
+  }
   function qsPrice(p) {
-    var base = Math.max(5000, +(p && p.fee) || 40000);
-    return Math.max(3000, Math.round(base * ageCurve(p && p.age) * 0.5 / 500) * 500);
+    var worth = wageOfMan(p) * FEE_ROUNDS * FEE_MULT * ageCurve(p && p.age);
+    return Math.max(3000, Math.round(worth * 0.5 / 500) * 500);
   }
 
   // ---- the data on the desk -------------------------------------------------

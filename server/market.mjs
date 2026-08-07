@@ -58,12 +58,54 @@ export function ageCurve(age) {
   if (a <= 33) return 0.6;
   return 0.4;
 }
+// ---------------------------------------------------------------------------
+// A FEE IS A CONTRACT BOUGHT OUT, SO IT IS PRICED IN WAGES.
+//
+// It used to be rating/9 - a straight line, and one that had nothing to do
+// with what the man cost to employ. With wages now on a curve that left the
+// game contradicting itself: a star cost x5.1 the median to KEEP and only
+// x2.4 to BUY, so the cheapest way to a great side was to buy one, which is
+// the opposite of every transfer market that has ever existed.
+//
+// A fee is what a selling club wants for the seasons of him it is giving up,
+// so it is his wage times a season times a multiple, bent by the years he has
+// left. That makes the two curves one curve: anything that moves a wage moves
+// a fee by construction, and they cannot drift apart again.
+//
+// At the calibrated midpoint a median cricketer is about $400k and the best
+// man alive about $2m - which is most of a mid club's bank AND unaffordable
+// in wages afterwards. Buying the world's best is meant to be a decision that
+// costs you the rest of your side, not a line item.
+export const FEE_ROUNDS = 18;              // a season of matchdays
+export const FEE_MULT = 2.4;               // seasons of him a buyer pays for
+// the engine's own curve, mirrored: 00-core.js foWageOf is the authority and
+// this must not drift from it
+const W_R50 = 25704, W_MID = 9290, W_K = 2.0;
+export function wageFromRating(rating, talents) {
+  const r = Math.max(1, +rating || W_R50);
+  const base = W_MID * Math.pow(r / W_R50, W_K);
+  return Math.max(400, Math.round(base * (1 + 0.06 * Math.max(0, talents | 0)) / 10) * 10);
+}
 export function valueOf(p) {
   if (!p) return 0;
-  const base = +p.fee || Math.round((+p.rating || 30000) / 9);
+  return Math.max(5000, Math.round(rawWorth(p) / 500) * 500);
+}
+// WHAT HE IS WORTH BEFORE ANYBODY ROUNDS IT. Kept separate because a quicksell
+// is HALF of the worth, and halving an already-rounded figure rounds twice: a
+// man worth 259,600 is valued at 260,000 and sold in haste for 130,000, while
+// the page - which halves the raw figure and rounds once - promises 129,500.
+// Five hundred pounds, and the manager sees both numbers. One raw sum, rounded
+// once at whichever end asks for it.
+function rawWorth(p) {
+  const wage = +p.wage > 0 ? +p.wage
+    : wageFromRating(+p.rating || W_R50, (p.talents || []).length);
   const form = 1 + (((p.formIx == null ? 3 : p.formIx) - 3) * 0.05);
-  const v = base * ageCurve(p.age) * form;
-  return Math.max(5000, Math.round(v / 500) * 500);
+  return wage * FEE_ROUNDS * FEE_MULT * ageCurve(p.age) * form;
+}
+// a sale to the bank, today, at half what a club would have paid for him
+export function quickSellOf(p) {
+  if (!p) return 3000;
+  return Math.max(3000, Math.round(rawWorth(p) * 0.5 / 500) * 500);
 }
 
 // ---------------------------------------------------------------------------
