@@ -334,7 +334,9 @@
     var s = S(p), pw = s.power || 0, ro = s.rotation || 0, te = s.temperament || 0;
     if (!FO_BATROLES[p.role] && p.role !== "allRounder" && p.role !== "wicketkeeper") return "Lower order";
     if (pw >= ro + 8) return "Aggressor";
-    if (te >= 68 && te >= pw) return "Anchor";
+    // "Grafter", not "Anchor": Anchor is a TALENT, and a derived read must
+    // never wear a talent's name or the two become the same thing on the page
+    if (te >= 68 && te >= pw) return "Grafter";
     if (ro >= pw + 8) return "Accumulator";
     return "Balanced";
   }
@@ -1061,8 +1063,13 @@
       ".fo-s2-id span{display:block;font:500 11px Inter,sans-serif;color:#8a8272;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-s2-hand,.fo-s2-age{font:500 12px Inter,sans-serif;color:#4c4437;white-space:nowrap}",
       ".fo-s2-age i{font-style:normal;color:#8a8272}",
-      ".fo-s2-trait{justify-self:start;font:700 9px Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;background:#F8ECD4;color:#8a6a1f;border:1px solid #e8d5a8;border-radius:6px;padding:4px 8px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}",
+      // a talent is one man in nine, so the chip is allowed to be seen from
+      // across the page: gold on navy, not a pale cream badge every row wears
+      ".fo-s2-trait{justify-self:start;font:700 9px Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;background:#14243A;color:#E8B96A;border:1px solid #14243A;border-radius:6px;padding:4px 8px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}",
       ".fo-s2-trait i{font-style:normal}.fo-s2-trait .sm{display:none}",
+      // and the men without one hold the column with a mark that is plainly
+      // not a badge
+      ".fo-s2-trait.none{background:none;border:0;color:#cfc7b5;padding:4px 0;letter-spacing:0}",
       ".fo-s2-stars{white-space:nowrap;font-size:13px;letter-spacing:1px}",
       ".fo-s2-stars .f{color:#E8B96A}.fo-s2-stars .e{color:#e3dccb}",
       ".fo-s2-stars .h{background:linear-gradient(90deg,#E8B96A 50%,#e3dccb 50%);-webkit-background-clip:text;background-clip:text;color:transparent}",
@@ -1189,8 +1196,20 @@
     }
     return "<span class='fo-s2-stars'>" + out + "</span>";
   }
-  // the trait chip: his first coached talent, else the strongest thing the
-  // engine knows about him - a label derived from his real skills, not invented
+  // THE TALENT CHIP MEANS A TALENT, AND NOTHING ELSE.
+  //
+  // This column used to fall back to a "read" when a man had no talent - a
+  // label derived from his best skill, in the same gold chip, in the same
+  // words. "vs SPIN", "MISER", "ANCHOR" and "SAFE" are all real talents AND
+  // were all reads, so a squad in which one man in fifteen was gifted printed
+  // fifteen identical-looking chips. The generator was right - the world runs
+  // at 11.6% and the newcomer's club was dealt exactly one - and the roster
+  // was quietly saying the opposite. A rare thing that is drawn on every row
+  // is not rare, whatever the data says.
+  //
+  // So the chip is a talent or it is nothing. A man without one gets a faint
+  // dash, which holds the grid column and reads as the absence it is.
+  //
   // A CHIP THAT SAYS "PARTNE..." SAYS NOTHING. The roster row prints a man's
   // talent in a fixed grid column, and on a phone "SIX MACHINE" and "NEW BALL
   // SPECIALIST" ran straight into an ellipsis - the one word that tells you
@@ -1210,13 +1229,6 @@
     goldenArm: "GOLDEN", mysteryBall: "MYSTERY", lightningHands: "GLOVES",
     safeHands: "SAFE", rocketArm: "ROCKET"
   };
-  // the same treatment for the read a man gets when he has NO talent: those
-  // labels are derived from his best skill and were just as long
-  var FO_READ_SHORT = {
-    "SAFE HANDS": "SAFE", "WICKET TAKER": "WICKETS", "METRONOME": "TIGHT",
-    "SWING KING": "SWING", "WORKHORSE": "STAMINA", "PACE HUNTER": "vs PACE",
-    "SPIN KILLER": "vs SPIN", "POWER HITTER": "POWER", "STRIKE ROTATOR": "ROTATOR"
-  };
   // the full name and the effect, for the chip's title
   function foS2TraitTip(p) {
     try {
@@ -1230,22 +1242,11 @@
   }
   function foS2Trait(p, short) {
     try {
-      var tals = p.talents || [];
-      if (tals.length) {
-        if (short && FO_TAL_SHORT[tals[0]]) return FO_TAL_SHORT[tals[0]];
-        var nm = (typeof TALN !== "undefined" && TALN[tals[0]]) || String(tals[0]).replace(/([A-Z])/g, " $1");
-        return nm.toUpperCase();
-      }
-      var sk = (p.skills || p), cls = foSqClass(p);
-      var pick = function (pairs) {
-        var best = pairs[0];
-        pairs.forEach(function (x) { if ((sk[x[0]] || 0) > (sk[best[0]] || 0)) best = x; });
-        return best[1];
-      };
-      var read = cls === "wk" ? "SAFE HANDS"
-        : cls === "bowl" ? pick([["wicket", "WICKET TAKER"], ["economy", "MISER"], ["discipline", "METRONOME"], ["moveTurn", "SWING KING"], ["stamina", "WORKHORSE"]])
-        : pick([["vsPace", "PACE HUNTER"], ["vsSpin", "SPIN KILLER"], ["power", "POWER HITTER"], ["rotation", "STRIKE ROTATOR"], ["temperament", "ANCHOR"]]);
-      return (short && FO_READ_SHORT[read]) ? FO_READ_SHORT[read] : read;
+      var t = (p.talents || [])[0];
+      if (!t) return "";
+      if (short && FO_TAL_SHORT[t]) return FO_TAL_SHORT[t];
+      var nm = (typeof TALN !== "undefined" && TALN[t]) || String(t).replace(/([A-Z])/g, " $1");
+      return nm.toUpperCase();
     } catch (e) { return ""; }
   }
   // THE STARS ARE HIS CRAFT'S STARS. The same ten-star read the scorecard,
@@ -1591,8 +1592,10 @@
           "<span class='fo-s2-id'><b>" + E(p.name) + foSqStar(p) + "</b><span>" + roleNm + " &middot; " + E(det) + (p.__y ? " &middot; Youth" : "") + "</span></span>" +
           "<span class='fo-s2-hand'>" + (p.hand === "L" ? "Left Hand" : "Right Hand") + "</span>" +
           "<span class='fo-s2-age'><i>Age</i> " + (p.age | 0) + "</span>" +
-          "<span class='fo-s2-trait' title='" + E(foS2TraitTip(p)) + "'>" +
-          "<i class='lg'>" + E(foS2Trait(p)) + "</i><i class='sm'>" + E(foS2Trait(p, 1)) + "</i></span>" +
+          ((p.talents || []).length
+            ? "<span class='fo-s2-trait' title='" + E(foS2TraitTip(p)) + "'>" +
+              "<i class='lg'>" + E(foS2Trait(p)) + "</i><i class='sm'>" + E(foS2Trait(p, 1)) + "</i></span>"
+            : "<span class='fo-s2-trait none'>&ndash;</span>") +
           foS2RoleStars(p, rCls, ovr) +
           "<b class='fo-s2-ovr' style='color:" + foSqQCol(ovr) + "'>" + ovr + "</b>" +
           (p.__y ? "<span></span>" : "<button type='button' class='fo-s2-xibtn" + (inXi ? " out" : "") + "' data-xit='" + E(p.name) + "'>" + (inXi ? "&#10005; XI" : "+ XI") + "</button>") +
