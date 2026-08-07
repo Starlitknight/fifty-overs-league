@@ -1062,6 +1062,7 @@
       ".fo-s2-hand,.fo-s2-age{font:500 12px Inter,sans-serif;color:#4c4437;white-space:nowrap}",
       ".fo-s2-age i{font-style:normal;color:#8a8272}",
       ".fo-s2-trait{justify-self:start;font:700 9px Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;background:#F8ECD4;color:#8a6a1f;border:1px solid #e8d5a8;border-radius:6px;padding:4px 8px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-s2-trait i{font-style:normal}.fo-s2-trait .sm{display:none}",
       ".fo-s2-stars{white-space:nowrap;font-size:13px;letter-spacing:1px}",
       ".fo-s2-stars .f{color:#E8B96A}.fo-s2-stars .e{color:#e3dccb}",
       ".fo-s2-stars .h{background:linear-gradient(90deg,#E8B96A 50%,#e3dccb 50%);-webkit-background-clip:text;background-clip:text;color:transparent}",
@@ -1162,7 +1163,9 @@
       ".fo-s2-flag{width:13px;height:9px;left:-4px;bottom:-2px}",
       ".fo-s2-id b{font-size:11.5px}.fo-s2-id span{font-size:9px}",
       ".fo-s2-age{font-size:8.5px;padding-left:3px}.fo-s2-age i{font-size:8.5px}",
-      ".fo-s2-trait{font-size:7px;letter-spacing:.06em;padding:3px 5px}",
+      // the short name below fits the column, so the chip never ellipses
+      ".fo-s2-trait{font-size:7.5px;letter-spacing:.04em;padding:3px 4px}",
+      ".fo-s2-trait .lg{display:none}.fo-s2-trait .sm{display:inline}",
       ".fo-s2-st10 .st{font-size:10px;letter-spacing:.5px}",
       ".fo-s2-ovr{font-size:15px}",
       ".fo-s2-car{font-size:9px}",
@@ -1188,10 +1191,48 @@
   }
   // the trait chip: his first coached talent, else the strongest thing the
   // engine knows about him - a label derived from his real skills, not invented
-  function foS2Trait(p) {
+  // A CHIP THAT SAYS "PARTNE..." SAYS NOTHING. The roster row prints a man's
+  // talent in a fixed grid column, and on a phone "SIX MACHINE" and "NEW BALL
+  // SPECIALIST" ran straight into an ellipsis - the one word that tells you
+  // what the player IS, cut off exactly where the meaning lives. Widening the
+  // column is not available: the row already carries a face, a name, a role, an
+  // age, ten stars and a rating inside 390 pixels.
+  //
+  // So the chip gets a SHORT NAME that always fits, and the full name and what
+  // the talent actually does ride along in the tooltip. Every short form is a
+  // word a cricketer would use - "vs SPIN", "NEW BALL", "DEATH" - so nothing is
+  // learned from the long name that the short one does not already say.
+  var FO_TAL_SHORT = {
+    fastStarter: "STARTER", anchor: "ANCHOR", finisher: "FINISHER",
+    sixMachine: "SIXES", spinKiller: "vs SPIN", paceHunter: "vs PACE",
+    busyRunner: "RUNNER", newBallSpecialist: "NEW BALL", deathSpecialist: "DEATH",
+    partnershipBreaker: "BREAKER", bouncer: "BOUNCER", miser: "MISER",
+    goldenArm: "GOLDEN", mysteryBall: "MYSTERY", lightningHands: "GLOVES",
+    safeHands: "SAFE", rocketArm: "ROCKET"
+  };
+  // the same treatment for the read a man gets when he has NO talent: those
+  // labels are derived from his best skill and were just as long
+  var FO_READ_SHORT = {
+    "SAFE HANDS": "SAFE", "WICKET TAKER": "WICKETS", "METRONOME": "TIGHT",
+    "SWING KING": "SWING", "WORKHORSE": "STAMINA", "PACE HUNTER": "vs PACE",
+    "SPIN KILLER": "vs SPIN", "POWER HITTER": "POWER", "STRIKE ROTATOR": "ROTATOR"
+  };
+  // the full name and the effect, for the chip's title
+  function foS2TraitTip(p) {
+    try {
+      var t = (p.talents || [])[0];
+      if (!t) return "";
+      var nm = (typeof TALN !== "undefined" && TALN[t]) || t;
+      var tip = "";
+      try { tip = (typeof TALTIPS !== "undefined" && TALTIPS[t]) || ""; } catch (eT) {}
+      return tip ? nm + " - " + tip : nm;
+    } catch (e) { return ""; }
+  }
+  function foS2Trait(p, short) {
     try {
       var tals = p.talents || [];
       if (tals.length) {
+        if (short && FO_TAL_SHORT[tals[0]]) return FO_TAL_SHORT[tals[0]];
         var nm = (typeof TALN !== "undefined" && TALN[tals[0]]) || String(tals[0]).replace(/([A-Z])/g, " $1");
         return nm.toUpperCase();
       }
@@ -1201,9 +1242,10 @@
         pairs.forEach(function (x) { if ((sk[x[0]] || 0) > (sk[best[0]] || 0)) best = x; });
         return best[1];
       };
-      if (cls === "wk") return "SAFE HANDS";
-      if (cls === "bowl") return pick([["wicket", "WICKET TAKER"], ["economy", "MISER"], ["discipline", "METRONOME"], ["moveTurn", "SWING KING"], ["stamina", "WORKHORSE"]]);
-      return pick([["vsPace", "PACE HUNTER"], ["vsSpin", "SPIN KILLER"], ["power", "POWER HITTER"], ["rotation", "STRIKE ROTATOR"], ["temperament", "ANCHOR"]]);
+      var read = cls === "wk" ? "SAFE HANDS"
+        : cls === "bowl" ? pick([["wicket", "WICKET TAKER"], ["economy", "MISER"], ["discipline", "METRONOME"], ["moveTurn", "SWING KING"], ["stamina", "WORKHORSE"]])
+        : pick([["vsPace", "PACE HUNTER"], ["vsSpin", "SPIN KILLER"], ["power", "POWER HITTER"], ["rotation", "STRIKE ROTATOR"], ["temperament", "ANCHOR"]]);
+      return (short && FO_READ_SHORT[read]) ? FO_READ_SHORT[read] : read;
     } catch (e) { return ""; }
   }
   // THE STARS ARE HIS CRAFT'S STARS. The same ten-star read the scorecard,
@@ -1549,7 +1591,8 @@
           "<span class='fo-s2-id'><b>" + E(p.name) + foSqStar(p) + "</b><span>" + roleNm + " &middot; " + E(det) + (p.__y ? " &middot; Youth" : "") + "</span></span>" +
           "<span class='fo-s2-hand'>" + (p.hand === "L" ? "Left Hand" : "Right Hand") + "</span>" +
           "<span class='fo-s2-age'><i>Age</i> " + (p.age | 0) + "</span>" +
-          "<span class='fo-s2-trait'>" + E(foS2Trait(p)) + "</span>" +
+          "<span class='fo-s2-trait' title='" + E(foS2TraitTip(p)) + "'>" +
+          "<i class='lg'>" + E(foS2Trait(p)) + "</i><i class='sm'>" + E(foS2Trait(p, 1)) + "</i></span>" +
           foS2RoleStars(p, rCls, ovr) +
           "<b class='fo-s2-ovr' style='color:" + foSqQCol(ovr) + "'>" + ovr + "</b>" +
           (p.__y ? "<span></span>" : "<button type='button' class='fo-s2-xibtn" + (inXi ? " out" : "") + "' data-xit='" + E(p.name) + "'>" + (inXi ? "&#10005; XI" : "+ XI") + "</button>") +
