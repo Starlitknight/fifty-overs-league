@@ -37,7 +37,17 @@ jobs:
     # exactly like a run that worked - so the world looks reseeded and is not.
     # The job always starts and says what it is doing, or why it is not.
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    # AN HOUR, BECAUSE THE PUBLISH STEP IS A FULL TICK ON A WORLD WITH NO
+    # MEMORY. The redeal itself is quick - half a minute to deal every squad
+    # and commit. What follows is `node tick.mjs`, and the reseed has just
+    # cleared `ticks`, which is the very table redealYouth guards itself with:
+    # so the tick stocks the academies of all sixteen nations from scratch,
+    # every club, through the engine. Twenty minutes was not enough for that,
+    # and a killed publish leaves a correctly redealt world with half its
+    # academies empty until the next hourly tick fills the rest. Same lesson
+    # the umpire's own timeout taught: size the ceiling to the work the run
+    # actually has to do, not to the work it usually does.
+    timeout-minutes: 60
     env:
       WORLD_SCHEMA: world
     steps:
