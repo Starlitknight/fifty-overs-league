@@ -636,11 +636,12 @@
       // The man is stamped __card when that happens, so the view says what it
       // actually knows rather than inventing a shape he does not have.
       if (mine && p.__card) {
+        // A PARAGRAPH WHERE A WORD WOULD DO. The long version explained the two
+        // resolutions the world describes a cricketer at, which is a thing the
+        // reader neither asked nor needs: the facets are on their way, and the
+        // only honest thing to say is that they are not here yet.
         adv = "<details class='fo-pp-adv'><summary>Advanced engine view</summary>" +
-          "<p class='fo-pp-dim'>Only this man&rsquo;s published card has reached this device &mdash; his batting, " +
-          "his bowling and his fielding, which are the three figures above. The fifteen engine facets behind them " +
-          "are not in the card, so they are not shown rather than guessed at. They arrive with the club&rsquo;s own " +
-          "squad; reload once you are signed in and they will be here.</p></details>";
+          "<p class='fo-pp-dim'>Loading&hellip;</p></details>";
       } else if (mine) {
         var sk = skills(p);
         adv = "<details class='fo-pp-adv'><summary>Advanced engine view</summary>" +
