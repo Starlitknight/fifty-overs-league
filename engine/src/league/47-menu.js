@@ -56,18 +56,21 @@
   // A door is named, not described: "The nets" is the whole of what the
   // reader needs, and a line under it explaining that the nets are where men
   // train was a caption on a signpost.
+  // SIX ROOMS CLOSED. News is the bell and nothing else - it had a page saying
+  // what the bell already says. Matchday, the honours board, World cricket, the
+  // atlas and the club dossiers are gone outright. Anything that used to link
+  // into them links somewhere real now, or is plain text; nothing points at a
+  // door that is not there.
   var MAP = [
     { k: "Your club", rooms: [
       ["home", "house", "Home ground"],
-      ["news", "bell", "News"],
       ["squad", "people", "The squad"],
       ["training", "net", "The nets"],
       ["academy", "star", "Youth Academy"],
       ["market", "coin", "The transfer market"],
-      ["finance", "coin", "The books"],
-      ["fixtures", "cal", "The fixture list"],
-      ["matchday", "pitch", "Matchday"],
-      ["milestones", "medal", "The honours board"]
+      ["finance", "coin", "Finances"],
+      ["ground", "house", "The ground"],
+      ["fixtures", "cal", "The fixture list"]
     ] },
     { k: "Tournaments", rooms: [
       ["colts", "star", "The Colts Cup"],
@@ -75,13 +78,10 @@
       ["champions", "crown", "The Champions Cup"]
     ] },
     { k: "The world", rooms: [
-      ["planet", "globe", "World cricket"],
       ["league", "table", "My league"],
       ["nations", "plane", "The international game"],
       ["rankings", "chart", "The world rankings"],
-      ["world", "map", "The world map"],
-      ["atlas", "book", "The atlas"],
-      ["team", "shield", "Club dossiers"]
+      ["world", "map", "The world map"]
     ] },
     { k: "The record", rooms: [
       ["almanack", "globe", "The world almanack"],
@@ -91,10 +91,49 @@
   ];
 
   function curRoom() { return ((location.hash || "#/home").split("?")[0] || "").replace("#/", "") || "home"; }
-  // rooms that are really the same door, so the lamp lights in one place
+
+  /* THE CLOSED ROOMS, AND WHY THIS IS ONE RULE RATHER THAN NINETY-NINE EDITS.
+   *
+   * Six rooms were shut. Ninety-nine links across twenty-nine modules pointed
+   * into them - most of them club names in scorecards, tables and reports,
+   * built in a dozen different places and reached down a dozen different
+   * paths. Rewriting every one of those call sites would be ninety-nine
+   * chances to miss one, and a missed one is a reader landing on a blank page.
+   *
+   * A closed door is a property of the BUILDING, not of each sign pointing at
+   * it, so it is stated once here - in the module that owns the room index -
+   * and every route into a shut room is turned at the threshold. A link that
+   * was not updated still goes somewhere real; a link written next year does
+   * too. Query strings survive the turn, so a club name still arrives at the
+   * league table knowing which club it meant.
+   */
+  var CLOSED = {
+    news: "#/home",            // the bell says everything this page said
+    matchday: "#/fixtures",    // the fixture list carries the build-up now
+    milestones: "#/home",
+    planet: "#/world",         // world cricket folds into the world map
+    atlas: "#/world",
+    team: "#/league"           // a club is read off the table it plays in
+  };
+  function turnAtClosedDoor() {
+    try {
+      var h = location.hash || "";
+      var path = h.split("?")[0].replace("#/", "");
+      var to = CLOSED[path];
+      if (!to) return;
+      var qs = h.indexOf("?") >= 0 ? h.slice(h.indexOf("?")) : "";
+      location.replace(location.pathname + location.search + to + qs);
+      if (typeof window.route === "function") window.route();
+    } catch (e) {}
+  }
+  window.addEventListener("hashchange", turnAtClosedDoor);
+  turnAtClosedDoor();
+  // rooms that are really the same door, so the lamp lights in one place.
+  // city/side/boss used to alias to the atlas; with the atlas closed they hang
+  // off the world map, which is the room they are actually reached from.
   var ALIAS = { club: "home", nation: "league", natteams: "nations", circuit: "world", tour: "world",
     cup: "champions", wcmatch: "champions",
-    player: "squad", matchlab: "squad", star: "squad", city: "atlas", side: "atlas", boss: "atlas",
+    player: "squad", matchlab: "squad", star: "squad", city: "world", side: "world", boss: "world",
     report: "lore", journal: "lore", scorecard: "lore" };
 
   // THE MASTHEAD OWNS THE ONLY MENU. There were two ways into the same

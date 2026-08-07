@@ -170,7 +170,7 @@
        ["Ten reliable habits", "tips", "tip habit advice strategy"]].forEach(function (tp) { ix.push({ k: "guide", n: tp[0], sec: tp[1], kw: tp[2] }); });
       [["Squad", "#/squad"], ["Matches", "#/matches"], ["Stats & records", "#/stats"], ["Training centre", "#/training"],
        ["Transfer market", "#/transfers"], ["Office", "#/office"], ["Club museum", "#/museum"], ["Almanac", "#/almanac"],
-       ["Matchday centre", "#/matchday"], ["Match Lab", "#/nets"], ["Manual", "#/guide"]].forEach(function (pg) { ix.push({ k: "page", n: pg[0], go: pg[1] }); });
+       ["Match Lab", "#/nets"], ["Manual", "#/guide"]].forEach(function (pg) { ix.push({ k: "page", n: pg[0], go: pg[1] }); });
     } catch (e) {}
     var go = function (r) {
       drop.style.display = "none"; inp.value = "";
@@ -791,7 +791,7 @@
         var nrRows = joinRows.concat(evsN.slice(0, 4).map(function (e3) {
           return "<div class='fo-nr-row'><span>" + nrPhrase(e3) + " <u>" + E(e3.club) + "</u></span><i>" + nrDate(e3.s, e3.r) + "</i></div>";
         })).slice(0, 4).join("");
-        newsCard = "<div class='fo-card fo-o-news'><div class='fo-card-h2row'><div class='fo-card-h2'>Club newsroom</div><a href='#/matchday' class='fo-morelink'>View all &rsaquo;</a></div><div class='fo-card-b'>" +
+        newsCard = "<div class='fo-card fo-o-news'><div class='fo-card-h2row'><div class='fo-card-h2'>Club newsroom</div></div><div class='fo-card-b'>" +
           (feat || nrRows ? feat + nrRows : "<div class='small'>The story starts with the first matchday.</div>") +
           "</div></div>";
       } catch (e) {}
@@ -801,7 +801,7 @@
       var search = "<div class='fo-search'><input id='fo-search-in' type='search' placeholder='Search players, clubs, or how anything works\u2026' autocomplete='off' spellcheck='false'><div class='fo-search-drop' id='fo-search-drop'></div></div>";
       var qk = function (href, ic, lbl) { return "<a href='" + href + "'><i>" + FO_I(ic, 18) + "</i><span>" + lbl + "</span></a>"; };
       var quick = "<div class='fo-ch-quick fo-ch-quick2'>" +
-        qk("#/matches", "calendar", "Fixtures &amp; results") + qk("#/matchday", "target", "Matchday centre") +
+        qk("#/matches", "calendar", "Fixtures &amp; results") +
         qk("#/nets", "bat", "Match Lab") + qk("#/guide", "info", "Manual") + "</div>";
       // upcoming fixtures card: league rounds + accepted friendlies in time order
       var fxItems = [];

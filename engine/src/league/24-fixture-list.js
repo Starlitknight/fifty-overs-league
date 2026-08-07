@@ -374,7 +374,7 @@
       feature +
       (resRows ? "<div class='fo-fl-k'>Results</div><div class='fo-fl-list'>" + resRows + "</div>" : "") +
       "<div class='fo-fl-k'>Still to play</div><div class='fo-fl-list'>" + upRows + "</div>" +
-      "<div class='fo-fl-foot'><a href='#/home'>&#8592; The club</a><a href='#/league'>The table &rsaquo;</a><a href='#/matches'>Friendlies &rsaquo;</a><a href='#/planet'>World cricket &rsaquo;</a></div>" +
+      "" +
       "</div>";
     return true;
   }
