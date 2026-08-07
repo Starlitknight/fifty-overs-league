@@ -797,6 +797,27 @@ test('015: watched IS recorded - the banked living patch replays the same match'
       cond.pitch, Number(m.seed), m.orders, cond.weather);
     console.log("### replay with TODAY's squads untouched matches the book? " +
       (facts(asIs) === facts(m.result_canonical)));
+    // IS TALENT STATE EVEN THE VARIABLE? If all three reconstructions agree
+    // with each other and none agrees with the book, it is not: the book was
+    // played with something this test can no longer rebuild, and the talent
+    // work is a red herring I have chased three times.
+    console.log('### patched === no-talent ? ' + (facts(replay) === facts(noTal)));
+    console.log('### patched === today    ? ' + (facts(replay) === facts(asIs)));
+    const bk = JSON.parse(facts(m.result_canonical)), rp = JSON.parse(facts(replay));
+    for (let i = 0; i < 2; i++) {
+      const same = JSON.stringify(bk.i[i]) === JSON.stringify(rp.i[i]);
+      console.log('### innings ' + (i + 1) + ' identical? ' + same +
+        (same ? '' : '  book ' + bk.i[i].r + '/' + bk.i[i].w + ' vs replay ' + rp.i[i].r + '/' + rp.i[i].w));
+      if (!same) {
+        const bb = bk.i[i].bat, rb = rp.i[i].bat;
+        for (let j = 0; j < Math.max(bb.length, rb.length); j++) {
+          const x = JSON.stringify(bb[j]), y = JSON.stringify(rb[j]);
+          if (x !== y) { console.log('###   first batter to differ: ' + x + '  vs  ' + y); break; }
+        }
+      }
+    }
+    console.log('### orders keys: ' + Object.keys(m.orders || {}).join(',') +
+      '   pitch ' + cond.pitch + '   weather ' + cond.weather);
     // DIAGNOSTIC: say WHAT differs about the two sides, not just that the
     // cricket did. Talent state is the newest thing that can leak across a
     // match boundary and it has leaked twice already.
