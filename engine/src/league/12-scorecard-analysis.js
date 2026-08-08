@@ -4446,15 +4446,18 @@
           ov.innerHTML =
             "<figure class='fo-lb-fig'><img src='' alt=''>" +
             "<figcaption class='fo-lb-cap'><b></b><i></i></figcaption></figure>" +
-            "<button type='button' class='fo-lb-nav prev' aria-label='Previous feature'>&#8249;</button>" +
-            "<button type='button' class='fo-lb-nav next' aria-label='Next feature'>&#8250;</button>" +
+            "<div class='fo-lb-bar'><button type='button' class='fo-lb-nav prev' aria-label='Previous feature'>&#8249;</button>" +
+            "<span class='fo-lb-cnt'></span>" +
+            "<button type='button' class='fo-lb-nav next' aria-label='Next feature'>&#8250;</button></div>" +
             "<button type='button' class='fo-lore-x' aria-label='Close'>&times;</button>";
           var img = ov.querySelector("img"), cap = ov.querySelector(".fo-lb-cap");
           var draw = function () {
             var p = pages[at]; if (!p) return;
             img.src = p.src; img.alt = "Fifty Overs Journal feature on " + p.nm;
             cap.querySelector("b").textContent = p.nm;
-            cap.querySelector("i").textContent = p.nat + " · Issue " + p.iss + " · " + p.n + " of " + no(pages.length - 1);
+            cap.querySelector("i").textContent = p.nat + " · Issue " + p.iss;
+            var cnt = ov.querySelector(".fo-lb-cnt");
+            if (cnt) cnt.textContent = (at + 1) + " / " + pages.length;
           };
           var step = function (d) {
             at = (at + d + pages.length) % pages.length; draw();
@@ -4676,11 +4679,32 @@
       ".fo-lb-cap{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;padding:18px 16px calc(28px + env(safe-area-inset-bottom,0px))}",
       ".fo-lb-cap b{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.14em;font-size:15px;color:#F5EFDC}",
       ".fo-lb-cap i{font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.24em;font-size:9.5px;color:var(--gold)}",
-      "html body .fo-lore-lb .fo-lb-nav{position:fixed;top:50%;transform:translateY(-50%);font-size:30px;line-height:1;color:#F5EFDC !important;background:rgba(12,20,36,.8) !important;border:1.5px solid rgba(235,194,113,.42) !important;border-radius:999px;width:48px;height:48px;cursor:pointer;transition:.16s}",
-      "html body .fo-lore-lb .fo-lb-nav:hover{border-color:var(--gold) !important;background:rgba(20,32,54,.95) !important}",
-      "html body .fo-lore-lb .fo-lb-nav.prev{left:14px}html body .fo-lore-lb .fo-lb-nav.next{right:14px}",
-      "html body .fo-lore-lb .fo-lore-x{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:14px;font-size:26px;line-height:1;color:#F5EFDC !important;background:rgba(12,20,36,.85) !important;border:1.5px solid rgba(235,194,113,.5) !important;border-radius:999px;width:42px;height:42px;cursor:pointer;backdrop-filter:blur(4px);z-index:2}",
-      "html body .fo-lore-lb .fo-lb-nav{z-index:2;backdrop-filter:blur(4px)}",
+      /* THE CONTROLS STOPPED BEING BOXES ON THE PAGE. Three bordered slabs -
+         one over the masthead, two over the first paragraph - is furniture
+         standing in front of the thing it is there to help you read. They are
+         one quiet group along the foot of the screen now, on a scrim that
+         fades into the page rather than sitting on it in a frame, and the page
+         is given room underneath so nothing it prints is ever behind them. */
+      "html body .fo-lore-lb .fo-lb-bar{position:fixed;left:0;right:0;bottom:0;z-index:3;",
+      "display:flex;align-items:center;justify-content:center;gap:26px;",
+      "padding:14px 16px calc(14px + env(safe-area-inset-bottom,0px));pointer-events:none;",
+      "background:linear-gradient(180deg,rgba(7,12,22,0),rgba(7,12,22,.82) 55%,rgba(7,12,22,.95))}",
+      "html body .fo-lore-lb .fo-lb-nav{pointer-events:auto;position:static;transform:none;",
+      "font:400 26px/1 Fraunces,Georgia,serif;color:rgba(245,239,220,.85) !important;",
+      "background:transparent !important;border:0 !important;border-radius:0 !important;",
+      "width:44px;height:44px;cursor:pointer;transition:color .16s}",
+      "html body .fo-lore-lb .fo-lb-nav:hover{color:#FFFEFC !important}",
+      "html body .fo-lore-lb .fo-lb-cnt{pointer-events:none;font:700 9.5px/1 Oswald,sans-serif;",
+      "letter-spacing:.22em;text-transform:uppercase;color:rgba(235,194,113,.9);",
+      "font-variant-numeric:tabular-nums;min-width:74px;text-align:center}",
+      "html body .fo-lore-lb .fo-lore-x{position:fixed;top:calc(10px + env(safe-area-inset-top,0px));right:10px;",
+      "font:300 30px/1 -apple-system,system-ui,sans-serif;color:#FFFEFC !important;",
+      "background:radial-gradient(circle,rgba(7,12,22,.62) 40%,rgba(7,12,22,0) 72%) !important;",
+      "border:0 !important;border-radius:999px;width:46px;height:46px;cursor:pointer;z-index:4;",
+      "text-shadow:0 1px 6px rgba(0,0,0,.8);opacity:.85;transition:opacity .16s}",
+      "html body .fo-lore-lb .fo-lore-x:hover{opacity:1}",
+      // room at the foot so the page's own last line never sits under the bar
+      "html body .fo-lore-lb .fo-lb-fig{padding-bottom:78px}",
       // ---------- narrower ----------
       // stacked, the story reads first and the printed page is the payoff at the
       // end of it - the plate carries its own headline, so leading with it twice
