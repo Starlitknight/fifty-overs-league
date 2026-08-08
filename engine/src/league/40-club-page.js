@@ -496,6 +496,16 @@
       var boss = !!(info && info.is_boss);
       var mgr = info && info.manager;
       var ident = (info && info.identity) || {};
+      // WHAT THIS CLUB WAS BEFORE THE RECORD BEGAN. A seat somebody holds was
+      // founded the day they took it; every other seat is an old county, and
+      // the whole page - the founding year, the seasons played, the cupboard,
+      // the story - reads off this one answer.
+      var her = null;
+      try {
+        var isNewClub = isMine || !!mgr;
+        her = (window.__foPlanet && window.__foPlanet.heritageOf)
+          ? window.__foPlanet.heritageOf(cid, slot, isNewClub) : null;
+      } catch (eHer) { her = null; }
       var players = (sq && sq.players) || [];
       var bill = (sq && +sq.wage_bill) || 0;
       var tBat = (sq && +sq.team_batting) || 0, tBowl = (sq && +sq.team_bowling) || 0, tFld = (sq && +sq.team_fielding) || 0;
@@ -709,9 +719,15 @@
         var sh = function (txt) { return "<div class='fo-cd-sh'>" + txt + "</div>"; };
 
         // -- identity ------------------------------------------------------
+        // EVERY CLUB SAID "FOUNDED: SEASON 1". Nine of the ten sides in any
+        // league are counties that were playing long before anybody opened
+        // this page; only the seat a person took is new. The founding year
+        // and the seasons behind it both come off the heritage now.
+        var foundedTxt = her ? (her.human ? "This season" : String(her.founded)) : "Season 1";
+        var seasonsTxt = her && !her.human ? num(her.seasons + Math.max(0, seasonNo - 1)) : String(seasonNo);
         var idMeta =
           "<span>Manager<b>" + (mgr ? E(mgr) : "Unmanaged") + "</b></span>" +
-          "<span>Founded<b>Season 1</b></span>" +
+          "<span>Founded<b>" + foundedTxt + "</b></span>" +
           "<span>Home ground<b>" + E(gname) + "</b></span>" +
           "<span>Division<b>" + E(natName(cid)) + " &middot; " + E(divLabel.replace("Division ", "")) + "</b></span>";
         var userMeets = myName ? meetingsWith(myName) : [];
@@ -726,7 +742,7 @@
         var idFoot =
           "<div class='f'><span>World rank</span><b>" + (rkRow ? "#" + rkRow.rank : "Unrated") + "</b></div>" +
           "<div class='f'><span>Vs your club</span><b>" + vsYou + "</b></div>" +
-          "<div class='f'><span>Seasons here</span><b>" + seasonNo + "</b></div>";
+          "<div class='f'><span>Seasons played</span><b>" + seasonsTxt + "</b></div>";
         var idActs = isMine
           ? "<a class='sec' href='#/squad'>Your squad</a><a class='sec' href='#/orders'>The orders</a>"
           : (canChallenge ? "<button type='button' class='pri' id='fo-cd-chbtn'>Challenge to a friendly</button>" : "") +
@@ -895,12 +911,6 @@
            the worst, because neither had ever won anything. A club that a
            manager has founded genuinely has none of this, and now that is a
            CONTRAST rather than the universal condition. */
-        var her = null;
-        try {
-          var isNew = isMine || !!mgr;      // a seat a person holds is a new club
-          her = window.__foPlanet && window.__foPlanet.heritageOf
-            ? window.__foPlanet.heritageOf(cid, slot, isNew) : null;
-        } catch (eH9) {}
         var hrRow = function (k9, n9, note) {
           return "<div class='r'><span>" + k9 + (note ? " <em>&middot; " + note + "</em>" : "") + "</span><b>" + n9 + "</b></div>";
         };
@@ -961,8 +971,22 @@
       } else if (tab === "honours") {
         bodyHTML = "<div class='fo-cp-panel'>" +
           "<div class='fo-cp-ph'><h2>&#10022; The trophy shelf &#10022;</h2></div>" +
-          (shelf.length ? shelf.map(function (s) { return "<div class='fo-cp-note'>" + s + "</div>"; }).join("")
-            : "<p class='fo-cp-dim'>Bare, for now. Every season writes the next line.</p>") +
+          // THE SHELF DID NOT START EMPTY for anybody but the club a person
+          // founded. What the record holds goes on top; what the club won
+          // before the record began goes under it, counted.
+          (shelf.length ? shelf.map(function (s) { return "<div class='fo-cp-note'>" + s + "</div>"; }).join("") : "") +
+          (function () {
+            if (!her) return shelf.length ? "" : "<p class='fo-cp-dim'>Bare, for now. Every season writes the next line.</p>";
+            if (her.human) return shelf.length ? "" : "<p class='fo-cp-dim'>Bare, for now &mdash; founded this season. Every season writes the next line.</p>";
+            var won = [];
+            if (her.titles) won.push("<div class='fo-cp-note'><b>" + her.titles + "</b> &mdash; " + E(natName(cid)) + " championship" + (her.titles === 1 ? "" : "s") + "</div>");
+            if (her.cups) won.push("<div class='fo-cp-note'><b>" + her.cups + "</b> &mdash; National Cup" + (her.cups === 1 ? "" : "s") + "</div>");
+            if (her.crowns) won.push("<div class='fo-cp-note'><b>" + her.crowns + "</b> &mdash; Champions Cup" + (her.crowns === 1 ? "" : "s") + "</div>");
+            return "<div class='fo-cp-sub'>Before the record</div>" +
+              (won.length ? won.join("") : "<p class='fo-cp-dim'>" + her.seasons + " senior seasons and nothing to show for them.</p>") +
+              "<div class='fo-cp-note'>Founded <b>" + her.founded + "</b> &middot; " + her.seasons + " seasons played" +
+              (her.lastTitle ? " &middot; last title " + her.lastTitle + " season" + (her.lastTitle === 1 ? "" : "s") + " before the record" : "") + "</div>";
+          })() +
           "<div class='fo-cp-sub'>The ground</div>" +
           "<div class='fo-cp-note'><b>" + E((info && info.ground) || "A ground of their own") + "</b></div>" +
           // an academy is a building, and buildings are visible - the level a

@@ -114,8 +114,13 @@
     matchday: "#/fixtures",    // the fixture list carries the build-up now
     milestones: "#/home",
     planet: "#/world",         // world cricket folds into the world map
-    atlas: "#/world",
-    team: "#/league"           // a club is read off the table it plays in
+    atlas: "#/world"
+    // #/team CAME OFF THIS LIST. Closing it was meant to say "a club is read
+    // off the table it plays in", but the table is a row of numbers: it does
+    // not carry a ground, a squad, a cupboard or a challenge. Every link into
+    // a club - the standings, the ladder, the preview's team status, the
+    // build-up cards - was landing back on the league, and the one room in
+    // the game that says who a club IS was reachable from nowhere.
   };
   function turnAtClosedDoor() {
     try {
