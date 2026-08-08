@@ -889,14 +889,42 @@
         var hnRow = function (k9, arr) {
           return "<div class='r'><span>" + k9 + (arr.length ? " <em>&middot; season " + arr.join(", ") + "</em>" : "") + "</span><b>" + (arr.length || "&ndash;") + "</b></div>";
         };
+        /* THE YEARS BEFORE THE RECORD. Every club in the world read as founded
+           five minutes ago and holding nothing, flagship included - so beating
+           the best side in the country was worth exactly as much as beating
+           the worst, because neither had ever won anything. A club that a
+           manager has founded genuinely has none of this, and now that is a
+           CONTRAST rather than the universal condition. */
+        var her = null;
+        try {
+          var isNew = isMine || !!mgr;      // a seat a person holds is a new club
+          her = window.__foPlanet && window.__foPlanet.heritageOf
+            ? window.__foPlanet.heritageOf(cid, slot, isNew) : null;
+        } catch (eH9) {}
+        var hrRow = function (k9, n9, note) {
+          return "<div class='r'><span>" + k9 + (note ? " <em>&middot; " + note + "</em>" : "") + "</span><b>" + n9 + "</b></div>";
+        };
         var hnCard = "<div class='fo-cd-card fo-cd-hn'>" + sh("Club honours") +
-          ((lgTitles.length || ccTitles.length)
-            ? hnRow(E(natName(cid)) + " champions", lgTitles) + hnRow("The Champions Cup", ccTitles) +
-              "<a class='fo-cd-lnk' href='" + hrefT("honours") + "'>The records</a>"
-            : "<div class='hnE'>No senior honours yet. Everything is still to be won.</div>") + "</div>";
+          (her && her.human
+            ? "<div class='hnE'>Founded this season. No honours yet &mdash; everything is still to be won.</div>"
+            : her
+              ? hrRow(E(natName(cid)) + " champions", her.titles + lgTitles.length,
+                      her.lastTitle ? "last won " + her.lastTitle + " season" + (her.lastTitle === 1 ? "" : "s") + " before the record" : "") +
+                hrRow("The National Cup", her.cups, "") +
+                hrRow("The Champions Cup", her.crowns + ccTitles.length, "") +
+                "<div class='hnFoot'>Est. " + her.founded + " &middot; " + her.seasons + " senior seasons before this one</div>" +
+                "<a class='fo-cd-lnk' href='" + hrefT("honours") + "'>The records</a>"
+              : ((lgTitles.length || ccTitles.length)
+                ? hnRow(E(natName(cid)) + " champions", lgTitles) + hnRow("The Champions Cup", ccTitles) +
+                  "<a class='fo-cd-lnk' href='" + hrefT("honours") + "'>The records</a>"
+                : "<div class='hnE'>No senior honours yet. Everything is still to be won.</div>")) + "</div>";
 
         // -- the club's story, desktop only, real events only --------------
-        var tlItems = [{ t: "Season 1", s: "Founded &middot; a founding member of " + E(natName(cid)) + " " + E(divLabel) }];
+        var tlItems = her && !her.human
+          ? [{ t: String(her.founded), s: "Founded &middot; " + (her.titles || her.cups
+                ? her.seasons + " senior seasons and " + (her.titles + her.cups + her.crowns) + " honours before the world began keeping this record"
+                : her.seasons + " senior seasons before the world began keeping this record") }]
+          : [{ t: "Season 1", s: "Founded &middot; a new club in " + E(natName(cid)) + " " + E(divLabel) }];
         lgTitles.forEach(function (sn9) { tlItems.push({ t: "Season " + sn9, s: E(natName(cid)) + " champions" }); });
         ccTitles.forEach(function (sn9) { tlItems.push({ t: "Season " + sn9, s: "Champions Cup winners" }); });
         if (played.length) tlItems.push({ t: "Season " + seasonNo, s: played.length + " match" + (played.length === 1 ? "" : "es") + " into the campaign" });
@@ -1331,6 +1359,7 @@
       ".fo-cd-hn .r:last-of-type{border-bottom:0}",
       ".fo-cd-hn .r em{font-style:normal;font:400 10.5px/1 Inter,sans-serif;color:#8a93a2}",
       ".fo-cd-hn .r b{margin-left:auto;font-weight:700}",
+      "html body #page .fo-cd-hn .hnFoot{margin-top:9px;padding-top:9px;border-top:1px solid rgba(20,28,40,.08);font:500 11px/1.45 Inter,sans-serif;color:rgba(20,28,40,.45);font-variant-numeric:tabular-nums}",
       ".fo-cd-hn .hnE{font:400 12.5px/1.6 Inter,sans-serif;color:#6d6350;background:#FBF6EA;border:1px dashed rgba(176,74,44,.25);border-radius:10px;padding:13px 14px}",
       // the club's story: a desktop ribbon, absent from the phone's first scroll
       ".fo-cd-tl{display:none}",

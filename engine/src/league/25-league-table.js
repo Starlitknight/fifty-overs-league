@@ -594,6 +594,19 @@
             var chip = r.mine ? "<em class='you'>You</em>"
               : r.boss ? "<em class='fl'>Flagship</em>"
               : mgrOf(r.slot) ? "<em class='hu'>" + E(mgrOf(r.slot)) + "</em>" : "";
+            // A TABLE OF SIXTEEN STRANGERS. Every side read the same, so a
+            // reader had no way to tell the club with ninety years and nine
+            // titles from the one promoted last season. The star count is what
+            // this club has already won, and it is derived from the seat - so
+            // it costs no request and cannot disagree with the club's page.
+            var star = "";
+            try {
+              if (!r.mine && !mgrOf(r.slot) && window.__foPlanet && window.__foPlanet.heritageOf) {
+                var hh9 = window.__foPlanet.heritageOf(natId, r.slot, false);
+                if (hh9 && hh9.titles) star = "<em class='tt' title='" + hh9.titles + " league titles before this season'>&#9733; " + hh9.titles + "</em>";
+              }
+            } catch (eH9) {}
+            chip = chip + star;
             var drop = divNo === 1 && list.length >= 8 && ix >= list.length - 2;
             return "<a class='fo-lgx-row" + (r.mine ? " mine" : "") + (ix < 4 ? " q" : "") + (drop ? " rel" : "") + "' href='#/team?c=" +
               encodeURIComponent(natId) + "&s=" + r.slot + "'>" +
@@ -798,8 +811,9 @@
     "html body #page .fo-lgx-row .cb{display:flex;align-items:center;justify-content:center}",
     "html body #page .fo-lgx-row .nm{min-width:0}",
     "html body #page .fo-lgx-row .nm b{display:block;font:600 12.5px/1.25 Inter,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
-    "html body #page .fo-lgx-row .nm em{display:block;margin-top:3px;font:700 8px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;font-style:normal;color:rgba(20,28,40,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    "html body #page .fo-lgx-row .nm em{display:inline-block;margin:3px 6px 0 0;vertical-align:top;font:700 8px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;font-style:normal;color:rgba(20,28,40,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
     "html body #page .fo-lgx-row .nm em.you{color:var(--nac)}",
+    "html body #page .fo-lgx-row .nm em.tt{color:#2F6B45}",
     "html body #page .fo-lgx-row .nm em.fl{color:#8A6A1F}",
     "html body #page .fo-lgx-row .nm em.hu{color:#177A57}",
     "html body #page .fo-lgx-row .fm{display:flex;gap:3px}",

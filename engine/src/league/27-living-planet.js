@@ -490,6 +490,81 @@
     } catch (e) { return null; }
   }
 
+  /* ---- WHAT A CLUB DID BEFORE THE WORLD STARTED WATCHING --------------------
+     Every club in this world read as founded five minutes ago. Sixteen sides
+     to a nation, all of them "a founding member, season 1", with an honours
+     board that said "nothing yet" - including the flagship, a club the game
+     elsewhere describes as the one everybody else measures themselves against.
+     A league where nobody has ever won anything has no weight to it: beating
+     the champions is only worth something if somebody has been champion.
+
+     THIS IS DERIVED, NOT WRITTEN DOWN. A club's past comes out of the same
+     seeded hash the planet already settles fixtures with, keyed on the nation
+     and the seat, and shaded by the standing that seat carries - so the
+     flagship has the deepest cabinet, a strong first-division side has a real
+     one, and a second-division club has a thin one and a long wait. Every
+     device computes the identical history from the identical seed; nothing is
+     stored, nothing can drift, and a world re-run rebuilds it exactly.
+
+     AND A CLUB A MANAGER HAS FOUNDED HAS NONE OF IT. That is the point of the
+     contrast: you walk in with nothing, into a league where the club down the
+     road has been winning things for ninety years. `human` says the seat is
+     held by a person, and a held seat is a new club with a new name and an
+     empty board.
+     ========================================================================= */
+  var HERITAGE_NOW = 2026;                    // the year the world's first season is played
+  function heritageOf(rid, slot, human) {
+    var s = slot | 0;
+    if (human) {
+      return { human: true, founded: HERITAGE_NOW, age: 0, seasons: 0,
+               titles: 0, cups: 0, crowns: 0, lastTitle: null, best: null };
+    }
+    var k = rid + "|heritage|" + s;
+    var r1 = rnd01(k + "|a"), r2 = rnd01(k + "|b"), r3 = rnd01(k + "|c"),
+        r4 = rnd01(k + "|d"), r5 = rnd01(k + "|e");
+    var boss = s === 0, d2 = s >= 8;
+    // where this seat sits on its own division's ladder, 0 = strongest
+    var st = strOf(rid, s);
+    var pull = boss ? 1 : d2 ? Math.max(0, (st - 0.890) / 0.060) * 0.45
+                            : 0.35 + Math.max(0, (st - 0.930) / 0.140) * 0.55;
+
+    // AGE. A flagship is an institution; a second-division club is usually a
+    // works side or a town club that came up the hard way.
+    var age = boss ? 96 + Math.round(r1 * 52)
+            : d2  ? 18 + Math.round(r1 * 54)
+                  : 44 + Math.round(r1 * 74);
+    // seasons in the senior competition - never more than the club is old
+    var seasons = Math.max(1, Math.min(age, Math.round(age * (boss ? 0.94 : d2 ? 0.55 : 0.8))));
+
+    // THE CABINET. Honours are rarer than seasons by an order of magnitude,
+    // and the spread inside a division is wider than the strength gap that
+    // produced it - a fallen giant and a club that has never won anything can
+    // sit on the same rung.
+    var titles = boss ? 5 + Math.round(r2 * 13)
+               : d2  ? (r2 > 0.72 ? Math.round(r2 * 2) : 0)
+                     : Math.round(Math.pow(r2, 1.7) * 9 * (0.35 + pull));
+    var cups   = boss ? 3 + Math.round(r3 * 11)
+               : d2  ? (r3 > 0.55 ? 1 + Math.round(r3 * 2) : 0)
+                     : Math.round(Math.pow(r3, 1.5) * 8 * (0.4 + pull));
+    // The world's crown is the rarest thing there is, and it is ENTERED BY
+    // CHAMPIONS: a club that has never won its own league has never been in
+    // the draw, so it cannot have won the thing. Canberra CC came out of the
+    // first draft holding a Champions Cup and no league title at all.
+    var crowns = !titles ? 0
+               : boss ? (r4 > 0.42 ? 1 + Math.round(r4 * 2) : 0)
+               : d2  ? 0
+                     : (r4 > 0.88 ? 1 : 0);
+    // HOW LONG SINCE. A club with a full cabinet and a forty-year wait is a
+    // different club from one that won it last year, and both are real.
+    var lastTitle = titles ? 1 + Math.round(Math.pow(r5, 1.6) * Math.min(58, seasons - 1)) : null;
+    return { human: false, founded: HERITAGE_NOW - age, age: age, seasons: seasons,
+             titles: titles, cups: cups, crowns: crowns, lastTitle: lastTitle,
+             // the one line that sums a club up, for a card with room for one
+             best: titles ? (titles + (titles === 1 ? " league title" : " league titles"))
+                 : cups   ? (cups + (cups === 1 ? " national cup" : " national cups"))
+                 : null };
+  }
+
   function condOf(rid, homeSlot, seasonNo, round) {
     var prof = NAT_COND[rid] || COND_DEFAULT;
     var p = {}, k;
@@ -1171,5 +1246,5 @@
     FA_DAYS: FA_DAYS, faDayOf: faDayOf, faDrawR16: faDrawR16, cupDraw: cupDraw,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
     COLTS_DAYS: COLTS_DAYS, isRestDay: isRestDay, REST_DAYS: REST_DAYS, dayOfRound: dayOfRound, roundOfDay: roundOfDay,
-    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, nations: regionList, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
+    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, heritageOf: heritageOf, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, nations: regionList, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();

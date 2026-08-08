@@ -345,12 +345,42 @@
       // a ball has been bowled every one of those numbers is a nought, and a
       // page of noughts is a page of nothing. Where they stand, what they have
       // won, and how they are going: that is the whole of a preview.
+      // WHAT THEY HAVE WON, before this season began. A bot club is an old
+      // county with a cupboard; a claimed one was founded the day somebody
+      // took it. Both facts belong on the billing, and one of them is the only
+      // thing on this page that is not a nought before the first ball.
+      // The manager map is the arbiter, and where it has not landed the line
+      // is left off entirely - a club somebody founded last week must never be
+      // handed somebody else's cupboard.
+      var herOf = function (slot) {
+        try {
+          var PLh = window.__foPlanet;
+          if (!PLh || !PLh.heritageOf) return null;
+          if (slot === mySlot) return PLh.heritageOf(natId, slot, true);
+          if (!g.mgrs) return null;
+          return PLh.heritageOf(natId, slot, !!g.mgrs[slot]);
+        } catch (eHr) { return null; }
+      };
+      var pl9 = function (n, one, many) { return n + " " + (n === 1 ? one : many); };
+      var honours = function (slot) {
+        var h = herOf(slot);
+        if (!h) return "";
+        if (h.human) return "<span class='fo-pm-her'>Founded this season &middot; first campaign</span>";
+        var won = [];
+        if (h.titles) won.push(pl9(h.titles, "league title", "league titles"));
+        if (h.cups) won.push(pl9(h.cups, "national cup", "national cups"));
+        if (h.crowns) won.push(pl9(h.crowns, "Champions Cup", "Champions Cups"));
+        return "<span class='fo-pm-her'>Est. " + h.founded + " &middot; " +
+          pl9(h.seasons, "season", "seasons") + " played" +
+          (won.length ? " &middot; " + won.join(", ") : " &middot; no honours") + "</span>";
+      };
       var sideLine = function (slot, nm, boss, st) {
         return "<a class='fo-pm-sl" + (slot === mySlot ? " mine" : "") +
           "' href='#/team?c=" + encodeURIComponent(natId) + "&s=" + slot + "'>" +
           foPmShield(nm, boss, natId) +
           "<b>" + foPmE(nm) + " <i>" + posOrd(st.pos) +
           (st.p ? " &middot; " + st.pts + " pts" : "") + "</i></b>" +
+          honours(slot) +
           "<span class='fo-pm-beads'>" + beads(st) + "</span>" +
           "<span class='fo-pm-slst'>" +
           "<u>P<b>" + st.p + "</b></u><u>W<b>" + st.w + "</b></u><u>L<b>" + st.l + "</b></u>" +
@@ -653,19 +683,20 @@
       ".fo-pm-wpbar .a{background:linear-gradient(90deg,#D06035,#C9571F)}",
       "@media(prefers-reduced-motion:reduce){.fo-pm-wpbar span{transition:none}}",
       ".fo-pm-two{display:flex;flex-direction:column;gap:7px}",
-      "#page a.fo-pm-sl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto auto;column-gap:11px;row-gap:4px;align-items:center;padding:11px 12px;border-radius:11px;background:#FFFEFC;border:1px solid var(--edge);text-decoration:none}",
+      "#page a.fo-pm-sl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto auto auto;column-gap:11px;row-gap:4px;align-items:center;padding:11px 12px;border-radius:11px;background:#FFFEFC;border:1px solid var(--edge);text-decoration:none}",
       "#page a.fo-pm-sl:hover{border-color:rgba(201,87,31,.5)}",
       "#page a.fo-pm-sl.mine{border-color:rgba(201,87,31,.45);background:#FBF6EA}",
-      "#page a.fo-pm-sl .fo-pm-sh{grid-row:span 3}",
+      "#page a.fo-pm-sl .fo-pm-sh{grid-row:span 4}",
       "#page a.fo-pm-sl b{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.02em;font-size:14px;color:var(--navy);overflow-wrap:anywhere}",
       "#page a.fo-pm-sl b{grid-column:2;grid-row:1}",
       "#page a.fo-pm-sl b i{font-family:Oswald,sans-serif;font-style:normal;font-weight:600;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);margin-left:5px}",
       "#page a.fo-pm-sl b i u{text-decoration:none;font-size:8px}",
-      "#page a.fo-pm-sl .fo-pm-beads{grid-column:2;grid-row:2}",
-      "#page a.fo-pm-sl .fo-pm-slst{grid-column:2;grid-row:3;display:flex;gap:14px}",
+      "#page a.fo-pm-sl .fo-pm-her{grid-column:2;grid-row:2;font:500 10.5px/1.35 Inter,sans-serif;color:rgba(27,36,50,.55)}",
+      "#page a.fo-pm-sl .fo-pm-beads{grid-column:2;grid-row:3}",
+      "#page a.fo-pm-sl .fo-pm-slst{grid-column:2;grid-row:4;display:flex;gap:14px}",
       "#page a.fo-pm-sl .fo-pm-slst u{text-decoration:none;font:600 8px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#8a93a2}",
       "#page a.fo-pm-sl .fo-pm-slst u b{display:block;grid-column:auto;grid-row:auto;font:600 12.5px/1.5 Inter,sans-serif;color:var(--ink);letter-spacing:0;margin:0;font-variant-numeric:tabular-nums}",
-      "#page a.fo-pm-sl .fo-pm-chev{grid-column:3;grid-row:span 3;text-decoration:none;font:400 20px/1 Fraunces,Georgia,serif;color:rgba(27,36,50,.4)}",
+      "#page a.fo-pm-sl .fo-pm-chev{grid-column:3;grid-row:span 4;text-decoration:none;font:400 20px/1 Fraunces,Georgia,serif;color:rgba(27,36,50,.4)}",
       ".fo-pm-beads{display:flex;gap:4px}",
       ".fo-pm-beads i{display:grid;place-items:center;width:19px;height:19px;border-radius:4px;font:700 9.5px/1 Inter,sans-serif;font-style:normal;color:#fff}",
       ".fo-pm-beads i.w{background:#1F7A50}.fo-pm-beads i.l{background:#C22823}.fo-pm-beads i.t{background:#8a93a2}",

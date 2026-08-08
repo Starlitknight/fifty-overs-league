@@ -480,6 +480,24 @@
         bits.push("<em>Division " + (info.div === 2 ? "Two" : "One") + "</em>");
         if (info.city) bits.push("<em>" + E(info.city) + "</em>");
       }
+      // WHAT THIS CLUB HAS WON, which is most of what a build-up is for. The
+      // planet derives it from the seat, so it costs nothing to ask and cannot
+      // disagree with the club's own page.
+      // A SEAT SOMEBODY HOLDS HAS NO CUPBOARD - it was founded the day they
+      // took it - so the manager map decides which account is told. Where the
+      // map is not on the device the club is left plain rather than handed a
+      // history that may belong to nobody.
+      try {
+        var mm9 = null;
+        try { mm9 = window.__foWorldNames && window.__foWorldNames.mgr ? window.__foWorldNames.mgr(side.__c) : null; } catch (eM) {}
+        var human9 = !mm9 || !!mm9[side.slot];
+        var h9 = (pl && pl.heritageOf && !human9) ? pl.heritageOf(side.__c, side.slot, false) : null;
+        if (h9 && !h9.human) {
+          if (h9.titles) bits.push("<em class='tt'>" + h9.titles + "&times; champions</em>");
+          if (h9.crowns) bits.push("<em class='tt'>" + h9.crowns + "&times; Champions Cup</em>");
+          if (!h9.titles && !h9.cups && !h9.crowns) bits.push("<em>Est. " + h9.founded + "</em>");
+        }
+      } catch (eH) {}
       // form, when the world's league snapshot is already on the device - it
       // is not fetched for this, because a build-up is not worth a round trip
       var form = "";
@@ -1049,6 +1067,7 @@
       ".fo-fd .fd-pmtags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}",
       ".fo-fd .fd-pmtags em{font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--fomut);background:rgba(20,36,58,.05);border-radius:999px;padding:6px 10px 5px}",
       ".fo-fd .fd-pmtags em.fl{color:#8a6a1f;background:rgba(232,185,106,.2)}",
+      ".fo-fd .fd-pmtags em.tt{color:#2F6B45;background:rgba(47,107,69,.11)}",
       ".fo-fd .fd-pmform{display:flex;gap:4px;margin-top:11px}",
       ".fo-fd .fd-pmform i{width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font:700 9.5px/1 Oswald,sans-serif;color:#FFFEFC}",
       ".fo-fd .fd-pmform i.w{background:#2F6B45}.fo-fd .fd-pmform i.l{background:#8C2B2B}.fo-fd .fd-pmform i.t{background:#8a8272}",
