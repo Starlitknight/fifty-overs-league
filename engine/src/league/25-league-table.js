@@ -578,7 +578,8 @@
           "<div class='fo-lgx-mile'><i>Highest score</i><b>" + (bat0 ? bat0.hs : "&mdash;") + "</b></div>" +
           "<div class='fo-lgx-mile'><i>Best bowling</i><b>" + (bowl0 && bowl0.bb ? bowl0.bb.w + "/" + bowl0.bb.r : "&mdash;") + "</b></div>" +
           "<div class='fo-lgx-mile'><i>Rounds played</i><b>" + playedRounds + " of " + rounds + "</b></div></div>" +
-          "<div class='fo-lgx-card'><h3>The book</h3><p class='fo-lgx-dim'>Every run and every wicket here was scored in a match the umpire played and banked. Nothing is estimated.</p></div>";
+          "<div class='fo-lgx-card'><h3>The book</h3><p class='fo-lgx-dim'>Every run and every wicket here was scored in a match the umpire played and banked. Nothing is estimated.</p>" +
+          "<p class='fo-lgx-dim'><a href='#/stats'>The Stats Centre &rsaquo;</a> reads the same book across your own club, this league and all nineteen at once.</p></div>";
 
       } else {
         // ---- the pennant race, one panel per flight ------------------------

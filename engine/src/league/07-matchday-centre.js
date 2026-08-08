@@ -1772,6 +1772,12 @@
     try {
       if ((location.hash || "").indexOf("#/stats") !== 0) return;
       var page = document.getElementById("page"); if (!page) return;
+      // THE STATS CENTRE LIGHTS ITS OWN MEN. It knows the seat you hold in the
+      // served world, so it marks your rows by club slot - which is exact -
+      // rather than by matching a name string against the local squad. Leave
+      // it alone: this would paint a flat fill over its own highlight, and
+      // would also catch rivals who happen to share a name with one of yours.
+      if (page.querySelector(".fo-stc")) return;
       var mine = {}; try { (userTeam().players || []).forEach(function (p2) { mine[p2.name] = 1; }); } catch (e0) { return; }
       page.querySelectorAll("table tr").forEach(function (tr) {
         if (tr.__foOwn || !tr.cells || tr.cells.length < 2 || tr.querySelector("th")) return;

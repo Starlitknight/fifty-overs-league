@@ -1728,7 +1728,10 @@ function route(){
   // record book, the invitationals, the world-club page, the transfer market,
   // the books, the dossier and the desk. Every old address, bookmark and
   // in-game link lands on the front door rather than a blank screen.
-  const GONE={club:1,office:1,nets:1,stats:1,matches:1,transfers:1,story:1,friendly:1,scout:1,reports:1,commentary:1,calibration:1,editor:1,welcome:1,founder:1,create:1,
+  // #/stats came OFF this list: the Circuit-era averages page it used to name
+  // is still retired, but the address now opens the STATS CENTRE, which reads
+  // the served world's scorebook instead of this device's own.
+  const GONE={club:1,office:1,nets:1,matches:1,transfers:1,story:1,friendly:1,scout:1,reports:1,commentary:1,calibration:1,editor:1,welcome:1,founder:1,create:1,
     whatif:1,guide:1,manual:1,help:1,ceremony:1,wire:1,records:1,comps:1,worldclub:1,ledger:1,dossier:1,desk:1};
   if(GONE[App.page]){location.hash='#/home';App.page='home';return}
   // the conquest Circuit is retired; its hub folds into the repurposed World map
@@ -1752,10 +1755,15 @@ function route(){
   }
   document.querySelectorAll('#topbar a').forEach(a=>a.classList.toggle('on',a.dataset.nav===App.page));
   const P={club:pgClub,office:pgOffice,matches:pgMatches,squad:pgSquad,orders:pgOrders,players:pgPlayers,
-    player:pgPlayer,nets:pgNets,stats:pgStats,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,editor:pgEditor};
+    // #/stats is the STATS CENTRE now (foRenderStatsPage, below). It reports
+    // the served world's scorebook, and hands off to pgStats - this game's own
+    // offline season averages - for a reader who holds no seat out there. The
+    // route must NOT be listed here as well: this table is consulted first, so
+    // an entry here would shadow the overlay and the centre would never open.
+    player:pgPlayer,nets:pgNets,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,editor:pgEditor};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
-  const OV={home:'foRenderHome',market:'foRenderMarketPage',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',lore:'foRenderLore',report:'foRenderReport',preview:'foRenderPreviewPage',training:'foRenderNetsPage',milestones:'foRenderHonoursPage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',facup:'foRenderFaCupPage',colts:'foRenderColtsPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',watch:'foRenderWatchPage',feed:'foRenderFeedPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',ground:'foRenderGroundPage',schedule:'foRenderSchedulePage',statement:'foRenderStatementPage',news:'foRenderNewsPage'}[App.page];
+  const OV={home:'foRenderHome',market:'foRenderMarketPage',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',lore:'foRenderLore',report:'foRenderReport',preview:'foRenderPreviewPage',training:'foRenderNetsPage',milestones:'foRenderHonoursPage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',facup:'foRenderFaCupPage',colts:'foRenderColtsPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',watch:'foRenderWatchPage',feed:'foRenderFeedPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',ground:'foRenderGroundPage',schedule:'foRenderSchedulePage',stats:'foRenderStatsPage',statement:'foRenderStatementPage',news:'foRenderNewsPage'}[App.page];
   if(P[App.page])P[App.page](q);
   // A RENDERER THAT THROWS USED TO VANISH. This catch was empty, so a page
   // whose painter hit an error left the topbar, the clock and the nav in place

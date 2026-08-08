@@ -85,6 +85,7 @@
       ["world", "map", "The world map"]
     ] },
     { k: "The record", rooms: [
+      ["stats", "chart", "The stats centre"],
       ["almanack", "globe", "The world almanack"],
       ["paper", "news", "The gazette"],
       ["lore", "book", "The journal"]

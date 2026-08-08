@@ -50,4 +50,5 @@
 54-colts-cup.js
 55-market.js
 56-schedule.js
+57-stats-centre.js
 61-notifications.js
