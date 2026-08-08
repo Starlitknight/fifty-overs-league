@@ -755,10 +755,14 @@
     if (FST.st && Date.now() - FST.at < 30000) { render(page, FST.st, room); return; }
     page.innerHTML = shell(head(TITLE, "Walking down to the treasurer&rsquo;s office&hellip;"));
     if (!jwt()) {
+      // each room says what IT is - the ground page borrowed the treasurer's
+      // line about ledgers, which read like a copy-paste because it was one
       page.innerHTML = shell(head(TITLE,
         (window.__foAuthPending
-          ? "Reaching your club&hellip; the ledger is on its way."
-          : "The club&rsquo;s money is the club&rsquo;s, and the world keeps it. Sign in to the account that holds your club and the ledger is here." +
+          ? (room === "ground" ? "Reaching your club&hellip; the ground staff are opening the gates." : "Reaching your club&hellip; the ledger is on its way.")
+          : (room === "ground"
+              ? "Every club has a home ground - stands, strips and a groundsman with opinions. Sign in and yours is here."
+              : "The club&rsquo;s money is the club&rsquo;s, and the world keeps it. Sign in to the account that holds your club and the ledger is here.") +
             "<br><button type='button' class='fo-door-btn' data-fo-door>Sign in</button>")));
       return;
     }

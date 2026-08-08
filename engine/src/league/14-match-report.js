@@ -692,7 +692,7 @@
       "<figure class='fo-mr-plate'><img src='" + art + "' alt='' onerror=\"this.parentNode.style.display='none'\"></figure>" +
       "<div class='fo-mr-in fo-mr-in--hero'>" +
       "<div class='fo-mr-mast'>The Fifty Overs Journal <em>&middot; Match Report</em></div>" +
-      "<div class='fo-mr-folio'>Season " + (hit.season | 0) + " &middot; Round " + (r.round | 0) + " &middot; League</div>" +
+      "<div class='fo-mr-folio'>Season " + (window.foSeasonN ? foSeasonN(hit.season | 0) : (hit.season | 0)) + " &middot; Round " + (r.round | 0) + " &middot; League</div>" +
       "<h1 class='fo-mr-head'>" + E(String(r.text || (hN + " v " + aN))) + "</h1>" +
       "<p class='fo-mr-dek'>" + E(hN) + " against " + E(aN) + " &middot; round " + (r.round | 0) + " of the season.</p>" +
       "<div class='fo-mr-score'>" +
@@ -1157,7 +1157,7 @@
         (f.ground ? E(f.ground) + " &nbsp;&middot;&nbsp; " : "") +
         (O.roundNo ? "Round " + (O.roundNo | 0) + " &nbsp;&middot;&nbsp; " : (f.date ? E(f.date) + " &nbsp;&middot;&nbsp; " : "")) +
         // a friendly is not a league match and should not claim to be one
-        (rec.friendly ? "Friendly" : rec.seasonNo ? "Season " + (rec.seasonNo | 0) : "League") + "</div>";
+        (rec.friendly ? "Friendly" : rec.seasonNo ? "Season " + (window.foSeasonN ? foSeasonN(rec.seasonNo | 0) : (rec.seasonNo | 0)) : "League") + "</div>";
       var dayFoot = "<div class='fo-mr-foot'>" +
         "<a class='fo-mr-back day' href='" + (O.back || "#/fixtures") + "'>" + (O.backLbl || "&#8592; Results") + "</a>" +
         (rec.friendly ? "<a class='fo-mr-back day' href='#/home'>The club</a>"

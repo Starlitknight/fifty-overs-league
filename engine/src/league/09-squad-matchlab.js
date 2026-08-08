@@ -270,7 +270,9 @@
     var eb = "Fifty Overs";
     try {
       var ph = window.__foPlanet.phaseOf(Date.now());
-      if (ph && ph.season) eb += " &middot; Season " + (ph.season | 0) + " &middot; Day " + ((ph.di | 0) + 1);
+      // the record numbers the seasons, so the kicker speaks the record's
+      // number - the club is not in Season 1 of a world with 136 behind it
+      if (ph && ph.season) eb += " &middot; " + window.__foPlanet.seasonLabel(ph.season) + " &middot; Day " + ((ph.di | 0) + 1);
     } catch (e) {}
     return eb + " &middot; " + (sv.view === "int" ? "the analyst&#39;s read"
       : sv.who === "yth" ? "the academy" : sv.who === "all" ? "every man on the books" : "the playing staff");
@@ -1447,7 +1449,7 @@
         return "<div class='fo-sqx-row " + cls2 + "'>" + arr.map(function (e) { return manHTML(e.p, e.ix + 1); }).join("") + "</div>";
       };
       var rows = rowHTML(standing, "ph-back") + rowHTML(frontArr, "ph-front") +
-        "<div class='fo-sqx-plate'><b>" + E(t.name) + "</b><span>First XI &middot; Season " + (App.seasonNo || 1) + "</span></div>";
+        "<div class='fo-sqx-plate'><b>" + E(t.name) + "</b><span>First XI &middot; Season " + (window.foSeasonN ? foSeasonN(App.seasonNo || 1) : (App.seasonNo || 1)) + "</span></div>";
 
       var railBtn = function (id, ic, big, lbl) {
         return "<button type='button' class='fo-sqx-rb" + (sv.mode === id ? " on" : "") + "' data-mode='" + id + "'>" +

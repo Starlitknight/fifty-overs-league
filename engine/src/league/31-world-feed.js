@@ -258,7 +258,7 @@
       var el = document.createElement("div");
       el.id = "fo-wsvc";
       el.innerHTML = "<i>The World Service &middot; served world &middot; engine " + E(FEED.results.length ? FEED.results[0].engineVersion : "v1") + "</i>" +
-        "<b>England, Season " + FEED.seasonNo + " &middot; round " + FEED.roundsPlayed + " of " + FEED.rounds + "</b>" + top3 +
+        "<b>England, Season " + (window.foSeasonN ? foSeasonN(FEED.seasonNo) : FEED.seasonNo) + " &middot; round " + FEED.roundsPlayed + " of " + FEED.rounds + "</b>" + top3 +
         (FEED.results.length ? "<span>" + E(FEED.results[FEED.results.length - 1].text) + "</span>" : "");
       var own = page.querySelector(".fo-pl-own");
       if (own && own.parentNode) own.parentNode.insertBefore(el, own.nextSibling);

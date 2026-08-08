@@ -184,7 +184,7 @@
     var my = (myRow && ((names && names[claim.slot]) || myRow.name)) || claim.club;
     var groundOf = function (slot) { return (mgr && mgr["g" + slot]) || ((bySlot[slot] || "the ground") + "'s ground"); };
     var pl0 = null; try { pl0 = window.__foPlanet; } catch (ePl) {}
-    var seasonNo = snap.seasonNo || 1;
+    var seasonNo = window.foSeasonN ? foSeasonN(snap.seasonNo || 1) : (snap.seasonNo || 1);
     var EP = pl0 ? pl0.EPOCH : 0, DAYMS = pl0 ? pl0.DAY : 86400000;
     var tsOfDay = function (d9) { return d9 == null ? 0 : EP + d9 * DAYMS; };
     var dayOf = function (round) {
@@ -510,7 +510,7 @@
         statChip(w, "won") + (t ? statChip(t, "tied") : "") + statChip(l, "lost");
       page.innerHTML =
         "<div class='fo-fl'>" +
-        heroHtml(E(my) + " &middot; Season " + (App.seasonNo || 1), chips, formHtml(letters)) +
+        heroHtml(E(my) + " &middot; Season " + (window.foSeasonN ? foSeasonN(App.seasonNo || 1) : (App.seasonNo || 1)), chips, formHtml(letters)) +
         feature +
         (resRows ? "<div class='fo-fl-k'>Results</div><div class='fo-fl-list'>" + resRows + "</div>" : "") +
         "<div class='fo-fl-k'>Still to play</div><div class='fo-fl-list'>" + upRows + "</div>" +

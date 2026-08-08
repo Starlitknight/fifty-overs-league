@@ -740,7 +740,7 @@
         }
       } catch (eR) {}
       var evs = (p._career || []).slice().reverse().slice(0, 14).map(function (c) {
-        var when = "Season " + c.s;
+        var when = "Season " + (window.foSeasonN ? foSeasonN(c.s) : c.s);
         try {
           var wd = (typeof foRoundDate === "function") ? foRoundDate(c.s, c.r) : null;
           if (wd && !/^S\d+ R\d+$/.test(wd)) when = wd;
@@ -762,7 +762,7 @@
           var bySeason = {};
           entries.forEach(function (e) { feed1(bySeason[e.s] = bySeason[e.s] || mkAgg(), e); });
           var keys = Object.keys(bySeason).sort(function (a, b2) { return +a - +b2; });
-          keys.forEach(function (k) { rows.push({ lbl: "Season " + k, b: bySeason[k], cls: "" }); });
+          keys.forEach(function (k) { rows.push({ lbl: "Season " + (window.foSeasonN ? foSeasonN(+k) : k), b: bySeason[k], cls: "" }); });
           if (keys.length > 1) { var tot = mkAgg(); entries.forEach(function (e) { feed1(tot, e); }); rows.push({ lbl: "Career", b: tot, cls: "fo-cp-tot" }); }
         } else if (entries.length) {
           var one = mkAgg(); entries.forEach(function (e) { feed1(one, e); });

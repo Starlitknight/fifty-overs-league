@@ -100,9 +100,9 @@
         var v = S().sweep(now);
         if (v.rec.indBat && v.rec.indBat.line.indexOf(name + " ") === 0) chips.push("Holds the world record score &middot; " + v.rec.indBat.v);
         if (v.rec.indBowl && v.rec.indBowl.line.indexOf(name + " ") === 0) chips.push("Holds the world's best bowling &middot; " + v.rec.indBowl.v + "/" + v.rec.indBowl.rc);
-        if (v.xi && (v.xi.bats.some(function (x) { return x.n === name; }) || v.xi.bowls.some(function (x) { return x.n === name; }))) chips.push("World XI of Season " + v.xi.season);
+        if (v.xi && (v.xi.bats.some(function (x) { return x.n === name; }) || v.xi.bowls.some(function (x) { return x.n === name; }))) chips.push("World XI of Season " + (window.foSeasonN ? foSeasonN(v.xi.season) : v.xi.season));
       } catch (eC) {}
-      pennants.forEach(function (s2) { chips.push(reg.nm + " champion &middot; Season " + s2); });
+      pennants.forEach(function (s2) { chips.push(reg.nm + " champion &middot; Season " + (window.foSeasonN ? foSeasonN(s2) : s2)); });
       var retired = seasons[seasons.length - 1] < p.season;
 
       var seasonRows = rows.map(function (a) {

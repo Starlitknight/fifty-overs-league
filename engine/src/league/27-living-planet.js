@@ -933,25 +933,45 @@
              from: sp.from, to: sp.to, slot: 0, boss: 1, craft: b.craft,
              club: b.club, city: b.city };
   }
-  /* A BOSS TAKES SOMEBODY'S PLACE, he is not an extra man on the staff. The
-   * club fields thirteen; if the greatest cricketer of his generation walks
-   * in, one of the generated pros walks out. The one who goes is the man of
-   * his own craft whose career overlaps his most - the player he kept out -
-   * and failing that the weakest overlapping man on the books. */
-  function evictFor(out, row) {
-    var best = -1, bestN = -1, i, m, ov;
-    for (i = 0; i < out.length; i++) {
-      m = out[i]; if (m.boss) continue;
-      ov = Math.min(m.to, row.to) - Math.max(m.from, row.from) + 1;
-      if (ov <= 0) continue;
-      // the man who goes must be on the books in the boss's LAST season, or the
-      // club quietly ends up fielding fourteen: the eviction has to land in the
-      // same season the arrival does
-      var score = (m.from <= row.to && m.to >= row.to ? 10000 : 0)
-                + (m.role === row.role ? 1000 : 0) + ov * 10 - m.q * 5;
-      if (score > bestN) { bestN = score; best = i; }
+  /* A BOSS TAKES A SEAT, he is not an extra man on the staff. The first
+   * draft pushed him on and evicted ONE overlapping pro, which balanced the
+   * books in exactly one season - the invariant check found Essex fielding
+   * fourteen men for most of the eighties, because the evicted man's career
+   * did not span the boss's. A club is thirteen SEATS, each a line of
+   * succession, so the boss is folded in the way the club actually works:
+   * he is given the seat whose men most resemble him, and that seat's own
+   * timeline is carved around his - the man before him retires the season
+   * he debuts, the man after him debuts the season after he goes, and
+   * anyone wholly inside his span simply never got a game. Thirteen men in
+   * every season of the record, by construction rather than by audit. */
+  function seatFor(out, row) {
+    var score = {}, best = -1, bestN = -Infinity;
+    out.forEach(function (m) {
+      if (m.boss || m.seat == null) return;
+      var ov = Math.min(m.to, row.to) - Math.max(m.from, row.from) + 1;
+      if (ov <= 0) return;
+      score[m.seat] = (score[m.seat] || 0) + (m.role === row.role ? 1000 : 0) + ov * 10 - m.q * 5;
+    });
+    Object.keys(score).forEach(function (s) { if (score[s] > bestN) { bestN = score[s]; best = +s; } });
+    return best;
+  }
+  function carveSeat(out, seat, row) {
+    for (var i = out.length - 1; i >= 0; i--) {
+      var m = out[i];
+      if (m.boss || m.seat !== seat) continue;
+      if (m.from >= row.from && m.to <= row.to) { out.splice(i, 1); continue; }   // never got a game
+      if (m.from < row.from && m.to > row.to) {
+        // spans the whole reign: he lost his place to the great man and won
+        // it back after - one man, two spells, the way clubs really work
+        out.push({ name: m.name, role: m.role, bat: m.bat, bowlA: m.bowlA, q: m.q,
+                   from: row.to + 1, to: m.to, slot: m.slot, seat: m.seat });
+        m.to = row.from - 1;
+        continue;
+      }
+      if (m.from < row.from && m.to >= row.from) m.to = row.from - 1;             // retired as he arrived
+      if (m.to > row.to && m.from <= row.to) m.from = row.to + 1;                 // debuted as he left
+      if (m.to < m.from) out.splice(i, 1);
     }
-    if (best >= 0) out.splice(best, 1);
   }
   var CAREERS = {};
   function careersOf(rid, slot) {
@@ -974,7 +994,7 @@
         var q = Math.max(0.18, Math.min(1, 0.22 + hrnd(k + "|q") * 0.62 + pull * 0.28));
         var a = Math.max(from, y), b = Math.min(HIST_END, y + len - 1);
         if (b >= a) out.push({ name: manName(rid, slot, seat, gen), role: ro.k,
-                               bat: ro.bat, bowlA: ro.bowl, q: q, from: a, to: b, slot: slot });
+                               bat: ro.bat, bowlA: ro.bowl, q: q, from: a, to: b, slot: slot, seat: seat });
         y += len;
       }
     }
@@ -983,7 +1003,8 @@
       var row = bossCareerRow(rid, b);
       if (row.to < from || row.from > HIST_END) return;
       if (row.from < from) row.from = from;
-      evictFor(out, row);
+      var st = seatFor(out, row);
+      if (st >= 0) { carveSeat(out, st, row); row.seat = st; }
       out.push(row);
     });
     CAREERS[ck] = out;
@@ -1466,7 +1487,7 @@
       regionList().forEach(function (r) {
         if (r.id === myNation()) return;
         var c = championOf(r.id, p.season);
-        if (c) out.push({ day: p.day, season: p.season, dayInSeason: p.di, phase: "league", category: "title", importance: 90, headline: r.nm + " have their champions: " + c.name + " take the season " + p.season + " pennant" });
+        if (c) out.push({ day: p.day, season: p.season, dayInSeason: p.di, phase: "league", category: "title", importance: 90, headline: r.nm + " have their champions: " + c.name + " take the Season " + seasonNo(p.season) + " pennant" });
       });
       // the off-season farewells: eras end, and the wire says goodbye properly
       try {
@@ -1613,7 +1634,7 @@
       var bandHTML = "<div class='fo-pl-band'><i>The world by the hour &middot; on your clock</i><div class='fo-pl-bandrow'>" + band + "</div></div>";
 
       var phaseLine =
-        p.preseason ? "The world is founded and the squads are named - season " + ANCHOR.season + " " + ((ANCHOR.start - dayIx(now)) === 1 ? "begins tomorrow" : "begins in " + (ANCHOR.start - dayIx(now)) + " days") :
+        p.preseason ? "The world is founded and the squads are named - Season " + seasonNo(ANCHOR.season) + " " + ((ANCHOR.start - dayIx(now)) === 1 ? "begins tomorrow" : "begins in " + (ANCHOR.start - dayIx(now)) + " days") :
         p.kind === "league" ? "Round " + p.round + " of " + ROUNDS + " across the world's leagues" :
         p.kind === "honours" ? "Honours day - champions are crowned tonight" :
         p.kind === "draw" ? "World Cup draw day - sixteen nations learn their fate" :
@@ -1764,7 +1785,7 @@
       page.innerHTML =
         "<div class='fo-pl'>" +
         "<div class='fo-pl-mast'>" +
-        "<div class='fo-pl-kick'>World cricket &middot; Season " + p.season + " &middot; Day " + (p.di + 1) + " of " + CYCLE + "</div>" +
+        "<div class='fo-pl-kick'>World cricket &middot; Season " + seasonNo(p.season) + " &middot; Day " + (p.di + 1) + " of " + CYCLE + "</div>" +
         "<h1>The Planet Plays Today</h1>" +
         "<p>" + E(phaseLine) + ". Every league runs on the world calendar, live from 10:00 UTC — online or offline, the same world for everyone.</p>" +
         // LIVE is a door, not a label: one live nation opens that nation's
@@ -2070,6 +2091,12 @@
    * a knighthood. A word that is a title is not a given name, so a name that
    * opens with one is printed whole. Shared by every ledger in the game so
    * the same man is shortened the same way wherever he is ranked. */
+  /* ONE SEASON NUMBER, EVERYWHERE. The world's own counter starts at 1; the
+   * record starts 136 seasons earlier. Half the rooms mapped the number and
+   * half printed it raw, so the masthead said Season 137 while the squad
+   * kicker and the Gazette dateline said Season 1 - three numbers for the
+   * same six weeks. Every page goes through this one door now. */
+  window.foSeasonN = function (n) { try { return seasonNo(n); } catch (e) { return Math.max(1, n | 0); } };
   var NOT_A_NAME = { sir: 1, dr: 1, lord: 1, king: 1, prince: 1, capt: 1, col: 1, rev: 1, prof: 1 };
   window.foShortName = function (n) {
     var a = String(n || "").trim().split(/\s+/);

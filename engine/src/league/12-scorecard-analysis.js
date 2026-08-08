@@ -754,7 +754,7 @@
       var pn = function (t2, b2) { return "<div class='panel'><h4>" + t2 + "</h4><div class='pad'>" + b2 + "</div></div>"; };
       return "<div class='crumb'>League &raquo; Almanac</div>" +
         "<div class='page-head'><div><div class='eyebrow'>The record book</div><h1>The Fifty Overs Almanac</h1><p>Everything that has ever happened in this league, kept for good.</p></div></div>" +
-        pn("Roll of honour", champs.map(function (c) { return "<div class='fo-ms-row'><span>Season " + c.s + "</span><b>" + E(c.t) + "</b><i>" + E(c.k) + "</i></div>"; }).join("") || "<div class='small'>No champions yet. Someone will be first.</div>") +
+        pn("Roll of honour", champs.map(function (c) { return "<div class='fo-ms-row'><span>Season " + (window.foSeasonN ? foSeasonN(c.s) : c.s) + "</span><b>" + E(c.t) + "</b><i>" + E(c.k) + "</i></div>"; }).join("") || "<div class='small'>No champions yet. Someone will be first.</div>") +
         pn("All-time run scorers", list(runsAll, "runs")) +
         pn("All-time wicket takers", list(wktsAll, "wkts")) +
         pn("Most international caps", list(capsAll, "caps")) +
@@ -4065,6 +4065,26 @@
       var hintEl = page.querySelector("#fo-world-hint");
       // full-viewport fit + centered start
       try { foFullBleedFit(page.querySelector(".fo-world")); } catch (eF) {}
+      // THE MASTHEAD IS STICKY AND THE HERO MUST CLEAR IT. The header and the
+      // back pill were pinned 22px from the top of the map, and the shell's
+      // own bar sat on top of them - the page opened with its title half
+      // swallowed. The map is measured against the real chrome instead of a
+      // guessed constant, so whatever the masthead grows into, the words
+      // start below it.
+      var wchrome = function () {
+        try {
+          var wEl = page.querySelector(".fo-world");
+          var tb9 = document.getElementById("topbar");
+          if (wEl && tb9) {
+            var ov9 = tb9.getBoundingClientRect().bottom - wEl.getBoundingClientRect().top;
+            wEl.style.setProperty("--wchrome", Math.max(0, Math.round(ov9)) + "px");
+          }
+        } catch (eCh) {}
+      };
+      // the shell's second row mounts on its own clock, so measure now and
+      // again once the masthead has finished growing
+      wchrome(); setTimeout(wchrome, 350); setTimeout(wchrome, 1200);
+      window.addEventListener("resize", wchrome);
       var openCard = function (i) {
         var r = FO_CX_REGIONS[i]; if (!r) return;
         var done = foCxConquered(st, r.id);
@@ -5739,7 +5759,7 @@
         (region.type ? "<span>&#9672; " + E(region.type) + "</span>" : "") +
         "<span>&#10086; " + E(foPitchName(region.pitch)) + " pitches</span>" +
         (region.wx ? "<span>&#9729; " + E(region.wx) + "</span>" : "") + "</div>";
-      var ebText = own ? ("Your Domestic League &middot; Season " + ((s && s.season) || 1)) : "The Grand Tour &middot; Rival League";
+      var ebText = own ? ("Your Domestic League &middot; Season " + (window.foSeasonN ? foSeasonN((s && s.season) || 1) : ((s && s.season) || 1))) : "The Grand Tour &middot; Rival League";
       var pulseStats = own
         ? "<div><i>You</i><b>" + foOrdinal(mePos || 8) + "</b></div><div><i>Top 4</i><b>Qualify</b></div><div><i>" + (14 - round) + "</i><b>Rounds left</b></div>"
         : "<div><i>Format</i><b>50 ov</b></div><div><i>Top 4</i><b>Qualify</b></div><div><i>Clubs</i><b>8</b></div>";
@@ -5942,7 +5962,7 @@
         // -- everything already banked, newest round first
         var rKeys = Object.keys(resByRound).map(Number).sort(function (a9, b9) { return b9 - a9; });
         resultsPanel = rKeys.length ? rKeys.map(function (rn) {
-          return "<div class='fo-rs-round'><div class='fo-rs-rh'>" + (snapSeasonOk ? "" : "Season " + srv.snap.seasonNo + " &middot; ") + "Round " + rn + "</div>" +
+          return "<div class='fo-rs-round'><div class='fo-rs-rh'>" + (snapSeasonOk ? "" : "Season " + (window.foSeasonN ? foSeasonN(srv.snap.seasonNo) : srv.snap.seasonNo) + " &middot; ") + "Round " + rn + "</div>" +
             resByRound[rn].map(function (r7) {
               return "<div class='fo-nt-rrow'><span class='t'>" + E(r7.home) + " v " + E(r7.away) + "</span><span class='res'>" + E(r7.text) + "</span></div>";
             }).join("") + "</div>";
@@ -5950,14 +5970,14 @@
           ? "<p class='fo-ov-sublabel'>No matches banked yet &mdash; the season is about to begin.</p>"
           : "<p class='fo-ov-sublabel'>Reaching the World Service for the season record&hellip;</p>");
         srvLiveFirst = (srv.state === "live");
-        if (srv.snap) ebText = (ownNat ? "Your world league" : "The World Service") + " &middot; Season " + srv.cal.seasonNo;
+        if (srv.snap) ebText = (ownNat ? "Your world league" : "The World Service") + " &middot; Season " + (window.foSeasonN ? foSeasonN(srv.cal.seasonNo) : srv.cal.seasonNo);
       }
       // ---- SEASON HONOURS: real leaders from the banked scorecards ---------
       var ntSecLeaders = "";
       if (srv && srv.snap && srv.snap.stats) {
         var stt = srv.snap.stats;
         var champLn = srv.snap.champion
-          ? "<div class='fo-nt-crown'>&#127942; <b>" + E(srv.snap.champion) + "</b> are the Season " + srv.snap.seasonNo + " champions</div>" : "";
+          ? "<div class='fo-nt-crown'>&#127942; <b>" + E(srv.snap.champion) + "</b> are the Season " + (window.foSeasonN ? foSeasonN(srv.snap.seasonNo) : srv.snap.seasonNo) + " champions</div>" : "";
         var ldRow = function (x, i, val) {
           var mine = !!(wclm && wclm.country === nation && x.club === wclm.club);
           return "<div class='fo-nt-ld" + (mine ? " mine" : "") + "'><i>" + (i + 1) + "</i><b>" + E(x.name) + "</b><u>" + E(x.club) + "</u><span>" + val + "</span></div>";
@@ -6875,12 +6895,12 @@
       "html body .fo-world-zoom button:hover{border-color:#F3D37A !important;color:#F3D37A !important}" +
       "@media (prefers-reduced-motion:reduce){.fo-wp.live .dot{animation:none}}" +
       // header, hint, back
-      ".fo-world-hd{position:absolute;z-index:4;top:22px;left:0;right:0;text-align:center;pointer-events:none;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.8)}" +
+      ".fo-world-hd{position:absolute;z-index:4;top:calc(18px + var(--wchrome,0px));left:0;right:0;text-align:center;pointer-events:none;color:#fff;text-shadow:0 2px 14px rgba(0,0,0,.8);padding:0 96px}" +
       "body.fo-home-on .fo-world-hd{top:64px}" +
       ".fo-world-hd .eb{font-family:Oswald,sans-serif;font-size:11px;font-weight:600;letter-spacing:4px;text-transform:uppercase;color:#F3D37A}" +
       ".fo-world-hd h1{margin:4px 0 3px;font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(30px,4vw,52px);letter-spacing:3px;text-transform:uppercase}" +
       ".fo-world-hd .ty{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2.6px;text-transform:uppercase;color:rgba(255,255,255,.85)}" +
-      "html body .fo-world-back{position:absolute;z-index:5;top:22px;left:18px;font-family:Oswald,sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#fff;background:rgba(5,20,40,.66);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:9px 16px;text-decoration:none;backdrop-filter:blur(8px)}" +
+      "html body .fo-world-back{position:absolute;z-index:5;top:calc(18px + var(--wchrome,0px));left:18px;font-family:Oswald,sans-serif;font-size:11px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#fff;background:rgba(5,20,40,.66);border:1px solid rgba(255,255,255,.25);border-radius:999px;padding:9px 16px;text-decoration:none;backdrop-filter:blur(8px)}" +
       "body.fo-home-on .fo-world-back{top:64px}" +
       ".fo-world-hint{position:absolute;z-index:4;bottom:18px;left:0;right:0;text-align:center;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:2.4px;text-transform:uppercase;color:rgba(255,255,255,.75);text-shadow:0 1px 4px rgba(0,0,0,.9);pointer-events:none}" +
       // the nation card

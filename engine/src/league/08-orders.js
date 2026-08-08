@@ -590,7 +590,7 @@
       var xiNames = bo.slice(0, 11);
       var benchNames = ((t && t.players) || []).map(function (p9) { return p9.name; }).filter(function (nm) { return xiNames.indexOf(nm) < 0; });
       // vertical, editable: the XI as a draggable list, the bench beside it
-      var xiCol = "<div class='pv-xi'><div class='fo-ord-vzh' style='margin-top:2px'>Batting order <span>&middot; tap &#x25B2;&#x25BC; to move a man, or drag him &middot; tap a man's letter to tell him how to bat: N normal, A attack, L launch, D defend</span></div><div class='fo-ord-xis' id='fo-ord-xi-list'>" + xiNames.map(function (nm, i) { return chip(nm, i, false); }).join("") + "</div></div>";
+      var xiCol = "<div class='pv-xi'><div class='fo-ord-vzh' style='margin-top:2px'>Batting order <span>&middot; &#x25B2;&#x25BC; reorder &middot; the letter is his tempo &mdash; N normal &middot; A attack &middot; L launch &middot; D defend</span></div><div class='fo-ord-xis' id='fo-ord-xi-list'>" + xiNames.map(function (nm, i) { return chip(nm, i, false); }).join("") + "</div></div>";
       var benchCol = "<div class='pv-bench'><div class='fo-ord-vzh' style='margin-top:2px'>Bench</div><div class='fo-ord-xis' id='fo-ord-bench-list'>" + benchNames.map(function (nm) { return chip(nm, null, true); }).join("") + "</div></div>";
       // one lane per bowling option (even the unused sixth): filled blocks
       // are his overs, and every cell is a BUTTON - tap an empty over to
@@ -1329,13 +1329,13 @@
       // a row is the rail and then the card; the rail is a sibling, not a
       // passenger, so its buttons are real buttons the keyboard can reach
       ".fo-ord-xis .xcw{display:flex;align-items:stretch;gap:5px;min-width:0}" +
-      ".fo-ord-xis .xcw>.mv{flex:0 0 auto;display:flex;flex-direction:column;justify-content:center;gap:3px;touch-action:manipulation}" +
+      ".fo-ord-xis .xcw>.mv{flex:0 0 auto;display:flex;flex-direction:column;justify-content:stretch;gap:0;touch-action:manipulation;border:1px solid rgba(28,36,51,.14);border-radius:10px;background:#FFFEFC;overflow:hidden;align-self:center}" +
       "html body #page .fo-ord-xis .xcw>button.xc{flex:1 1 auto;min-width:0}" +
-      "html body.ftpskin #page .fo-ord-xis button.mvb,html body #page .fo-ord-xis button.mvb{display:flex!important;align-items:center;justify-content:center;width:34px;min-width:0;min-height:20px!important;height:auto;flex:1 1 0;margin:0!important;padding:0!important;border:1px solid rgba(28,36,51,.12)!important;border-radius:7px;background:#EEF2F7!important;color:#41577a!important;font-size:10px;line-height:1;cursor:pointer;box-shadow:none!important;-webkit-user-select:none;user-select:none;transition:background .12s,color .12s}" +
+      "html body.ftpskin #page .fo-ord-xis button.mvb,html body #page .fo-ord-xis button.mvb{display:flex!important;align-items:center;justify-content:center;width:32px;min-width:0;min-height:24px!important;height:auto;flex:1 1 0;margin:0!important;padding:0!important;border:0!important;border-bottom:1px solid rgba(28,36,51,.1)!important;border-radius:0;background:transparent!important;color:#41577a!important;font-size:10px;line-height:1;cursor:pointer;box-shadow:none!important;-webkit-user-select:none;user-select:none;transition:background .12s,color .12s}" +
       "html body #page .fo-ord-xis button.mvb:hover{background:#DCE5F0!important;border-color:#B04A2C!important;color:#B04A2C!important}" +
       "html body #page .fo-ord-xis button.mvb:active{background:#B04A2C!important;color:#FFFEFC!important}" +
       "html body #page .fo-ord-xis button.mvb.off{opacity:.25;pointer-events:none}" +
-      "html body #page .fo-ord-xis button.mvb.mvs{font-size:13px;color:#B04A2C!important}" +
+      "html body #page .fo-ord-xis button.mvb.mvs{font-size:13px;color:#B04A2C!important;border-bottom:0!important}" +
       // the player-card modal is narrow: slim the v2 art panel so the name
       // never truncates beside the OVR
       "#fo-ord-pc .pkm{padding-left:84px}" +
@@ -1372,7 +1372,7 @@
       ".fo-ord-xis .xc .r1 .hd{font-size:8px;font-weight:800;color:#9aa3af;letter-spacing:.04em;flex:0 0 auto}" +
       ".fo-ord-xis .xc .r1 .ov,.fo-ord-bws .bw .bw-h .ov{margin-left:auto;display:inline-flex;align-items:baseline;gap:2px;flex:0 0 auto}" +
       ".fo-ord-xis .xc .ov b,.fo-ord-bws .bw .ov b{font-size:16.5px;font-weight:800;color:#B04A2C}" +
-      ".fo-ord-xis .xc .r2,.fo-ord-bws .bw .r2{margin-top:-1px}" +
+      ".fo-ord-xis .xc .r2{margin-top:2px}.fo-ord-bws .bw .r2{margin-top:-1px}" +
       ".fo-ord-pcx2{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap}" +
       "html body #page .fo-ord-pcx2 button,html body .fo-modal .fo-ord-pcx2 button{border:1px solid rgba(28,36,51,.2);background:#FFFEFC;color:#0E233F;border-radius:8px;padding:6px 12px;font-size:12px;font-weight:700;cursor:pointer}" +
       ".fo-ord-xis .xc .r1 b{font-size:11.5px;font-weight:800;color:#243244;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +

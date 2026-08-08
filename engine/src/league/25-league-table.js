@@ -577,7 +577,7 @@
 
         main = "<div class='fo-lgx-panel'>" +
           "<div class='fo-lgx-ph'><h2>The stats centre</h2><span class='fo-lgx-sub'>Season " +
-          ((snap && snap.seasonNo) || 1) + " &middot; after round " + playedRounds + "</span></div>" +
+          (window.foSeasonN ? foSeasonN((snap && snap.seasonNo) || 1) : ((snap && snap.seasonNo) || 1)) + " &middot; after round " + playedRounds + "</span></div>" +
           bookTabs + body9 + "</div>";
 
         rail = "<div class='fo-lgx-card dark'><h3>The season so far</h3>" +

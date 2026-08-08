@@ -109,7 +109,7 @@
     var page = document.getElementById("page"); if (!page || !ready()) return;
     foGzCss();
     document.body.classList.add("fo-gz-on");
-    var me = userTeam(), sN = App.seasonNo || 1, day = worldDay();
+    var me = userTeam(), sN = window.foSeasonN ? foSeasonN(App.seasonNo || 1) : (App.seasonNo || 1), day = worldDay();
 
     var lead = foGzLead(me, day);
 

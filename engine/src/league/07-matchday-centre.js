@@ -813,7 +813,7 @@
       }
       var eye = ["FULL TIME"];
       if (meta.kind) eye.push(meta.kind);
-      if (meta.seasonNo) eye.push("SEASON " + meta.seasonNo);
+      if (meta.seasonNo) eye.push("SEASON " + (window.foSeasonN ? foSeasonN(meta.seasonNo) : meta.seasonNo));
       if (meta.roundNo) eye.push("ROUND " + meta.roundNo);
       if (meta.dateStr) eye.push(E(meta.dateStr));
       return "<div class='fo-mhead'><div class='fo-mh-l'>" +

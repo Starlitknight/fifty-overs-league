@@ -365,7 +365,20 @@
     if (q.fr) { renderFriendly(page, q.fr); return; }
     var sv = wt.serverFixtures(rid, Date.now());
     var fx = sv.fx || [], cal = sv.cal;
-    if (!fx.length || !cal.round) { page.innerHTML = shell(rid, cal, null, null, "<p class='fd-dim'>No round on today's card.</p>"); return; }
+    if (!fx.length || !cal.round) {
+      // a rest day is still a page, not a shrug: say when play resumes and
+      // hand the reader somewhere to go
+      var rest9 = "";
+      try {
+        var pl9 = P(), ph9 = pl9.phaseOf(Date.now());
+        var nxh9 = pl9.natHour(rid);
+        rest9 = "<div class='fd-rest'><b>A rest day in this league.</b>" +
+          "<span>The next round bowls at " + (pl9.hhTxt ? pl9.hhTxt(nxh9) : (nxh9 + ":00")) + " on the next match day.</span>" +
+          "<a href='#/schedule'>The season&rsquo;s calendar &rsaquo;</a><a href='#/league'>The table as it stands &rsaquo;</a></div>";
+      } catch (e9) { rest9 = "<p class='fd-dim'>No round on today's card.</p>"; }
+      page.innerHTML = shell(rid, cal, null, null, rest9);
+      return;
+    }
     var fi = Math.max(0, Math.min(fx.length - 1, parseInt(q.f || "0", 10) || 0));
     var m = fx[fi];
     var id = rid + ":s" + cal.seasonNo + ":r" + cal.round + ":h" + m.home.slot + "a" + m.away.slot;
@@ -1395,6 +1408,10 @@
       "html body #page .fo-fd a.fd-plink:hover{color:#C9571F !important}",
       "html body #page .fo-fd .fd-teams a.fd-plink:hover{color:#E8B96A !important}",
       ".fo-fd .fd-dim{font:400 13.5px Fraunces,Georgia,serif;color:var(--fomut);padding:24px 6px}",
+      ".fo-fd .fd-rest{display:flex;flex-direction:column;gap:8px;padding:34px 6px 10px;max-width:430px}",
+      ".fo-fd .fd-rest b{font:600 21px/1.25 Fraunces,Georgia,serif;color:var(--foink)}",
+      ".fo-fd .fd-rest span{font:400 13.5px/1.6 Inter,system-ui,sans-serif;color:var(--fomut)}",
+      "html body #page .fo-fd .fd-rest a{font:600 11.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#C9571F !important;text-decoration:none;margin-top:4px}",
       ".fo-fd .fd-foot{display:flex;justify-content:space-between;margin-top:16px}",
       "html body #page .fo-fd .fd-foot a{font:700 10px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#C9571F !important;text-decoration:none !important}",
       // ---- the phone: stacked, the crease first, the stage tighter
