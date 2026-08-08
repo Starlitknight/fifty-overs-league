@@ -20,7 +20,7 @@
   // cannot print a national season number - it prints the year, which is the
   // one name for a season that every country agrees on.
   function SEASON_LAB(n) {
-    try { if (window.__foPlanet && window.__foPlanet.seasonYear) return String(window.__foPlanet.seasonYear(n)); } catch (e) {}
+    try { if (window.__foPlanet && window.__foPlanet.seasonNo) return String(window.__foPlanet.seasonNo(n)); } catch (e) {}
     return String(n);
   }
   "use strict";

@@ -723,7 +723,12 @@
         // league are counties that were playing long before anybody opened
         // this page; only the seat a person took is new. The founding year
         // and the seasons behind it both come off the heritage now.
-        var foundedTxt = her ? (her.human ? "This season" : String(her.founded)) : "Season 1";
+        // A SEASON IS NOT A YEAR. A club older than the record has no season
+        // number to be founded in, and saying so is truer than inventing one.
+        var foundedTxt = !her ? "&mdash;"
+          : her.human ? "This season"
+          : her.foundedSeason ? "Season " + her.foundedSeason
+          : "Before the record";
         var seasonsTxt = her && !her.human ? num(her.seasons + Math.max(0, seasonNo - 1)) : String(seasonNo);
         var idMeta =
           "<span>Manager<b>" + (mgr ? E(mgr) : "Unmanaged") + "</b></span>" +
@@ -919,11 +924,11 @@
             ? "<div class='hnE'>Founded this season. No honours yet &mdash; everything is still to be won.</div>"
             : her
               ? hrRow(E(natName(cid)) + " champions", her.titles + lgTitles.length,
-                      her.lastTitleYear ? "last won in " + her.lastTitleYear : "") +
+                      her.lastTitleYear ? "last won in Season " + her.lastTitleYear : "") +
                 hrRow("The National Cup", her.cups, "") +
                 hrRow("The Champions Cup", her.crowns + ccTitles.length, "") +
-                "<div class='hnFoot'>Est. " + her.founded + " &middot; " + her.seasons + " seasons in the " +
-                E(natName(cid)) + " league, which has been played since " + her.leagueFrom + "</div>" +
+                "<div class='hnFoot'>" + her.seasons + " seasons in the " + E(natName(cid)) +
+                " league, first played in Season " + her.leagueFromSeason + "</div>" +
                 "<a class='fo-cd-lnk' href='" + hrefT("honours") + "'>The records</a>"
               : ((lgTitles.length || ccTitles.length)
                 ? hnRow(E(natName(cid)) + " champions", lgTitles) + hnRow("The Champions Cup", ccTitles) +
@@ -937,16 +942,16 @@
         // not a timeline.
         var tlItems = [];
         if (her && !her.human) {
-          tlItems.push({ t: String(her.founded), s: "Founded &middot; " +
-            (her.founded < her.leagueFrom
+          tlItems.push({ t: her.foundedSeason ? "Season " + her.foundedSeason : "Founded",
+            s: "Founded &middot; " + (her.founded < her.leagueFrom
               ? "playing before the " + E(natName(cid)) + " league existed"
-              : "joined a competition first played in " + her.leagueFrom) });
+              : "joined a competition first played in Season " + her.leagueFromSeason) });
           var marks = [];
           (her.crownYears || []).forEach(function (y9) { marks.push({ y: y9, s: "Champions Cup winners" }); });
           (her.titleYears || []).forEach(function (y9) { marks.push({ y: y9, s: E(natName(cid)) + " champions" }); });
           (her.cupYears || []).forEach(function (y9) { marks.push({ y: y9, s: "National Cup winners" }); });
           marks.sort(function (a, b) { return b.y - a.y; });
-          marks.slice(0, 6).forEach(function (m8) { tlItems.push({ t: String(m8.y), s: m8.s }); });
+          marks.slice(0, 6).forEach(function (m8) { tlItems.push({ t: "Season " + m8.y, s: m8.s }); });
         } else {
           tlItems.push({ t: "Season 1", s: "Founded &middot; a new club in " + E(natName(cid)) + " " + E(divLabel) });
         }
@@ -997,7 +1002,7 @@
             // WITH THE YEARS ON THEM. A count is a fact; a list of years is a
             // history, and every one of these is a season with a table behind it.
             var yrs = function (a) {
-              var l = (a || []).slice().reverse();
+              var l = (a || []).slice().reverse().map(function (x) { return "S" + x; });
               return l.length > 12 ? l.slice(0, 12).join(", ") + " and " + (l.length - 12) + " more" : l.join(", ");
             };
             if (her.titles) won.push("<div class='fo-cp-note'><b>" + her.titles + "</b> &mdash; " + E(natName(cid)) + " championship" + (her.titles === 1 ? "" : "s") + "<u>" + yrs(her.titleYears) + "</u></div>");
@@ -1005,8 +1010,9 @@
             if (her.crowns) won.push("<div class='fo-cp-note'><b>" + her.crowns + "</b> &mdash; Champions Cup" + (her.crowns === 1 ? "" : "s") + "<u>" + yrs(her.crownYears) + "</u></div>");
             return "<div class='fo-cp-sub'>The record</div>" +
               (won.length ? won.join("") : "<p class='fo-cp-dim'>" + her.seasons + " seasons in the competition and nothing to show for them.</p>") +
-              "<div class='fo-cp-note'>Founded <b>" + her.founded + "</b> &middot; " + her.seasons + " seasons played" +
-              (her.lastTitleYear ? " &middot; last title in " + her.lastTitleYear : "") +
+              "<div class='fo-cp-note'>Founded <b>" + (her.foundedSeason ? "Season " + her.foundedSeason : "before the record") +
+              "</b> &middot; " + her.seasons + " seasons played" +
+              (her.lastTitleYear ? " &middot; last title in Season " + her.lastTitleYear : "") +
               " &middot; <a href='#/stats?v=hist&n=" + encodeURIComponent(cid) + "'>walk the seasons &rsaquo;</a></div>";
           })() +
           "<div class='fo-cp-sub'>The ground</div>" +

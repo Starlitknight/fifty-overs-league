@@ -343,12 +343,9 @@
         // beside it, which is the figure every other league shares.
         (function () {
           var sN = (snap && snap.seasonNo) || (cal && cal.seasonNo > 0 ? cal.seasonNo : 1);
-          var lab = "Season " + sN, yr = "";
-          try {
-            if (pl && pl.seasonNoIn) lab = "Season " + pl.seasonNoIn(natId, sN);
-            if (pl && pl.seasonYear) yr = " &middot; " + pl.seasonYear(sN);
-          } catch (eSy) {}
-          return "<div class='fo-lgx-k'>" + E(natNm) + " &middot; " + lab + yr + "</div>";
+          var lab = "Season " + sN;
+          try { if (pl && pl.seasonLabel) lab = pl.seasonLabel(sN); } catch (eSy) {}
+          return "<div class='fo-lgx-k'>" + E(natNm) + " &middot; " + lab + "</div>";
         })() +
         "<h1>The " + E(natNm) + " League" + (hasDivs ? " &middot; Division " + (plateDiv === 1 ? "One" : "Two") : "") + "</h1>" +
         "</div></div>" +

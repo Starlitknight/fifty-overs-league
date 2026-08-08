@@ -647,8 +647,8 @@
       // selling is exactly what a close season is for, and the auctions run on
       // their own three-day clock rather than on the fixture list. The eyebrow
       // says so instead of printing a day number that means nothing in a break.
-      var yr = (window.__foPlanet.seasonYear ? window.__foPlanet.seasonYear(ph && ph.season) : (ph && ph.season));
-      if (ph && ph.kind === "league") eb = "Fifty Overs &middot; " + yr + " season &middot; day " + ((ph.di | 0) + 1);
+      var lab = (window.__foPlanet.seasonLabel ? window.__foPlanet.seasonLabel(ph && ph.season) : ("Season " + (ph && ph.season)));
+      if (ph && ph.kind === "league") eb = "Fifty Overs &middot; " + lab + " &middot; day " + ((ph.di | 0) + 1);
       else eb = "Fifty Overs &middot; the close season &middot; the board stays open";
     } catch (e) {}
     var n = MK.listings ? MK.listings.length : null;

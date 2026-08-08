@@ -762,16 +762,20 @@
   function heritageOf(rid, slot, human) {
     if (human) {
       return { human: true, founded: HERITAGE_NOW, age: 0, seasons: 0, leagueFrom: leagueBorn(rid),
+               foundedSeason: null, leagueFromSeason: sIdx(leagueBorn(rid)),
                titles: 0, cups: 0, crowns: 0, titleYears: [], cupYears: [], crownYears: [],
                lastTitle: null, lastTitleYear: null, best: null };
     }
     var h = honoursOf(rid, slot | 0);
     var lastY = h.titles.length ? h.titles[h.titles.length - 1] : null;
+    // foundedSeason is null for a club older than the record itself
+    var fS = sIdx(h.founded);
     return { human: false, founded: h.founded, age: h.age, seasons: h.seasons, leagueFrom: h.leagueFrom,
+             foundedSeason: fS > 0 ? fS : null, leagueFromSeason: sIdx(h.leagueFrom),
              titles: h.titles.length, cups: h.cups.length, crowns: h.crowns.length,
-             titleYears: h.titles, cupYears: h.cups, crownYears: h.crowns,
-             // "seasons before the record", which is how the cards word it
-             lastTitle: lastY ? (HIST_END - lastY + 1) : null, lastTitleYear: lastY,
+             titleYears: sList(h.titles), cupYears: sList(h.cups), crownYears: sList(h.crowns),
+             // "seasons ago", which is how the cards word it
+             lastTitle: lastY ? (HIST_END - lastY + 1) : null, lastTitleYear: lastY ? sIdx(lastY) : null,
              best: h.titles.length ? (h.titles.length + (h.titles.length === 1 ? " league title" : " league titles"))
                  : h.cups.length  ? (h.cups.length + (h.cups.length === 1 ? " national cup" : " national cups"))
                  : null };
@@ -837,6 +841,29 @@
     return v2;
   }
 
+  /* A SEASON IS NOT A YEAR, so it must not be printed as one.
+   * The record is generated a year at a time because that is the natural way
+   * to say "who came after whom", but a Fifty Overs season is six weeks, not
+   * twelve months, and dating one 1974 tells the reader something untrue about
+   * how long it took. Every year the record holds is therefore converted to a
+   * SEASON NUMBER on the way out, counted from the first season anybody
+   * played: the oldest league on the planet opened the record, so its first
+   * season is Season 1 and every other country joins partway through.
+   * A club older than the record itself has no season number for its founding,
+   * and the pages say that in words rather than inventing one. */
+  var SEASON_ONE = null;
+  function seasonOne() {
+    if (SEASON_ONE != null) return SEASON_ONE;
+    var m = null;
+    regionList().forEach(function (r) { var b = leagueBorn(r.id); if (m == null || b < m) m = b; });
+    SEASON_ONE = (m == null ? HIST_END : m);
+    return SEASON_ONE;
+  }
+  // a year in the record -> the season it was; <= 0 means "before the record"
+  function sIdx(year) { return (year | 0) - seasonOne() + 1; }
+  function histSeasons() { return sIdx(HIST_END); }
+  var sList = function (a) { return (a || []).map(sIdx); };
+
   /* THE WORLD IS NOT IN ITS FIRST SEASON ANY MORE.
    * It said "Season 1" everywhere while the record behind it ran to a hundred
    * and thirty-six - the league had been played since 1890 and the masthead
@@ -848,10 +875,10 @@
    *     every country - England's 2026 is its 137th season, Nepal's is its
    *     47th - and so can only be printed where a country is named.
    */
-  function seasonYear(n) { return HIST_END + Math.max(1, n | 0); }
-  function seasonNoIn(rid, n) { return histSpan(rid).seasons + Math.max(1, n | 0); }
-  // the label for a masthead or a card: the year, because it is true everywhere
-  function seasonLabel(n) { return String(seasonYear(n)); }
+  // the live world carries straight on from the record: the season after the
+  // last one written down is the next number, not a new count starting at one
+  function seasonNo(n) { return histSeasons() + Math.max(1, n | 0); }
+  function seasonLabel(n) { return "Season " + seasonNo(n); }
 
   // the whole span a nation's record covers, for a page that offers to walk it
   // the span is the years that were actually PLAYED, not the years since the
@@ -1136,7 +1163,7 @@
     if (p.kind !== "league") {
       if (p.preseason) {
         var toGo = ANCHOR.start - dayIx(now);
-        return { key: "up", liveIds: [], chip: "The " + seasonLabel(ANCHOR.season) + " season opens " + (toGo === 1 ? "tomorrow" : "in " + toGo + " days") };
+        return { key: "up", liveIds: [], chip: seasonLabel(ANCHOR.season) + " opens " + (toGo === 1 ? "tomorrow" : "in " + toGo + " days") };
       }
       return { key: "fin", liveIds: [],
         chip: dayWord(p) ||
@@ -1288,7 +1315,7 @@
             }).join("") + "</div>";
         }).join("");
         var champLine = stagesDone >= 4 ? "<div class='fo-pl-crown'>&#127942; <b>" + E(wcChampion(p.season).nm) + "</b> are champions of the world</div>" : "";
-        cupHTML = "<div class='fo-pl-cup'><div class='fo-pl-cuph'><i>" + seasonLabel(p.season) + " World Cup</i>" +
+        cupHTML = "<div class='fo-pl-cup'><div class='fo-pl-cuph'><i>" + seasonLabel(p.season) + " &middot; World Cup</i>" +
           (myIn ? "<span class='in'>" + E(myRegion.nm) + " are in" + (ups.length ? " &middot; called up: " + ups.map(E).join(", ") : "") + "</span>" : "<span class='in'>" + E(myRegion.nm) + " missed the cut this season</span>") +
           (abroad.length ? "<span class='in'>Your dressing room at the cup: " + abroad.map(E).join(", ") + "</span>" : "") +
           "</div>" + champLine + stageRows + "</div>";
@@ -1552,5 +1579,5 @@
     FA_DAYS: FA_DAYS, faDayOf: faDayOf, faDrawR16: faDrawR16, cupDraw: cupDraw,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
     COLTS_DAYS: COLTS_DAYS, isRestDay: isRestDay, REST_DAYS: REST_DAYS, dayOfRound: dayOfRound, roundOfDay: roundOfDay,
-    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, heritageOf: heritageOf, honoursOf: honoursOf, histYear: histYear, wcYear: wcYear, wcHistory: wcHistory, seasonYear: seasonYear, seasonNoIn: seasonNoIn, seasonLabel: seasonLabel, natHonours: natHonours, WC_FROM: WC_FROM, crownYear: crownYear, histSpan: histSpan, leagueBorn: leagueBorn, foundedOf: foundedOf, HIST_END: HIST_END, CROWN_FROM: CROWN_FROM, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, nations: regionList, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
+    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, heritageOf: heritageOf, honoursOf: honoursOf, histYear: histYear, wcYear: wcYear, wcHistory: wcHistory, seasonNo: seasonNo, seasonLabel: seasonLabel, sIdx: sIdx, histSeasons: histSeasons, seasonOne: seasonOne, natHonours: natHonours, WC_FROM: WC_FROM, crownYear: crownYear, histSpan: histSpan, leagueBorn: leagueBorn, foundedOf: foundedOf, HIST_END: HIST_END, CROWN_FROM: CROWN_FROM, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, nations: regionList, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();

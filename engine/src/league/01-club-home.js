@@ -649,7 +649,7 @@
       // the year, not the ordinal: the world did not begin this week
       var metaBits = [(function () {
         var n = App.seasonNo || 1;
-        try { if (window.__foPlanet && window.__foPlanet.seasonLabel) return "The " + window.__foPlanet.seasonLabel(n) + " season"; } catch (e) {}
+        try { if (window.__foPlanet && window.__foPlanet.seasonLabel) return window.__foPlanet.seasonLabel(n); } catch (e) {}
         return "Season " + n;
       })()];
       if (ctry) metaBits.push((ctryFlag ? ctryFlag + " " : "") + E(ctry));

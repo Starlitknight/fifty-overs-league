@@ -431,7 +431,7 @@
 
     var elsewhere =
       "<div class='fo-stc-sec'><div class='fo-stc-sech'>Elsewhere in the record</div><div class='fo-stc-grid'>" +
-      "<a class='fo-stc-item' href='#/stats?v=hist&n=" + encodeURIComponent(natId) + "'><b>The record</b><span>Every season this league has ever played: the table that decided it, the champions and the cup winners, year by year.</span><i>" + (function () { try { var sp = PL9().histSpan(natId); return sp.seasons ? sp.from + "&ndash;" + sp.to : "The record"; } catch (e) { return "The record"; } })() + "</i></a>" +
+      "<a class='fo-stc-item' href='#/stats?v=hist&n=" + encodeURIComponent(natId) + "'><b>The record</b><span>Every season this league has ever played: the table that decided it, the champions and the cup winners, year by year.</span><i>" + (function () { try { var sp = PL9().histSpan(natId); return sp.seasons ? "Seasons " + PL9().sIdx(sp.from) + "&ndash;" + PL9().sIdx(sp.to) : "The record"; } catch (e) { return "The record"; } })() + "</i></a>" +
       "<a class='fo-stc-item' href='#/league'><b>The league table</b><span>Where the clubs stand, the fixtures and the results, round by round.</span><i>" + E(natName(natId)) + "</i></a>" +
       "<a class='fo-stc-item' href='#/rankings'><b>The world rankings</b><span>Nations and clubs ranked on what they have done, across every competition.</span><i>The world</i></a>" +
       "<a class='fo-stc-item' href='#/almanack'><b>The world almanack</b><span>Champions, cup winners and the honours every season has handed out.</span><i>Every season</i></a>" +
@@ -571,6 +571,10 @@
      All of it derived from the seed - nothing stored, nothing fetched.
      ========================================================================== */
   function PL9() { try { return window.__foPlanet || null; } catch (e) { return null; } }
+  function ord(n) {
+    var v = n | 0, s2 = (v % 100 >= 11 && v % 100 <= 13) ? "th" : ({ 1: "st", 2: "nd", 3: "rd" })[v % 10] || "th";
+    return v + s2;
+  }
   function histBody(natId, wantYear) {
     var P = PL9();
     if (!P || !P.histYear) return "<div class='fo-stc-sec'><p class='fo-stc-dim'>The record is still waking up.</p></div>";
@@ -591,10 +595,14 @@
     var teamHref = function (slot) { return "#/team?c=" + encodeURIComponent(natId) + "&s=" + slot; };
 
     // the years, newest first, as one picker - every season is one tap away
+    // A SEASON IS NOT A YEAR - six weeks, not twelve months - so the record
+    // is walked in season numbers. The year stays as the internal key because
+    // that is how the seasons are generated; nothing prints it.
+    var sN = function (yy) { return P.sIdx ? P.sIdx(yy) : yy; };
     var opts = "";
     for (var y = span.to; y >= span.from; y--) {
       if (!P.histYear(natId, y)) continue;
-      opts += "<option value='" + y + "'" + (y === year ? " selected" : "") + ">" + y + "</option>";
+      opts += "<option value='" + y + "'" + (y === year ? " selected" : "") + ">Season " + sN(y) + "</option>";
     }
     var natOpts = (P.nations() || []).map(function (r) {
       return "<option value='" + E(r.id) + "'" + (r.id === natId ? " selected" : "") + ">" + E(r.nm) + "</option>";
@@ -603,7 +611,8 @@
     var prevY = null, nextY = null;
     for (y = year - 1; y >= span.from; y--) if (P.histYear(natId, y)) { prevY = y; break; }
     for (y = year + 1; y <= span.to; y++) if (P.histYear(natId, y)) { nextY = y; break; }
-    var step = function (yy, lab) {
+    var step = function (yy, pre, post) {
+      var lab = yy == null ? "&mdash;" : pre + "S" + sN(yy) + post;
       return yy == null ? "<span class='fo-stc-hstep off'>" + lab + "</span>"
         : "<a class='fo-stc-hstep' href='#/stats?v=hist&n=" + encodeURIComponent(natId) + "&y=" + yy + "'>" + lab + "</a>";
     };
@@ -630,13 +639,13 @@
     var champ = nmOf(h.champion);
     var cupTxt = h.cup == null ? "not played" : nmOf(h.cup);
     return "<div class='fo-stc-sec fo-stc-hhead'>" +
-      "<div class='fo-stc-hnav'>" + step(prevY, "&lsaquo; " + (prevY || "")) +
+      "<div class='fo-stc-hnav'>" + step(prevY, "&lsaquo; ", "") +
       "<label>Season<select id='fo-stc-hy'>" + opts + "</select></label>" +
       "<label>League<select id='fo-stc-hn'>" + natOpts + "</select></label>" +
-      step(nextY, (nextY || "") + " &rsaquo;") + "</div>" +
-      "<h2>" + E(natName(natId)) + " &middot; " + year + "</h2>" +
-      "<p class='fo-stc-dim'>Season " + (year - span.from + 1) + " of " + span.seasons +
-      " &middot; the competition has been played since " + span.from + ".</p>" +
+      step(nextY, "", " &rsaquo;") + "</div>" +
+      "<h2>" + E(natName(natId)) + " &middot; Season " + sN(year) + "</h2>" +
+      "<p class='fo-stc-dim'>The " + E(natName(natId)) + " league's " + ord(year - span.from + 1) +
+      " season of " + span.seasons + " &middot; first played in Season " + sN(span.from) + ".</p>" +
       "<div class='fo-stc-lead'>" +
       "<div><i>Champions</i><b><a href='" + teamHref(h.champion) + "'>" + E(champ) + "</a></b><em>" + h.table[0].pts + " points from " + h.rounds + "</em></div>" +
       "<div><i>National Cup</i><b>" + (h.cup == null ? "&mdash;" : "<a href='" + teamHref(h.cup) + "'>" + E(cupTxt) + "</a>") + "</b><em>" + (h.cup == null ? "not played that year" : "the knockout") + "</em></div>" +
