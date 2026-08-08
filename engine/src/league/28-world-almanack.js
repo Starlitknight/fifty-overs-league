@@ -138,7 +138,8 @@
     var pl = P(); if (!pl) return null;
     var p = pl.phaseOf(now), my = myNation();
     var rd = pl.roundsDone(now, p.season);
-    var sig = p.season + "|" + rd + "|" + my + "|" + ((App && App.results && App.results.length) || 0);
+    var almSel = ""; try { var m0 = /[?&]n=([^&]+)/.exec(location.hash || ""); almSel = m0 ? m0[1] : ""; } catch (e0) {}
+    var sig = p.season + "|" + rd + "|" + my + "|" + almSel + "|" + ((App && App.results && App.results.length) || 0);
     if (CACHE.sig === sig) return CACHE.v;
     var bySeason = {}, rec = {
       total: null, margin: null, chase: null, indBat: null, indBowl: null
@@ -241,16 +242,27 @@
     // was built and have never had a name in them, because nothing kept a
     // career. The record does now: every figure below is the sum of seasons a
     // reader can walk one at a time in the Stats Centre.
+    // WHICH LEAGUE'S RECORD. The lists open on the whole planet; the rail
+    // above them narrows to one country, and the choice rides in the address
+    // so it survives a reload and can be handed to somebody else.
+    var almNat = "";
+    try {
+      var mN = /[?&]n=([^&]+)/.exec(location.hash || "");
+      var want = mN ? decodeURIComponent(mN[1]) : "";
+      if (want && regionList().some(function (r) { return r.id === want; })) almNat = want;
+    } catch (eAN) {}
     var allBat = [], allBowl = [];
     try {
-      var cw = pl.careerWorld ? pl.careerWorld() : [];
+      var cw = almNat ? (pl.careerBook ? pl.careerBook(almNat) : [])
+                      : (pl.careerWorld ? pl.careerWorld() : []);
+      cw.forEach(function (c) { if (!c.rid && almNat) c.rid = almNat; });
       allBat = cw.filter(function (c) { return c.inns >= 30; })
         .sort(function (a, b) { return b.runs - a.runs; }).slice(0, 8);
       allBowl = cw.filter(function (c) { return c.wkts >= 30; })
         .sort(function (a, b) { return b.wkts - a.wkts; }).slice(0, 8);
     } catch (eAT) {}
     var v = { phase: p, rd: rd, runs: top(cur.runs), wkts: top(cur.wkts), rec: rec, roll: roll.reverse(),
-              allBat: allBat, allBowl: allBowl, xi: xiSeason >= 1 ? xiOf(xiSeason) : null };
+              allBat: allBat, allBowl: allBowl, almNat: almNat, xi: xiSeason >= 1 ? xiOf(xiSeason) : null };
     CACHE.sig = sig; CACHE.v = v;
     return v;
   }
@@ -405,10 +417,25 @@
           "</th><th>Ave</th><th>" + (isBat ? "HS" : "BB") + "</th></tr></thead><tbody>" +
           rows.map(function (x, i) { return ldgRow(x, i, isBat); }).join("") + "</tbody></table>" +
           "<a class='fo-al-more' href='#/stats?v=career&sc=world&b=" + (isBat ? "bat" : "bowl") +
-          "'>The whole book &rsaquo;</a></div>";
+          "&sc=" + (v.almNat ? "league&n=" + encodeURIComponent(v.almNat) : "world") + "'>The whole book &rsaquo;</a></div>";
       };
-      var allTimeHTML = ldg("All-time run scorers", v.allBat, true) +
-                        ldg("All-time wicket takers", v.allBowl, false);
+      // one rail for both books: the world, then every league that has one
+      var railHTML = (function () {
+        var item = function (id, lab) {
+          var on = (v.almNat || "") === id;
+          return "<a class='" + (on ? "on" : "") + "' href='#/almanack" + (id ? "?n=" + encodeURIComponent(id) : "") + "'>" + lab + "</a>";
+        };
+        var out = item("", "The world");
+        regionList().forEach(function (r) { out += item(r.id, E(r.nm)); });
+        return "<div class='fo-al-rail'>" + out + "</div>";
+      })();
+      var where = v.almNat ? E((regionById(v.almNat) || {}).nm || "") : "the world";
+      var allTimeHTML =
+        "<div class='fo-al-sec fo-al-atall'><h2>The all-time books</h2>" +
+        "<p class='fo-al-none'>Every career in " + where + " with the innings behind it, sorted on the whole thing.</p>" +
+        railHTML + "</div>" +
+        ldg("All-time run scorers", v.allBat, true) +
+        ldg("All-time wicket takers", v.allBowl, false);
 
       // the winter window
       var mktHTML = "";
@@ -498,6 +525,14 @@
     "html body #page .fo-al-ldg td.big{font-weight:700;color:#141C28;width:52px}",
     "html body #page .fo-al-ldg th:nth-child(4),html body #page .fo-al-ldg td:nth-child(4){width:42px}",
     "html body #page .fo-al-ldg th:nth-child(5),html body #page .fo-al-ldg td:nth-child(5){width:48px}",
+    /* the league rail: a scrolling line of leagues over the two books. Chips
+       rather than the underlined .fo-seg line, because there are seventeen of
+       them and they have to scroll sideways as a set. */
+    "html body #page .fo-al-rail{display:flex;gap:7px;overflow-x:auto;-webkit-overflow-scrolling:touch;padding:4px 0 2px;margin:10px -2px 0;scrollbar-width:none}",
+    "html body #page .fo-al-rail::-webkit-scrollbar{display:none}",
+    "html body #page .fo-al-rail a{flex:0 0 auto;padding:7px 12px;border:1px solid rgba(20,28,40,.16);border-radius:5px;background:#FFFEFC;text-decoration:none;font:600 11.5px/1 Inter,system-ui,sans-serif;color:rgba(20,28,40,.62) !important;white-space:nowrap}",
+    "html body #page .fo-al-rail a.on{background:#0E2246;border-color:#0E2246;color:#FFFEFC !important}",
+    "html body #page .fo-al-atall{padding-bottom:2px}",
     "html body #page a.fo-al-more{display:inline-block;margin-top:11px;font:600 11.5px/1 Inter,system-ui,sans-serif;color:#B44A22 !important;text-decoration:none}",
     "html body #page a.fo-al-ld{text-decoration:none;color:#141C28}",
     "html body #page a.fo-al-ld:hover b{color:#B44A22}",
