@@ -315,6 +315,14 @@
       "html body #page .fo-stc-sub{font:500 11px/1.4 Inter,sans-serif;color:rgba(20,28,40,.52)}",
       "html body #page .fo-stc-dim{font:400 12px/1.55 Inter,sans-serif;color:rgba(20,28,40,.5);margin:8px 2px}",
       "html body #page .fo-stc-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:10px -4px 0}",
+      // THE FOOT HAD NO RULE AT ALL, so its two links were laid out by whatever
+      // the page around them happened to say, and on the record room they
+      // landed on top of each other. It is a row now, with a gap it cannot
+      // close and a wrap for when the two names are too long for one line.
+      "html body #page .fo-stc-foot{display:flex;flex-wrap:wrap;justify-content:space-between;",
+      "gap:10px 18px;margin:22px 0 6px;padding-top:14px;border-top:1px solid rgba(20,28,40,.10)}",
+      "html body #page .fo-stc-foot a{flex:0 1 auto;font:600 12px/1.4 Inter,system-ui,sans-serif;",
+      "color:#B44A22 !important;text-decoration:none}",
       // ---- the record: the year picker, the champions band, the old table ----
       "html body #page .fo-stc-hnav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}",
       "html body #page .fo-stc-hnav label{display:flex;align-items:center;gap:6px;font:700 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(20,28,40,.5)}",

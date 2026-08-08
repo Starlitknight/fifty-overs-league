@@ -140,9 +140,18 @@
     if (document.getElementById("fo-seg-css")) return;
     var s = document.createElement("style"); s.id = "fo-seg-css";
     s.textContent = [
+      /* A MENU MUST SURVIVE THE BOX IT IS DROPPED INTO. The first cut trusted
+         its parent, and on the statement - whose shell lays its children out
+         in a row - the whole menu was squeezed to twenty-six pixels wide and
+         eight tall, so three buttons at forty-odd pixels each spilled straight
+         down over the ledger beneath them. It claims a full line for itself
+         now whether the parent is flex, grid or ordinary flow, refuses to be
+         shrunk below its content, and each choice keeps its words on one line. */
       "html body #page .fo-seg{display:flex;flex-wrap:wrap;gap:0 22px;align-items:center;",
+      "width:100%;flex:1 0 100%;grid-column:1/-1;min-width:0;height:auto;min-height:0;",
       "margin:16px 0 10px;padding:0 2px;border-bottom:1px solid rgba(20,28,40,.10)}",
-      "html body #page .fo-seg > *{position:relative;appearance:none;-webkit-appearance:none;",
+      "html body #page .fo-seg > *{flex:0 0 auto;white-space:nowrap;width:auto;height:auto;",
+      "position:relative;appearance:none;-webkit-appearance:none;",
       "background:transparent !important;border:0 !important;border-radius:0 !important;",
       "box-shadow:none !important;padding:9px 0 10px !important;margin:0 !important;min-height:0;",
       "font:600 12.5px/1 Inter,system-ui,sans-serif !important;letter-spacing:-.005em;",

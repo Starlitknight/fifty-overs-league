@@ -275,7 +275,16 @@
       ".fo-gz-let i{font-family:Fraunces,Georgia,serif;font-size:11.5px;color:rgba(34,30,22,.55)}",
       ".fo-gz-sec.ads .fo-gz-ad{font-family:Fraunces,Georgia,serif;font-size:12px;line-height:1.5;color:#2A2519;border:1px solid rgba(34,30,22,.3);padding:8px 10px;margin:0 0 8px;text-align:center}",
       ".fo-gz-ad b{letter-spacing:.06em}",
-      ".fo-gz-foot{font-family:Fraunces,Georgia,serif;font-style:normal;font-size:11.5px;color:rgba(34,30,22,.6);text-align:center;margin-top:6px}",
+      // the members' line: centred inline links were overlapping each other on
+      // a phone when the row wrapped, so it is a wrapping row with a real gap
+      ".fo-gz-foot{display:flex;flex-wrap:wrap;justify-content:center;align-items:baseline;gap:4px 8px;",
+      "font-family:Fraunces,Georgia,serif;font-style:normal;font-size:11.5px;line-height:1.6;",
+      "color:rgba(34,30,22,.6);text-align:center;margin-top:6px}",
+      // the app widens every link into a 44px touch target with a NEGATIVE
+      // margin, which is invisible in ordinary prose and makes two links in a
+      // flex row sit five pixels on top of each other. Inside this row the
+      // margin is cancelled and the gap does the spacing instead.
+      ".fo-gz-foot a{flex:0 0 auto;white-space:nowrap;margin:0 !important}",
       ".fo-gz-foot a{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;margin:0 -12px;border-radius:12px;color:#8E2F1C;text-decoration:none}",
       ".fo-gz-foot a:hover{text-decoration:underline}"
     ].join("\n");
