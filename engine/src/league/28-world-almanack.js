@@ -370,23 +370,45 @@
 
       // the all-time books, off the whole planet's record
       var natNm9 = {}; try { regionList().forEach(function (r) { natNm9[r.id] = r.nm; }); } catch (eNN) {}
-      var allRow = function (x, i, isBat) {
+      /* THE LEDGER. The almanack's job is that you can look something up, so
+         the all-time lists are a ruled table that fits a phone whole rather
+         than a stack of cards that runs off the side of it. The country is a
+         FLAG, not a word: "South Africa" is thirteen characters of column
+         width spent on something a two-centimetre picture says instantly, and
+         with the word gone the name, the span and the figures all fit. */
+      var shortName = function (n) {
+        var a = String(n || "").trim().split(/\s+/);
+        return a.length < 2 ? n : a[0].charAt(0) + ". " + a.slice(1).join(" ");
+      };
+      var ldgRow = function (x, i, isBat) {
         var span = "";
         try { span = "S" + P().sIdx(x.from) + "\u2013S" + P().sIdx(x.to); } catch (eSp) {}
-        return "<a class='fo-al-ld' href='#/stats?v=career&n=" + encodeURIComponent(x.rid) +
-          "&b=" + (isBat ? "bat" : "bowl") + "&sc=world'><i>" + (i + 1) + "</i>" +
-          (natNm9[x.rid] ? "<img src='" + flagOf(x.rid) + "' alt=''>" : "") +
-          "<span><b>" + E(x.name) + "</b><em>" + E(natNm9[x.rid] || "") + " &middot; " + span +
-          " &middot; " + x.seasons + " seasons</em></span><u>" +
-          (isBat ? x.runs.toLocaleString() + " runs" : x.wkts.toLocaleString() + " wkts") + "</u></a>";
+        var ave = isBat
+          ? ((x.inns - x.no) > 0 ? (x.runs / (x.inns - x.no)).toFixed(1) : "\u2014")
+          : (x.wkts ? (x.rc / x.wkts).toFixed(1) : "\u2014");
+        var best = isBat ? (x.hs + (x.hsNo ? "*" : "")) : (x.bbW ? x.bbW + "/" + x.bbR : "\u2014");
+        return "<tr onclick=\"location.hash='#/stats?v=career&n=" + E(x.rid) +
+          "&b=" + (isBat ? "bat" : "bowl") + "&sc=world'\">" +
+          "<td class='rk'>" + (i + 1) + "</td>" +
+          "<td class='who'><div class='wr'><img src='" + flagOf(x.rid) + "' alt='" + E(natNm9[x.rid] || "") +
+            "' title='" + E(natNm9[x.rid] || "") + "'>" +
+            "<span><b>" + E(shortName(x.name)) + "</b><em>" + span + "</em></span></div></td>" +
+          "<td class='big'>" + (isBat ? x.runs.toLocaleString() : x.wkts) + "</td>" +
+          "<td>" + ave + "</td><td>" + best + "</td></tr>";
       };
-      var allTimeHTML =
-        "<div class='fo-al-sec'><h2>All-time run scorers</h2>" +
-        (v.allBat.length ? v.allBat.map(function (x, i) { return allRow(x, i, true); }).join("")
-                         : "<p class='fo-al-none'>The record is still being read.</p>") + "</div>" +
-        "<div class='fo-al-sec'><h2>All-time wicket takers</h2>" +
-        (v.allBowl.length ? v.allBowl.map(function (x, i) { return allRow(x, i, false); }).join("")
-                          : "<p class='fo-al-none'>The record is still being read.</p>") + "</div>";
+      var ldg = function (title, rows, isBat) {
+        if (!rows.length) return "<div class='fo-al-sec'><h2>" + title +
+          "</h2><p class='fo-al-none'>The record is still being read.</p></div>";
+        return "<div class='fo-al-sec'><h2>" + title + "</h2>" +
+          "<table class='fo-al-ldg'><thead><tr><th class='rk'>#</th><th>" +
+          (isBat ? "Batsman" : "Bowler") + "</th><th>" + (isBat ? "Runs" : "Wkts") +
+          "</th><th>Ave</th><th>" + (isBat ? "HS" : "BB") + "</th></tr></thead><tbody>" +
+          rows.map(function (x, i) { return ldgRow(x, i, isBat); }).join("") + "</tbody></table>" +
+          "<a class='fo-al-more' href='#/stats?v=career&sc=world&b=" + (isBat ? "bat" : "bowl") +
+          "'>The whole book &rsaquo;</a></div>";
+      };
+      var allTimeHTML = ldg("All-time run scorers", v.allBat, true) +
+                        ldg("All-time wicket takers", v.allBowl, false);
 
       // the winter window
       var mktHTML = "";
@@ -453,6 +475,30 @@
     "html body #page .fo-al-rec{padding:8px 0;border-top:1px solid rgba(20,28,40,.06)}",
     "html body #page .fo-al-rec.mine{background:linear-gradient(90deg,rgba(176,132,9,.1),rgba(176,132,9,0));border-radius:10px;padding:8px 10px}",
     "html body #page .fo-al-rec.mine i{color:#B08409}",
+    /* ---- THE LEDGER: one ruled table that fits a phone whole ------------
+       Fixed layout so the name column takes what is left and the four
+       figure columns are never squeezed off the right-hand edge - which is
+       exactly how the old card list failed. The flag stands in for the
+       country: a picture in twenty-two pixels where the word wanted a
+       hundred, and the row still says which nation at a glance. */
+    "html body #page .fo-al-ldg{width:100%;table-layout:fixed;border-collapse:collapse;margin-top:4px;font-variant-numeric:tabular-nums}",
+    "html body #page .fo-al-ldg th{padding:8px 3px;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.42);border-bottom:1px solid rgba(20,28,40,.5);text-align:right}",
+    "html body #page .fo-al-ldg th:nth-child(2){text-align:left}",
+    "html body #page .fo-al-ldg td{padding:9px 3px;border-bottom:1px solid rgba(20,28,40,.08);text-align:right;font:500 13px/1.35 Inter,system-ui,sans-serif;color:rgba(20,28,40,.72)}",
+    "html body #page .fo-al-ldg tbody tr{cursor:pointer}",
+    "html body #page .fo-al-ldg tbody tr:nth-child(odd) td{background:rgba(20,28,40,.022)}",
+    "html body #page .fo-al-ldg tbody tr:hover td{background:rgba(201,85,47,.06)}",
+    "html body #page .fo-al-ldg .rk{width:20px;text-align:right;color:rgba(20,28,40,.38);font-size:11.5px}",
+    "html body #page .fo-al-ldg td.who{text-align:left;overflow:hidden}",
+      "html body #page .fo-al-ldg td.who .wr{display:flex;align-items:center;gap:8px;min-width:0}",
+    "html body #page .fo-al-ldg td.who img{width:22px;height:15px;flex:none;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(20,28,40,.14)}",
+    "html body #page .fo-al-ldg td.who span{min-width:0}",
+    "html body #page .fo-al-ldg td.who b{display:block;font:600 13.5px/1.2 Inter,system-ui,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    "html body #page .fo-al-ldg td.who em{font-style:normal;font:400 10.5px/1.4 Inter,system-ui,sans-serif;color:rgba(20,28,40,.42);font-variant-numeric:tabular-nums}",
+    "html body #page .fo-al-ldg td.big{font-weight:700;color:#141C28;width:52px}",
+    "html body #page .fo-al-ldg th:nth-child(4),html body #page .fo-al-ldg td:nth-child(4){width:42px}",
+    "html body #page .fo-al-ldg th:nth-child(5),html body #page .fo-al-ldg td:nth-child(5){width:48px}",
+    "html body #page a.fo-al-more{display:inline-block;margin-top:11px;font:600 11.5px/1 Inter,system-ui,sans-serif;color:#B44A22 !important;text-decoration:none}",
     "html body #page a.fo-al-ld{text-decoration:none;color:#141C28}",
     "html body #page a.fo-al-ld:hover b{color:#B44A22}",
     "html body #page .fo-al-rec i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#B44A22;font-style:normal}",

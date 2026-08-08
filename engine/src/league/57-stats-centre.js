@@ -351,6 +351,23 @@
       "@media(max-width:430px){html body #page .fo-stc-htb:not(.bk) th:nth-child(6),html body #page .fo-stc-htb:not(.bk) td:nth-child(6){display:none}}",
       // the books carry a name and a line under it, so they scroll rather than
       // squeeze - a career is worth a sideways swipe
+      // the careers ledger: fixed layout, a flag for the nation, four figures
+      "html body #page .fo-stc-ldg{width:100%;table-layout:fixed;border-collapse:collapse;margin-top:6px;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-stc-ldg th{padding:8px 3px;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.42);border-bottom:1px solid rgba(20,28,40,.5);text-align:right}",
+      "html body #page .fo-stc-ldg th:nth-child(2){text-align:left}",
+      "html body #page .fo-stc-ldg td{padding:9px 3px;border-bottom:1px solid rgba(20,28,40,.08);text-align:right;font:500 13px/1.35 Inter,system-ui,sans-serif;color:rgba(20,28,40,.72)}",
+      "html body #page .fo-stc-ldg tr:nth-child(odd) td{background:rgba(20,28,40,.022)}",
+      "html body #page .fo-stc-ldg .rk{width:22px;color:rgba(20,28,40,.38);font-size:11.5px}",
+      "html body #page .fo-stc-ldg td.who{text-align:left;overflow:hidden}",
+      "html body #page .fo-stc-ldg td.who .wr{display:flex;align-items:center;gap:8px;min-width:0}",
+      "html body #page .fo-stc-ldg td.who img{width:22px;height:15px;flex:none;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(20,28,40,.14)}",
+      "html body #page .fo-stc-ldg td.who span{min-width:0}",
+      "html body #page .fo-stc-ldg td.who b{display:block;font:600 13.5px/1.2 Inter,system-ui,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      "html body #page .fo-stc-ldg td.who em{font-style:normal;font:400 10.5px/1.4 Inter,system-ui,sans-serif;color:rgba(20,28,40,.42);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}",
+      "html body #page .fo-stc-ldg td.big{font-weight:700;color:#141C28;width:56px}",
+      "html body #page .fo-stc-ldg th:nth-child(4),html body #page .fo-stc-ldg td:nth-child(4){width:42px}",
+      "html body #page .fo-stc-ldg th:nth-child(5),html body #page .fo-stc-ldg td:nth-child(5){width:46px}",
+      "html body #page .fo-stc-ldg th:nth-child(6),html body #page .fo-stc-ldg td:nth-child(6){width:30px}",
       "html body #page .fo-stc-htb.bk{table-layout:auto;min-width:520px}",
       "html body #page .fo-stc-htb.bk td:nth-child(2) u{display:block;text-decoration:none;font:400 10.5px/1.35 Inter,system-ui,sans-serif;color:rgba(20,28,40,.5)}",
       "html body #page .fo-stc-htb.bk th.r,html body #page .fo-stc-htb.bk td.r{width:auto;padding-left:9px}",
@@ -730,24 +747,37 @@
       for (var i = 0; i < a.length; i++) if ((a[i].slot | 0) === (x.slot | 0)) return a[i].name;
       return "";
     };
+    /* THE LEDGER. Eight columns and a full country name needed 520px and a
+       sideways swipe, so half the figures lived off the right-hand edge of
+       every phone. Four figures and a FLAG fit whole: the flag says the
+       nation in twenty-two pixels where the word wanted a hundred, and the
+       name shortens to an initial and a surname the way a scorecard does. */
+    var flagOf = function (rid) {
+      var base = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
+      try { return base + "flags/" + window.__foCxAPI.flagFile(rid) + ".svg"; } catch (e) { return ""; }
+    };
+    var shortName = function (n) {
+      var a = String(n || "").trim().split(/\s+/);
+      return a.length < 2 ? n : a[0].charAt(0) + ". " + a.slice(1).join(" ");
+    };
     var head = bk === "bat"
-      ? "<tr><th class='r'>#</th><th>Batsman</th><th class='r'>Sns</th><th class='r'>Inns</th><th class='r'>Runs</th><th class='r'>HS</th><th class='r'>Ave</th><th class='r'>100</th></tr>"
-      : "<tr><th class='r'>#</th><th>Bowler</th><th class='r'>Sns</th><th class='r'>Ov</th><th class='r'>Wkts</th><th class='r'>BB</th><th class='r'>Ave</th><th class='r'>5w</th></tr>";
+      ? "<tr><th class='rk'>#</th><th>Batsman</th><th>Runs</th><th>Ave</th><th>HS</th><th>100</th></tr>"
+      : "<tr><th class='rk'>#</th><th>Bowler</th><th>Wkts</th><th>Ave</th><th>BB</th><th>5w</th></tr>";
     var body = list.slice(0, 60).map(function (x, i) {
       var span = "S" + sN(x.from) + "&ndash;S" + sN(x.to);
-      var who = "<td>" + E(x.name) + "<u>" + E(clubOf(x)) + (scope === "world" ? " &middot; " + E(natOf[x.rid] || "") : "") +
-        " &middot; " + span + "</u></td>";
+      var rid = x.rid || natId, fl = flagOf(rid);
+      var who = "<td class='who'><div class='wr'>" +
+        (fl ? "<img src='" + fl + "' alt='" + E(natOf[rid] || "") + "' title='" + E(natOf[rid] || "") + "'>" : "") +
+        "<span><b>" + E(shortName(x.name)) + "</b><em>" + E(clubOf(x)) + " &middot; " + span + "</em></span></div></td>";
       return bk === "bat"
-        ? "<tr><td class='r'>" + (i + 1) + "</td>" + who +
-          "<td class='r'>" + x.seasons + "</td><td class='r'>" + x.inns + "</td><td class='r'><b>" + x.runs + "</b></td>" +
-          "<td class='r'>" + x.hs + (x.hsNo ? "*" : "") + "</td>" +
-          "<td class='r'>" + ((x.inns - x.no) > 0 ? (x.runs / (x.inns - x.no)).toFixed(2) : "&mdash;") + "</td>" +
-          "<td class='r'>" + x.h100 + "</td></tr>"
-        : "<tr><td class='r'>" + (i + 1) + "</td>" + who +
-          "<td class='r'>" + x.seasons + "</td><td class='r'>" + Math.round(x.ov) + "</td><td class='r'><b>" + x.wkts + "</b></td>" +
-          "<td class='r'>" + (x.bbW ? x.bbW + "/" + x.bbR : "&mdash;") + "</td>" +
-          "<td class='r'>" + (x.wkts ? (x.rc / x.wkts).toFixed(2) : "&mdash;") + "</td>" +
-          "<td class='r'>" + x.fifers + "</td></tr>";
+        ? "<tr><td class='rk'>" + (i + 1) + "</td>" + who +
+          "<td class='big'>" + x.runs.toLocaleString() + "</td>" +
+          "<td>" + ((x.inns - x.no) > 0 ? (x.runs / (x.inns - x.no)).toFixed(1) : "&mdash;") + "</td>" +
+          "<td>" + x.hs + (x.hsNo ? "*" : "") + "</td><td>" + x.h100 + "</td></tr>"
+        : "<tr><td class='rk'>" + (i + 1) + "</td>" + who +
+          "<td class='big'>" + x.wkts + "</td>" +
+          "<td>" + (x.wkts ? (x.rc / x.wkts).toFixed(1) : "&mdash;") + "</td>" +
+          "<td>" + (x.bbW ? x.bbW + "/" + x.bbR : "&mdash;") + "</td><td>" + x.fifers + "</td></tr>";
     }).join("");
     var seg = function (k, v, lab) {
       var on = (k === "b" ? bk : scope) === v;
@@ -762,8 +792,8 @@
       "<p class='fo-stc-dim'>Every career in " + (scope === "world" ? "the world" : "the " + E(natName(natId)) + " league") +
       " with " + (bk === "bat" ? "30 innings" : "30 wickets") + " behind it &mdash; " + list.length.toLocaleString() +
       " of them. Each total is the sum of the seasons you can read one by one in the record.</p></div>" +
-      "<div class='fo-stc-sec'><div class='fo-stc-scroll'><table class='fo-stc-htb bk'><thead>" + head +
-      "</thead><tbody>" + body + "</tbody></table></div></div>" +
+      "<div class='fo-stc-sec'><table class='fo-stc-ldg'><thead>" + head +
+      "</thead><tbody>" + body + "</tbody></table></div>" +
       "<div class='fo-stc-foot'><a href='#/stats'>&lsaquo; The Stats Centre</a>" +
       "<a href='#/stats?v=hist&n=" + encodeURIComponent(natId) + "'>Walk the seasons &rsaquo;</a></div>";
   }
