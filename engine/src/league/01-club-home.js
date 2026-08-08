@@ -646,7 +646,12 @@
       var ctry = (SYNC && SYNC.myTeam && SYNC.myTeam.country) || t.country || (((t.players || [])[0] || {}).nat) || "";
       var ctryFlag = ""; try { ctryFlag = (typeof foFlag === "function" && ctry) ? (foFlag(ctry) || "") : ""; } catch (eFl) {}
       var lgName = (LG && LG.name) ? LG.name : "One Day League";
-      var metaBits = ["Season " + (App.seasonNo || 1)];
+      // the year, not the ordinal: the world did not begin this week
+      var metaBits = [(function () {
+        var n = App.seasonNo || 1;
+        try { if (window.__foPlanet && window.__foPlanet.seasonLabel) return "The " + window.__foPlanet.seasonLabel(n) + " season"; } catch (e) {}
+        return "Season " + n;
+      })()];
       if (ctry) metaBits.push((ctryFlag ? ctryFlag + " " : "") + E(ctry));
       metaBits.push(E(lgName));
       if (posLineTop) metaBits.push("<b class='fo-c2-gold'>" + posLineTop + "</b>");
@@ -2931,7 +2936,7 @@
       var d = new Date();
       c.textContent = d.toLocaleDateString("en-GB", { weekday: "short", day: "2-digit", month: "short" }) + " " +
         d.toLocaleTimeString("en-GB", { hour: "2-digit", minute: "2-digit", second: "2-digit" });
-      if (!c.title) c.title = "Build " + FO_BUILD;
+      if (!c.getAttribute("aria-label")) c.setAttribute("aria-label", "Build " + FO_BUILD);
     } catch (e) {}
   }
   setInterval(tickClock, 1000);

@@ -643,7 +643,13 @@
     var eb = "Fifty Overs &middot; the world's board";
     try {
       var ph = window.__foPlanet.phaseOf(Date.now());
-      if (ph && ph.season) eb = "Fifty Overs &middot; Season " + (ph.season | 0) + " &middot; Day " + ((ph.di | 0) + 1);
+      // THE BOARD DOES NOT SHUT BETWEEN SEASONS. Cricket stops; buying and
+      // selling is exactly what a close season is for, and the auctions run on
+      // their own three-day clock rather than on the fixture list. The eyebrow
+      // says so instead of printing a day number that means nothing in a break.
+      var yr = (window.__foPlanet.seasonYear ? window.__foPlanet.seasonYear(ph && ph.season) : (ph && ph.season));
+      if (ph && ph.kind === "league") eb = "Fifty Overs &middot; " + yr + " season &middot; day " + ((ph.di | 0) + 1);
+      else eb = "Fifty Overs &middot; the close season &middot; the board stays open";
     } catch (e) {}
     var n = MK.listings ? MK.listings.length : null;
     var soon = 0, now = Date.now();

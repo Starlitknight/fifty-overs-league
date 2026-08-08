@@ -518,10 +518,20 @@
   function foBellWire(tb, wrap) {
     if (!(SYNC && SYNC.started && !SYNC.practice && LG)) return;
     if (tb.querySelector("#fo-bell")) return;
-    var bell = document.createElement("span"); bell.id = "fo-bell"; bell.title = "Notifications";
+    var bell = document.createElement("span"); bell.id = "fo-bell"; bell.setAttribute("aria-label", "Notifications");
     bell.innerHTML = "<svg viewBox='0 0 24 24' width='17' height='17' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9'/><path d='M13.7 21a2 2 0 0 1-3.4 0'/></svg><i id='fo-bell-n' style='display:none'></i>";
-    var status = tb.querySelector("#fo-top-status");
-    if (status && status.parentNode === tb) tb.insertBefore(bell, status); else tb.appendChild(bell);
+    // STRAIGHT INTO THE GROUP IT BELONGS TO. Hanging it off the bar and
+    // letting the masthead reparent it a moment later is what put the bell on
+    // top of the clock for a frame on every single paint.
+    var rt = tb.querySelector("#fo-hdr-right");
+    if (!rt) { try { if (window.foHdrRight) window.foHdrRight(tb); } catch (eR) {} rt = tb.querySelector("#fo-hdr-right"); }
+    if (rt) rt.appendChild(bell);
+    else {
+      var status = tb.querySelector("#fo-top-status");
+      if (status && status.parentNode === tb) tb.insertBefore(bell, status); else tb.appendChild(bell);
+    }
+    // and put the group back in its proper order now that it has a new member
+    try { if (window.foHdrRight) window.foHdrRight(tb); } catch (eR2) {}
     bell.addEventListener("click", function () {
       var pn = document.getElementById("fo-bell-panel");
       if (pn) { pn.remove(); return; }
@@ -2136,7 +2146,7 @@
         foMobSheet(k9 === cur9 && k9 !== "live" ? "live" : k9);
       });
       var sc9 = document.createElement("button");
-      sc9.id = "fo-mob-spdchip"; sc9.type = "button"; sc9.title = "Playback speed";
+      sc9.id = "fo-mob-spdchip"; sc9.type = "button"; sc9.setAttribute("aria-label", "Playback speed");
       sc9.textContent = (window.__foThMult || 1) + "\u00d7";
       document.body.appendChild(sc9);
       sc9.addEventListener("click", function () {
@@ -2179,7 +2189,7 @@
     // drawer close
     if (!document.getElementById("fo-thd-x")) {
       var x9 = document.createElement("button");
-      x9.id = "fo-thd-x"; x9.type = "button"; x9.innerHTML = "&#10005;"; x9.title = "Close";
+      x9.id = "fo-thd-x"; x9.type = "button"; x9.innerHTML = "&#10005;"; x9.setAttribute("aria-label", "Close");
       document.body.appendChild(x9);
       x9.addEventListener("click", function () { foThDrawer(false); try { foThChrome(true); } catch (e8) {} });
     }

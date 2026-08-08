@@ -800,6 +800,9 @@
       if (!same) want.forEach(function (el) { rt.appendChild(el); });
     } catch (e) {}
   }
+  // the bell is built by the matchday module, which cannot see this function
+  // unless it is put somewhere both can reach
+  try { window.foHdrRight = foHdrRight; } catch (eHR) {}
   try {
     if (!document.getElementById("fo-hdr-right-css")) {
       var hrS = document.createElement("style"); hrS.id = "fo-hdr-right-css";
@@ -810,6 +813,19 @@
         "html body #topbar#topbar #fo-hdr-right #fo-wclock{position:static;transform:none;right:auto;top:auto;margin:0}",
         "html body #topbar #fo-hdr-right #fo-wire-btn,html body #topbar #fo-hdr-right #fo-bell,html body #topbar #fo-hdr-right #fo-mlive{position:relative;margin:0;flex:none;top:auto;right:auto;left:auto;bottom:auto;transform:none}",
         "html body #topbar #fo-hdr-right:empty{display:none}",
+        /* THE BELL USED TO FLY ACROSS THE MASTHEAD ON EVERY PAINT.
+           It is created by the matchday module as a direct child of #topbar,
+           where the bar's own rules put it hard against the clock, and only
+           afterwards does foHdrRight move it into the group on the right. That
+           left one painted frame with the bell sitting on top of the date and
+           the time before it snapped back - on every navigation and every
+           reload, which is exactly when a reader is looking at the masthead.
+           A control that has not been placed yet is not shown. The moment it
+           lands inside #fo-hdr-right it stops being a direct child of the bar
+           and this rule stops applying to it, so nothing has to remember to
+           turn it back on. */
+        "html body #topbar > #fo-bell,html body #topbar > #fo-wire-btn,html body #topbar > #fo-mlive," +
+          "html body #topbar > #fo-clock,html body #topbar > #fo-wclock{visibility:hidden}",
         // THE MASTHEAD KEEPS ITS HEIGHT. Its 46px came from nothing but the
         // 44px menu button standing in it; with the button gone the bar
         // collapsed to 42 on a desktop and 28 on a phone, and the world clock
@@ -942,7 +958,11 @@
       var brand = tb.querySelector(".brand");
       if (brand && !brand.querySelector(".fo-brandicon")) {
         brand.innerHTML = '<img class="fo-brandicon" src="' + APPICON + '" alt=""> Fifty Overs';
-        brand.style.cursor = "pointer"; brand.title = "Club home";
+        // NO TITLE ATTRIBUTE ON THE MASTHEAD. A phone has no hover, so the
+        // browser answers a tap on a titled element by drawing its own slab
+        // along the bottom of the screen - the "Club home" bar. The crest is
+        // obviously the way home; it does not need labelling.
+        brand.style.cursor = "pointer"; brand.removeAttribute("title");
         // the app icon is a Home button
         brand.addEventListener("click", function (e) { e.preventDefault(); location.hash = "#/club"; if (typeof window.route === "function") window.route(); });
       }

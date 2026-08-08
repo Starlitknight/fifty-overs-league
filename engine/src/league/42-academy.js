@@ -400,18 +400,12 @@
     return true;
   };
 
-  // a small floating note in the game's own voice - a native popup would
-  // freeze the page's timers and clicks
+  // THE LAST FLOATING SLAB. It slid up over the bottom of whatever you were
+  // reading to tell you what you had just plainly done. Where there is a
+  // control to speak beside, foSayAt speaks beside it; where there is not,
+  // this writes to the console and puts nothing over the page.
   function note(msg) {
-    try {
-      css();
-      var n = document.createElement("div");
-      n.className = "fo-ac-toast";
-      n.textContent = String(msg || "");
-      document.body.appendChild(n);
-      requestAnimationFrame(function () { n.classList.add("on"); });
-      setTimeout(function () { n.classList.remove("on"); setTimeout(function () { n.remove(); }, 400); }, 5200);
-    } catch (e) {}
+    try { console.info("[fifty-overs] " + String(msg || "")); } catch (e) {}
   }
 
   // THE COLTS CUP: the boys' own competition, played in its own week.

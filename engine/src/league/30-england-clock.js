@@ -15,6 +15,15 @@
 // cadence - this clock only drives solo/bot seasons.
 (function () {
   "use strict";
+  // THE MASTHEAD SAID "SEASON 1" over a world with a hundred and thirty-six
+  // seasons behind it. The bar is shared by every league on the planet, so it
+  // cannot print a national season number - it prints the year, which is the
+  // one name for a season that every country agrees on.
+  function SEASON_LAB(n) {
+    try { if (window.__foPlanet && window.__foPlanet.seasonYear) return String(window.__foPlanet.seasonYear(n)); } catch (e) {}
+    return String(n);
+  }
+  "use strict";
   function P() { return window.__foPlanet || null; }
   var DAY = 86400000, ENG_H = 14, LIVE_MS = 3 * 3600000;
   var MON = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -152,10 +161,10 @@
       if (ph.preseason) {
         var away = ((P().anchorOf() || {}).start | 0) - ph.day;
         dayLn = away > 0
-          ? "SEASON " + ph.season + " · IN " + away + (away === 1 ? " DAY" : " DAYS")
-          : "SEASON " + ph.season + " · FIRST BALL TODAY";
+          ? "SEASON " + SEASON_LAB(ph.season) + " · IN " + away + (away === 1 ? " DAY" : " DAYS")
+          : "SEASON " + SEASON_LAB(ph.season) + " · FIRST BALL TODAY";
       } else {
-        dayLn = "DAY " + (ph.di + 1) + " · SEASON " + ph.season;
+        dayLn = "DAY " + (ph.di + 1) + " · SEASON " + SEASON_LAB(ph.season);
       }
     } catch (eD) {}
     var live = 0;

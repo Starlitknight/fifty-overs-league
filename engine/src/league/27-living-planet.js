@@ -837,6 +837,22 @@
     return v2;
   }
 
+  /* THE WORLD IS NOT IN ITS FIRST SEASON ANY MORE.
+   * It said "Season 1" everywhere while the record behind it ran to a hundred
+   * and thirty-six - the league had been played since 1890 and the masthead
+   * announced it was about to start. A season has two true names now:
+   *   - its YEAR, which every league on the planet shares and which follows
+   *     straight on from the record (2025 was the last season written down,
+   *     so the world's first is 2026);
+   *   - its NUMBER IN ITS OWN COMPETITION, which is a different figure in
+   *     every country - England's 2026 is its 137th season, Nepal's is its
+   *     47th - and so can only be printed where a country is named.
+   */
+  function seasonYear(n) { return HIST_END + Math.max(1, n | 0); }
+  function seasonNoIn(rid, n) { return histSpan(rid).seasons + Math.max(1, n | 0); }
+  // the label for a masthead or a card: the year, because it is true everywhere
+  function seasonLabel(n) { return String(seasonYear(n)); }
+
   // the whole span a nation's record covers, for a page that offers to walk it
   // the span is the years that were actually PLAYED, not the years since the
   // constitution was signed - a page that offers to walk the record must not
@@ -1120,7 +1136,7 @@
     if (p.kind !== "league") {
       if (p.preseason) {
         var toGo = ANCHOR.start - dayIx(now);
-        return { key: "up", liveIds: [], chip: "Season " + ANCHOR.season + " opens " + (toGo === 1 ? "tomorrow" : "in " + toGo + " days") };
+        return { key: "up", liveIds: [], chip: "The " + seasonLabel(ANCHOR.season) + " season opens " + (toGo === 1 ? "tomorrow" : "in " + toGo + " days") };
       }
       return { key: "fin", liveIds: [],
         chip: dayWord(p) ||
@@ -1272,7 +1288,7 @@
             }).join("") + "</div>";
         }).join("");
         var champLine = stagesDone >= 4 ? "<div class='fo-pl-crown'>&#127942; <b>" + E(wcChampion(p.season).nm) + "</b> are champions of the world</div>" : "";
-        cupHTML = "<div class='fo-pl-cup'><div class='fo-pl-cuph'><i>Season " + p.season + " World Cup</i>" +
+        cupHTML = "<div class='fo-pl-cup'><div class='fo-pl-cuph'><i>" + seasonLabel(p.season) + " World Cup</i>" +
           (myIn ? "<span class='in'>" + E(myRegion.nm) + " are in" + (ups.length ? " &middot; called up: " + ups.map(E).join(", ") : "") + "</span>" : "<span class='in'>" + E(myRegion.nm) + " missed the cut this season</span>") +
           (abroad.length ? "<span class='in'>Your dressing room at the cup: " + abroad.map(E).join(", ") + "</span>" : "") +
           "</div>" + champLine + stageRows + "</div>";
@@ -1536,5 +1552,5 @@
     FA_DAYS: FA_DAYS, faDayOf: faDayOf, faDrawR16: faDrawR16, cupDraw: cupDraw,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
     COLTS_DAYS: COLTS_DAYS, isRestDay: isRestDay, REST_DAYS: REST_DAYS, dayOfRound: dayOfRound, roundOfDay: roundOfDay,
-    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, heritageOf: heritageOf, honoursOf: honoursOf, histYear: histYear, wcYear: wcYear, wcHistory: wcHistory, natHonours: natHonours, WC_FROM: WC_FROM, crownYear: crownYear, histSpan: histSpan, leagueBorn: leagueBorn, foundedOf: foundedOf, HIST_END: HIST_END, CROWN_FROM: CROWN_FROM, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, nations: regionList, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
+    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, heritageOf: heritageOf, honoursOf: honoursOf, histYear: histYear, wcYear: wcYear, wcHistory: wcHistory, seasonYear: seasonYear, seasonNoIn: seasonNoIn, seasonLabel: seasonLabel, natHonours: natHonours, WC_FROM: WC_FROM, crownYear: crownYear, histSpan: histSpan, leagueBorn: leagueBorn, foundedOf: foundedOf, HIST_END: HIST_END, CROWN_FROM: CROWN_FROM, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, nations: regionList, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();
