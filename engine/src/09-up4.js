@@ -82,9 +82,14 @@
     try{
       econInit();
       var homeT=GD.teams.find(function(x){return x.name===M.meta.home;});
-      var crowd=homeT?attendance(homeT,M.meta.weather,'normal').toLocaleString():'a good crowd';
+      /* the umpire's context has no ticket office and sometimes no ground
+         name; the sentence must survive both. "A crowd of a good crowd" and
+         "at undefined" were both this line believing its inputs. */
+      var att=homeT?attendance(homeT,M.meta.weather,'normal').toLocaleString():null;
+      var crowdLn=att?'A crowd of '+att+' has gathered':'A good crowd has gathered';
+      var where=M.meta.ground?(' at '+M.meta.ground):(M.meta.home?(' at '+M.meta.home+"'s ground"):'');
       var inn=M.innings[M.inns];
-      if(M.inns===0)return 'A crowd of '+crowd+' has gathered at '+M.meta.ground+' for '+M.meta.home+' v '+M.meta.away+', with '+(M.meta.weather||'Sunny')+' conditions and a '+M.pitch+' pitch. '+(M.tossText||(App.tossState&&App.tossState.txt)||'')+' The players are ready - let battle commence.';
+      if(M.inns===0)return crowdLn+where+' for '+M.meta.home+' v '+M.meta.away+', with '+(M.meta.weather||'Sunny')+' conditions and a '+M.pitch+' pitch. '+(M.tossText||(App.tossState&&App.tossState.txt)||'')+' The players are ready - let battle commence.';
       return 'THE CHASE BEGINS. '+inn.batTeam+' need '+M.target+' to win. '+inn.bat[inn.striker].p.name+' and '+inn.bat[inn.nonstriker].p.name+' walk out under pressure.';
     }catch(e){return M.inns===0?'Play begins.':'The chase begins.';}
   }

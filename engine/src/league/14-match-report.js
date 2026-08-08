@@ -388,7 +388,7 @@
       var cls = o === "4" ? "four" : o === "6" ? "six" : (foMrIsKey(L) && !FO_MR_MARK[o] && o !== "4" && o !== "6") ? "wkt" : "";
       if (FO_MR_MARK[o]) cls = "mark";
       return rows += "<div class='fo-mr-ball" + (cls ? " " + cls : "") + "'>" +
-        "<b>" + E(L.no || o || "") + "</b><span>" + E(L.txt || "") + "</span></div>";
+        "<b>" + E(L.no || o || "") + "</b><span>" + E(foMrMend(L.txt || "")) + "</span></div>";
     });
     return "<div class='fo-mr-comm'>" +
       "<div class='fo-mr-rule'><span>Ball by ball</span></div>" + toggle +
@@ -1224,6 +1224,17 @@
      bowler's figures they are used; the walk fills in only the men he never
      printed, which is anybody pulled up mid-over.
      ========================================================================== */
+  /* BANKED PROSE IS IMMUTABLE; ITS DISPLAY IS NOT. Two flaws shipped inside
+     early banked intros - "A crowd of a good crowd" (a fallback pasted where a
+     number belonged) and "at undefined" (a server context with no ground
+     name). The generator is fixed for every match to come; logs already in
+     the bank get mended at the moment of printing, which touches nothing.
+   */
+  window.foMrMend = function (t) {
+    return String(t == null ? "" : t)
+      .replace("A crowd of a good crowd has gathered", "A good crowd has gathered")
+      .replace(" at undefined for ", " for ");
+  };
   var FR_WKT = { wC: "caught", wB: "bowled", wLBW: "lbw", wST: "stumped", wRO: "run out" };
   function foFrBallRuns(r) {
     var o = r && r.out, t = (r && r.txt) || "";

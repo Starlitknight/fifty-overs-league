@@ -66,10 +66,19 @@
 
   window.foMatchRatings = function (innings) {
     var by = {}, at = function (nm) { return by[nm] || (by[nm] = { club: nm }); };
-    (innings || []).filter(Boolean).forEach(function (inn) {
+    var inns = (innings || []).filter(Boolean);
+    // WHO WAS BOWLING IS NOT A SEPARATE FACT. A banked friendly card names
+    // only the batting side of each innings, and keying an object on the
+    // missing bowler minted a club called "undefined" with its own ratings
+    // column. The bowling side of one innings IS the batting side of the
+    // other, so it is read from there before falling back to the card's word.
+    var batName = function (i9) { var x = inns[i9]; return x && x.batTeam && x.batTeam !== "undefined" ? x.batTeam : null; };
+    inns.forEach(function (inn, ix) {
       var u = window.foUnitRatings(inn); if (!u) return;
-      var b = at(inn.batTeam); b.top = u.top; b.middle = u.middle; b.tail = u.tail;
-      var o = at(inn.bowlTeam); o.seam = u.seam; o.spin = u.spin; o.field = u.field;
+      var bNm = inn.batTeam && inn.batTeam !== "undefined" ? inn.batTeam : null;
+      var oNm = inn.bowlTeam && inn.bowlTeam !== "undefined" ? inn.bowlTeam : batName(1 - ix);
+      if (bNm) { var b = at(bNm); b.top = u.top; b.middle = u.middle; b.tail = u.tail; }
+      if (oNm) { var o = at(oNm); o.seam = u.seam; o.spin = u.spin; o.field = u.field; }
     });
     Object.keys(by).forEach(function (nm) {
       var x = by[nm], got = ["top", "middle", "tail", "seam", "spin", "field"].filter(function (k) { return x[k] != null; });
@@ -101,7 +110,12 @@
       var innings = ((result && (result.innings || result.scorecard)) || []).filter(Boolean);
       var names = [];
       innings.forEach(function (inn) {
-        [inn.batTeam, inn.bowlTeam].forEach(function (n) { if (n && names.indexOf(n) < 0) names.push(n); });
+        // a banked card can carry the STRING "undefined" where a bowling side
+        // was never named - a ghost that walks straight past a falsy check
+        // and gets its own ratings column
+        [inn.batTeam, inn.bowlTeam].forEach(function (n) {
+          if (n && n !== "undefined" && n !== "null" && names.indexOf(n) < 0) names.push(n);
+        });
       });
       if (names.length !== 2) return out;
       var card = { innings: innings, home: names[0], away: names[1] };

@@ -59,10 +59,12 @@
   function foCommIntro(){
     try{
       if(typeof M==='undefined'||!M||!M.meta)return '';
-      var m=M.meta;var crowd='a good crowd';
-      try{var ht=GD.teams.find(function(t){return t.name===m.home;});if(ht&&typeof attendance==='function')crowd=attendance(ht).toLocaleString()+' spectators';}catch(e){}
+      var m=M.meta;var att=null;
+      try{var ht=GD.teams.find(function(t){return t.name===m.home;});if(ht&&typeof attendance==='function')att=attendance(ht).toLocaleString()+' spectators';}catch(e){}
       var toss=(App.tossState&&App.tossState.txt)||'';
-      return '<div class="fo-comm-intro">A crowd of '+crowd+' has gathered at '+esc(m.ground)+' for '+esc(m.home)+' v '+esc(m.away)+
+      var crowdLn=att?('A crowd of '+att+' has gathered'):'A good crowd has gathered';
+      var where=m.ground?(' at '+esc(m.ground)):(m.home?(' at '+esc(m.home)+"'s ground"):'');
+      return '<div class="fo-comm-intro">'+crowdLn+where+' for '+esc(m.home)+' v '+esc(m.away)+
         ', with '+esc(m.weather||'Sunny')+' conditions and a '+esc(M.pitch)+' pitch. '+(toss?esc(toss)+' ':'')+
         'The players are ready — let battle commence.</div>';
     }catch(e){return '';}

@@ -773,7 +773,7 @@
           (wb.length ? "<span class='os'>" + wb.map(function (b9) { return "<strong>" + E(b9.nm) + "</strong> " + b9.r + " (" + b9.b + "b)"; }).join(" &middot; ") + "</span>" : "") +
           "</div></div>";
       }
-      if (r4.intro || r4.no === "") return "<div class='fd-ev note'><span class='ic'>" + (r4.out && r4.out !== "▶" ? E(r4.out) : "&#9873;") + "</span><div class='w'>" + E(r4.txt) + "</div></div>";
+      if (r4.intro || r4.no === "") return "<div class='fd-ev note'><span class='ic'>" + (r4.out && r4.out !== "▶" ? E(r4.out) : "&#9873;") + "</span><div class='w'>" + E(window.foMrMend ? foMrMend(r4.txt) : r4.txt) + "</div></div>";
       var wk4 = r4.out && r4.out[0] === "w" && r4.out !== "wide";
       var txt = r4.txt || "", head = "", body9 = txt;
       var ci = txt.indexOf(" : ");
