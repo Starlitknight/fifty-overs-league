@@ -128,13 +128,13 @@
       }
 
       var html = "<div class='fo-fa-page'>" +
-        "<div class='fo-kb-hero'><div><span class='eb'>The national knockout &middot; season&nbsp;" + seasonNo + "</span>" +
+        "<div class='fo-kb-hero'><div><span class='eb'>The national knockout &middot; season&nbsp;" + (window.foSeasonN ? foSeasonN(seasonNo) : seasonNo) + "</span>" +
         "<h1>The " + E(natNm) + " Cup</h1>" +
         "<p>Sixteen clubs, four Sundays, one trophy. Every round a fresh draw.</p></div>" +
         "<span class='tro' aria-hidden='true'>&#127942;</span></div>" +
         natRail(rid, "#/facup");
       if (body && body.champion) {
-        html += "<div class='fo-fa-champ'><span>&#127942;</span><div><i>Cup winners, season " + seasonNo + "</i><b>" +
+        html += "<div class='fo-fa-champ'><span>&#127942;</span><div><i>Cup winners, season " + (window.foSeasonN ? foSeasonN(seasonNo) : seasonNo) + "</i><b>" +
           E(body.champion) + "</b></div></div>";
       }
 
@@ -297,12 +297,12 @@
       var banked = !!(body && body.stages && body.stages.g1);
 
       var html = "<div class='fo-fa-page'>" +
-        "<div class='fo-kb-hero'><div><span class='eb'>The sixteen champions &middot; season&nbsp;" + seasonNo + "</span>" +
+        "<div class='fo-kb-hero'><div><span class='eb'>The sixteen champions &middot; season&nbsp;" + (window.foSeasonN ? foSeasonN(seasonNo) : seasonNo) + "</span>" +
         "<h1>The Champions Cup</h1>" +
         "<p>The champions of the national leagues meet in the closing week: three group days, then a straight knockout.</p></div>" +
         "<span class='tro' aria-hidden='true'>&#127942;</span></div>";
       if (banked && body.champion) {
-        html += "<div class='fo-fa-champ'><span>&#127942;</span><div><i>Champions of the world, season " + seasonNo +
+        html += "<div class='fo-fa-champ'><span>&#127942;</span><div><i>Champions of the world, season " + (window.foSeasonN ? foSeasonN(seasonNo) : seasonNo) +
           "</i><b>" + E(body.champion) + "</b></div></div>";
       }
 

@@ -232,7 +232,7 @@
         "<i>" + x.seed + "</i>" +
         "<img src='" + flagOf(x.rid) + "' alt='' onerror=\"this.style.display='none'\">" +
         "<b>" + teamA(x, E(x.name)) + (x.mine ? " <u>YOU</u>" : "") + "</b>" +
-        "<span>" + E(x.nat) + (x.provisional ? " · as it stands" : "") + "</span></div>";
+        "<span" + (x.provisional ? " class='prov'" : "") + ">" + E(x.nat) + "</span></div>";
     }).join("");
 
     // the bracket: only stages whose windows have CLOSED show results
@@ -253,7 +253,7 @@
     var champHTML = "";
     if (done >= 5 && br && br.champion) {
       champHTML = "<div class='fo-cl-crown" + (br.champion.mine ? " mine" : "") + "'>" +
-        "<i>&#127942;</i><b>" + E(br.champion.name) + "</b><span>Champions of the world's clubs · season " + season + "</span>" +
+        "<i>&#127942;</i><b>" + E(br.champion.name) + "</b><span>Champions of the world's clubs · season " + (window.foSeasonN ? foSeasonN(season) : season) + "</span>" +
         (br.champion.mine ? "<em>YOUR club. The whole planet watched.</em>" : "") + "</div>";
     }
 
@@ -263,7 +263,7 @@
 
     page.innerHTML = "<div class='fo-cl'><div class='fo-cl-in'>" +
       "<div class='fo-cl-hero'>" +
-      "<div class='fo-cl-k'>World cricket &middot; season " + season + " &middot; the clubs' crown</div>" +
+      "<div class='fo-cl-k'>World cricket &middot; season " + (window.foSeasonN ? foSeasonN(season) : season) + " &middot; the clubs' crown</div>" +
       "<h1>The Champions Cup</h1>" +
       "<p>" + E(status) + "</p>" +
       "<span class='fo-cl-chip'>" + chip + "</span>" +
@@ -339,6 +339,7 @@
       "html body #page a.fo-cl-tl{color:inherit;text-decoration:none}",
       "html body #page a.fo-cl-tl:hover{color:#B44A22;text-decoration:underline}",
       "html body #page .fo-cl-ent span{font-size:10.5px;color:rgba(20,28,40,.5);white-space:nowrap}",
+      "html body #page .fo-cl-ent span.prov{font-style:italic;color:rgba(20,28,40,.34)}",
       "html body #page .fo-cl-ent.mine{background:rgba(200,154,46,.07);border-radius:8px;padding-left:6px;padding-right:6px}",
       "html body #page .fo-cl-schrow{display:flex;justify-content:space-between;gap:10px;padding:7px 0;border-bottom:1px solid rgba(20,28,40,.05);font-size:12.5px}",
       "html body #page .fo-cl-schrow:last-child{border-bottom:none}",

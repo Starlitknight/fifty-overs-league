@@ -592,8 +592,9 @@
           "<div class='fo-race-n'>" + x[key].toLocaleString() + " " + unit + "</div></div>";
       }).join("");
     };
-    return "<div class='grid2'><div class='col'><div class='panel fo-keep'><h4>The run race &middot; season " + sN + "</h4><div class='pad'>" + mkRows(runs, "rr", "runs") + "</div></div></div>" +
-      "<div class='col'><div class='panel fo-keep'><h4>The wicket race &middot; season " + sN + "</h4><div class='pad'>" + mkRows(wkts, "w", "wkts") + "</div></div></div></div>";
+    var sLab9 = window.foSeasonN ? foSeasonN(sN) : sN;
+    return "<div class='grid2'><div class='col'><div class='panel fo-keep'><h4>The run race &middot; season " + sLab9 + "</h4><div class='pad'>" + mkRows(runs, "rr", "runs") + "</div></div></div>" +
+      "<div class='col'><div class='panel fo-keep'><h4>The wicket race &middot; season " + sLab9 + "</h4><div class='pad'>" + mkRows(wkts, "w", "wkts") + "</div></div></div></div>";
   }
   // the Stats page carries the races and the club's milestone board
   try {

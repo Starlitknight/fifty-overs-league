@@ -1165,11 +1165,15 @@
         (O.roundNo ? "Round " + (O.roundNo | 0) + " &nbsp;&middot;&nbsp; " : (f.date ? E(f.date) + " &nbsp;&middot;&nbsp; " : "")) +
         // a friendly is not a league match and should not claim to be one
         (rec.friendly ? "Friendly" : rec.seasonNo ? "Season " + (window.foSeasonN ? foSeasonN(rec.seasonNo | 0) : (rec.seasonNo | 0)) : "League") + "</div>";
+      // three doors read as one each: where you came from, the league, the
+      // club - a friendly's "came from" IS the club, so it gets two, not a
+      // "The club / Club" stutter
       var dayFoot = "<div class='fo-mr-foot'>" +
-        "<a class='fo-mr-back day' href='" + (O.back || "#/fixtures") + "'>" + (O.backLbl || "&#8592; Results") + "</a>" +
+        "<a class='fo-mr-back day' href='" + (O.back || "#/fixtures") + "'>" +
+        (O.backLbl || (rec.friendly ? "&#8592; The broadcast" : "&#8592; Results")) + "</a>" +
         (rec.friendly ? "<a class='fo-mr-back day' href='#/home'>The club</a>"
-                      : "<a class='fo-mr-back day' href='#/league'>The league</a>") +
-        "<a class='fo-mr-back day' href='#/home'>Club</a>" +
+                      : "<a class='fo-mr-back day' href='#/league'>The league</a>" +
+                        "<a class='fo-mr-back day' href='#/home'>Club</a>") +
         "</div>";
 
       var body;
