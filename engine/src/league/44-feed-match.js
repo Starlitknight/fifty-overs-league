@@ -110,6 +110,25 @@
   }
 
   // ---- ONE PASS DOWN THE BOOK: everything the panels need, per innings -----
+  // ---- WHAT A DELIVERY WAS WORTH ------------------------------------------
+  // The umpire prints a tally at the end of each over and nothing in between,
+  // so any score read off his last summary stands still for up to six balls.
+  // These are his own codes; summing them across a completed match reproduces
+  // every one of his over tallies exactly, both innings, so this is reading
+  // the book rather than guessing at it. A code it cannot read counts nothing,
+  // which leaves the score short rather than inventing runs.
+  function ballRuns(r) {
+    var o = r && r.out, t = (r && r.txt) || "";
+    if (!o) return 0;
+    if (/^[0-9]+$/.test(o)) return +o;
+    if (o === "dot") return 0;
+    if (o === "wide") return /\bfour\b/i.test(t) ? 5 : 1;
+    if (o === "noball") return /\bsix\b/i.test(t) ? 7 : /\bfour\b/i.test(t) ? 5 : 1;
+    if (o === "bye" || o === "legbye") return /\bfour\b/i.test(t) ? 4 : /\btwo\b/i.test(t) ? 2 : 1;
+    return 0;                                   // a wicket, and no run with it
+  }
+  function isWicket(r) { return !!(r && r.out && r.out[0] === "w" && r.out !== "wide"); }
+
   function bookState(seen) {
     var mk = function () { return { bats: [], byKey: {}, bowls: [], bowlByKey: {}, overs: [], fow: [], top: null, who: null, team: null, brk: null, target: null, striker: null, bowler: null, sinceTop: [], open: false, lastNo: null, pshipBalls: 0 }; };
     var inns = [mk(), mk()], pendingWk = null;
@@ -289,7 +308,7 @@
     css();
     document.body.classList.add("fo-fd-on");
     var id = "fr:" + frId;
-    if (T.id !== id) { T.tab = "live"; T.filter = "all"; T.full = false; }
+    if (T.id !== id) { T.tab = "live"; T.filter = "all"; T.full = false; T.tabAuto = true; }
     T.id = id;
     if (!page.querySelector(".fo-fd")) page.innerHTML = "<div class='fo-fd'><div class='fd-in'><p class='fd-dim'>Opening the umpire's book&hellip;</p></div></div>";
     frFetch(frId).then(function (j) {
@@ -352,7 +371,7 @@
     var id = rid + ":s" + cal.seasonNo + ":r" + cal.round + ":h" + m.home.slot + "a" + m.away.slot;
     var winStart = pl.EPOCH + pl.dayIx(Date.now()) * 86400000 + pl.natHour(rid) * 3600000;
     var winLen = (pl.LIVE_LEN || 3) * 3600000, BALL_MS = winLen / 600;
-    if (T.id !== id) { T.tab = "live"; T.filter = "all"; T.full = false; }
+    if (T.id !== id) { T.tab = "live"; T.filter = "all"; T.full = false; T.tabAuto = true; }
     T.id = id; T.rid = rid;
     page.innerHTML = shell(rid, cal, null, m, stageShell(m, null, "Opening the umpire's book&hellip;"));
     logFetch(rid, id).then(function (log) {
@@ -552,14 +571,44 @@
     var inns = bookState(seen);
     var innNow = inns[1].open ? 1 : 0, I = inns[innNow];
     var tp = I.top ? parseTop(I.top.txt) : null;
+    // THE BALLS SINCE THE LAST OVER WERE CALLED. A chase ends on the winning
+    // run, and no over-summary follows it, so the last tally the umpire
+    // printed is the score BEFORE the shot that won the match: this friendly
+    // finished 159/4 chasing 159, and the stage said 158/4 - one short of the
+    // target it had just passed, under a headline saying they had won by six
+    // wickets. Live it was the same fault at a smaller scale, the big number
+    // frozen for six balls at a time.
+    if (tp) {
+      var addR = 0, addW = 0;
+      I.sinceTop.forEach(function (r9) { addR += ballRuns(r9); if (isWicket(r9)) addW++; });
+      tp.runs += addR; tp.wkts += addW;
+    }
     // THE LAST BALL COUNTS. The over-summary rides BEFORE a delivery, so an
     // innings that ends mid-over leaves the top a ball stale - the book read
     // 192/9 while the umpire's fall note said 193/10, and the match never
-    // looked finished. The fall note carries the true tally; prefer it.
+    // looked finished. The fall note carries the true tally; it stays as the
+    // floor under the sum above, so an unreadable code can never leave the
+    // score behind a figure the umpire has already written down.
     if (tp && I.fow.length) {
       var lf9 = I.fow[I.fow.length - 1];
       if (lf9.score >= tp.runs && lf9.w >= tp.wkts) { tp.runs = lf9.score; tp.wkts = lf9.w; }
     }
+    // THE CHASE IS NEVER GIVEN AN INNINGS BREAK, so nothing in the umpire's
+    // book ever closes it. close is written from the "Innings break" note,
+    // and the second innings does not get one - it ends because somebody has
+    // won. Every read that asks "is this innings still going?" therefore said
+    // yes forever: the scorecard headed the chase "batting", the stage kept
+    // its run rate and its fifty-over strip, and the men who finished the
+    // match were still standing at the crease an hour after stumps.
+    // The last delivery IS the close. Say so, once the reveal is complete.
+    if (done && I && !I.close && tp) I.close = { runs: tp.runs, wkts: tp.wkts };
+    // A MATCH THAT IS ALREADY OVER WHEN IT IS OPENED IS NOT A BROADCAST.
+    // It opens on the card, the way a report does. One shot, on the first
+    // paint of this match only - a match that finishes while somebody is
+    // watching the ball-by-ball must not have the page pulled out from under
+    // them at the moment of the winning run.
+    var firstPaint = !!T.tabAuto; T.tabAuto = false;
+    if (done && firstPaint) T.tab = "card";
 
     // ---- THE MATCH STAGE ---------------------------------------------------
     var meta = inns.meta, condBits = [];
@@ -584,7 +633,25 @@
     }
     // the three reads under the score, all arithmetic on the umpire's prints
     var mets = "";
-    if (tp && tp.over > 0) {
+    // AT STUMPS THEY ARE THE WRONG THREE READS. A run rate and a last-five
+    // are questions about an innings in progress; the question after the last
+    // ball is what the two sides made, so that is what the stage prints.
+    var innScore = function (II) {
+      if (II.close) return II.close.runs + "/" + II.close.wkts;
+      if (!II.top) return null;
+      var t9 = parseTop(II.top.txt);
+      return t9 ? t9.runs + "/" + t9.wkts : null;
+    };
+    if (done) {
+      var fin9 = [];
+      for (var ix9 = 0; ix9 < 2; ix9++) {
+        var II9 = inns[ix9], sc9 = innScore(II9);
+        if (!sc9) continue;
+        fin9.push("<div class='mt wide'><u>" + E(II9.team || (ix9 ? m.away.name : m.home.name)) +
+          "</u><b>" + sc9 + "</b></div>");
+      }
+      if (fin9.length) mets = "<div class='fd-mets'>" + fin9.join("") + "</div>";
+    } else if (tp && tp.over > 0) {
       var rr = tp.runs / tp.over;
       var l5 = I.overs.slice(-5);
       var l5r = 0; l5.forEach(function (o) { l5r += o.ovRuns; });
@@ -607,7 +674,7 @@
         third + "</div>";
     }
     var strip = "";
-    if (tp || I.open) {
+    if (!done && (tp || I.open)) {
       var pc = Math.max(0, Math.min(100, posOv / 50 * 100));
       strip = "<div class='fd-strip'><span class='s0'>1</span><span class='bar'><i style='width:" + pc.toFixed(1) + "%'></i>" +
         "<em style='left:" + pc.toFixed(1) + "%'>" + Math.max(1, Math.ceil(posOv || 1)) + "</em></span><span class='s1'>50</span></div>";
@@ -627,7 +694,7 @@
           (rTx ? E(rTx) : "the umpire is signing the card&hellip;") + "</b></div>";
       })() : "") +
       (done && !cal.__fr ? "<a class='fd-enter' href='#/report?n=" + encodeURIComponent(rid) + "&w=" + encodeURIComponent(id) + "'>The full report and scorecard &rsaquo;</a>" : "") +
-      (done && cal.__fr ? "<a class='fd-enter' href='#' onclick='foFeedTab(\"card\");return false'>The full scorecard &rsaquo;</a>" : "") +
+      (done && cal.__fr && T.tab !== "card" ? "<a class='fd-enter' href='#' onclick='foFeedTab(\"card\");return false'>The full scorecard &rsaquo;</a>" : "") +
       strip +
       "</div></div>";
 
@@ -637,12 +704,12 @@
       return "<button type='button' class='" + (T.tab === p9[0] ? "on" : "") + "' onclick='foFeedTab(\"" + p9[0] + "\")'>" + p9[1] + "</button>";
     }).join("");
     var body;
-    if (T.tab === "card") body = cardPanel(inns, m);
+    if (T.tab === "card") body = cardPanel(inns, m, done);
     else if (T.tab === "charts") body = chartsPanel(inns, m, live);
     else if (T.tab === "teams") body = teamsPanel(m, rid);
     else body = "<div class='fd-work'>" +
       "<div class='fd-wfeed'>" + livePanel(seen, done, I, tp) + "</div>" +
-      "<div class='fd-wside'>" + creasePanel(inns, innNow, tp, live) + "</div>" +
+      "<div class='fd-wside'>" + (done ? closePanel(inns, m) : creasePanel(inns, innNow, tp, live)) + "</div>" +
       "</div>";
     page.innerHTML = shell(rid, cal, live ? "live" : done ? "fin" : "up", m,
       stage +
@@ -762,6 +829,59 @@
     return null;
   }
 
+  // ---- HOW IT FINISHED, the panel that replaces the crease at stumps -------
+  // "At the crease" beside a match that ended an hour ago is the single
+  // loudest way a finished page can still look live: two men not out, a
+  // bowler mid-spell, a partnership still growing. After the last ball the
+  // same corner answers the only question left - who made the runs and who
+  // took the wickets - one innings at a time, in the order they were played.
+  function closePanel(inns, m) {
+    var best = function (arr, cmp) {
+      var b = null;
+      (arr || []).forEach(function (x) { if (!b || cmp(x, b) > 0) b = x; });
+      return b;
+    };
+    var out = "";
+    for (var ix = 0; ix < 2; ix++) {
+      var I = inns[ix];
+      if (!I.open && !I.bats.length) continue;
+      var nm = I.team || (ix ? m.away.name : m.home.name);
+      var sc = I.close ? I.close.runs + "/" + I.close.wkts : "";
+      var tb = best(I.bats.filter(function (b9) { return b9.r != null; }),
+        function (a, b) { return (a.r | 0) - (b.r | 0); });
+      // the wickets in this innings were taken by the OTHER side, so the
+      // bowling line is labelled rather than left to sit under a club name
+      // it does not belong to
+      var tw = best(I.bowls.filter(function (b9) { return b9.w != null; }),
+        function (a, b) { return ((a.w | 0) - (b.w | 0)) || ((b.r | 0) - (a.r | 0)); });
+      if (!tb && !tw) continue;
+      // the fielding side is simply the other innings' batting side, named
+      // from the umpire's own print wherever he has made one
+      var oth = inns[ix ? 0 : 1];
+      var fieldNm = oth.team || (ix ? m.home.name : m.away.name);
+      out += (out ? "<div class='dv'></div>" : "") +
+        "<div class='sh'>" + E(nm) + (sc ? " &middot; " + sc : "") + "</div>";
+      if (tb) out += "<div class='cb'><span class='nm'>" + plink(tb.nm) + pstar(tb.nm, T.rid) + "</span>" +
+        "<span class='rv'>" + tb.r + (tb.out ? "" : "*") + "</span>" +
+        "<span class='bv'>" + (tb.b == null ? "" : "(" + tb.b + ")") + "</span></div>";
+      if (tw) out += "<div class='cb bw'><span class='nm'>" + plink(tw.nm) + pstar(tw.nm, T.rid) + "</span>" +
+        "<span class='rv'>" + tw.o + "&ndash;" + tw.r + "</span><span class='wv'>" + tw.w + "</span></div>";
+      out += "<div class='lbl cap'><span>" + (tb ? "Top score" : "") +
+        (tb && tw ? ", and best bowling for " + E(fieldNm) : tw ? "Best bowling for " + E(fieldNm) : "") +
+        "</span></div>";
+    }
+    if (!out) {
+      return "<div class='fd-panel fd-crease'><div class='fd-bh'><div class='tl'><b>HOW IT FINISHED</b></div></div>" +
+        "<p class='fd-dim'>The card carries the full account of it.</p>" +
+        "<button type='button' class='fd-viewsc' onclick='foFeedTab(\"card\")'>VIEW FULL SCORECARD</button></div>";
+    }
+    return "<div class='fd-panel fd-crease'>" +
+      "<div class='fd-bh'><div class='tl'><b>HOW IT FINISHED</b></div></div>" +
+      out +
+      "<button type='button' class='fd-viewsc' onclick='foFeedTab(\"card\")'>VIEW FULL SCORECARD</button>" +
+      "</div>";
+  }
+
   // ---- AT THE CREASE, the situation beside the book ------------------------
   function creasePanel(inns, innNow, tp, live) {
     var I = inns[innNow];
@@ -821,7 +941,7 @@
       : I.top ? (function (t9) { return t9 ? t9.runs + "/" + t9.wkts : ""; })(parseTop(I.top.txt)) : "";
     return "<div class='fd-ih'><b>" + E(nm) + "</b><span>" + sc + (I.close ? "" : I.open ? " &middot; batting" : "") + "</span></div>";
   }
-  function cardPanel(inns, m) {
+  function cardPanel(inns, m, done) {
     var out = "";
     for (var ix = 0; ix < 2; ix++) {
       var I = inns[ix];
@@ -850,8 +970,14 @@
       if (ix === 0 && I.brk) out += "<div class='fd-note'>" + E(I.brk) + "</div>";
     }
     if (!out) out = "<p class='fd-dim'>The umpire prints the first tallies at the end of over one.</p>";
-    return "<div class='fd-panel'><div class='fd-ch'>The live scorecard &middot; as the umpire prints it</div>" + out +
-      "<div class='fd-note'>Current batters read as at the umpire&rsquo;s last end-of-over print; dismissed men are final.</div></div>";
+    // AT STUMPS IT IS NOT A LIVE SCORECARD, it is the card. The caption and
+    // the footnote below it both describe a book still being written, and
+    // both were still saying so an hour after the last ball.
+    return "<div class='fd-panel'><div class='fd-ch'>" +
+      (done ? "The scorecard &middot; as the umpire signed it" : "The live scorecard &middot; as the umpire prints it") + "</div>" + out +
+      (done ? ""
+            : "<div class='fd-note'>Current batters read as at the umpire&rsquo;s last end-of-over print; dismissed men are final.</div>") +
+      "</div>";
   }
   // the partnership ladder: every stand from the umpire's fall-of-wicket
   // lines, and the unbroken stand as the difference of his two latest scores
@@ -1103,6 +1229,10 @@
       ".fo-fd .fd-mets u{display:block;text-decoration:none;font:700 10px/1 Oswald,sans-serif;letter-spacing:.2em;color:rgba(255,254,252,.5);margin-bottom:5px}",
       ".fo-fd .fd-mets b{font:700 21px/1 Inter,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums}",
       ".fo-fd .fd-mets b s{text-decoration:none;font-size:13px;color:var(--fogold)}",
+      // the final totals name two clubs rather than three short captions,
+      // so their labels are given room to be read and to wrap
+      ".fo-fd .fd-mets .mt.wide{max-width:52%}",
+      ".fo-fd .fd-mets .mt.wide u{font-size:9.5px;line-height:1.3;letter-spacing:.12em;white-space:normal;overflow-wrap:anywhere}",
       // the innings-progress strip along the stage floor
       ".fo-fd .fd-strip{display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:18px}",
       ".fo-fd .fd-strip .s0,.fo-fd .fd-strip .s1{font:700 10px Oswald,sans-serif;color:rgba(255,254,252,.45)}",
@@ -1173,6 +1303,7 @@
       ".fo-fd .fd-crease .cb .bv{font:400 12.5px Inter,sans-serif;color:var(--fomut);font-variant-numeric:tabular-nums}",
       ".fo-fd .fd-crease .cb .wv{font:700 16px Oswald,sans-serif;color:var(--foor)}",
       ".fo-fd .fd-crease .lbl{display:flex;justify-content:flex-end;gap:14px;font:700 8.5px Oswald,sans-serif;letter-spacing:.14em;color:#b3ab99}",
+      ".fo-fd .fd-crease .lbl.cap{justify-content:flex-start;letter-spacing:.08em;text-transform:none;font:400 10.5px/1.4 Inter,sans-serif;color:var(--fomut);margin-top:3px}",
       ".fo-fd .fd-crease .lbl span:first-child{flex:1}",
       ".fo-fd .fd-crease .dv{height:1px;background:#efe9d9;margin:10px 0}",
       ".fo-fd .fd-crease .sh{font:700 10px Oswald,sans-serif;letter-spacing:.18em;color:var(--fomut);margin:2px 0 6px}",
