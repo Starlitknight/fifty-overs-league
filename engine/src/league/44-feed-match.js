@@ -694,7 +694,9 @@
           (rTx ? E(rTx) : "the umpire is signing the card&hellip;") + "</b></div>";
       })() : "") +
       (done && !cal.__fr ? "<a class='fd-enter' href='#/report?n=" + encodeURIComponent(rid) + "&w=" + encodeURIComponent(id) + "'>The full report and scorecard &rsaquo;</a>" : "") +
-      (done && cal.__fr && T.tab !== "card" ? "<a class='fd-enter' href='#' onclick='foFeedTab(\"card\");return false'>The full scorecard &rsaquo;</a>" : "") +
+      // A FRIENDLY GETS THE FULL REPORT NOW, the same Journal page a league
+      // match opens - so the stage sends the reader there rather than to a tab
+      (done && cal.__fr ? "<a class='fd-enter' href='#/report?fr=" + E(String(id).replace(/^fr:/, "")) + "'>The full report and scorecard &rsaquo;</a>" : "") +
       strip +
       "</div></div>";
 

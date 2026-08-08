@@ -171,7 +171,12 @@
     function foKeeperFromDis(inn) {
       var counts = {}; if (!inn || !inn.bat) return null;
       inn.bat.forEach(function (b) {
-        var o = b.out || "", m = o.match(/†\s*([A-Za-z][A-Za-z.'\- ]+?)\s+b\s/) || o.match(/^st\s+†?\s*([A-Za-z][A-Za-z.'\- ]+?)\s+b\s/);
+        // b.out is a dismissal LINE on a served card and an OBJECT on an
+        // engine innings. Calling .match on the object threw, the caller's
+        // try/catch swallowed it, and the whole scorecard came back empty -
+        // which is how a friendly's report said its innings were never
+        // recorded when every ball of them was.
+        var o = typeof b.out === "string" ? b.out : "", m = o.match(/†\s*([A-Za-z][A-Za-z.'\- ]+?)\s+b\s/) || o.match(/^st\s+†?\s*([A-Za-z][A-Za-z.'\- ]+?)\s+b\s/);
         if (m) { var nm = m[1].trim(); counts[nm] = (counts[nm] || 0) + 1; }
       });
       var best = null, bv = 0; for (var k in counts) if (counts[k] > bv) { bv = counts[k]; best = k; }

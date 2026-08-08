@@ -1156,10 +1156,12 @@
       var crumb = "<div class='fo-ms-crumb'>&#8249;&#8249; &nbsp;" +
         (f.ground ? E(f.ground) + " &nbsp;&middot;&nbsp; " : "") +
         (O.roundNo ? "Round " + (O.roundNo | 0) + " &nbsp;&middot;&nbsp; " : (f.date ? E(f.date) + " &nbsp;&middot;&nbsp; " : "")) +
-        (rec.seasonNo ? "Season " + (rec.seasonNo | 0) : "League") + "</div>";
+        // a friendly is not a league match and should not claim to be one
+        (rec.friendly ? "Friendly" : rec.seasonNo ? "Season " + (rec.seasonNo | 0) : "League") + "</div>";
       var dayFoot = "<div class='fo-mr-foot'>" +
         "<a class='fo-mr-back day' href='" + (O.back || "#/fixtures") + "'>" + (O.backLbl || "&#8592; Results") + "</a>" +
-        "<a class='fo-mr-back day' href='#/league'>The league</a>" +
+        (rec.friendly ? "<a class='fo-mr-back day' href='#/home'>The club</a>"
+                      : "<a class='fo-mr-back day' href='#/league'>The league</a>") +
         "<a class='fo-mr-back day' href='#/home'>Club</a>" +
         "</div>";
 
@@ -1195,12 +1197,249 @@
       } catch (eTb9) {}
   }
 
+  /* ==========================================================================
+     A FRIENDLY GETS THE SAME REPORT.
+     The Journal page above is the best thing the game prints about a match -
+     the headline, the turning point, the man of the match, the worm, the card
+     and the commentary - and a friendly could not reach it. Not because a
+     friendly deserves less, but because this page reads a SERVED LEAGUE row
+     and a friendly is a ball-by-ball log behind a different RPC.
+     So the log is turned into the record this page already knows how to read.
+     One page, every match in the game.
+     THE UMPIRE OUTRANKS THE WALK. Walking the deliveries gives complete
+     figures to the last ball - better than his over prints, which stop at the
+     last completed over - but it disagreed with him on wickets, crediting
+     Noah Wright three where his own card says five. Where he has printed a
+     bowler's figures they are used; the walk fills in only the men he never
+     printed, which is anybody pulled up mid-over.
+     ========================================================================== */
+  var FR_WKT = { wC: "caught", wB: "bowled", wLBW: "lbw", wST: "stumped", wRO: "run out" };
+  function foFrBallRuns(r) {
+    var o = r && r.out, t = (r && r.txt) || "";
+    if (!o) return 0;
+    if (/^[0-9]+$/.test(o)) return +o;
+    if (o === "dot") return 0;
+    if (o === "wide") return /\bfour\b/i.test(t) ? 5 : 1;
+    if (o === "noball") return /\bsix\b/i.test(t) ? 7 : /\bfour\b/i.test(t) ? 5 : 1;
+    if (o === "bye" || o === "legbye") return /\bfour\b/i.test(t) ? 4 : /\btwo\b/i.test(t) ? 2 : 1;
+    return 0;
+  }
+  function foFrOvOf(legal) { return Math.floor(legal / 6) + (legal % 6) / 10; }
+
+  function foMrRecFromFriendly(j, resultText) {
+    if (!j || !j.log || !j.log.length) return null;
+    var log = (j.log || []).slice().reverse();        // the RPC serves newest first
+    var hN = (j.home && j.home.name) || "Home", aN = (j.away && j.away.name) || "Away";
+    var mk = function () {
+      return { batTeam: "", runs: 0, wkts: 0, legal: 0, bat: [], byName: {}, bowlers: {}, printed: {},
+               fow: [], pships: [], pairNow: [], pshipBalls: 0, extras: { wd: 0, nb: 0, b: 0, lb: 0 }, worm: [] };
+    };
+    var I = [mk(), mk()], meta = { wx: "", pitch: "", toss: "", elected: "" };
+    for (var i = 0; i < log.length; i++) {
+      var r = log[i]; if (!r) continue;
+      var S = I[(r.inn | 0) === 1 ? 1 : 0];
+      if (r.out === "▶") {                       // the umpire's opening line
+        var cw = /with (.+?) conditions and an? (.+?) pitch/i.exec(r.txt || "");
+        var ct = /([A-Za-z0-9 '&-]+?) won the toss and chose to (\w+)/i.exec(r.txt || "");
+        if (cw) { meta.wx = cw[1]; meta.pitch = cw[2]; }
+        if (ct) { meta.toss = ct[1].trim(); meta.elected = ct[2]; }
+        continue;
+      }
+      if (r._top) {                                   // an end-of-over print
+        var tp = /-\s*(.+?)\s+(\d+)\/(\d+)\./.exec(r.txt || "");
+        if (tp && !S.batTeam) S.batTeam = tp[1].trim();
+        var ovm = /End of over (\d+)/.exec(r.txt || "");
+        if (ovm) S.worm.push([+ovm[1], S.runs, S.wkts]);
+        // his own figures for the man who bowled it
+        var bw = /([A-Z][A-Za-z .'’-]+?) (\d+)-(\d+)-(\d+)\.\s*$/.exec(r.txt || "");
+        if (bw) S.printed[bw[1].trim()] = { o: +bw[2], r: +bw[3], w: +bw[4] };
+        continue;
+      }
+      if (/Innings break/.test(r.txt || "")) {
+        var cl = /Innings break\.\s*(.+?)\s+(\d+)\/(\d+)\./.exec(r.txt || "");
+        if (cl && !S.batTeam) S.batTeam = cl[1].trim();
+        continue;
+      }
+      var fx = /Partnership ends at (\d+)\s*-\s*(.+?) out for (\d+)\s*\((\d+)\)\.\s*(.+?)\s+(\d+)\/(\d+)\./.exec(r.txt || "");
+      if (fx) {
+        if (!S.batTeam) S.batTeam = fx[5].trim();
+        S.fow.push({ sc: +fx[6], wkt: +fx[7], who: fx[2], ov: foFrOvOf(S.legal) });
+        // A STAND IS TWO MEN, and the page names them: "put on 74 from 61
+        // balls". The umpire prints the runs and who fell; the pair and the
+        // balls come off the deliveries since the last wicket.
+        var dn = fx[2].trim(), db = S.byName[dn];
+        if (!db) { db = { p: { name: dn }, r: 0, b: 0, f4: 0, f6: 0, out: null }; S.byName[dn] = db; S.bat.push(db); }
+        db.r = +fx[3]; db.b = +fx[4];              // his figures, in his own hand
+        db.out = S.pendWk || "out";
+        S.pendWk = null;
+        S.pships.push({ runs: +fx[1], balls: S.pshipBalls || 0, w: +fx[7],
+                        pair: (S.pairNow || []).slice(0, 2).join(" / ") });
+        S.pshipBalls = 0;
+        S.pairNow = (S.pairNow || []).filter(function (n) { return n !== fx[2]; });
+        continue;
+      }
+      if (r.no === "" || r.intro) continue;
+
+      // ---- a delivery -----------------------------------------------------
+      var o = r.out, runs = foFrBallRuns(r);
+      var wide = o === "wide", nb = o === "noball", bye = (o === "bye" || o === "legbye");
+      S.runs += runs;
+      if (!wide && !nb) S.legal++;
+      if (wide) S.extras.wd += runs;
+      else if (nb) S.extras.nb += runs;
+      else if (o === "bye") S.extras.b += runs;
+      else if (o === "legbye") S.extras.lb += runs;
+      S.pshipBalls = (S.pshipBalls || 0) + (wide ? 0 : 1);
+      if (r.strikerNm) {
+        S.pairNow = S.pairNow || [];
+        if (S.pairNow.indexOf(r.strikerNm) < 0) S.pairNow.push(r.strikerNm);
+        if (S.pairNow.length > 2) S.pairNow = S.pairNow.slice(-2);
+        var b = S.byName[r.strikerNm];
+        if (!b) { b = { p: { name: r.strikerNm }, r: 0, b: 0, f4: 0, f6: 0, out: null }; S.byName[r.strikerNm] = b; S.bat.push(b); }
+        if (!wide) b.b++;                              // a wide is not a ball faced
+        if (/^[0-9]+$/.test(o)) { b.r += +o; if (+o === 4) b.f4++; if (+o === 6) b.f6++; }
+
+      }
+      // A RUN-OUT CAN TAKE THE MAN AT THE OTHER END. Hanging the dismissal on
+      // the striker of the delivery gave Theo Crawford's run-out to whoever
+      // happened to be facing, and his figures to the wrong man with it. The
+      // umpire's fall-of-wicket note names him, so the wicket waits for it.
+      if (FR_WKT[o]) {
+        var bo9 = foMrSurname(r.bowlerNm || ""), fl9 = foMrSurname((r.ev && r.ev.fldNm) || "");
+        S.pendWk = o === "wC" ? ("c " + (fl9 || "sub") + " b " + bo9)
+                 : o === "wB" ? ("b " + bo9)
+                 : o === "wLBW" ? ("lbw b " + bo9)
+                 : o === "wST" ? ("st \u2020 b " + bo9)
+                 : "run out";
+      }
+      if (r.bowlerNm) {
+        var w = S.bowlers[r.bowlerNm];
+        if (!w) { w = { p: { name: r.bowlerNm }, b: 0, r: 0, w: 0 }; S.bowlers[r.bowlerNm] = w; }
+        if (!wide && !nb) w.b++;
+        if (!bye) w.r += runs;                         // a bye is not the bowler's
+        if (FR_WKT[o] && o !== "wRO") w.w++;
+      }
+      if (FR_WKT[o]) S.wkts++;
+    }
+    // the innings may close mid-over, so the worm gets its true last point
+    I.forEach(function (S) {
+      if (!S.legal) return;
+      var pt = [Math.round(foFrOvOf(S.legal) * 10) / 10, S.runs, S.wkts];
+      if (!S.worm.length || S.worm[S.worm.length - 1][0] < pt[0]) S.worm.push(pt);
+      // the last stand never gets a fall-of-wicket note, so it is closed here
+      if (S.pshipBalls && (S.pairNow || []).length) {
+        var lastF = S.fow.length ? S.fow[S.fow.length - 1].sc : 0;
+        S.pships.push({ runs: Math.max(0, S.runs - lastF), balls: S.pshipBalls,
+                        w: S.wkts + 1, pair: S.pairNow.slice(0, 2).join(" / ") });
+      }
+      // HIS CARD, NOT MINE, wherever he wrote one down
+      Object.keys(S.printed).forEach(function (k) {
+        var pr = S.printed[k], mine = null, best = null;
+        Object.keys(S.bowlers).forEach(function (nm) {
+          if (nm === k || foMrSurname(nm) === foMrSurname(k)) mine = S.bowlers[nm];
+        });
+        if (mine) { mine.b = pr.o * 6; mine.r = pr.r; mine.w = pr.w; }
+        else { S.bowlers[k] = { p: { name: k }, b: pr.o * 6, r: pr.r, w: pr.w }; }
+        if (best) { /* unused */ }
+      });
+    });
+    if (!I[0].batTeam) I[0].batTeam = (meta.elected === "bat") ? meta.toss : (meta.toss === hN ? aN : hN);
+    if (!I[1].batTeam) I[1].batTeam = (I[0].batTeam === hN ? aN : hN);
+    if (!I[1].legal) I[1] = null;
+
+    // who won, off the umpire's own words
+    var txt = resultText || "", winner = null;
+    if (txt) {
+      [hN, aN].forEach(function (n) {
+        if (winner) return;
+        if (new RegExp("^" + n.replace(/[.*+?^${}()|[\]\\]/g, "\\$&") + "\\b").test(txt)) winner = n;
+      });
+    }
+    return {
+      ix: "fr" + (j.id || ""), home: hN, away: aN, comp: "friendly",
+      date: j.playAtMs ? new Date(+j.playAtMs).toISOString().slice(0, 10) : "",
+      ground: (j.home && j.home.ground) || (hN + " Ground"),
+      pitch: meta.pitch, weather: meta.wx,
+      innings: I[1] ? [I[0], I[1]] : [I[0]],
+      worm: I[1] ? [I[0].worm, I[1].worm] : [I[0].worm],
+      result: { text: txt, winner: winner },
+      // THE PAGE REVERSES THIS ITSELF. Every reader downstream - the key
+      // moments, the commentary - takes rec.log NEWEST FIRST, which is how the
+      // World Service serves a league card. Handing over the oldest-first copy
+      // the walk above needed made the moments read the second innings as the
+      // first, and put Somerset's score beside a Mashed Potatoes wicket.
+      log: (j.log || []).slice(), friendly: true
+    };
+  }
+
+  // one fetch for the two things a friendly report needs
+  var FR_REC = {};
+  function foMrFriendlyFetch(id) {
+    if (FR_REC[id]) return Promise.resolve(FR_REC[id]);
+    var SB = "https://egaipdksvztqqgouriyc.supabase.co";
+    var KEY = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+    var call = function (fn) {
+      return fetch(SB + "/rest/v1/rpc/" + fn, {
+        method: "POST", headers: { apikey: KEY, "content-type": "application/json" },
+        body: JSON.stringify({ p_id: +id })
+      }).then(function (r) { return r.ok ? r.json() : null; }).catch(function () { return null; });
+    };
+    return Promise.all([call("world_friendly_log"), call("world_friendly_detail")])
+      .then(function (a) {
+        if (!a[0] || !a[0].log) return null;
+        var rec = foMrRecFromFriendly(a[0], (a[1] && a[1].text) || "");
+        if (rec) FR_REC[id] = rec;
+        return rec;
+      });
+  }
+
   window.foRenderReport = function () {
     try {
       try { if (typeof window.foCxNav === "function") window.foCxNav(); } catch (eN) {}
       if ((location.hash || "").split("?")[0] !== "#/report") return;
       var page = document.getElementById("page"); if (!page) return;
       foMrCss();
+      // A FRIENDLY NAMES ITSELF BY ITS OWN ID. Same page, same painter.
+      var mfr = /[?&]fr=(\d+)/.exec(location.hash || "");
+      if (mfr) {
+        var mtF = /[?&]t=(\w+)/.exec(location.hash || "");
+        var tabF = mtF ? mtF[1] : "sum";
+        if (["sum", "card", "comm", "chart", "fantasy"].indexOf(tabF) < 0) tabF = "sum";
+        var sigF = "mrf|" + mfr[1] + "|" + tabF + "|" + (/[?&]c=all\b/.test(location.hash || "") ? "all" : "key");
+        if (page.__foMrSig === sigF && page.querySelector(".fo-mr")) return;
+        page.__foMrSig = sigF;
+        document.body.classList.add("fo-mr-on");
+        var ownF = location.hash;
+        page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
+          "<h1 class='fo-mr-head'>Sending for the book&hellip;</h1>" +
+          "<p class='fo-mr-dek'>Reaching the umpire for this friendly's record.</p></div></div>";
+        foMrFriendlyFetch(mfr[1]).then(function (rec) {
+          if (location.hash !== ownF) return;          // the reader moved on
+          if (!rec) {
+            page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
+              "<h1 class='fo-mr-head'>That friendly is not in the book</h1>" +
+              "<p class='fo-mr-dek'>It may not have been played yet.</p>" +
+              "<div class='fo-mr-foot'><a class='fo-mr-back' href='#/home'>&#8592; The club</a></div></div></div>";
+            return;
+          }
+          var baseF = "#/report?fr=" + encodeURIComponent(mfr[1]);
+          foMrPaint(rec, page, {
+            tab: tabF, commAll: /[?&]c=all\b/.test(location.hash || ""),
+            href: function (t) { return baseF + "&t=" + t; },
+            others: [], back: "#/feed?fr=" + encodeURIComponent(mfr[1])
+          });
+        }).catch(function (eF) {
+          // a swallowed rejection here is a page stuck on "sending for the
+          // book" with nothing anywhere to say why
+          try { console.warn("friendly report failed", eF); } catch (e2) {}
+          if (location.hash !== ownF) return;
+          page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
+            "<h1 class='fo-mr-head'>The book would not open</h1>" +
+            "<p class='fo-mr-dek'>" + E(String((eF && eF.message) || eF).slice(0, 140)) + "</p>" +
+            "<div class='fo-mr-foot'><a class='fo-mr-back' href='#/feed?fr=" + encodeURIComponent(mfr[1]) + "'>&#8592; The match</a></div></div></div>";
+        });
+        return;
+      }
       // a served match names itself by nation + the World Service's match id
       var mw = /[?&]w=([^&]+)/.exec(location.hash || "");
       var mn = /[?&]n=([a-z]+)/.exec(location.hash || "");

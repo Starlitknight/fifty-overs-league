@@ -204,16 +204,29 @@
       "</div></div>";
   }
 
+  /* A PAGE ONLY EVER PAINTS ITS OWN ROOM.
+   * This asked the selectors and then wrote whatever came back straight into
+   * #page - with no check that the reader was still HERE. Tap Nations and then
+   * the Almanack a second later and the selectors' answer landed on top of the
+   * record book, which is how a sweep of the whole game found "The selectors
+   * have not met yet" printed under the almanack's masthead. The hash is
+   * checked on the way in and again on the way back from the world. */
+  function onNationsPage() {
+    return (location.hash || "").split("?")[0] === "#/nations";
+  }
   window.foRenderNationsPage = function () {
     var page = document.getElementById("page"); if (!page) return;
+    if (!onNationsPage()) return;
     css();
     page.innerHTML = shell("<div class='fo-ac-note'>Asking the selectors&hellip;</div>");
     Promise.all([
       snapshot("nations"),
       jwt() ? rpc("world_my_status") : Promise.resolve(null)
     ]).then(function (d) {
+      if (!onNationsPage()) return;                 // the reader moved on
       render(page, d[0], d[1]);
     }).catch(function (e) {
+      if (!onNationsPage()) return;
       page.innerHTML = shell("<div class='fo-ac-note'>The world could not be reached (" +
         E(String(e && e.message).slice(0, 90)) + "). Try again in a minute.</div>");
     });
