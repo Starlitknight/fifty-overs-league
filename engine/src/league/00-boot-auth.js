@@ -653,7 +653,15 @@
    * timers and may arrive after the clock; a node already in the right place
    * is left alone, so this does not churn the DOM once it has settled.
    */
-  var FO_HDR_RIGHT = ["#fo-bell", "#fo-wire-btn", "#fo-clock", "#fo-wclock"];
+  /* THE LIVE PILL BELONGS IN THIS ROW TOO, and it was the one thing in that
+     corner that was not. #fo-hdr-right is absolutely positioned against the
+     masthead's right edge; the pill was inserted straight into #topbar and
+     laid out in normal flow, so the two ended up occupying the same corner and
+     the pill sat on top of the bell. Anything that lives at the right of the
+     masthead goes in the box that owns the right of the masthead - then the
+     flex gap keeps them apart and no z-index has to arbitrate.
+     It leads the row: on air outranks a notification, which outranks a clock. */
+  var FO_HDR_RIGHT = ["#fo-mlive", "#fo-bell", "#fo-wire-btn", "#fo-clock", "#fo-wclock"];
   function foHdrRight(tb) {
     try {
       if (!tb) tb = document.getElementById("topbar");
@@ -681,7 +689,7 @@
           "display:flex;align-items:center;gap:9px;z-index:5}",
         // the clock stops pinning itself now that the box it sits in does
         "html body #topbar#topbar #fo-hdr-right #fo-wclock{position:static;transform:none;right:auto;top:auto;margin:0}",
-        "html body #topbar #fo-hdr-right #fo-wire-btn,html body #topbar #fo-hdr-right #fo-bell{position:relative;margin:0;flex:none}",
+        "html body #topbar #fo-hdr-right #fo-wire-btn,html body #topbar #fo-hdr-right #fo-bell,html body #topbar #fo-hdr-right #fo-mlive{position:relative;margin:0;flex:none;top:auto;right:auto;left:auto;bottom:auto;transform:none}",
         "html body #topbar #fo-hdr-right:empty{display:none}",
         // THE MASTHEAD KEEPS ITS HEIGHT. Its 46px came from nothing but the
         // 44px menu button standing in it; with the button gone the bar
@@ -850,7 +858,8 @@
       if (!ml) {
         ml = document.createElement("a"); ml.id = "fo-mlive"; ml.href = "#";
         ml.innerHTML = "<span class='live-dot'></span><span class='live-txt'>Live</span>";
-        tb.insertBefore(ml, tb.querySelector("#fo-top-status"));
+        // parented by foHdrRight below, which owns that corner
+        tb.appendChild(ml);
         ml.addEventListener("click", function (e) {
           e.preventDefault();
           var go = ml.getAttribute("data-go");

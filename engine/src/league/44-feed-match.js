@@ -809,7 +809,7 @@
       var I = inns[ix];
       if (!I.open && !I.bats.length) continue;
       out += innTitle(I, m, ix);
-      out += "<table class='fd-tb'><tr><th>Batting</th><th></th><th class='r'>R</th><th class='r'>B</th><th class='r'>SR</th></tr>" +
+      out += "<div class='fd-tbw'><table class='fd-tb'><tr><th>Batting</th><th></th><th class='r'>R</th><th class='r'>B</th><th class='r'>SR</th></tr>" +
         I.bats.map(function (b9) {
           var how = b9.out
             ? (b9.out.how === "caught" && b9.out.fld ? "c " + E(surname(b9.out.fld)) + " b " + E(surname(b9.out.bowler || "")) :
@@ -822,12 +822,12 @@
             "<td class='r'>" + (b9.r != null ? b9.r + (b9.out ? "" : "*") : "&mdash;") + "</td>" +
             "<td class='r'>" + (b9.b != null ? b9.b : "&mdash;") + "</td>" +
             "<td class='r'>" + (sr != null ? sr : "&mdash;") + "</td></tr>";
-        }).join("") + "</table>";
+        }).join("") + "</table></div>";
       if (I.bowls.length)
-        out += "<table class='fd-tb'><tr><th>Bowling</th><th class='r'>O</th><th class='r'>R</th><th class='r'>W</th></tr>" +
+        out += "<div class='fd-tbw'><table class='fd-tb'><tr><th>Bowling</th><th class='r'>O</th><th class='r'>R</th><th class='r'>W</th></tr>" +
           I.bowls.map(function (w9) {
             return "<tr><td>" + plink(w9.nm) + pstar(w9.nm, T.rid) + "<span class='ss'>" + sStars(w9.nm, "bowl") + "</span></td><td class='r'>" + w9.o + "</td><td class='r'>" + w9.r + "</td><td class='r'>" + w9.w + "</td></tr>";
-          }).join("") + "</table>";
+          }).join("") + "</table></div>";
       if (I.fow.length || I.top) out += partHtml(I);
       if (ix === 0 && I.brk) out += "<div class='fd-note'>" + E(I.brk) + "</div>";
     }
@@ -1167,7 +1167,17 @@
       ".fo-fd .fd-ih{display:flex;align-items:baseline;gap:10px;margin:12px 0 6px}",
       ".fo-fd .fd-ih b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:16px;color:var(--foink)}",
       ".fo-fd .fd-ih span{font:700 13px Oswald,sans-serif;color:var(--foor)}",
-      ".fo-fd .fd-tb{width:100%;border-collapse:collapse;margin:4px 0 10px;font:400 12.5px/1.5 Inter,sans-serif}",
+      // THE SCORECARD RAN OFF THE PHONE. The table was width:100% inside a
+      // panel with eighteen pixels of padding each side, and nothing said what
+      // to do when its contents were wider than that - so the strike-rate
+      // column was sliced down the middle of its digits by the panel edge,
+      // with no way to reach it. A table wider than its column scrolls INSIDE
+      // its own box; the page never scrolls sideways for it.
+      ".fo-fd .fd-tbw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:4px -4px 10px;padding:0 4px}",
+      ".fo-fd .fd-tb{width:100%;min-width:330px;border-collapse:collapse;margin:0;font:400 12.5px/1.5 Inter,sans-serif}",
+      // and the ten-star strip is what made it too wide: on a narrow screen it
+      // is the thing a reader needs least standing beside the runs
+      "@media(max-width:520px){.fo-fd .fd-tb .ss{display:none}}",
       ".fo-fd .fd-tb th{font:700 9.5px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fomut);text-align:left;padding:4px 6px;border-bottom:1px solid var(--fobrd)}",
       ".fo-fd .fd-tb td{padding:5px 6px;border-bottom:1px solid #f3eee1;color:var(--foink)}",
       ".fo-fd .fd-tb .r{text-align:right;font-variant-numeric:tabular-nums}",
