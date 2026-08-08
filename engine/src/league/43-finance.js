@@ -102,9 +102,7 @@
       // the amount and the balance in tabular figures so columns of money
       // line up on the decimal the way a treasurer expects
       "html body #page .fo-fin-stlink{display:block;margin-top:18px;padding:14px 16px;background:var(--paper) !important;border:1px solid rgba(20,28,40,.14);border-left:3px solid var(--brand);border-radius:12px;font:600 13px/1.4 Inter,sans-serif;color:#0E2246 !important;text-decoration:none !important}",
-      ".fo-st-tabs{display:flex;gap:7px;margin:18px 0 12px;flex-wrap:wrap}",
-      "html body #page .fo-st-tab{font:700 10.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.6) !important;background:var(--paper) !important;border:1px solid rgba(20,28,40,.16) !important;border-radius:999px !important;padding:0 16px !important;min-height:40px;cursor:pointer}",
-      "html body #page .fo-st-tab.on{color:#FFFEFC !important;background:#0E2246 !important;border-color:#0E2246 !important}",
+      // the statement's filter is a line of words, not a toolbar - see .fo-seg
       ".fo-st-head{display:grid;grid-template-columns:46px minmax(0,1fr) 96px 96px;gap:10px;padding:0 12px 7px;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(20,28,40,.42)}",
       ".fo-st-head span:nth-child(3),.fo-st-head span:nth-child(4){text-align:right}",
       ".fo-st-list{background:var(--paper);border:1px solid rgba(20,28,40,.12);border-radius:14px;overflow:hidden}",
@@ -690,7 +688,7 @@
       "<div class='fo-fin-bank'><div class='lb'>In the treasury</div><b>" + M(SM.bank) + "</b>" +
       "<div class='fo-fin-walk'><div><span>Entries on file</span><i>" + SM.entries + "</i></div>" +
       "<div><span>Showing</span><i>" + shown + "</i></div></div></div>" +
-      "<div class='fo-st-tabs'>" + tabs + "</div>" +
+      "<div class='fo-seg fo-st-tabs'>" + tabs + "</div>" +
       "<div class='fo-st-head'><span>Time</span><span>What</span><span>Amount</span><span>Balance</span></div>" +
       "<div class='fo-st-list'>" + stRows() + "</div>" +
       (SM.more ? "<button type='button' id='fo-st-more' class='fo-st-more'" + (SM.busy ? " disabled" : "") + ">" +

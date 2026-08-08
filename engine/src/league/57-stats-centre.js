@@ -346,8 +346,7 @@
       "html body #page .fo-stc-htb.bk{table-layout:auto;min-width:520px}",
       "html body #page .fo-stc-htb.bk td:nth-child(2) u{display:block;text-decoration:none;font:400 10.5px/1.35 Inter,system-ui,sans-serif;color:rgba(20,28,40,.5)}",
       "html body #page .fo-stc-htb.bk th.r,html body #page .fo-stc-htb.bk td.r{width:auto;padding-left:9px}",
-      "html body #page .fo-stc-cseg{display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border-radius:9px;border:1px solid rgba(20,28,40,.16);text-decoration:none;font:700 10px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(20,28,40,.55)}",
-      "html body #page .fo-stc-cseg.on{border-color:#C9552F;color:#C9552F;background:rgba(201,85,47,.06)}",
+      // the careers room's two choosers are the shared line of words (.fo-seg)
       // ---- the table -------------------------------------------------------
       // A SOLID NAVY HEADER BAND with white condensed capitals is a spreadsheet
       // wearing a suit: it puts the loudest thing on the page above the quietest
@@ -746,11 +745,11 @@
       var on = (k === "b" ? bk : scope) === v;
       var href = "#/stats?v=career&n=" + encodeURIComponent(natId) +
         "&b=" + (k === "b" ? v : bk) + "&sc=" + (k === "s" ? v : scope);
-      return "<a class='fo-stc-cseg" + (on ? " on" : "") + "' href='" + href + "'>" + lab + "</a>";
+      return "<a class='" + (on ? "on" : "") + "' href='" + href + "'>" + lab + "</a>";
     };
     return "<div class='fo-stc-sec fo-stc-hhead'>" +
-      "<div class='fo-stc-hnav'>" + seg("b", "bat", "Batting") + seg("b", "bowl", "Bowling") +
-      seg("s", "league", E(natName(natId))) + seg("s", "world", "The world") + "</div>" +
+      "<div class='fo-seg'>" + seg("b", "bat", "Batting") + seg("b", "bowl", "Bowling") + "</div>" +
+      "<div class='fo-seg'>" + seg("s", "league", E(natName(natId))) + seg("s", "world", "The world") + "</div>" +
       "<h2>All-time " + (bk === "bat" ? "batting" : "bowling") + "</h2>" +
       "<p class='fo-stc-dim'>Every career in " + (scope === "world" ? "the world" : "the " + E(natName(natId)) + " league") +
       " with " + (bk === "bat" ? "30 innings" : "30 wickets") + " behind it &mdash; " + list.length.toLocaleString() +

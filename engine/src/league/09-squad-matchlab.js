@@ -1044,10 +1044,10 @@
       ".fo-s2-q:focus{outline:none;border-color:#C9571F}",
       ".fo-s2-sortw{font:500 12px Inter,sans-serif;color:#6d6455;display:flex;align-items:center;gap:6px}",
       ".fo-s2-sortw select{font:600 12px Inter,sans-serif;color:#14243A;border:1px solid #d9d0bc;border-radius:8px;background:#FFFEFC;padding:7px 8px}",
-      ".fo-s2-chip{font:700 11px Inter,sans-serif;border:1px solid #d9d0bc;background:#FFFEFC;color:#4c4437;border-radius:999px;padding:7px 13px;cursor:pointer}",
-      ".fo-s2-chip.on{background:#14243A;border-color:#14243A;color:#fff}",
-      "html body.ftpskin button.fo-s2-chip{background:#FFFEFC !important;color:#4c4437 !important;border-color:#d9d0bc !important}",
-      "html body.ftpskin button.fo-s2-chip.on{background:#14243A !important;color:#fff !important;border-color:#14243A !important}",
+      // the role filter is a line of words now - see .fo-seg in the boot module
+      ".fo-s2-roles{flex:1 0 100%;margin-top:2px}",
+
+
       // ---- role sections ----
       ".fo-s2-sec{margin-bottom:12px}",
       ".fo-s2-seck{display:flex;align-items:center;justify-content:space-between;background:#14243A;color:#F6F3EB;border-radius:9px 9px 0 0;padding:7px 14px;font:700 10.5px Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase}",
@@ -1602,9 +1602,9 @@
         "<label class='fo-s2-sortw'>Sort by <select id='fo-s2-sort'>" + SORTS.map(function (o) {
           return "<option value='" + o[0] + "'" + (sv.s2sort === o[0] ? " selected" : "") + ">" + o[1] + "</option>";
         }).join("") + "</select></label>" +
-        ROLEF.map(function (c) {
+        "<div class='fo-seg fo-s2-roles'>" + ROLEF.map(function (c) {
           return "<button type='button' class='fo-s2-chip" + (sv.roleF === c[0] ? " on" : "") + "' data-rf='" + c[0] + "'>" + c[1] + "</button>";
-        }).join("") +
+        }).join("") + "</div>" +
         "</div>";
 
       // ---- the list, grouped by role ----

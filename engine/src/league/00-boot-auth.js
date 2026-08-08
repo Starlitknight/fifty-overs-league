@@ -119,6 +119,57 @@
    *
    * The strip is keyboard-safe: Escape cancels, and the SAFE choice holds
    * focus, so no destructive action is ever one stray Enter away. */
+  /* ---- ONE MENU, EVERYWHERE ----------------------------------------------
+   *
+   * A row of filled pills is a row of BUTTONS, and a button says "this does
+   * something". A filter does not do something - it says which of the things
+   * already on the page you are looking at. Six lozenges in three colours
+   * across the top of a statement is a toolbar shouting over the thing it is
+   * meant to be quietly filtering.
+   *
+   * The elegant form is the one the Stats Centre already uses and everything
+   * else now shares: the choices set as plain type, close together, with the
+   * live one carried in ink and underscored in rust. It reads as a line of
+   * words - which is what it is - and the page underneath stays the loudest
+   * thing on the screen.
+   *
+   * Any row of <button>s or <a>s marked .fo-seg picks this up; the current one
+   * carries .on. Nothing else is needed.
+   */
+  function foSegCss() {
+    if (document.getElementById("fo-seg-css")) return;
+    var s = document.createElement("style"); s.id = "fo-seg-css";
+    s.textContent = [
+      "html body #page .fo-seg{display:flex;flex-wrap:wrap;gap:0 22px;align-items:center;",
+      "margin:16px 0 10px;padding:0 2px;border-bottom:1px solid rgba(20,28,40,.10)}",
+      "html body #page .fo-seg > *{position:relative;appearance:none;-webkit-appearance:none;",
+      "background:transparent !important;border:0 !important;border-radius:0 !important;",
+      "box-shadow:none !important;padding:9px 0 10px !important;margin:0 !important;min-height:0;",
+      "font:600 12.5px/1 Inter,system-ui,sans-serif !important;letter-spacing:-.005em;",
+      "text-transform:none !important;text-decoration:none !important;cursor:pointer;",
+      "color:rgba(20,28,40,.45) !important;transition:color .12s ease}",
+      "html body #page .fo-seg > *:hover{color:#141C28 !important}",
+      "html body #page .fo-seg > *:focus-visible{outline:2px solid rgba(201,85,47,.5);outline-offset:2px}",
+      "html body #page .fo-seg > .on{color:#0E2246 !important;font-weight:700 !important}",
+      "html body #page .fo-seg > .on:after{content:'';position:absolute;left:0;right:0;bottom:-1px;",
+      "height:2px;border-radius:1px;background:#C9571F}",
+      // on a dark plate the same line reads in paper and gold
+      "html body #page .fo-seg.dark{border-bottom-color:rgba(255,254,252,.14)}",
+      "html body #page .fo-seg.dark > *{color:rgba(255,254,252,.55) !important}",
+      "html body #page .fo-seg.dark > *:hover{color:#FFFEFC !important}",
+      "html body #page .fo-seg.dark > .on{color:#FFFEFC !important}",
+      "html body #page .fo-seg.dark > .on:after{background:#E8B96A}",
+      "@media(max-width:430px){html body #page .fo-seg{gap:0 16px}",
+      "html body #page .fo-seg > *{font-size:12px !important}}"
+    ].join("");
+    document.body.appendChild(s);
+  }
+  try {
+    window.foSegCss = foSegCss;
+    if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", foSegCss);
+    else foSegCss();
+  } catch (eSg) {}
+
   function foDecCss() {
     if (document.getElementById("fo-dec-css")) return;
     var s = document.createElement("style"); s.id = "fo-dec-css";
