@@ -315,6 +315,32 @@
       "html body #page .fo-stc-sub{font:500 11px/1.4 Inter,sans-serif;color:rgba(20,28,40,.52)}",
       "html body #page .fo-stc-dim{font:400 12px/1.55 Inter,sans-serif;color:rgba(20,28,40,.5);margin:8px 2px}",
       "html body #page .fo-stc-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:10px -4px 0}",
+      // ---- the record: the year picker, the champions band, the old table ----
+      "html body #page .fo-stc-hnav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}",
+      "html body #page .fo-stc-hnav label{display:flex;align-items:center;gap:6px;font:700 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(20,28,40,.5)}",
+      "html body #page .fo-stc-hnav select{min-height:38px;padding:0 10px;border-radius:9px;border:1px solid rgba(20,28,40,.2);background:#FFFEFC;font:600 14px/1 Inter,system-ui,sans-serif;color:#141C28;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-stc-hstep{min-height:38px;display:inline-flex;align-items:center;padding:0 12px;border-radius:9px;border:1px solid rgba(20,28,40,.16);text-decoration:none;font:700 11px/1 Oswald,sans-serif;letter-spacing:.1em;color:#B44A22;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-stc-hstep.off{opacity:.32;color:rgba(20,28,40,.5)}",
+      "html body #page .fo-stc-hhead h2{margin:2px 0 2px;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:24px;color:#141C28}",
+      "html body #page .fo-stc-htb tr.ch td{background:rgba(47,107,69,.07)}",
+      "html body #page .fo-stc-htb tr.ch em{font-style:normal;margin-left:6px;font:700 8px/1 Oswald,sans-serif;letter-spacing:.14em;color:#2F6B45}",
+      // THE RECORD KEEPS ITS OWN TABLE. It borrowed the book's chrome at first
+      // and lost every numeric column off the right-hand edge, because that
+      // table is built to be wide and scrolled and this one has to fit a phone
+      // whole. Fixed layout, a club column that takes what is left, and seven
+      // narrow columns that are always there.
+      "html body #page .fo-stc-htb{width:100%;table-layout:fixed;border-collapse:collapse;margin-top:6px;font:400 12.5px/1.4 Inter,system-ui,sans-serif;color:#141C28}",
+      "html body #page .fo-stc-htb th{padding:7px 3px;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(20,28,40,.45);border-bottom:1px solid rgba(20,28,40,.16)}",
+      "html body #page .fo-stc-htb td{padding:8px 3px;border-bottom:1px solid rgba(20,28,40,.07)}",
+      "html body #page .fo-stc-htb th:first-child,html body #page .fo-stc-htb td:first-child{width:24px;text-align:right;color:rgba(20,28,40,.45)}",
+      "html body #page .fo-stc-htb th:nth-child(2),html body #page .fo-stc-htb td:nth-child(2){text-align:left;width:auto;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      "html body #page .fo-stc-htb td:nth-child(2) a{text-decoration:none;color:#141C28 !important;font-weight:600}",
+      "html body #page .fo-stc-htb th.r,html body #page .fo-stc-htb td.r{text-align:right;width:26px;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-stc-htb th:last-child,html body #page .fo-stc-htb td:last-child{width:44px;color:rgba(20,28,40,.6)}",
+      "html body #page .fo-stc-htb tr.ch td:nth-child(2) a{color:#2F6B45 !important}",
+      "html body #page .fo-stc-htb tr.ch td{background:rgba(47,107,69,.08)}",
+      "html body #page .fo-stc-htb tr.ch em{font-style:normal;margin-left:5px;font:700 7.5px/1 Oswald,sans-serif;letter-spacing:.12em;color:#2F6B45}",
+      "@media(max-width:430px){html body #page .fo-stc-htb th:nth-child(6),html body #page .fo-stc-htb td:nth-child(6){display:none}}",
       // ---- the table -------------------------------------------------------
       // A SOLID NAVY HEADER BAND with white condensed capitals is a spreadsheet
       // wearing a suit: it puts the loudest thing on the page above the quietest
@@ -405,6 +431,7 @@
 
     var elsewhere =
       "<div class='fo-stc-sec'><div class='fo-stc-sech'>Elsewhere in the record</div><div class='fo-stc-grid'>" +
+      "<a class='fo-stc-item' href='#/stats?v=hist&n=" + encodeURIComponent(natId) + "'><b>The record</b><span>Every season this league has ever played: the table that decided it, the champions and the cup winners, year by year.</span><i>" + (function () { try { var sp = PL9().histSpan(natId); return sp.seasons ? sp.from + "&ndash;" + sp.to : "The record"; } catch (e) { return "The record"; } })() + "</i></a>" +
       "<a class='fo-stc-item' href='#/league'><b>The league table</b><span>Where the clubs stand, the fixtures and the results, round by round.</span><i>" + E(natName(natId)) + "</i></a>" +
       "<a class='fo-stc-item' href='#/rankings'><b>The world rankings</b><span>Nations and clubs ranked on what they have done, across every competition.</span><i>The world</i></a>" +
       "<a class='fo-stc-item' href='#/almanack'><b>The world almanack</b><span>Champions, cup winners and the honours every season has handed out.</span><i>Every season</i></a>" +
@@ -535,6 +562,107 @@
       body + "</div>";
   }
 
+
+  /* ==========================================================================
+     THE RECORD (#/stats?v=hist) — every season this league has ever played.
+     The scorebook above is this season's. This is the other hundred and
+     thirty-five: pick a year and read the table that decided it, who took the
+     championship, who took the cup, and what the world was doing that summer.
+     All of it derived from the seed - nothing stored, nothing fetched.
+     ========================================================================== */
+  function PL9() { try { return window.__foPlanet || null; } catch (e) { return null; } }
+  function histBody(natId, wantYear) {
+    var P = PL9();
+    if (!P || !P.histYear) return "<div class='fo-stc-sec'><p class='fo-stc-dim'>The record is still waking up.</p></div>";
+    var span = P.histSpan(natId);
+    if (!span.seasons) return "<div class='fo-stc-sec'><p class='fo-stc-dim'>" + E(natName(natId)) + " has no record before this season.</p></div>";
+    var year = parseInt(wantYear, 10);
+    if (!(year >= span.from && year <= span.to)) year = span.to;
+    while (year >= span.from && !P.histYear(natId, year)) year--;
+    var h = P.histYear(natId, year);
+    if (!h) return "<div class='fo-stc-sec'><p class='fo-stc-dim'>No season was played in " + year + ".</p></div>";
+
+    var sides = [];
+    try { sides = P.sidesOf(natId) || []; } catch (e) {}
+    var nmOf = function (slot) {
+      for (var i = 0; i < sides.length; i++) if ((sides[i].slot | 0) === (slot | 0)) return sides[i].name;
+      return "Club " + slot;
+    };
+    var teamHref = function (slot) { return "#/team?c=" + encodeURIComponent(natId) + "&s=" + slot; };
+
+    // the years, newest first, as one picker - every season is one tap away
+    var opts = "";
+    for (var y = span.to; y >= span.from; y--) {
+      if (!P.histYear(natId, y)) continue;
+      opts += "<option value='" + y + "'" + (y === year ? " selected" : "") + ">" + y + "</option>";
+    }
+    var natOpts = (P.nations() || []).map(function (r) {
+      return "<option value='" + E(r.id) + "'" + (r.id === natId ? " selected" : "") + ">" + E(r.nm) + "</option>";
+    }).join("");
+
+    var prevY = null, nextY = null;
+    for (y = year - 1; y >= span.from; y--) if (P.histYear(natId, y)) { prevY = y; break; }
+    for (y = year + 1; y <= span.to; y++) if (P.histYear(natId, y)) { nextY = y; break; }
+    var step = function (yy, lab) {
+      return yy == null ? "<span class='fo-stc-hstep off'>" + lab + "</span>"
+        : "<a class='fo-stc-hstep' href='#/stats?v=hist&n=" + encodeURIComponent(natId) + "&y=" + yy + "'>" + lab + "</a>";
+    };
+
+    var rows = h.table.map(function (r, i) {
+      var win = i === 0;
+      return "<tr class='" + (win ? "ch" : "") + "'><td class='r'>" + (i + 1) + "</td>" +
+        "<td><a href='" + teamHref(r.slot) + "'>" + E(nmOf(r.slot)) + "</a></td>" +
+        "<td class='r'>" + r.p + "</td><td class='r'>" + r.w + "</td><td class='r'>" + r.l + "</td>" +
+        "<td class='r'>" + r.t + "</td><td class='r'><b>" + r.pts + "</b></td>" +
+        "<td class='r'>" + (r.nrr >= 0 ? "+" : "") + r.nrr.toFixed(2) + "</td></tr>";
+    }).join("");
+
+    // what the world was doing that summer
+    var world = [];
+    try {
+      var cr = P.crownYear(year);
+      if (cr) world.push("<div><i>Champions Cup</i><b><a href='#/team?c=" + encodeURIComponent(cr.rid) + "&s=" + cr.slot + "'>" +
+        E(natName(cr.rid)) + "</a></b><em>" + E(natName(cr.rid)) + "'s champions took the world crown</em></div>");
+      var wc = P.wcYear(year);
+      if (wc) world.push("<div><i>World Cup</i><b>" + E(wc.name) + "</b><em>beat " + E(wc.runnerName || "the field") + " in the final</em></div>");
+    } catch (e) {}
+
+    var champ = nmOf(h.champion);
+    var cupTxt = h.cup == null ? "not played" : nmOf(h.cup);
+    return "<div class='fo-stc-sec fo-stc-hhead'>" +
+      "<div class='fo-stc-hnav'>" + step(prevY, "&lsaquo; " + (prevY || "")) +
+      "<label>Season<select id='fo-stc-hy'>" + opts + "</select></label>" +
+      "<label>League<select id='fo-stc-hn'>" + natOpts + "</select></label>" +
+      step(nextY, (nextY || "") + " &rsaquo;") + "</div>" +
+      "<h2>" + E(natName(natId)) + " &middot; " + year + "</h2>" +
+      "<p class='fo-stc-dim'>Season " + (year - span.from + 1) + " of " + span.seasons +
+      " &middot; the competition has been played since " + span.from + ".</p>" +
+      "<div class='fo-stc-lead'>" +
+      "<div><i>Champions</i><b><a href='" + teamHref(h.champion) + "'>" + E(champ) + "</a></b><em>" + h.table[0].pts + " points from " + h.rounds + "</em></div>" +
+      "<div><i>National Cup</i><b>" + (h.cup == null ? "&mdash;" : "<a href='" + teamHref(h.cup) + "'>" + E(cupTxt) + "</a>") + "</b><em>" + (h.cup == null ? "not played that year" : "the knockout") + "</em></div>" +
+      world.join("") + "</div></div>" +
+      "<div class='fo-stc-sec'><div class='fo-stc-sech'>The table</div>" +
+      "<div class='fo-stc-scroll'><table class='fo-stc-htb'>" +
+      "<thead><tr><th class='r'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th>" +
+      "<th class='r'>T</th><th class='r'>Pts</th><th class='r'>NRR</th></tr></thead><tbody>" + rows +
+      "</tbody></table></div></div>" +
+      "<div class='fo-stc-foot'><a href='#/stats'>&lsaquo; The Stats Centre</a>" +
+      "<a href='#/league?n=" + encodeURIComponent(natId) + "'>This season's table &rsaquo;</a></div>";
+  }
+  function wireHist() {
+    try {
+      var y = document.getElementById("fo-stc-hy"), n = document.getElementById("fo-stc-hn");
+      var go = function () {
+        location.hash = "#/stats?v=hist&n=" + encodeURIComponent(n ? n.value : "") + "&y=" + (y ? y.value : "");
+      };
+      if (y) y.addEventListener("change", go);
+      if (n) n.addEventListener("change", function () {
+        // a different league has a different span, so the year is not carried
+        location.hash = "#/stats?v=hist&n=" + encodeURIComponent(n.value);
+      });
+    } catch (e) {}
+  }
+
   window.foRenderStatsPage = function () {
     var page = document.getElementById("page"); if (!page) return;
     if (!onPage()) return;
@@ -547,6 +675,11 @@
 
     var natId = qparam("n") || myNation();
     var v = qparam("v"), scope = qparam("sc");
+    if (v === "hist") {
+      page.innerHTML = "<div class='fo-stc'>" + histBody(natId, qparam("y")) + "</div>";
+      wireHist();
+      return;
+    }
     if (!BOOKS[v]) v = "";
     if (!SCOPES[scope]) scope = "league";
     // a manager with no seat in the world has no club to scope to

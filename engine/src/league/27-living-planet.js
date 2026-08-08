@@ -512,57 +512,347 @@
      held by a person, and a held seat is a new club with a new name and an
      empty board.
      ========================================================================= */
+  // FNV-1a ALONE IS NOT ENOUGH HERE. Two keys that differ only in their last
+  // character - "eng|found|1" and "eng|found|2" - come out of it about four
+  // thousandths apart, because the final mix is one xor and one multiply. Every
+  // key in this record ends in a slot number or a year, so the first draft gave
+  // seven English clubs founding years inside three years of each other and a
+  // league whose champion barely moved. An avalanche finisher on the way out
+  // scatters them properly; rnd01 itself is untouched, because the fixtures,
+  // the conditions and the sides are drawn from it and must not move.
+  function hrnd(k) {
+    var h = h32(k);
+    h ^= h >>> 15; h = Math.imul(h, 2246822519) >>> 0;
+    h ^= h >>> 13; h = Math.imul(h, 3266489917) >>> 0;
+    h ^= h >>> 16;
+    return (h >>> 0) / 4294967296;
+  }
+
   var HERITAGE_NOW = 2026;                    // the year the world's first season is played
-  function heritageOf(rid, slot, human) {
-    var s = slot | 0;
-    if (human) {
-      return { human: true, founded: HERITAGE_NOW, age: 0, seasons: 0,
-               titles: 0, cups: 0, crowns: 0, lastTitle: null, best: null };
+  var HIST_END = HERITAGE_NOW - 1;            // the last year of the record before it
+
+  /* THE RECORD IS NOT A NUMBER, IT IS A LIST OF SEASONS.
+   *
+   * The first pass at this drew a club's honours straight out of the seed:
+   * six titles, four cups, a Champions Cup, last won two seasons ago. It read
+   * well on a card and it could not answer a single question. Which seasons?
+   * Who else finished above them? Who was champion the year they were second?
+   * There was no year in it, so there was nothing to look up - and a record
+   * you cannot look up is decoration.
+   *
+   * So the seasons are played instead, one year at a time from the year the
+   * nation's league was founded to the year before the world's first, and the
+   * honours are COUNTED OFF the result. That makes the record the single
+   * truth: a club's title count is the number of years its name is at the top
+   * of a table that exists, the champion of 1974 is a club that was already
+   * founded in 1974, and every figure on every page agrees with every other
+   * because they are all reading the same list.
+   *
+   * Nothing is stored. Given the seed, every device rebuilds the identical
+   * hundred-and-thirty-odd seasons, and a world re-run rebuilds them exactly.
+   *
+   * AND A CLUB A MANAGER HAS FOUNDED HAS NONE OF IT. That is the point of the
+   * contrast: you walk in with nothing, into a league where the club down the
+   * road has been winning things since before the war.
+   */
+
+  // WHEN EACH LEAGUE WAS FOUNDED. Deliberate, not random: cricket arrived in
+  // these countries in a known order, and a derivation that made Nepal older
+  // than England would be seeded nonsense rather than history.
+  var LEAGUE_BORN = {
+    eng: 1890, aus: 1893, saf: 1890, sa: 1890, rsa: 1890,
+    ind: 1934, pak: 1953, nzl: 1921, nz: 1921, sri: 1938, sl: 1938,
+    wi: 1966, win: 1966, zim: 1970, ban: 1974, bng: 1974,
+    afg: 1995, ire: 1968, irl: 1968, ned: 1962, nl: 1962,
+    sco: 1965, wal: 1969, ken: 1971, usa: 1961, can: 1966, nep: 1980
+  };
+  function leagueBorn(rid) {
+    if (LEAGUE_BORN[rid] != null) return LEAGUE_BORN[rid];
+    return 1955 + (h32("lgborn|" + rid) % 30);      // a league nobody has named yet
+  }
+  // the club itself. A flagship is an institution and predates its league; a
+  // second-division side is usually a works team or a town club that came up
+  // the hard way, and some of them are younger than the manager reading this.
+  // A LEAGUE IS FOUNDED BY CLUBS, so some of them have to be there on the day
+  // it starts. The first draft drew every founding year independently and gave
+  // England a competition that ran for fifteen years with three clubs in it -
+  // seasons that could not be played, and a record with holes at the front.
+  // Five of the seven first-division seats are founder members, chosen by the
+  // seed rather than by slot number, and the rest join afterwards.
+  var FOUNDERS = {};
+  function foundersOf(rid) {
+    if (FOUNDERS[rid]) return FOUNDERS[rid];
+    var o = [1, 2, 3, 4, 5, 6, 7].sort(function (a, b) {
+      return hrnd(rid + "|fnd|" + a) - hrnd(rid + "|fnd|" + b);
+    });
+    var m = {}; o.slice(0, 5).forEach(function (x) { m[x] = 1; });
+    FOUNDERS[rid] = m;
+    return m;
+  }
+  function foundedOf(rid, slot) {
+    var s = slot | 0, born = leagueBorn(rid), span = Math.max(10, HIST_END - born);
+    var r = hrnd(rid + "|found|" + s);
+    if (s === 0) return born - 4 - Math.round(r * 26);            // older than the league
+    if (s >= 8) return born + 8 + Math.round(r * span * 0.62);    // the lower flight, later
+    if (foundersOf(rid)[s]) return born - 14 + Math.round(r * 14);  // there on the first day
+    return born + 3 + Math.round(r * span * 0.40);                // joined the competition
+  }
+  // A CLUB HAS GOLDEN AGES AND LEAN ONES. A flat strength number would hand
+  // the same club the title decade after decade; two slow waves out of phase
+  // give a side that was unbeatable in the fifties and nowhere in the eighties,
+  // which is what a hundred years of a league actually looks like.
+  function eraForm(rid, slot, year) {
+    var k = rid + "|era|" + slot;
+    var ph1 = hrnd(k + "|p1") * 6.283, ph2 = hrnd(k + "|p2") * 6.283;
+    var len1 = 17 + hrnd(k + "|l1") * 21, len2 = 34 + hrnd(k + "|l2") * 39;
+    var a = Math.sin(year / len1 * 6.283 + ph1), b = Math.sin(year / len2 * 6.283 + ph2);
+    return 1 + 0.45 * a + 0.30 * b;                                // roughly 0.25 … 1.75
+  }
+  // the clubs that existed in a given year, with the weight each carried
+  function fieldOf(rid, year) {
+    var out = [];
+    for (var s = 0; s < 16; s++) {
+      var f = foundedOf(rid, s);
+      if (f > year) continue;
+      // strOf is a par-scoring number near 1; the spread between a flagship
+      // and a second-division seat is small there and enormous in a title
+      // race, so it is stretched before it is used as a weight
+      var st = strOf(rid, s);
+      // THE FLAGSHIP IS NOT THE LEAGUE. At an exponent of 2.2 the strongest
+      // seat took forty-four of England's hundred and thirty-six titles - a
+      // third of the record to one club, which is not a competition. A gentler
+      // curve leaves it the most decorated side in the country by a distance
+      // and still lets fifteen other names onto the honours board.
+      var base = Math.pow(Math.max(0.01, (st - 0.86) / 0.16), 1.35) + 0.06;
+      // a club is weaker in its first years than it will ever be again
+      var young = Math.min(1, (year - f + 1) / 12);
+      out.push({ slot: s, founded: f, w: Math.max(0.001, base * eraForm(rid, s, year) * young) });
     }
-    var k = rid + "|heritage|" + s;
-    var r1 = rnd01(k + "|a"), r2 = rnd01(k + "|b"), r3 = rnd01(k + "|c"),
-        r4 = rnd01(k + "|d"), r5 = rnd01(k + "|e");
-    var boss = s === 0, d2 = s >= 8;
-    // where this seat sits on its own division's ladder, 0 = strongest
-    var st = strOf(rid, s);
-    var pull = boss ? 1 : d2 ? Math.max(0, (st - 0.890) / 0.060) * 0.45
-                            : 0.35 + Math.max(0, (st - 0.930) / 0.140) * 0.55;
+    return out;
+  }
+  // one seeded weighted draw
+  function drawOne(field, key, flat) {
+    var tot = 0, i;
+    for (i = 0; i < field.length; i++) tot += flat ? Math.pow(field[i].w, 0.45) : field[i].w;
+    if (tot <= 0) return field.length ? field[0] : null;
+    var t = hrnd(key) * tot, run = 0;
+    for (i = 0; i < field.length; i++) {
+      run += flat ? Math.pow(field[i].w, 0.45) : field[i].w;
+      if (t <= run) return field[i];
+    }
+    return field[field.length - 1];
+  }
 
-    // AGE. A flagship is an institution; a second-division club is usually a
-    // works side or a town club that came up the hard way.
-    var age = boss ? 96 + Math.round(r1 * 52)
-            : d2  ? 18 + Math.round(r1 * 54)
-                  : 44 + Math.round(r1 * 74);
-    // seasons in the senior competition - never more than the club is old
-    var seasons = Math.max(1, Math.min(age, Math.round(age * (boss ? 0.94 : d2 ? 0.55 : 0.8))));
+  // ---- one season of one nation, in full -----------------------------------
+  // The champion is drawn first and then stood at the top, so the table and
+  // the honour can never disagree. Everything under him is his own weight
+  // plus the season's own noise, which is what a league table is.
+  var HIST_YR = {};
+  function histYear(rid, year) {
+    var ck = rid + "|" + year;
+    if (HIST_YR[ck]) return HIST_YR[ck];
+    var born = leagueBorn(rid);
+    if (year < born || year > HIST_END) return (HIST_YR[ck] = null);
+    var field = fieldOf(rid, year);
+    if (field.length < 4) return (HIST_YR[ck] = null);
+    var champ = drawOne(field, "champ|" + rid + "|" + year, false);
+    var rest = field.filter(function (x) { return x.slot !== champ.slot; });
+    rest.forEach(function (x) {
+      x.__s = x.w * (0.55 + hrnd("pos|" + rid + "|" + year + "|" + x.slot) * 0.9);
+    });
+    rest.sort(function (a, b) { return b.__s - a.__s; });
+    var order = [champ].concat(rest);
+    // a season is fourteen rounds, the way it is now; points are two a win
+    var R = 14;
+    var rows = order.map(function (x, i) {
+      var n = order.length;
+      // wins slide from the champion down, with a season's worth of jitter
+      var lin = 1 - (i / Math.max(1, n - 1));
+      var jit = (hrnd("w|" + rid + "|" + year + "|" + x.slot) - 0.5) * 0.16;
+      var w = Math.max(0, Math.min(R, Math.round((0.22 + lin * 0.62 + jit) * R)));
+      if (i === 0) w = Math.max(w, Math.round(R * 0.62));
+      var t = hrnd("t|" + rid + "|" + year + "|" + x.slot) > 0.93 ? 1 : 0;
+      if (w + t > R) t = 0;
+      var l = R - w - t;
+      var nrr = ((w - R / 2) / R) * 1.9 + (hrnd("n|" + rid + "|" + year + "|" + x.slot) - 0.5) * 0.5;
+      return { slot: x.slot, p: R, w: w, l: l, t: t, pts: w * 2 + t, nrr: Math.round(nrr * 1000) / 1000 };
+    });
+    // THE CHAMPION HAS THE MOST POINTS. Forcing him to the top of a table he
+    // did not top produced a first draft that read "Surrey 22 pts" above
+    // "Middlesex 24 pts" - a standings table that contradicted itself on its
+    // own first two lines. He is given the points instead of the position: a
+    // win more than the best of the rest, and then the table sorts honestly.
+    var best = 0;
+    rows.forEach(function (r) { if (r.slot !== champ.slot && r.pts > best) best = r.pts; });
+    rows.forEach(function (r) {
+      if (r.slot !== champ.slot) return;
+      if (r.pts > best) return;
+      r.w = Math.min(R, Math.floor(best / 2) + 1);
+      r.t = 0; r.l = R - r.w; r.pts = r.w * 2;
+      if (r.pts <= best) { r.pts = best + 1; r.t = 1; r.w = Math.floor(r.pts / 2); r.l = R - r.w - r.t; }
+    });
+    rows.sort(function (a, b) { return (b.pts - a.pts) || (b.nrr - a.nrr); });
+    // the National Cup is a knockout, so it is a flatter draw and the league
+    // champion wins it much less often than his weight suggests
+    var cupFrom = born + 8;
+    var cup = year >= cupFrom ? drawOne(field, "cup|" + rid + "|" + year, true) : null;
+    var v = { year: year, rid: rid, rounds: R, table: rows, champion: champ.slot,
+              cup: cup ? cup.slot : null };
+    HIST_YR[ck] = v;
+    return v;
+  }
 
-    // THE CABINET. Honours are rarer than seasons by an order of magnitude,
-    // and the spread inside a division is wider than the strength gap that
-    // produced it - a fallen giant and a club that has never won anything can
-    // sit on the same rung.
-    var titles = boss ? 5 + Math.round(r2 * 13)
-               : d2  ? (r2 > 0.72 ? Math.round(r2 * 2) : 0)
-                     : Math.round(Math.pow(r2, 1.7) * 9 * (0.35 + pull));
-    var cups   = boss ? 3 + Math.round(r3 * 11)
-               : d2  ? (r3 > 0.55 ? 1 + Math.round(r3 * 2) : 0)
-                     : Math.round(Math.pow(r3, 1.5) * 8 * (0.4 + pull));
-    // The world's crown is the rarest thing there is, and it is ENTERED BY
-    // CHAMPIONS: a club that has never won its own league has never been in
-    // the draw, so it cannot have won the thing. Canberra CC came out of the
-    // first draft holding a Champions Cup and no league title at all.
-    var crowns = !titles ? 0
-               : boss ? (r4 > 0.42 ? 1 + Math.round(r4 * 2) : 0)
-               : d2  ? 0
-                     : (r4 > 0.88 ? 1 : 0);
-    // HOW LONG SINCE. A club with a full cabinet and a forty-year wait is a
-    // different club from one that won it last year, and both are real.
-    var lastTitle = titles ? 1 + Math.round(Math.pow(r5, 1.6) * Math.min(58, seasons - 1)) : null;
-    return { human: false, founded: HERITAGE_NOW - age, age: age, seasons: seasons,
-             titles: titles, cups: cups, crowns: crowns, lastTitle: lastTitle,
-             // the one line that sums a club up, for a card with room for one
-             best: titles ? (titles + (titles === 1 ? " league title" : " league titles"))
-                 : cups   ? (cups + (cups === 1 ? " national cup" : " national cups"))
+  // ---- the Champions Cup: the world's own knockout, champions only ---------
+  var CROWN_FROM = 1975;
+  var CROWN_YR = {};
+  function crownYear(year) {
+    if (year < CROWN_FROM || year > HIST_END) return null;
+    if (CROWN_YR[year]) return CROWN_YR[year];
+    var ents = [];
+    regionList().forEach(function (r) {
+      var y = histYear(r.id, year);
+      if (!y) return;
+      var st = strOf(r.id, y.champion);
+      // the champion's own strength and this year's own luck. A per-nation
+      // constant here froze the draw: Sri Lanka won eight and England one,
+      // for fifty-one years running, because the constant never changed.
+      ents.push({ rid: r.id, slot: y.champion,
+                  w: Math.pow(Math.max(0.02, (st - 0.86) / 0.16), 1.2) * (0.55 + hrnd("cw|" + year + "|" + r.id) * 0.95) });
+    });
+    if (ents.length < 4) return (CROWN_YR[year] = null);
+    var win = drawOne(ents, "crown|" + year, true);
+    var run = drawOne(ents.filter(function (e) { return e.rid !== win.rid; }), "crownr|" + year, true);
+    var v = { year: year, rid: win.rid, slot: win.slot,
+              runnerRid: run ? run.rid : null, runnerSlot: run ? run.slot : null };
+    CROWN_YR[year] = v;
+    return v;
+  }
+
+  // ---- what one club won, with the years on it -----------------------------
+  var HON = {};
+  function honoursOf(rid, slot) {
+    var ck = rid + "|" + slot;
+    if (HON[ck]) return HON[ck];
+    var born = leagueBorn(rid), f = foundedOf(rid, slot);
+    var titles = [], cups = [], crowns = [], y;
+    for (y = Math.max(born, f); y <= HIST_END; y++) {
+      var h = histYear(rid, y);
+      if (!h) continue;
+      if (h.champion === (slot | 0)) titles.push(y);
+      if (h.cup === (slot | 0)) cups.push(y);
+    }
+    for (y = CROWN_FROM; y <= HIST_END; y++) {
+      var c = crownYear(y);
+      if (c && c.rid === rid && c.slot === (slot | 0)) crowns.push(y);
+    }
+    // seasons in the competition: the years this club could actually have
+    // played one, which is not the same as the years since it was founded
+    var played = 0;
+    for (y = Math.max(born, f); y <= HIST_END; y++) if (histYear(rid, y)) played++;
+    var v = { founded: f, leagueFrom: born, seasons: played,
+              age: HERITAGE_NOW - f, titles: titles, cups: cups, crowns: crowns };
+    HON[ck] = v;
+    return v;
+  }
+
+  /* heritageOf is the one-line read of all of the above, kept in the shape
+     every card already uses: counts rather than years, and how long since the
+     last title. It is a VIEW now, not a source - change the seasons and every
+     figure on every page moves with them. */
+  function heritageOf(rid, slot, human) {
+    if (human) {
+      return { human: true, founded: HERITAGE_NOW, age: 0, seasons: 0, leagueFrom: leagueBorn(rid),
+               titles: 0, cups: 0, crowns: 0, titleYears: [], cupYears: [], crownYears: [],
+               lastTitle: null, lastTitleYear: null, best: null };
+    }
+    var h = honoursOf(rid, slot | 0);
+    var lastY = h.titles.length ? h.titles[h.titles.length - 1] : null;
+    return { human: false, founded: h.founded, age: h.age, seasons: h.seasons, leagueFrom: h.leagueFrom,
+             titles: h.titles.length, cups: h.cups.length, crowns: h.crowns.length,
+             titleYears: h.titles, cupYears: h.cups, crownYears: h.crowns,
+             // "seasons before the record", which is how the cards word it
+             lastTitle: lastY ? (HIST_END - lastY + 1) : null, lastTitleYear: lastY,
+             best: h.titles.length ? (h.titles.length + (h.titles.length === 1 ? " league title" : " league titles"))
+                 : h.cups.length  ? (h.cups.length + (h.cups.length === 1 ? " national cup" : " national cups"))
                  : null };
+  }
+  /* ---- THE NATIONS HAVE A RECORD TOO --------------------------------------
+   * Clubs are not the only thing in this world with a past. The World Cup has
+   * been played every four years since 1979, and a national side that has won
+   * three of them is a different country to walk into than one that has never
+   * reached a final - which is exactly the contrast the club record draws, one
+   * level up. Weighted by the strength of the nation's own clubs, because that
+   * is where its cricketers come from, and drawn afresh each tournament so no
+   * country is handed a dynasty by a constant. */
+  var WC_FROM = 1979, WC_EVERY = 4;
+  var WC_YR = {}, NAT_STR = {};
+  function natStrength(rid) {
+    if (NAT_STR[rid] != null) return NAT_STR[rid];
+    var t = 0, n = 0;
+    for (var s = 0; s < 8; s++) { t += strOf(rid, s); n++; }
+    return (NAT_STR[rid] = n ? t / n : 1);
+  }
+  function wcYear(year) {
+    if (year < WC_FROM || year > HIST_END) return null;
+    if ((year - WC_FROM) % WC_EVERY !== 0) return null;
+    if (WC_YR[year] !== undefined) return WC_YR[year];
+    var ents = regionList().map(function (r) {
+      var st = natStrength(r.id);
+      return { rid: r.id, nm: r.nm,
+               w: Math.pow(Math.max(0.02, (st - 0.90) / 0.12), 1.3) * (0.5 + hrnd("wc|" + year + "|" + r.id) * 1.0) };
+    });
+    if (ents.length < 4) return (WC_YR[year] = null);
+    var win = drawOne(ents, "wcw|" + year, true);
+    var run = drawOne(ents.filter(function (e) { return e.rid !== win.rid; }), "wcr|" + year, true);
+    var v = { year: year, rid: win.rid, name: win.nm,
+              runnerRid: run ? run.rid : null, runnerName: run ? run.nm : null,
+              host: drawOne(ents, "wch|" + year, true).rid };
+    WC_YR[year] = v;
+    return v;
+  }
+  // every World Cup ever played, newest last
+  function wcHistory() {
+    var out = [];
+    for (var y = WC_FROM; y <= HIST_END; y += WC_EVERY) { var v = wcYear(y); if (v) out.push(v); }
+    return out;
+  }
+  // what one country has won, and how near it has been
+  var NAT_HON = {};
+  function natHonours(rid) {
+    if (NAT_HON[rid]) return NAT_HON[rid];
+    var wins = [], finals = [];
+    wcHistory().forEach(function (v) {
+      if (v.rid === rid) { wins.push(v.year); finals.push(v.year); }
+      else if (v.runnerRid === rid) finals.push(v.year);
+    });
+    // the country's clubs have a shelf of their own, and it is the nation's
+    // standing as much as theirs
+    var t = 0, c = 0, cr = 0;
+    for (var s = 0; s < 16; s++) { var h = honoursOf(rid, s); t += h.titles.length; c += h.cups.length; cr += h.crowns.length; }
+    var sp = histSpan(rid);
+    var v2 = { wins: wins, finals: finals, worldCups: wins.length,
+               leagueFrom: leagueBorn(rid), seasons: sp.seasons,
+               clubTitles: t, clubCups: c, championsCups: cr };
+    NAT_HON[rid] = v2;
+    return v2;
+  }
+
+  // the whole span a nation's record covers, for a page that offers to walk it
+  // the span is the years that were actually PLAYED, not the years since the
+  // constitution was signed - a page that offers to walk the record must not
+  // offer a season that has no table in it
+  var SPAN = {};
+  function histSpan(rid) {
+    if (SPAN[rid]) return SPAN[rid];
+    var born = leagueBorn(rid), from = null, n = 0;
+    for (var y = born; y <= HIST_END; y++) {
+      if (!histYear(rid, y)) continue;
+      if (from == null) from = y;
+      n++;
+    }
+    var v = { from: from == null ? HIST_END : from, to: HIST_END, seasons: n };
+    SPAN[rid] = v;
+    return v;
   }
 
   function condOf(rid, homeSlot, seasonNo, round) {
@@ -1246,5 +1536,5 @@
     FA_DAYS: FA_DAYS, faDayOf: faDayOf, faDrawR16: faDrawR16, cupDraw: cupDraw,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
     COLTS_DAYS: COLTS_DAYS, isRestDay: isRestDay, REST_DAYS: REST_DAYS, dayOfRound: dayOfRound, roundOfDay: roundOfDay,
-    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, heritageOf: heritageOf, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, nations: regionList, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
+    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, heritageOf: heritageOf, honoursOf: honoursOf, histYear: histYear, wcYear: wcYear, wcHistory: wcHistory, natHonours: natHonours, WC_FROM: WC_FROM, crownYear: crownYear, histSpan: histSpan, leagueBorn: leagueBorn, foundedOf: foundedOf, HIST_END: HIST_END, CROWN_FROM: CROWN_FROM, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, nations: regionList, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();
