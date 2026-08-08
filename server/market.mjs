@@ -576,6 +576,40 @@ export async function runMarket(pool, country, seasonNo, round, { now = Date.now
   const agents = await openFreeAgents(pool, host, country, seasonNo, dayIx(now));
   return { opened, agents };
 }
+// ---------------------------------------------------------------------------
+// THE BOARD DOES NOT WAIT FOR THE CRICKET.
+//
+// Free agents were walked on by runTick, and runTick is driven by a loop that
+// begins at the season's start_day - so on any day before a season opens, or
+// in the break between two of them, the loop body never runs and not one name
+// walks on. A world two days from its first ball therefore had a transfer
+// market with nothing whatsoever in it, which is the one time a manager most
+// wants to be buying: he has a squad, a bank and nothing to do with either.
+//
+// The close season is exactly when a market should be busiest. This stocks
+// every league's board straight off the world day, with no season gate on it
+// at all. Bot clubs still shed men on league rounds - a club sells because a
+// round showed it what it does not need - but the shelf itself is kept full
+// every day the world turns, cricket or no cricket.
+// ---------------------------------------------------------------------------
+export async function stockMarket(pool, host, { now = Date.now() } = {}) {
+  if (!host || !host.genSquad) return [];
+  const day = dayIx(now);
+  const seasons = (await pool.query(
+    `SELECT DISTINCT ON (country_id) country_id, season_no
+       FROM seasons ORDER BY country_id, season_no DESC`)).rows;
+  const opened = [];
+  for (const s of seasons) {
+    try {
+      const got = await openFreeAgents(pool, host, s.country_id, s.season_no, day);
+      if (got.length) opened.push({ country: s.country_id, n: got.length });
+    } catch (e) {
+      console.error('free agents failed for ' + s.country_id + ':', e.message);
+    }
+  }
+  return opened;
+}
+
 export async function settleMarket(pool, { now = Date.now() } = {}) {
   const bids = await placeBotBids(pool, now);
   const settled = await closeListings(pool, { now });

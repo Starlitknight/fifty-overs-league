@@ -26,7 +26,7 @@ import { settleMoney } from './economy.mjs';
 import { runComps } from './comps.mjs';
 import { ensureCallups, absentBySlot, coverSheet, runWindows, rebuildNations, seasonSquad,
          ensureNatSquad, natSquadNow } from './nations.mjs';
-import { runMarket, settleMarket, rebuildMarket } from './market.mjs';
+import { runMarket, settleMarket, rebuildMarket, stockMarket } from './market.mjs';
 import { matchRating, ladderRating, strengthRating, ratingsOf, RANK_WINDOW, RANK_BASE } from './ratings.mjs';
 
 export function matchId(country, seasonNo, round, h, a) {
@@ -1447,6 +1447,15 @@ if (import.meta.url === `file://${process.argv[1]}`) {
     // windows that are up have their envelopes opened, and the board is
     // republished. Sealed bids mean the hour this runs at buys nobody
     // anything.
+    // THE SHELF IS FILLED BEFORE THE ENVELOPES ARE OPENED, and it is filled
+    // whether or not anybody is playing cricket today. runTick only walks a
+    // day that falls inside a season, so without this the board is bare in
+    // every break and bare before the world's very first ball.
+    try {
+      const st = await stockMarket(pool, host);
+      const nFA = st.reduce((t, x) => t + x.n, 0);
+      if (nFA) lines.push('market: ' + nFA + ' free agents walked on');
+    } catch (eFa) { lines.push('market stock: ' + eFa.message); }
     try {
       const mk = await settleMarket(pool);
       const sold = mk.settled.filter(x => x.sold);
