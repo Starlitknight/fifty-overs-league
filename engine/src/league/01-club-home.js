@@ -312,7 +312,18 @@
           "<div class='fo-c2-nr'><div class='fo-c2-nk'>Match starts in</div><div class='fo-c2-cd' id='fo-cd-fr'></div>" +
           "<div class='fo-c2-nsub'><b>" + E(w.full) + "</b></div>" +
           "<div class='fo-c2-ndl'>" + (locked ? "Teamsheets are in" : (f.myOrders ? "Lineup set \u2713" : "Your latest orders play")) + "</div>" +
+          // THE DOOR TO THE TEAMSHEET, which this card never had. A league
+          // fixture offers "Set lineup"; a friendly offered only the other
+          // club's squad, so the one thing a manager wants to do before a
+          // match had no button on the surface that announces the match.
+          (locked ? "" : "<button class='fo-next-cta" + (f.myOrders ? " fo-done" : "") + "' id='fo-fr-ord'>" +
+            (f.myOrders ? "Review lineup &rsaquo;" : "Set lineup &rsaquo;") + "</button>") +
           "<button class='fo-next-cta' id='fo-fr-foe'>Their squad &rsaquo;</button></div>";
+        var bo = document.getElementById("fo-fr-ord");
+        if (bo) bo.addEventListener("click", function () {
+          location.hash = "#/orders";
+          if (typeof window.route === "function") window.route();
+        });
         var bf = document.getElementById("fo-fr-foe");
         if (bf) bf.addEventListener("click", function () {
           location.hash = frHref(foe);

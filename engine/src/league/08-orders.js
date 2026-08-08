@@ -983,6 +983,20 @@
                 try { if (err) toast("Saved here, but the world did not take it: " + String(err.message || err).slice(0, 70)); } catch (e9) {}
               }));
             } catch (eW9) {}
+            // ...and with every friendly still open. The umpire prefers a
+            // sheet filed FOR the friendly over the league one, and until now
+            // nothing ever filed it, so a scheduled friendly had no lineup a
+            // manager could set. It does now, and it says so when it lands.
+            try {
+              if (window.__foWorldPushFriendlyOrders) {
+                window.__foWorldPushFriendlyOrders(App.orders, function (err, n) {
+                  try {
+                    if (err) toast("Saved here, but a friendly did not take it: " + String(err.message || err).slice(0, 70));
+                    else if (n > 0) toast("Lineup filed for " + (n === 1 ? "your friendly" : n + " friendlies") + " too.");
+                  } catch (e8) {}
+                });
+              }
+            } catch (eF9) {}
             if (App.pending) { location.hash = "#/match"; if (typeof window.route === "function") window.route(); }
             else {
               // saving IS leaving: the sheet is filed, so the room's work is

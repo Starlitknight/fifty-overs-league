@@ -272,6 +272,53 @@
     } catch (e) { return false; }
   };
 
+  // ---- AND THE SAME SHEET PLAYS THE FRIENDLIES ------------------------------
+  // A friendly could take a lineup of its own from the day it was built:
+  // migration 010 added c_orders/o_orders and world_friendly_orders to fill
+  // them, and runFriendlies reads them first - "the lineup set FOR this
+  // friendly wins". Nothing on any device ever called that function. So the
+  // column was always null, `myOrders` was always false, and every friendly
+  // in the world was played off whatever league sheet happened to be lying
+  // around, or off an engine auto-pick for a manager who had never filed one.
+  // A manager who went to set a lineup for his friendly found there was
+  // nowhere to set it, because there wasn't.
+  //
+  // Saving orders now files them against every friendly still open, on the
+  // same terms as a round: each tie on its own account, so one that has
+  // already locked never costs the rest, and a lock is not an error - it is
+  // the rule, and the sheet filed before it is the side that walks out.
+  window.__foWorldPushFriendlyOrders = function (orders, cb) {
+    try {
+      if (!jwt() || !window.__foWorldClaim) return false;
+      var body = trimOrders(orders);
+      if (!body || !(body.batOrder || body.xi)) return false;
+      rpc("world_my_friendlies").then(function (list) {
+        var now = Date.now();
+        // the server refuses a sheet inside the final hour; asking anyway
+        // would spend a request to be told what the clock already says
+        var open = (list || []).filter(function (f) {
+          return f && (f.status === "offered" || f.status === "accepted") &&
+                 f.playAtMs && f.playAtMs - now > 3600000;
+        });
+        if (!open.length) { if (cb) cb(null, 0); return; }
+        var chain = Promise.resolve(), sent = 0, firstErr = null;
+        open.forEach(function (f) {
+          chain = chain.then(function () {
+            return rpc("world_friendly_orders", { p_id: f.id, p_orders: body })
+              .then(function () { sent++; })
+              .catch(function (e) {
+                var s = String((e && e.message) || e);
+                if (/lock|teamsheets are in|already/i.test(s)) return;
+                if (!firstErr) firstErr = e;
+              });
+          });
+        });
+        chain.then(function () { try { if (cb) cb(sent ? null : firstErr, sent); } catch (e) {} });
+      }).catch(function (e) { try { if (cb) cb(e, 0); } catch (e2) {} });
+      return true;
+    } catch (e) { return false; }
+  };
+
   // the nets hand their plan to the World Service, debounced - a manager
   // flicking through programmes should not write once per flick
   var TR_T = null, TR_LAST = "";
