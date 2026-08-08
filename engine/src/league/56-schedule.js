@@ -94,6 +94,19 @@
       "html body #page .fo-sch-wk{display:flex;align-items:center;gap:10px;margin:16px 0 6px}",
       "html body #page .fo-sch-wk b{font:600 8px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(20,28,40,.34)}",
       "html body #page .fo-sch-wk u{flex:1;border-top:1px solid rgba(20,28,40,.1);text-decoration:none}",
+      // the date column, and your own fixture inside the event
+      "html body #page .fo-sch-row .dt{flex:0 0 46px;font:600 10px/1.25 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(20,28,40,.34)}",
+      "html body #page .fo-sch-row .dt u{display:block;margin-top:3px;font:500 10.5px/1 Inter,sans-serif;letter-spacing:0;text-transform:none;color:rgba(20,28,40,.3);text-decoration:none;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-sch-rest .dt{flex:0 0 auto;font:500 10.5px/1 Inter,sans-serif;letter-spacing:0;text-transform:none;color:rgba(20,28,40,.26)}",
+      "html body #page .fo-sch-rest .rw{font:500 10.5px/1 Inter,sans-serif;color:rgba(20,28,40,.26);white-space:nowrap}",
+      "html body #page .fo-sch-you{display:flex;align-items:center;gap:7px;margin-top:5px;font:500 12px/1.2 Inter,sans-serif;color:rgba(20,28,40,.55)}",
+      "html body #page .fo-sch-you i{font-style:normal;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.34);background:rgba(20,28,40,.05);border-radius:4px;padding:4px 6px 3px}",
+      "html body #page .fo-sch-you u{text-decoration:none;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;border-radius:4px;padding:4px 7px 3px;color:#FFFEFC}",
+      "html body #page .fo-sch-you.w u{background:#2F6B45}",
+      "html body #page .fo-sch-you.l u{background:#8C2B2B}",
+      "html body #page .fo-sch-you.t u{background:#6b6355}",
+      "html body #page .fo-sch-you.none{color:rgba(20,28,40,.3)}",
+      "html body #page .fo-sch-wk .wc{font:500 10px/1 Inter,sans-serif;color:rgba(20,28,40,.28);font-variant-numeric:tabular-nums}",
       "html body #page .fo-sch-row{display:flex;align-items:center;gap:12px;background:#FFFEFC;border-left:3px solid var(--c);border-radius:0 9px 9px 0;padding:11px 13px;margin-bottom:4px;box-shadow:0 4px 14px rgba(30,38,52,.05)}",
       "html body #page .fo-sch-row .dn{flex:0 0 26px;font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.34);font-variant-numeric:tabular-nums}",
       "html body #page .fo-sch-row .ev{flex:1;min-width:0;font:600 13.5px/1.25 Inter,sans-serif;color:#141C28}",
@@ -102,7 +115,7 @@
       "html body #page .fo-sch-row.fin .ev{color:var(--c)}",
       "html body #page .fo-sch-row.today{box-shadow:0 0 0 2px #C9571F}",
       "html body #page .fo-sch-row.today .dn{color:#B44A22}",
-      "html body #page .fo-sch-rest{display:flex;align-items:center;gap:12px;padding:5px 13px 5px 16px;margin-bottom:4px}",
+      "html body #page .fo-sch-rest{display:flex;align-items:center;gap:10px;padding:6px 13px 6px 16px;margin-bottom:4px}",
       "html body #page .fo-sch-rest .dn{flex:0 0 26px;font:500 11px/1 Inter,sans-serif;color:rgba(20,28,40,.34);font-variant-numeric:tabular-nums}",
       "html body #page .fo-sch-rest u{flex:1;border-top:1px dashed rgba(20,28,40,.1);text-decoration:none}",
       "html body #page .fo-sch-rest.today .dn{color:#B44A22;font-weight:700}",
@@ -113,10 +126,70 @@
       "html body #page .fo-sch-hd{gap:12px}",
       "html body #page .fo-sch-hd h1{flex:1 1 100%;font-size:28px}",
       "html body #page .fo-sch-row{padding:10px 11px;gap:10px}",
-      "html body #page .fo-sch-row .ev{font-size:13px}}"
+      "html body #page .fo-sch-row .ev{font-size:13px}html body #page .fo-sch-row .dt{flex-basis:40px;font-size:9px}html body #page .fo-sch-rest .rw{display:none}}"
     ].join("\n");
     document.head.appendChild(s);
   }
+
+  /* ---- WHO YOU PLAY -------------------------------------------------------
+     The page said "Round 3" and stopped. A schedule that will not name your
+     opponent is a competition calendar, not a fixture list, and the one thing
+     a manager opens it for - when do I play Kent, and are we home - was the
+     one thing it withheld.
+
+     schedOf is the planet's own draw: the same pairs the umpire settles, in
+     the same order, derived from the nation and the season rather than stored.
+     So this asks it for your division's round and finds the pair you are in.
+     No fetch, no snapshot, and it cannot disagree with the fixtures page. */
+  function mySeat(pl) {
+    var cl = null;
+    try { cl = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (e) {}
+    if (!cl || cl.country == null || cl.slot == null) return null;
+    var div = 1, sides = [];
+    try {
+      sides = pl.sidesOf(cl.country) || [];
+      for (var i = 0; i < sides.length; i++) if ((sides[i].slot | 0) === (cl.slot | 0)) { div = sides[i].div || 1; break; }
+    } catch (e2) {}
+    var byS = {}; sides.forEach(function (x) { byS[x.slot] = x; });
+    return { rid: cl.country, slot: cl.slot | 0, div: div, club: cl.club || "", by: byS };
+  }
+  function myFixture(pl, seat, season, round) {
+    if (!seat || !round) return null;
+    try {
+      var rounds = pl.schedOf(seat.rid, season, null, seat.div) || [];
+      var pairs = rounds[round - 1] || [];
+      for (var i = 0; i < pairs.length; i++) {
+        var a = pairs[i][0] | 0, b = pairs[i][1] | 0;
+        if (a === seat.slot) return { opp: seat.by[b], home: true };
+        if (b === seat.slot) return { opp: seat.by[a], home: false };
+      }
+    } catch (e) {}
+    return null;
+  }
+  // and the result, when the world has already played it - read off the league
+  // snapshot the device holds, never fetched for this
+  function myResult(seat, round) {
+    if (!seat) return null;
+    try {
+      var lg = window.__foWorldLg && window.__foWorldLg.get(seat.rid);
+      var res = (lg && lg.results) || [];
+      for (var i = 0; i < res.length; i++) {
+        var r = res[i];
+        if ((r.round | 0) !== (round | 0)) continue;
+        if (r.home !== seat.club && r.away !== seat.club) continue;
+        return { won: r.winner === seat.club, tie: r.winner === null, text: r.text || "" };
+      }
+    } catch (e) {}
+    return null;
+  }
+  // the real date a day of the season falls on
+  function dayDate(pl, season, di) {
+    try {
+      var t = pl.EPOCH + (pl.seasonStart(season) + di) * pl.DAY + 12 * 3600000;
+      return new Date(t).toLocaleDateString("en-GB", { day: "numeric", month: "short" });
+    } catch (e) { return ""; }
+  }
+  var WD = ["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"];
 
   function hh(h) { return (h == null || !(h >= 0)) ? "" : ("0" + (h | 0)).slice(-2) + ":00"; }
   // a countdown read at a glance: days out while it is days out, then the
@@ -204,20 +277,38 @@
         return "<span><i style='background:" + COL[k[0]] + "'></i>" + k[1] + "</span>";
       }).join("") + "</div>";
 
+    var seat = mySeat(pl);
     var body = "<div class='fo-sch-sp'>";
     for (var w = 0; w < 6; w++) {
-      body += "<div class='fo-sch-wk'><b>" + E(WK[w] || ("Week " + (w + 1))) + "</b><u></u></div>";
+      var wDays = days.slice(w * 7, w * 7 + 7);
+      var wPlay = wDays.filter(function (z) { return !z.rest; }).length;
+      body += "<div class='fo-sch-wk'><b>" + E(WK[w] || ("Week " + (w + 1))) + "</b>" +
+        "<span class='wc'>" + wPlay + " match day" + (wPlay === 1 ? "" : "s") + "</span><u></u></div>";
       for (var d = 0; d < 7; d++) {
         var x = days[w * 7 + d], isToday = (x.di === today);
         if (x.rest) {
           body += "<div class='fo-sch-rest" + (isToday ? " today" : "") + "'>" +
-            "<span class='dn'>" + (x.di + 1) + "</span><u></u></div>";
+            "<span class='dn'>" + (x.di + 1) + "</span>" +
+            "<span class='dt'>" + E(WD[x.di % 7]) + " " + E(dayDate(pl, season, x.di)) + "</span>" +
+            "<u></u><span class='rw'>Nets &middot; scouting &middot; the market</span></div>";
           continue;
+        }
+        // YOUR OWN MATCH, on the day it is played
+        var fx = x.p.kind === "league" ? myFixture(pl, seat, season, x.p.round) : null;
+        var rs = fx ? myResult(seat, x.p.round) : null;
+        var mine = "";
+        if (fx && fx.opp) {
+          mine = "<span class='fo-sch-you" + (rs ? (rs.tie ? " t" : rs.won ? " w" : " l") : "") + "'>" +
+            "<i>" + (fx.home ? "v" : "at") + "</i>" + E(fx.opp.name) +
+            (rs ? "<u>" + (rs.tie ? "TIED" : rs.won ? "WON" : "LOST") + "</u>" : "") + "</span>";
+        } else if (x.p.kind === "league" && seat) {
+          mine = "<span class='fo-sch-you none'>Draw not made</span>";
         }
         body += "<div class='fo-sch-row" + (x.fin ? " fin" : "") + (isToday ? " today" : "") +
           "' style='--c:" + COL[x.cls] + "'>" +
           "<span class='dn'>" + (x.di + 1) + "</span>" +
-          "<span class='ev'>" + label(x.p) + "</span>" +
+          "<span class='dt'>" + E(WD[x.di % 7]) + "<u>" + E(dayDate(pl, season, x.di)) + "</u></span>" +
+          "<span class='ev'>" + label(x.p) + mine + "</span>" +
           "<span class='hr'>" + (x.hr || "&mdash;") + "</span></div>";
       }
     }

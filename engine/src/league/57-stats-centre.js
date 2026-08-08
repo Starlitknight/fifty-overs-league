@@ -291,38 +291,59 @@
       "html body #page .fo-stc-lead b{display:block;font:600 13.5px/1.3 Inter,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       "html body #page .fo-stc-lead em{display:block;margin-top:3px;font:700 17px/1 Inter,sans-serif;font-style:normal;font-variant-numeric:tabular-nums;color:#FFFEFC}",
       // ---- the table view ---------------------------------------------------
-      "html body #page .fo-stc-back{display:inline-flex;align-items:center;min-height:34px;margin:18px 0 0;font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.6) !important;text-decoration:none !important}",
+      "html body #page .fo-stc-back{display:inline-flex;align-items:center;min-height:30px;margin:16px 0 0;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.4) !important;text-decoration:none !important}",
       "html body #page .fo-stc-back:hover{color:#B44A22 !important}",
-      "html body #page .fo-stc-bar{display:flex;gap:6px;flex-wrap:wrap;margin:14px 0 0}",
-      "html body #page .fo-stc-bar.two{margin-top:8px}",
-      "html body #page .fo-stc-bar a{font:700 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.6) !important;background:rgba(20,28,40,.045);border:1px solid rgba(20,28,40,.14);border-radius:999px;padding:0 15px;min-height:38px;display:inline-flex;align-items:center;text-decoration:none !important}",
-      "html body #page .fo-stc-bar a.on{color:#FFFDF7 !important;background:#0E2246;border-color:#0E2246}",
+      // ---- the controls: type, not lozenges ---------------------------------
+      "html body #page .fo-stc-ctl{margin:14px 0 0;border-top:1px solid rgba(20,28,40,.1);border-bottom:1px solid rgba(20,28,40,.1);padding:4px 0}",
+      "html body #page .fo-stc-seg{display:flex;flex-wrap:wrap;gap:0 22px;padding:7px 2px}",
+      "html body #page .fo-stc-seg+.fo-stc-seg,html body #page .fo-stc-filt{border-top:1px solid rgba(20,28,40,.06)}",
+      "html body #page .fo-stc-seg a{position:relative;font:600 12px/1 Inter,sans-serif;letter-spacing:-.005em;color:rgba(20,28,40,.45) !important;text-decoration:none !important;padding:7px 0 8px;transition:color .12s ease}",
+      "html body #page .fo-stc-seg a:hover{color:#141C28 !important}",
+      "html body #page .fo-stc-seg a.on{color:#0E2246 !important;font-weight:700}",
+      "html body #page .fo-stc-seg a.on:after{content:'';position:absolute;left:0;right:0;bottom:2px;height:2px;border-radius:1px;background:#C9571F}",
+      "html body #page .fo-stc-filt{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0 22px}",
+      "@media(max-width:520px){html body #page .fo-stc-filt{display:block}html body #page .fo-stc-qual{border-top:1px solid rgba(20,28,40,.06);width:100%}}",
+      "html body #page .fo-stc-filt .fo-stc-seg{border-top:0;flex:1}",
+      "html body #page .fo-stc-qual{display:inline-flex;align-items:center;gap:8px;padding:7px 2px 8px;font:500 12px/1 Inter,sans-serif;color:rgba(20,28,40,.45) !important;text-decoration:none !important}",
+      "html body #page .fo-stc-qual i{width:15px;height:15px;border-radius:4px;border:1.5px solid rgba(20,28,40,.25);display:block;position:relative}",
+      "html body #page .fo-stc-qual.on{color:#0E2246 !important;font-weight:600}",
+      "html body #page .fo-stc-qual.on i{background:#C9571F;border-color:#C9571F}",
+      "html body #page .fo-stc-qual.on i:after{content:'';position:absolute;left:4px;top:1px;width:4px;height:8px;border:solid #FFFEFC;border-width:0 2px 2px 0;transform:rotate(42deg)}",
       "html body #page .fo-stc-panel{background:#FFFEFC;border:1px solid rgba(20,28,40,.11);border-radius:16px;padding:16px 16px 12px;margin-top:14px;box-shadow:0 6px 20px rgba(30,38,52,.055)}",
       "html body #page .fo-stc-ph{display:flex;align-items:baseline;justify-content:space-between;gap:12px;flex-wrap:wrap;margin-bottom:4px}",
       "html body #page .fo-stc-ph h2{margin:0;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:23px;letter-spacing:-.01em;color:#0E2246}",
       "html body #page .fo-stc-sub{font:500 11px/1.4 Inter,sans-serif;color:rgba(20,28,40,.52)}",
       "html body #page .fo-stc-dim{font:400 12px/1.55 Inter,sans-serif;color:rgba(20,28,40,.5);margin:8px 2px}",
       "html body #page .fo-stc-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:10px -4px 0}",
+      // ---- the table -------------------------------------------------------
+      // A SOLID NAVY HEADER BAND with white condensed capitals is a spreadsheet
+      // wearing a suit: it puts the loudest thing on the page above the quietest
+      // and makes the figures fight it. The head is now the same paper as the
+      // rows, held down by a single rule, and the weight moved to where the
+      // reading is - the name and the number.
       "html body #page table.fo-stc-tbl{border-collapse:collapse;width:100%;min-width:660px;font-variant-numeric:tabular-nums}",
-      "html body #page table.fo-stc-tbl th{position:sticky;top:0;z-index:1;background:#0E2246;color:#FFFDF7;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;text-align:right;padding:9px 7px;white-space:nowrap;cursor:pointer;-webkit-user-select:none;user-select:none}",
+      "html body #page table.fo-stc-tbl th{position:sticky;top:0;z-index:1;background:#FFFEFC;color:rgba(20,28,40,.45);font:600 9px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;text-align:right;padding:0 8px 10px;white-space:nowrap;cursor:pointer;-webkit-user-select:none;user-select:none;box-shadow:inset 0 -1px 0 rgba(20,28,40,.16)}",
       "html body #page table.fo-stc-tbl th.rk,html body #page table.fo-stc-tbl th.nm,html body #page table.fo-stc-tbl th.cl,html body #page table.fo-stc-tbl th.ct{text-align:left}",
       "html body #page table.fo-stc-tbl th.rk{cursor:default}",
-      "html body #page table.fo-stc-tbl th:hover{background:#173461}",
-      "html body #page table.fo-stc-tbl th[data-dir]{color:#E8B96A}",
-      "html body #page table.fo-stc-tbl th[data-dir='desc']:after{content:' \\25BE'}",
-      "html body #page table.fo-stc-tbl th[data-dir='asc']:after{content:' \\25B4'}",
-      "html body #page table.fo-stc-tbl td{padding:8px 7px;text-align:right;white-space:nowrap;font:600 12px/1.2 Oswald,sans-serif;color:#141C28;border-bottom:1px solid rgba(20,28,40,.07)}",
-      "html body #page table.fo-stc-tbl td.rk{text-align:left;font-weight:400;color:rgba(20,28,40,.4)}",
-      "html body #page table.fo-stc-tbl td.nm,html body #page table.fo-stc-tbl td.cl,html body #page table.fo-stc-tbl td.ct{text-align:left;font-family:Inter,sans-serif;font-weight:500}",
-      "html body #page table.fo-stc-tbl td.cl,html body #page table.fo-stc-tbl td.ct{font-size:11.5px}",
+      "html body #page table.fo-stc-tbl th:hover{color:#141C28}",
+      "html body #page table.fo-stc-tbl th[data-dir]{color:#B44A22;box-shadow:inset 0 -2px 0 #C9571F}",
+      "html body #page table.fo-stc-tbl th[data-dir=&#39;desc&#39;]:after{content:' \\25BE'}",
+      "html body #page table.fo-stc-tbl th[data-dir=&#39;asc&#39;]:after{content:' \\25B4'}",
+      // figures in Inter, not the condensed poster face; the name carries the weight
+      "html body #page table.fo-stc-tbl td{padding:9px 8px;text-align:right;white-space:nowrap;font:500 12.5px/1.2 Inter,sans-serif;color:rgba(20,28,40,.78);border-bottom:1px solid rgba(20,28,40,.055)}",
+      "html body #page table.fo-stc-tbl td.rk{text-align:left;font-weight:400;color:rgba(20,28,40,.3);font-size:11px}",
+      "html body #page table.fo-stc-tbl td.nm,html body #page table.fo-stc-tbl td.cl,html body #page table.fo-stc-tbl td.ct{text-align:left}",
+      "html body #page table.fo-stc-tbl td.nm{font-weight:600;color:#141C28}",
+      "html body #page table.fo-stc-tbl td.cl,html body #page table.fo-stc-tbl td.ct{font-size:11.5px;font-weight:400;color:rgba(20,28,40,.45)}",
       "html body #page table.fo-stc-tbl td.nm a{color:#141C28 !important;text-decoration:none !important}",
-      "html body #page table.fo-stc-tbl td.cl a{color:rgba(20,28,40,.55) !important;text-decoration:none !important}",
-      "html body #page table.fo-stc-tbl td.ct{color:rgba(20,28,40,.45)}",
-      "html body #page table.fo-stc-tbl tbody tr:nth-child(even){background:rgba(20,28,40,.022)}",
-      "html body #page table.fo-stc-tbl tbody tr.mine{background:linear-gradient(90deg,rgba(201,87,31,.17),rgba(232,185,106,.09) 62%,rgba(232,185,106,.04))}",
-      "html body #page table.fo-stc-tbl tbody tr.mine td{border-bottom-color:rgba(201,87,31,.28)}",
-      "html body #page table.fo-stc-tbl tbody tr.mine td:first-child{box-shadow:inset 3px 0 0 #C9571F}",
-      "html body #page table.fo-stc-tbl tbody tr.mine td.nm a{color:#B44A22 !important;font-weight:800}",
+      "html body #page table.fo-stc-tbl td.nm a:hover{color:#B44A22 !important}",
+      "html body #page table.fo-stc-tbl td.cl a{color:rgba(20,28,40,.45) !important;text-decoration:none !important}",
+      // the leading column of a row a reader is scanning: the first three
+      // figures after the name get full ink, the tail recedes
+      "html body #page table.fo-stc-tbl tbody tr:hover td{background:rgba(20,28,40,.028)}",
+      "html body #page table.fo-stc-tbl tbody tr.mine td{background:rgba(201,87,31,.07)}",
+      "html body #page table.fo-stc-tbl tbody tr.mine td:first-child{box-shadow:inset 2px 0 0 #C9571F}",
+      "html body #page table.fo-stc-tbl tbody tr.mine td.nm a{color:#B44A22 !important;font-weight:700}",
       "html body #page .fo-stc-note{margin-top:22px;background:rgba(14,34,70,.045);border:1px solid rgba(20,28,40,.1);border-radius:14px;padding:15px 17px 13px}",
       "html body #page .fo-stc-note h3{margin:0 0 8px;font:600 10.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#0E2246}",
       "html body #page .fo-stc-note ul{margin:0;padding-left:17px}",
@@ -424,20 +445,30 @@
     var g = gather(scope, natId);
     var rounds = g.rounds;
 
-    var scopeBar = "<div class='fo-stc-bar'>" + (mine ? ["club", "league", "world"] : ["league", "world"]).map(function (k) {
-      return "<a class='" + (k === scope ? "on" : "") + "' href='" + href(bookKey, k, qualOn, divPick) + "'>" + SCOPES[k].label + "</a>";
-    }).join("") + "</div>";
-    var bookBar = "<div class='fo-stc-bar two'>" + ["bat", "bowl", "field"].map(function (k) {
-      return "<a class='" + (k === bookKey ? "on" : "") + "' href='" + href(k, scope, qualOn, divPick) + "'>" + BOOKS[k].label + "</a>";
-    }).join("") + "</div>";
-    // the filters that change what is COUNTED rather than which book is open
-    var filt = "<div class='fo-stc-bar two'>" +
-      "<a class='" + (qualOn ? "on" : "") + "' href='" + href(bookKey, scope, !qualOn, divPick) + "'>Qualified only</a>" +
-      (scope === "club" ? "" : ["", "1", "2"].map(function (d) {
-        return "<a class='" + (divPick === d ? "on" : "") + "' href='" + href(bookKey, scope, qualOn, d) + "'>" +
-          (d ? "Division " + (d === "1" ? "One" : "Two") : "Both divisions") + "</a>";
-      }).join("")) + "</div>";
-
+    // THE CONTROLS WERE THREE STACKS OF PILLS - eleven lozenges in rows,
+    // taking a third of a phone screen before a single figure appeared, and
+    // every one of them shouting in navy or grey. A statistician does not need
+    // eleven buttons; he needs to know which book he is in and be able to
+    // change it. So: one line of quiet type per axis, the live one underlined
+    // in rust, the rest in ink at 45%. Nothing shouts, nothing is a lozenge,
+    // and the whole control surface is shorter than one of the old rows.
+    var seg = function (items, cur, mk) {
+      return "<div class='fo-stc-seg'>" + items.map(function (it) {
+        return "<a class='" + (it[0] === cur ? "on" : "") + "' href='" + mk(it[0]) + "'>" + it[1] + "</a>";
+      }).join("") + "</div>";
+    };
+    var scopes = (mine ? [["club", "My club"], ["league", "My league"], ["world", "The world"]]
+                       : [["league", "My league"], ["world", "The world"]]);
+    var controls =
+      "<div class='fo-stc-ctl'>" +
+      seg(scopes, scope, function (k) { return href(bookKey, k, qualOn, divPick); }) +
+      seg([["bat", "Batting"], ["bowl", "Bowling"], ["field", "Fielding"]], bookKey,
+          function (k) { return href(k, scope, qualOn, divPick); }) +
+      "<div class='fo-stc-filt'>" +
+      (scope === "club" ? "" : seg([["", "Both divisions"], ["1", "Division One"], ["2", "Division Two"]], divPick,
+          function (k) { return href(bookKey, scope, qualOn, k); })) +
+      "<a class='fo-stc-qual" + (qualOn ? " on" : "") + "' href='" + href(bookKey, scope, !qualOn, divPick) + "'>" +
+      "<i></i>Qualified only</a></div></div>";
     var body;
     if (!g.rows.length && g.waiting) {
       body = "<p class='fo-stc-dim'>Sending for " + (g.waiting > 1 ? g.waiting + " scorebooks" : "the scorebook") + "&hellip;</p>";
@@ -495,10 +526,10 @@
 
     return "<div class='fo-stc-hero'><div class='k'>Stats Centre &middot; " + E(where) + "</div>" +
       "<h1>" + BK.short + "</h1>" +
-      "<p>" + BK.blurb + " Read across " + SCOPES[scope].blurb + ", this season only. Click any column head to sort by it.</p>" +
+      "<p>" + SAY[bookKey][scope] + "</p>" +
       "<div class='fo-stc-now'>" + chips + "</div></div>" +
       "<a class='fo-stc-back' href='#/stats'>&lsaquo; All the books</a>" +
-      scopeBar + bookBar + filt +
+      controls +
       "<div class='fo-stc-panel'><div class='fo-stc-ph'><h2>" + BK.short + "</h2>" +
       "<span class='fo-stc-sub'>" + E(where) + " &middot; after round " + rounds + "</span></div>" +
       body + "</div>";
