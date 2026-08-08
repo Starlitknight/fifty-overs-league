@@ -1855,13 +1855,31 @@ function route(){
     location.hash='#/squad';return
   }
   document.querySelectorAll('#topbar a').forEach(a=>a.classList.toggle('on',a.dataset.nav===App.page));
-  const P={club:pgClub,office:pgOffice,matches:pgMatches,squad:pgSquad,orders:pgOrders,players:pgPlayers,
-    // #/stats is the STATS CENTRE now (foRenderStatsPage, below). It reports
-    // the served world's scorebook, and hands off to pgStats - this game's own
-    // offline season averages - for a reader who holds no seat out there. The
-    // route must NOT be listed here as well: this table is consulted first, so
-    // an entry here would shadow the overlay and the centre would never open.
-    player:pgPlayer,nets:pgNets,commentary:pgCommentary,welcome:pgWelcome,match:pgMatch,scorecard:pgScorecard,calibration:pgCal,reports:pgReports,editor:pgEditor};
+  /* THE ROUTE TABLE IS THE DOOR LIST, and the solo career's doors are off it.
+     What survives is what the served world still uses: the squad, the orders
+     sheet, a player's page, and the live match room the world theatre rejoins
+     a broadcast through. Everything else that used to be named on this line -
+     the club dashboard, the office, the solo market, the solo fixture list,
+     the on-device averages page, the draft, the tour - was reachable only from
+     a career this game no longer offers, and is now reachable from nowhere.
+
+     THE BODIES ARE STILL IN THE FILE, and that is a deliberate stop rather
+     than laziness. Three attempts to cut them out each broke multiplayer in a
+     different place, every one caught by the tests:
+
+       - cutting from one page to the next swallowed findPlayer and the aggBat
+         family, which the market and the player page call;
+       - runTour is not a tour. FO_TRAIN_PROGS, FO_TRAIN_FOCUS, FO_PLAN_ENTRY,
+         foSetIntensity and foBulkTrain all live inside it, and the nets page
+         is very much a multiplayer room;
+       - pgMatch and renderMatch are not solo either: the world theatre rejoins
+         a live served broadcast through them.
+
+     The solo code is braided through the shared code rather than sitting
+     beside it, so pulling it out is an incremental job with a test after every
+     step - not one sweep. Closing the doors is the safe half of it, and it is
+     done: nothing below can be reached. */
+  const P={squad:pgSquad,orders:pgOrders,player:pgPlayer,match:pgMatch,scorecard:pgScorecard};
   // Circuit-era pages paint themselves; dispatch them directly so a refresh
   // never flashes the retired club dashboard while their interval spins up
   const OV={home:'foRenderHome',market:'foRenderMarketPage',league:'foRenderLeagueTablePage',nation:'foRenderNation',atlas:'foRenderLeague',planet:'foRenderPlanetPage',almanack:'foRenderAlmanackPage',star:'foRenderStarPage',wcmatch:'foRenderWcMatchPage',cup:'foRenderCup',circuit:'foRenderCircuit',city:'foRenderCity',tour:'foRenderTour',world:'foRenderWorld',boss:'foRenderBoss',side:'foRenderSide',lore:'foRenderLore',report:'foRenderReport',preview:'foRenderPreviewPage',training:'foRenderNetsPage',milestones:'foRenderHonoursPage',fixtures:'foRenderFixturesPage',matchday:'foRenderMatchdayPage',paper:'foRenderPaperPage',champions:'foRenderChampionsPage',facup:'foRenderFaCupPage',colts:'foRenderColtsPage',natteams:'foRenderNationsPage',nations:'foRenderNationsPage',watch:'foRenderWatchPage',feed:'foRenderFeedPage',rankings:'foRenderRankingsPage',team:'foRenderClubPage',academy:'foRenderAcademyPage',finance:'foRenderFinancePage',ground:'foRenderGroundPage',schedule:'foRenderSchedulePage',stats:'foRenderStatsPage',statement:'foRenderStatementPage',news:'foRenderNewsPage'}[App.page];
