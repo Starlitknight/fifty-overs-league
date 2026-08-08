@@ -1756,14 +1756,77 @@
    * hours of the next morning in New Zealand - the instant wins, because it
    * is the thing he has to turn up for.
    */
+  /* WHAT TO CALL HIS ZONE.
+   *
+   * The browser knows PDT and AEST but hands back "GMT+5:30" for India and
+   * "GMT+12" for New Zealand - an offset where a name exists, and the two
+   * biggest cricketing audiences in the game are among them. Where it gives
+   * up, this names the zone instead.
+   *
+   * Two rules keep it honest. It only speaks when the browser has ALREADY
+   * given up (a bare GMT/UTC offset) - a real abbreviation from the platform
+   * always wins, because the platform knows the reader's locale and this does
+   * not. And a zone that keeps summer time carries BOTH names with the
+   * standard offset beside them, so the right one is chosen from the offset in
+   * force today rather than being frozen at whichever was true when this list
+   * was written. An ambiguous abbreviation is left off the list entirely:
+   * Bangladesh's "BST" is Britain's, China's "CST" is America's, and a wrong
+   * name is worse than an honest offset.
+   */
+  var TZ_NAME = {
+    // no summer time: one name, all year
+    "Asia/Kolkata": "IST", "Asia/Calcutta": "IST",
+    "Asia/Karachi": "PKT", "Asia/Kabul": "AFT",
+    // some builds still resolve Nepal under the old spelling
+    "Asia/Kathmandu": "NPT", "Asia/Katmandu": "NPT",
+    // AN ABBREVIATION ONLY EVER NAMES THE READER'S OWN ZONE, so two zones
+    // sharing one cannot collide on a screen: nobody is in Dhaka and London
+    // at once. Bangladesh gets its BST and China its CST after all.
+    "Asia/Dhaka": "BST", "Asia/Shanghai": "CST", "Asia/Taipei": "CST",
+    "Asia/Dubai": "GST", "Asia/Singapore": "SGT", "Asia/Hong_Kong": "HKT",
+    "Asia/Tokyo": "JST", "Asia/Seoul": "KST", "Asia/Bangkok": "ICT",
+    "Asia/Jakarta": "WIB", "Asia/Manila": "PHT",
+    "Africa/Johannesburg": "SAST", "Africa/Harare": "CAT", "Africa/Lusaka": "CAT",
+    "Africa/Maputo": "CAT", "Africa/Nairobi": "EAT", "Africa/Kampala": "EAT",
+    "Africa/Dar_es_Salaam": "EAT", "Africa/Addis_Ababa": "EAT", "Africa/Lagos": "WAT",
+    "America/Port_of_Spain": "AST", "America/Barbados": "AST", "America/Antigua": "AST",
+    "America/St_Lucia": "AST", "America/Dominica": "AST", "America/Grenada": "AST",
+    "America/St_Vincent": "AST", "America/St_Kitts": "AST", "America/Guyana": "GYT",
+    "America/Jamaica": "EST",
+    "Australia/Brisbane": "AEST", "Australia/Perth": "AWST", "Australia/Darwin": "ACST",
+    // summer time: [standard, daylight, standard offset in minutes east]
+    "Pacific/Auckland": ["NZST", "NZDT", 720],
+    "Australia/Sydney": ["AEST", "AEDT", 600], "Australia/Melbourne": ["AEST", "AEDT", 600],
+    "Australia/Hobart": ["AEST", "AEDT", 600], "Australia/Canberra": ["AEST", "AEDT", 600],
+    "Australia/Adelaide": ["ACST", "ACDT", 570],
+    "Europe/Amsterdam": ["CET", "CEST", 60], "Europe/Berlin": ["CET", "CEST", 60],
+    "Europe/Paris": ["CET", "CEST", 60], "Europe/Madrid": ["CET", "CEST", 60],
+    "Europe/Rome": ["CET", "CEST", 60], "Europe/Brussels": ["CET", "CEST", 60],
+    "Europe/London": ["GMT", "BST", 0], "Europe/Dublin": ["GMT", "IST", 0],
+    "Europe/Lisbon": ["WET", "WEST", 0]
+  };
   var TZ_ABBR = null;
   function tzAbbr() {
     if (TZ_ABBR != null) return TZ_ABBR;
-    TZ_ABBR = "";
+    var raw = "";
     try {
       var ps = new Intl.DateTimeFormat(undefined, { timeZoneName: "short" }).formatToParts(new Date());
-      for (var i = 0; i < ps.length; i++) if (ps[i].type === "timeZoneName") { TZ_ABBR = ps[i].value; break; }
-    } catch (e) { TZ_ABBR = ""; }
+      for (var i = 0; i < ps.length; i++) if (ps[i].type === "timeZoneName") { raw = ps[i].value; break; }
+    } catch (e) { raw = ""; }
+    // the platform gave a real name: it knows the reader's locale, this does not
+    if (raw && !/^(GMT|UTC)\s*[+\-]/.test(raw)) { TZ_ABBR = raw; return TZ_ABBR; }
+    try {
+      var zone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+      var m = TZ_NAME[zone];
+      if (typeof m === "string") { TZ_ABBR = m; return TZ_ABBR; }
+      if (m && m.length === 3) {
+        // getTimezoneOffset is minutes WEST, so east is the negative of it
+        var offNow = -new Date().getTimezoneOffset();
+        TZ_ABBR = offNow === m[2] ? m[0] : m[1];
+        return TZ_ABBR;
+      }
+    } catch (e2) {}
+    TZ_ABBR = raw;                       // an honest offset beats a wrong name
     return TZ_ABBR;
   }
   function hm(ms) {
