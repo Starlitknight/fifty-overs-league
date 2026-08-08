@@ -518,7 +518,7 @@
         "<div><b>" + foPmE(ground) + "</b><i>" + foPmE(natNm || "") + "</i></div></div>" +
         "<div class='fo-pm-fact'>" +
         ic("<circle cx='12' cy='12' r='9'/><path d='M5.4 8.2c4 1.6 9.2 1.6 13.2 0M5.4 15.8c4-1.6 9.2-1.6 13.2 0'/>") +
-        "<div><b>" + foPmHH(g.hour) + " UTC</b><i>First ball</i></div></div>" +
+        "<div><b>" + (function () { try { return window.__foPlanet.hhTxt(g.hour); } catch (e) { return foPmHH(g.hour); } })() + "</b><i>First ball</i></div></div>" +
         "</div>" +
         "</div>" +
 

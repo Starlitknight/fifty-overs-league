@@ -1362,7 +1362,7 @@
       else if (h < h0 && (nextAt == null || h0 < nextAt)) nextAt = h0;
     });
     if (liveIds.length) return { key: "live", liveIds: liveIds, chip: "LIVE now in " + liveIds.length + " " + (liveIds.length === 1 ? "nation" : "nations") };
-    if (nextAt != null) return { key: "up", liveIds: [], chip: "Next play " + hh(nextAt) + " UTC" };
+    if (nextAt != null) return { key: "up", liveIds: [], chip: "Next play " + hhTxt(nextAt) };
     return { key: "fin", liveIds: [], chip: "The world's play is done for today" };
   }
   function stageName(st) { return { r16: "The Last Sixteen", qf: "Quarter-finals", sf: "Semi-finals", final: "THE WORLD CUP FINAL" }[st] || st; }
@@ -1419,9 +1419,9 @@
         // a live nation's flag is a door to the world theatre; the rest open the nation page
         var dest = st2 === "on" ? "#/watch?n=" + encodeURIComponent(r.id) : "#/nation?n=" + encodeURIComponent(r.id);
         return "<a class='fo-pl-tz " + st2 + (r.id === my ? " me" : "") + "' href='" + dest + "' aria-label='" + E(r.nm) + "'>" +
-          "<img src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\"><i>" + hh(h0).slice(0, 2) + "</i></a>";
+          "<img src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\"><i>" + hhTxt(h0).slice(0, 5) + "</i></a>";
       }).join("");
-      var bandHTML = "<div class='fo-pl-band'><i>The world by the hour &middot; UTC</i><div class='fo-pl-bandrow'>" + band + "</div></div>";
+      var bandHTML = "<div class='fo-pl-band'><i>The world by the hour &middot; on your clock</i><div class='fo-pl-bandrow'>" + band + "</div></div>";
 
       var phaseLine =
         p.preseason ? "The world is founded and the squads are named - season " + ANCHOR.season + " " + ((ANCHOR.start - dayIx(now)) === 1 ? "begins tomorrow" : "begins in " + (ANCHOR.start - dayIx(now)) + " days") :
@@ -1740,7 +1740,62 @@
   // every card that dates a match prints the same ones.
   var DOW_NM = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
   var MON_NM = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
-  function hhTxt(h) { return (h < 10 ? "0" : "") + (h | 0) + ":00 UTC"; }
+  /* ---- THE WORLD RUNS ON UTC; THE READER DOES NOT ------------------------
+   *
+   * Every instant in this game is absolute - EPOCH plus a day plus an hour -
+   * so which clock it is PRINTED on is a rendering choice and nothing else.
+   * It was printed on the umpire's, and a manager in Bengaluru was told his
+   * side plays at 14:00 UTC and left to do the arithmetic himself; one in
+   * Auckland was told a date that was not even the date it happens on where
+   * he lives. The derivation is untouched - the same millisecond either way -
+   * and only the words change.
+   *
+   * A world DAY is still a UTC day, because that is what the fixture list is
+   * built on. A MATCH is an instant, and an instant is shown where the reader
+   * is standing. Where the two disagree - a 14:00 UTC round is the small
+   * hours of the next morning in New Zealand - the instant wins, because it
+   * is the thing he has to turn up for.
+   */
+  var TZ_ABBR = null;
+  function tzAbbr() {
+    if (TZ_ABBR != null) return TZ_ABBR;
+    TZ_ABBR = "";
+    try {
+      var ps = new Intl.DateTimeFormat(undefined, { timeZoneName: "short" }).formatToParts(new Date());
+      for (var i = 0; i < ps.length; i++) if (ps[i].type === "timeZoneName") { TZ_ABBR = ps[i].value; break; }
+    } catch (e) { TZ_ABBR = ""; }
+    return TZ_ABBR;
+  }
+  function hm(ms) {
+    var d = new Date(ms), h = d.getHours(), m = d.getMinutes();
+    return (h < 10 ? "0" : "") + h + ":" + (m < 10 ? "0" : "") + m;
+  }
+  function dmy(ms) {
+    var d = new Date(ms);
+    return DOW_NM[d.getDay()] + " " + d.getDate() + " " + MON_NM[d.getMonth()];
+  }
+  // how many LOCAL days apart two instants are, so "Today" means the reader's
+  // today and not the umpire's
+  function localDayGap(ms, now) {
+    var a = new Date(ms), b = new Date(now == null ? Date.now() : now);
+    return Math.round((new Date(a.getFullYear(), a.getMonth(), a.getDate()) -
+                       new Date(b.getFullYear(), b.getMonth(), b.getDate())) / 86400000);
+  }
+  // one instant, named the way the reader would name it
+  function atTxt(day, hour, now) {
+    var ms = EPOCH + day * DAY + ((hour == null ? 0 : hour) | 0) * 3600000;
+    var g = localDayGap(ms, now);
+    var lab = g === 0 ? "Today" : g === 1 ? "Tomorrow" : g === -1 ? "Yesterday" : dmy(ms);
+    var z = tzAbbr();
+    return lab + " &middot; " + hm(ms) + (z ? " " + z : "");
+  }
+  // an hour of the world day, on the reader's clock. Anchored to today's date
+  // so the offset in force is the one he is living in.
+  function hhTxt(h) {
+    var ms = EPOCH + dayIx(Date.now()) * DAY + ((h | 0)) * 3600000;
+    var z = tzAbbr();
+    return hm(ms) + (z ? " " + z : "");
+  }
   function dateTxt(day, now) {
     if (day == null) return "";
     var today = dayIx(now == null ? Date.now() : now);
@@ -1755,11 +1810,11 @@
   function whenTxt(season, round, rid, now) {
     var d = dayOfSeasonRound(season, round);
     if (d == null) return "";
-    return dateTxt(d, now) + " · " + hhTxt(rid == null ? 14 : natHour(rid));
+    return atTxt(d, rid == null ? 14 : natHour(rid), now);
   }
   window.__foPlanet = { roundOfDay: roundOfDay, dayOfRound: dayOfRound, dayOfSeasonRound: dayOfSeasonRound,
     anchorWorld: anchorWorld, anchorOf: anchorOf, seasonStart: seasonStart,
-    dateTxt: dateTxt, hhTxt: hhTxt, whenTxt: whenTxt,
+    dateTxt: dateTxt, hhTxt: hhTxt, whenTxt: whenTxt, atTxt: atTxt, tzAbbr: tzAbbr, localHM: hm, localDate: dmy,
     FA_DAYS: FA_DAYS, faDayOf: faDayOf, faDrawR16: faDrawR16, cupDraw: cupDraw,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
     COLTS_DAYS: COLTS_DAYS, isRestDay: isRestDay, REST_DAYS: REST_DAYS, dayOfRound: dayOfRound, roundOfDay: roundOfDay,

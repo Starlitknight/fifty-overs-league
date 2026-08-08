@@ -327,7 +327,7 @@
     }).join("");
     var ga = natGround(ST.nation);
     var windows9 = (snap.windows || [5, 9, 13]);
-    var hour9 = (snap.hourUtc == null ? 18 : snap.hourUtc) + ":00 UTC";
+    var hour9 = (function(h9){try{return window.__foPlanet.hhTxt(h9);}catch(e9){return (h9<10?"0":"")+h9+":00";}})(snap.hourUtc == null ? 18 : snap.hourUtc);
     // THE SERIES THE CALENDAR DEALT - best of three, one game a window, over
     // three rest days. An older cached snapshot carried a single round; read
     // either so a stale localStorage copy still paints.

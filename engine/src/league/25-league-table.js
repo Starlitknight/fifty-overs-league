@@ -303,7 +303,7 @@
       } catch (eAw) { awaiting = 0; }
       var scorerLine = awaiting
         ? "Round " + Math.min(rounds, playedRounds + awaiting) + " in " + E(natNm) + " finished at " +
-          hh((hour + ((pl && pl.LIVE_LEN) || 3)) % 24) + " UTC. The umpire settles it on the World Service " +
+          (function(h9){try{return window.__foPlanet.hhTxt(h9);}catch(e9){return (h9<10?"0":"")+h9+":00";}})((hour + ((pl && pl.LIVE_LEN) || 3)) % 24) + ". The umpire settles it on the World Service " +
           "within a couple of hours of the close &mdash; until then this page still reads " +
           (playedRounds ? "after round " + playedRounds : "the start of the season") + "."
         : "";
@@ -504,7 +504,7 @@
             return href
               ? "<a class='" + cls + "' href='" + href + "'>" + body + "</a>"
               : "<div class='" + cls + "'>" + body + "</div>";
-          }).join("") : "<p class='fo-lgx-dim'>No cricket has been played yet. The first round settles at " + hh(hour) + " UTC.</p>") +
+          }).join("") : "<p class='fo-lgx-dim'>No cricket has been played yet. The first round settles at " + (function(h9){try{return window.__foPlanet.hhTxt(h9);}catch(e9){return (h9<10?"0":"")+h9+":00";}})(hour) + ".</p>") +
           "</div>";
 
         // match of the round: the narrowest margin the round produced
@@ -554,7 +554,7 @@
           if (!rows9.length) {
             body9 = "<p class='fo-lgx-dim'>Nobody has " +
               (bookKey === "bat" ? "faced a ball" : bookKey === "bowl" ? "bowled one" : "taken a catch") +
-              " yet. The numbers begin at " + hh(hour) + " UTC.</p>";
+              " yet. The numbers begin at " + (function(h9){try{return window.__foPlanet.hhTxt(h9);}catch(e9){return (h9<10?"0":"")+h9+":00";}})(hour) + ".</p>";
           } else {
             var head9 = "<tr><th class='rk'>#</th><th class='nm'>Name</th><th class='cl'>Team</th>" +
               BK.cols.map(function (c) { return "<th>" + c[1] + "</th>"; }).join("") + "</tr>";
@@ -673,7 +673,7 @@
         } catch (eNd2) {}
         var nextTtl = state === "live" ? "Round " + curRound + ", in play"
           : "Round " + nextRd + (nextDayWord || (state === "fin" ? ", next" : " today"));
-        var nextWhen = hh(hour) + " UTC";
+        var nextWhen = (function () { try { return pl.hhTxt(hour); } catch (e) { return hh(hour); } })();
         var nextPairs = [];
         try {
           var sc2 = wt && wt.schedMirror ? wt.schedMirror(natId, Math.max(1, (cal && cal.seasonNo) || 1), plateDiv) : null;

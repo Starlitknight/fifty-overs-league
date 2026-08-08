@@ -369,7 +369,7 @@
       var hNowG = (nowG - (plG.EPOCH + plG.dayIx(nowG) * 86400000)) / 3600000;
       var h0G = plG.natHour(rid);
       if (hNowG < h0G) {
-        wtSay("The first ball is at " + (h0G < 10 ? "0" : "") + h0G + ":00 UTC - the broadcast opens then.");
+        wtSay("The first ball is at " + (function(h9){try{return window.__foPlanet.hhTxt(h9);}catch(e9){return (h9<10?"0":"")+h9+":00";}})(h0G) + " - the broadcast opens then.");
         return;
       }
       // The round's revealed orders AND the living state of the men playing it
@@ -602,7 +602,7 @@
       return;
     }
 
-    var hh0 = (h0 < 10 ? "0" : "") + h0 + ":00 UTC";
+    var hh0 = (function(h9){try{return window.__foPlanet.hhTxt(h9);}catch(e9){return (h9<10?"0":"")+h9+":00";}})(h0);
     // T-minus one hour: the teamsheets are public - show the ACTUAL elevens,
     // a claimed manager's named XI and the engine's own pick for the bots
     var teamsIn = state === "up" && (h0 - hNowW) <= 1;
@@ -658,7 +658,7 @@
         (state === "live" ? "Watch the live broadcast &rsaquo;" : "Watch it back &rsaquo;") + "</a>" : "") +
       "</div></div>" +
       (others ? "<div class='fo-wt-rail'><i>Also in this round</i>" + others + "</div>" : "") +
-      "<div class='fo-wt-natsw'><i>Other leagues today &middot; first ball UTC</i>" +
+      "<div class='fo-wt-natsw'><i>Other leagues today &middot; first ball, your time</i>" +
       "<div class='fo-wt-nats'>" + regions.filter(function (r) { return r.id !== my; }).sort(function (a, b) { return pl.natHour(a.id) - pl.natHour(b.id); }).map(function (r) {
         var hh2 = pl.natHour(r.id);
         var hNow2 = (now - (pl.EPOCH + pl.dayIx(now) * 86400000)) / 3600000;

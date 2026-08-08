@@ -382,7 +382,7 @@
         var mins = Math.max(1, Math.ceil((winStart - Date.now()) / 60000));
         page.innerHTML = shell(rid, cal, "up", m,
           stageShell(m, null, Date.now() < winStart
-            ? "Round " + cal.round + " &middot; first ball " + hh(pl.natHour(rid)) + " UTC"
+            ? "Round " + cal.round + " &middot; first ball " + (function () { try { return pl.hhTxt(pl.natHour(rid)); } catch (e) { return hh(pl.natHour(rid)); } })()
             : "Round " + cal.round + " &middot; the umpire is walking out") +
           preMatch(rid, cal, m, winStart, "") +
           teamsPanel(m, rid));

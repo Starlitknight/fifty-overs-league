@@ -96,8 +96,13 @@
     var t = roundTime(r); if (!t) return "";
     var d = new Date(t), now = Date.now();
     var days = Math.floor(t / DAY) - Math.floor(now / DAY);
+    // the next round, on his clock rather than the umpire's
+    try {
+      var P9 = P();
+      if (P9 && P9.atTxt && P9.dayIx) return P9.atTxt(P9.dayIx(d.getTime()), 14).replace(/&middot;/g, "·");
+    } catch (eA) {}
     var day = days === 0 ? "Today" : days === 1 ? "Tomorrow" : DOW[d.getUTCDay()] + " " + d.getUTCDate() + " " + MON[d.getUTCMonth()];
-    return day + " · 14:00 UTC";
+    return day + " · 14:00";
   }
 
   // ---- the round plays whether you show up or not ----------------------------
@@ -139,9 +144,13 @@
 
   // ---- the clock in the top bar ----------------------------------------------
   function clockTxt() {
+    // THE MASTHEAD SHOWS THE READER'S CLOCK. The world still turns on UTC;
+    // he does not have to.
     var n = new Date();
-    var t = DOW[n.getUTCDay()] + " " + n.getUTCDate() + " " + MON[n.getUTCMonth()] +
-      " · " + (n.getUTCHours() < 10 ? "0" : "") + n.getUTCHours() + ":" + (n.getUTCMinutes() < 10 ? "0" : "") + n.getUTCMinutes() + " UTC";
+    var z = ""; try { z = (P() && P().tzAbbr) ? P().tzAbbr() : ""; } catch (eZ) {}
+    var t = DOW[n.getDay()] + " " + n.getDate() + " " + MON[n.getMonth()] +
+      " · " + (n.getHours() < 10 ? "0" : "") + n.getHours() + ":" + (n.getMinutes() < 10 ? "0" : "") + n.getMinutes() +
+      (z ? " " + z : "");
     var dayLn = "";
     // THE DAY IS THE SEASON'S DAY, NOT THE WORLD'S.
     //

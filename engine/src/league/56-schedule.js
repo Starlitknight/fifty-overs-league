@@ -314,7 +314,7 @@
     }
     body += "</div>";
 
-    var fine = "<p class='fo-sch-fine'>All times UTC" +
+    var fine = "<p class='fo-sch-fine'>All times shown on your own clock" +
       (hourTxt ? " &middot; " + E(myNat || "your league") + " plays at " + hourTxt : "") +
       " &middot; orders lock at the first ball &middot; the nets, scouting and the market run on the rest days" +
       " &middot; day 38 turns the year: everyone ages, the oldest retire, and clubs go up and down.</p>";
