@@ -4449,7 +4449,11 @@
             cap.querySelector("b").textContent = p.nm;
             cap.querySelector("i").textContent = p.nat + " · Issue " + p.iss + " · " + p.n + " of " + no(pages.length - 1);
           };
-          var step = function (d) { at = (at + d + pages.length) % pages.length; draw(); };
+          var step = function (d) {
+            at = (at + d + pages.length) % pages.length; draw();
+            // a new page starts at its masthead, not wherever the last one was
+            try { ov.scrollTop = 0; } catch (eS) {}
+          };
           var shut = function () { try { ov.remove(); } catch (e2) {} document.removeEventListener("keydown", key); };
           var key = function (ev) {
             if (ev.key === "Escape") shut();
@@ -4643,17 +4647,33 @@
       "html body #page a.fo-lore-back{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:10.5px;font-weight:600;color:#F5EFDC !important;text-decoration:none !important;background:rgba(12,20,36,.6);border:1.5px solid rgba(235,194,113,.42);border-radius:999px;padding:11px 19px;transition:.16s}",
       "html body #page a.fo-lore-back:hover{color:#F3D37A !important;border-color:var(--gold)}",
       // ---------- the plates, opened as a magazine you can page through ----------
-      ".fo-lore-lb{position:fixed;inset:0;z-index:9000;background:rgba(4,8,16,.96);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto;cursor:zoom-out;animation:foLxIn .22s ease}",
+      /* THE PRINTED PAGE, PRINTED FULL SIZE.
+         It used to open as a postcard: eighteen pixels of padding all round,
+         a rounded corner, a drop shadow and a cap of 82vh, so a page laid out
+         to be READ arrived two thirds the size of the screen it was on, with a
+         caption underneath repeating the headline already printed at the top
+         of it. A magazine page is not a thumbnail of itself.
+         It fills the width now, edge to edge, and the overlay scrolls - which
+         is how anybody reads a page on a phone. No padding, no corner, no
+         shadow, nothing over it but the way out and the way on. */
+      ".fo-lore-lb{position:fixed;inset:0;z-index:9000;background:#070C16;display:block;padding:0;overflow:auto;-webkit-overflow-scrolling:touch;cursor:zoom-out;animation:foLxIn .22s ease}",
       "@keyframes foLxIn{from{opacity:0}to{opacity:1}}",
-      ".fo-lb-fig{margin:0;max-width:min(1500px,94vw);cursor:default;display:flex;flex-direction:column;gap:12px;align-items:center}",
-      ".fo-lore-lb img{max-width:100%;max-height:82vh;width:auto;height:auto;border-radius:6px;box-shadow:0 30px 80px rgba(0,0,0,.8)}",
-      ".fo-lb-cap{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center}",
+      ".fo-lb-fig{margin:0 auto;max-width:min(1200px,100vw);width:100%;cursor:default;display:block}",
+      ".fo-lore-lb img{display:block;width:100%;max-width:none;max-height:none;height:auto;border-radius:0;box-shadow:none}",
+      /* ON A PHONE THE PLATE IS PORTRAIT AND THE PHONE IS PORTRAIT, and filling
+         the width still left a sixth of the screen dark under the page. It
+         fills the screen instead. The crop this costs is a few per cent off
+         each margin of a printed page - and the masthead is pinned to the top
+         so nothing that carries a word is ever the thing that goes. */
+      "@media(max-width:760px){.fo-lore-lb img{min-height:100dvh;object-fit:cover;object-position:center top}}",
+      ".fo-lb-cap{display:flex;flex-direction:column;align-items:center;gap:3px;text-align:center;padding:18px 16px calc(28px + env(safe-area-inset-bottom,0px))}",
       ".fo-lb-cap b{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.14em;font-size:15px;color:#F5EFDC}",
       ".fo-lb-cap i{font-family:Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.24em;font-size:9.5px;color:var(--gold)}",
       "html body .fo-lore-lb .fo-lb-nav{position:fixed;top:50%;transform:translateY(-50%);font-size:30px;line-height:1;color:#F5EFDC !important;background:rgba(12,20,36,.8) !important;border:1.5px solid rgba(235,194,113,.42) !important;border-radius:999px;width:48px;height:48px;cursor:pointer;transition:.16s}",
       "html body .fo-lore-lb .fo-lb-nav:hover{border-color:var(--gold) !important;background:rgba(20,32,54,.95) !important}",
       "html body .fo-lore-lb .fo-lb-nav.prev{left:14px}html body .fo-lore-lb .fo-lb-nav.next{right:14px}",
-      "html body .fo-lore-lb .fo-lore-x{position:fixed;top:14px;right:16px;font-size:26px;line-height:1;color:#F5EFDC !important;background:rgba(12,20,36,.85) !important;border:1.5px solid rgba(235,194,113,.5) !important;border-radius:999px;width:42px;height:42px;cursor:pointer}",
+      "html body .fo-lore-lb .fo-lore-x{position:fixed;top:calc(12px + env(safe-area-inset-top,0px));right:14px;font-size:26px;line-height:1;color:#F5EFDC !important;background:rgba(12,20,36,.85) !important;border:1.5px solid rgba(235,194,113,.5) !important;border-radius:999px;width:42px;height:42px;cursor:pointer;backdrop-filter:blur(4px);z-index:2}",
+      "html body .fo-lore-lb .fo-lb-nav{z-index:2;backdrop-filter:blur(4px)}",
       // ---------- narrower ----------
       // stacked, the story reads first and the printed page is the payoff at the
       // end of it - the plate carries its own headline, so leading with it twice
@@ -4663,7 +4683,7 @@
         ".fo-lx-tdek{display:none}.fo-lx-tname{font-size:14px}html body #page button.fo-lx-toc{padding:11px 4px;gap:11px}" +
         ".fo-lx-folio{gap:10px}.fo-lx-folmeta{font-size:8px;letter-spacing:.16em}" +
         ".fo-lx-rungs{gap:8px}html body #page a.fo-lx-rung{flex:0 0 92px}.fo-lx-rung img{height:88px}" +
-        ".fo-lore-lb{padding:8px}.fo-lore-lb img{max-height:74vh}html body .fo-lore-lb .fo-lb-nav{width:40px;height:40px;font-size:24px;top:auto;bottom:14px;transform:none}" +
+        "html body .fo-lore-lb .fo-lb-nav{width:40px;height:40px;font-size:24px;top:auto;bottom:calc(14px + env(safe-area-inset-bottom,0px));transform:none}" +
         "html body .fo-lore-lb .fo-lb-nav.prev{left:10px}html body .fo-lore-lb .fo-lb-nav.next{right:10px}}"
     ].join("");
     document.head.appendChild(loCss);

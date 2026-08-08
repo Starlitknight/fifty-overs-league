@@ -147,8 +147,8 @@
     if (!jwt()) {
       page.innerHTML = shell("<div class='fo-ac-card'><p class='fo-ac-p'>" +
         (window.__foAuthPending
-          ? "Reaching your club&hellip; the boys will be here in a moment."
-          : "Your academy belongs to your club in the served world. Sign in to the account that holds it and the boys will be here waiting." +
+          ? "Reaching your club&hellip;"
+          : "The academy belongs to your club. Sign in and the boys are here." +
             "<br><button type='button' class='fo-door-btn' data-fo-door>Sign in</button>") +
         "</p></div>");
       return;
@@ -199,16 +199,19 @@
     }).join("");
 
     if (!ac.restDay) {
-      return "<div class='fo-ac-note'><b>There is cricket on today.</b> The scout travels on rest days &mdash; " +
-        (ac.restDays || []).length + " of them a season &mdash; and comes back with one boy each time.</div>";
+      return "<div class='fo-ac-note'><b>Cricket on today.</b> The scout travels on rest days.</div>";
     }
     if (ac.scoutedToday) {
-      return "<div class='fo-ac-note'><b>Today&rsquo;s trip is made.</b> The scout is out again on the next rest day.</div>";
+      return "<div class='fo-ac-note'><b>Today&rsquo;s trip is made.</b> Out again on the next rest day.</div>";
     }
     return "<div class='fo-ac-scout'>" +
       "<div class='fo-ac-srow'><select id='fo-ac-nat' class='fo-ac-sel'>" + opts + "</select>" +
       "<button type='button' class='fo-ac-btn' id='fo-ac-go'>Scout a recruit</button></div>" +
-      "<div class='fo-ac-note thin'>A nation leans toward what it is known for &mdash; South Africa turns out quicks, India spinners and wristy batsmen &mdash; but every nation makes every kind of cricketer, and a gem is no likelier in one than another. You are buying a type, not a better shop.</div>" +
+      // WHAT A NATION LEANS TOWARD, in a line. The paragraph this replaces
+      // spent forty-six words saying that no country is better than another,
+      // which is the one thing a manager can work out by seeing the same
+      // prices on every door.
+      "<div class='fo-ac-note thin'>A country leans toward its own kind of cricketer. None of them is a better shop.</div>" +
       "</div>";
   }
 
@@ -229,8 +232,10 @@
           "<span><i>He is yours for</i><b>" + yearsLeft(p.age) + "</b><u>" + (yearsLeft(p.age) === 1 ? "season" : "seasons") + "</u></span>" +
         "</div>" +
         bandGrid(p) +
-        "<div class='fo-ac-note thin'>This is the scout's opinion, not the boy's file: every range holds the truth somewhere inside it, and a level-" + lvl9 +
-          " academy reads a boy to about &plusmn;" + E(p.blur || "") + ". Build the academy up and this same report sharpens. The only way to know who he really is, is to sign him &mdash; the signature is the reveal.</div>" +
+        // the ranges above ARE the point; the paragraph explaining that a range
+        // is a range said it in fifty-eight words
+        "<div class='fo-ac-note thin'>The scout's estimate, &plusmn;" + E(p.blur || "") + " at level " + lvl9 +
+          ". Signing him is the only way to know.</div>" +
         "<div class='fo-ac-obtns'>" +
           "<button type='button' class='fo-ac-btn' data-fo-rec='sign'>Sign him and find out</button>" +
           "<button type='button' class='fo-ac-btn ghost' data-fo-rec='release'>Let him go</button>" +
@@ -262,13 +267,12 @@
     for (var i = 1; i <= top; i++) pips += "<s class='fo-ac-pip" + (i <= lv ? " on" : "") + "'></s>";
 
     var up = lv >= top
-      ? "<div class='fo-ac-note'>Level " + top + ". There is nowhere further to go; the country sends people to look at yours now &mdash; and it costs " +
-        money(UPKEEP[top]) + " a round to keep the lights on.</div>"
+      ? "<div class='fo-ac-note'>Level " + top + " &mdash; the top. " + money(UPKEEP[top]) + " a round to run.</div>"
       : (function () {
           var cost = Number(ac.nextCost || BUILD[lv]), can = bank >= cost && bank >= 0;
           return "<div class='fo-ac-uprow'>" +
-            "<div><b>Level " + (lv + 1) + "</b><i>Better cricketers through the door, more often &middot; " +
-              money(ac.nextUpkeep || UPKEEP[lv + 1]) + " a round to run</i></div>" +
+            "<div><b>Level " + (lv + 1) + "</b><i>Better boys, more often &middot; " +
+              money(ac.nextUpkeep || UPKEEP[lv + 1]) + " a round</i></div>" +
             "<button type='button' class='fo-ac-btn" + (can ? "" : " off") + "' data-fo-acup='" + (lv + 1) + "'" + (can ? "" : " disabled") + ">" +
               (can ? "Build it &middot; " + money(cost) : "Needs " + money(cost)) + "</button></div>";
         })();
@@ -286,17 +290,18 @@
     // and the cup - and a door through to the boys.
     var list = boys.length
       ? "<a class='fo-ac-sqlink' href='#/squad'><span><b>" + boys.length + (boys.length === 1 ? " boy" : " boys") +
-        " on the books</b><i>They stand with the squad now &mdash; flip Show to Youth for skills, senior shirts and releases</i></span><s>&rsaquo;</s></a>"
-      : "<div class='fo-ac-note'>Nobody on the books. Scout a recruit on the next rest day.</div>";
+        " on the books</b><i>They stand with the squad &mdash; Show: Youth</i></span><s>&rsaquo;</s></a>"
+      : "<div class='fo-ac-note'>Nobody on the books yet.</div>";
 
     page.innerHTML = shell(
-      "<div class='fo-ac-card'><h3>The scout<span>" + ((ac.restDays || []).length) + " rest days a season</span></h3>" +
+      "<div class='fo-ac-card'><h3>The scout<span>" + ((ac.restDays || []).length) + " rest days</span></h3>" +
         scoutHTML(ac) + "</div>" +
       "<div class='fo-ac-card'><h3>" + E(ac.club || "Your club") + "<span>Level " + lv + "</span></h3>" +
         "<div class='fo-ac-lvl'><div class='fo-ac-pips'>" + pips + "</div>" +
-          "<div class='fo-ac-lvt'><b>Level " + lv + "</b><i>" + boys.length + " on the books &middot; " +
-          (boys.length === 1 ? "one boy" : boys.length + " boys") + " on the books" +
-          "</i></div></div>" +
+          // this printed the same count twice in one line - "3 on the books ·
+          // 3 boys on the books" - and the card's own heading says the level
+          "<div class='fo-ac-lvt'><b>Level " + lv + "</b><i>" +
+          (boys.length === 1 ? "one boy" : boys.length + " boys") + " on the books</i></div></div>" +
         "<div class='fo-ac-money'>" +
           "<div><i>Upkeep</i><b>" + money(ac.upkeep || UPKEEP[lv]) + "</b><u>a round</u></div>" +
           "<div><i>Their wages</i><b>" + wage(boys.reduce(function (t, y) { return t + (+y.wage || 0); }, 0)) + "</b><u>a round</u></div>" +
