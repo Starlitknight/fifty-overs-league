@@ -28,3 +28,4 @@ server/backups/
 # One-off Playwright verification scripts + their screenshots. Disposable.
 resolver/_*.mjs
 resolver/_*.png
+scratchpad/
