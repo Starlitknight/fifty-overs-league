@@ -467,7 +467,7 @@
         if (!rows.length) return "<div class='fo-al-sec'><h2>" + title +
           "</h2><p class='fo-al-none'>The record is still being read.</p></div>";
         return "<div class='fo-al-sec'><h2>" + title + "</h2>" +
-          "<table class='fo-al-ldg'><thead><tr><th class='rk'>#</th><th>" +
+          "<table class='fo-al-ldg fo-fits'><thead><tr><th class='rk'>#</th><th>" +
           (isBat ? "Batsman" : "Bowler") + "</th><th>" + (isBat ? "Runs" : "Wkts") +
           "</th><th>Ave</th><th>" + (isBat ? "HS" : "BB") + "</th></tr></thead><tbody>" +
           rows.map(function (x, i) { return ldgRow(x, i, isBat); }).join("") + "</tbody></table>" +

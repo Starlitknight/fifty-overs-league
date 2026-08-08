@@ -344,7 +344,7 @@
       // match ball for ball, and inventing the balls is not on offer
       if (rec && rec.__servedCard) {
         return foMrNone("The commentary has aged out",
-          "The umpire keeps every match's full ball-by-ball for a week after it is played, then lets it go - " +
+          "The umpire keeps every ball of the running season; when a season ends, its commentary goes with it - " +
           "the scorecard, the chart and the points above are his own record and are kept forever.");
       }
       return foMrNone("The commentary has been let go",
@@ -555,7 +555,7 @@
     MR_CARD[k] = p;
     return p;
   }
-  // THE UMPIRE'S OWN COMMENTARY, kept for a week after the match (migration
+  // THE UMPIRE'S OWN COMMENTARY, kept for the whole running season (migration 066; was a week under
   // 045). Where it exists it outranks the replay's - it is the very
   // ball-by-ball the match was settled on - and after the week it is let go,
   // scorecard forever, exactly as the save's own slimming has always worked.
@@ -1077,11 +1077,13 @@
     // a sibling tab hands its own body in and borrows the hero + tab bar, so
     // every view of the match stands in the same room
     if (O && O.__tabBody != null) return hero + (tabBar || "") + O.__tabBody;
+    // THE STORY READS DOWNWARD: what happened (prose), who did it (performers),
+    // the shape of it (charts) - and only then the blow-by-blow. Key moments
+    // close the page as a full-width strip, one step from the ball-by-ball
+    // book they are excerpts of.
     return hero + (tabBar || "") +
       "<div class='fo-ms-g'>" +
       "<div class='fo-ms-card'>" +
-      "<div class='fo-ms-ck'><span>Key moments</span></div>" + moments +
-      "<a class='fo-ms-more' href='" + O.href("comm") + "'>View all ball-by-ball events &rarr;</a>" +
       "<div class='fo-ms-ck'><span>Match summary</span></div><div class='fo-ms-prose'>" + prose + "</div>" +
       (miles ? "<div class='fo-ms-ck'><span>Milestones</span></div>" + miles : "") +
       "</div>" +
@@ -1097,7 +1099,12 @@
       "<div class='fo-ms-ck'><span>Runs per over</span><em class='fo-ms-note'>&#9679; wicket</em></div><div class='fo-ms-pad'>" + foMrManhattan(rec, f) + "</div>" +
       (pships ? "<div class='fo-ms-dark first'><div class='dk'>Best partnerships</div>" + pships + "</div>" : "") +
       nextFix +
-      "</div></div>";
+      "</div>" +
+      "<div class='fo-ms-card fo-ms-wide'>" +
+      "<div class='fo-ms-ck'><span>Key moments</span></div>" + moments +
+      "<a class='fo-ms-more' href='" + O.href("comm") + "'>Read it ball by ball &rarr;</a>" +
+      "</div>" +
+      "</div>";
   }
 
   // ONE PAINTER, TWO SOURCES. A match played on this device and a world
@@ -1551,7 +1558,7 @@
       ".fo-mr-cards{display:grid;gap:12px}",
       ".fo-mr-row2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;align-items:start;margin-bottom:14px}",
       ".fo-mr-cards--row{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:18px}",
-      ".fo-mr-side{padding:14px 16px;border-radius:13px;background:rgba(9,15,28,.7);border:1px solid rgba(150,180,225,.16)}",
+      ".fo-mr-side{padding:14px 16px;border-radius:13px;background:linear-gradient(140deg,#0B1D33,#132E4E);border:1px solid rgba(235,194,113,.18);box-shadow:0 14px 30px rgba(11,29,51,.28)}",
       ".fo-mr-sh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}",
       ".fo-mr-sh b{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:12.5px;color:var(--paper);flex:1;min-width:0}",
       ".fo-mr-sh u{font-family:Inter,sans-serif;font-weight:700;font-size:19px;color:var(--gold);text-decoration:none;font-variant-numeric:tabular-nums}",
@@ -1562,7 +1569,7 @@
       ".fo-mr-rule:before{content:'';height:1px;flex:0 0 40px;background:linear-gradient(90deg,transparent,rgba(230,177,94,.45))}",
       ".fo-mr-rule:after{content:'';height:1px;flex:1;background:linear-gradient(90deg,rgba(230,177,94,.45),transparent)}",
       ".fo-mr-rule span{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.32em;font-size:10.5px;font-weight:600;color:var(--gold);white-space:nowrap}",
-      ".fo-mr-worm{padding:14px 12px;border-radius:13px;background:rgba(9,15,28,.66);border:1px solid rgba(150,180,225,.16)}",
+      ".fo-mr-worm{padding:14px 12px;border-radius:13px;background:linear-gradient(140deg,#0B1D33,#132E4E);border:1px solid rgba(235,194,113,.18)}",
       ".fo-mr-worm svg{width:100%;height:auto;display:block;overflow:visible}",
       ".fo-mr-worm .g{stroke:rgba(150,180,225,.14);stroke-width:1}",
       ".fo-mr-worm .gl{fill:#6f819e;font-family:Oswald,sans-serif;font-size:8.5px;letter-spacing:.08em}",
@@ -1688,6 +1695,7 @@
       "html body #page .fo-mr--sum a.fo-mr-tab.on{color:#C9571F !important;border-bottom-color:#C9571F}",
       // grid + cards
       ".fo-ms-g{display:grid;grid-template-columns:1.05fr 1fr 1.35fr;gap:14px;align-items:start}",
+      ".fo-ms-card.fo-ms-wide{grid-column:1/-1}",
       ".fo-ms-card{background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);overflow:hidden}",
       ".fo-ms-ck{display:flex;justify-content:space-between;align-items:center;padding:12px 15px 9px;font:700 11px Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#14243A;border-bottom:1px solid #eee7d9}",
       ".fo-ms-note{font:500 9px Oswald,sans-serif;letter-spacing:.1em;color:#8E1F13;font-style:normal}",

@@ -148,7 +148,7 @@ async function playRound(pool, host, country, season, round, opts) {
       `INSERT INTO matches(id, country_id, season_no, round, home_slot, away_slot, seed, engine_version, pitch, orders, result, result_canonical, home_name, away_name, living, ratings)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,$12::text,$13,$14,$15::jsonb,$16::jsonb) ON CONFLICT (id) DO NOTHING`,
       [id, country, season.season_no, round, hs, as, seed, ENGINE_VERSION, cond.pitch, JSON.stringify(tieOrders), resultJson, resultJson, home.name, away.name, JSON.stringify(living), rat ? JSON.stringify(rat) : null]);
-    // THE COMMENTARY KEEPS FOR A WEEK. The engine's ball-by-ball is read off
+    // THE COMMENTARY KEEPS FOR THE SEASON (066). The ball-by-ball is read off
     // the match just played and banked beside the card (never inside it - the
     // canonical result does not move). A failure here must not cost the round:
     // the scorecard is the record, the commentary is a luxury.
@@ -713,10 +713,12 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
             AND (season_no < $2 OR (season_no = $2 AND round < $3 - 1))`,
         [country, season.season_no, round]);
     } catch (eSl) { console.error('almanack slimming failed for ' + country + ':', eSl.message); }
-    // the week-old commentary is let go; the RPC refuses to serve past the
-    // week anyway, so a late prune never leaks a stale book
+    // THE COMMENTARY KEEPS FOR THE SEASON (066). The real sweep runs at
+    // rollover, one country at a time; this age prune is only the long-stop
+    // for a country whose rollover never fires - 45 days is over a full
+    // cycle, so no running season can lose a ball to it
     try {
-      await pool.query(`DELETE FROM match_logs WHERE played_at < now() - interval '7 days'`);
+      await pool.query(`DELETE FROM match_logs WHERE played_at < now() - interval '45 days'`);
     } catch (eLp) { /* pre-045 database: no commentary bank yet */ }
   }
   // THE MARKET. Bot clubs shed men on league rounds; the free-agent trickle
@@ -1412,6 +1414,11 @@ export async function rollSeasons(pool, { now = Date.now() } = {}) {
     // a year on every colt, and a senior shirt for anyone who has reached 21
     try { await ageYouth(pool, r.country_id, r.season_no); }
     catch (eA) { console.error('academy rollover failed for ' + r.country_id + ':', eA.message); }
+    // the old season's ball-by-ball goes with the season (066): every log in
+    // this country - league rounds and friendlies both bank under the
+    // country - is swept the day the next season exists
+    try { await pool.query(`DELETE FROM match_logs WHERE country_id = $1`, [r.country_id]); }
+    catch (eLg) { console.error('commentary sweep failed for ' + r.country_id + ':', eLg.message); }
     rolled.push(r.country_id + ':s' + (r.season_no + 1));
   }
   return rolled;

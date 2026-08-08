@@ -149,7 +149,6 @@
       weekBest = (bi ? "<div class='fo-gz-best'><b>" + bi.rr + (bi.o ? "" : "*") + "</b><span>" + E(bi.nm) + " &middot; bat</span></div>" : "") +
         (bs ? "<div class='fo-gz-best'><b>" + bs.w + "/" + bs.cr + "</b><span>" + E(bs.nm) + " &middot; ball</span></div>" : "");
     } catch (e) {}
-    if (!weekBest) weekBest = "<p class='fo-gz-quiet'>Awaiting the first round of the season.</p>";
 
     // notes from the nets: training pops as club gossip
     var netsNotes = "";
@@ -158,7 +157,6 @@
         return "<div class='fo-gz-nln'><b>" + E(l.n) + "</b> is said to be sharper than ever &mdash; the " + E(String(l.why || "nets").toLowerCase()) + " have done their work.</div>";
       }).join("");
     } catch (e) {}
-    if (!netsNotes) netsNotes = "<div class='fo-gz-nln quiet'>The training ground keeps its secrets this week.</div>";
 
     // letters to the editor: seeded lore, flavoured by the club's standing
     var LETTERS = [
@@ -187,19 +185,26 @@
     var adIx = h32("gzad|" + day) % ADS.length;
     var ads = [0, 1, 2].map(function (k) { return "<div class='fo-gz-ad'>" + ADS[(adIx + k * 2) % ADS.length] + "</div>"; }).join("");
 
+    // A REAL PAPER NEVER PRINTS AN EMPTY COLUMN. A section with nothing to
+    // say is not set at all - the reader learns more from its absence than
+    // from a line apologising for it.
     var sec = function (title, body, cls) {
+      if (!body) return "";
       return "<div class='fo-gz-sec" + (cls ? " " + cls : "") + "'><h3>" + title + "</h3>" + body + "</div>";
     };
     page.innerHTML = "<div class='fo-gz'><div class='fo-gz-in'>" +
       "<div class='fo-gz-mast'>" +
-      "<div class='fo-gz-mrule'></div>" +
+      "<div class='fo-gz-ears'><span class='ear'>Season " + sN + "<br>Day " + day + "</span>" +
       "<h1>The Fifty Overs Gazette</h1>" +
-      "<div class='fo-gz-date'><span>" + dateline() + "</span><span>Season " + sN + " &middot; world day " + day + "</span><span>Price: tuppence</span></div>" +
+      "<span class='ear r'>Price<br>tuppence</span></div>" +
       "<div class='fo-gz-mrule'></div>" +
+      "<div class='fo-gz-folio'>" + dateline() + " &nbsp;&bull;&nbsp; No. " + (day | 0) + " &nbsp;&bull;&nbsp; Printed for the members of " + E(me.name) + "</div>" +
+      "<div class='fo-gz-mrule thin'></div>" +
       "</div>" +
       "<div class='fo-gz-lead'>" +
       "<div class='fo-gz-k'>" + lead.kicker + "</div>" +
       "<h2>" + lead.head + "</h2>" +
+      "<div class='fo-gz-by'>By our cricket correspondent</div>" +
       "<div class='fo-gz-body'>" + lead.body + "</div>" + lead.cta +
       "</div>" +
       "<div class='fo-gz-cols'>" +
@@ -236,14 +241,20 @@
       ".fo-gz-in{max-width:980px;margin:0 auto}",
       // masthead
       ".fo-gz-mast{text-align:center;margin:0 0 18px}",
+      ".fo-gz-ears{display:flex;align-items:center;justify-content:space-between;gap:8px}",
+      ".fo-gz-ears h1{flex:1;text-align:center}",
+      ".fo-gz-ears .ear{flex:0 0 auto;font-family:Fraunces,Georgia,serif;font-size:10.5px;line-height:1.45;color:rgba(34,30,22,.6);border:1px solid rgba(34,30,22,.3);padding:5px 9px;text-align:center;min-width:64px}",
+      "@media(max-width:560px){.fo-gz-ears .ear{display:none}}",
+      ".fo-gz-folio{font-family:Fraunces,Georgia,serif;font-size:11.5px;letter-spacing:.04em;color:rgba(34,30,22,.65);padding:5px 0 4px;font-variant-caps:all-small-caps}",
+      ".fo-gz-mrule.thin{border-top:1px solid #221E16;border-bottom:none;height:0;margin:0 0 4px}",
+      ".fo-gz-by{font-family:Fraunces,Georgia,serif;font-style:italic;font-size:12px;color:rgba(34,30,22,.55);margin:0 0 10px}",
       ".fo-gz-mrule{border-top:2.5px solid #221E16;border-bottom:1px solid #221E16;height:4px;margin:6px 0}",
       ".fo-gz-mast h1{font-family:Fraunces,Fraunces,Georgia,serif;font-weight:700;font-size:clamp(30px,6vw,52px);line-height:1.05;margin:10px 0;color:#1B1710;letter-spacing:.01em}",
-      ".fo-gz-date{display:flex;justify-content:space-between;gap:10px;font-family:Fraunces,Georgia,serif;font-style:normal;font-size:11.5px;color:rgba(34,30,22,.65);padding:0 2px;flex-wrap:wrap}",
       // lead
       ".fo-gz-lead{border-bottom:1px solid rgba(34,30,22,.25);padding:6px 0 18px;margin:0 0 18px}",
       ".fo-gz-k{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#8E2F1C;margin:0 0 6px}",
       ".fo-gz-lead h2{font-family:Fraunces,Fraunces,Georgia,serif;font-weight:600;font-size:clamp(24px,4.6vw,38px);line-height:1.08;margin:0 0 12px;color:#1B1710;text-wrap:balance}",
-      ".fo-gz-body{font-family:Fraunces,Georgia,serif;font-size:14.5px;line-height:1.65;color:#2A2519;max-width:66ch}",
+      ".fo-gz-body{font-family:Fraunces,Georgia,serif;font-size:14.5px;line-height:1.65;color:#2A2519;max-width:66ch;text-align:justify;hyphens:auto;-webkit-hyphens:auto}",
       ".fo-gz-body p{margin:0 0 10px}",
       ".fo-gz-body b{color:#1B1710}",
       ".fo-gz-drop{float:left;font-family:Fraunces,Fraunces,Georgia,serif;font-size:46px;line-height:.82;padding:4px 7px 0 0;color:#8E2F1C;font-weight:600}",
@@ -254,10 +265,11 @@
       "@media(max-width:760px){.fo-gz-cols{grid-template-columns:minmax(0,1fr)}}",
       ".fo-gz-sec{border-bottom:1px solid rgba(34,30,22,.18);padding:0 0 15px;margin:0 0 15px;break-inside:avoid}",
       ".fo-gz-sec h3{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#1B1710;border-bottom:1.5px solid #221E16;padding:0 0 5px;margin:0 0 10px}",
-      ".fo-gz-wln{font-family:Fraunces,Georgia,serif;font-size:12.5px;line-height:1.5;color:#2A2519;padding:5px 0;border-bottom:1px dotted rgba(34,30,22,.2)}",
+      ".fo-gz-wln{font-family:Fraunces,Georgia,serif;font-size:12px;line-height:1.5;color:#2A2519;padding:5px 0;border-bottom:1px dotted rgba(34,30,22,.2)}",
+      ".fo-gz-wln::first-line{font-variant-caps:normal}",
       ".fo-gz-wln:last-child{border-bottom:none}",
       ".fo-gz-wln.quiet,.fo-gz-nln.quiet,.fo-gz-quiet{font-style:normal;color:rgba(34,30,22,.5)}",
-      ".fo-gz-sec p{font-family:Fraunces,Georgia,serif;font-size:13px;line-height:1.6;color:#2A2519;margin:0 0 9px}",
+      ".fo-gz-sec p{font-family:Fraunces,Georgia,serif;font-size:13px;line-height:1.6;color:#2A2519;margin:0 0 9px;text-align:justify;hyphens:auto;-webkit-hyphens:auto}",
       ".fo-gz-mini{margin-top:4px}",
       ".fo-gz-mrow{display:flex;align-items:baseline;gap:8px;padding:4px 0;border-bottom:1px dotted rgba(34,30,22,.2);font-size:12.5px}",
       ".fo-gz-mrow i{font-style:normal;color:rgba(34,30,22,.45);width:14px}",

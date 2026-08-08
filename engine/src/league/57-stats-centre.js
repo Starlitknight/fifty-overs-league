@@ -279,17 +279,22 @@
       "html body #page .fo-stc-sech{display:flex;align-items:center;gap:12px;font:600 11px/1 Oswald,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#0E2246;margin:0 2px 10px}",
       "html body #page .fo-stc-sech:after{content:'';flex:1;border-top:1px solid rgba(20,28,40,.14)}",
       "html body #page .fo-stc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(268px,1fr));gap:11px}",
-      "html body #page .fo-stc-item{display:block;background:#FFFEFC;border:1px solid rgba(20,28,40,.11);border-radius:13px;padding:14px 15px 13px;text-decoration:none !important;box-shadow:0 5px 16px rgba(30,38,52,.05);transition:transform .13s ease,box-shadow .13s ease,border-color .13s ease}",
-      "html body #page .fo-stc-item:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(30,38,52,.1);border-color:rgba(14,34,70,.3)}",
-      "html body #page .fo-stc-item b{display:block;font:600 14px/1.25 Inter,sans-serif;color:#0E2246 !important;margin-bottom:5px}",
+      "html body #page .fo-stc-item{display:block;background:#FFFEFC;border:1px solid rgba(20,28,40,.11);border-left:3px solid rgba(180,74,34,.55);border-radius:4px 13px 13px 4px;padding:14px 15px 13px;text-decoration:none !important;box-shadow:0 5px 16px rgba(30,38,52,.05);transition:transform .13s ease,box-shadow .13s ease,border-color .13s ease}",
+      "html body #page .fo-stc-item:hover{transform:translateY(-2px);box-shadow:0 12px 26px rgba(30,38,52,.1);border-color:rgba(14,34,70,.3);border-left-color:#B44A22}",
+      "html body #page .fo-stc-item b{display:block;font:600 16px/1.2 Fraunces,Georgia,serif;letter-spacing:-.01em;color:#0E2246 !important;margin-bottom:5px}",
       "html body #page .fo-stc-item span{display:block;font:400 11.5px/1.5 Inter,sans-serif;color:rgba(20,28,40,.6)}",
-      "html body #page .fo-stc-item i{display:block;margin-top:8px;font:700 9px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#B44A22 !important;font-style:normal}",
+      "html body #page .fo-stc-item i{display:block;margin-top:8px;font:700 9px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#B44A22 !important;font-style:normal}html body #page .fo-stc-item i:after{content:' \u203A'}",
       // the season's leaders, on the index
-      "html body #page .fo-stc-lead{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:10px}",
-      "html body #page .fo-stc-lead div{background:#0E2246;border-radius:13px;padding:13px 15px 12px;color:#FFFDF7}",
-      "html body #page .fo-stc-lead i{display:block;font:600 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#EBC271;font-style:normal;margin-bottom:7px}",
-      "html body #page .fo-stc-lead b{display:block;font:600 13.5px/1.3 Inter,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
-      "html body #page .fo-stc-lead em{display:block;margin-top:3px;font:700 17px/1 Inter,sans-serif;font-style:normal;font-variant-numeric:tabular-nums;color:#FFFEFC}",
+      // THE HONOURS BOARD - one board, not a stack of slabs. The winners share
+      // a single navy plate the way they share a season; a hairline divides
+      // them, the name is the thing that is large, and the how is a whisper.
+      "html body #page .fo-stc-lead{display:grid;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));gap:0;background:#0E2246;border-radius:16px;overflow:hidden;box-shadow:0 14px 34px rgba(11,29,51,.24)}",
+      "html body #page .fo-stc-lead div{background:transparent;border-left:1px solid rgba(244,239,228,.12);padding:16px 18px 15px;color:#FFFDF7;min-width:0}",
+      "html body #page .fo-stc-lead div:first-child{border-left:0}",
+      "html body #page .fo-stc-lead i{display:block;font:600 9px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#EBC271;font-style:normal;margin-bottom:8px}",
+      "html body #page .fo-stc-lead b{display:block;font:600 19px/1.15 Fraunces,Georgia,serif;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      "html body #page .fo-stc-lead em{display:block;margin-top:5px;font:400 11.5px/1.5 Inter,sans-serif;font-style:normal;font-variant-numeric:tabular-nums;color:rgba(244,239,228,.62)}",
+      "@media(max-width:560px){html body #page .fo-stc-lead{grid-template-columns:1fr}html body #page .fo-stc-lead div{border-left:0;border-top:1px solid rgba(244,239,228,.12);padding:13px 18px 12px}html body #page .fo-stc-lead div:first-child{border-top:0}}",
       // ---- the table view ---------------------------------------------------
       "html body #page .fo-stc-back{display:inline-flex;align-items:center;min-height:30px;margin:16px 0 0;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.4) !important;text-decoration:none !important}",
       "html body #page .fo-stc-back:hover{color:#B44A22 !important}",
@@ -324,12 +329,27 @@
       "html body #page .fo-stc-foot a{flex:0 1 auto;font:600 12px/1.4 Inter,system-ui,sans-serif;",
       "color:#B44A22 !important;text-decoration:none}",
       // ---- the record: the year picker, the champions band, the old table ----
-      "html body #page .fo-stc-hnav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}",
-      "html body #page .fo-stc-hnav label{display:flex;align-items:center;gap:6px;font:700 9px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(20,28,40,.5)}",
-      "html body #page .fo-stc-hnav select{min-height:38px;padding:0 10px;border-radius:9px;border:1px solid rgba(20,28,40,.2);background:#FFFEFC;font:600 14px/1 Inter,system-ui,sans-serif;color:#141C28;font-variant-numeric:tabular-nums}",
-      "html body #page .fo-stc-hstep{min-height:38px;display:inline-flex;align-items:center;padding:0 12px;border-radius:9px;border:1px solid rgba(20,28,40,.16);text-decoration:none;font:700 11px/1 Oswald,sans-serif;letter-spacing:.1em;color:#B44A22;font-variant-numeric:tabular-nums}",
-      "html body #page .fo-stc-hstep.off{opacity:.32;color:rgba(20,28,40,.5)}",
+      // THE SEASON MASTHEAD - a programme cover, not a settings panel
+      "html body #page .fo-stc-mast{display:flex;align-items:stretch;gap:6px;background:linear-gradient(132deg,#0B1D33,#122C4B 55%,#1B3A5F);border-radius:18px;padding:20px 10px 17px;margin-bottom:14px;box-shadow:0 18px 40px rgba(11,29,51,.3)}",
+      "html body #page .fo-stc-mast .mid{flex:1;min-width:0;text-align:center;display:flex;flex-direction:column;align-items:center;gap:4px}",
+      "html body #page .fo-stc-mast .mid i{font:600 10px/1 Oswald,sans-serif;letter-spacing:.26em;text-transform:uppercase;color:#EBC271;font-style:normal}",
+      "html body #page .fo-stc-mast .mid b{font:600 clamp(30px,7.4vw,40px)/1.02 Oswald,sans-serif;letter-spacing:.03em;text-transform:uppercase;color:#FFFEFC;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-stc-mast .mid .of{font:400 11px/1.5 Inter,system-ui,sans-serif;color:rgba(244,239,228,.62)}",
+      // the pickers are part of the board: ghost controls with a gold rule
+      "html body #page .fo-stc-mast .pick{display:flex;gap:16px;margin-top:8px;max-width:100%}",
+      "html body #page .fo-stc-mast .pick label{position:relative;display:inline-flex;align-items:center;min-width:0}",
+      "html body #page .fo-stc-mast .pick label:after{content:'\\25BE';position:absolute;right:2px;pointer-events:none;font-size:9px;color:#EBC271}",
+      "html body #page .fo-stc-mast .pick select{appearance:none!important;-webkit-appearance:none!important;min-height:34px!important;max-width:44vw;padding:0 18px 0 4px!important;border:0!important;border-bottom:1px solid rgba(235,194,113,.5)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;font:600 12.5px/1 Inter,system-ui,sans-serif!important;color:#F4EFE4!important;font-variant-numeric:tabular-nums;cursor:pointer;text-overflow:ellipsis}",
+      "html body #page .fo-stc-mast .pick select:focus{outline:none;border-bottom-color:#EBC271}",
+      "html body #page .fo-stc-mast .pick select option{color:#141C28;background:#FFFEFC}",
+      "html body #page .fo-stc-hstep{flex:0 0 auto;align-self:center;display:inline-flex;flex-direction:column;align-items:center;gap:3px;text-decoration:none;padding:4px 6px}",
+      "html body #page .fo-stc-hstep u{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border:1.5px solid rgba(235,194,113,.45);border-radius:999px;text-decoration:none;font:400 19px/1 Inter,sans-serif;color:#EBC271;transition:border-color .14s,color .14s}",
+      "html body #page .fo-stc-hstep:hover u{border-color:#EBC271;color:#FFFEFC}",
+      "html body #page .fo-stc-hstep s{text-decoration:none;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.12em;color:rgba(244,239,228,.55);font-variant-numeric:tabular-nums}",
+      "html body #page .fo-stc-hstep.off{opacity:.22;pointer-events:none}",
       "html body #page .fo-stc-hhead h2{margin:2px 0 2px;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:24px;color:#141C28}",
+      "html body #page .fo-stc-ck{font:600 10px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#B44A22;margin:14px 0 6px}",
+      "html body #page .fo-stc-hhead h2 s{text-decoration:none;font:600 10px/1 Oswald,sans-serif;letter-spacing:.15em;text-transform:uppercase;color:rgba(20,28,40,.45);margin-left:12px;vertical-align:3px;white-space:nowrap;font-variant-numeric:tabular-nums}",
       "html body #page .fo-stc-htb tr.ch td{background:rgba(47,107,69,.07)}",
       "html body #page .fo-stc-htb tr.ch em{font-style:normal;margin-left:6px;font:700 8px/1 Oswald,sans-serif;letter-spacing:.14em;color:#2F6B45}",
       // THE RECORD KEEPS ITS OWN TABLE. It borrowed the book's chrome at first
@@ -365,10 +385,24 @@
       "html body #page .fo-stc-ldg td.who b{display:block;font:600 13.5px/1.2 Inter,system-ui,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       "html body #page .fo-stc-ldg td.who em{font-style:normal;font:400 10.5px/1.4 Inter,system-ui,sans-serif;color:rgba(20,28,40,.42);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}",
       "html body #page .fo-stc-ldg td.who b .bs{font-style:normal;color:#C9571F;font-size:10px;margin-right:4px;vertical-align:1px}",
-      "html body #page .fo-stc-ldg td.big{font-weight:700;color:#141C28;width:56px}",
+      "html body #page .fo-stc-ldg th:nth-child(3),html body #page .fo-stc-ldg td.big{width:56px}html body #page .fo-stc-ldg td.big{font-weight:700;color:#141C28}",
       "html body #page .fo-stc-ldg th:nth-child(4),html body #page .fo-stc-ldg td:nth-child(4){width:42px}",
       "html body #page .fo-stc-ldg th:nth-child(5),html body #page .fo-stc-ldg td:nth-child(5){width:46px}",
       "html body #page .fo-stc-ldg th:nth-child(6),html body #page .fo-stc-ldg td:nth-child(6){width:30px}",
+      // A NAME IS THE POINT OF THE LIST. On a phone the figures were taking
+      // 174px of a 361px table and the men were coming out as "Sir..." - so
+      // the numerals give a little back and the name column keeps whole names.
+      "@media(max-width:430px){" +
+        "html body #page .fo-stc-ldg .rk{width:17px;font-size:10.5px}" +
+        "html body #page .fo-stc-ldg td.who .wr{gap:6px}" +
+        "html body #page .fo-stc-ldg td.who img{width:19px;height:13px}" +
+        "html body #page .fo-stc-ldg td.who b{font-size:12.5px}" +
+        "html body #page .fo-stc-ldg td{font-size:12px;padding:9px 2px}" +
+        "html body #page .fo-stc-ldg th:nth-child(3),html body #page .fo-stc-ldg td.big{width:47px}" +
+        "html body #page .fo-stc-ldg th:nth-child(4),html body #page .fo-stc-ldg td:nth-child(4){width:36px}" +
+        "html body #page .fo-stc-ldg th:nth-child(5),html body #page .fo-stc-ldg td:nth-child(5){width:39px}" +
+        "html body #page .fo-stc-ldg th:nth-child(6),html body #page .fo-stc-ldg td:nth-child(6){width:25px}" +
+      "}",
       "html body #page .fo-stc-htb.bk{table-layout:auto;min-width:520px}",
       "html body #page .fo-stc-htb.bk td:nth-child(2) u{display:block;text-decoration:none;font:400 10.5px/1.35 Inter,system-ui,sans-serif;color:rgba(20,28,40,.5)}",
       "html body #page .fo-stc-htb.bk th.r,html body #page .fo-stc-htb.bk td.r{width:auto;padding-left:9px}",
@@ -644,10 +678,13 @@
     var prevY = null, nextY = null;
     for (y = year - 1; y >= span.from; y--) if (P.histYear(natId, y)) { prevY = y; break; }
     for (y = year + 1; y <= span.to; y++) if (P.histYear(natId, y)) { nextY = y; break; }
+    // a chevron disc either side of the number; the season it walks to rides
+    // underneath so the tap still says where it goes
     var step = function (yy, pre, post) {
-      var lab = yy == null ? "&mdash;" : pre + "S" + sN(yy) + post;
-      return yy == null ? "<span class='fo-stc-hstep off'>" + lab + "</span>"
-        : "<a class='fo-stc-hstep' href='#/stats?v=hist&n=" + encodeURIComponent(natId) + "&y=" + yy + "'>" + lab + "</a>";
+      var arrow = pre || post;
+      if (yy == null) return "<span class='fo-stc-hstep off'><u>" + arrow + "</u></span>";
+      return "<a class='fo-stc-hstep' href='#/stats?v=hist&n=" + encodeURIComponent(natId) + "&y=" + yy +
+        "' aria-label='Season " + sN(yy) + "'><u>" + arrow + "</u><s>S" + sN(yy) + "</s></a>";
     };
 
     var rows = h.table.map(function (r, i) {
@@ -671,20 +708,30 @@
 
     var champ = nmOf(h.champion);
     var cupTxt = h.cup == null ? "not played" : nmOf(h.cup);
+    /* THE MASTHEAD IS THE SEASON. The first draft opened with a row of bare
+     * form controls - a grey pill, two native selects - which is a settings
+     * panel, not a record book. The season now stands like a programme cover:
+     * chevrons either side of the number, and the pickers dressed as part of
+     * the board rather than bolted above it. */
     return "<div class='fo-stc-sec fo-stc-hhead'>" +
-      "<div class='fo-stc-hnav'>" + step(prevY, "&lsaquo; ", "") +
-      "<label>Season<select id='fo-stc-hy'>" + opts + "</select></label>" +
-      "<label>League<select id='fo-stc-hn'>" + natOpts + "</select></label>" +
-      step(nextY, "", " &rsaquo;") + "</div>" +
-      "<h2>" + E(natName(natId)) + " &middot; Season " + sN(year) + "</h2>" +
-      "<p class='fo-stc-dim'>The " + E(natName(natId)) + " league's " + ord(year - span.from + 1) +
-      " season of " + span.seasons + " &middot; first played in Season " + sN(span.from) + ".</p>" +
+      "<div class='fo-stc-mast'>" +
+      step(prevY, "&lsaquo;", "") +
+      "<div class='mid'>" +
+      "<i>" + E(natName(natId)) + " &middot; the record</i>" +
+      "<b>Season " + sN(year) + "</b>" +
+      "<span class='of'>" + ord(year - span.from + 1) + " of " + span.seasons +
+      " &middot; first played in Season " + sN(span.from) + "</span>" +
+      "<span class='pick'>" +
+      "<label><select id='fo-stc-hy' aria-label='Season'>" + opts + "</select></label>" +
+      "<label><select id='fo-stc-hn' aria-label='League'>" + natOpts + "</select></label>" +
+      "</span></div>" +
+      step(nextY, "", "&rsaquo;") + "</div>" +
       "<div class='fo-stc-lead'>" +
-      "<div><i>Champions</i><b><a href='" + teamHref(h.champion) + "'>" + E(champ) + "</a></b><em>" + h.table[0].pts + " points from " + h.rounds + "</em></div>" +
-      "<div><i>National Cup</i><b>" + (h.cup == null ? "&mdash;" : "<a href='" + teamHref(h.cup) + "'>" + E(cupTxt) + "</a>") + "</b><em>" + (h.cup == null ? "not played that year" : "the knockout") + "</em></div>" +
+      "<div><i>&#127942; Champions</i><b><a href='" + teamHref(h.champion) + "'>" + E(champ) + "</a></b><em>" + h.table[0].pts + " points from " + h.rounds + " rounds</em></div>" +
+      "<div><i>National Cup</i><b>" + (h.cup == null ? "&mdash;" : "<a href='" + teamHref(h.cup) + "'>" + E(cupTxt) + "</a>") + "</b><em>" + (h.cup == null ? "not played that year" : "won the knockout") + "</em></div>" +
       world.join("") + "</div></div>" +
       "<div class='fo-stc-sec'><div class='fo-stc-sech'>The table</div>" +
-      "<div class='fo-stc-scroll'><table class='fo-stc-htb'>" +
+      "<div class='fo-stc-scroll'><table class='fo-stc-htb fo-fits'>" +
       "<thead><tr><th class='r'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th>" +
       "<th class='r'>T</th><th class='r'>Pts</th><th class='r'>NRR</th></tr></thead><tbody>" + rows +
       "</tbody></table></div></div>" +
@@ -792,11 +839,12 @@
     return "<div class='fo-stc-sec fo-stc-hhead'>" +
       "<div class='fo-seg'>" + seg("b", "bat", "Batting") + seg("b", "bowl", "Bowling") + "</div>" +
       "<div class='fo-seg'>" + seg("s", "league", E(natName(natId))) + seg("s", "world", "The world") + "</div>" +
-      "<h2>All-time " + (bk === "bat" ? "batting" : "bowling") + "</h2>" +
-      "<p class='fo-stc-dim'>Every career in " + (scope === "world" ? "the world" : "the " + E(natName(natId)) + " league") +
-      " with " + (bk === "bat" ? "30 innings" : "30 wickets") + " behind it &mdash; " + list.length.toLocaleString() +
-      " of them. Each total is the sum of the seasons you can read one by one in the record.</p></div>" +
-      "<div class='fo-stc-sec'><table class='fo-stc-ldg'><thead>" + head +
+      "<div class='fo-stc-ck'>" + (scope === "world" ? "The whole world" : E(natName(natId))) + " &middot; the record</div>" +
+      "<h2>All-time " + (bk === "bat" ? "batting" : "bowling") +
+      "<s>" + list.length.toLocaleString() + " careers</s></h2>" +
+      "<p class='fo-stc-dim'>Every career with " + (bk === "bat" ? "30 innings" : "30 wickets") +
+      " behind it. Each total is the sum of the seasons you can read one by one in the record.</p></div>" +
+      "<div class='fo-stc-sec'><table class='fo-stc-ldg fo-fits'><thead>" + head +
       "</thead><tbody>" + body + "</tbody></table></div>" +
       "<div class='fo-stc-foot'><a href='#/stats'>&lsaquo; The Stats Centre</a>" +
       "<a href='#/stats?v=hist&n=" + encodeURIComponent(natId) + "'>Walk the seasons &rsaquo;</a></div>";

@@ -1528,6 +1528,10 @@
       if (docW > 760) return;
       document.querySelectorAll("#page table").forEach(function (tb) {
         if (tb.closest(".fo-scrollx")) return;
+        // a table that manages its own width says so and is left alone - the
+        // wrap decision races the page's stylesheet, and one early measurement
+        // used to trap a fixed-layout table behind min-width:530 for good
+        if (tb.classList.contains("fo-fits")) return;
         // A page that already manages its own sideways scroll must not be
         // wrapped again: the second scroll box becomes the sticky positioning
         // context, which strands that page's pinned header and pinned first

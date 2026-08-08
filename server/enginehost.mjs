@@ -224,7 +224,7 @@ globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson, wea
 // THE COMMENTARY OF THE MATCH JUST PLAYED. __svcRun leaves the finished match
 // in M; this reads its ball-by-ball out without re-running a single delivery
 // and without touching the canonical result - the log is banked BESIDE the
-// card (match_logs, kept a week), never inside it, so nothing about the
+// card (match_logs, kept for the season - 066), never inside it, so nothing about the
 // canonical shape or the golden-master replays moves an inch.
 // THE THRESHOLDS, read off the shipped engine rather than copied beside it.
 // The umpire folds talent progress out of the record and has to know when a
