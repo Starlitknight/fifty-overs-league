@@ -227,6 +227,44 @@
     document.head.appendChild(s);
   }
 
+  // the solo room's own clothes, cut from the same cloth as the levers above
+  function foSoloCss() {
+    if (document.getElementById("fo-so-css")) return;
+    var s = document.createElement("style"); s.id = "fo-so-css";
+    s.textContent = [
+      // `.fo-me-lever b` is a display:block headline, which is right for the
+      // one big figure and wrong for a bold word inside a sentence - it threw
+      // "content" and "$9.00" onto lines of their own mid-clause.
+      "html body #page .fo-me-lever em b,html body #page .fo-so-row b b{display:inline;margin:0;font:inherit;font-weight:700;color:#2A2418;letter-spacing:0}",
+      "html body #page .fo-so-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(268px,1fr));gap:12px;margin-top:14px}",
+      "html body #page .fo-so-tick{grid-column:1/-1}",
+      "html body #page .fo-so-row{display:flex;align-items:baseline;gap:8px;font:500 12px/1.5 Inter,sans-serif;color:#4A4235;border-top:1px solid #EDE4D4;padding:6px 0 0;margin-top:6px}",
+      "html body #page .fo-so-row span{flex:1;min-width:0}",
+      "html body #page .fo-so-row b{font:700 12.5px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums;color:#2A2418}",
+      "html body #page .fo-so-row em{font-style:normal;font:600 10px/1 Oswald,sans-serif;letter-spacing:.08em;color:#9A8E77;min-width:52px;text-align:right}",
+      "html body #page .fo-so-note{margin-top:8px !important;font-size:11px !important;color:#9A8E77 !important}",
+      // the ladder: every price, and the gate it returns
+      "html body #page .fo-so-bars{display:flex;align-items:flex-end;gap:3px;height:86px;margin:12px 0 0}",
+      // these bars are BUTTONS INSIDE A LEVER, and the lever's own button rule
+      // paints every one of those with a top border, a full-width block and
+      // ten pixels of padding - it was drawn for the single call-to-action at
+      // the foot of a card, not for seventeen of them in a row. Beaten here
+      // rather than by making the bars divs, because a price you pick is a
+      // control and should answer the keyboard like one.
+      "html body #page .fo-me-lever .fo-so-bar,html body #page .fo-so-bar{flex:1;min-width:0;height:100%;display:flex;flex-direction:column;justify-content:flex-end;align-items:center;gap:4px;cursor:pointer;-webkit-appearance:none;" +
+        "background:none !important;border:0 !important;border-top:0 !important;border-radius:0 !important;padding:0 !important;margin-top:0 !important;width:auto;box-shadow:none !important}",
+      "html body #page .fo-me-lever .fo-so-bar:focus-visible{outline:2px solid #C9571F;outline-offset:2px}",
+      "html body #page .fo-me-lever .fo-so-bar u{display:block;width:100%;border-radius:3px 3px 0 0;background:#D8CDB8;text-decoration:none;transition:background .12s ease}",
+      "html body #page .fo-me-lever .fo-so-bar i{font:600 9px/1 Oswald,sans-serif;font-style:normal;color:#9A8E77;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-me-lever .fo-so-bar:hover u{background:#B9AB90}",
+      "html body #page .fo-me-lever .fo-so-bar.peak u{background:#3F7A4F}",
+      "html body #page .fo-me-lever .fo-so-bar.on u{background:#C9571F}",
+      "html body #page .fo-me-lever .fo-so-bar.on i{color:#B44A22;font-weight:700}",
+      "html body #page .fo-so-legend{display:flex;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-top:9px;font:600 10px/1.4 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#9A8E77}",
+      "html body #page .fo-so-legend .pk{color:#3F7A4F}"
+    ].join("\n");
+    document.head.appendChild(s);
+  }
   function shell(body) {
     return "<div class='fo-fin'>" + body + "</div>";
   }
@@ -735,6 +773,101 @@
   // ONE LOADER, TWO DOORS. Finances and the ground read the same world status
   // and the same figures; only the room differs, so the fetching, the signed-out
   // copy and the error path are written once and told which room they are for.
+  /* ---- THE SOLO BOOKS, AND THE ONE DECISION IN THEM ------------------------
+     The offline career keeps its money on the device: a bank, a crowd, a wage
+     bill, a ground and - new - a ticket price. This renders those in the same
+     clothes as the served room rather than a second design, because they are
+     the same job.
+
+     THE TICKET IS THE POINT. Every other figure here is the consequence of
+     cricket already played; the price is the one number a manager sets with
+     his own hand, and the crowd argues back. The stepper shows what each price
+     does to the gate BEFORE he commits to it, and says plainly where the money
+     peaks and what chasing that peak costs him in supporters - because a lever
+     whose effect you cannot see is not a decision, it is a guess. */
+  function renderSolo(page, t, room) {
+    foSoloCss();
+    var mood = (t.mood == null ? 3 : t.mood | 0);
+    var MOODW = ["furious", "angry", "grumpy", "content", "pleased", "delighted", "euphoric"];
+    var price = foTicketOf(t), fair = foFairPrice(t), seats = +t.seats || 10000;
+    var crowd = foGateCrowd(t), gate = foGateOf(t);
+    var sponsor = (typeof foSponsorOf === "function") ? foSponsorOf(t) : 25000;
+    var wages = (t.players || []).reduce(function (s, p) { return s + (+p.wage || 0); }, 0);
+    var ground = foGroundCost(t), acad = foAcadCost(t.acadY) + foAcadCost(t.acadS);
+    var bank = 0; try { bank = (App.fin && App.fin.bank) || 0; } catch (eB) {}
+    var HOME = 9, ROUNDS = 18;
+    var inSzn = gate * HOME + sponsor * ROUNDS, outSzn = (wages + ground + acad) * ROUNDS;
+
+    // where the money peaks, and what it costs to sit there
+    var best = price, bestG = 0;
+    for (var p = 4; p <= 30; p++) { var g = foGateOf(t, p); if (g > bestG) { bestG = g; best = p; } }
+    var drift = foTicketDrift(t), bleed = Math.round((1 - Math.pow(drift, HOME)) * 100);
+
+    var pct = function (a, b) { return b > 0 ? Math.round(a / b * 100) : 0; };
+    var row = function (k, v, note) {
+      return "<div class='fo-so-row'><span>" + k + "</span><b>" + v + "</b>" +
+        (note ? "<em>" + note + "</em>" : "") + "</div>";
+    };
+
+    // the ticket ladder: every price this club could charge, and the gate it
+    // returns, so the shape of the trade is visible rather than described
+    var bars = "";
+    for (var q = 4; q <= 20; q++) {
+      var gq = foGateOf(t, q), h = bestG > 0 ? Math.round(gq / bestG * 100) : 0;
+      bars += "<button type='button' class='fo-so-bar" + (q === price ? " on" : "") +
+        (q === best ? " peak" : "") + "' data-fo-tick='" + q + "' " +
+        "title='$" + q + " &middot; " + foGateCrowd(t, q).toLocaleString() + " in, " + M(gq) + "'>" +
+        "<u style='height:" + Math.max(2, h) + "%'></u><i>" + q + "</i></button>";
+    }
+
+    var ticketCard =
+      "<div class='fo-me-lever fo-so-tick'><div class='top'><div class='ic'>" + foMeIcon("ground") + "</div><span>The ticket</span></div>" +
+      "<b>$" + price + " a head</b>" +
+      "<em>Your crowd is <b>" + MOODW[mood] + "</b> and reckons a ticket is worth about <b>$" + fair.toFixed(2) + "</b>. " +
+      (price > fair
+        ? "You are asking " + Math.round((price / fair - 1) * 100) + "% over that, so " +
+          (bleed > 0 ? "about <b>" + bleed + "% of your following drifts away across a season</b>." : "some stay home.")
+        : price < fair ? "Under the odds &mdash; the ground fills, the till does not."
+        : "Bang on what they will pay.") + "</em>" +
+      "<div class='fo-so-bars'>" + bars + "</div>" +
+      "<div class='fo-so-legend'><span>" + crowd.toLocaleString() + " of " + seats.toLocaleString() + " seats &middot; " + M(gate) + " a match</span>" +
+      "<span class='pk'>Most money at $" + best + "</span></div></div>";
+
+    var body =
+      "<div class='fo-so-grid'>" +
+      "<div class='fo-me-lever'><div class='top'><div class='ic'>" + foMeIcon("bank") + "</div><span>The bank</span></div>" +
+      "<b>" + M(bank) + "</b><em>Season projection: " + M(inSzn) + " in, " + M(outSzn) + " out &mdash; " +
+      (inSzn >= outSzn ? "a surplus of <b>" + M(inSzn - outSzn) + "</b>." : "<b>short by " + M(outSzn - inSzn) + "</b>.") +
+      "</em></div>" +
+      ticketCard +
+      "<div class='fo-me-lever'><div class='top'><div class='ic'>" + foMeIcon("crowd") + "</div><span>Money in, a season</span></div>" +
+      "<b>" + M(inSzn) + "</b><em></em>" +
+      row("Gate &middot; " + HOME + " home matches", M(gate * HOME), pct(gate * HOME, inSzn) + "%") +
+      row("Sponsor &middot; " + ROUNDS + " rounds", M(sponsor * ROUNDS), pct(sponsor * ROUNDS, inSzn) + "%") +
+      "<em class='fo-so-note'>The sponsor follows how you are doing too &mdash; " + M(sponsor) + " a round while they are " + MOODW[mood] + ".</em></div>" +
+      "<div class='fo-me-lever'><div class='top'><div class='ic'>" + foMeIcon("wages") + "</div><span>Money out, a season</span></div>" +
+      "<b>" + M(outSzn) + "</b><em></em>" +
+      row("Player wages", M(wages * ROUNDS), pct(wages * ROUNDS, inSzn) + "% of income") +
+      row("The ground", M(ground * ROUNDS), pct(ground * ROUNDS, inSzn) + "%") +
+      row("Academies", M(acad * ROUNDS), pct(acad * ROUNDS, inSzn) + "%") +
+      "</div></div>";
+
+    page.innerHTML = shell(head(t.name || "Your club",
+      room === "ground" ? "The ground, the crowd and what they pay to get in."
+                        : "What the club takes, what it spends, and the one price you set yourself.") + body);
+    soloWire(page, t);
+  }
+  // one delegated handler: pick a price, keep it, repaint
+  function soloWire(page, t) {
+    page.querySelectorAll("[data-fo-tick]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        t.ticket = +b.getAttribute("data-fo-tick");
+        try { if (typeof saveGame === "function") saveGame(false); } catch (e) {}
+        renderSolo(page, t, (location.hash || "").indexOf("#/ground") === 0 ? "ground" : "finance");
+      });
+    });
+  }
+
   function financeRoom(room) {
     var page = document.getElementById("page"); if (!page) return;
     var TITLE = room === "ground" ? "The ground" : "Finances";
@@ -744,6 +877,14 @@
     // open, not for every return to a page whose figures have not moved
     if (FST.st && Date.now() - FST.at < 30000) { render(page, FST.st, room); return; }
     page.innerHTML = shell(head(TITLE, "Walking down to the treasurer&rsquo;s office&hellip;"));
+    // ---- THE OFFLINE CAREER HAS BOOKS TOO --------------------------------
+    // This room only ever spoke to the served world, so a manager playing the
+    // solo career - the front door of this game, no account required - opened
+    // Finances and was told to sign in. His club had a bank, a crowd, a wage
+    // bill and a ground, and not one of them was visible anywhere; the room
+    // that used to show them was retired. So the same door now opens on
+    // whichever books the device actually keeps.
+    if (soloBooks()) return;
     if (!jwt()) {
       page.innerHTML = shell(head(TITLE,
         (window.__foAuthPending
@@ -751,6 +892,25 @@
           : "The club&rsquo;s money is the club&rsquo;s, and the world keeps it. Sign in to the account that holds your club and the ledger is here." +
             "<br><button type='button' class='fo-door-btn' data-fo-door>Sign in</button>")));
       return;
+    }
+    function soloBooks() {
+      try {
+        // a signed-in manager whose token has not landed yet is NOT a solo
+        // player - showing him local books for a second and then swapping them
+        // for the world's would be two different answers to the same question.
+        // THE CLAIM HAS TO BE READ OFF THE DEVICE, not off the window: the
+        // global is only set once world_my_status answers, so on a cold open -
+        // or a bad connection - a manager who holds a club in the world would
+        // have been handed somebody else's offline books.
+        var claim = window.__foWorldClaim;
+        if (!claim) { try { claim = JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eC) {} }
+        if (jwt() || claim || window.__foAuthPending) return false;
+        if (typeof userTeam !== "function" || typeof foGateOf !== "function") return false;
+        var t = userTeam(); if (!t || !t.players) return false;
+        try { if (typeof econInit === "function") econInit(); } catch (eE) {}
+        renderSolo(page, t, room);
+        return true;
+      } catch (e) { return false; }
     }
     rpc("world_my_status").then(function (st) {
       if (!st || st.signedIn === false) {

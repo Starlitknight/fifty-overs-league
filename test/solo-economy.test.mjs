@@ -31,23 +31,28 @@ const run = (src) => vm.runInContext(src, ctx);
 // opening the books is what derives the wages, exactly as it does in a browser
 run('econInit()');
 
-// the solo economy's own figures, from 03-onboarding's FO_FIN and the engine
-// it documents: 18 rounds, 9 of them at home, a $9 ticket, a $25,000 sponsor
-const ROUNDS = 18, HOME = 9, TICKET = 9, SPONSOR = 25000;
+// a solo season: eighteen rounds, nine of them at home
+const ROUNDS = 18, HOME = 9;
 
-// every club's books for one season, settled from the shipped rules
+// EVERY FIGURE HERE IS THE GAME'S OWN. This used to carry its own copy of the
+// income rule - a $9 ticket and a $25,000 sponsor, written into the test - and
+// when the ticket became a decision and the sponsor started following the
+// club's standing, the copy went on passing while describing an economy that
+// no longer existed. A guard that models the thing it is guarding is not a
+// guard. It asks foGateOf, foSponsorOf, foGroundCost and foAcadCost.
 function books() {
   const raw = run(`JSON.stringify(GD.teams.map(function(t){return {
     name:t.name, seats:t.seats, supporters:t.supporters, mood:t.mood,
+    ticket:foTicketOf(t), fair:foFairPrice(t), crowd:foGateCrowd(t),
+    gate:foGateOf(t), sponsor:foSponsorOf(t),
     wage:t.players.reduce(function(s,p){return s+(+p.wage||0)},0),
     ground:foGroundCost(t), acad:foAcadCost(t.acadY)+foAcadCost(t.acadS),
     men:t.players.length }}))`);
   return JSON.parse(raw).map(t => {
-    // attendance is the engine's own: supporters x (0.55 + 0.13 x mood), capped by seats
-    const att = Math.min(t.seats, Math.round(t.supporters * (0.55 + 0.13 * (t.mood == null ? 3 : t.mood))));
-    const income = att * TICKET * HOME + SPONSOR * ROUNDS;
+    const income = t.gate * HOME + t.sponsor * ROUNDS;
     const costs = (t.wage + t.ground + t.acad) * ROUNDS;
-    return { ...t, att, income, costs, wageShare: t.wage * ROUNDS / income, share: costs / income };
+    return { ...t, income, costs, gateShare: t.gate * HOME / income,
+             wageShare: t.wage * ROUNDS / income, share: costs / income };
   });
 }
 
@@ -129,6 +134,63 @@ test('a founding club can carry its whole cost stack out of one season', () => {
   assert.ok(mean > 0.40 && mean < 0.70,
     'the mean wage bill is ' + Math.round(mean * 100) + '% of income, off its 55% mark');
   for (const t of all) assert.ok(t.wage > t.ground + t.acad, t.name + ': the squad should cost more than the buildings');
+});
+
+test('the ticket is a decision, not a constant', () => {
+  const t = 'GD.teams[0]';
+  const fair = run(`foFairPrice(${t})`);
+  // THE CROWD ARGUES BACK. Cheap fills the ground, dear empties it, and there
+  // is a price in between where the money peaks - if there were not, there
+  // would be nothing to decide and the old hardcoded $9 would have been as
+  // good an answer as any.
+  let best = 0, bestGate = 0, prices = [];
+  for (let p = 4; p <= 30; p++) {
+    const g = run(`foGateOf(${t},${p})`);
+    prices.push([p, run(`foGateCrowd(${t},${p})`), g]);
+    if (g > bestGate) { bestGate = g; best = p; }
+  }
+  assert.ok(best > 4 && best < 30, 'the best price is an interior one, not an end stop (got $' + best + ')');
+  assert.ok(best > fair, 'the money peaks just ABOVE what the crowd calls fair, so there is something to find');
+  assert.ok(best < fair * 1.35, 'but not so far above that the answer is always "charge the maximum"');
+  // the crowd only ever shrinks as the price rises, and never exceeds the seats
+  const seats = run(`+${t}.seats`);
+  for (let i = 1; i < prices.length; i++) {
+    assert.ok(prices[i][1] <= prices[i - 1][1], 'a dearer ticket never brings MORE people ($' + prices[i][0] + ')');
+    assert.ok(prices[i][1] <= seats, 'never more people than seats');
+  }
+  assert.equal(prices[prices.length - 1][1], 0, 'at thirty dollars a head nobody comes');
+
+  // AND THE FAIR PRICE IS A FACT ABOUT THE CLUB, not a constant either: a side
+  // winning things can charge for it.
+  const before = run(`(function(){${t}.mood=1;return foFairPrice(${t})})()`);
+  const after = run(`(function(){${t}.mood=5;return foFairPrice(${t})})()`);
+  assert.ok(after > before * 1.2, 'a happy crowd will pay more (' + before + ' then ' + after + ')');
+  run(`${t}.mood=3`);
+
+  // and charging over the odds costs supporters, so the best gate this round
+  // and the best gate this season are not the same price
+  assert.equal(run(`(function(){${t}.ticket=Math.round(foFairPrice(${t}));return foTicketDrift(${t})})()`), 1,
+    'a fair price keeps your following');
+  const greedy = run(`(function(){${t}.ticket=Math.round(foFairPrice(${t})*1.6);return foTicketDrift(${t})})()`);
+  assert.ok(greedy < 1 && greedy >= 0.92, 'gouging bleeds the base, but never faster than 8% a match');
+  run(`${t}.ticket=0`);
+});
+
+test('the crowd is the club\'s biggest earner, not the sponsor', () => {
+  // A $25,000 standing order every round, whoever you were and however you
+  // were doing, was 69% of a cricket club's income. The gate was 31%. That is
+  // backwards for a sport whose clubs live on who turns up, and it is why the
+  // ticket could be a constant without anybody noticing.
+  const all = books();
+  for (const t of all) {
+    assert.ok(t.gateShare > 0.5,
+      t.name + ': the gate is only ' + Math.round(t.gateShare * 100) + '% of income; the crowd should be the club');
+  }
+  // and the sponsor follows the club's standing, so winning pays twice
+  const lo = run('(function(){GD.teams[0].mood=0;return foSponsorOf(GD.teams[0])})()');
+  const hi = run('(function(){GD.teams[0].mood=6;return foSponsorOf(GD.teams[0])})()');
+  run('GD.teams[0].mood=3');
+  assert.ok(hi > lo * 2, 'a sponsor buys a shirt because of who is wearing it (' + lo + ' then ' + hi + ')');
 });
 
 test('the three bills are each written down exactly once', () => {

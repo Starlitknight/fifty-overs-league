@@ -1547,8 +1547,8 @@ function econInit(){
   App.seasonNo=1;App.history=[];
   App.market={listed:[],myBids:{},round:-1};
   App.cup={stage:0,alive:null,results:[],out:false};
-  for(const t of GD.teams){t.acadY=t.acadY||2;t.acadS=t.acadS||2;t.seats=t.seats||9000;
-    t.supporters=t.supporters||2600;t.mood=t.mood??3;t.homePitch=t.homePitch||groundPitch(t.ground);t.bank=t.bank||500000;}
+  for(const t of GD.teams){t.acadY=t.acadY||2;t.acadS=t.acadS||2;t.seats=t.seats||9000;t.ticket=foTicketOf(t);
+    t.supporters=t.supporters||FO_SOLO_SUPPORT;t.mood=t.mood??3;t.homePitch=t.homePitch||groundPitch(t.ground);t.bank=t.bank||500000;}
 }
 // WHAT HE IS WORTH, ON THE SAME CURVE AS EVERYTHING ELSE.
 // This was wage x 34 plus a linear term in rating - an independent third
@@ -1681,6 +1681,94 @@ function pgMarket(){
 const MOODW=['furious','angry','grumpy','content','pleased','delighted','euphoric'];
 function ledger(label,amt){App.fin.bank+=amt;App.fin.ledger.unshift({wk:'S'+App.seasonNo+' R'+((App.season?App.season.round:0)+1),label,amt});if(App.fin.ledger.length>200)App.fin.ledger.pop()}
 function attendance(t){return Math.min(t.seats,Math.round(t.supporters*(0.55+0.13*t.mood)))}
+
+/* ---- THE TICKET, WHICH WAS NOT A DECISION -----------------------------------
+   The gate was att x 9 in four places and "@ $9" in two more, and nine dollars
+   was never chosen by anybody - it was typed. So the crowd, the one number a
+   manager can actually move, converted to money at a rate he had no say in,
+   and the gate came to 31% of a club's income against a sponsor cheque worth
+   69%. The biggest thing a cricket club owns is the people who come and watch,
+   and in this game they were a rounding error attached to a constant.
+
+   The price is his now, between four dollars and thirty, and the crowd answers
+   it. THE PUBLIC HAS A VIEW ON WHAT THE CLUB IS WORTH: fair price rises with
+   their mood, so a side winning things can charge for it and a side losing
+   cannot. Under the fair price a few more come than would otherwise bother;
+   over it they stay home, fast.
+
+   THE SLOPE IS CHOSEN, NOT GUESSED. Above fair, the fill falls by 0.77 per
+   unit of over-pricing, which puts the revenue-maximising price about 15%
+   ABOVE what the public thinks is fair - so there is something to find, and
+   finding it means reading your own supporters rather than solving this once
+   and typing the answer in forever.
+
+   AND THE GREEDY PRICE EATS ITS OWN SEED CORN. Charging over the odds bleeds
+   supporters every home match (foTicketDrift), and supporters are what the
+   gate is made of, so the best gate this round and the best gate this season
+   are not the same price. That is the decision. */
+const FO_TICKET_REF=9;                               // what a neutral crowd expects to pay
+const FO_TICKET_MIN=4, FO_TICKET_MAX=30;
+function foTicketOf(t){
+  const v=Math.round(+((t&&t.ticket))||0);
+  return v?Math.max(FO_TICKET_MIN,Math.min(FO_TICKET_MAX,v)):FO_TICKET_REF;
+}
+// what this club's public reckons a ticket is worth, which is a fact about how
+// the club is doing and not about the club's ambitions
+function foFairPrice(t){
+  const mood=(t&&t.mood!=null)?+t.mood:3;
+  return FO_TICKET_REF*(0.70+0.10*Math.max(0,Math.min(6,mood)));
+}
+// how many turn up at a given price - never more than there are seats
+function foGateCrowd(t,price,base){
+  if(!t)return 0;
+  const p=price==null?foTicketOf(t):Math.max(1,+price||0);
+  const b=base==null?Math.round((+t.supporters||FO_SOLO_SUPPORT)*(0.55+0.13*((t.mood==null?3:+t.mood)))):base;
+  const r=p/foFairPrice(t);
+  const fill=r<=1?1+0.25*(1-r):Math.max(0,1-0.77*(r-1));
+  return Math.max(0,Math.min(+t.seats||10000,Math.round(b*fill)));
+}
+function foGateOf(t,price,base){
+  const p=price==null?foTicketOf(t):Math.max(1,+price||0);
+  return foGateCrowd(t,p,base)*p;
+}
+// what pricing over the odds costs you, applied once per home match: the
+// supporters you priced out do not come back next week just because you
+// dropped it again
+function foTicketDrift(t){
+  if(!t)return 1;
+  const r=foTicketOf(t)/foFairPrice(t);
+  if(r<=1)return 1;
+  return Math.max(0.92,1-0.10*(r-1));
+}
+/* ---- AND THE SPONSOR STOPS BEING A SALARY -----------------------------------
+   Twenty-five thousand a round, every round, whoever you were and however you
+   were doing: $450,000 a season of guaranteed money against a gate worth
+   $198,000. Sixty-nine per cent of a cricket club's income arrived by standing
+   order, which is why the crowd could be ignored - and it is exactly backwards
+   for a sport whose clubs live and die on who turns up.
+
+   A sponsor buys a shirt because of who is wearing it. This one follows the
+   same thing the gate does - how the club is doing - so winning pays twice and
+   a bad run costs twice. It is calibrated to leave a mid-table club's income
+   where it was, so the cost balance settled in the last change still holds:
+   $25,000 at content, $15,000 furious, $35,000 euphoric. */
+function foSponsorOf(t){
+  const mood=(t&&t.mood!=null)?Math.max(0,Math.min(6,+t.mood)):3;
+  return Math.round((8000+mood*12000/6)/100)*100;
+}
+/* AND THE CROWD WAS TOO SMALL TO BE WORTH ARGUING ABOUT.
+   Twenty-six hundred supporters in a nine-thousand-seat ground: a quarter
+   full on the best day it ever had, which is why the gate came to a third of
+   income however the ticket was priced, and why the sponsor had to carry the
+   club. The number was never chosen against the ground it fills - it is the
+   default in `t.supporters||2600`, sitting under a stadium built for three and
+   a half times as many.
+   Five thousand fills a bit over half the ground at a fair price, which leaves
+   the other half as something to earn: win, and they come, and the stand you
+   built starts paying for itself. The sponsor comes down to match, so a
+   mid-table club's income lands where it was and the MIX is what changed. */
+const FO_SOLO_SUPPORT=5000;
+try{window.foGateOf=foGateOf;window.foGateCrowd=foGateCrowd;window.foFairPrice=foFairPrice;window.foTicketOf=foTicketOf;window.foSponsorOf=foSponsorOf}catch(eT){}
 const findPlayer=nm=>{for(const t of GD.teams){for(const p of t.players)if(p.name===nm)return{p,team:t};for(const p of (t.youth||[]))if(p.name===nm)return{p,team:t,youth:true}}return null};
 // grouped aggregates per spec
 const S=p=>p.skills||{};
@@ -1927,7 +2015,7 @@ function pgOffice(){
     <div class="panel"><h4>Home ground - ${esc(t.ground)}</h4><div class="pad">
       <table class="kv"><tr><td>Capacity</td><td>${t.seats.toLocaleString()} seats</td></tr>
 
-      <tr><td>Est. attendance</td><td>${attendance(t).toLocaleString()} <span class="small">@ $9</span></td></tr></table>
+      <tr><td>Est. attendance</td><td>${foGateCrowd(t).toLocaleString()} <span class="small">@ $${foTicketOf(t)}</span></td></tr></table>
       <div class="ctlrow"><button onclick="if(App.fin.bank>=240000){ledger('Stadium expansion (+2,000)',-240000);userTeam().seats+=2000;pgOffice()}else alert('Insufficient funds')">Expand +2,000 seats ($240,000)</button></div>
       <div class="ctlrow"><span>Pitch preparation:</span><select onchange="userTeam().homePitch=this.value;pgOffice()">
         ${['balanced','flat','green','dry','slow','cracked','twoPaced'].map(p=>`<option value="${p}" ${t.homePitch===p?'selected':''}>${p}</option>`).join('')}</select></div>
@@ -2162,7 +2250,7 @@ function completeRound(){
   ledger('Academies (Y'+me.acadY+'/S'+me.acadS+')',-foAcadBill(me));
   const myLg=App.results.filter(r=>r.comp!=='youth'&&r.round===S.round&&(r.home===me.name||r.away===me.name));
   for(const r of myLg){
-    if(r.home===me.name){const att=attendance(me);ledger('Gate receipts ('+att.toLocaleString()+' att.)',att*9)}
+    if(r.home===me.name){const att=foGateCrowd(me);ledger('Gate receipts ('+att.toLocaleString()+' att. @ $'+foTicketOf(me)+')',att*foTicketOf(me));me.supporters=Math.max(800,Math.round(me.supporters*foTicketDrift(me)))}
     const won=r.result.winner===me.name;
     me.mood=Math.max(0,Math.min(6,me.mood+(won?1:-1)));
     me.supporters=Math.max(800,Math.round(me.supporters*(won?1.03:0.985)));
@@ -3540,7 +3628,7 @@ function importFounderClub(f){
     if(App.mergeQueue.some(c=>c.name===src.name)){alert(src.name+' is already in the merge queue.');return}
     // strip to a clean club record
     const club={name:src.name,ground:src.ground||'Neutral Park',players:src.players,youth:src.youth||[],
-      acadY:src.acadY||2,acadS:src.acadS||2,seats:src.seats||9000,supporters:src.supporters||2600,mood:3,
+      acadY:src.acadY||2,acadS:src.acadS||2,seats:src.seats||9000,supporters:src.supporters||FO_SOLO_SUPPORT,mood:3,
       homePitch:src.homePitch||'balanced',bank:src.bank||300000,founded:true,blurb:'A founder club.'};
     App.mergeQueue.push(club);
     saveGame(false);pgOffice();
@@ -4152,13 +4240,12 @@ function runTour(){
   function ensureFinance(){
     if(!App.fin)App.fin={bank:500000,ledger:[]}; if(!Array.isArray(App.fin.ledger))App.fin.ledger=[];
     const t=GD.teams[App.teamIx]||GD.teams[0]; if(!t)return App.fin;
-    t.acadY=t.acadY??2; t.acadS=t.acadS??2; t.seats=t.seats||10000; t.supporters=t.supporters||2600; t.mood=t.mood??3;
+    t.acadY=t.acadY??2; t.acadS=t.acadS??2; t.seats=t.seats||10000; t.supporters=t.supporters||FO_SOLO_SUPPORT; t.mood=t.mood??3; t.ticket=foTicketOf(t);
     const nf=nextFixture();
     const expectedGate=nf&&nf.isHome?attendance(t,nf.weather,'normal')*9:0;
     const wage=wageBill(t), academy=foAcadBill(t), train=trainingCost(t), burn=wage+foGroundCost(t)+academy+train;
-    App.fin.sponsorBase=App.fin.sponsorBase??25000;
     App.fin.supporters=t.supporters; App.fin.supporterMood=t.mood; App.fin.weeklyWageBill=wage;
-    App.fin.projectedIncome=(App.fin.sponsorBase||25000)+expectedGate;
+    App.fin.projectedIncome=(foSponsorOf(userTeam()))+expectedGate;
     App.fin.projectedExpenses=burn;
     App.fin.projectedBank=(App.fin.bank||0)+App.fin.projectedIncome-App.fin.projectedExpenses;
     App.fin.stadiumCapacity=t.seats; App.fin.seniorAcademyLevel=t.acadS; App.fin.youthAcademyLevel=t.acadY;
@@ -4181,7 +4268,7 @@ function runTour(){
     const moodMult=[0.55,0.70,0.85,1.00,1.12,1.25,1.40][Math.max(0,Math.min(6,t.mood??3))]||1;
     const wx={sunny:1,hot:1,overcast:.95,humid:.96,drizzle:.75,misty:.85,chilly:.85,scorching:.90,windy:.90,'dew later':.92}[String(weather).toLowerCase()]||.95;
     const imp={normal:1,cup:1.25,final:1.6,top:1.15,dead:.85}[importance]||1;
-    return Math.min(t.seats||10000,Math.max(400,Math.round((t.supporters||2600)*moodMult*wx*imp)));
+    return Math.min(t.seats||10000,Math.max(400,Math.round((t.supporters||FO_SOLO_SUPPORT)*moodMult*wx*imp)));
   };
 
   const TRAIN_PROGS={
@@ -4307,15 +4394,15 @@ function runTour(){
     for(let i=0;i<rd.length;i++){const f=rd[i];if(S.played[fixtureKey(S.round,f)]!==undefined)continue;const isUser=(f[0]===App.teamIx||f[1]===App.teamIx);const home=GD.teams[f[0]], away=GD.teams[f[1]];
       simBackground(f[0],f[1],{home:home.name,away:away.name,ground:home.ground,pitch:(home.name===userTeam().name?(home.homePitch||groundPitch(home.ground)):groundPitch(home.ground)),weather:WXLIST[(S.round*7+f[0]*3)%WXLIST.length],seed:5000+S.round*10+f[0],date:simDate(),comp:'league',round:S.round,isUser});}
     const me=userTeam();const start=App.fin.bank;const summaries=[];
-    ledger('Sponsor','Sponsor base payment',App.fin.sponsorBase||25000);summaries.push(`Sponsor ${money(App.fin.sponsorBase||25000)}`);
+    ledger('Sponsor','Sponsor base payment',foSponsorOf(userTeam()));summaries.push(`Sponsor ${money(foSponsorOf(userTeam()))}`);
     const myLg=App.results.filter(r=>r.comp!=='youth'&&r.round===S.round&&(r.home===me.name||r.away===me.name));
-    for(const r of myLg){if(r.home===me.name){const att=attendance(me,r.weather,'normal');const gate=att*9;ledger('Gate','Gate receipts ('+att.toLocaleString()+' att.)',gate);(App.fin.recentAttendances=App.fin.recentAttendances||[]).unshift(att);App.fin.recentAttendances=App.fin.recentAttendances.slice(0,8);summaries.push(`Gate ${money(gate)}`)}
-      const won=r.result.winner===me.name;const heavy=won&&/win by (?:[7-9]|10) wickets|win by \d{3}/.test(r.result.text);me.mood=Math.max(0,Math.min(6,(me.mood??3)+(won?(heavy?2:1):-1)));me.supporters=Math.max(800,Math.round((me.supporters||2600)*(won?1.03:.985)));}
+    for(const r of myLg){if(r.home===me.name){const att=foGateCrowd(me,null,attendance(me,r.weather,'normal'));const gate=att*foTicketOf(me);ledger('Gate','Gate receipts ('+att.toLocaleString()+' att. @ $'+foTicketOf(me)+')',gate);me.supporters=Math.max(800,Math.round((me.supporters||FO_SOLO_SUPPORT)*foTicketDrift(me)));(App.fin.recentAttendances=App.fin.recentAttendances||[]).unshift(att);App.fin.recentAttendances=App.fin.recentAttendances.slice(0,8);summaries.push(`Gate ${money(gate)}`)}
+      const won=r.result.winner===me.name;const heavy=won&&/win by (?:[7-9]|10) wickets|win by \d{3}/.test(r.result.text);me.mood=Math.max(0,Math.min(6,(me.mood??3)+(won?(heavy?2:1):-1)));me.supporters=Math.max(800,Math.round((me.supporters||FO_SOLO_SUPPORT)*(won?1.03:.985)));}
     const wages=wageBill(me);ledger('Wages','Player wages',-wages);
     ledger('Stadium','Ground maintenance',-foGroundCost(me));
     const ac=foAcadBill(me);ledger('Academy','Academy upkeep (Y'+(me.acadY||0)+'/S'+(me.acadS||0)+')',-ac);
     const tc=trainingCost(me);if(tc)ledger('Training','Intense training costs',-tc);
-    for(const t of GD.teams)if(t!==me){const wb=wageBill(t), acb=foAcadBill(t);t.bank=(t.bank||500000)+(App.fin.sponsorBase||25000)-wb-foGroundCost(t)-acb;}
+    for(const t of GD.teams)if(t!==me){const wb=wageBill(t), acb=foAcadBill(t);t.bank=(t.bank||500000)+foSponsorOf(t)-wb-foGroundCost(t)-acb;}
     resolveMarket();cupTick();applyTraining();ensureFinance();
     if(App.fin.bank<0)ledger('Debt','Overdraft interest / board pressure',-Math.min(7500,Math.round(Math.abs(App.fin.bank)*.025)));
     App.fin.lastRoundFinanceSummary={round:S.round+1,start,end:App.fin.bank,wages,academy:ac,training:tc,summary:summaries.join(' · '),risk:App.fin.debtWarningLevel};
@@ -4388,7 +4475,7 @@ function runTour(){
   founderConfirm=function(){
     const F=App.founder, ix=App.teamIx||0, t=GD.teams[ix];const spent=founderSpent(), unused=F.budget-spent, bank=Math.round(150000+0.40*Math.max(0,unused));
     t.name=F.name;t.players=F.picked.map(p=>{const q=JSON.parse(JSON.stringify(p));delete q.fee;q.fatigue='rested';q.formIx=3;ensureTraining(q);return q});t.youth=[];t.founded=true;t.identity=F.identity||store('fo_identity')||'Balanced XI';
-    App.fin={bank,ledger:[],sponsorBase:25000};econInit();ledger('Founder','Founder operating bank after draft',0);t.bank=bank;store('fo_club',String(ix));store('fo_welcomed','1');foSetMyClub(t.name);App.orders.batOrder=[];saveGame(false);
+    App.fin={bank,ledger:[]};econInit();ledger('Founder','Founder operating bank after draft',0);t.bank=bank;store('fo_club',String(ix));store('fo_welcomed','1');foSetMyClub(t.name);App.orders.batOrder=[];saveGame(false);
     const n=t.players.length,bowl=t.players.filter(p=>p.bowlTypeFull&&p.bowlTypeFull!=='none').length,wk=t.players.filter(p=>p.keeper).length,wages=wageBill(t);
     const risk=n<=12?'expensive first XI, thin depth':unused<35000?'minimal draft savings':bowl<6?'light bowling depth':'manageable';
     const verdict=(wk&&bowl>=5&&n>=14)?'Well-shaped squad with enough cover.':(n<=12?'High ceiling if the first XI fires, but injuries and fatigue will hurt.':'Legal squad with one or two obvious problems to manage.');
@@ -4418,11 +4505,11 @@ function runTour(){
     $('#page').innerHTML=crumb(t.name,'Squad')+`<div class="page-head"><div><div class="eyebrow">Selection and development</div><h1>Squad decisions</h1><p>Filter by role, inspect fit, and assign training based on what you need six rounds from now.</p></div><div class="action-row"><button onclick="foBulkTrain('role')">Assign by role</button><button onclick="foBulkTrain('restTired')">Rest tired players</button><button onclick="foBulkTrain('light')">Light week</button><button onclick="foBulkTrain('normal')">Normal week</button></div></div>${squadFilterButtons()}<div class="card"><div class="card-body"><table><tr><th>Name</th><th>Role</th><th class="n">Age</th><th>Form</th><th>Fatigue</th><th class="n">Bat</th><th class="n">Bowl</th><th class="n">Field</th><th class="n">Wage</th><th>Talent</th><th>Training</th></tr>${rows}</table></div></div>`;
   };
 
-  function financeDashboard(){econInit();const t=userTeam(), nf=nextFixture(), gate=nf&&nf.isHome?attendance(t,nf.weather,'normal')*9:0, wages=wageBill(t), ac=foAcadBill(t), tc=trainingCost(t), projected=(App.fin.bank||0)+(App.fin.sponsorBase||25000)+gate-wages-foGroundCost(t)-ac-tc;
+  function financeDashboard(){econInit();const t=userTeam(), nf=nextFixture(), gate=nf&&nf.isHome?foGateOf(t,null,attendance(t,nf.weather,'normal')):0, wages=wageBill(t), ac=foAcadBill(t), tc=trainingCost(t), projected=(App.fin.bank||0)+(foSponsorOf(userTeam()))+gate-wages-foGroundCost(t)-ac-tc;
     const led=App.fin.ledger.slice(0,26).map(l=>`<tr><td>${esc(l.wk)}</td><td>${esc(l.category||ledgerCat(l.label))}</td><td>${esc(l.item||l.label)}</td><td class="n" style="color:${l.amt<0?'var(--red)':'var(--green)'}">${l.amt<0?'−':'+'}${money(Math.abs(l.amt))}</td><td class="n">${l.balance!==undefined?money(l.balance):''}</td></tr>`).join('')||'<tr><td colspan="5" class="empty-state">No transactions yet.</td></tr>';
-    return `<div class="kpi-grid"><div class="kpi-card"><span>Bank</span><b>${money(App.fin.bank)}</b></div><div class="kpi-card"><span>Weekly burn</span><b>${money(wages+foGroundCost(t)+ac+tc)}</b></div><div class="kpi-card"><span>Runway</span><b>${App.fin.runway} rounds</b></div><div class="kpi-card"><span>Wage bill</span><b>${money(wages)}</b></div><div class="kpi-card"><span>Expected next income</span><b>${money((App.fin.sponsorBase||25000)+gate)}</b></div><div class="kpi-card"><span>Risk level</span><b>${esc(App.fin.debtWarningLevel)}</b></div></div><div class="page-grid-2"><div class="card"><div class="card-title">This-round projection</div><div class="card-body"><table class="kv"><tr><td>Starting bank</td><td>${money(App.fin.bank)}</td></tr><tr><td>+ Sponsor</td><td>${money(App.fin.sponsorBase||25000)}</td></tr><tr><td>+ Expected gate</td><td>${money(gate)}</td></tr><tr><td>- Wages</td><td>${money(wages)}</td></tr><tr><td>- Ground maintenance</td><td>${money(foGroundCost(t))}</td></tr><tr><td>- Academy upkeep</td><td>${money(ac)}</td></tr><tr><td>- Training intensity</td><td>${money(tc)}</td></tr><tr><td><b>= Projected bank</b></td><td><b>${money(projected)}</b></td></tr></table></div></div><div class="card"><div class="card-title">Finance warnings</div><div class="card-body warning-list"><div>${wages>50000?'⚠ Unsustainable wage bill':wages>38000?'⚠ Dangerous wage bill':wages>28000?'⚠ Tight wage bill':'✓ Wage bill is healthy'}</div><div>${App.fin.runway<3?'⚠ Bank runway below 3 rounds':'✓ Runway acceptable'}</div><div>${t.seats>(t.supporters||2600)*4?'⚠ Stadium may be too large for supporter base':'✓ Stadium size reasonable'}</div><div>${projected<0?'⚠ Next projection creates overdraft':'✓ Projection remains solvent'}</div></div></div></div><div class="card"><div class="card-title">Ledger</div><div class="card-body"><table><tr><th>Round</th><th>Category</th><th>Item</th><th class="n">Amount</th><th class="n">Balance</th></tr>${led}</table></div></div>`}
+    return `<div class="kpi-grid"><div class="kpi-card"><span>Bank</span><b>${money(App.fin.bank)}</b></div><div class="kpi-card"><span>Weekly burn</span><b>${money(wages+foGroundCost(t)+ac+tc)}</b></div><div class="kpi-card"><span>Runway</span><b>${App.fin.runway} rounds</b></div><div class="kpi-card"><span>Wage bill</span><b>${money(wages)}</b></div><div class="kpi-card"><span>Expected next income</span><b>${money((foSponsorOf(userTeam()))+gate)}</b></div><div class="kpi-card"><span>Risk level</span><b>${esc(App.fin.debtWarningLevel)}</b></div></div><div class="page-grid-2"><div class="card"><div class="card-title">This-round projection</div><div class="card-body"><table class="kv"><tr><td>Starting bank</td><td>${money(App.fin.bank)}</td></tr><tr><td>+ Sponsor</td><td>${money(foSponsorOf(userTeam()))}</td></tr><tr><td>+ Expected gate</td><td>${money(gate)}</td></tr><tr><td>- Wages</td><td>${money(wages)}</td></tr><tr><td>- Ground maintenance</td><td>${money(foGroundCost(t))}</td></tr><tr><td>- Academy upkeep</td><td>${money(ac)}</td></tr><tr><td>- Training intensity</td><td>${money(tc)}</td></tr><tr><td><b>= Projected bank</b></td><td><b>${money(projected)}</b></td></tr></table></div></div><div class="card"><div class="card-title">Finance warnings</div><div class="card-body warning-list"><div>${wages>50000?'⚠ Unsustainable wage bill':wages>38000?'⚠ Dangerous wage bill':wages>28000?'⚠ Tight wage bill':'✓ Wage bill is healthy'}</div><div>${App.fin.runway<3?'⚠ Bank runway below 3 rounds':'✓ Runway acceptable'}</div><div>${t.seats>(t.supporters||FO_SOLO_SUPPORT)*4?'⚠ Stadium may be too large for supporter base':'✓ Stadium size reasonable'}</div><div>${projected<0?'⚠ Next projection creates overdraft':'✓ Projection remains solvent'}</div></div></div></div><div class="card"><div class="card-title">Ledger</div><div class="card-body"><table><tr><th>Round</th><th>Category</th><th>Item</th><th class="n">Amount</th><th class="n">Balance</th></tr>${led}</table></div></div>`}
   function trainingCentre(){const t=userTeam();const rows=(t.players||[]).concat(t.youth||[]).map(p=>{ensureTraining(p);const pr=trainProgressPct(p);return `<tr><td>${playerLink(p)}</td><td class="n">${p.age}</td><td>${esc(potentialRead(p))}</td><td>${playerKind(p)}</td><td><select onchange="setTrain('${safeName(p.name)}',this.value);pgOffice()">${trainOptions(p.training.program)}</select></td><td><select onchange="foSetIntensity('${safeName(p.name)}',this.value);pgOffice()">${intensityOptions(p.training.intensity)}</select></td><td>${esc(pr.skill)} <span class="progress-bar mini"><i style="width:${pct(pr.pct)}"></i></span> ${Math.round(pr.pct)}%</td><td>${esc(p.fatigue)}</td><td class="n">${p.training.intensity==='Intense'?money(500):money(0)}</td></tr>`}).join('');const tr=App.trainingReports&&App.trainingReports[0];return `<div class="card"><div class="card-title">Training Centre</div><div class="card-body"><div class="status-strip"><span>Senior academy L${t.acadS||0}</span><span>Youth academy L${t.acadY||0}</span><span>${(t.players||[]).length} seniors</span><span>${(t.youth||[]).length} youth</span><span>Cost ${money(trainingCost(t))}</span></div><div class="action-row"><button onclick="foBulkTrain('batters')">Train batters</button><button onclick="foBulkTrain('bowlers')">Train bowlers</button><button onclick="foBulkTrain('keepers')">Train keepers</button><button onclick="foBulkTrain('restTired')">Rest tired</button><button onclick="foBulkTrain('role')">Assign by role</button></div><table><tr><th>Name</th><th class="n">Age</th><th>Potential</th><th>Role</th><th>Program</th><th>Intensity</th><th>Next likely gain</th><th>Fatigue</th><th class="n">Cost</th></tr>${rows}</table>${tr?`<div class="manager-note"><b>Training Report - Round ${tr.round}</b><br><b>Skill gains:</b> ${tr.gains.slice(0,5).map(esc).join('; ')||'none'}<br><b>Near gains:</b> ${tr.near.slice(0,5).map(esc).join('; ')||'none'}<br><b>Recovery:</b> ${tr.recovery.slice(0,4).map(esc).join('; ')||'none'}<br><b>Fatigue slowed:</b> ${tr.slowed.slice(0,4).map(esc).join('; ')||'none'}</div>`:''}</div></div>`}
-  pgOffice=function(){econInit();const t=userTeam();const yUp=acadUpCost(t.acadY), sUp=acadUpCost(t.acadS);$('#page').innerHTML=crumb(t.name,'Office')+`<div class="page-head"><div><div class="eyebrow">Business dashboard</div><h1>Office</h1><p>Can you afford the squad you want?</p></div><div class="action-row"><button class="primary" onclick="saveGame(true)">Save now</button><button onclick="exportGame()">Export file</button><label><input type="file" accept=".json" style="display:none" onchange="importGame(this.files[0])"><button onclick="this.previousElementSibling.click()">Import file</button></label></div></div>${financeDashboard()}<div class="page-grid-2"><div class="card"><div class="card-title">Academies</div><div class="card-body"><table class="kv"><tr><td>Youth academy</td><td>Level ${t.acadY||0} ${t.acadY<5?`<button onclick="if(App.fin.bank>=${yUp}){ledger('Academy','Youth academy upgrade',-${yUp});userTeam().acadY++;pgOffice()}else alert('Insufficient funds')">Upgrade ${money(yUp)}</button>`:'<span class="small">MAX</span>'}</td></tr><tr><td>Senior academy</td><td>Level ${t.acadS||0} ${t.acadS<5?`<button onclick="if(App.fin.bank>=${sUp}){ledger('Academy','Senior academy upgrade',-${sUp});userTeam().acadS++;pgOffice()}else alert('Insufficient funds')">Upgrade ${money(sUp)}</button>`:'<span class="small">MAX</span>'}</td></tr></table><div class="small">Level costs now match the upgrade brief. Senior academy speeds senior development; youth academy improves youth training and end-of-season intake.</div></div></div><div class="card"><div class="card-title">Home ground - ${esc(t.ground)}</div><div class="card-body"><table class="kv"><tr><td>Capacity</td><td>${(t.seats||10000).toLocaleString()} seats</td></tr><tr><td>Est. attendance</td><td>${attendance(t).toLocaleString()} @ $9</td></tr><tr><td>Pitch preparation</td><td><select onchange="userTeam().homePitch=this.value;pgOffice()">${['balanced','flat','green','dry','slow','cracked','twoPaced'].map(p=>`<option value="${p}" ${t.homePitch===p?'selected':''}>${p}</option>`).join('')}</select></td></tr></table><button onclick="if(App.fin.bank>=240000){ledger('Stadium','Stadium expansion (+2,000)',-240000);userTeam().seats+=2000;pgOffice()}else alert('Insufficient funds')">Expand +2,000 seats ($240,000)</button></div></div></div>${trainingCentre()}<div class="page-grid-2"><div class="card"><div class="card-title">Founder league / commissioner</div><div class="card-body"><div class="small">Import founder club files, start a 10-club league, then exchange orders packets each round.</div><div class="action-row"><label><input type="file" accept=".json" style="display:none" onchange="importFounderClub(this.files[0]);this.value=''"><button class="primary" onclick="this.previousElementSibling.click()">Import founder club file</button></label><button onclick="startLeagueFromMerge()">Start league from queue</button><button onclick="exportOrdersPacket()">Export my orders packet</button><label><input type="file" accept=".json" style="display:none" onchange="importOrdersPacket(this.files[0]);this.value=''"><button onclick="this.previousElementSibling.click()">Import orders packet</button></label></div><div class="small">Queued: ${(App.mergeQueue||[]).map(c=>esc(c.name)).join(', ')||'none'}</div></div></div><div class="card"><div class="card-title">Danger zone</div><div class="card-body"><button class="warn" onclick="if(confirm('Reset the game completely?')){try{localStorage.clear()}catch(e){};location.hash='';location.reload()}">Reset game</button></div></div></div>`;updateTopbarStatus()};
+  pgOffice=function(){econInit();const t=userTeam();const yUp=acadUpCost(t.acadY), sUp=acadUpCost(t.acadS);$('#page').innerHTML=crumb(t.name,'Office')+`<div class="page-head"><div><div class="eyebrow">Business dashboard</div><h1>Office</h1><p>Can you afford the squad you want?</p></div><div class="action-row"><button class="primary" onclick="saveGame(true)">Save now</button><button onclick="exportGame()">Export file</button><label><input type="file" accept=".json" style="display:none" onchange="importGame(this.files[0])"><button onclick="this.previousElementSibling.click()">Import file</button></label></div></div>${financeDashboard()}<div class="page-grid-2"><div class="card"><div class="card-title">Academies</div><div class="card-body"><table class="kv"><tr><td>Youth academy</td><td>Level ${t.acadY||0} ${t.acadY<5?`<button onclick="if(App.fin.bank>=${yUp}){ledger('Academy','Youth academy upgrade',-${yUp});userTeam().acadY++;pgOffice()}else alert('Insufficient funds')">Upgrade ${money(yUp)}</button>`:'<span class="small">MAX</span>'}</td></tr><tr><td>Senior academy</td><td>Level ${t.acadS||0} ${t.acadS<5?`<button onclick="if(App.fin.bank>=${sUp}){ledger('Academy','Senior academy upgrade',-${sUp});userTeam().acadS++;pgOffice()}else alert('Insufficient funds')">Upgrade ${money(sUp)}</button>`:'<span class="small">MAX</span>'}</td></tr></table><div class="small">Level costs now match the upgrade brief. Senior academy speeds senior development; youth academy improves youth training and end-of-season intake.</div></div></div><div class="card"><div class="card-title">Home ground - ${esc(t.ground)}</div><div class="card-body"><table class="kv"><tr><td>Capacity</td><td>${(t.seats||10000).toLocaleString()} seats</td></tr><tr><td>Est. attendance</td><td>${foGateCrowd(t).toLocaleString()} @ $${foTicketOf(t)}</td></tr><tr><td>Pitch preparation</td><td><select onchange="userTeam().homePitch=this.value;pgOffice()">${['balanced','flat','green','dry','slow','cracked','twoPaced'].map(p=>`<option value="${p}" ${t.homePitch===p?'selected':''}>${p}</option>`).join('')}</select></td></tr></table><button onclick="if(App.fin.bank>=240000){ledger('Stadium','Stadium expansion (+2,000)',-240000);userTeam().seats+=2000;pgOffice()}else alert('Insufficient funds')">Expand +2,000 seats ($240,000)</button></div></div></div>${trainingCentre()}<div class="page-grid-2"><div class="card"><div class="card-title">Founder league / commissioner</div><div class="card-body"><div class="small">Import founder club files, start a 10-club league, then exchange orders packets each round.</div><div class="action-row"><label><input type="file" accept=".json" style="display:none" onchange="importFounderClub(this.files[0]);this.value=''"><button class="primary" onclick="this.previousElementSibling.click()">Import founder club file</button></label><button onclick="startLeagueFromMerge()">Start league from queue</button><button onclick="exportOrdersPacket()">Export my orders packet</button><label><input type="file" accept=".json" style="display:none" onchange="importOrdersPacket(this.files[0]);this.value=''"><button onclick="this.previousElementSibling.click()">Import orders packet</button></label></div><div class="small">Queued: ${(App.mergeQueue||[]).map(c=>esc(c.name)).join(', ')||'none'}</div></div></div><div class="card"><div class="card-title">Danger zone</div><div class="card-body"><button class="warn" onclick="if(confirm('Reset the game completely?')){try{localStorage.clear()}catch(e){};location.hash='';location.reload()}">Reset game</button></div></div></div>`;updateTopbarStatus()};
 
   const oldReports=pgReports;
   pgReports=function(q){
@@ -4742,7 +4829,7 @@ completeRound=function(){
   ledger('Ground maintenance',-foGroundCost(me));
   ledger('Academies (Y'+me.acadY+'/S'+me.acadS+')',-foAcadBill(me));
   const myLg=App.results.filter(r=>r.comp==='league'&&r.round===roundNo&&(r.home===me.name||r.away===me.name));
-  for(const r of myLg){if(r.home===me.name){const att=attendance(me);ledger('Gate receipts ('+att.toLocaleString()+' att.)',att*9)} const won=r.result.winner===me.name; me.mood=Math.max(0,Math.min(6,me.mood+(won?1:-1))); me.supporters=Math.max(800,Math.round(me.supporters*(won?1.03:0.985)));}
+  for(const r of myLg){if(r.home===me.name){const att=foGateCrowd(me);ledger('Gate receipts ('+att.toLocaleString()+' att. @ $'+foTicketOf(me)+')',att*foTicketOf(me));me.supporters=Math.max(800,Math.round(me.supporters*foTicketDrift(me)))} const won=r.result.winner===me.name; me.mood=Math.max(0,Math.min(6,me.mood+(won?1:-1))); me.supporters=Math.max(800,Math.round(me.supporters*(won?1.03:0.985)));}
   for(const tt of GD.teams)if(tt!==me)tt.bank+=45000-24*foGroundCost(tt)/9;
   resolveMarket(); cupTick(); applyTraining();
   S.round=roundNo+1; App.round=S.round+1;
