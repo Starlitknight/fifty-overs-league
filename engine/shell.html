@@ -2,7 +2,7 @@
 --ftp-panel:#ffffff;--ftp-link:#1a5276;--ftp-bar:#3f9e3f;--ftp-text:#22302a;--ftp-warn:#a33}
 *{box-sizing:border-box}
 html{background:#0B1322}
-body{margin:0;min-height:100vh;min-height:100dvh;background:var(--ftp-bg);color:var(--ftp-text);font:12px Verdana,Geneva,Tahoma,sans-serif;line-height:1.45}
+body{margin:0;min-height:100vh;min-height:100dvh;background:var(--ftp-bg);color:var(--ftp-text);font:13px Inter,system-ui,-apple-system,'Segoe UI',Roboto,sans-serif;line-height:1.5;-webkit-font-smoothing:antialiased;-moz-osd-grayscale:grayscale}
 a{color:var(--ftp-link);text-decoration:none}a:hover{text-decoration:underline}
 #topbar{background:linear-gradient(180deg,#173f2b,#1d4a66 140%);color:#fff;border-bottom:3px solid #2c7a2c;padding:0 10px;display:flex;align-items:center;gap:2px;flex-wrap:wrap}
 #topbar .brand{font-weight:bold;font-size:13px;padding:7px 10px 7px 2px;color:#dce9f2}
@@ -30,8 +30,8 @@ td.n,th.n{text-align:right}
 .pblock .meta{color:#5a6a63;font-size:11px}
 .pblock .cols{display:flex;gap:26px;flex-wrap:wrap;margin-top:4px}
 .pblock .cols>div{min-width:220px}
-select,input[type=text],input[type=number]{font:11.5px Verdana;padding:2px 4px;border:1px solid var(--ftp-border);background:#fff}
-button{font:11.5px Verdana;padding:3px 10px;border:1px solid #4a7;background:#e7f0e7;cursor:pointer}
+select,input[type=text],input[type=number]{font:12.5px Inter,system-ui,sans-serif;padding:2px 4px;border:1px solid var(--ftp-border);background:#fff}
+button{font:600 12.5px Inter,system-ui,sans-serif;padding:3px 10px;border:1px solid #4a7;background:#e7f0e7;cursor:pointer}
 button:hover{background:#d8e8d8}
 button.primary{background:var(--ftp-blue);color:#fff;border-color:var(--ftp-blue-dark);font-weight:bold}
 button.primary:hover{background:var(--ftp-blue-dark)}
@@ -60,7 +60,7 @@ details.adv summary{cursor:pointer;color:var(--ftp-link);font-size:11px}
 .rowlink{cursor:pointer}
 
 .crumb{border-left:4px solid #2c7a2c;padding-left:8px}
-.scorebig{font-family:Georgia,'Times New Roman',serif;color:#173f2b}
+.scorebig{font-family:Fraunces,Georgia,'Times New Roman',serif;color:#173f2b}
 button.primary{background:linear-gradient(180deg,#2c7a2c,#1c5537);border-color:#144427}
 .panel{box-shadow:0 1px 2px rgba(20,40,25,.08)}
 
@@ -74,7 +74,7 @@ th{background:#efe9d9;color:#4a4536}
 button.primary{background:linear-gradient(180deg,#355e3b,#274428);border-color:#1d331e}
 .pblock{background:#fffdf7;border-color:#d8d0bd}
 
-.evflash{position:absolute;top:4px;right:8px;font-family:Georgia,serif;font-weight:bold;font-size:19px;padding:2px 12px;animation:pop .55s ease-out}
+.evflash{position:absolute;top:4px;right:8px;font-family:Fraunces,Georgia,serif;font-weight:bold;font-size:19px;padding:2px 12px;animation:pop .55s ease-out}
 @keyframes pop{0%{transform:scale(.4);opacity:0}55%{transform:scale(1.18);opacity:1}100%{transform:scale(1)}}
 .scorebig{font-size:24px;font-weight:bold}
 .commfeed .bl{padding:2px 4px;border-bottom:1px dotted #e2dccb;font-size:11.5px}
@@ -102,7 +102,7 @@ button.primary{background:linear-gradient(180deg,#355e3b,#274428);border-color:#
 /* coin flip */
 .coin{width:120px;height:120px;margin:0 auto;position:relative;transform-style:preserve-3d}
 .coin-face{position:absolute;inset:0;border-radius:50%;display:flex;align-items:center;justify-content:center;
- font:bold 52px Georgia,serif;color:#5a4a1e;background:radial-gradient(circle at 35% 30%,#f7e7ad,#d9b94a 60%,#a8862a);
+ font:bold 52px Fraunces,Georgia,serif;color:#5a4a1e;background:radial-gradient(circle at 35% 30%,#f7e7ad,#d9b94a 60%,#a8862a);
  border:4px solid #a8862a;backface-visibility:hidden;box-shadow:0 4px 14px rgba(90,70,20,.45)}
 .coin-back{transform:rotateX(180deg)}
 .coin.flipping{animation:coinspin .5s linear infinite}
@@ -110,7 +110,7 @@ button.primary{background:linear-gradient(180deg,#355e3b,#274428);border-color:#
 .coin.show-t{transform:rotateX(180deg)}
 @keyframes coinspin{from{transform:rotateX(0)}to{transform:rotateX(360deg)}}
 /* full-screen event flash */
-.bigflash{position:fixed;top:38%;left:0;right:0;text-align:center;font:bold 110px Georgia,serif;
+.bigflash{position:fixed;top:38%;left:0;right:0;text-align:center;font:bold 110px Fraunces,Georgia,serif;
  letter-spacing:6px;pointer-events:none;z-index:999;text-shadow:0 3px 18px rgba(0,0,0,.25);
  animation:bigpop .95s ease-out forwards}
 @keyframes bigpop{0%{transform:scale(.3);opacity:0}25%{transform:scale(1.12);opacity:1}70%{transform:scale(1);opacity:.95}100%{transform:scale(1.05);opacity:0}}
@@ -139,7 +139,7 @@ button.primary{background:linear-gradient(180deg,#355e3b,#274428);border-color:#
 .dfee{text-align:right;font-size:13px;color:#3a3628}
 .dsign button{font-size:11px;padding:3px 10px}
 .dcaret{color:#b0a789;text-align:center}
-.dscout{font-size:11px;font-style:italic;color:#6a6250;padding:0 9px 7px 41px;line-height:1.35}
+.dscout{font-size:11px;font-style:normal;color:#6a6250;padding:0 9px 7px 41px;line-height:1.35}
 .ddetail{border-top:1px solid #ece4d0;background:#fcfaf3;padding-top:3px}
 .budgetcard .pad{padding:10px 12px}
 .budgetbig{font-size:24px;font-weight:800;line-height:1.1;letter-spacing:-.5px}
@@ -467,7 +467,7 @@ img.foric{width:16px;height:16px;object-fit:contain;vertical-align:middle;margin
 .fo-hand,.fo-type{color:#5a7f93;font-weight:bold;font-size:10px;letter-spacing:.3px}
 
 /* ---- #13/#18 ability chips: distinct font + hover ---- */
-.foabil{font-family:"Iowan Old Style",Georgia,"Times New Roman",serif;font-style:italic;font-weight:600;
+.foabil{font-family:Fraunces,Georgia,'Times New Roman',serif;font-style:normal;font-weight:600;
   color:#7b5a0a;background:#fff4d9;border:1px solid #e1c37b;border-radius:3px;padding:0 5px;cursor:help;
   display:inline-block;line-height:1.5;margin:0 1px}
 .foabil:hover{background:#ffe9ad}
@@ -617,7 +617,7 @@ table.fo-scorecard th.n,table.fo-scorecard td.n,table.fo-bowling th.n,table.fo-b
 
 /* item 8: commentary intro */
 #ftpcomm .fo-comm-intro{background:#f7f9fb;border-left:3px solid #3496bd;padding:8px 12px;margin-bottom:6px;
-  font-size:12px;line-height:1.5;color:#2b3b44;font-style:italic}
+  font-size:12px;line-height:1.5;color:#2b3b44;font-style:normal}
 
 </style>
 

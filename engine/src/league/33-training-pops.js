@@ -162,7 +162,7 @@
       ".fo-pop-chip{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid rgba(31,158,114,.45);border-radius:999px;padding:5px 11px 5px 8px;font-size:12px;color:#1F5C43;box-shadow:0 3px 10px rgba(20,60,35,.12);animation:foPopIn .38s cubic-bezier(.34,1.56,.64,1) both}",
       ".fo-pop-chip i{font-style:normal;font-size:10px;color:#1F9E72}",
       ".fo-pop-chip b{font-weight:600;color:#173D2D}",
-      ".fo-pop-more{font-size:11px;color:#4B8A6E;font-family:Georgia,serif;font-style:italic}",
+      ".fo-pop-more{font-size:11px;color:#4B8A6E;font-family:Fraunces,Georgia,serif;font-style:normal}",
       // the roster chip
       ".fo-pop-up{display:inline-block;font-style:normal;font-size:10px;font-weight:700;color:#1F9E72;background:rgba(31,158,114,.12);border:1px solid rgba(31,158,114,.35);border-radius:6px;padding:0 4px;margin-left:4px;vertical-align:1px;line-height:1.5;animation:foPopIn .38s cubic-bezier(.34,1.56,.64,1) both}",
       // the player-page development panel: the dossier below the hero is a

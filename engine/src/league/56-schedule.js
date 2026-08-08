@@ -75,7 +75,7 @@
       "html body #page .fo-sch{max-width:760px;margin:20px auto 46px;padding:0 18px;color:#141C28}",
       // ---- the head: the title, what is next, how far in --------------------
       "html body #page .fo-sch-hd{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;padding:0 2px 15px;border-bottom:1px solid rgba(20,28,40,.1)}",
-      "html body #page .fo-sch-hd h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:33px;letter-spacing:-.02em;line-height:1;margin:0;flex:0 0 auto;color:#0E2246}",
+      "html body #page .fo-sch-hd h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:33px;letter-spacing:-.02em;line-height:1;margin:0;flex:0 0 auto;color:#0E2246}",
       "html body #page .fo-sch-nx{flex:1 1 200px;min-width:0}",
       "html body #page .fo-sch-nx i{display:block;font-style:normal;font:600 8px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#B44A22}",
       "html body #page .fo-sch-nx b{display:block;font:600 15px/1.2 Inter,sans-serif;margin-top:6px;color:#141C28}",

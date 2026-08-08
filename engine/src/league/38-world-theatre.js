@@ -331,7 +331,7 @@
         var o = null; try { o = JSON.parse(localStorage.getItem(WT_RES) || "null"); } catch (eP) {}
         if (o && o.until && Date.now() < o.until) {
           var pg = document.getElementById("page");
-          if (pg) pg.innerHTML = "<div style='padding:90px 24px;text-align:center;font:italic 400 15px Georgia,serif;color:#6d6455'>Rejoining the broadcast&hellip;</div>";
+          if (pg) pg.innerHTML = "<div style='padding:90px 24px;text-align:center;font:400 15px Fraunces,Georgia,serif;color:#6d6455'>Rejoining the broadcast&hellip;</div>";
           wtMaybeResume();   // fires now if the world is aboard; the boot poll covers the rest
           return;
         }
@@ -585,7 +585,7 @@
       return;
     }
     if (false) {
-      page.innerHTML = "<div class='fo-wt'><p style='padding:80px 20px;color:#fff;font:italic 400 15px Georgia,serif'>Joining the broadcast&hellip; " +
+      page.innerHTML = "<div class='fo-wt'><p style='padding:80px 20px;color:#fff;font:400 15px Fraunces,Georgia,serif'>Joining the broadcast&hellip; " +
         "<a href='#/watch?n=" + encodeURIComponent(rid) + "&f=" + fi + "' style='color:#E8B96A;text-decoration:underline'>taking long? open the fixtures page</a></p></div>";
       setTimeout(function () { try { window.foWtSpectate(rid, null, null, fi); } catch (eGo) {} }, 30);
       var goBusy = function () { try { return typeof M !== "undefined" && M && !M.done && M.meta && M.meta.__spectate; } catch (eB) { return false; } };
@@ -724,8 +724,8 @@
       ".fo-wt-ground{font:600 11px/1.4 Inter,sans-serif;color:rgba(20,32,47,.55);margin-bottom:7px}",
       ".fo-wt-bug{background:#0E233F;border-left:3px solid #C95532;border-radius:16px;padding:15px 17px;color:#FFFEFC;box-shadow:0 8px 24px rgba(14,35,63,.18)}",
       ".fo-wt-teams{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}",
-      ".fo-wt-teams b{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:18px;color:#FFFEFC}",
-      ".fo-wt-teams i{font-style:italic;font-size:11px;color:rgba(255,254,252,.5)}",
+      ".fo-wt-teams b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:18px;color:#FFFEFC}",
+      ".fo-wt-teams i{font-style:normal;font-size:11px;color:rgba(255,254,252,.5)}",
       ".fo-wt-score{font:700 15px/1.3 Oswald,sans-serif;letter-spacing:.04em;color:#E8B96A;margin-top:7px}",
       ".fo-wt-crease{display:flex;justify-content:space-between;gap:10px;margin-top:10px;font:400 11.5px/1.5 Inter,sans-serif;color:rgba(255,254,252,.85);flex-wrap:wrap}",
       ".fo-wt-crease u{text-decoration:none;color:#FFFEFC;font-weight:600}",
@@ -733,12 +733,12 @@
       ".fo-wt-over i{font-style:normal;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:rgba(255,254,252,.1);border:1px solid rgba(255,254,252,.18);font:700 11px/1 Oswald,sans-serif;color:#E8DFCE}",
       ".fo-wt-over i.b{background:rgba(232,185,106,.2);border-color:#E8B96A;color:#E8B96A}",
       ".fo-wt-over i.w{background:rgba(255,107,94,.22);border-color:#FF6B5E;color:#FF6B5E}",
-      ".fo-wt-comm{font:italic 400 12px/1.5 'Fraunces',Georgia,serif;color:rgba(255,254,252,.65);margin-top:9px}",
+      ".fo-wt-comm{font:400 12px/1.5 Fraunces,Georgia,serif;color:rgba(255,254,252,.65);margin-top:9px}",
       ".fo-wt-enter{display:block;width:100%;margin-top:12px;font:700 12px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:#C95532 !important;border:none !important;border-radius:999px !important;padding:13px 16px !important;cursor:pointer;text-align:center;text-decoration:none !important}",
       ".fo-wt-teamsin{margin-top:12px;border-top:1px solid rgba(255,254,252,.14);padding-top:11px}",
       ".fo-wt-teamsin .ld{font:400 12px/1.4 Inter,sans-serif;color:rgba(255,254,252,.65)}",
       ".fo-wt-teamsin .cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}",
-      ".fo-wt-teamsin .c b{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:13px;margin-bottom:2px}",
+      ".fo-wt-teamsin .c b{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:13px;margin-bottom:2px}",
       ".fo-wt-teamsin .c u{display:block;text-decoration:none;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#E8B96A;margin-bottom:6px}",
       ".fo-wt-teamsin .c span{display:flex;align-items:baseline;gap:6px;font:400 11.5px/1.55 Inter,sans-serif;color:rgba(255,254,252,.85)}",
       ".fo-wt-teamsin .c span i{font-style:normal;font:700 9px/1 Oswald,sans-serif;color:rgba(255,254,252,.4);width:12px;text-align:right}",

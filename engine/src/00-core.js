@@ -2746,7 +2746,7 @@ function pgMatch(){
     try{
       const wtR=JSON.parse(localStorage.getItem('fo_wt_resume')||'null');
       if(wtR&&wtR.until&&Date.now()<wtR.until){
-        $('#page').innerHTML='<div style="padding:90px 24px;text-align:center;font:italic 400 15px Georgia,serif;color:#6d6455">Rejoining the broadcast&hellip; <a href="#/home" style="color:#C9571F;text-decoration:underline">or go to the club</a></div>';
+        $('#page').innerHTML='<div style="padding:90px 24px;text-align:center;font:400 15px Fraunces,Georgia,serif;color:#6d6455">Rejoining the broadcast&hellip; <a href="#/home" style="color:#C9571F;text-decoration:underline">or go to the club</a></div>';
         // and if the world will not answer, let go of the note rather than
         // hold the reader on this curtain forever
         setTimeout(function(){try{
@@ -4912,7 +4912,7 @@ window.foClubCrest = (function () {
       "<path d='M60 26 L60 128 M18 70 L102 70' stroke='url(#" + id + "g)' stroke-width='2.6' fill='none'/>" +
       "<path d='M18 26 L60 26 L60 70 L18 70 Z M60 70 L102 70 L102 128 L60 128 Z' fill='" + NAVY + "' opacity='.45'/></g>" +
       "<path d='M60 123.5 C37 110 22.5 94 22.5 68 L22.5 30.5 L97.5 30.5 L97.5 68 C97.5 94 83 110 60 123.5 Z' fill='none' stroke='" + GOLD + "' stroke-width='1.2' opacity='.85'/>";
-    var mono = "<text x='60' y='90' text-anchor='middle' font-family='Fraunces,Georgia,serif' font-weight='600'" +
+    var mono = "<text x='60' y='90' text-anchor='middle' font-family='Fraunces,Fraunces,Georgia,serif' font-weight='600'" +
       " font-size='" + (ini.length > 1 ? 40 : 48) + "' fill='" + CREAM + "' letter-spacing='1'" +
       " stroke='" + c2 + "' stroke-width='3' paint-order='stroke'>" + esc(ini) + "</text>";
     if (!full) {

@@ -76,19 +76,21 @@
   // Branded toast notifications instead of native alert() popups. Errors show
   // terracotta with a warning icon; everything else neutral navy with a check.
   var _toastHost = null;
+  /* TOASTS ARE GONE.
+   *
+   * Every confirmation this program had was a slab that slid over the corner
+   * of the screen, sat there for up to six and a half seconds and then took
+   * itself away - on a phone, over the thing you had just tapped. Sixty-nine
+   * call sites, most of them telling you what you had plainly just done.
+   *
+   * The work still reports itself where the work is: an order that saved
+   * leaves the room, a bid that lands appears on the board, a lineup that
+   * files turns its button green. What is left here writes to the console so
+   * nothing is lost to somebody debugging, and puts nothing on the screen.
+   * Errors that a manager genuinely cannot proceed past still stop him - those
+   * go through foConfirm, which is a modal and stays. */
   function toast(msg, kind) {
-    try {
-      if (!_toastHost || !_toastHost.isConnected) { _toastHost = document.createElement("div"); _toastHost.id = "fo-toasts"; document.body.appendChild(_toastHost); }
-      var t = document.createElement("div");
-      t.className = "fo-toast fo-toast-" + (kind || "info");
-      t.innerHTML = "<span class='fo-toast-ic'>" + FO_I(kind === "error" ? "warn" : "checkCircle", 16) + "</span><span class='fo-toast-tx'>" + E(msg) + "</span>";
-      _toastHost.appendChild(t);
-      t.addEventListener("click", function () { t.remove(); });
-      requestAnimationFrame(function () { t.classList.add("on"); });
-      var ttl = Math.min(6500, 3000 + msg.length * 28);   // longer messages linger (capped - stacked toasts were burying the UI on phones)
-      setTimeout(function () { t.classList.remove("on"); setTimeout(function () { t.remove(); }, 350); }, ttl);
-      while (_toastHost.children.length > 2) _toastHost.firstChild.remove();
-    } catch (e) { try { window.alert(msg); } catch (e2) {} }
+    try { (kind === "error" ? console.warn : console.info)("[fifty-overs] " + msg); } catch (e) {}
   }
   function say(m) {
     var isErr = !!(m && (m instanceof Error || m.message));
@@ -602,10 +604,8 @@
         "@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url(" + fbase + "inter-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}" +
         "@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url(" + fbase + "inter-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}" +
         // Fraunces: the almanack voice - variable optical-size serif for display
-        "@font-face{font-family:'Fraunces';font-style:normal;font-weight:300 700;font-display:swap;src:url(" + fbase + "fraunces-normal-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}" +
-        "@font-face{font-family:'Fraunces';font-style:normal;font-weight:300 700;font-display:swap;src:url(" + fbase + "fraunces-normal-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}" +
-        "@font-face{font-family:'Fraunces';font-style:italic;font-weight:300 700;font-display:swap;src:url(" + fbase + "fraunces-italic-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}" +
-        "@font-face{font-family:'Fraunces';font-style:italic;font-weight:300 700;font-display:swap;src:url(" + fbase + "fraunces-italic-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}";
+        "@font-face{font-family:Fraunces;font-style:normal;font-weight:300 700;font-display:swap;src:url(" + fbase + "fraunces-normal-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}" +
+        "@font-face{font-family:Fraunces;font-style:normal;font-weight:300 700;font-display:swap;src:url(" + fbase + "fraunces-normal-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}";
       document.head.appendChild(ff);
     }
   } catch (e) {}

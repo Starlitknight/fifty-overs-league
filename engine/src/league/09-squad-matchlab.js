@@ -679,7 +679,7 @@
       // masthead over the art
       ".fo-sqx-hd{margin-bottom:14px}",
       ".fo-sqx-hd h1{font-family:Oswald,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.02em;font-size:clamp(34px,5vw,64px);line-height:.88;margin:0;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.6)}",
-      ".fo-sqx-tag{font-family:Georgia,serif;font-style:italic;font-size:clamp(14px,1.5vw,19px);color:var(--gold);margin-top:6px;text-shadow:0 2px 12px rgba(0,0,0,.7)}",
+      ".fo-sqx-tag{font-family:Fraunces,Georgia,serif;font-style:normal;font-size:clamp(14px,1.5vw,19px);color:var(--gold);margin-top:6px;text-shadow:0 2px 12px rgba(0,0,0,.7)}",
       // the field itself
       // the team photograph: standing row behind, seated row in front,
       // the front row overlapping the back the way bodies do on the steps
@@ -692,7 +692,7 @@
       ".fo-sqx-row.ph-front{z-index:2;margin-top:clamp(-20px,-1.8vh,-9px)}",
       ".fo-sqx-plate{align-self:center;margin-top:clamp(10px,1.8vh,18px);padding:7px 22px;border-radius:4px;text-align:center;background:linear-gradient(180deg,#caa64e,#8f7226 85%);box-shadow:0 2px 8px rgba(0,0,0,.5),inset 0 1px 0 rgba(255,240,200,.55);border:1px solid rgba(60,47,13,.6)}",
       ".fo-sqx-plate b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:12px;letter-spacing:.24em;text-transform:uppercase;color:#2e2408;text-shadow:0 1px 0 rgba(255,240,200,.4)}",
-      ".fo-sqx-plate span{display:block;font-family:Georgia,serif;font-style:italic;font-size:10.5px;color:#4a3a10}",
+      ".fo-sqx-plate span{display:block;font-family:Fraunces,Georgia,serif;font-style:normal;font-size:10.5px;color:#4a3a10}",
       // a man on the park
       "html body #page button.fo-sqx-man{position:relative;width:clamp(72px,7.2vw,104px);padding:0 0 6px !important;border:0 !important;border-radius:12px !important;font:inherit !important;cursor:pointer;background:linear-gradient(180deg,rgba(10,18,32,.42),rgba(6,11,20,.9)) !important;outline:1.5px solid rgba(150,180,225,.22);transition:transform .18s cubic-bezier(.2,.7,.2,1),outline-color .18s,box-shadow .18s}",
       "html body #page button.fo-sqx-man:hover{background:linear-gradient(180deg,rgba(14,24,42,.5),rgba(6,11,20,.94)) !important;transform:translateY(-4px);outline-color:rgba(235,194,113,.6);box-shadow:0 12px 26px rgba(0,0,0,.5)}",
@@ -730,7 +730,7 @@
       "html body #page .fo-sqg-pick select,html body.ftpskin #page .fo-sqg-pick select{-webkit-appearance:none;appearance:none;border:1px solid rgba(20,28,40,.16) !important;border-radius:8px !important;background:#FFFEFC url(\"data:image/svg+xml,%3Csvg xmlns=&#39;http://www.w3.org/2000/svg&#39; viewBox=&#39;0 0 10 6&#39;%3E%3Cpath d=&#39;M1 1l4 4 4-4&#39; fill=&#39;none&#39; stroke=&#39;%23141C28&#39; stroke-width=&#39;1.4&#39; stroke-linecap=&#39;round&#39;/%3E%3C/svg%3E\") no-repeat right 10px center/10px 6px !important;color:#141C28 !important;font:600 11px Oswald,sans-serif !important;letter-spacing:.1em;text-transform:uppercase;padding:7px 28px 7px 11px !important;min-height:32px;cursor:pointer}",
       "html body #page .fo-sqg-pick select:hover{border-color:rgba(217,85,42,.5) !important}",
       "html body #page .fo-sqg-pick select:focus-visible{outline:2px solid #C95532;outline-offset:1px}",
-      ".fo-sqg-cap{margin:0 0 10px;font:italic 400 12.5px/1.5 Georgia,serif;color:rgba(20,28,40,.58)}",
+      ".fo-sqg-cap{margin:0 0 10px;font:400 12.5px/1.5 Fraunces,Georgia,serif;color:rgba(20,28,40,.58)}",
       ".fo-sqg-cap b{font-style:normal;font-weight:600;color:#B44A22}",
       // NO SCROLLBAR OF ITS OWN. A box with its own bar inside a page with
       // another one is two scrollbars for one list. The grid is as tall as the
@@ -799,7 +799,7 @@
       ".fo-sqg-fl{display:inline-block;width:20px;height:14px;border-radius:2px;overflow:hidden;vertical-align:-2px;box-shadow:0 0 0 1px rgba(20,28,40,.12)}",
       ".fo-sqg-fl img{width:100%;height:100%;object-fit:cover;display:block}",
       ".fo-sqg-nat{font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:rgba(20,28,40,.55)}",
-      ".fo-sqg-v{font-family:Oswald,sans-serif;font-weight:600;font-size:12.5px;font-variant-numeric:tabular-nums}",
+      ".fo-sqg-v{font-family:Inter,sans-serif;font-weight:600;font-size:12.5px;font-variant-numeric:tabular-nums}",
       ".fo-sqg .c-fit{white-space:nowrap}",
       ".fo-sqg-fit{display:inline-block;width:34px;height:5px;border-radius:3px;background:rgba(20,32,47,.12);margin-right:6px;vertical-align:2px;overflow:hidden}",
       ".fo-sqg-fit i{display:block;height:100%;border-radius:3px}",
@@ -807,7 +807,7 @@
       ".fo-sqg td.agg .fo-sqg-v{font-weight:700;font-size:13.5px}",
       ".fo-sqg td.c-ovr .fo-sqg-v{font-size:15px}",
       // the club's own line, under the men
-      ".fo-sqg-none{text-align:center;font:italic 400 13px Georgia,serif;color:rgba(20,28,40,.5);height:74px}",
+      ".fo-sqg-none{text-align:center;font:400 13px Fraunces,Georgia,serif;color:rgba(20,28,40,.5);height:74px}",
       // the grid is a daylight page like the roster: no art, no veil
       // ---- THE ANALYST'S DESK (the grid view's own clothes) -----------------
       // THE SWITCH DOES NOT MOVE. The grid borrows the roster's exact room -
@@ -827,7 +827,7 @@
       "html body #page .fo-sqx.analyst button.fo-sqx-vb.on{background:#14243A !important;color:#F1EEE6 !important}",
       // the book fills the same room the roster's list does
       ".fo-sqx.analyst .fo-sqg-outer{max-width:none;margin:0 0 34px}",
-      ".fo-sqa-warn{padding:26px 20px;border:1px solid rgba(27,36,50,.12);border-radius:13px;background:#FFFEFC;color:#7B8698;font:italic 400 13px/1.6 Fraunces,Georgia,serif}",
+      ".fo-sqa-warn{padding:26px 20px;border:1px solid rgba(27,36,50,.12);border-radius:13px;background:#FFFEFC;color:#7B8698;font:400 13px/1.6 Fraunces,Fraunces,Georgia,serif}",
       "@media(max-width:600px){.fo-sqx.analyst .fo-sqa-ttl h1{font-size:30px}}",
       ".fo-sqx.gridding .fo-sqx-bg,.fo-sqx.gridding .fo-sqx-veil{display:none}",
       // overflow:hidden on the park (it clips the ground art) would make the
@@ -858,7 +858,7 @@
       ".fo-sqx-bhd span{font-family:Oswald,sans-serif;letter-spacing:.14em;font-size:10px;color:#6f819e}",
       ".fo-sqx-brow{display:flex;gap:10px;overflow-x:auto;padding-bottom:4px;scrollbar-width:thin}",
       ".fo-sqx-brow .fo-sqx-man{flex:0 0 auto}",
-      ".fo-sqx-bempty{font-family:Georgia,serif;font-style:italic;font-size:13px;color:#6f819e}",
+      ".fo-sqx-bempty{font-family:Fraunces,Georgia,serif;font-style:normal;font-size:13px;color:#6f819e}",
       // ---- the roster: daylight browse list ----
       ".fo-sqx.rostering .fo-sqx-bg,.fo-sqx.rostering .fo-sqx-veil{display:none}",
       ".fo-sqx.rostering .fo-sqx-park{background:transparent}",
@@ -885,7 +885,7 @@
       ".fo-ros-tal{display:flex;flex-wrap:wrap;gap:4px;margin-top:4px}",
       ".fo-ros-tal u{text-decoration:none;font:700 8px/1 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#8a6d3b;background:rgba(176,132,9,.1);border:1px solid rgba(176,132,9,.28);border-radius:5px;padding:2.5px 6px;white-space:nowrap}",
       ".fo-ros-tal u.m{color:rgba(20,28,40,.45);background:rgba(20,28,40,.05);border-color:rgba(20,28,40,.15)}",
-      ".fo-ros-ovr{font-family:Oswald,sans-serif;font-weight:700;font-size:23px;font-variant-numeric:tabular-nums;min-width:30px;text-align:right;padding-left:12px;border-left:1px solid rgba(20,28,40,.15)}",
+      ".fo-ros-ovr{font-family:Inter,sans-serif;font-weight:700;font-size:23px;font-variant-numeric:tabular-nums;min-width:30px;text-align:right;padding-left:12px;border-left:1px solid rgba(20,28,40,.15)}",
       ".fo-ros-go{display:none}",
       ".fo-ros .fo-sqt-frm .w{display:none}",
       "@media(max-width:480px){.fo-ros-row{gap:9px}}",
@@ -919,20 +919,20 @@
       ".fo-sqx-attr .k{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:9.5px;color:#6B7686;min-width:56px}",
       ".fo-sqx-attr .m{height:5px;border-radius:3px;background:rgba(20,28,40,.1);overflow:hidden}",
       ".fo-sqx-attr .m i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#C9A24B,var(--gold))}",
-      ".fo-sqx-attr .v{font-family:Oswald,sans-serif;font-weight:600;font-size:12px;color:#141C28;min-width:22px;text-align:right;font-variant-numeric:tabular-nums}",
+      ".fo-sqx-attr .v{font-family:Inter,sans-serif;font-weight:600;font-size:12px;color:#141C28;min-width:22px;text-align:right;font-variant-numeric:tabular-nums}",
       ".fo-sqx-attr.nil .v{color:#9AA3AE}.fo-sqx-attr.nil .m i{background:rgba(20,28,40,.18)}",
       // traits + stars
-      ".fo-sqx-trait{display:flex;gap:8px;font-family:Georgia,serif;font-size:12.5px;line-height:1.45;color:#3A4453;margin-bottom:7px}",
+      ".fo-sqx-trait{display:flex;gap:8px;font-family:Fraunces,Georgia,serif;font-size:12.5px;line-height:1.45;color:#3A4453;margin-bottom:7px}",
       ".fo-sqx-trait s{color:#B08409;text-decoration:none;line-height:1.2}",
       ".fo-sqx-stars{display:flex;gap:3px;font-size:17px;color:rgba(20,28,40,.18);margin-top:4px}",
       ".fo-sqx-stars .on{color:#C89A2E}",
       // form + condition
       ".fo-sqx-frow{display:grid;grid-template-columns:1fr auto;gap:18px;align-items:center;padding:14px 18px;border-top:1px solid rgba(20,28,40,.1)}",
       ".fo-sqx-pips{display:flex;gap:6px;flex-wrap:wrap}",
-      ".fo-sqx-pip{font-family:Oswald,sans-serif;font-weight:600;font-size:12.5px;min-width:38px;text-align:center;padding:7px 6px;border-radius:7px;background:rgba(20,28,40,.08);color:#141C28;font-variant-numeric:tabular-nums}",
+      ".fo-sqx-pip{font-family:Inter,sans-serif;font-weight:600;font-size:12.5px;min-width:38px;text-align:center;padding:7px 6px;border-radius:7px;background:rgba(20,28,40,.08);color:#141C28;font-variant-numeric:tabular-nums}",
       ".fo-sqx-pip.hi{background:rgba(22,163,74,.14);color:#177A45}",
       ".fo-sqx-pip.lo{background:rgba(180,45,45,.12);color:#A72F2F}",
-      ".fo-sqx-none{font-family:Georgia,serif;font-style:italic;font-size:12.5px;color:#8A8272}",
+      ".fo-sqx-none{font-family:Fraunces,Georgia,serif;font-style:normal;font-size:12.5px;color:#8A8272}",
       ".fo-sqx-ring{position:relative;width:66px;height:66px;flex:0 0 auto}",
       ".fo-sqx-ring svg{transform:rotate(-90deg);display:block}",
       ".fo-sqx-ring circle{fill:none;stroke-width:5}",
@@ -950,7 +950,7 @@
       "html body #page button.fo-sqx-act.solid{background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;border:0 !important;color:#0d1526 !important;box-shadow:0 6px 18px rgba(235,194,113,.24)}",
       "html body #page button.fo-sqx-act.solid:hover{background:linear-gradient(180deg,#F5C566,#D4AC52) !important;color:#0d1526 !important;border-color:transparent !important;transform:translateY(-1px);box-shadow:0 10px 24px rgba(235,194,113,.34)}",
       "html body #page button.fo-sqx-act.solid.arm{background:linear-gradient(180deg,#5BD0A6,#2f9d78) !important;color:#062018 !important}",
-      ".fo-sqx-hint{grid-column:1/-1;font-family:Georgia,serif;font-style:italic;font-size:12.5px;line-height:1.45;color:#2E7D5B;margin:0}",
+      ".fo-sqx-hint{grid-column:1/-1;font-family:Fraunces,Georgia,serif;font-style:normal;font-size:12.5px;line-height:1.45;color:#2E7D5B;margin:0}",
       // ---- stacked ----
       // the list wants the whole width - there is no dossier beside it
       "#page .fo-sqx.listing .fo-sqx-in{grid-template-columns:minmax(0,1fr)}",
@@ -1118,7 +1118,7 @@
       ".fo-s2-xirow .xrm{border:none;background:none;color:#c9c1ae;font-size:11px;cursor:pointer;padding:2px}",
       ".fo-s2-xirow .xrm:hover{color:#B23230}",
       "html body.ftpskin .fo-s2-xirow .xrm{background:none !important;color:#c9c1ae !important;border:none !important;box-shadow:none !important;padding:2px !important}",
-      ".fo-s2-xislot{padding:10px 14px;font:italic 500 11.5px Georgia,serif;color:#B23230;border-top:1px dashed #e8d5a8;background:#FDF8EE}",
+      ".fo-s2-xislot{padding:10px 14px;font:500 11.5px Fraunces,Georgia,serif;color:#B23230;border-top:1px dashed #e8d5a8;background:#FDF8EE}",
       ".fo-s2-xirow:last-of-type{border-bottom:none}",
       ".fo-s2-xirow.dragover{background:#FBF0D8}",
       ".fo-s2-xirow .grip{color:#c9c1ae;cursor:grab;font-size:11px;letter-spacing:-1px}",

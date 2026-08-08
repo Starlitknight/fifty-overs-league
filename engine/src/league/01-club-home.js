@@ -2280,7 +2280,7 @@
       ".fo-cxh-next .fo-cxh-face.crest{object-fit:contain;padding:6px;background:rgba(255,254,252,.92)}" +
       ".fo-cxh-next b{color:#FFFEFC}.fo-cxh-next em{display:block;font-style:normal;font-size:12px;color:#b9c2d4}" +
       ".fo-cxh-next .bosslbl{font-style:normal;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.6px;color:#F0B94E}" +
-      ".fo-cxh-quip{font-style:italic;font-size:13px;color:#dfe5f0;margin-top:9px;max-width:520px}" +
+      ".fo-cxh-quip{font-style:normal;font-size:13px;color:#dfe5f0;margin-top:9px;max-width:520px}" +
       ".fo-cxh-story{font-size:12px;color:#b9c2d4;margin-top:7px;max-width:520px}.fo-cxh-story a{color:#E4C463}" +
       ".fo-cxh-act{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap}" +
       "html body #page .fo-cxh-cta,html body.ftpskin #page .fo-cxh-cta{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:12.5px;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:10px;padding:10px 22px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.35) !important}" +
@@ -2337,7 +2337,7 @@
       ".pht{display:flex;gap:9px;align-items:flex-start;background:rgba(255,255,255,.06);border:1px solid rgba(201,162,75,.35);border-radius:10px;padding:7px 10px}" +
       ".pht-k{flex:0 0 auto;font-family:Oswald,sans-serif;font-size:8.5px;letter-spacing:1.6px;color:#0B1322;background:#C9A24B;border-radius:6px;padding:2.5px 7px;font-weight:600;margin-top:1px}" +
       ".pht b{font-size:13px;color:#FFFEFC}.pht p{margin:1px 0 0;font-size:11.5px;line-height:1.45;color:#b9c2d4}" +
-      ".phc-meta{display:flex;gap:7px;justify-content:center;align-items:center;flex-wrap:wrap;font-style:italic;font-size:12px;color:#c7cede;margin-top:10px}" +
+      ".phc-meta{display:flex;gap:7px;justify-content:center;align-items:center;flex-wrap:wrap;font-style:normal;font-size:12px;color:#c7cede;margin-top:10px}" +
       ".phc-meta.phc-m2{margin-top:2px;font-size:11px;color:#a7b1c6}" +
       ".phc-meta s{text-decoration:none;color:#C9A24B}" +
       ".phc-ft{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12);font-family:Oswald,sans-serif;font-size:9px;letter-spacing:1.6px;color:#8a93a3}" +
@@ -2410,7 +2410,7 @@
       "html body #page #fo-pstage .fo-bigskill-bar i{background:linear-gradient(90deg,var(--tc),#F0B94E) !important;border-radius:99px}" +
       "html body #page #fo-pstage .fo-bigskill-w{color:#dfe5f0 !important}" +
       // career panel: pill tabs, gold moments
-      "html body #page #fo-pstage .fo-cp-prov{background:rgba(255,255,255,.06) !important;border:1px solid rgba(255,255,255,.14) !important;color:#c7cede !important;font-style:italic}" +
+      "html body #page #fo-pstage .fo-cp-prov{background:rgba(255,255,255,.06) !important;border:1px solid rgba(255,255,255,.14) !important;color:#c7cede !important;font-style:normal}" +
       "#fo-pstage .fo-cp-tabs{display:flex;gap:8px;margin:9px 0 5px}" +
       "html body #page #fo-pstage .fo-cp-tab{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);color:#dfe5f0 !important;border-radius:99px;padding:4px 15px;cursor:pointer;font-family:Oswald,sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-size:10.5px;text-decoration:none}" +
       "html body #page #fo-pstage .fo-cp-tab.on{background:#C9A24B;border-color:#C9A24B;color:#101B2D !important;font-weight:600}" +

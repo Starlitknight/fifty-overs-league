@@ -225,7 +225,7 @@
       ".fo-nt-in{max-width:760px;margin:0 auto;padding:14px 12px 40px}",
       ".fo-nt-hero{background:linear-gradient(135deg,#14243A,#0E2246);border-radius:16px;padding:20px 22px;margin-bottom:12px;border-left:4px solid #C9571F}",
       ".fo-nt-hero i{font:700 10px Oswald,sans-serif;letter-spacing:.22em;color:#E8B96A;font-style:normal}",
-      ".fo-nt-hero h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:34px;color:#FFFEFC;margin:4px 0 0}",
+      ".fo-nt-hero h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:34px;color:#FFFEFC;margin:4px 0 0}",
       ".fo-nt-hero u{display:inline-block;margin-top:8px;text-decoration:none;font:600 11px Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#F1B27A}",
       ".fo-nt-card{background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);padding:6px 14px 8px;margin-bottom:12px}",
       ".fo-nt-ck{display:flex;align-items:center;gap:8px;font:600 10px Oswald,sans-serif;letter-spacing:.19em;text-transform:uppercase;color:#a49b86;padding:11px 0 9px;border-bottom:1px solid #efe9dc}",
@@ -248,7 +248,7 @@
       // and unread news carries a quiet mark rather than a shout
       ".fo-nt-row.fresh .ic{background:#E7F1EC;color:#177A57}",
       ".fo-nt-row.fresh b:after{content:'';display:inline-block;width:6px;height:6px;border-radius:50%;background:#C9571F;margin-left:7px;vertical-align:middle}",
-      ".fo-nt-empty{padding:22px 4px;text-align:center;font:italic 400 12.5px Georgia,serif;color:#a49b86}",
+      ".fo-nt-empty{padding:22px 4px;text-align:center;font:400 12.5px Fraunces,Georgia,serif;color:#a49b86}",
       "@media(max-width:560px){.fo-nt-hero h1{font-size:27px}.fo-nt-row b{font-size:12.5px}.fo-nt-row i{font-size:11px}",
       "html body #page a.fo-nt-row{grid-template-columns:26px minmax(0,1fr);gap:9px}.fo-nt-row .wh{display:none}}"
     ].join("\n");

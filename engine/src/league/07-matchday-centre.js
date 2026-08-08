@@ -2478,9 +2478,9 @@
       "body.fo-dash a.fo-db-tml{color:inherit !important;text-decoration:none}" +
       "body.fo-dash a.fo-db-tml:hover{color:#C9571F !important;text-decoration:underline}" +
       "body.fo-dash .fo-db-bug .tm.rt{margin-left:auto;text-align:right}" +
-      "body.fo-dash .fo-db-bug .sc b{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:28px;line-height:1}" +
+      "body.fo-dash .fo-db-bug .sc b{display:block;font-family:Fraunces,Fraunces,Georgia,serif;font-weight:600;font-size:28px;line-height:1}" +
       "body.fo-dash .fo-db-bug .st{text-align:center;border-left:1px solid #eee7d9;padding-left:20px}" +
-      "body.fo-dash .fo-db-bug .st b{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:19px;margin-top:2px}" +
+      "body.fo-dash .fo-db-bug .st b{display:block;font-family:Fraunces,Fraunces,Georgia,serif;font-weight:600;font-size:19px;margin-top:2px}" +
       "body.fo-dash .fo-db-bug .st b.sm{font-size:11px;font-family:Inter,sans-serif;font-weight:500;max-width:150px}" +
       "body.fo-dash .fo-db-bug .bb9{display:flex;gap:4px;margin-top:5px}" +
       "body.fo-dash .fo-db-bug .db-b{min-width:22px;height:22px;font-size:11px}" +
@@ -2495,7 +2495,7 @@
       "body.fo-dash .db-p img{width:48px;height:48px;border-radius:50%;object-fit:cover;object-position:50% 12%;border:2px solid #E8B96A;flex:0 0 48px}" +
       // when the row runs tight the NAME gives way, never the numbers
       "body.fo-dash .db-p .pt{flex:1;min-width:0;overflow:hidden}" +
-      "body.fo-dash .db-p .nm{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:14px;line-height:1.1;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      "body.fo-dash .db-p .nm{font-family:Fraunces,Fraunces,Georgia,serif;font-weight:600;font-size:14px;line-height:1.1;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       "body.fo-dash .db-p .rw{display:flex;gap:7px;align-items:center;margin-top:3px;overflow:hidden}" +
       "body.fo-dash .db-p .rw .k{white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;font-size:8.5px}" +
       // the ten stars read exactly as the scorecard reads them: filled gold,
@@ -2506,7 +2506,7 @@
       "body.fo-dash .db-p .stars em.f{color:#E8B96A}" +
       "body.fo-dash .db-p .stars em.h{color:#E8B96A;opacity:.55}" +
       "body.fo-dash .db-p .pr{margin-left:auto;text-align:right;flex:0 0 auto}" +
-      "body.fo-dash .db-p .pr b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:15px;white-space:nowrap}" +
+      "body.fo-dash .db-p .pr b{font-family:Fraunces,Fraunces,Georgia,serif;font-weight:600;font-size:15px;white-space:nowrap}" +
       "body.fo-dash .db-p .pr b.fig{font-size:13.5px}" +
       "body.fo-dash .db-p .pr b i{color:#C9571F;font-style:normal}" +
       "body.fo-dash .db-p .pr span{font-size:10.5px;color:#8a7f6e;margin-left:3px}" +
@@ -2585,7 +2585,7 @@
       "#fo-commpage .cp-art{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 38%}" +
       "#fo-commpage .cp-veil{position:absolute;inset:0;background:linear-gradient(90deg,rgba(20,36,58,.94) 0%,rgba(20,36,58,.82) 46%,rgba(20,36,58,.5) 100%)}" +
       "#fo-commpage .cp-hin{position:relative;display:flex;align-items:center;gap:18px;padding:16px max(24px,calc(50vw - 560px));flex-wrap:wrap}" +
-      "#fo-commpage .cp-title b{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:20px;color:#FFFEFC}" +
+      "#fo-commpage .cp-title b{display:block;font-family:Fraunces,Fraunces,Georgia,serif;font-weight:600;font-size:20px;color:#FFFEFC}" +
       "#fo-commpage .cp-title span{font:500 11px Oswald,sans-serif;letter-spacing:1.8px;text-transform:uppercase;color:#c9d0da}" +
       "#fo-commpage .cp-title span i{font-style:normal;color:#E8B96A;font-size:13px}" +
       "html body #fo-cp-back{font-family:Oswald,sans-serif;font-weight:500;font-size:11px;letter-spacing:1.6px;text-transform:uppercase;color:#FFFEFC !important;background:rgba(255,255,255,.1) !important;border:1px solid rgba(255,255,255,.35) !important;border-radius:9px;padding:9px 14px;cursor:pointer;box-shadow:none !important}" +
@@ -3683,7 +3683,7 @@
       ".fo-mst.k-wicket .fo-mst-moment .t{color:#ff6c61}" +
       ".fo-mst.k-dot .fo-mst-moment .t{color:#c7e4e8}" +
       ".fo-mst.k-done .fo-mst-moment .t{color:#8fe3a4}" +
-      ".fo-mst-moment p{max-width:440px;margin:0 auto;color:rgba(255,255,255,.92);font-family:Georgia,serif;font-size:15px;line-height:1.45}" +
+      ".fo-mst-moment p{max-width:440px;margin:0 auto;color:rgba(255,255,255,.92);font-family:Fraunces,Georgia,serif;font-size:15px;line-height:1.45}" +
       ".fo-mst-foot{position:absolute;z-index:7;left:14px;right:14px;bottom:12px;min-height:46px;display:flex;justify-content:space-between;align-items:center;gap:14px;padding:8px 12px;border-radius:13px;background:rgba(5,20,40,.8);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px);color:#fff}" +
       ".fo-mst-foot .gf{font-size:11.5px;color:rgba(255,255,255,.82);line-height:1.4}" +
       ".fo-mst-foot .gf b{color:#f7c75b;font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.6px;text-transform:uppercase;margin-right:4px}" +

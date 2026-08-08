@@ -316,8 +316,12 @@
         var dist9 = mins >= 90 ? Math.floor(mins / 60) + "h " + (mins % 60) + "m" : mins + " minute" + (mins === 1 ? "" : "s");
         page.innerHTML = shell(rid, cal, "up", m,
           stageShell(m, null, Date.now() < winStart
-            ? "Friendly &middot; first ball <b>" + E(whenT) + (tz9 ? " " + E(tz9) : "") + " your time</b> (" + E(utcT) + " UTC) &mdash; in " + dist9 + "."
-            : "Friendly &middot; the umpire is walking out &mdash; the first deliveries arrive in a minute or two."));
+            ? "Friendly &middot; first ball <b>" + E(whenT) + (tz9 ? " " + E(tz9) : "") + " your time</b> (" + E(utcT) + " UTC)"
+            : "Friendly &middot; the umpire is walking out") +
+          preMatch(rid, cal, m, winStart,
+            "Nothing is at stake and nothing is banked \u2014 no points, no table, no place in the record. " +
+            "The teamsheet you filed is the side that walks out.") +
+          teamsPanel(m, rid));
         clearTimeout(T.timer);
         T.timer = setTimeout(function () { frFetch(frId, true).then(function () { window.foRenderFeedPage(); }); },
           winStart - Date.now() > 150000 ? 60000 : 20000);
@@ -359,8 +363,10 @@
         var mins = Math.max(1, Math.ceil((winStart - Date.now()) / 60000));
         page.innerHTML = shell(rid, cal, "up", m,
           stageShell(m, null, Date.now() < winStart
-            ? "Round " + cal.round + " &middot; the first ball at " + hh(pl.natHour(rid)) + " UTC &mdash; about " + mins + " minute" + (mins === 1 ? "" : "s") + " away."
-            : "Round " + cal.round + " &middot; the umpire is walking out &mdash; the first deliveries arrive in a minute or two."));
+            ? "Round " + cal.round + " &middot; first ball " + hh(pl.natHour(rid)) + " UTC"
+            : "Round " + cal.round + " &middot; the umpire is walking out") +
+          preMatch(rid, cal, m, winStart, "") +
+          teamsPanel(m, rid));
         clearTimeout(T.timer);
         T.timer = setTimeout(function () { logFetch(rid, id, true).then(function () { window.foRenderFeedPage(); }); }, 45000);
         return;
@@ -408,6 +414,99 @@
   window.foFeedFilter = function (f) { T.filter = f; if (T.args) paint.apply(null, T.args); };
   window.foFeedAll = function () { T.full = true; if (T.args) paint.apply(null, T.args); };
   function hh(h) { return (h < 10 ? "0" : "") + h + ":00"; }
+
+  /* ---- THE BUILD-UP -----------------------------------------------------
+     Before the first ball this page was a headline and one sentence: two club
+     names, a kick-off time, and eighty per cent of the screen left blank. A
+     friendly was the worst of it - "FIRST BALL SOON" and nothing whatever to
+     read while you waited.
+
+     Everything below is already knowable an hour out and none of it needed
+     asking the server for: the square and the sky come from the planet's own
+     condOf (the same call the umpire settles by, so what is promised here is
+     what is played), the sides come from sidesOf, and the teamsheets come
+     from the orders the world publishes at the lock. So the wait now has the
+     things a manager actually wants in it. */
+  function preMatch(rid, cal, m, winStart, note) {
+    var pl = P(); var out = "";
+    // ---- the clock ------------------------------------------------------
+    var left = winStart ? winStart - Date.now() : 0;
+    var cd = "";
+    if (left > 0) {
+      var mins = Math.floor(left / 60000), hrs = Math.floor(mins / 60);
+      cd = "<div class='fd-pmc'><span>First ball in</span><b>" +
+        (hrs > 0 ? hrs + "h " + (mins % 60) + "m" : Math.max(1, mins) + " min") + "</b></div>";
+    } else {
+      cd = "<div class='fd-pmc'><span>Now</span><b>The umpire is walking out</b></div>";
+    }
+
+    // ---- the square and the sky -----------------------------------------
+    var cond = null;
+    try { cond = pl && pl.condOf ? pl.condOf(rid, m.home.slot, (cal && cal.seasonNo) || 0, (cal && cal.round) || 0) : null; } catch (eC) {}
+    var PITCH = { balanced: "Balanced", flat: "Flat", green: "Green", dry: "Crumbling",
+                  slow: "Slow and low", cracked: "Cracked", twoPaced: "Two-paced" };
+    var TIP = { balanced: "Nothing given, nothing denied.", flat: "A road. Bat first and bat long.",
+                green: "The seamers talk all morning.", dry: "It will turn, and turn more after tea.",
+                slow: "Hard to hit through the line.", cracked: "Variable bounce brings edges.",
+                twoPaced: "The pace off the pitch never settles." };
+    if (cond) {
+      out += "<div class='fd-pmrow'>" +
+        "<div class='fd-pmk'><span>The square</span><b>" + E(PITCH[cond.pitch] || cond.pitch || "Balanced") + "</b>" +
+        "<u>" + E(TIP[cond.pitch] || "") + "</u></div>" +
+        "<div class='fd-pmk'><span>The sky</span><b>" + E(cond.weather || "Fair") + "</b>" +
+        "<u>" + E(typeof wxTip === "function" ? wxTip(cond.weather) : "") + "</u></div>" +
+        "<div class='fd-pmk'><span>The ground</span><b>" + E(m.home.name) + "</b>" +
+        "<u>" + (m.home.city ? E(m.home.city) + " &middot; " : "") + "home advantage to the hosts</u></div>" +
+        "</div>";
+    }
+
+    // ---- the two sides, and the men who decide it ------------------------
+    // sidesOf is the planet's own account of a club, so this reads the same
+    // eleven the umpire will pick from rather than a guess at one
+    // WHAT THE PLANET ACTUALLY KNOWS ABOUT A CLUB. sidesOf carries a club's
+    // identity and its standing - name, city, division, flagship, strength -
+    // and NOT its players; the squads live behind a separate fetch this page
+    // has no business making before a ball is bowled. So the card says what is
+    // in hand rather than an empty list where an eleven should be.
+    var sideCard = function (side, tag) {
+      var info = null;
+      try {
+        var all = (pl && pl.sidesOf(side.__c)) || [];
+        for (var i = 0; i < all.length; i++) if ((all[i].slot | 0) === (side.slot | 0)) { info = all[i]; break; }
+      } catch (eS) {}
+      var bits = [];
+      if (info) {
+        if (info.boss) bits.push("<em class='fl'>Flagship</em>");
+        bits.push("<em>Division " + (info.div === 2 ? "Two" : "One") + "</em>");
+        if (info.city) bits.push("<em>" + E(info.city) + "</em>");
+      }
+      // form, when the world's league snapshot is already on the device - it
+      // is not fetched for this, because a build-up is not worth a round trip
+      var form = "";
+      try {
+        var lg = window.__foWorldLg && window.__foWorldLg.get(side.__c);
+        var res = (lg && lg.results) || [];
+        var f5 = [];
+        for (var r = res.length - 1; r >= 0 && f5.length < 5; r--) {
+          var x = res[r];
+          if (x.home !== side.name && x.away !== side.name) continue;
+          f5.unshift(x.winner === null ? "t" : x.winner === side.name ? "w" : "l");
+        }
+        if (f5.length) form = "<div class='fd-pmform'>" + f5.map(function (k) {
+          return "<i class='" + k + "'>" + k.toUpperCase() + "</i>"; }).join("") + "</div>";
+      } catch (eL) {}
+      return "<div class='fd-pmside'><div class='fd-pmst'>" + tag + "</div>" +
+        "<a class='fd-pmsn' href='#/team?c=" + encodeURIComponent(side.__c) + "&s=" + side.slot + "'>" + E(side.name) + "</a>" +
+        (bits.length ? "<div class='fd-pmtags'>" + bits.join("") + "</div>" : "") + form +
+        "</div>";
+    };
+    out += "<div class='fd-pmsides'>" + sideCard(m.home, "Home") +
+      "<span class='fd-pmv'>v</span>" + sideCard(m.away, "Away") + "</div>";
+
+    return "<div class='fd-panel fd-pm'>" + cd +
+      (note ? "<p class='fd-pmnote'>" + note + "</p>" : "") + out + "</div>";
+  }
+
   function stageShell(m, inner, sub) {
     return "<div class='fd-stage'><div class='fd-stagein'>" +
       "<div class='fd-teams'><b>" + E(m.home.name) + "</b><i>vs</i><b>" + E(m.away.name) + "</b></div>" +
@@ -927,6 +1026,35 @@
       ".fo-fd{position:relative;min-height:70vh;color:var(--foink);font-family:Inter,-apple-system,sans-serif}",
       ".fo-fd .fd-in{max-width:1240px;margin:0 auto;padding:16px 24px 60px}",
       "@media(min-width:1400px){.fo-fd .fd-in{padding-left:44px;padding-right:44px}}",
+      // ---- the build-up, before a ball is bowled
+      ".fo-fd .fd-pm{margin-top:14px;padding:18px 20px 20px}",
+      ".fo-fd .fd-pmc{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--fobrd)}",
+      ".fo-fd .fd-pmc span{font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fomut)}",
+      ".fo-fd .fd-pmc b{font:700 26px/1 Inter,sans-serif;letter-spacing:-.02em;color:var(--foink);font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-pmnote{margin:13px 0 0;font:400 13px/1.6 Inter,sans-serif;color:#5d6472;max-width:66ch}",
+      ".fo-fd .fd-pmrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:16px}",
+      ".fo-fd .fd-pmk{border-left:3px solid var(--foor);padding:2px 0 2px 12px}",
+      ".fo-fd .fd-pmk span{display:block;font:600 9px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fomut)}",
+      ".fo-fd .fd-pmk b{display:block;margin-top:7px;font:600 16px/1.15 Inter,sans-serif;letter-spacing:-.01em;color:var(--foink)}",
+      ".fo-fd .fd-pmk u{display:block;margin-top:5px;font:400 12px/1.5 Inter,sans-serif;color:#6c7382;text-decoration:none}",
+      ".fo-fd .fd-pmsides{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:start;margin-top:20px;padding-top:18px;border-top:1px solid var(--fobrd)}",
+      ".fo-fd .fd-pmv{align-self:center;font:600 12px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fomut)}",
+      ".fo-fd .fd-pmst{font:600 9px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fomut)}",
+      "html body #page .fo-fd .fd-pmsn{display:block;margin-top:7px;font:600 17px/1.15 Inter,sans-serif;letter-spacing:-.015em;color:var(--foink) !important;text-decoration:none !important}",
+      "html body #page .fo-fd .fd-pmsn:hover{color:#B44A22 !important}",
+      ".fo-fd .fd-pmmen{margin-top:11px;display:flex;flex-direction:column;gap:6px}",
+      ".fo-fd .fd-pmmen span{display:flex;align-items:baseline;justify-content:space-between;gap:10px;font:500 12.5px/1.3 Inter,sans-serif;color:#3c4453;border-bottom:1px solid rgba(20,36,58,.06);padding-bottom:5px}",
+      ".fo-fd .fd-pmmen span:last-child{border-bottom:0}",
+      ".fo-fd .fd-pmmen u{text-decoration:none;font:700 12.5px/1 Inter,sans-serif;color:var(--foink);font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-pmtags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}",
+      ".fo-fd .fd-pmtags em{font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--fomut);background:rgba(20,36,58,.05);border-radius:999px;padding:6px 10px 5px}",
+      ".fo-fd .fd-pmtags em.fl{color:#8a6a1f;background:rgba(232,185,106,.2)}",
+      ".fo-fd .fd-pmform{display:flex;gap:4px;margin-top:11px}",
+      ".fo-fd .fd-pmform i{width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font:700 9.5px/1 Oswald,sans-serif;color:#FFFEFC}",
+      ".fo-fd .fd-pmform i.w{background:#2F6B45}.fo-fd .fd-pmform i.l{background:#8C2B2B}.fo-fd .fd-pmform i.t{background:#8a8272}",
+      ".fo-fd .fd-pmnone{color:var(--fomut);font:400 12px/1.4 Inter,sans-serif}",
+      "@media(max-width:640px){.fo-fd .fd-pm{padding:15px 14px 16px}.fo-fd .fd-pmc b{font-size:22px}",
+      ".fo-fd .fd-pmsides{grid-template-columns:1fr;gap:16px}.fo-fd .fd-pmv{display:none}}",
       // ---- the metadata row, one line above the stage
       ".fo-fd .fd-meta{display:flex;align-items:center;gap:11px;flex-wrap:wrap;min-height:46px;margin-bottom:10px}",
       "html body #page .fo-fd .fd-back{font:600 13px/1 Inter,sans-serif;color:#3a4353 !important;text-decoration:none !important;white-space:nowrap}",
@@ -942,19 +1070,19 @@
       ".fo-fd .fd-stage{position:relative;overflow:hidden;min-height:250px;border-radius:16px;background:linear-gradient(120deg,var(--fon9),var(--fon));background-size:cover;background-position:center;color:#FFFEFC;box-shadow:0 10px 30px rgba(14,35,63,.2);display:flex;align-items:stretch}",
       ".fo-fd .fd-stagein{position:relative;flex:1;display:flex;flex-direction:column;padding:26px 30px 18px;min-width:0}",
       ".fo-fd .fd-teams{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}",
-      ".fo-fd .fd-teams b{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:clamp(22px,2.4vw,30px);color:#FFFEFC;letter-spacing:.01em}",
-      ".fo-fd .fd-teams i{font-style:italic;font-family:'Fraunces',Georgia,serif;font-size:15px;color:var(--foor)}",
+      ".fo-fd .fd-teams b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(22px,2.4vw,30px);color:#FFFEFC;letter-spacing:.01em}",
+      ".fo-fd .fd-teams i{font-style:normal;font-family:Fraunces,Georgia,serif;font-size:15px;color:var(--foor)}",
       ".fo-fd .fd-cond{font:500 13.5px/1.6 Inter,sans-serif;color:#8FA8CC;margin-top:4px}",
       ".fo-fd .fd-scorerow{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-top:12px}",
-      ".fo-fd .fd-scorerow em{font-style:normal;font:700 clamp(48px,6vw,68px)/1 Oswald,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums;letter-spacing:.01em}",
-      ".fo-fd .fd-scorerow span{font:700 21px/1 Oswald,sans-serif;color:var(--fogold);font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-scorerow em{font-style:normal;font:700 clamp(48px,6vw,68px)/1 Inter,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums;letter-spacing:.01em}",
+      ".fo-fd .fd-scorerow span{font:700 21px/1 Inter,sans-serif;color:var(--fogold);font-variant-numeric:tabular-nums}",
       ".fo-fd .fd-scorerow span u{text-decoration:none;font-size:13px;letter-spacing:.16em}",
-      ".fo-fd .fd-scorerow .op{font:italic 400 15px/1.5 'Fraunces',Georgia,serif;color:rgba(255,254,252,.8)}",
+      ".fo-fd .fd-scorerow .op{font:400 15px/1.5 Fraunces,Georgia,serif;color:rgba(255,254,252,.8)}",
       ".fo-fd .fd-mets{display:flex;gap:0;margin-top:14px;flex-wrap:wrap}",
       ".fo-fd .fd-mets .mt{padding:0 22px;border-left:1px solid rgba(255,254,252,.16)}",
       ".fo-fd .fd-mets .mt:first-child{padding-left:0;border-left:none}",
       ".fo-fd .fd-mets u{display:block;text-decoration:none;font:700 10px/1 Oswald,sans-serif;letter-spacing:.2em;color:rgba(255,254,252,.5);margin-bottom:5px}",
-      ".fo-fd .fd-mets b{font:700 21px/1 Oswald,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-mets b{font:700 21px/1 Inter,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums}",
       ".fo-fd .fd-mets b s{text-decoration:none;font-size:13px;color:var(--fogold)}",
       // the innings-progress strip along the stage floor
       ".fo-fd .fd-strip{display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:18px}",
@@ -962,11 +1090,11 @@
       ".fo-fd .fd-strip .bar{position:relative;flex:1;height:4px;border-radius:99px;background:rgba(143,168,204,.28)}",
       ".fo-fd .fd-strip .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,var(--fogold),var(--foor))}",
       ".fo-fd .fd-strip .bar em{position:absolute;top:50%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:var(--fogold);color:var(--fon9);font:700 10.5px/24px Oswald,sans-serif;font-style:normal;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.35)}",
-      ".fo-fd .fd-sub{font:italic 400 14px/1.6 'Fraunces',Georgia,serif;color:rgba(255,254,252,.78);margin-top:10px}",
+      ".fo-fd .fd-sub{font:400 14px/1.6 Fraunces,Georgia,serif;color:rgba(255,254,252,.78);margin-top:10px}",
       "html body #page .fo-fd .fd-enter{display:inline-block;margin-top:14px;font:700 11.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:var(--foor) !important;border:none;border-radius:999px;padding:12px 22px;cursor:pointer;text-align:center;text-decoration:none !important;align-self:flex-start}",
       "html body #page .fo-fd .fd-ftime{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;margin:12px 0 0}",
       "html body #page .fo-fd .fd-ftime u{text-decoration:none;flex:none;font:700 10px/1 Oswald,sans-serif;letter-spacing:.22em;color:#E8B96A}",
-      "html body #page .fo-fd .fd-ftime b{font:600 16px/1.35 'Fraunces',Georgia,serif;font-weight:600;color:#FFFEFC}",
+      "html body #page .fo-fd .fd-ftime b{font:600 16px/1.35 Fraunces,Georgia,serif;font-weight:600;color:#FFFEFC}",
       // ---- the tab rail: an almanack rule with an underline
       ".fo-fd .fd-tabs{display:flex;gap:2px;margin:18px 0 0;border-bottom:1px solid #d8d0bd;overflow-x:auto;scrollbar-width:none}",
       ".fo-fd .fd-tabs::-webkit-scrollbar{display:none}",
@@ -984,7 +1112,7 @@
       // ---- the ball-by-ball header
       ".fo-fd .fd-bh{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}",
       ".fo-fd .fd-bh .tl b{font:700 13px Oswald,sans-serif;letter-spacing:.18em;color:var(--foink)}",
-      ".fo-fd .fd-bh .tl span{display:block;font:italic 400 11.5px 'Fraunces',Georgia,serif;color:var(--fomut);margin-top:2px}",
+      ".fo-fd .fd-bh .tl span{display:block;font:400 11.5px Fraunces,Georgia,serif;color:var(--fomut);margin-top:2px}",
       ".fo-fd .fd-bh .tr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}",
       ".fo-fd .fd-bh .ov9{font:700 11px Oswald,sans-serif;letter-spacing:.14em;color:var(--foor)}",
       ".fo-fd .fd-bh .lo{font:400 11.5px Inter,sans-serif;color:var(--fomut)}",
@@ -1001,7 +1129,7 @@
       ".fo-fd .fd-ev:last-child{border-bottom:none}",
       ".fo-fd .fd-ev .dot{position:relative;z-index:1;flex:0 0 26px}",
       ".fo-fd .fd-ev .w{flex:1;min-width:0}",
-      ".fo-fd .fd-ev .no{font:700 11px Oswald,sans-serif;color:var(--fomut);font-variant-numeric:tabular-nums;margin-right:8px}",
+      ".fo-fd .fd-ev .no{font:700 11px Inter,sans-serif;color:var(--fomut);font-variant-numeric:tabular-nums;margin-right:8px}",
       ".fo-fd .fd-ev b{font:600 13.5px Inter,sans-serif;color:var(--foink)}",
       ".fo-fd .fd-ev p{margin:3px 0 0;font:400 13px/1.55 Inter,sans-serif;color:#4a4436}",
       // wickets: restrained fire
@@ -1011,7 +1139,7 @@
       // notes: marginalia, not cards
       ".fo-fd .fd-ev.note{border-bottom:none;padding:6px 2px}",
       ".fo-fd .fd-ev.note .ic{position:relative;z-index:1;flex:0 0 26px;text-align:center;color:var(--foor);font-size:12px;line-height:22px}",
-      ".fo-fd .fd-ev.note .w{font:italic 400 12.5px/1.55 Georgia,serif;color:#a05f2e}",
+      ".fo-fd .fd-ev.note .w{font:400 12.5px/1.55 Fraunces,Georgia,serif;color:#a05f2e}",
       // over banners
       ".fo-fd .fd-ev.top{border-bottom:none;padding:8px 0}",
       ".fo-fd .fd-ev.top .w{position:relative;z-index:1;font:700 12px Inter,sans-serif;color:var(--foink);background:#F6F3EB;border-radius:8px;padding:8px 11px}",
@@ -1021,8 +1149,8 @@
       ".fo-fd .fd-crease .cb{display:flex;align-items:baseline;gap:8px;padding:6px 0;font:400 13.5px Inter,sans-serif}",
       ".fo-fd .fd-crease .cb .nm{flex:1;font-weight:600;color:var(--foink);display:flex;align-items:center;gap:7px;min-width:0;flex-wrap:wrap}",
       ".fo-fd .fd-crease .cb .nm i.st{width:7px;height:7px;border-radius:50%;background:var(--foor);flex:0 0 7px}",
-      ".fo-fd .fd-crease .cb .rv{font:700 14px Oswald,sans-serif;color:var(--foink);font-variant-numeric:tabular-nums}",
-      ".fo-fd .fd-crease .cb .rv.new{font:italic 400 12px Georgia,serif;color:var(--fomut)}",
+      ".fo-fd .fd-crease .cb .rv{font:700 14px Inter,sans-serif;color:var(--foink);font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-crease .cb .rv.new{font:400 12px Fraunces,Georgia,serif;color:var(--fomut)}",
       ".fo-fd .fd-crease .cb .bv{font:400 12.5px Inter,sans-serif;color:var(--fomut);font-variant-numeric:tabular-nums}",
       ".fo-fd .fd-crease .cb .wv{font:700 16px Oswald,sans-serif;color:var(--foor)}",
       ".fo-fd .fd-crease .lbl{display:flex;justify-content:flex-end;gap:14px;font:700 8.5px Oswald,sans-serif;letter-spacing:.14em;color:#b3ab99}",
@@ -1037,15 +1165,15 @@
       // ---- the scorecard tables
       ".fo-fd .fd-ch{font:700 10px Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fomut);margin:2px 0 8px}",
       ".fo-fd .fd-ih{display:flex;align-items:baseline;gap:10px;margin:12px 0 6px}",
-      ".fo-fd .fd-ih b{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:16px;color:var(--foink)}",
+      ".fo-fd .fd-ih b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:16px;color:var(--foink)}",
       ".fo-fd .fd-ih span{font:700 13px Oswald,sans-serif;color:var(--foor)}",
       ".fo-fd .fd-tb{width:100%;border-collapse:collapse;margin:4px 0 10px;font:400 12.5px/1.5 Inter,sans-serif}",
       ".fo-fd .fd-tb th{font:700 9.5px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fomut);text-align:left;padding:4px 6px;border-bottom:1px solid var(--fobrd)}",
       ".fo-fd .fd-tb td{padding:5px 6px;border-bottom:1px solid #f3eee1;color:var(--foink)}",
       ".fo-fd .fd-tb .r{text-align:right;font-variant-numeric:tabular-nums}",
-      ".fo-fd .fd-tb td.h{font-size:11.5px;color:var(--fomut);font-style:italic}",
+      ".fo-fd .fd-tb td.h{font-size:11.5px;color:var(--fomut);font-style:normal}",
       ".fo-fd .fd-tb tr.no td:first-child{font-weight:600}",
-      ".fo-fd .fd-note{font:italic 400 11.5px/1.6 Georgia,serif;color:var(--fomut);margin:8px 0 2px}",
+      ".fo-fd .fd-note{font:400 11.5px/1.6 Fraunces,Georgia,serif;color:var(--fomut);margin:8px 0 2px}",
       // partnerships
       ".fo-fd .fd-ph{font:700 9.5px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fomut);margin:10px 0 6px}",
       ".fo-fd .fd-pr{display:grid;grid-template-columns:74px 1fr 34px;gap:4px 10px;align-items:center;padding:3px 0;font:400 12px Inter,sans-serif}",
@@ -1053,8 +1181,8 @@
       ".fo-fd .fd-pr .bar{height:9px;background:#F1EEE6;border-radius:99px;overflow:hidden}",
       ".fo-fd .fd-pr .bar i{display:block;height:100%;background:var(--foink);border-radius:99px}",
       ".fo-fd .fd-pr.lv .bar i{background:var(--foor)}",
-      ".fo-fd .fd-pr .v{text-align:right;font:700 12.5px Oswald,sans-serif;color:var(--foink);font-variant-numeric:tabular-nums}",
-      ".fo-fd .fd-pr .nt{grid-column:2/4;font:italic 400 11px Georgia,serif;color:var(--fomut);margin-top:-2px}",
+      ".fo-fd .fd-pr .v{text-align:right;font:700 12.5px Inter,sans-serif;color:var(--foink);font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-pr .nt{grid-column:2/4;font:400 11px Fraunces,Georgia,serif;color:var(--fomut);margin-top:-2px}",
       // charts
       ".fo-fd .fd-svg{width:100%;height:auto;display:block}",
       ".fo-fd .fd-svg .gl{stroke:#efe9d9;stroke-width:1}",
@@ -1081,7 +1209,7 @@
       ".fo-fd .fd-leg .lg.ask b{color:#8E1F13}",
       // lineups
       ".fo-fd .fd-xic{display:grid;grid-template-columns:1fr 1fr;gap:14px}",
-      ".fo-fd .fd-xic .c b{display:block;font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:14px;color:var(--foink);margin-bottom:2px}",
+      ".fo-fd .fd-xic .c b{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:14px;color:var(--foink);margin-bottom:2px}",
       ".fo-fd .fd-xic .c u{display:block;text-decoration:none;font:700 8.5px Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--foor);margin-bottom:6px}",
       ".fo-fd .fd-xic .c u.t2{margin-top:8px;color:var(--fomut)}",
       ".fo-fd .fd-xic .c span{display:flex;align-items:baseline;gap:6px;font:400 12px/1.6 Inter,sans-serif;color:var(--foink)}",
@@ -1104,7 +1232,7 @@
       "html body #page .fo-fd a.fd-plink,html body #page .fo-fd a.fd-plink:visited{color:inherit !important;text-decoration:none !important;border-bottom:none !important}",
       "html body #page .fo-fd a.fd-plink:hover{color:#C9571F !important}",
       "html body #page .fo-fd .fd-teams a.fd-plink:hover{color:#E8B96A !important}",
-      ".fo-fd .fd-dim{font:italic 400 13.5px Georgia,serif;color:var(--fomut);padding:24px 6px}",
+      ".fo-fd .fd-dim{font:400 13.5px Fraunces,Georgia,serif;color:var(--fomut);padding:24px 6px}",
       ".fo-fd .fd-foot{display:flex;justify-content:space-between;margin-top:16px}",
       "html body #page .fo-fd .fd-foot a{font:700 10px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#C9571F !important;text-decoration:none !important}",
       // ---- the phone: stacked, the crease first, the stage tighter

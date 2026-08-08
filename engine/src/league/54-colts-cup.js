@@ -225,7 +225,7 @@
       "html body #page .fo-cc-tie .side.w .nm{color:#141C28;font-weight:600}",
       "html body #page .fo-cc-tie .side.me .nm{color:#C8542F}",
       "html body #page .fo-cc-tie .side u{flex:none;text-decoration:none;font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:#C8542F}",
-      "html body #page .fo-cc-tie .vs{flex:none;font-size:10.5px;color:#b4aa98;font-style:italic}",
+      "html body #page .fo-cc-tie .vs{flex:none;font-size:10.5px;color:#b4aa98;font-style:normal}",
       "html body #page .fo-cc-tie .ff{flex:none;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#C8542F;font-style:normal}",
       "html body #page .fo-cc-line{margin:0 0 6px;font-size:12px;color:#8a857c}",
       "html body #page .fo-cc-lead{display:grid;gap:4px}",

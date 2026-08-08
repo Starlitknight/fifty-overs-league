@@ -641,7 +641,7 @@ FOC.oval = (function () {
       ".ov-board{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;padding:9px 14px;background:#14213D;color:#F1EADA}" +
       ".ov-score{display:flex;gap:8px;align-items:baseline}" +
       ".ov-score span{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:#b9c2d4}" +
-      ".ov-score b{font-family:Oswald,sans-serif;font-size:22px;letter-spacing:1px;color:#fff;font-variant-numeric:tabular-nums}" +
+      ".ov-score b{font-family:Inter,sans-serif;font-size:22px;letter-spacing:1px;color:#fff;font-variant-numeric:tabular-nums}" +
       ".ov-bats,.ov-bowl{font-size:12px;color:#d5dcea;font-variant-numeric:tabular-nums}" +
       ".ov-strip{margin-left:auto;display:flex;gap:4px}" +
       ".ov-strip i{font-style:normal;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:#1f2d4a;color:#cfd6e4}" +

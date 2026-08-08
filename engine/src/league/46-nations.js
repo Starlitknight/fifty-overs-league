@@ -129,7 +129,7 @@
       "html body #page .fo-nat-tie b.w{color:#177A57}",
       "html body #page .fo-nat-tie u{text-decoration:none;color:rgba(20,28,40,.5);font-variant-numeric:tabular-nums}",
       "html body #page .fo-nat-tie em{font-style:normal;color:rgba(20,28,40,.3);font-size:10px}",
-      "html body #page .fo-nat-tie i{flex:1 0 100%;font-style:italic;font-size:11px;color:rgba(20,28,40,.5)}",
+      "html body #page .fo-nat-tie i{flex:1 0 100%;font-style:normal;font-size:11px;color:rgba(20,28,40,.5)}",
       "html body #page .fo-nat-pay{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}",
       "html body #page .fo-nat-pay span{font:500 10.5px/1 Inter,sans-serif;color:rgba(20,28,40,.62);background:rgba(20,28,40,.06);border-radius:999px;padding:6px 10px}",
       "html body #page .fo-nat-pay span.mine{background:rgba(232,185,106,.32);color:#6B520F;font-weight:700}",
@@ -163,7 +163,7 @@
       "html body #page .fo-nt-lead img{width:100%;height:100%;min-height:220px;object-fit:cover;display:block}",
       "html body #page .fo-nt-lead .tx{padding:clamp(18px,2.4vw,32px);display:flex;flex-direction:column;justify-content:center}",
       "html body #page .fo-nt-cat{font:600 10px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#B44A22;margin-bottom:12px}",
-      "html body #page .fo-nt-lead h3{font:600 clamp(22px,2.2vw,32px)/1.18 Fraunces,Georgia,serif;margin:0 0 12px;letter-spacing:-.01em;color:#14243A}",
+      "html body #page .fo-nt-lead h3{font:600 clamp(22px,2.2vw,32px)/1.18 Fraunces,Fraunces,Georgia,serif;margin:0 0 12px;letter-spacing:-.01em;color:#14243A}",
       "html body #page .fo-nt-dek{font:400 14px/1.65 Inter,sans-serif;color:rgba(20,28,40,.62);margin:0}",
       "html body #page .fo-nt-when{font:500 11px/1 Inter,sans-serif;color:rgba(20,28,40,.4);margin-top:16px}",
       "html body #page .fo-nt-g3{display:grid;grid-template-columns:1fr;gap:20px}",
@@ -171,13 +171,13 @@
       "html body #page .fo-nt-story{background:linear-gradient(0deg,#FBF6EA,#FDFAF2);border:1px solid rgba(20,28,40,.12);border-radius:14px;overflow:hidden;display:flex;flex-direction:column}",
       "html body #page .fo-nt-story img{width:100%;height:150px;object-fit:cover;display:block}",
       "html body #page .fo-nt-story .tx{padding:17px 19px 19px;display:flex;flex-direction:column;flex:1}",
-      "html body #page .fo-nt-story h4{font:600 18px/1.32 Fraunces,Georgia,serif;margin:0 0 9px;color:#14243A}",
+      "html body #page .fo-nt-story h4{font:600 18px/1.32 Fraunces,Fraunces,Georgia,serif;margin:0 0 9px;color:#14243A}",
       "html body #page .fo-nt-story .fo-nt-dek{font-size:12.5px;flex:1}",
       // ---- the rail ----------------------------------------------------------
       "html body #page .fo-nt-rail{min-width:0}",
       "html body #page .fo-nt-tile{background:linear-gradient(0deg,#FBF6EA,#FDFAF2);border:1px solid rgba(20,28,40,.12);border-radius:12px;padding:17px 19px;margin-bottom:20px}",
       "html body #page .fo-nt-tile h3{font:600 11px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#8a5219;margin:0 0 14px}",
-      "html body #page .fo-nt-big{font:700 44px/1 Fraunces,Georgia,serif;color:#14243A}",
+      "html body #page .fo-nt-big{font:700 44px/1 Fraunces,Fraunces,Georgia,serif;color:#14243A}",
       "html body #page .fo-nt-big:after{content:'';display:block;width:40px;height:4px;background:#C9571F;margin-top:9px}",
       "html body #page .fo-nt-lab{font:600 9px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.45);margin-top:13px}",
       "html body #page .fo-nt-lab b{display:block;font:700 21px/1.2 Inter,sans-serif;color:#14243A;margin-top:5px;letter-spacing:0}",
@@ -416,7 +416,7 @@
         h: E(n.name) + (natRank.natP ? " stand" : " start") + " #" + natRank.rank + " in the world",
         dek: natRank.natP
           ? "The national XI is rated " + fmtR(natRank.natRating) + "; the nation's club game " + fmtR(natRank.clubRating) + "."
-          : "Every nation opens level at 3,500. The ladder first moves the night the tours begin &mdash; the XI is still unproven." });
+          : "The XI is unproven \u2014 its rating begins to mean something the night the tours do." });
     }
     if ((n.caps || []).length) {
       var cl0 = n.caps[0];

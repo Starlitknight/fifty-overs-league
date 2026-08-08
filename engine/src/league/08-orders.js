@@ -1296,7 +1296,7 @@
       ".mg-grid .mgc em{font-style:normal;width:22px;text-align:right;font-size:10.5px;font-weight:700;color:#8a93a3;flex:0 0 auto;font-variant-numeric:tabular-nums}" +
       ".mg-grid .mgc b{display:flex;align-items:center;justify-content:center;height:22px;width:28px;flex:0 0 auto;border-radius:6px;font-size:9.5px;font-weight:800;color:#fff}" +
       ".mg-grid .mgc .mgn{font-size:11.5px;font-weight:700;color:#243244;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}" +
-      ".mg-grid .mgc .mgn-e{color:#b6bdc9;font-weight:600;font-style:italic}" +
+      ".mg-grid .mgc .mgn-e{color:#b6bdc9;font-weight:600;font-style:normal}" +
       // one uniform navy for every bowler's cells - the initials tell them
       // apart, the colour stays calm
       ".mg-chips .mgb i{display:none}" +

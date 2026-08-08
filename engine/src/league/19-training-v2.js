@@ -759,7 +759,7 @@
       ".fo-t2-in{max-width:900px;margin:0 auto;padding:14px 12px 40px}",
       ".fo-t2-hero{display:flex;align-items:center;justify-content:space-between;gap:14px;background:linear-gradient(135deg,#14243A,#0E2246);border-radius:16px;padding:20px 22px;margin-bottom:12px;border-left:4px solid #C9571F}",
       ".fo-t2-hero i{font:700 10px Oswald,sans-serif;letter-spacing:.22em;color:#E8B96A;font-style:normal}",
-      ".fo-t2-hero h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:34px;color:#FFFEFC;margin:4px 0 0}",
+      ".fo-t2-hero h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:34px;color:#FFFEFC;margin:4px 0 0}",
       ".fo-t2-hero .cr svg{width:56px;height:74px}",
       // the academy strip: one building, and what it is worth and costs
       "html body #page a.fo-t2-acad{display:flex;align-items:center;gap:14px;background:#FFFEFC;border:1px solid #e3dccb;border-left:4px solid #B8933A;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);padding:11px 14px;margin-bottom:12px;text-decoration:none;color:#14243A !important}",
@@ -838,7 +838,7 @@
       "html body #page .fo-t2-row.foc select[data-t2f]{color:#A64426 !important;border-color:rgba(201,87,31,.26) !important;background-color:#FDF5EF !important}",
       ".fo-t2-nofoc{text-align:left;padding-left:9px;font:600 12px Inter,sans-serif;color:#cdc5b2}",
       ".fo-t2-dim{margin:0 0 10px;font:400 12px Inter,sans-serif;color:#6d6455;line-height:1.5}",
-      ".fo-t2-note{font:italic 400 11.5px Georgia,serif;color:#6d6455}",
+      ".fo-t2-note{font:400 11.5px Fraunces,Georgia,serif;color:#6d6455}",
       ".fo-t2-report{border-left:4px solid #177A57}",
       ".fo-t2-rl{padding:6px 0;border-bottom:1px solid #f3eee1;font:500 12.5px Inter,sans-serif;color:#14243A;line-height:1.5}",
       ".fo-t2-rl:last-of-type{border-bottom:none}",
@@ -883,8 +883,8 @@
       ".fo-t2-bar u b{display:block;height:100%;border-radius:4px;background:linear-gradient(90deg,#E8B96A,#C9571F)}",
       ".fo-t2-bar em{font:700 11px Oswald,sans-serif;letter-spacing:.05em;color:#177A57;font-style:normal;text-align:right}",
       ".fo-t2-bar em.nil{color:#cdc5b2}",
-      ".fo-t2-cnote{margin:10px 0 0;font:italic 400 11.5px Georgia,serif;color:#8a8272;line-height:1.6}",
-      ".fo-t2-empty{padding:14px 4px;text-align:center;font:italic 400 12.5px Georgia,serif;color:#a49b86}",
+      ".fo-t2-cnote{margin:10px 0 0;font:400 11.5px Fraunces,Georgia,serif;color:#8a8272;line-height:1.6}",
+      ".fo-t2-empty{padding:14px 4px;text-align:center;font:400 12.5px Fraunces,Georgia,serif;color:#a49b86}",
       // THE SAVE speaks when there is something to say. Nothing filed, and it
       // stands quietly on the paper; a picker moved, and it lights.
       ".fo-t2-save .pl{width:13px;height:13px;vertical-align:-1px;margin-right:9px;opacity:.9}",
@@ -900,7 +900,7 @@
       "  border-color:#B34A18 !important;box-shadow:0 6px 18px rgba(201,87,31,.26) !important}",
       "html body #page button.fo-t2-save.dirty:hover{background:#B84D19 !important;color:#FFFEFC !important}",
       "html body #page button.fo-t2-save:focus-visible{outline:2px solid #B8933A;outline-offset:3px}",
-      ".fo-t2-fine{margin:9px 0 0;text-align:center;font:italic 400 11.5px Georgia,serif;color:#8a8272;line-height:1.6}",
+      ".fo-t2-fine{margin:9px 0 0;text-align:center;font:400 11.5px Fraunces,Georgia,serif;color:#8a8272;line-height:1.6}",
       "@media(max-width:640px){.fo-t2-acad{flex-wrap:wrap;gap:8px 12px}.fo-t2-acad .rt,.fo-t2-acad .bill,.fo-t2-acad .nx{flex:0 0 auto}.fo-t2-acad .go{display:none}}",
       "@media(max-width:560px){.fo-t2-hero h1{font-size:27px}.fo-t2-hero .cr svg{width:42px;height:55px}",
       ".fo-t2-head,.fo-t2-row{grid-template-columns:26px minmax(0,.92fr) minmax(84px,1.06fr) minmax(74px,.92fr);gap:4px;padding-left:6px;padding-right:6px;margin:0 -6px}",

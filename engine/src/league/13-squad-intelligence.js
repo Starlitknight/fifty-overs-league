@@ -122,7 +122,7 @@
       ".fo-si-kpi{border:1px solid rgba(232,185,106,.18);border-radius:11px;background:rgba(255,253,247,.05);padding:12px 13px 13px}",
       ".fo-si-kpi span{display:block;font:600 8px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(241,238,230,.5)}",
       ".fo-si-kpi .v{display:flex;align-items:flex-end;gap:11px;margin-top:10px}",
-      ".fo-si-kpi b{font:700 25px/1 Oswald,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums}",
+      ".fo-si-kpi b{font:700 25px/1 Inter,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums}",
       // the note stays beside the figure it qualifies. Pushed to the far edge
       // of a card this wide it read as a separate, unrelated word.
       ".fo-si-kpi em{font-style:normal;font:600 8px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#5FBF98;padding-bottom:3px}",
@@ -137,24 +137,29 @@
 
       /* ranking - every man on the books, never a silent top-N */
       ".fo-si-list{max-height:600px;overflow:auto;overscroll-behavior:contain}",
-      "html body #page button.fo-si-row{display:grid;width:100%;grid-template-columns:36px minmax(0,1fr) auto 34px;gap:9px;align-items:center;margin:0;padding:9px 12px !important;border:0 !important;border-bottom:1px solid rgba(27,36,50,.07) !important;border-radius:0 !important;background:var(--pp) !important;text-align:left;box-shadow:none !important;cursor:pointer}",
+      "html body #page button.fo-si-row{display:grid;width:100%;grid-template-columns:36px minmax(0,1fr) auto 34px 18px;gap:9px;align-items:center;margin:0;padding:9px 12px !important;border:0 !important;border-bottom:1px solid rgba(27,36,50,.07) !important;border-radius:0 !important;background:var(--pp) !important;text-align:left;box-shadow:none !important;cursor:pointer}",
       "html body #page button.fo-si-row:hover{background:#F7F4EC !important}",
       "html body #page button.fo-si-row.on{background:linear-gradient(90deg,rgba(232,185,106,.18),rgba(232,185,106,0) 70%) !important;box-shadow:inset 3px 0 0 var(--gd) !important}",
       ".fo-si-thumb{width:36px;height:36px;border-radius:9px;display:block;object-fit:cover;object-position:50% 20%;background:#16283F;box-shadow:0 0 0 1px rgba(27,36,50,.16)}",
       ".fo-si-rid{min-width:0}",
-      ".fo-si-rid b{display:block;font:600 13.5px/1.2 Fraunces,Georgia,serif;color:var(--nv);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-si-rid b{display:block;font:600 13.5px/1.2 Fraunces,Fraunces,Georgia,serif;color:var(--nv);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-si-rid i{display:block;margin-top:3px;font:600 7.5px/1 Oswald,sans-serif;font-style:normal;letter-spacing:.15em;text-transform:uppercase;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-si-trend{font:600 7.5px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;color:#4E8A72}",
       ".fo-si-trend.up{color:#177A57}.fo-si-trend.down{color:#B4432C}",
-      ".fo-si-rat{text-align:right;font:700 17px/1 Oswald,sans-serif;color:var(--nv);font-variant-numeric:tabular-nums}",
-      ".fo-si-empty{padding:22px 16px;font:italic 400 12px/1.6 Fraunces,Georgia,serif;color:var(--mut)}",
+      ".fo-si-rat{text-align:right;font:700 17px/1 Inter,sans-serif;color:var(--nv);font-variant-numeric:tabular-nums;letter-spacing:-.02em}",
+      ".fo-si-go{display:flex;align-items:center;justify-content:center;width:18px;height:26px;border-radius:6px;font:400 17px/1 Inter,sans-serif;color:rgba(27,36,50,.3);cursor:pointer;transition:color .12s ease,background .12s ease}",
+      ".fo-si-go:hover{color:#B44A22;background:rgba(201,87,31,.1)}",
+      ".fo-si-go:focus-visible{outline:2px solid #C9571F;outline-offset:1px}",
+      ".fo-si-open{color:inherit !important;text-decoration:none !important}",
+      ".fo-si-open:hover{color:#B44A22 !important}",
+      ".fo-si-empty{padding:22px 16px;font:400 12px/1.6 Fraunces,Fraunces,Georgia,serif;color:var(--mut)}",
 
       /* the chart: age across, rating up */
       ".fo-si-chart{position:relative;padding:16px 16px 44px 52px;height:452px}",
       ".fo-si-plot{position:relative;height:100%;border-left:1px solid rgba(27,36,50,.22);border-bottom:1px solid rgba(27,36,50,.22)}",
       ".fo-si-gl{position:absolute;background:rgba(27,36,50,.07)}",
       ".fo-si-gl.v{top:0;bottom:0;width:1px}.fo-si-gl.h{left:0;right:0;height:1px}",
-      ".fo-si-tk{position:absolute;font:600 8px/1 Oswald,sans-serif;letter-spacing:.1em;color:var(--mut);font-variant-numeric:tabular-nums}",
+      ".fo-si-tk{position:absolute;font:600 8px/1 Inter,sans-serif;letter-spacing:.1em;color:var(--mut);font-variant-numeric:tabular-nums}",
       ".fo-si-tk.x{bottom:-19px;transform:translateX(-50%)}",
       ".fo-si-tk.y{left:-11px;transform:translate(-100%,-50%)}",
       ".fo-si-axl{position:absolute;font:600 8px/1 Oswald,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:var(--nv)}",
@@ -163,7 +168,7 @@
       // min-width/min-height are held down on purpose: the phone skin gives
       // every button a 38px minimum, which turned a 28px round dot into an
       // egg. A dot is a dot at every width.
-      "html body #page button.fo-si-dot{position:absolute;width:34px !important;height:34px !important;min-width:0 !important;min-height:0 !important;margin:-17px 0 0 -17px;padding:0 !important;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,254,252,.9) !important;border-radius:50% !important;font:700 11px/1 Oswald,sans-serif !important;font-variant-numeric:tabular-nums;color:#F1EEE6 !important;background:var(--nv) !important;box-shadow:0 2px 7px rgba(20,36,58,.2) !important;cursor:pointer;z-index:3;transition:transform .14s ease}",
+      "html body #page button.fo-si-dot{position:absolute;width:34px !important;height:34px !important;min-width:0 !important;min-height:0 !important;margin:-17px 0 0 -17px;padding:0 !important;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,254,252,.9) !important;border-radius:50% !important;font:700 11px/1 Inter,sans-serif !important;font-variant-numeric:tabular-nums;color:#F1EEE6 !important;background:var(--nv) !important;box-shadow:0 2px 7px rgba(20,36,58,.2) !important;cursor:pointer;z-index:3;transition:transform .14s ease}",
       "html body #page button.fo-si-dot.bat{background:#C9571F !important}",
       "html body #page button.fo-si-dot.ar{background:#177A57 !important}",
       "html body #page button.fo-si-dot.wk{background:#B8933A !important}",
@@ -184,15 +189,15 @@
       ".fo-si-hero{position:relative;padding:18px 18px 20px;min-height:230px;overflow:hidden;background:linear-gradient(168deg,#182B44,#0C1B2E)}",
       ".fo-si-hero .lb{position:relative;z-index:3;display:block;font:600 8px/1 Oswald,sans-serif;letter-spacing:.21em;text-transform:uppercase;color:var(--gd)}",
       ".fo-si-idw{position:relative;z-index:3;width:150px}",
-      ".fo-si-hero h3{margin:13px 0 4px;font:600 25px/.98 Fraunces,Georgia,serif;color:#FFFDF7}",
+      ".fo-si-hero h3{margin:13px 0 4px;font:600 25px/.98 Fraunces,Fraunces,Georgia,serif;color:#FFFDF7}",
       ".fo-si-hero .mt{font:400 9.5px/1.45 Inter,sans-serif;color:rgba(246,239,223,.6)}",
-      ".fo-si-hero .big{position:relative;z-index:3;margin-top:16px;font:700 50px/.8 Oswald,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums}",
+      ".fo-si-hero .big{position:relative;z-index:3;margin-top:16px;font:700 50px/.8 Inter,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums}",
       ".fo-si-hero .big span{display:block;margin-top:9px;font:600 8px/1 Oswald,sans-serif;letter-spacing:.19em;text-transform:uppercase;color:rgba(246,239,223,.55)}",
       ".fo-si-plate{position:absolute;right:14px;bottom:0;z-index:2;width:110px;height:186px;object-fit:cover;object-position:50% 22%;border-radius:9px 9px 0 0;box-shadow:0 0 0 1px rgba(232,185,106,.34),0 -6px 26px rgba(0,0,0,.4)}",
       ".fo-si-stats{padding:15px 17px 17px}",
       ".fo-si-st{display:grid;grid-template-columns:74px minmax(0,1fr) 30px;gap:10px;align-items:center;padding:7px 0}",
       ".fo-si-st span{font:600 8px/1 Oswald,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:var(--mut)}",
-      ".fo-si-st b{text-align:right;font:700 12px/1 Oswald,sans-serif;color:var(--nv);font-variant-numeric:tabular-nums}",
+      ".fo-si-st b{text-align:right;font:700 12px/1 Inter,sans-serif;color:var(--nv);font-variant-numeric:tabular-nums}",
 
       "@media(max-width:1240px){.fo-si-work{grid-template-columns:290px minmax(0,1fr) 280px}}",
       "@media(max-width:1040px){.fo-si-work{grid-template-columns:290px minmax(0,1fr)}.fo-si-player{grid-column:1/-1;display:grid;grid-template-columns:330px minmax(0,1fr)}}",
@@ -285,7 +290,13 @@
         foSiE(foSiRoleName(p).replace("Wicketkeeper", "WK").replace("All-rounder", "AR")) +
         " &middot; AGE " + Math.floor(foSiAge(p)) + " &middot; " + foSiNat(p) + "</i></span>" +
         "<span class='fo-si-trend " + tr.cls + "'>" + tr.mark + " " + tr.word + "</span>" +
-        "<b class='fo-si-rat'>" + foSiOvr(p) + "</b></button>";
+        "<b class='fo-si-rat'>" + foSiOvr(p) + "</b>" +
+        // THE ROW SELECTS; THE CHEVRON OPENS. Reading a man in the panel and
+        // going to his page are two different intentions, and this room only
+        // ever offered the first - the analyst's list was the one place in the
+        // game where a player's name was not a way to reach him.
+        "<span class='fo-si-go' data-si-open='" + foSiE(p.name) + "' role='link' tabindex='0'" +
+        " aria-label='Open " + foSiE(p.name) + "&#39;s profile'>&rsaquo;</span></button>";
     }).join("") || "<div class='fo-si-empty'>No players match this role.</div>";
 
     // ---- the map: age across the bottom, rating up the side ----
@@ -349,7 +360,8 @@
 
     var player = "<aside class='fo-si-card fo-si-player'>" +
       "<div class='fo-si-hero'><span class='lb'>Selected player</span>" +
-      "<div class='fo-si-idw'><h3>" + foSiE(selected.name) + "</h3>" +
+      "<div class='fo-si-idw'><h3><a class='fo-si-open' href='#/player?n=" + encodeURIComponent(selected.name) + "'>" +
+        foSiE(selected.name) + "</a></h3>" +
       "<div class='mt'>" + foSiE(foSiRoleName(selected)) + " &middot; " + (selected.hand === "L" ? "LHB" : "RHB") + " &middot; " + foSiNat(selected) + "</div></div>" +
       "<div class='big'>" + foSiOvr(selected) + "<span>Overall</span></div>" +
       "<img class='fo-si-plate' src='" + foSiE(foSiArt(selected)) + "' alt='' decoding='async'></div>" +
@@ -434,6 +446,13 @@
     if (role) role.addEventListener("change", function () { sv.iRole = role.value; sv.iSel = null; repaint(); });
     var sort = page.querySelector("#fo-si-sort");
     if (sort) sort.addEventListener("change", function () { sv.iSort = sort.value; repaint(); });
+    var open = function (n) { if (n) { location.hash = "#/player?n=" + encodeURIComponent(n); try { if (typeof window.route === "function") window.route(); } catch (eR) {} } };
+    page.querySelectorAll("[data-si-open]").forEach(function (g) {
+      g.addEventListener("click", function (ev) { ev.stopPropagation(); open(g.getAttribute("data-si-open")); });
+      g.addEventListener("keydown", function (ev) {
+        if (ev.key === "Enter" || ev.key === " ") { ev.preventDefault(); ev.stopPropagation(); open(g.getAttribute("data-si-open")); }
+      });
+    });
     page.querySelectorAll("[data-si-player]").forEach(function (b) {
       b.addEventListener("click", function () { sv.iSel = b.getAttribute("data-si-player"); repaint(); });
     });

@@ -13,7 +13,7 @@
       ".fo-cp-prov{background:#F0F4F8;border:1px solid rgba(31,78,107,.16);border-radius:10px;padding:10px 13px;font-size:12.5px;color:#243244;margin-bottom:10px}" +
       ".fo-cp-ev{display:flex;gap:9px;align-items:baseline;font-size:12.5px;margin:4px 0;color:#3a4353}" +
       ".fo-cp-ev i{font-style:normal;flex:0 0 82px;color:#8a93a3;font-size:11px;font-weight:700;white-space:nowrap}" +
-      ".fo-cp-fr td{color:#8a93a3}.fo-cp-fr td:first-child{font-style:italic}" +
+      ".fo-cp-fr td{color:#8a93a3}.fo-cp-fr td:first-child{font-style:normal}" +
       ".fo-cp-fld{font-size:12.5px;color:#3a4353}" +
       ".fo-fr-tag{display:inline-block;background:#E8EAEE;color:#5a6472;border-radius:6px;padding:0 6px;font-size:10px;font-weight:700;vertical-align:1px;white-space:nowrap}" +
       ".fo-cp-tabs{display:flex;gap:6px;margin:10px 0 2px}" +
@@ -29,7 +29,7 @@
       ".fo-ms-row b{color:#0E233F}.fo-ms-row i{font-style:normal;margin-left:auto;color:#C95532;font-weight:800;white-space:nowrap}" +
       ".fo-duel{display:flex;gap:8px;align-items:baseline;font-size:12.5px;margin:5px 0;color:#3a4353}" +
       ".fo-duel b{color:#0E233F}.fo-duel em{font-style:normal;margin-left:auto;font-weight:800;color:#8a2f1d;white-space:nowrap}" +
-      ".fo-news-voice{color:#5b4a91;font-style:italic}" +
+      ".fo-news-voice{color:#5b4a91;font-style:normal}" +
       "@media(max-width:640px){" +
       ".fo-ch-hero{padding:14px 16px}" +
       ".fo-ch-crest{width:54px;height:54px;min-width:54px}.fo-ch-crest img{width:54px;height:54px;border-radius:12px}" +
@@ -1129,7 +1129,7 @@
       "body.ftpskin #ftpcomm .line.wkt .text{color:#8f231b !important}" +
       "body.ftpskin #ftpcomm .rslt .four{background:#2d6a8f !important}" +
       "#ftpcomm .fo-ctag{font-weight:800;color:#0E233F;font-style:normal}" +
-      "#ftpcomm .fo-c-mile{background:#f7f2fb;border-bottom:1px solid #e6daf2;padding:4px 8px;color:#6b3fa0;font-style:italic;font-weight:600}" +
+      "#ftpcomm .fo-c-mile{background:#f7f2fb;border-bottom:1px solid #e6daf2;padding:4px 8px;color:#6b3fa0;font-style:normal;font-weight:600}" +
       "#ftpcomm .fo-c-fow{background:#fbf0ee;border-bottom:1px solid #efd6cf;padding:4px 8px;color:#8f231b;font-weight:600}" +
       "#ftpcomm .fo-c-flag{background:#fdf7e8;border-bottom:1px solid #efe2bd;padding:4px 8px;color:#7b5a0a}" +
       "#ftpcomm .fo-c-mile .text,#ftpcomm .fo-c-fow .text,#ftpcomm .fo-c-flag .text{float:none;width:auto;padding:0;color:inherit}" +
@@ -1148,7 +1148,7 @@
       ".fo-trx-chip{font-size:11px;background:#FFFEFC;border:1px solid #DDD8CF;border-radius:999px;padding:3px 9px;color:#667085}" +
       ".fo-trx-chip b{color:#111827}" +
       ".fo-trx-main{background:#fdf3e2;border-color:#ecd9ae;color:#8a5a1d}.fo-trx-main b{color:#8a5a1d}" +
-      ".fo-trx-rest{font-size:12px;color:#667085;font-style:italic}" +
+      ".fo-trx-rest{font-size:12px;color:#667085;font-style:normal}" +
       // phones: wide stats tables scroll inside their panel instead of being
       // crushed into ellipsis dots (engine's fo-stattbl is table-layout:fixed)
       "@media(max-width:820px){" +
