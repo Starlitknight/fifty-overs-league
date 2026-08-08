@@ -92,6 +92,27 @@
   function dayTxt(d) {
     try { return window.__foPlanet.dateTxt(d) || ("day " + d); } catch (e) { return "day " + d; }
   }
+  /* THE SPINE: which country a man comes from, said in colour.
+   *
+   * The market is the only room in the game where cricketers from sixteen
+   * nations stand side by side on one board, and a border round a card is
+   * mostly there to say where one lot ends and the next begins. This one does
+   * that and one useful thing more - a solid edge down the left in the man's
+   * own country's colour, so a manager scanning forty lots finds the Afghan
+   * spinners without reading a single line.
+   *
+   * The colours are not invented here: they are the accents each nation
+   * already wears on its crest and its boss plate, so the board agrees with
+   * every other room the reader has been in.
+   */
+  var NAT_SPINE = {
+    eng: "#2F6B45", ire: "#2E8B67", ned: "#D06A19", win: "#B78926", rsa: "#B7352B",
+    zim: "#D15B22", aus: "#D59600", nzl: "#079B99", slk: "#216DB5", sub: "#7A44C5",
+    pak: "#1E7F5C", afg: "#5B4A91", bgd: "#0E6E4F", nep: "#B5304C", sco: "#2B5AA6",
+    wal: "#A62A2E", ken: "#237A46", usa: "#33366E", can: "#C2483B"
+  };
+  function spineOf(rid) { return NAT_SPINE[rid] || "#5A6472"; }
+
   function toastMsg(m) { try { toast(m); } catch (e) { try { console.info("[fifty-overs] " + m); } catch (e2) {} } }
   // the market's decisions are taken on the board itself
   function decide(el, o) {
@@ -359,7 +380,8 @@
     // one press placed, the word lands ON the card - never a popup (MK.ok)
     var okStrip = (MK.ok && Number(MK.ok.id) === Number(L.id) && Date.now() - MK.ok.at < 12000)
       ? "<div class='bidok'>&#10003; Offer in: " + exact(MK.ok.amt) + " &mdash; you lead until someone answers</div>" : "";
-    return "<div class='fo-mk-row" + (lead ? " lead" : "") + "' data-id='" + L.id + "'>" +
+    return "<div class='fo-mk-row" + (lead ? " lead" : "") + "' data-id='" + L.id +
+      "' style='--sp:" + spineOf(L.country_id) + "'>" +
       "<div class='bd'>" +
       "<div class='tp'>" +
       (ovr != null ? "<span class='ovr' title='Overall'>" + ovr + "</span>" : "") +
@@ -1134,7 +1156,10 @@
       "html body #page .fo-mk-deck .sel select{appearance:none !important;-webkit-appearance:none !important;border:0 !important;background:transparent !important;font:600 11.5px/1.4 Inter,sans-serif !important;color:#14243A !important;padding:6px 16px 6px 0 !important;cursor:pointer;min-height:0 !important;box-shadow:none !important}",
       "html body #page .fo-mk-deck .sel:after{content:'';position:absolute;right:2px;top:50%;width:7px;height:7px;border-right:1.8px solid #98a0ae;border-bottom:1.8px solid #98a0ae;transform:translateY(-70%) rotate(45deg);pointer-events:none}",
       // THE BID RAIL CARD: identity and reads on paper, the money in navy
-      "html body #page .fo-mk-row{display:grid;grid-template-columns:1fr 225px;background:#FFFEFC;border:1px solid rgba(27,36,50,.1);border-radius:16px;overflow:hidden;margin-bottom:13px;box-shadow:0 3px 12px rgba(14,35,63,.06)}",
+      // the spine is a real left border, not an inner bar: the card's own edge
+      // carries the colour, so nothing inside has to move to make room for it
+      "html body #page .fo-mk-row{position:relative;display:grid;grid-template-columns:1fr 225px;background:#FFFEFC;border:1px solid rgba(27,36,50,.14);border-left:4px solid var(--sp,#5A6472);border-radius:3px 16px 16px 3px;overflow:hidden;margin-bottom:13px;box-shadow:0 3px 12px rgba(14,35,63,.06)}",
+      "html body #page .fo-mk-row.lead{border-color:rgba(27,36,50,.2);border-left-color:var(--sp,#5A6472);box-shadow:0 4px 16px rgba(14,35,63,.10)}",
       "html body #page .fo-mk-row.lead{border-color:rgba(23,122,87,.4)}",
       "html body #page .fo-mk-row .bd{padding:19px 26px 15px;min-width:0}",
       "html body #page .fo-mk-row .tp{display:flex;align-items:center;gap:13px}",
