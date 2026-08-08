@@ -232,16 +232,36 @@
     return out;
   }
   function signedThisSeason(season) { try { return App.wmkt && App.wmkt["s" + season]; } catch (e) { return null; } }
-  function signStar(season, idx) {
+  // no dialogs: a refusal is said beside the button that asked, and the
+  // signing itself is agreed on the row it is offered from
+  function signSay(el, m) {
+    if (window.foSayAt) { window.foSayAt(el, m, "error"); return; }
+    try { console.warn("[fifty-overs] " + m); } catch (e) {}
+  }
+  function signStar(season, idx, el) {
     try {
       var p = P().phaseOf(Date.now());
-      if (p.season !== season || !windowOpen(p)) { alert("The window is closed."); return; }
-      if (signedThisSeason(season)) { alert("One overseas signing per season - you have already made yours."); return; }
+      if (p.season !== season || !windowOpen(p)) { signSay(el, "The window is closed."); return; }
+      if (signedThisSeason(season)) { signSay(el, "One overseas signing per season - you have already made yours."); return; }
       var lst = marketOf(season), item = lst[idx]; if (!item) return;
       var t = userTeam();
-      if (t.players.some(function (q) { return q.name === item.p.name; })) { alert(item.p.name + " is already at your club."); return; }
-      if (!App.fin || App.fin.bank < item.fee) { alert("The board will not sanction it - you need " + fmtMoney(item.fee) + "."); return; }
-      if (!window.confirm("Sign " + item.p.name + " (" + item.nat + ") from " + item.club + " for " + fmtMoney(item.fee) + "?")) return;
+      if (t.players.some(function (q) { return q.name === item.p.name; })) { signSay(el, item.p.name + " is already at your club."); return; }
+      if (!App.fin || App.fin.bank < item.fee) { signSay(el, "The board will not sanction it - you need " + fmtMoney(item.fee) + "."); return; }
+      if (el && window.foDecide) {
+        window.foDecide(el, {
+          q: "Sign " + item.p.name + " (" + item.nat + ") from " + item.club + "?",
+          note: "The fee is " + fmtMoney(item.fee) + ", and it is your one overseas signing this season.",
+          ok: "Sign him", cancel: "Not this one",
+          onYes: function () { signStarDo(season, item); }
+        });
+        return;
+      }
+      signStarDo(season, item);
+    } catch (e) { try { console.warn("signStar", e); } catch (e2) {} }
+  }
+  function signStarDo(season, item) {
+    try {
+      var t = userTeam();
       var np = JSON.parse(JSON.stringify(item.p));
       np.fatigue = "rested"; np.formIx = 3;
       try { if (typeof jsDerive === "function") jsDerive(np); } catch (eD) {}
@@ -341,7 +361,7 @@
         "</div>";
 
       page.querySelectorAll(".fo-al-sign").forEach(function (b) {
-        b.addEventListener("click", function () { signStar(p.season, +b.getAttribute("data-i")); });
+        b.addEventListener("click", function () { signStar(p.season, +b.getAttribute("data-i"), b); });
       });
     } catch (e) { try { console.warn("foRenderAlmanackPage", e); } catch (e2) {} }
   }

@@ -316,12 +316,20 @@
     try { if (window.__foWorldClaim) return true; } catch (e) {}
     try { return !!localStorage.getItem("fo_world_claim"); } catch (e2) { return false; }
   }
-  function foSqYouthAct(name, action, after) {
+  // el is the button that was pressed: the contract question opens where it
+  // stands rather than in a browser dialog over the squad
+  function foSqYouthAct(name, action, after, el) {
     try {
-      if (window.__foColtAction && window.__foColtAction(name, action, after)) return;
+      if (window.__foColtAction && window.__foColtAction(name, action, after, el)) return;
     } catch (eW) {}
-    if (action === "promote") { try { promoteYouth(App.teamIx, name); } catch (eP) {} }
-    after();
+    if (action === "promote") { try { promoteYouth(App.teamIx, name); } catch (eP) {} after(); return; }
+    var run = function () { after(); };
+    if (window.foDecide && el) {
+      window.foDecide(el, { q: "Let " + name + " go?", note: "He leaves the club for good.",
+        ok: "Let him go", cancel: "Keep him", danger: true, onYes: run });
+      return;
+    }
+    run();
   }
   // === Squad — the XI stood on the park, and whoever you tapped in the dossier ===
   // Batting style is not stored, so it is read off the skills the way a coach
@@ -1807,11 +1815,11 @@
       if (sb) sb.addEventListener("click", function () { sv.arm = (sv.arm === sv.sel) ? null : sv.sel; pgSquad(); });
       var pb = page.querySelector("#fo-sqx-promote");
       if (pb) pb.addEventListener("click", function () {
-        foSqYouthAct(sv.sel, "promote", function () { sv.xi = null; sv.sel = null; pgSquad(); });
+        foSqYouthAct(sv.sel, "promote", function () { sv.xi = null; sv.sel = null; pgSquad(); }, pb);
       });
       var rb0 = page.querySelector("#fo-sqx-release");
       if (rb0) rb0.addEventListener("click", function () {
-        foSqYouthAct(sv.sel, "release", function () { sv.xi = null; sv.sel = null; pgSquad(); });
+        foSqYouthAct(sv.sel, "release", function () { sv.xi = null; sv.sel = null; pgSquad(); }, rb0);
       });
 
       // ==== SQUAD v2 wiring ==================================================
@@ -1855,12 +1863,12 @@
       });
       page.querySelectorAll("[data-ypro]").forEach(function (b) {
         b.addEventListener("click", function () {
-          foSqYouthAct(b.getAttribute("data-ypro"), "promote", function () { sv.xi = null; sv.open = null; s2Repaint(); });
+          foSqYouthAct(b.getAttribute("data-ypro"), "promote", function () { sv.xi = null; sv.open = null; s2Repaint(); }, b);
         });
       });
       page.querySelectorAll("[data-yrel]").forEach(function (b) {
         b.addEventListener("click", function () {
-          foSqYouthAct(b.getAttribute("data-yrel"), "release", function () { sv.xi = null; sv.open = null; s2Repaint(); });
+          foSqYouthAct(b.getAttribute("data-yrel"), "release", function () { sv.xi = null; sv.open = null; s2Repaint(); }, b);
         });
       });
       page.querySelectorAll("[data-mkc]").forEach(function (b) {

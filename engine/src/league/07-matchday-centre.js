@@ -1291,7 +1291,7 @@
       pnl.innerHTML = inner;
       pnl.__foInner = inner;
       pnl.querySelectorAll(".fo-fr-play").forEach(function (b2) { b2.addEventListener("click", function () { var fr = foFriendlies[+b2.getAttribute("data-i")]; if (fr) foPlayFriendly(fr); }); });
-      pnl.querySelectorAll(".fo-fr-x").forEach(function (b2) { b2.addEventListener("click", function () { foRemoveFriendly(+b2.getAttribute("data-i")); }); });
+      pnl.querySelectorAll(".fo-fr-x").forEach(function (b2) { b2.addEventListener("click", function () { foRemoveFriendly(+b2.getAttribute("data-i"), b2); }); });
       pnl.querySelectorAll(".fo-ch-acc,.fo-ch-dec").forEach(function (b2) {
         b2.addEventListener("click", function () {
           rpc("challenge_respond", { p_id: b2.getAttribute("data-id"), p_accept: b2.classList.contains("fo-ch-acc") })

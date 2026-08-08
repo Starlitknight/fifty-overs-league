@@ -420,7 +420,13 @@
           // them where they are - the next load tries again, and a released
           // club is claimed the moment one frees up.
           if (/full/i.test(String(e.message || ""))) {
-            try { alert(String(e.message).slice(0, 200)); } catch (eA) {}
+            // no dialog: the page says it where the page is, and the next
+            // load tries again the moment a seat frees up
+            try { console.warn("[fifty-overs] " + String(e.message).slice(0, 200)); } catch (eA) {}
+            try {
+              var host = document.getElementById("page");
+              if (host && host.firstChild && window.foSayAt) window.foSayAt(host.firstChild, String(e.message).slice(0, 200), "error");
+            } catch (eB) {}
           }
         });
       }).catch(function () {});

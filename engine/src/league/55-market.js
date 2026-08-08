@@ -92,7 +92,16 @@
   function dayTxt(d) {
     try { return window.__foPlanet.dateTxt(d) || ("day " + d); } catch (e) { return "day " + d; }
   }
-  function toastMsg(m) { try { toast(m); } catch (e) { try { alert(m); } catch (e2) {} } }
+  function toastMsg(m) { try { toast(m); } catch (e) { try { console.info("[fifty-overs] " + m); } catch (e2) {} } }
+  // the market's decisions are taken on the board itself
+  function decide(el, o) {
+    if (window.foDecide) { window.foDecide(el, o); return; }
+    try { if (o && o.onYes) o.onYes(o.input ? o.input.value : undefined); } catch (e) {}
+  }
+  function sayErrAt(el, m) {
+    if (window.foSayAt) { window.foSayAt(el, m, "error"); return; }
+    try { console.warn("[fifty-overs] " + m); } catch (e) {}
+  }
   function sayErr(e) { toastMsg(String((e && e.message) || e).replace(/^error:\s*/i, "")); }
 
   // THE UMPIRE'S OWN ARITHMETIC, mirrored so the page can say a price before
@@ -1003,31 +1012,47 @@
     }
     if ((b = t9.closest("[data-mk-list]"))) {
       var nm = b.getAttribute("data-mk-list");
-      var res = prompt("Reserve for " + nm + " — the least you will accept:", "20000");
-      if (res == null) return;
-      res = Math.round(+String(res).replace(/[^0-9]/g, ""));
-      if (!(res > 0)) return;
-      rpc("world_market_list", { p_player: nm, p_reserve: res }).then(function (r) {
-        toastMsg(nm + " is on the board · the hammer falls in three days");
-        refetch(true);
-      }).catch(sayErr);
+      decide(b, {
+        q: "Reserve for " + nm, note: "The least you will accept. Below it the hammer does not fall.",
+        input: { value: "20000", placeholder: "20000" }, ok: "Put him on the board", cancel: "Not yet",
+        onYes: function (v) {
+          var res = Math.round(+String(v == null ? "" : v).replace(/[^0-9]/g, ""));
+          if (!(res > 0)) { sayErrAt(b, "A reserve has to be a figure above nothing."); return; }
+          rpc("world_market_list", { p_player: nm, p_reserve: res }).then(function () {
+            toastMsg(nm + " is on the board · the hammer falls in three days");
+            refetch(true);
+          }).catch(sayErr);
+        }
+      });
       return;
     }
     if ((b = t9.closest("[data-mk-qs]"))) {
       var nm2 = b.getAttribute("data-mk-qs"), fee = +b.getAttribute("data-fee");
-      if (!confirm("Quick-sell " + nm2 + " to the bank for $" + fee.toLocaleString() + "? This is immediate and final.")) return;
-      rpc("world_market_quicksell", { p_player: nm2 }).then(function (r) {
-        toastMsg(nm2 + " sold to the bank for $" + ((r && r.fee) || fee).toLocaleString() + ". The fee lands with the next settle.");
-        refetch(true);
-      }).catch(sayErr);
+      decide(b, {
+        q: "Sell " + nm2 + " to the bank for $" + fee.toLocaleString() + "?",
+        note: "Immediate and final. No auction, no counter-offer, and he does not come back.",
+        ok: "Sell him", cancel: "Keep him", danger: true,
+        onYes: function () {
+          rpc("world_market_quicksell", { p_player: nm2 }).then(function (r) {
+            toastMsg(nm2 + " sold to the bank for $" + ((r && r.fee) || fee).toLocaleString() + ". The fee lands with the next settle.");
+            refetch(true);
+          }).catch(sayErr);
+        }
+      });
       return;
     }
     if ((b = t9.closest("[data-mk-rel]"))) {
       var nm3 = b.getAttribute("data-mk-rel");
-      if (!confirm("Release " + nm3 + " for nothing? He walks, and he does not come back.")) return;
-      rpc("world_market_release", { p_player: nm3 }).then(function () {
-        toastMsg(nm3 + " released."); refetch(true);
-      }).catch(sayErr);
+      decide(b, {
+        q: "Release " + nm3 + " for nothing?",
+        note: "He walks, the club gets no fee, and he does not come back.",
+        ok: "Release him", cancel: "Keep him", danger: true,
+        onYes: function () {
+          rpc("world_market_release", { p_player: nm3 }).then(function () {
+            toastMsg(nm3 + " released."); refetch(true);
+          }).catch(sayErr);
+        }
+      });
       return;
     }
   });

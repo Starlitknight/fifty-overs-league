@@ -102,6 +102,125 @@
   // Branded confirmation modal replacing native confirm(). Destructive actions get
   // deliberate friction: danger styling, explicit verb on the button, and the SAFE
   // choice holds focus so Enter/Escape can never destroy anything by accident.
+  /* ---- THE DECISION HAPPENS WHERE THE DECISION IS ------------------------
+   *
+   * A native confirm() is the browser's dialog, not the game's: it prints the
+   * hostname, it stacks a "Suppress dialogs" button under the question, and on
+   * a phone it covers the page you were reading to ask about it. A branded
+   * modal is better looking and exactly as rude - it still takes the screen
+   * away from the thing being decided.
+   *
+   * So a decision is taken in place. The button that was pressed steps aside
+   * and a strip opens where it stood, carrying the question, what it costs,
+   * and the two ways out. Cancel puts the button back. Nothing covers anything
+   * and the page never moves under the reader.
+   *
+   *   foDecide(btn, { q, note, ok, danger, onYes })
+   *
+   * The strip is keyboard-safe: Escape cancels, and the SAFE choice holds
+   * focus, so no destructive action is ever one stray Enter away. */
+  function foDecCss() {
+    if (document.getElementById("fo-dec-css")) return;
+    var s = document.createElement("style"); s.id = "fo-dec-css";
+    s.textContent = [
+      ".fo-dec{display:block;margin:8px 0;padding:12px 14px;border-radius:12px;background:#FFFEFC;",
+      "border:1px solid rgba(20,28,40,.16);border-left:3px solid #C9552F;",
+      "font:400 13px/1.5 Inter,system-ui,sans-serif;color:#141C28;text-align:left}",
+      ".fo-dec.dngr{border-left-color:#B3372B}",
+      ".fo-dec b{display:block;font:600 13.5px/1.4 Inter,system-ui,sans-serif;color:#141C28}",
+      ".fo-dec p{margin:4px 0 0;font:400 12px/1.5 Inter,system-ui,sans-serif;color:rgba(20,28,40,.62)}",
+      ".fo-dec .fo-dec-in{display:block;width:100%;max-width:220px;margin-top:9px;min-height:40px;",
+      "padding:0 12px;border-radius:9px;border:1px solid rgba(20,28,40,.24);background:#FFFEFC;",
+      "font:600 15px/1 Inter,system-ui,sans-serif;color:#141C28;font-variant-numeric:tabular-nums}",
+      ".fo-dec .fo-dec-in:focus{outline:none;border-color:#C9552F;box-shadow:0 0 0 3px rgba(201,85,47,.16)}",
+      ".fo-dec .fo-dec-act{display:flex;gap:8px;margin-top:10px}",
+      ".fo-dec button{flex:0 0 auto;min-height:38px;padding:0 16px;border-radius:9px;cursor:pointer;",
+      "font:700 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
+      ".fo-dec .fo-dec-no{background:transparent;border:1px solid rgba(20,28,40,.24);color:rgba(20,28,40,.7)}",
+      ".fo-dec .fo-dec-yes{background:#C9552F;border:1px solid #C9552F;color:#FFFEFC}",
+      ".fo-dec.dngr .fo-dec-yes{background:#B3372B;border-color:#B3372B}",
+      ".fo-dec .fo-dec-no:focus,.fo-dec .fo-dec-yes:focus{outline:2px solid rgba(201,85,47,.5);outline-offset:2px}"
+    ].join("");
+    document.body.appendChild(s);
+  }
+  function foDecide(el, opts) {
+    try {
+      if (!el || !el.parentNode) { if (opts && opts.onYes) opts.onYes(); return; }
+      foDecCss();
+      var o = opts || {};
+      // pressing the same button twice must not open two strips
+      var prev = el.parentNode.querySelector(".fo-dec[data-fo-dec='1']");
+      if (prev && prev.__foFor === el) return;
+      var box = document.createElement("div");
+      box.className = "fo-dec" + (o.danger ? " dngr" : "");
+      box.setAttribute("data-fo-dec", "1");
+      box.__foFor = el;
+      // a decision that needs a FIGURE carries its own field, so a reserve
+      // price is typed on the board it belongs to rather than in the browser's
+      // prompt box
+      box.innerHTML = "<b></b>" + (o.note ? "<p></p>" : "") +
+        (o.input ? "<input class='fo-dec-in' type='text' inputmode='numeric' autocomplete='off'>" : "") +
+        "<div class='fo-dec-act'><button type='button' class='fo-dec-no'></button>" +
+        "<button type='button' class='fo-dec-yes'></button></div>";
+      box.querySelector("b").textContent = String(o.q || "Are you sure?");
+      if (o.note) box.querySelector("p").textContent = String(o.note);
+      if (o.input) {
+        var inp = box.querySelector(".fo-dec-in");
+        inp.value = String(o.input.value == null ? "" : o.input.value);
+        if (o.input.placeholder) inp.placeholder = String(o.input.placeholder);
+      }
+      box.querySelector(".fo-dec-no").textContent = String(o.cancel || "Cancel");
+      box.querySelector(".fo-dec-yes").textContent = String(o.ok || "Confirm");
+      var shown = el.style.display;
+      el.style.display = "none";
+      el.parentNode.insertBefore(box, el.nextSibling);
+      var close = function () {
+        try { document.removeEventListener("keydown", onKey); } catch (e) {}
+        try { el.style.display = shown || ""; } catch (e) {}
+        try { if (box.parentNode) box.parentNode.removeChild(box); } catch (e) {}
+      };
+      var onKey = function (e) { if (e.key === "Escape") { close(); try { el.focus(); } catch (e2) {} } };
+      document.addEventListener("keydown", onKey);
+      box.querySelector(".fo-dec-no").addEventListener("click", function (e) {
+        e.preventDefault(); e.stopPropagation(); close(); try { el.focus(); } catch (e2) {}
+      });
+      var commit = function (e) {
+        if (e) { e.preventDefault(); e.stopPropagation(); }
+        var v = o.input ? box.querySelector(".fo-dec-in").value : undefined;
+        close();
+        try { if (o.onYes) o.onYes(v); } catch (e2) { try { console.warn("foDecide", e2); } catch (e3) {} }
+      };
+      box.querySelector(".fo-dec-yes").addEventListener("click", commit);
+      // typing a figure and pressing Enter is the same as pressing the verb
+      if (o.input) box.querySelector(".fo-dec-in").addEventListener("keydown", function (e) {
+        if (e.key === "Enter") commit(e);
+      });
+      // with a field to fill the cursor belongs in it; without one the SAFE
+      // choice holds focus so Enter can never destroy anything
+      try { box.querySelector(o.input ? ".fo-dec-in" : ".fo-dec-no").focus(); } catch (e) {}
+      try { box.scrollIntoView({ block: "nearest" }); } catch (e) {}
+    } catch (eD) { try { if (opts && opts.onYes) opts.onYes(); } catch (e2) {} }
+  }
+  // A LINE THAT SAYS WHY, where the thing that failed is. Same idea as the
+  // decision strip: an error belongs beside the control that produced it, not
+  // over the whole page.
+  function foSayAt(el, msg, kind) {
+    try {
+      if (!el || !el.parentNode) { try { console.warn("[fifty-overs] " + msg); } catch (e) {} return; }
+      foDecCss();
+      var ex = el.parentNode.querySelector(".fo-dec[data-fo-note='1']");
+      if (ex) ex.remove();
+      var n = document.createElement("div");
+      n.className = "fo-dec" + (kind === "error" ? " dngr" : "");
+      n.setAttribute("data-fo-note", "1");
+      n.innerHTML = "<b></b>";
+      n.querySelector("b").textContent = String(msg || "").slice(0, 300);
+      el.parentNode.insertBefore(n, el.nextSibling);
+      setTimeout(function () { try { if (n.parentNode) n.parentNode.removeChild(n); } catch (e) {} }, 9000);
+    } catch (e) { try { console.warn("[fifty-overs] " + msg); } catch (e2) {} }
+  }
+  try { window.foDecide = foDecide; window.foSayAt = foSayAt; } catch (eX) {}
+
   function foConfirm(opts) {
     return new Promise(function (res) {
       var old = document.getElementById("fo-modal"); if (old) old.remove();
@@ -1206,14 +1325,18 @@
       }
     } catch (e) { return false; }
   }
-  function foRemoveFriendly(i) {
+  // el is the cross that was pressed: the question opens on the fixture row
+  function foRemoveFriendly(i, el) {
     var fr = foFriendlies[i]; if (!fr) return;
     try {
       if (typeof M !== "undefined" && M && !M.done && App.pending && App.pending.__friendly && App.pending.away === fr.oppName) {
-        say("That friendly is being played right now · finish or abandon the match first."); return;
+        foSayAt(el, "That friendly is being played right now - finish or abandon the match first.", "error"); return;
       }
     } catch (e) {}
-    foConfirm({ title: "Remove the friendly vs " + fr.oppName + "?", body: "You can schedule another from their club page any time.", confirm: "Remove", cancel: "Keep it" })
-      .then(function (ok) { if (!ok) return; foFriendlies.splice(i, 1); foFrSchedSave(); if (typeof window.route === "function") window.route(); });
+    var go = function () { foFriendlies.splice(i, 1); foFrSchedSave(); if (typeof window.route === "function") window.route(); };
+    if (!el) { go(); return; }
+    foDecide(el, { q: "Remove the friendly vs " + fr.oppName + "?",
+      note: "You can schedule another from their club page any time.",
+      ok: "Remove it", cancel: "Keep it", danger: true, onYes: go });
   }
 

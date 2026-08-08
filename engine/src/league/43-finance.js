@@ -542,21 +542,29 @@
     // the masthead button and the lever tile are one decision with two doors:
     // the tile used to reach across and .click() the other one through an
     // inline onclick, which broke silently the moment either id moved
+    // A STAND IS NOT BOUGHT IN A BROWSER DIALOG. The question opens where the
+    // button stood - what it builds, what it costs, and what it means - so the
+    // page being decided about is still on the screen while it is decided.
     var buy = function (btns, ask, go) {
       var all = btns.filter(Boolean);
       all.forEach(function (b) {
         b.addEventListener("click", function () {
-          if (!confirm(ask())) return;
-          all.forEach(function (x) { x.disabled = true; });
-          go(function (t, bad) { if (bad) all.forEach(function (x) { x.disabled = false; }); say(t, bad); });
+          var a = ask();
+          var commit = function () {
+            all.forEach(function (x) { x.disabled = true; });
+            go(function (t, bad) { if (bad) all.forEach(function (x) { x.disabled = false; }); say(t, bad); });
+          };
+          if (!window.foDecide) { commit(); return; }
+          window.foDecide(b, { q: a.q, note: a.note, ok: a.ok || "Build it", onYes: commit });
         });
       });
     };
     var want = Number(f.nextSeats) || 0, cost = Number(f.nextSeatsCost) || 0;
     buy([page.querySelector("#fo-fin-seats"), page.querySelector("#fo-fin-seats2")],
       function () {
-        return "Build to " + want.toLocaleString() + " seats for " + M(cost) +
-          "?\n\nA stand is never taken down again, and the treasury has to hold the money on the day.";
+        return { q: "Build to " + want.toLocaleString() + " seats for " + M(cost) + "?",
+                 note: "A stand is never taken down again, and the treasury has to hold the money on the day.",
+                 ok: "Build the stand" };
       },
       function (done) {
         done("Laying the concrete…");
@@ -571,7 +579,11 @@
     var lv = (Number(f.academyLevel) || Number(st.academy) || 1) + 1;
     var acost = Number(f.nextAcademyCost) || [0, 400000, 900000, 1800000, 3200000][lv - 1] || 0;
     buy([page.querySelector("#fo-fin-acad")],
-      function () { return "Take the academy to level " + lv + " for " + M(acost) + "?"; },
+      function () {
+        return { q: "Take the academy to level " + lv + " for " + M(acost) + "?",
+                 note: "A level is never given back, and the treasury has to hold the money on the day.",
+                 ok: "Build it" };
+      },
       function (done) {
         done("Signing the builders…");
         rpc("world_set_academy", { p_level: lv })

@@ -312,16 +312,20 @@
       go.disabled = true; go.textContent = "Travelling…";
       rpc("world_scout", { p_nation: sel2 ? sel2.value : ac.country })
         .then(function () { window.foRenderAcademyPage(); })
-        .catch(function (e) { go.disabled = false; go.textContent = "Scout a recruit"; alert(String(e.message).slice(0, 200)); });
+        .catch(function (e) { go.disabled = false; go.textContent = "Scout a recruit"; sayAt(go, String(e.message).slice(0, 200)); });
     });
     page.querySelectorAll("[data-fo-rec]").forEach(function (b) {
       b.addEventListener("click", function () {
         var act = b.getAttribute("data-fo-rec");
-        if (act === "release" && !confirm("Let him go? He walks away and you will not see him again.")) return;
-        b.disabled = true; b.textContent = act === "sign" ? "Signing…" : "Letting him go…";
-        rpc("world_recruit", { p_action: act })
-          .then(function () { window.foRenderAcademyPage(); })
-          .catch(function (e) { b.disabled = false; window.foRenderAcademyPage(); alert(String(e.message).slice(0, 200)); });
+        var run = function () {
+          b.disabled = true; b.textContent = act === "sign" ? "Signing…" : "Letting him go…";
+          rpc("world_recruit", { p_action: act })
+            .then(function () { window.foRenderAcademyPage(); })
+            .catch(function (e) { b.disabled = false; window.foRenderAcademyPage(); sayAt(b, String(e.message).slice(0, 200)); });
+        };
+        if (act !== "release") { run(); return; }
+        decide(b, { q: "Let him go?", note: "He walks away and you will not see him again.",
+                    ok: "Let him go", cancel: "Keep him", danger: true, onYes: run });
       });
     });
     var upBtn = page.querySelector("[data-fo-acup]");
@@ -330,7 +334,7 @@
       upBtn.disabled = true; upBtn.textContent = "Building…";
       rpc("world_set_academy", { p_level: +upBtn.getAttribute("data-fo-acup") })
         .then(function () { window.foRenderAcademyPage(); })
-        .catch(function (e) { upBtn.disabled = false; upBtn.textContent = "Try again"; alert(String(e.message).slice(0, 200)); });
+        .catch(function (e) { upBtn.disabled = false; upBtn.textContent = "Try again"; sayAt(upBtn, String(e.message).slice(0, 200)); });
     });
   }
 
@@ -339,27 +343,51 @@
   // answers the squad page's promote/release taps against the world, quoting
   // the real fee before anything is signed. Returns false when no world club
   // is signed in, so the caller can fall back to the local game's own books.
+  // the shared in-page decision strip and the inline note beside a control;
+  // both degrade to doing the thing / writing to the console if the boot
+  // module has not landed yet
+  function decide(el, o) {
+    if (window.foDecide) { window.foDecide(el, o); return; }
+    try { if (o && o.onYes) o.onYes(); } catch (e) {}
+  }
+  function sayAt(el, m) {
+    if (window.foSayAt) { window.foSayAt(el, m, "error"); return; }
+    try { console.warn("[fifty-overs] " + m); } catch (e) {}
+  }
+
   var COLT_FEE = null;
-  window.__foColtAction = function (name, action, done) {
+  window.__foColtAction = function (name, action, done, el) {
     var after = function () { try { if (done) done(); } catch (eD) {} };
     try { if (!jwt()) return false; } catch (e0) { return false; }
     var ask = function (fee) {
-      var q = action === "release"
-        ? "Let " + name + " go? He leaves the club for good."
-        : fee != null
-          ? "Hand " + name + " a senior contract for " + money(fee) + "?"
-          : "Hand " + name + " a senior contract? The fee comes out of the treasury.";
-      if (!confirm(q)) { after(); return; }
+      var q = action === "release" ? "Let " + name + " go?"
+        : fee != null ? "Hand " + name + " a senior contract for " + money(fee) + "?"
+                      : "Hand " + name + " a senior contract?";
+      var nt = action === "release" ? "He leaves the club for good."
+        : "The fee comes out of the treasury, and the shirt is his from the next round.";
+      // the question opens under the button on the squad page; with no button
+      // to open under, the contract is not signed by guesswork - it is dropped
+      if (!window.foDecide || !el) { after(); return; }
+      window.foDecide(el, {
+        q: q, note: nt, danger: action === "release",
+        ok: action === "release" ? "Let him go" : "Sign him",
+        cancel: action === "release" ? "Keep him" : "Not yet",
+        onYes: function () { commit(); }
+      });
+    };
+    var commit = function () {
       rpc("world_colt", { p_name: name, p_action: action })
         .then(function () {
-          note(action === "promote" ? name + " pulls on a senior shirt." : name + " leaves the club.");
+          if (el) sayAt(el, action === "promote" ? name + " pulls on a senior shirt." : name + " leaves the club.");
+          else note(action === "promote" ? name + " pulls on a senior shirt." : name + " leaves the club.");
           // the senior squad has changed, so the world's copy of it must be
           // re-read before any other page shows the old fifteen
           try { if (window.__foWorldRefreshPlan) window.__foWorldRefreshPlan(); } catch (e2) {}
           after();
         })
         .catch(function (e) {
-          note(String((e && e.message) || e).replace(/^error:\s*/i, "").slice(0, 180));
+          if (el) sayAt(el, String((e && e.message) || e).replace(/^error:\s*/i, "").slice(0, 180));
+          else note(String((e && e.message) || e).replace(/^error:\s*/i, "").slice(0, 180));
           after();
         });
     };
