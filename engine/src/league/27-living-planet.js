@@ -780,6 +780,190 @@
                  : h.cups.length  ? (h.cups.length + (h.cups.length === 1 ? " national cup" : " national cups"))
                  : null };
   }
+  /* ==========================================================================
+     THE MEN WHO PLAYED THE SEASONS.
+     A record of champions with no cricketers in it is a list of club names.
+     Statsguru's whole point is that you can ask who scored the runs, in which
+     season, for whom - so the record needs people, and it needs the SAME
+     people every time anybody asks.
+     Generating real squads for a hundred and thirty-six seasons of sixteen
+     clubs in sixteen countries is out of the question - that is thirty-five
+     thousand squads through the engine's generator on a page load. So a
+     historical cricketer is derived directly instead: a name, a club, a debut,
+     a career length and an aptitude, rolled forward one generation at a time.
+     A club always has thirteen men; when one retires the next walks in, and
+     the seed decides all of it.
+     Season figures come off the man and the season his club was having, so a
+     good player in a great side scores heavily and the same player in that
+     club's lean years does not - which is what makes a career worth reading.
+     ========================================================================== */
+  var ROLES = [
+    { k: "opener",         bat: 1.00, bowl: 0.05 },
+    { k: "opener",         bat: 0.98, bowl: 0.05 },
+    { k: "topOrderBat",    bat: 1.00, bowl: 0.10 },
+    { k: "middleOrderBat", bat: 0.92, bowl: 0.15 },
+    { k: "middleOrderBat", bat: 0.88, bowl: 0.20 },
+    { k: "wicketkeeper",   bat: 0.80, bowl: 0.00 },
+    { k: "allRounder",     bat: 0.72, bowl: 0.70 },
+    { k: "allRounder",     bat: 0.62, bowl: 0.80 },
+    { k: "fingerSpin",     bat: 0.28, bowl: 1.00 },
+    { k: "wristSpin",      bat: 0.22, bowl: 1.00 },
+    { k: "seamFast",       bat: 0.24, bowl: 1.00 },
+    { k: "seamFastMedium", bat: 0.30, bowl: 0.96 },
+    { k: "seamMedium",     bat: 0.34, bowl: 0.90 }
+  ];
+  var SQUAD_N = 13;
+  function natOfRid(rid) {
+    try {
+      var r = (regionList() || []).filter(function (x) { return x.id === rid; })[0];
+      return (r && (r.cty || r.nm)) || "England";
+    } catch (e) { return "England"; }
+  }
+  // a deterministic name for one seat in one generation
+  function manName(rid, slot, seat, gen) {
+    var k = "man|" + rid + "|" + slot + "|" + seat + "|" + gen, i = 0;
+    var rf = function () { i++; return hrnd(k + "|" + i); };
+    try {
+      if (typeof window.natName === "function") return window.natName(natOfRid(rid), rf, null);
+    } catch (e) {}
+    return "Player " + slot + "-" + seat + "-" + gen;
+  }
+  var CAREERS = {};
+  function careersOf(rid, slot) {
+    var ck = rid + "|" + slot;
+    if (CAREERS[ck]) return CAREERS[ck];
+    var born = leagueBorn(rid), f = foundedOf(rid, slot);
+    var from = Math.max(born, f), out = [];
+    if (from > HIST_END) return (CAREERS[ck] = out);
+    for (var seat = 0; seat < SQUAD_N; seat++) {
+      // each seat runs its own line of succession, staggered so a club never
+      // loses its whole side in one winter
+      var y = from - Math.round(hrnd("stag|" + rid + "|" + slot + "|" + seat) * 8);
+      for (var gen = 0; gen < 60 && y <= HIST_END; gen++) {
+        var k = rid + "|" + slot + "|" + seat + "|" + gen;
+        var len = 5 + Math.round(hrnd(k + "|len") * 12);            // 5 to 17 seasons
+        var ro = ROLES[Math.floor(hrnd(k + "|role") * ROLES.length) % ROLES.length];
+        // a man's own class, tilted by the club he plays for
+        var st = strOf(rid, slot);
+        var pull = Math.max(0, Math.min(1, (st - 0.86) / 0.16));
+        var q = Math.max(0.18, Math.min(1, 0.22 + hrnd(k + "|q") * 0.62 + pull * 0.28));
+        var a = Math.max(from, y), b = Math.min(HIST_END, y + len - 1);
+        if (b >= a) out.push({ name: manName(rid, slot, seat, gen), role: ro.k,
+                               bat: ro.bat, bowlA: ro.bowl, q: q, from: a, to: b, slot: slot });
+        y += len;
+      }
+    }
+    CAREERS[ck] = out;
+    return out;
+  }
+  // WHAT A MAN DID IN ONE SEASON, for the club his club was that year.
+  function manSeason(rid, m, year) {
+    var h = histYear(rid, year); if (!h) return null;
+    var pos = 0, n = h.table.length;
+    for (var i = 0; i < n; i++) if (h.table[i].slot === m.slot) { pos = i + 1; break; }
+    if (!pos) return null;
+    // a side near the top gives its batsmen more to bat for and its bowlers
+    // more to bowl at; the effect is real but never the whole story
+    var side = 1.12 - (pos - 1) / Math.max(1, n - 1) * 0.24;
+    var k = "ms|" + rid + "|" + m.name + "|" + year;
+    var form = 0.78 + hrnd(k + "|f") * 0.40;
+    var mats = Math.max(6, Math.min(h.rounds, Math.round(h.rounds * (0.62 + hrnd(k + "|m") * 0.38))));
+    var o = { name: m.name, role: m.role, slot: m.slot, season: year, m: mats,
+              inns: 0, no: 0, runs: 0, bf: 0, hs: 0, hsNo: false, h100: 0, h50: 0,
+              ov: 0, rc: 0, wkts: 0, bbW: 0, bbR: 0 };
+    if (m.bat > 0.15) {
+      o.inns = Math.max(1, mats - (hrnd(k + "|i") > 0.7 ? 1 : 0));
+      // CALIBRATED AGAINST FIFTY-OVER CRICKET, not against a curve that looked
+      // pretty. The first pass put the best career average in the world at 80,
+      // which no batsman has ever managed over a career in this format; the
+      // floor under q keeps a poor player from averaging nothing at all.
+      var perInn = 6 + m.bat * (0.35 + m.q * 0.65) * form * side * 34;
+      o.runs = Math.max(0, Math.round(o.inns * perInn * (0.9 + hrnd(k + "|r") * 0.2)));
+      o.no = Math.min(o.inns - 1, Math.round(hrnd(k + "|no") * (m.bat > 0.7 ? 2 : 4)));
+      var sr = 62 + m.q * 34 + hrnd(k + "|sr") * 22;
+      o.bf = Math.max(o.runs, Math.round(o.runs / (sr / 100)));
+      o.hs = Math.max(0, Math.round(perInn * (1.9 + hrnd(k + "|hs") * 1.7)));
+      if (o.hs > o.runs) o.hs = o.runs;
+      o.hsNo = hrnd(k + "|hn") > 0.78;
+      o.h100 = o.hs >= 100 ? 1 + Math.floor(hrnd(k + "|c") * (o.runs / 420)) : 0;
+      o.h50 = Math.max(o.h100, Math.round(o.runs / 190));
+      if (o.h50 < o.h100) o.h50 = o.h100;
+    }
+    if (m.bowlA > 0.15) {
+      // A PART-TIMER IS NOT A FRONT-LINE BOWLER WITH A BAD DAY. The first pass
+      // gave a man who bowls twenty per cent of the time three and a half overs
+      // a match, which is a spell, and he ended careers averaging ninety-six.
+      // Overs follow aptitude steeply, and wickets fall out of the overs and a
+      // strike rate rather than being drawn beside them - so the average is an
+      // arithmetic consequence of the two, the way it is on a real card.
+      o.ov = Math.round(mats * (0.4 + Math.pow(m.bowlA, 1.6) * 8.2) * 10) / 10;
+      var econ = 6.5 - m.bowlA * (0.3 + m.q * 0.7) * 2.1 + (hrnd(k + "|e") - 0.5) * 0.7;
+      o.rc = Math.max(0, Math.round(o.ov * Math.max(3.6, econ)));
+      var sr = 62 - m.bowlA * (0.3 + m.q * 0.7) * 26 + (hrnd(k + "|w") - 0.5) * 9;
+      sr = Math.max(24, sr) * (0.94 + side * 0.06);
+      o.wkts = Math.max(0, Math.round(o.ov * 6 / sr * form));
+      if (o.wkts) {
+        o.bbW = Math.max(1, Math.min(7, 2 + Math.floor(hrnd(k + "|bb") * Math.min(5, o.wkts))));
+        o.bbR = 9 + Math.floor(hrnd(k + "|bbr") * 44);
+      }
+    }
+    return o;
+  }
+  // one season of one league, every man in it
+  var BOOK = {};
+  function seasonBook(rid, year) {
+    var ck = rid + "|" + year;
+    if (BOOK[ck]) return BOOK[ck];
+    var h = histYear(rid, year);
+    if (!h) return (BOOK[ck] = { bat: [], bowl: [] });
+    var rows = [];
+    h.table.forEach(function (t) {
+      careersOf(rid, t.slot).forEach(function (m) {
+        if (year < m.from || year > m.to) return;
+        var o = manSeason(rid, m, year); if (o) rows.push(o);
+      });
+    });
+    var v = { year: year, rid: rid,
+              bat: rows.filter(function (x) { return x.inns > 0; }).slice().sort(function (a, b) { return b.runs - a.runs || b.hs - a.hs; }),
+              bowl: rows.filter(function (x) { return x.wkts > 0; }).slice().sort(function (a, b) { return b.wkts - a.wkts || a.rc - b.rc; }) };
+    BOOK[ck] = v;
+    return v;
+  }
+  // A CAREER IS THE SUM OF THE SEASONS, not a separate opinion about a man.
+  var CAR = {};
+  function careerBook(rid) {
+    if (CAR[rid]) return CAR[rid];
+    var out = [], span = histSpan(rid);
+    for (var slot = 0; slot < 16; slot++) {
+      careersOf(rid, slot).forEach(function (m) {
+        var c = { name: m.name, role: m.role, slot: m.slot, rid: rid, from: m.from, to: m.to,
+                  seasons: 0, m: 0, inns: 0, no: 0, runs: 0, bf: 0, hs: 0, hsNo: false,
+                  h100: 0, h50: 0, ov: 0, rc: 0, wkts: 0, bbW: 0, bbR: 0, fifers: 0 };
+        for (var y = Math.max(m.from, span.from); y <= Math.min(m.to, span.to); y++) {
+          var o = manSeason(rid, m, y); if (!o) continue;
+          c.seasons++; c.m += o.m; c.inns += o.inns; c.no += o.no; c.runs += o.runs;
+          c.bf += o.bf; c.h100 += o.h100; c.h50 += o.h50;
+          if (o.hs > c.hs) { c.hs = o.hs; c.hsNo = o.hsNo; }
+          c.ov = Math.round((c.ov + o.ov) * 10) / 10; c.rc += o.rc; c.wkts += o.wkts;
+          if (o.bbW >= 5) c.fifers++;
+          if (o.bbW > c.bbW || (o.bbW === c.bbW && o.bbR < c.bbR)) { c.bbW = o.bbW; c.bbR = o.bbR; }
+        }
+        if (c.seasons) out.push(c);
+      });
+    }
+    CAR[rid] = out;
+    return out;
+  }
+  // the whole planet's careers, for a book that spans it
+  var CARW = null;
+  function careerWorld() {
+    if (CARW) return CARW;
+    var out = [];
+    regionList().forEach(function (r) { out = out.concat(careerBook(r.id)); });
+    CARW = out;
+    return out;
+  }
+
   /* ---- THE NATIONS HAVE A RECORD TOO --------------------------------------
    * Clubs are not the only thing in this world with a past. The World Cup has
    * been played every four years since 1979, and a national side that has won
@@ -1579,5 +1763,5 @@
     FA_DAYS: FA_DAYS, faDayOf: faDayOf, faDrawR16: faDrawR16, cupDraw: cupDraw,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
     COLTS_DAYS: COLTS_DAYS, isRestDay: isRestDay, REST_DAYS: REST_DAYS, dayOfRound: dayOfRound, roundOfDay: roundOfDay,
-    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, heritageOf: heritageOf, honoursOf: honoursOf, histYear: histYear, wcYear: wcYear, wcHistory: wcHistory, seasonNo: seasonNo, seasonLabel: seasonLabel, sIdx: sIdx, histSeasons: histSeasons, seasonOne: seasonOne, natHonours: natHonours, WC_FROM: WC_FROM, crownYear: crownYear, histSpan: histSpan, leagueBorn: leagueBorn, foundedOf: foundedOf, HIST_END: HIST_END, CROWN_FROM: CROWN_FROM, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, nations: regionList, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
+    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, heritageOf: heritageOf, honoursOf: honoursOf, histYear: histYear, careersOf: careersOf, seasonBook: seasonBook, careerBook: careerBook, careerWorld: careerWorld, wcYear: wcYear, wcHistory: wcHistory, seasonNo: seasonNo, seasonLabel: seasonLabel, sIdx: sIdx, histSeasons: histSeasons, seasonOne: seasonOne, natHonours: natHonours, WC_FROM: WC_FROM, crownYear: crownYear, histSpan: histSpan, leagueBorn: leagueBorn, foundedOf: foundedOf, HIST_END: HIST_END, CROWN_FROM: CROWN_FROM, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, nations: regionList, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();

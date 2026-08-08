@@ -340,7 +340,14 @@
       "html body #page .fo-stc-htb tr.ch td:nth-child(2) a{color:#2F6B45 !important}",
       "html body #page .fo-stc-htb tr.ch td{background:rgba(47,107,69,.08)}",
       "html body #page .fo-stc-htb tr.ch em{font-style:normal;margin-left:5px;font:700 7.5px/1 Oswald,sans-serif;letter-spacing:.12em;color:#2F6B45}",
-      "@media(max-width:430px){html body #page .fo-stc-htb th:nth-child(6),html body #page .fo-stc-htb td:nth-child(6){display:none}}",
+      "@media(max-width:430px){html body #page .fo-stc-htb:not(.bk) th:nth-child(6),html body #page .fo-stc-htb:not(.bk) td:nth-child(6){display:none}}",
+      // the books carry a name and a line under it, so they scroll rather than
+      // squeeze - a career is worth a sideways swipe
+      "html body #page .fo-stc-htb.bk{table-layout:auto;min-width:520px}",
+      "html body #page .fo-stc-htb.bk td:nth-child(2) u{display:block;text-decoration:none;font:400 10.5px/1.35 Inter,system-ui,sans-serif;color:rgba(20,28,40,.5)}",
+      "html body #page .fo-stc-htb.bk th.r,html body #page .fo-stc-htb.bk td.r{width:auto;padding-left:9px}",
+      "html body #page .fo-stc-cseg{display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border-radius:9px;border:1px solid rgba(20,28,40,.16);text-decoration:none;font:700 10px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(20,28,40,.55)}",
+      "html body #page .fo-stc-cseg.on{border-color:#C9552F;color:#C9552F;background:rgba(201,85,47,.06)}",
       // ---- the table -------------------------------------------------------
       // A SOLID NAVY HEADER BAND with white condensed capitals is a spreadsheet
       // wearing a suit: it puts the loudest thing on the page above the quietest
@@ -432,6 +439,7 @@
     var elsewhere =
       "<div class='fo-stc-sec'><div class='fo-stc-sech'>Elsewhere in the record</div><div class='fo-stc-grid'>" +
       "<a class='fo-stc-item' href='#/stats?v=hist&n=" + encodeURIComponent(natId) + "'><b>The record</b><span>Every season this league has ever played: the table that decided it, the champions and the cup winners, year by year.</span><i>" + (function () { try { var sp = PL9().histSpan(natId); return sp.seasons ? "Seasons " + PL9().sIdx(sp.from) + "&ndash;" + PL9().sIdx(sp.to) : "The record"; } catch (e) { return "The record"; } })() + "</i></a>" +
+      "<a class='fo-stc-item' href='#/stats?v=career&n=" + encodeURIComponent(natId) + "'><b>All-time careers</b><span>Every batsman and bowler in the record, ranked on a whole career rather than one season.</span><i>The record</i></a>" +
       "<a class='fo-stc-item' href='#/league'><b>The league table</b><span>Where the clubs stand, the fixtures and the results, round by round.</span><i>" + E(natName(natId)) + "</i></a>" +
       "<a class='fo-stc-item' href='#/rankings'><b>The world rankings</b><span>Nations and clubs ranked on what they have done, across every competition.</span><i>The world</i></a>" +
       "<a class='fo-stc-item' href='#/almanack'><b>The world almanack</b><span>Champions, cup winners and the honours every season has handed out.</span><i>Every season</i></a>" +
@@ -655,9 +663,104 @@
       "<thead><tr><th class='r'>#</th><th>Club</th><th class='r'>P</th><th class='r'>W</th><th class='r'>L</th>" +
       "<th class='r'>T</th><th class='r'>Pts</th><th class='r'>NRR</th></tr></thead><tbody>" + rows +
       "</tbody></table></div></div>" +
+      // WHO SCORED THE RUNS. A season with a champion and no cricketers in it
+      // is a club name and a number; this is the half of the record anybody
+      // actually argues about.
+      (function () {
+        var bk = null;
+        try { bk = P.seasonBook ? P.seasonBook(natId, year) : null; } catch (e) { return ""; }
+        if (!bk || (!bk.bat.length && !bk.bowl.length)) return "";
+        var ave = function (r, i, n) { var d = i - n; return d > 0 ? (r / d).toFixed(2) : "&mdash;"; };
+        var bat = bk.bat.slice(0, 5).map(function (x, i) {
+          return "<tr><td class='r'>" + (i + 1) + "</td><td>" + E(x.name) + "<u>" + E(nmOf(x.slot)) + "</u></td>" +
+            "<td class='r'>" + x.inns + "</td><td class='r'><b>" + x.runs + "</b></td>" +
+            "<td class='r'>" + x.hs + (x.hsNo ? "*" : "") + "</td><td class='r'>" + ave(x.runs, x.inns, x.no) + "</td></tr>";
+        }).join("");
+        var bowl = bk.bowl.slice(0, 5).map(function (x, i) {
+          return "<tr><td class='r'>" + (i + 1) + "</td><td>" + E(x.name) + "<u>" + E(nmOf(x.slot)) + "</u></td>" +
+            "<td class='r'>" + x.ov.toFixed(0) + "</td><td class='r'><b>" + x.wkts + "</b></td>" +
+            "<td class='r'>" + (x.bbW ? x.bbW + "/" + x.bbR : "&mdash;") + "</td>" +
+            "<td class='r'>" + (x.wkts ? (x.rc / x.wkts).toFixed(2) : "&mdash;") + "</td></tr>";
+        }).join("");
+        return "<div class='fo-stc-sec'><div class='fo-stc-sech'>The season&rsquo;s runs</div>" +
+          "<div class='fo-stc-scroll'><table class='fo-stc-htb bk'><thead><tr><th class='r'>#</th><th>Batsman</th>" +
+          "<th class='r'>Inns</th><th class='r'>Runs</th><th class='r'>HS</th><th class='r'>Ave</th></tr></thead><tbody>" +
+          bat + "</tbody></table></div></div>" +
+          "<div class='fo-stc-sec'><div class='fo-stc-sech'>The season&rsquo;s wickets</div>" +
+          "<div class='fo-stc-scroll'><table class='fo-stc-htb bk'><thead><tr><th class='r'>#</th><th>Bowler</th>" +
+          "<th class='r'>Ov</th><th class='r'>Wkts</th><th class='r'>BB</th><th class='r'>Ave</th></tr></thead><tbody>" +
+          bowl + "</tbody></table></div></div>";
+      })() +
       "<div class='fo-stc-foot'><a href='#/stats'>&lsaquo; The Stats Centre</a>" +
+      "<a href='#/stats?v=career&n=" + encodeURIComponent(natId) + "'>All-time careers &rsaquo;</a>" +
       "<a href='#/league?n=" + encodeURIComponent(natId) + "'>This season's table &rsaquo;</a></div>";
   }
+  /* THE CAREERS (#/stats?v=career) — statsguru's own question, asked of the
+     whole record: not who led one season, but who did it for fifteen. Every
+     figure here is the SUM of the seasons above, so a man's career total is
+     what you get by adding up the years you can already read one by one. */
+  function careerBody(natId, book, wantScope) {
+    var P = PL9();
+    if (!P || !P.careerBook) return "<div class='fo-stc-sec'><p class='fo-stc-dim'>The record is still waking up.</p></div>";
+    var scope = wantScope === "world" ? "world" : "league";
+    var bk = book === "bowl" ? "bowl" : "bat";
+    var rows = [];
+    try { rows = scope === "world" ? P.careerWorld() : P.careerBook(natId); } catch (e) { rows = []; }
+    var natOf = {}; (P.nations() || []).forEach(function (r) { natOf[r.id] = r.nm; });
+    var sN = function (y) { return P.sIdx ? P.sIdx(y) : y; };
+    var qual = bk === "bat"
+      ? function (x) { return x.inns >= 30; }
+      : function (x) { return x.wkts >= 30; };
+    var list = rows.filter(qual);
+    list.sort(bk === "bat"
+      ? function (a, b) { return b.runs - a.runs || b.hs - a.hs; }
+      : function (a, b) { return b.wkts - a.wkts || (a.rc / Math.max(1, a.wkts)) - (b.rc / Math.max(1, b.wkts)); });
+    var sides = {};
+    var clubOf = function (x) {
+      var r2 = x.rid || natId;
+      if (!sides[r2]) { try { sides[r2] = P.sidesOf(r2) || []; } catch (e) { sides[r2] = []; } }
+      var a = sides[r2];
+      for (var i = 0; i < a.length; i++) if ((a[i].slot | 0) === (x.slot | 0)) return a[i].name;
+      return "";
+    };
+    var head = bk === "bat"
+      ? "<tr><th class='r'>#</th><th>Batsman</th><th class='r'>Sns</th><th class='r'>Inns</th><th class='r'>Runs</th><th class='r'>HS</th><th class='r'>Ave</th><th class='r'>100</th></tr>"
+      : "<tr><th class='r'>#</th><th>Bowler</th><th class='r'>Sns</th><th class='r'>Ov</th><th class='r'>Wkts</th><th class='r'>BB</th><th class='r'>Ave</th><th class='r'>5w</th></tr>";
+    var body = list.slice(0, 60).map(function (x, i) {
+      var span = "S" + sN(x.from) + "&ndash;S" + sN(x.to);
+      var who = "<td>" + E(x.name) + "<u>" + E(clubOf(x)) + (scope === "world" ? " &middot; " + E(natOf[x.rid] || "") : "") +
+        " &middot; " + span + "</u></td>";
+      return bk === "bat"
+        ? "<tr><td class='r'>" + (i + 1) + "</td>" + who +
+          "<td class='r'>" + x.seasons + "</td><td class='r'>" + x.inns + "</td><td class='r'><b>" + x.runs + "</b></td>" +
+          "<td class='r'>" + x.hs + (x.hsNo ? "*" : "") + "</td>" +
+          "<td class='r'>" + ((x.inns - x.no) > 0 ? (x.runs / (x.inns - x.no)).toFixed(2) : "&mdash;") + "</td>" +
+          "<td class='r'>" + x.h100 + "</td></tr>"
+        : "<tr><td class='r'>" + (i + 1) + "</td>" + who +
+          "<td class='r'>" + x.seasons + "</td><td class='r'>" + Math.round(x.ov) + "</td><td class='r'><b>" + x.wkts + "</b></td>" +
+          "<td class='r'>" + (x.bbW ? x.bbW + "/" + x.bbR : "&mdash;") + "</td>" +
+          "<td class='r'>" + (x.wkts ? (x.rc / x.wkts).toFixed(2) : "&mdash;") + "</td>" +
+          "<td class='r'>" + x.fifers + "</td></tr>";
+    }).join("");
+    var seg = function (k, v, lab) {
+      var on = (k === "b" ? bk : scope) === v;
+      var href = "#/stats?v=career&n=" + encodeURIComponent(natId) +
+        "&b=" + (k === "b" ? v : bk) + "&sc=" + (k === "s" ? v : scope);
+      return "<a class='fo-stc-cseg" + (on ? " on" : "") + "' href='" + href + "'>" + lab + "</a>";
+    };
+    return "<div class='fo-stc-sec fo-stc-hhead'>" +
+      "<div class='fo-stc-hnav'>" + seg("b", "bat", "Batting") + seg("b", "bowl", "Bowling") +
+      seg("s", "league", E(natName(natId))) + seg("s", "world", "The world") + "</div>" +
+      "<h2>All-time " + (bk === "bat" ? "batting" : "bowling") + "</h2>" +
+      "<p class='fo-stc-dim'>Every career in " + (scope === "world" ? "the world" : "the " + E(natName(natId)) + " league") +
+      " with " + (bk === "bat" ? "30 innings" : "30 wickets") + " behind it &mdash; " + list.length.toLocaleString() +
+      " of them. Each total is the sum of the seasons you can read one by one in the record.</p></div>" +
+      "<div class='fo-stc-sec'><div class='fo-stc-scroll'><table class='fo-stc-htb bk'><thead>" + head +
+      "</thead><tbody>" + body + "</tbody></table></div></div>" +
+      "<div class='fo-stc-foot'><a href='#/stats'>&lsaquo; The Stats Centre</a>" +
+      "<a href='#/stats?v=hist&n=" + encodeURIComponent(natId) + "'>Walk the seasons &rsaquo;</a></div>";
+  }
+
   function wireHist() {
     try {
       var y = document.getElementById("fo-stc-hy"), n = document.getElementById("fo-stc-hn");
@@ -684,6 +787,10 @@
 
     var natId = qparam("n") || myNation();
     var v = qparam("v"), scope = qparam("sc");
+    if (v === "career") {
+      page.innerHTML = "<div class='fo-stc'>" + careerBody(natId, qparam("b"), qparam("sc")) + "</div>";
+      return;
+    }
     if (v === "hist") {
       page.innerHTML = "<div class='fo-stc'>" + histBody(natId, qparam("y")) + "</div>";
       wireHist();

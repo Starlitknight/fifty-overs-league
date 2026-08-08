@@ -237,7 +237,20 @@
     };
     var xiSeason = (p.di >= (pl.ROUNDS || 18) ? p.season : p.season - 1);
     var cur = agg(p.season);
-    var v = { phase: p, rd: rd, runs: top(cur.runs), wkts: top(cur.wkts), rec: rec, roll: roll.reverse(), xi: xiSeason >= 1 ? xiOf(xiSeason) : null };
+    // THE ALL-TIME LISTS. The panels for these have been on the page since it
+    // was built and have never had a name in them, because nothing kept a
+    // career. The record does now: every figure below is the sum of seasons a
+    // reader can walk one at a time in the Stats Centre.
+    var allBat = [], allBowl = [];
+    try {
+      var cw = pl.careerWorld ? pl.careerWorld() : [];
+      allBat = cw.filter(function (c) { return c.inns >= 30; })
+        .sort(function (a, b) { return b.runs - a.runs; }).slice(0, 8);
+      allBowl = cw.filter(function (c) { return c.wkts >= 30; })
+        .sort(function (a, b) { return b.wkts - a.wkts; }).slice(0, 8);
+    } catch (eAT) {}
+    var v = { phase: p, rd: rd, runs: top(cur.runs), wkts: top(cur.wkts), rec: rec, roll: roll.reverse(),
+              allBat: allBat, allBowl: allBowl, xi: xiSeason >= 1 ? xiOf(xiSeason) : null };
     CACHE.sig = sig; CACHE.v = v;
     return v;
   }
@@ -355,6 +368,26 @@
           "</div>";
       }).join("");
 
+      // the all-time books, off the whole planet's record
+      var natNm9 = {}; try { regionList().forEach(function (r) { natNm9[r.id] = r.nm; }); } catch (eNN) {}
+      var allRow = function (x, i, isBat) {
+        var span = "";
+        try { span = "S" + P().sIdx(x.from) + "\u2013S" + P().sIdx(x.to); } catch (eSp) {}
+        return "<a class='fo-al-ld' href='#/stats?v=career&n=" + encodeURIComponent(x.rid) +
+          "&b=" + (isBat ? "bat" : "bowl") + "&sc=world'><i>" + (i + 1) + "</i>" +
+          (natNm9[x.rid] ? "<img src='" + flagOf(x.rid) + "' alt=''>" : "") +
+          "<span><b>" + E(x.name) + "</b><em>" + E(natNm9[x.rid] || "") + " &middot; " + span +
+          " &middot; " + x.seasons + " seasons</em></span><u>" +
+          (isBat ? x.runs.toLocaleString() + " runs" : x.wkts.toLocaleString() + " wkts") + "</u></a>";
+      };
+      var allTimeHTML =
+        "<div class='fo-al-sec'><h2>All-time run scorers</h2>" +
+        (v.allBat.length ? v.allBat.map(function (x, i) { return allRow(x, i, true); }).join("")
+                         : "<p class='fo-al-none'>The record is still being read.</p>") + "</div>" +
+        "<div class='fo-al-sec'><h2>All-time wicket takers</h2>" +
+        (v.allBowl.length ? v.allBowl.map(function (x, i) { return allRow(x, i, false); }).join("")
+                          : "<p class='fo-al-none'>The record is still being read.</p>") + "</div>";
+
       // the winter window
       var mktHTML = "";
       var open = windowOpen(p);
@@ -394,7 +427,9 @@
         (v.xi ? "<div class='fo-al-sec'><h2>World XI of Season " + sNo2(v.xi.season) + "</h2>" +
           ldr(v.xi.bats, " runs", v.xi.season) + ldr(v.xi.bowls, " wkts", v.xi.season) + "</div>" : "") +
         mktHTML +
-        "<div class='fo-al-sec'><h2>The roll of champions</h2>" + rollHTML + "</div>" +
+        allTimeHTML +
+        "<div class='fo-al-sec'><h2>The roll of champions</h2>" + rollHTML +
+        "<p class='fo-al-none'><a href='#/stats?v=hist'>Walk every season in the record &rsaquo;</a></p></div>" +
         "<div class='fo-al-foot'><a href='#/planet'>World cricket today &rsaquo;</a><a href='#/league'>My league &rsaquo;</a><a href='#/milestones'>My honours &rsaquo;</a></div>" +
         "</div>";
 
