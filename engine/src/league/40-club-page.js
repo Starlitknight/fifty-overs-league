@@ -64,6 +64,62 @@
   // four times as the club, the squad and the honours land - a half-typed
   // kick-off must survive all four.
   var CH = { key: "", when: "", msg: "", list: null, busy: false };
+  /* ---- THE NAMES ON THE HONOURS BOARD -------------------------------------
+   * A trophy shelf is a list of seasons, and seasons are won by men. The
+   * record holds every career this club has ever had, so the great ones go
+   * under the trophies: the leading run-scorer and the leading wicket-taker
+   * in the club's history, and above them the man the tour is named after if
+   * this is the club that produced him.
+   *
+   * Nothing here is a lookup of something written down - the ranking is read
+   * off the same career book the Stats Centre ranks the world by, so what the
+   * board says is checkable from the other end.
+   */
+  function planet() { return window.__foPlanet || null; }
+  function sLbl(y) { try { return "S" + planet().sIdx(y); } catch (e) { return ""; } }
+  function greatRow(c, mark, line) {
+    var P = planet(), span = "";
+    try { span = sLbl(c.from) + "&ndash;" + sLbl(c.to); } catch (e) {}
+    var bat = c.inns > c.no ? (c.runs / (c.inns - c.no)) : 0;
+    var bowl = c.wkts ? (c.rc / c.wkts) : 0;
+    var fig = c.runs >= c.wkts * 22
+      ? "<b>" + num(c.runs) + "</b> runs at " + bat.toFixed(1) + (c.h100 ? " &middot; " + c.h100 + " hundred" + (c.h100 === 1 ? "" : "s") : "")
+      : "<b>" + c.wkts + "</b> wickets at " + bowl.toFixed(1) + (c.fifers ? " &middot; " + c.fifers + " five-for" + (c.fifers === 1 ? "" : "s") : "");
+    return "<div class='fo-cp-note fo-cp-great" + (mark ? " boss" : "") + "'>" +
+      (mark ? "<i class='mk'>" + E(mark) + "</i>" : "") +
+      "<b>" + E(c.name) + "</b> &mdash; " + fig +
+      "<u>" + span + " &middot; " + c.seasons + " season" + (c.seasons === 1 ? "" : "s") +
+      (line ? " &middot; " + E(line) : "") + "</u></div>";
+  }
+  function clubGreats(cid, slot) {
+    var P = planet(); if (!P || !P.careerBook) return "";
+    var men;
+    try { men = P.careerBook(cid).filter(function (c) { return c.slot === (slot | 0); }); }
+    catch (e) { return ""; }
+    if (!men.length) return "";
+    var out = [], seen = {};
+    // the named man first, with what his club won while he played
+    try {
+      (P.bossesOf(cid) || []).forEach(function (b) {
+        if (!b || b.career.slot !== (slot | 0)) return;
+        var won = [];
+        if (b.titles.length) won.push(b.titles.length + " title" + (b.titles.length === 1 ? "" : "s"));
+        if (b.cups.length) won.push(b.cups.length + " cup" + (b.cups.length === 1 ? "" : "s"));
+        if (b.crowns.length) won.push(b.crowns.length + " Champions Cup" + (b.crowns.length === 1 ? "" : "s"));
+        seen[b.name] = 1;
+        out.push(greatRow(b.career, b.playing ? "Still playing" : "The great one",
+          won.length ? "won " + won.join(", ") + " here" : "no honours in his time"));
+      });
+    } catch (e2) {}
+    var byRuns = men.slice().sort(function (a, b) { return b.runs - a.runs; })[0];
+    var byWkts = men.slice().sort(function (a, b) { return b.wkts - a.wkts; })[0];
+    if (byRuns && !seen[byRuns.name] && byRuns.runs) { seen[byRuns.name] = 1; out.push(greatRow(byRuns, "Most runs", "")); }
+    if (byWkts && !seen[byWkts.name] && byWkts.wkts) { seen[byWkts.name] = 1; out.push(greatRow(byWkts, "Most wickets", "")); }
+    if (!out.length) return "";
+    return "<div class='fo-cp-sub'>The names on the board</div>" + out.join("") +
+      "<div class='fo-cp-note fo-cp-dim2'><a href='#/stats?v=career&n=" + encodeURIComponent(cid) +
+      "'>Every career this league has had &rsaquo;</a></div>";
+  }
   function pad2(n) { return (n < 10 ? "0" : "") + n; }
   function dtLocal(ms) {
     var d = new Date(ms);
@@ -1015,6 +1071,11 @@
               (her.lastTitleYear ? " &middot; last title in Season " + her.lastTitleYear : "") +
               " &middot; <a href='#/stats?v=hist&n=" + encodeURIComponent(cid) + "'>walk the seasons &rsaquo;</a></div>";
           })() +
+          // A SHELF IS A LIST OF SEASONS; MEN WON THEM. The record knows every
+          // career this club has ever had, so the names go under the trophies
+          // where they belong - and where the club has one of the men the tour
+          // is named after, he stands at the top of his own honours board.
+          clubGreats(cid, slot) +
           "<div class='fo-cp-sub'>The ground</div>" +
           "<div class='fo-cp-note'><b>" + E((info && info.ground) || "A ground of their own") + "</b></div>" +
           // an academy is a building, and buildings are visible - the level a
@@ -1511,6 +1572,15 @@
       ".fo-cp-note{font:500 13px/1.6 Inter,sans-serif;color:var(--navy);padding:3px 0}",
       ".fo-cp-note u{text-decoration:none;font:420 12px/1.5 Fraunces,Georgia,serif;color:rgba(12,27,51,.55)}",
       ".fo-cp-note u{display:block;margin-top:3px;font-variant-numeric:tabular-nums}",
+      // a name on the board gets a rule and a rank tag; the tour's own man
+      // gets the club's colour down his left-hand side, because he is the
+      // reason anybody outside this country has heard of the place
+      ".fo-cp-great{padding:9px 0 9px 11px;border-left:2px solid rgba(12,27,51,.12);margin:6px 0}",
+      ".fo-cp-great.boss{border-left-color:#C8542F}",
+      ".fo-cp-great .mk{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(12,27,51,.45);margin-bottom:4px;font-style:normal}",
+      ".fo-cp-great.boss .mk{color:#C8542F}",
+      ".fo-cp-dim2{font:420 12px/1.5 Fraunces,Georgia,serif;margin-top:8px}",
+      ".fo-cp-dim2 a{color:var(--navy)}",
       ".fo-cp-dim{font:420 13px/1.6 Fraunces,Georgia,serif;color:rgba(12,27,51,.55);margin:6px 0 0}",
       ".fo-cp-dim.foot{margin-top:14px;padding-top:12px;border-top:1px solid rgba(12,27,51,.08)}",
       // the challenge: one line of paper above the tabs, the same stock the

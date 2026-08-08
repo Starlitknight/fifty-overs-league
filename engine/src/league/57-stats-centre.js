@@ -364,6 +364,7 @@
       "html body #page .fo-stc-ldg td.who span{min-width:0}",
       "html body #page .fo-stc-ldg td.who b{display:block;font:600 13.5px/1.2 Inter,system-ui,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       "html body #page .fo-stc-ldg td.who em{font-style:normal;font:400 10.5px/1.4 Inter,system-ui,sans-serif;color:rgba(20,28,40,.42);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}",
+      "html body #page .fo-stc-ldg td.who b .bs{font-style:normal;color:#C9571F;font-size:10px;margin-right:4px;vertical-align:1px}",
       "html body #page .fo-stc-ldg td.big{font-weight:700;color:#141C28;width:56px}",
       "html body #page .fo-stc-ldg th:nth-child(4),html body #page .fo-stc-ldg td:nth-child(4){width:42px}",
       "html body #page .fo-stc-ldg th:nth-child(5),html body #page .fo-stc-ldg td:nth-child(5){width:46px}",
@@ -756,19 +757,22 @@
       var base = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
       try { return base + "flags/" + window.__foCxAPI.flagFile(rid) + ".svg"; } catch (e) { return ""; }
     };
-    var shortName = function (n) {
-      var a = String(n || "").trim().split(/\s+/);
-      return a.length < 2 ? n : a[0].charAt(0) + ". " + a.slice(1).join(" ");
-    };
+    var shortName = window.foShortName;
     var head = bk === "bat"
       ? "<tr><th class='rk'>#</th><th>Batsman</th><th>Runs</th><th>Ave</th><th>HS</th><th>100</th></tr>"
       : "<tr><th class='rk'>#</th><th>Bowler</th><th>Wkts</th><th>Ave</th><th>BB</th><th>5w</th></tr>";
     var body = list.slice(0, 60).map(function (x, i) {
       var span = "S" + sN(x.from) + "&ndash;S" + sN(x.to);
       var rid = x.rid || natId, fl = flagOf(rid);
+      // A NAME A READER ALREADY KNOWS DESERVES TO BE RECOGNISABLE. The men the
+      // tour is built on are in this list on the same terms as everybody else
+      // - same qualification, same sort, no seat reserved - so the only thing
+      // marking them is a star saying "you have met this one".
       var who = "<td class='who'><div class='wr'>" +
         (fl ? "<img src='" + fl + "' alt='" + E(natOf[rid] || "") + "' title='" + E(natOf[rid] || "") + "'>" : "") +
-        "<span><b>" + E(shortName(x.name)) + "</b><em>" + E(clubOf(x)) + " &middot; " + span + "</em></span></div></td>";
+        "<span><b>" + (x.boss ? "<i class='bs' title='One of the great names'>&#9733;</i>" : "") +
+        E(shortName(x.name)) + "</b><em>" + E(clubOf(x)) + " &middot; " + span +
+        (x.boss && x.craft ? " &middot; " + E(x.craft) : "") + "</em></span></div></td>";
       return bk === "bat"
         ? "<tr><td class='rk'>" + (i + 1) + "</td>" + who +
           "<td class='big'>" + x.runs.toLocaleString() + "</td>" +

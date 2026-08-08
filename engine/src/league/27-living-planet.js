@@ -828,6 +828,131 @@
     } catch (e) {}
     return "Player " + slot + "-" + seat + "-" + gen;
   }
+  /* ---- THE BOSSES ARE IN THE BOOK ----------------------------------------
+   * Every nation on the tour has a named man at the head of it - Pemberley
+   * who bats time, Steenkamp with the new ball under lights, Zadran and the
+   * wrong'un nobody has picked. Until now they existed only in the room you
+   * meet them in, which made them costumes: a nation could hand you its
+   * greatest cricketer and its own record of the last hundred and thirty-six
+   * seasons would have no idea who he was.
+   *
+   * So they go in the ledger with everybody else. Each one takes a seat in
+   * his own club - slot 0 is the boss club in every league, the flagship that
+   * predates the competition - and his seasons are computed by exactly the
+   * machinery that computes every other man's. Nothing about him is written
+   * down: his runs, his wickets, his best season and the titles he played in
+   * all fall out of the same derivation, so the record stays honest and
+   * statsguru can rank him against the other ten thousand careers in it
+   * without being told to.
+   *
+   * What IS authored here is the small part a seed has no business drawing:
+   * WHAT HE BOWLS, HOW GOOD HE IS, AND HOW LONG HE HAS BEEN AT IT. Those are
+   * already fixed by his own dialogue - a man introduced as twenty-one with a
+   * nation on his shoulder cannot have an eighteen-season career, and the
+   * boy who has never been picked cannot bat like an opener. `len` is the
+   * career in seasons and `end` how many seasons ago it finished; end 0 means
+   * he is out there now, which is why you are about to play him.
+   *
+   * England's flagship is Essex in the live world and London CC on the tour -
+   * the same institution under the name each era gave it, so Pemberley and
+   * Thorne belong to it under both. Thorne is the exception to everything: he
+   * is not a door on the tour but the last one, he has been retired
+   * twenty-odd seasons, and his ledger is meant to be the best in the world.
+   */
+  var BOSS_CRAFT = {
+    eng: { role: "opener",          q: 0.98, len: 19, end: 0, craft: "batted time, and never once gave it away" },
+    ire: { role: "seamFastMedium",  q: 0.93, len: 15, end: 0, craft: "swung the new ball both ways, from both ends" },
+    ned: { role: "allRounder",      q: 0.92, len: 17, end: 0, craft: "captained off a laminated sheet and never once tore it up" },
+    win: { role: "middleOrderBat",  q: 0.96, len: 15, end: 0, craft: "won matches in ten overs, laughing" },
+    rsa: { role: "seamFast",        q: 0.96, len: 16, end: 0, craft: "bowled thunderbolts under lights and set fields to match" },
+    zim: { role: "allRounder",      q: 0.90, len: 3,  end: 0, craft: "twenty-two years old and captaining as if the scoreboard were a rumour" },
+    aus: { role: "topOrderBat",     q: 0.98, len: 17, end: 0, craft: "batted sides clean out of the contest" },
+    nzl: { role: "wicketkeeper",    q: 0.94, len: 17, end: 0, craft: "four seasons behind the stumps without shelling a chance" },
+    slk: { role: "fingerSpin",      q: 0.97, len: 18, end: 0, craft: "tossed it above the eyeline and bought wickets at full price" },
+    sub: { role: "wristSpin",       q: 0.97, len: 16, end: 0, craft: "six different balls an over, and read your feet like a newspaper" },
+    pak: { role: "seamFast",        q: 0.97, len: 15, end: 0, craft: "made a forty-over-old ball swing like new" },
+    afg: { role: "wristSpin",       q: 0.95, len: 6,  end: 0, craft: "bowled the one delivery the world game has not solved" },
+    bgd: { role: "fingerSpin",      q: 0.93, len: 16, end: 0, craft: "left-arm spin that never gave you the same ball twice" },
+    nep: { role: "wristSpin",       q: 0.91, len: 2,  end: 0, craft: "twenty-one, leg-spin, and a nation on his shoulder" },
+    sco: { role: "allRounder",      q: 0.92, len: 17, end: 0, craft: "opened the batting and the bowling, both of them into the gale" },
+    wal: { role: "seamFastMedium",  q: 0.90, len: 15, end: 0, craft: "late in-swing, later out-swing, and a baritone appeal" },
+    ken: { role: "middleOrderBat",  q: 0.91, len: 14, end: 0, craft: "finished innings the way lions finish sprints" },
+    usa: { role: "middleOrderBat",  q: 0.92, len: 12, end: 0, craft: "launch angles, exit velocity, and no respect at all for par" },
+    can: { role: "wicketkeeper",    q: 0.90, len: 15, end: 0, craft: "kept wicket, captained, and let nothing past him" },
+    gt:  { rid: "eng", role: "allRounder", q: 0.99, len: 21, end: 23,
+           craft: "every trick from every nation, twenty years before he began teaching them" }
+  };
+  // the tour's own table, read straight - the leader, his club and his city
+  var BOSSES = null;
+  function bossTable() {
+    if (BOSSES) return BOSSES;
+    var m = {};
+    try {
+      var c = cx(); if (!c) return {};
+      (c.regions() || []).forEach(function (r) {
+        var bc = null; (r.clubs || []).forEach(function (x) { if (x.boss) bc = x; });
+        if (!bc || !bc.leader) return;
+        var cr = BOSS_CRAFT[r.id]; if (!cr) return;
+        var rid = cr.rid || r.id;
+        (m[rid] = m[rid] || []).push({ rid: rid, key: r.id, name: bc.leader, club: bc.nm,
+          city: bc.city || "", note: bc.note || "", craft: cr.craft, role: cr.role,
+          q: cr.q, len: cr.len, end: cr.end, final: !!r.final });
+      });
+    } catch (e) { return {}; }
+    BOSSES = m;
+    return m;
+  }
+  // the men of one nation who are somebody, oldest career first
+  function bossMen(rid) {
+    var l = (bossTable()[rid] || []).slice();
+    l.sort(function (a, b) { return (b.end + b.len) - (a.end + a.len); });
+    return l;
+  }
+  // his career as the record keeps it: a span, a craft and a class, nothing else
+  function bossSpan(b) {
+    var to = HIST_END - (b.end | 0), from = to - Math.max(1, b.len | 0) + 1;
+    return { from: from, to: to };
+  }
+  /* A BOSS IS BETTER THAN ANY MAN THE SEED CAN DRAW, and the record has to be
+   * able to say so. Generated class tops out at 1.00 - the strongest club in
+   * the strongest league, with the roll going his way - so a boss written at
+   * 0.9-0.99 is merely somewhere in the pack, and the first pass had the
+   * fastest bowler on the tour seventy-sixth on his own country's wicket list.
+   * The authored figure is therefore a rank among the bosses, not a class in
+   * the same units; it maps onto a band that begins where the generated
+   * ceiling ends. The lift is small on purpose - it puts the best batsman in
+   * the world near an average of fifty and the best spinner near
+   * twenty-three, which is where the top of a fifty-over record should sit,
+   * not somewhere no cricketer has ever been. */
+  function bossQ(q) { return 1.02 + (Math.max(0.88, Math.min(0.99, q)) - 0.90) * 2.0; }
+  function bossCareerRow(rid, b) {
+    var sp = bossSpan(b), ro = null;
+    for (var i = 0; i < ROLES.length; i++) if (ROLES[i].k === b.role) { ro = ROLES[i]; break; }
+    if (!ro) ro = ROLES[3];
+    return { name: b.name, role: ro.k, bat: ro.bat, bowlA: ro.bowl, q: bossQ(b.q),
+             from: sp.from, to: sp.to, slot: 0, boss: 1, craft: b.craft,
+             club: b.club, city: b.city };
+  }
+  /* A BOSS TAKES SOMEBODY'S PLACE, he is not an extra man on the staff. The
+   * club fields thirteen; if the greatest cricketer of his generation walks
+   * in, one of the generated pros walks out. The one who goes is the man of
+   * his own craft whose career overlaps his most - the player he kept out -
+   * and failing that the weakest overlapping man on the books. */
+  function evictFor(out, row) {
+    var best = -1, bestN = -1, i, m, ov;
+    for (i = 0; i < out.length; i++) {
+      m = out[i]; if (m.boss) continue;
+      ov = Math.min(m.to, row.to) - Math.max(m.from, row.from) + 1;
+      if (ov <= 0) continue;
+      // the man who goes must be on the books in the boss's LAST season, or the
+      // club quietly ends up fielding fourteen: the eviction has to land in the
+      // same season the arrival does
+      var score = (m.from <= row.to && m.to >= row.to ? 10000 : 0)
+                + (m.role === row.role ? 1000 : 0) + ov * 10 - m.q * 5;
+      if (score > bestN) { bestN = score; best = i; }
+    }
+    if (best >= 0) out.splice(best, 1);
+  }
   var CAREERS = {};
   function careersOf(rid, slot) {
     var ck = rid + "|" + slot;
@@ -853,6 +978,14 @@
         y += len;
       }
     }
+    // and then the men the tour named walk in, at the club that is theirs
+    if ((slot | 0) === 0) bossMen(rid).forEach(function (b) {
+      var row = bossCareerRow(rid, b);
+      if (row.to < from || row.from > HIST_END) return;
+      if (row.from < from) row.from = from;
+      evictFor(out, row);
+      out.push(row);
+    });
     CAREERS[ck] = out;
     return out;
   }
@@ -868,7 +1001,7 @@
     var k = "ms|" + rid + "|" + m.name + "|" + year;
     var form = 0.78 + hrnd(k + "|f") * 0.40;
     var mats = Math.max(6, Math.min(h.rounds, Math.round(h.rounds * (0.62 + hrnd(k + "|m") * 0.38))));
-    var o = { name: m.name, role: m.role, slot: m.slot, season: year, m: mats,
+    var o = { name: m.name, role: m.role, slot: m.slot, boss: m.boss ? 1 : 0, season: year, m: mats,
               inns: 0, no: 0, runs: 0, bf: 0, hs: 0, hsNo: false, h100: 0, h50: 0,
               ov: 0, rc: 0, wkts: 0, bbW: 0, bbR: 0 };
     if (m.bat > 0.15) {
@@ -937,6 +1070,7 @@
     for (var slot = 0; slot < 16; slot++) {
       careersOf(rid, slot).forEach(function (m) {
         var c = { name: m.name, role: m.role, slot: m.slot, rid: rid, from: m.from, to: m.to,
+                  boss: m.boss ? 1 : 0, craft: m.craft || "",
                   seasons: 0, m: 0, inns: 0, no: 0, runs: 0, bf: 0, hs: 0, hsNo: false,
                   h100: 0, h50: 0, ov: 0, rc: 0, wkts: 0, bbW: 0, bbR: 0, fifers: 0 };
         for (var y = Math.max(m.from, span.from); y <= Math.min(m.to, span.to); y++) {
@@ -953,6 +1087,61 @@
     }
     CAR[rid] = out;
     return out;
+  }
+  /* WHAT A BOSS WON IS NOT A SEPARATE OPINION ABOUT HIM EITHER.
+   * He played for a club that has a shelf, and the honours on it that fall
+   * inside his career are his - the same test a real record applies, and the
+   * reason a man who arrived in a lean decade has fewer of them than the
+   * flagship's win rate would suggest. His rank is read off the world book, so
+   * "third-highest run-scorer alive" means exactly that and is checkable. */
+  var BOSSCAR = {};
+  function bossLedger(rid, name) {
+    var ck = rid + "|" + name;
+    if (BOSSCAR[ck]) return BOSSCAR[ck];
+    var men = bossMen(rid).filter(function (b) { return b.name === name; });
+    if (!men.length) return null;
+    var b = men[0];
+    var car = careerBook(rid).filter(function (c) { return c.boss && c.name === name; })[0];
+    if (!car) return null;
+    var h = honoursOf(rid, 0), inSpan = function (y) { return y >= car.from && y <= car.to; };
+    var titles = h.titles.filter(inSpan), cups = h.cups.filter(inSpan), crowns = h.crowns.filter(inSpan);
+    // his best season, by the thing he is actually for
+    var bowlerFirst = car.wkts > 0 && car.runs < car.wkts * 22;
+    var best = null;
+    for (var y = car.from; y <= car.to; y++) {
+      var s = seasonBook(rid, y), row = null;
+      (bowlerFirst ? s.bowl : s.bat).forEach(function (r) { if (r.name === name) row = r; });
+      if (!row) continue;
+      if (!best || (bowlerFirst ? row.wkts > best.wkts : row.runs > best.runs)) best = row;
+    }
+    var w = careerWorld();
+    var rankRuns = w.filter(function (c) { return c.runs > car.runs; }).length + 1;
+    var rankWkts = w.filter(function (c) { return c.wkts > car.wkts; }).length + 1;
+    /* THE CLUB IS THE ONE THE LEAGUE TABLE CALLS IT. A boss arrives carrying
+     * the name his own era gave the institution - London CC, Thorne's
+     * Invincible XI - and the ledger three pages away calls the same club
+     * Essex, because that is what the league table calls it now. One man
+     * cannot play for two clubs in the same record, so the living world's
+     * name wins everywhere and the tour's name is kept beside it. */
+    var liveClub = b.club;
+    try { (sidesOf(rid) || []).forEach(function (s) { if ((s.slot | 0) === 0) liveClub = s.name; }); } catch (e3) {}
+    var v = { rid: rid, name: name, club: liveClub, tourClub: b.club, city: b.city, craft: b.craft, note: b.note,
+              role: car.role, from: car.from, to: car.to, playing: car.to >= HIST_END,
+              career: car, best: best, bowlerFirst: bowlerFirst,
+              titles: titles, cups: cups, crowns: crowns,
+              rankRuns: rankRuns, rankWkts: rankWkts, worldN: w.length };
+    BOSSCAR[ck] = v;
+    return v;
+  }
+  // every named man of a nation, the retired ones first; bossOf gives the one
+  // still out there, which is the one a manager is about to have to bat against
+  function bossesOf(rid) {
+    return bossMen(rid).map(function (b) { return bossLedger(rid, b.name); })
+                       .filter(function (x) { return !!x; });
+  }
+  function bossOf(rid) {
+    var l = bossesOf(rid).filter(function (x) { return x.playing; });
+    return l.length ? l[l.length - 1] : (bossesOf(rid)[0] || null);
   }
   // the whole planet's careers, for a book that spans it
   var CARW = null;
@@ -1875,11 +2064,24 @@
     if (d == null) return "";
     return atTxt(d, rid == null ? 14 : natHour(rid), now);
   }
+  /* A SCORECARD SHORTENS A NAME; IT DOES NOT MANGLE ONE. Initial-and-surname
+   * is right for a man called Doug Cazaly and wrong for one called Sir Giles
+   * Pemberley, who came back as "S. Giles Pemberley" - an initial made out of
+   * a knighthood. A word that is a title is not a given name, so a name that
+   * opens with one is printed whole. Shared by every ledger in the game so
+   * the same man is shortened the same way wherever he is ranked. */
+  var NOT_A_NAME = { sir: 1, dr: 1, lord: 1, king: 1, prince: 1, capt: 1, col: 1, rev: 1, prof: 1 };
+  window.foShortName = function (n) {
+    var a = String(n || "").trim().split(/\s+/);
+    if (a.length < 2) return n;
+    if (NOT_A_NAME[a[0].toLowerCase().replace(/\./g, "")]) return n;
+    return a[0].charAt(0) + ". " + a.slice(1).join(" ");
+  };
   window.__foPlanet = { roundOfDay: roundOfDay, dayOfRound: dayOfRound, dayOfSeasonRound: dayOfSeasonRound,
     anchorWorld: anchorWorld, anchorOf: anchorOf, seasonStart: seasonStart,
     dateTxt: dateTxt, hhTxt: hhTxt, whenTxt: whenTxt, atTxt: atTxt, tzAbbr: tzAbbr, localHM: hm, localDate: dmy,
     FA_DAYS: FA_DAYS, faDayOf: faDayOf, faDrawR16: faDrawR16, cupDraw: cupDraw,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
     COLTS_DAYS: COLTS_DAYS, isRestDay: isRestDay, REST_DAYS: REST_DAYS, dayOfRound: dayOfRound, roundOfDay: roundOfDay,
-    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, heritageOf: heritageOf, honoursOf: honoursOf, histYear: histYear, careersOf: careersOf, seasonBook: seasonBook, careerBook: careerBook, careerWorld: careerWorld, wcYear: wcYear, wcHistory: wcHistory, seasonNo: seasonNo, seasonLabel: seasonLabel, sIdx: sIdx, histSeasons: histSeasons, seasonOne: seasonOne, natHonours: natHonours, WC_FROM: WC_FROM, crownYear: crownYear, histSpan: histSpan, leagueBorn: leagueBorn, foundedOf: foundedOf, HIST_END: HIST_END, CROWN_FROM: CROWN_FROM, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, nations: regionList, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
+    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, heritageOf: heritageOf, honoursOf: honoursOf, histYear: histYear, careersOf: careersOf, seasonBook: seasonBook, careerBook: careerBook, careerWorld: careerWorld, bossOf: bossOf, bossesOf: bossesOf, bossLedger: bossLedger, wcYear: wcYear, wcHistory: wcHistory, seasonNo: seasonNo, seasonLabel: seasonLabel, sIdx: sIdx, histSeasons: histSeasons, seasonOne: seasonOne, natHonours: natHonours, WC_FROM: WC_FROM, crownYear: crownYear, histSpan: histSpan, leagueBorn: leagueBorn, foundedOf: foundedOf, HIST_END: HIST_END, CROWN_FROM: CROWN_FROM, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, nations: regionList, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();

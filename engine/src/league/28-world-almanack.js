@@ -29,6 +29,47 @@
   function myNation() { try { return (window.__foLgAPI && window.__foLgAPI.nation()) || "eng"; } catch (e) { return "eng"; } }
   function regionList() { var c = cx(); return c ? (c.regions() || []).filter(function (r) { return !r.final; }) : []; }
   function regionById(rid) { var L = regionList(); for (var i = 0; i < L.length; i++) if (L[i].id === rid) return L[i]; return null; }
+  /* ---- THE NAMES THE GAME KNOWS ------------------------------------------
+   * An all-time list that ranks twenty thousand careers and never says who
+   * any of them are is a phone book. Every country has one man it is known
+   * by - the one waiting at the end of its leg of the tour - and here is
+   * where a reader can find out what he actually did.
+   *
+   * Every figure below is read off the same career book the ledgers above are
+   * ranked from, so a claim made here can be checked from the other end: if
+   * it says he leads his country's wicket list, he is at the top of that
+   * table too.
+   */
+  function greatFlag(rid) { try { return artBase() + "flags/" + cx().flagFile(rid) + ".svg"; } catch (e) { return ""; } }
+  function greatCard(b) {
+    var c = b.career, P0 = P(), span = "";
+    try { span = "S" + P0.sIdx(b.from) + "–S" + P0.sIdx(b.to); } catch (e) {}
+    var fig = b.bowlerFirst
+      ? "<b>" + c.wkts + "</b><i>wickets at " + (c.wkts ? (c.rc / c.wkts).toFixed(1) : "—") + "</i>"
+      : "<b>" + c.runs.toLocaleString() + "</b><i>runs at " +
+        ((c.inns - c.no) > 0 ? (c.runs / (c.inns - c.no)).toFixed(1) : "—") + "</i>";
+    var won = [];
+    if (b.titles.length) won.push(b.titles.length + " title" + (b.titles.length === 1 ? "" : "s"));
+    if (b.cups.length) won.push(b.cups.length + " cup" + (b.cups.length === 1 ? "" : "s"));
+    if (b.crowns.length) won.push(b.crowns.length + " Champions Cup" + (b.crowns.length === 1 ? "" : "s"));
+    return "<a class='fo-al-gr' href='#/stats?v=career&n=" + E(b.rid) +
+      "&b=" + (b.bowlerFirst ? "bowl" : "bat") + "&sc=league'>" +
+      "<img src='" + greatFlag(b.rid) + "' alt='' onerror=\"this.style.visibility='hidden'\">" +
+      "<span class='nm'><b>" + E(b.name) + "</b>" +
+      "<em>" + E(b.club) + " &middot; " + span + " &middot; " +
+      (b.playing ? "still playing" : "retired") + "</em>" +
+      "<u>" + E(b.craft) + "</u></span>" +
+      "<span class='fg'>" + fig + "</span>" +
+      "<span class='wn'>" + (won.length ? E(won.join(" &middot; ").replace(/&middot;/g, "·")) : "no honours") + "</span>" +
+      "</a>";
+  }
+  function greatsHTML(greats, where) {
+    if (!greats || !greats.length) return "";
+    return "<div class='fo-al-sec'><h2>The names the game knows</h2>" +
+      "<p class='fo-al-none'>The men " + where + " is known by, and what the record says they did. " +
+      "Every figure is the sum of their seasons, ranked in the books above on the same terms as everybody else.</p>" +
+      "<div class='fo-al-grs'>" + greats.map(greatCard).join("") + "</div></div>";
+  }
   function genFn() { try { if (typeof window.__foGenArchetypeSquad === "function") return window.__foGenArchetypeSquad; } catch (e) {} try { if (typeof foGenArchetypeSquad === "function") return foGenArchetypeSquad; } catch (e2) {} return null; }
   function ovrOf(p) { try { if (typeof foPkOvr === "function") return foPkOvr(p); } catch (e) {} return (p && p.rating ? Math.round(p.rating / 1000) : 50); }
 
@@ -261,8 +302,24 @@
       allBowl = cw.filter(function (c) { return c.wkts >= 30; })
         .sort(function (a, b) { return b.wkts - a.wkts; }).slice(0, 8);
     } catch (eAT) {}
+    // THE NAMES THE GAME KNOWS. Every country has one man it is known by, and
+    // an almanack that ranks twenty thousand careers without ever saying who
+    // they are is a phone book. Read straight off the record, so the figures
+    // beside a name here are the same ones the ledger above ranks him on.
+    var greats = [];
+    try {
+      // the PLANET's list, not this page's: the almanack keeps its own idea of
+      // which regions exist, and a great name from a league the world record
+      // does not contain would be a man with no seasons behind him
+      var natsG = almNat ? [{ id: almNat }] : (pl.nations ? pl.nations() : regionList());
+      if (pl.bossesOf) natsG.forEach(function (r) {
+        (pl.bossesOf(r.id) || []).forEach(function (b) { greats.push(b); });
+      });
+      greats.sort(function (a, b) { return (b.playing ? 1 : 0) - (a.playing ? 1 : 0) || a.name.localeCompare(b.name); });
+    } catch (eGR) { greats = []; }
     var v = { phase: p, rd: rd, runs: top(cur.runs), wkts: top(cur.wkts), rec: rec, roll: roll.reverse(),
-              allBat: allBat, allBowl: allBowl, almNat: almNat, xi: xiSeason >= 1 ? xiOf(xiSeason) : null };
+              allBat: allBat, allBowl: allBowl, almNat: almNat, greats: greats,
+              xi: xiSeason >= 1 ? xiOf(xiSeason) : null };
     CACHE.sig = sig; CACHE.v = v;
     return v;
   }
@@ -388,10 +445,7 @@
          FLAG, not a word: "South Africa" is thirteen characters of column
          width spent on something a two-centimetre picture says instantly, and
          with the word gone the name, the span and the figures all fit. */
-      var shortName = function (n) {
-        var a = String(n || "").trim().split(/\s+/);
-        return a.length < 2 ? n : a[0].charAt(0) + ". " + a.slice(1).join(" ");
-      };
+      var shortName = window.foShortName;
       var ldgRow = function (x, i, isBat) {
         var span = "";
         try { span = "S" + P().sIdx(x.from) + "\u2013S" + P().sIdx(x.to); } catch (eSp) {}
@@ -404,7 +458,8 @@
           "<td class='rk'>" + (i + 1) + "</td>" +
           "<td class='who'><div class='wr'><img src='" + flagOf(x.rid) + "' alt='" + E(natNm9[x.rid] || "") +
             "' title='" + E(natNm9[x.rid] || "") + "'>" +
-            "<span><b>" + E(shortName(x.name)) + "</b><em>" + span + "</em></span></div></td>" +
+            "<span><b>" + (x.boss ? "<i class='bs'>&#9733;</i>" : "") + E(shortName(x.name)) +
+            "</b><em>" + span + "</em></span></div></td>" +
           "<td class='big'>" + (isBat ? x.runs.toLocaleString() : x.wkts) + "</td>" +
           "<td>" + ave + "</td><td>" + best + "</td></tr>";
       };
@@ -435,7 +490,8 @@
         "<p class='fo-al-none'>Every career in " + where + " with the innings behind it, sorted on the whole thing.</p>" +
         railHTML + "</div>" +
         ldg("All-time run scorers", v.allBat, true) +
-        ldg("All-time wicket takers", v.allBowl, false);
+        ldg("All-time wicket takers", v.allBowl, false) +
+        greatsHTML(v.greats, where);
 
       // the winter window
       var mktHTML = "";
@@ -533,6 +589,22 @@
     "html body #page .fo-al-rail a{flex:0 0 auto;padding:7px 12px;border:1px solid rgba(20,28,40,.16);border-radius:5px;background:#FFFEFC;text-decoration:none;font:600 11.5px/1 Inter,system-ui,sans-serif;color:rgba(20,28,40,.62) !important;white-space:nowrap}",
     "html body #page .fo-al-rail a.on{background:#0E2246;border-color:#0E2246;color:#FFFEFC !important}",
     "html body #page .fo-al-atall{padding-bottom:2px}",
+    // the great names: a ruled card each, the figure it is famous for set
+    // large on the right and the honours under it, so a column of them can be
+    // read down without reading any one of them whole
+    "html body #page .fo-al-ldg td.who b .bs{font-style:normal;color:#C9571F;font-size:10px;margin-right:4px;vertical-align:1px}",
+    "html body #page .fo-al-grs{display:grid;grid-template-columns:minmax(0,1fr);gap:0;margin-top:8px}",
+    "@media(min-width:820px){html body #page .fo-al-grs{grid-template-columns:repeat(2,minmax(0,1fr));column-gap:26px}}",
+    "html body #page a.fo-al-gr{display:grid;grid-template-columns:26px minmax(0,1fr) auto;grid-template-areas:'f n g' '. w w';gap:2px 11px;align-items:start;padding:13px 2px;border-bottom:1px solid rgba(20,28,40,.09);text-decoration:none;color:inherit}",
+    "html body #page a.fo-al-gr img{grid-area:f;width:24px;height:16px;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(20,28,40,.14);margin-top:2px}",
+    "html body #page a.fo-al-gr .nm{grid-area:n;min-width:0}",
+    "html body #page a.fo-al-gr .nm b{display:block;font:600 14.5px/1.25 Inter,system-ui,sans-serif;color:#141C28}",
+    "html body #page a.fo-al-gr .nm em{display:block;font-style:normal;font:400 10.5px/1.5 Inter,system-ui,sans-serif;color:rgba(20,28,40,.44)}",
+    "html body #page a.fo-al-gr .nm u{display:block;text-decoration:none;font:400 12px/1.5 Fraunces,Georgia,serif;color:rgba(20,28,40,.66);margin-top:5px}",
+    "html body #page a.fo-al-gr .fg{grid-area:g;text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}",
+    "html body #page a.fo-al-gr .fg b{display:block;font:700 21px/1 Oswald,sans-serif;color:#0E2246}",
+    "html body #page a.fo-al-gr .fg i{display:block;font-style:normal;font:400 9.5px/1.4 Inter,system-ui,sans-serif;color:rgba(20,28,40,.44);margin-top:3px}",
+    "html body #page a.fo-al-gr .wn{grid-area:w;font:600 9.5px/1.5 Oswald,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#B44A22;margin-top:7px}",
     "html body #page a.fo-al-more{display:inline-block;margin-top:11px;font:600 11.5px/1 Inter,system-ui,sans-serif;color:#B44A22 !important;text-decoration:none}",
     "html body #page a.fo-al-ld{text-decoration:none;color:#141C28}",
     "html body #page a.fo-al-ld:hover b{color:#B44A22}",
