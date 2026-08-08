@@ -39,6 +39,11 @@
   // seasons keep their past people - a record set in season 2 belongs to
   // season 2's generation forever.
   var ERA_LEN = 3;
+  // every season number this page prints continues the record rather than
+  // starting a second count at one
+  function sNo2(n) {
+    try { var P9 = P(); return (P9 && P9.seasonNo) ? P9.seasonNo(n) : n; } catch (e) { return n; }
+  }
   function eraOf(rid, slot, season) { return Math.floor((Math.max(1, season) - 1 + (h32("stag|" + rid + "|" + slot) % ERA_LEN)) / ERA_LEN); }
   var SQ = {};
   function squadOf(rid, slot, season) {
@@ -147,9 +152,9 @@
         if (r.id === my) return;
         for (var rr = 1; rr <= (s < p.season ? WR : pl.roundsDone(now, s, r.id)); rr++) {
           pl.fixturesOf(r.id, s, rr).forEach(function (m) {
-            if (!rec.total || m.first > rec.total.v) rec.total = { v: m.first, line: m.home.name + " " + m.hs + " v " + m.away.name, where: r.nm + ", season " + s };
-            if (m.winner === m.home && (!rec.margin || (m.first - m.second) > rec.margin.v)) rec.margin = { v: m.first - m.second, line: m.text + " (" + m.hs + " v " + m.as + ")", where: r.nm + ", season " + s };
-            if (m.winner === m.away && (!rec.chase || m.second > rec.chase.v)) rec.chase = { v: m.second, line: m.away.name + " chase " + (m.first + 1) + " — " + m.as, where: r.nm + ", season " + s };
+            if (!rec.total || m.first > rec.total.v) rec.total = { v: m.first, line: m.home.name + " " + m.hs + " v " + m.away.name, where: r.nm + ", Season " + sNo2(s) };
+            if (m.winner === m.home && (!rec.margin || (m.first - m.second) > rec.margin.v)) rec.margin = { v: m.first - m.second, line: m.text + " (" + m.hs + " v " + m.as + ")", where: r.nm + ", Season " + sNo2(s) };
+            if (m.winner === m.away && (!rec.chase || m.second > rec.chase.v)) rec.chase = { v: m.second, line: m.away.name + " chase " + (m.first + 1) + " — " + m.as, where: r.nm + ", Season " + sNo2(s) };
             var pfx = perf(r.id, s, rr, m);
             [["h", m.home], ["a", m.away]].forEach(function (side) {
               var x = pfx[side[0]];
@@ -157,8 +162,8 @@
               // dressing rooms never pool their tallies
               if (x.bat) note(agg(s).runs, x.bat.n + "|" + r.id + "|" + side[1].slot, x.bat.r, { club: side[1].name, nat: r.nm, rid: r.id, slot: side[1].slot, nm: x.bat.n });
               if (x.bowl) note(agg(s).wkts, x.bowl.n + "|" + r.id + "|" + side[1].slot, x.bowl.w, { club: side[1].name, nat: r.nm, rid: r.id, slot: side[1].slot, nm: x.bowl.n });
-              if (x.bat && (!rec.indBat || x.bat.r > rec.indBat.v)) rec.indBat = { v: x.bat.r, line: x.bat.n + " " + x.bat.r + " for " + side[1].name, where: r.nm + ", season " + s };
-              if (x.bowl && (!rec.indBowl || x.bowl.w > rec.indBowl.v || (x.bowl.w === rec.indBowl.v && x.bowl.rc < rec.indBowl.rc))) rec.indBowl = { v: x.bowl.w, rc: x.bowl.rc, line: x.bowl.n + " " + x.bowl.w + "/" + x.bowl.rc + " for " + side[1].name, where: r.nm + ", season " + s };
+              if (x.bat && (!rec.indBat || x.bat.r > rec.indBat.v)) rec.indBat = { v: x.bat.r, line: x.bat.n + " " + x.bat.r + " for " + side[1].name, where: r.nm + ", Season " + sNo2(s) };
+              if (x.bowl && (!rec.indBowl || x.bowl.w > rec.indBowl.v || (x.bowl.w === rec.indBowl.v && x.bowl.rc < rec.indBowl.rc))) rec.indBowl = { v: x.bowl.w, rc: x.bowl.rc, line: x.bowl.n + " " + x.bowl.w + "/" + x.bowl.rc + " for " + side[1].name, where: r.nm + ", Season " + sNo2(s) };
             });
           });
         }
@@ -168,13 +173,36 @@
       return Object.keys(map).map(function (k) { return { n: (map[k].meta && map[k].meta.nm) || k, v: map[k].n, meta: map[k].meta }; })
         .sort(function (a, b) { return b.v - a.v; }).slice(0, 6);
     };
+    // THE ROLL OPENS WITH THE RECORD, not with this week. The almanack called
+    // itself "everything that has ever happened" and began at Season 1 of a
+    // world that has a hundred and thirty-six seasons behind it. The history
+    // is read from the same derivation the club pages and the record room use,
+    // so a champion named here is the champion named there.
     var roll = [];
+    try {
+      if (pl.histSeasons && pl.histYear && pl.seasonOne) {
+        var hN = pl.histSeasons(), yr0 = pl.seasonOne();
+        for (var hs = Math.max(1, hN - 11); hs <= hN; hs++) {
+          var yr = yr0 + hs - 1, hch = [];
+          regionList().forEach(function (r) {
+            var hy = pl.histYear(r.id, yr); if (!hy) return;
+            var sd = pl.sidesOf(r.id) || [], nm9 = "";
+            for (var q = 0; q < sd.length; q++) if ((sd[q].slot | 0) === (hy.champion | 0)) nm9 = sd[q].name;
+            if (nm9) hch.push({ nat: r.nm, club: nm9 });
+          });
+          var cr9 = pl.crownYear ? pl.crownYear(yr) : null, wc9 = pl.wcYear ? pl.wcYear(yr) : null;
+          roll.push({ season: hs, no: hs, past: true, champs: hch,
+                      wc: wc9 ? { nm: wc9.name } : null,
+                      crown: cr9 ? regionById(cr9.rid) : null, live: false });
+        }
+      }
+    } catch (eH9) {}
     for (var s2 = 1; s2 <= p.season; s2++) {
       var done = s2 < p.season || p.di >= (pl.ROUNDS || 18);
       var champs = [];
       if (done) regionList().forEach(function (r) { if (r.id === my) return; var c = pl.championOf(r.id, s2); if (c) champs.push({ nat: r.nm, club: c.name }); });
       var wcDone = s2 < p.season || pl.wcStagesDone(now, s2) >= 4;
-      roll.push({ season: s2, wc: wcDone ? pl.wcChampion(s2) : null, champs: champs, live: s2 === p.season && !done });
+      roll.push({ season: s2, no: sNo2(s2), wc: wcDone ? pl.wcChampion(s2) : null, champs: champs, live: s2 === p.season && !done });
     }
     // YOUR league is the twentieth nation: when one of your real matches
     // outdoes the planet, the record book bows to it - marked in gold
@@ -183,7 +211,7 @@
       var myLeague = ((myReg && myReg.nm) || "Your nation") + " · your league";
       (typeof App !== "undefined" && App && App.results ? App.results : []).forEach(function (r0) {
         if (!r0 || r0.comp !== "league" || !r0.innings) return;
-        var sn = r0.seasonNo != null ? ", season " + r0.seasonNo : "";
+        var sn = r0.seasonNo != null ? ", Season " + sNo2(r0.seasonNo) : "";
         r0.innings.forEach(function (inn) {
           if (!inn) return;
           if (rec.total && (inn.runs | 0) > rec.total.v) rec.total = { v: inn.runs | 0, line: inn.batTeam + " " + inn.runs + (inn.wkts >= 10 ? " all out" : "/" + inn.wkts) + " v " + (inn.bowlTeam || ""), where: myLeague + sn, mine: true };
@@ -310,9 +338,19 @@
 
       var rollHTML = v.roll.map(function (rw) {
         var champBits = rw.champs.slice(0, 3).map(function (c) { return E(c.club) + " (" + E(c.nat) + ")"; }).join(", ");
-        return "<div class='fo-al-roll'><i>Season " + rw.season + "</i>" +
+        return "<div class='fo-al-roll" + (rw.past ? " past" : "") + "'><i>Season " + (rw.no || rw.season) + "</i>" +
           (rw.live ? "<b class='live'>In play &middot; round " + v.rd + " of " + ((P() && P().ROUNDS) || 18) + "</b>" :
-            "<b>" + (rw.wc ? "&#127942; " + E(rw.wc.nm) + " won the World Cup" : "World Cup to come") + "</b>") +
+            // BOTH TROPHIES, when both were won. The World Cup comes round
+            // every fourth season and the Champions Cup every one, so showing
+            // only the first found hid a club competition in the very seasons
+            // that had the most cricket in them.
+            "<b>" + (function () {
+              var bits = [];
+              if (rw.wc) bits.push("&#127942; " + E(rw.wc.nm) + " won the World Cup");
+              if (rw.crown) bits.push("&#127942; " + E(rw.crown.nm) + " took the Champions Cup");
+              return bits.length ? bits.join(" &middot; ")
+                : rw.past ? "No world tournament that season" : "World Cup to come";
+            })() + "</b>") +
           (champBits ? "<span>League pennants: " + champBits + (rw.champs.length > 3 ? " &amp; " + (rw.champs.length - 3) + " more" : "") + "</span>" : "") +
           "</div>";
       }).join("");
@@ -347,13 +385,13 @@
       page.innerHTML =
         "<div class='fo-al'>" +
         "<header class='fo-nvmast'>" +
-        "<div class='k'>The book of record &middot; Season " + p.season + "</div>" +
+        "<div class='k'>The book of record &middot; Season " + sNo2(p.season) + "</div>" +
         "<h1>The World Almanack</h1>" +
         "</header>" +
         "<div class='fo-al-sec'><h2>All-time records</h2>" + recHTML + "</div>" +
         "<div class='fo-al-sec cols'><div><h2>Most runs this season</h2>" + ldr(v.runs, "", p.season) + "</div>" +
         "<div><h2>Most wickets</h2>" + ldr(v.wkts, "", p.season) + "</div></div>" +
-        (v.xi ? "<div class='fo-al-sec'><h2>World XI of Season " + v.xi.season + "</h2>" +
+        (v.xi ? "<div class='fo-al-sec'><h2>World XI of Season " + sNo2(v.xi.season) + "</h2>" +
           ldr(v.xi.bats, " runs", v.xi.season) + ldr(v.xi.bowls, " wkts", v.xi.season) + "</div>" : "") +
         mktHTML +
         "<div class='fo-al-sec'><h2>The roll of champions</h2>" + rollHTML + "</div>" +

@@ -760,7 +760,14 @@
     };
     function foRenderAlmanac() {
       try {
-        if (!/^#\/almanac/.test(location.hash || "")) return;
+        // ONE LETTER, AND THE WRONG BOOK WON. This is the SOLO almanac, and it
+        // reads GD.teams and App.playerHist - a save this game no longer keeps.
+        // Its address is #/almanac; the served world's record book is
+        // #/almanack, which this pattern also matched. So every time a manager
+        // opened the world almanack, the retired one painted over it a moment
+        // later and he read five empty panels telling him nothing had ever
+        // happened. The door it answers is its own, exactly.
+        if ((location.hash || "").split("?")[0] !== "#/almanac") return;
         var page = document.getElementById("page"); if (!page) return;
         if (page.querySelector(".fo-alm-flag")) return;
         page.innerHTML = "<div class='fo-alm-flag'></div>" + foAlmanacHTML();
