@@ -15,6 +15,20 @@
    calendar changes, this page changes with it and nobody has to remember to
    come here. A hand-written copy of the schedule would be wrong the first time
    anybody moved a day, and wrong silently.
+
+   THE SPINE, and why the first draft of this page was wrong. It printed
+   forty-two rows of equal weight, each carrying the same sentence - "Both
+   divisions play. Your orders lock at the first ball." - so a rest day took
+   exactly as much room as the Champions Cup final, and the two words that
+   made a day different were buried under thirty that did not. A season has a
+   shape and that page had none.
+
+   Now a day with cricket on it gets a card in its competition's colour and a
+   rest day gets a hairline. The colour says WHICH competition, so no card
+   spends its words repeating it - a Colts Cup semi-final reads "Semi-finals"
+   in orange, not "Colts Cup · semi-finals · The academies play and the league
+   stands down". And every rule that used to be printed forty-two times is
+   printed once, at the foot, in fine print.
    ========================================================================== */
 (function () {
   "use strict";
@@ -22,98 +36,119 @@
 
   function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
   function planet() { try { return window.__foPlanet || null; } catch (e) { return null; } }
-  var WD = ["Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday"];
 
-  // WHAT EACH KIND OF DAY IS, IN WORDS. phaseOf returns a kind and a stage;
-  // this is the only place that turns those into English, so the vocabulary
-  // cannot drift between the fixture list and here.
-  function tell(p) {
-    var k = p.kind, st = p.stage;
-    if (k === "league") return { t: "League &middot; round " + p.round, c: "lg",
-      d: "Both divisions play. Your orders lock at the first ball." };
-    if (k === "playoff") return { t: st === "semi" ? "League play-off semi-finals" : "THE LEAGUE FINALS", c: "po",
-      d: st === "semi" ? "First plays fourth, second plays third, in both divisions."
-                       : "Champions crowned in both divisions." };
-    if (k === "facup") return { t: "National Cup &middot; " + ({ r16: "round of 16", qf: "quarter-finals", sf: "semi-finals", final: "THE FINAL" }[st] || st), c: "fa",
-      d: st === "final" ? "One club left standing in the country." : "Knockout. Lose and your cup is over." };
-    if (k === "colts") return { t: "Colts Cup &middot; " + ({ r16: "round of 16", qf: "quarter-finals", sf: "semi-finals", final: "THE FINAL" }[st] || st), c: "co",
-      d: "The academies play and the league stands down." };
-    if (k === "cup") return { t: "Champions Cup &middot; " + ({ g1: "group round 1", g2: "group round 2", g3: "group round 3", qf: "quarter-finals", sf: "semi-finals", final: "THE FINAL" }[st] || st), c: "ch",
-      d: "The clubs' crown, across the whole world." };
-    if (k === "transition") return { t: "THE TURNING OF THE YEAR", c: "tr",
-      d: "Every cricketer ages a year, the oldest retire, boys come through, and clubs go up and down." };
-    return { t: "Rest day", c: "re", d: "No cricket. Training, the nets and the market carry on." };
+  // ---- what a day IS, in as few words as carry the meaning -----------------
+  // The colour rail on the card has already said which competition this is, so
+  // none of these repeat it. `label` is what a card shows; `longOf` is the one
+  // full name on the page, and it goes to the "next up" line.
+  var STAGE = { r16: "Round of 16", qf: "Quarter-finals", sf: "Semi-finals", final: "Final",
+                g1: "Group 1", g2: "Group 2", g3: "Group 3" };
+  var COMP = { league: "League", facup: "National Cup", colts: "Colts Cup",
+               cup: "Champions Cup", playoff: "League play-offs", transition: "The turning of the year" };
+  var CLS = { league: "lg", facup: "fa", colts: "co", cup: "ch", playoff: "po", transition: "tr", rest: "re" };
+  // the colours, one per competition, defined once so a competition can never
+  // wear two different ones on the same page
+  var COL = { lg: "#0E2246", fa: "#17636B", co: "#C9571F", po: "#8C2B2B",
+              ch: "#6B3E8F", tr: "#4A5567", re: "rgba(20,28,40,.14)" };
+
+  function label(p) {
+    if (p.kind === "league") return "Round " + p.round;
+    if (p.kind === "playoff") return p.stage === "final" ? "Final" : "Semi-finals";
+    if (p.kind === "transition") return "New year";
+    if (p.kind === "rest") return "";
+    return STAGE[p.stage] || p.stage || "";
+  }
+  function longOf(p) {
+    if (p.kind === "league") return "League &middot; round " + p.round;
+    if (p.kind === "transition") return COMP.transition;
+    if (p.kind === "rest") return "Rest day";
+    return (COMP[p.kind] || "") + " &middot; " + label(p).toLowerCase();
   }
 
   // the weeks a reader thinks in, named for what they are
-  function weekName(w) {
-    return ["The opening week", "The second week", "The third week",
-            "COLTS WEEK", "Finals week", "Champions Cup week"][w] || ("Week " + (w + 1));
-  }
+  var WK = ["Opening", "Second", "Third", "Colts", "Finals", "Champions Cup"];
 
   function css() {
     if (document.getElementById("fo-sch-css")) return;
     var s = document.createElement("style"); s.id = "fo-sch-css";
     s.textContent = [
-      "html body #page .fo-sch{max-width:1000px;margin:22px auto 44px;padding:0 18px;color:#141C28}",
-      "html body #page .fo-sch-hero{background:linear-gradient(132deg,#0B1D33,#122C4B 55%,#1B3A5F);border-radius:20px;padding:24px 26px 22px;box-shadow:0 20px 46px rgba(11,29,51,.34)}",
-      "html body #page .fo-sch-hero .k{font:600 10.5px/1 Oswald,sans-serif;letter-spacing:.26em;text-transform:uppercase;color:#EBC271}",
-      "html body #page .fo-sch-hero h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:38px;letter-spacing:-.015em;margin:7px 0 10px;color:#FFFEFC;line-height:1.03}",
-      "html body #page .fo-sch-hero p{margin:0;font:400 13.5px/1.55 Inter,sans-serif;color:rgba(244,239,228,.76);max-width:64ch}",
-      "html body #page .fo-sch-now{display:flex;gap:8px;flex-wrap:wrap;margin-top:15px}",
-      "html body #page .fo-sch-now span{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:11px;padding:8px 13px 7px;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(244,239,228,.62)}",
-      "html body #page .fo-sch-now span b{display:block;margin-bottom:4px;font:700 16px/1 Inter,sans-serif;letter-spacing:0;color:#FFFEFC;font-variant-numeric:tabular-nums}",
-      // ---- the week blocks --------------------------------------------------
-      "html body #page .fo-sch-wk{margin-top:24px}",
-      "html body #page .fo-sch-wkh{display:flex;align-items:center;gap:12px;font:600 11px/1 Oswald,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#0E2246;margin:0 2px 9px}",
-      "html body #page .fo-sch-wkh:after{content:'';flex:1;border-top:1px solid rgba(20,28,40,.14)}",
-      "html body #page .fo-sch-list{background:#FFFEFC;border:1px solid rgba(20,28,40,.11);border-radius:14px;overflow:hidden;box-shadow:0 6px 20px rgba(30,38,52,.055)}",
-      "html body #page .fo-sch-row{display:grid;grid-template-columns:58px 96px minmax(0,1fr) 74px;gap:14px;align-items:center;padding:11px 18px;border-top:1px solid rgba(20,28,40,.08)}",
-      "html body #page .fo-sch-list>.fo-sch-row:first-child{border-top:0}",
-      "html body #page .fo-sch-row .dy{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.42)}",
-      "html body #page .fo-sch-row .wd{font:600 12.5px/1 Inter,sans-serif;color:rgba(20,28,40,.72)}",
-      "html body #page .fo-sch-row .ev b{display:block;font:600 13.5px/1.25 Inter,sans-serif;color:#141C28}",
-      "html body #page .fo-sch-row .ev span{display:block;margin-top:2px;font:400 11.5px/1.4 Inter,sans-serif;color:rgba(20,28,40,.5)}",
-      "html body #page .fo-sch-row .hr{font:600 11.5px/1 Inter,sans-serif;color:rgba(20,28,40,.55);text-align:right;font-variant-numeric:tabular-nums}",
-      // a rest day is quiet; the days that matter carry their own colour
-      "html body #page .fo-sch-row.re{background:rgba(20,28,40,.018)}",
-      "html body #page .fo-sch-row.re .ev b{color:rgba(20,28,40,.5);font-weight:500}",
-      "html body #page .fo-sch-row.tr,html body #page .fo-sch-row.po,html body #page .fo-sch-row.co{background:rgba(201,85,50,.05)}",
-      "html body #page .fo-sch-row.tr .ev b{color:#B44A22}",
-      "html body #page .fo-sch-row.po .ev b,html body #page .fo-sch-row.co .ev b{color:#B44A22}",
-      "html body #page .fo-sch-row.ch .ev b{color:#8A6A1F}",
-      "html body #page .fo-sch-row.fa .ev b{color:#2F5FC8}",
-      // TODAY. The one row a reader is actually standing on.
-      "html body #page .fo-sch-row.today{position:relative;background:linear-gradient(90deg,rgba(23,122,87,.10),rgba(23,122,87,.02))}",
-      "html body #page .fo-sch-row.today:before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#177A57}",
-      "html body #page .fo-sch-row.today .dy{color:#177A57}",
-      "html body #page .fo-sch-row.today .ev b:after{content:'TODAY';margin-left:9px;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;color:#177A57;vertical-align:1px}",
-      // ---- the rhythm note --------------------------------------------------
-      "html body #page .fo-sch-note{margin-top:22px;background:#FFFEFC;border:1px solid rgba(20,28,40,.11);border-left:3px solid #C95532;border-radius:12px;padding:16px 18px}",
-      "html body #page .fo-sch-note h3{margin:0 0 8px;font:600 11px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#0E2246}",
-      "html body #page .fo-sch-note ul{margin:0;padding-left:18px}",
-      "html body #page .fo-sch-note li{font:400 12.5px/1.6 Inter,sans-serif;color:rgba(20,28,40,.72);margin-bottom:5px}",
-      "html body #page .fo-sch-note li b{color:#141C28}",
-      "@media(max-width:620px){",
-      "html body #page .fo-sch{padding:0 12px}",
-      "html body #page .fo-sch-hero{padding:19px 17px 17px;border-radius:16px}",
-      "html body #page .fo-sch-hero h1{font-size:30px}",
-      "html body #page .fo-sch-row{grid-template-columns:38px minmax(0,1fr) 58px;gap:9px;padding:10px 12px}",
-      "html body #page .fo-sch-row .wd{display:none}",
-      "html body #page .fo-sch-row .ev b{font-size:12.5px}",
-      "html body #page .fo-sch-row .ev span{font-size:10.5px}}"
+      "html body #page .fo-sch{max-width:760px;margin:20px auto 46px;padding:0 18px;color:#141C28}",
+      // ---- the head: the title, what is next, how far in --------------------
+      "html body #page .fo-sch-hd{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;padding:0 2px 15px;border-bottom:1px solid rgba(20,28,40,.1)}",
+      "html body #page .fo-sch-hd h1{font-family:'Fraunces',Georgia,serif;font-weight:600;font-size:33px;letter-spacing:-.02em;line-height:1;margin:0;flex:0 0 auto;color:#0E2246}",
+      "html body #page .fo-sch-nx{flex:1 1 200px;min-width:0}",
+      "html body #page .fo-sch-nx i{display:block;font-style:normal;font:600 8px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#B44A22}",
+      "html body #page .fo-sch-nx b{display:block;font:600 15px/1.2 Inter,sans-serif;margin-top:6px;color:#141C28}",
+      "html body #page .fo-sch-cd{flex:0 0 auto;white-space:nowrap;font:600 15px/1 Inter,sans-serif;font-variant-numeric:tabular-nums;color:rgba(20,28,40,.55)}",
+      "html body #page .fo-sch-cd em{font-style:normal;font-size:11px;color:rgba(20,28,40,.34)}",
+      "html body #page .fo-sch-tr{display:flex;align-items:center;gap:10px;padding:11px 2px 0}",
+      "html body #page .fo-sch-tr u{flex:1;height:3px;border-radius:2px;background:rgba(20,28,40,.1);overflow:hidden;text-decoration:none}",
+      "html body #page .fo-sch-tr u b{display:block;height:100%;background:#C9571F}",
+      "html body #page .fo-sch-tr span{font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.34)}",
+      // ---- the legend: a colour and a word ---------------------------------
+      "html body #page .fo-sch-lg{display:flex;flex-wrap:wrap;gap:5px 14px;padding:12px 2px 0}",
+      "html body #page .fo-sch-lg span{display:inline-flex;align-items:center;gap:6px;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.34)}",
+      "html body #page .fo-sch-lg i{width:7px;height:7px;border-radius:2px;display:block}",
+      // ---- the spine --------------------------------------------------------
+      "html body #page .fo-sch-sp{margin-top:14px}",
+      "html body #page .fo-sch-wk{display:flex;align-items:center;gap:10px;margin:16px 0 6px}",
+      "html body #page .fo-sch-wk b{font:600 8px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(20,28,40,.34)}",
+      "html body #page .fo-sch-wk u{flex:1;border-top:1px solid rgba(20,28,40,.1);text-decoration:none}",
+      "html body #page .fo-sch-row{display:flex;align-items:center;gap:12px;background:#FFFEFC;border-left:3px solid var(--c);border-radius:0 9px 9px 0;padding:11px 13px;margin-bottom:4px;box-shadow:0 4px 14px rgba(30,38,52,.05)}",
+      "html body #page .fo-sch-row .dn{flex:0 0 26px;font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.34);font-variant-numeric:tabular-nums}",
+      "html body #page .fo-sch-row .ev{flex:1;min-width:0;font:600 13.5px/1.25 Inter,sans-serif;color:#141C28}",
+      "html body #page .fo-sch-row .hr{font:500 11.5px/1 Inter,sans-serif;color:rgba(20,28,40,.34);font-variant-numeric:tabular-nums}",
+      // a final is the one day of a competition worth colouring the words for
+      "html body #page .fo-sch-row.fin .ev{color:var(--c)}",
+      "html body #page .fo-sch-row.today{box-shadow:0 0 0 2px #C9571F}",
+      "html body #page .fo-sch-row.today .dn{color:#B44A22}",
+      "html body #page .fo-sch-rest{display:flex;align-items:center;gap:12px;padding:5px 13px 5px 16px;margin-bottom:4px}",
+      "html body #page .fo-sch-rest .dn{flex:0 0 26px;font:500 11px/1 Inter,sans-serif;color:rgba(20,28,40,.34);font-variant-numeric:tabular-nums}",
+      "html body #page .fo-sch-rest u{flex:1;border-top:1px dashed rgba(20,28,40,.1);text-decoration:none}",
+      "html body #page .fo-sch-rest.today .dn{color:#B44A22;font-weight:700}",
+      // the rules, once, at the foot, in fine print
+      "html body #page .fo-sch-fine{margin:16px 2px 0;font:400 11px/1.6 Inter,sans-serif;color:rgba(20,28,40,.34)}",
+      "@media(max-width:640px){",
+      "html body #page .fo-sch{padding:0 12px;margin-top:16px}",
+      "html body #page .fo-sch-hd{gap:12px}",
+      "html body #page .fo-sch-hd h1{flex:1 1 100%;font-size:28px}",
+      "html body #page .fo-sch-row{padding:10px 11px;gap:10px}",
+      "html body #page .fo-sch-row .ev{font-size:13px}}"
     ].join("\n");
     document.head.appendChild(s);
   }
 
+  function hh(h) { return (h == null || !(h >= 0)) ? "" : ("0" + (h | 0)).slice(-2) + ":00"; }
+  // a countdown read at a glance: days out while it is days out, then the
+  // clock face once it is close enough to matter in hours
+  function cdText(ms) {
+    if (!(ms > 0)) return "now";
+    var m = Math.floor(ms / 60000), d = Math.floor(m / 1440), h = Math.floor((m % 1440) / 60), mi = m % 60;
+    if (d > 0) return d + "d " + h + "h";
+    return h + ":" + ("0" + mi).slice(-2);
+  }
+
+  // ONE PLACE TURNS A DAY OF THIS SEASON INTO A MOMENT. The countdown and the
+  // first ball of a row both ask here, so the page cannot disagree with itself
+  // about when a day starts.
+  function ballAt(pl, season, di, hour) {
+    try {
+      var start = pl.seasonStart(season);
+      return pl.EPOCH + (start + di) * pl.DAY + (hour | 0) * 3600000;
+    } catch (e) { return 0; }
+  }
+
+  var TICK = null;
+  function stopTick() { if (TICK) { clearInterval(TICK); TICK = null; } }
+
   window.foRenderSchedulePage = function () {
     var page = document.getElementById("page"); if (!page) return;
-    if ((location.hash || "").split("?")[0] !== "#/schedule") return;
+    if ((location.hash || "").split("?")[0] !== "#/schedule") { stopTick(); return; }
     css();
     var pl = planet();
     if (!pl || !pl.phaseOf) {
-      page.innerHTML = "<div class='fo-sch'><div class='fo-sch-hero'><div class='k'>The season</div>" +
-        "<h1>Schedule</h1><p>The world calendar has not loaded yet &mdash; try again in a moment.</p></div></div>";
+      page.innerHTML = "<div class='fo-sch'><div class='fo-sch-hd'><h1>Schedule</h1></div>" +
+        "<p class='fo-sch-fine'>The world calendar has not loaded yet &mdash; try again in a moment.</p></div>";
       return;
     }
 
@@ -131,59 +166,83 @@
       var cl = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
       if (cl && cl.country) { myNat = String(cl.country).toUpperCase(); myHour = pl.natHour(cl.country); }
     } catch (eC) {}
-    var hourTxt = (myHour == null || !(myHour >= 0))
-      ? "&mdash;"
-      : (("0" + (myHour | 0)).slice(-2) + ":00");
+    if (myHour == null || !(myHour >= 0)) { try { myHour = pl.natHour("eng"); } catch (eH) { myHour = 14; } }
+    var hourTxt = hh(myHour);
 
-    var chips =
-      "<span><b>" + season + "</b>Season</span>" +
-      (today >= 0 ? "<span><b>" + (today + 1) + " / 42</b>Day of the season</span>" : "") +
-      (here && here.round ? "<span><b>" + here.round + "</b>League round</span>" : "") +
-      "<span><b>14</b>League rounds</span>" +
-      "<span><b>6</b>Weeks a season</span>";
-
-    var hero =
-      "<div class='fo-sch-hero'><div class='k'>The season &middot; six weeks, forty-two days</div>" +
-      "<h1>Schedule</h1>" +
-      "<p>A season is six exact weeks and one year of a cricketer&rsquo;s life. The league plays Monday, " +
-      "Tuesday, Thursday and Friday; the cups take the Sundays; the fourth week belongs to the boys, and " +
-      "the league stands down while they have it. Everything below is read off the world&rsquo;s own clock.</p>" +
-      "<div class='fo-sch-now'>" + chips +
-      (myHour != null && myHour >= 0
-        ? "<span><b>" + (("0" + (myHour | 0)).slice(-2) + ":00") + "</b>" + E(myNat || "Your") + " play at (UTC)</span>"
-        : "") + "</div></div>";
-
-    // ---- the forty-two days, a week at a time -----------------------------
-    var body = "";
-    for (var w = 0; w < 6; w++) {
-      var rows = "";
-      for (var d = 0; d < 7; d++) {
-        var di = w * 7 + d;
-        var p = dayPhase(pl, season, di);
-        var t = tell(p);
-        var isToday = (di === today);
-        rows += "<div class='fo-sch-row " + t.c + (isToday ? " today" : "") + "'>" +
-          "<span class='dy'>Day " + (di + 1) + "</span>" +
-          "<span class='wd'>" + WD[di % 7] + "</span>" +
-          "<span class='ev'><b>" + t.t + "</b><span>" + t.d + "</span></span>" +
-          "<span class='hr'>" + (p.kind === "rest" || p.kind === "transition" ? "&mdash;" : hourTxt) + "</span>" +
-          "</div>";
-      }
-      body += "<div class='fo-sch-wk'><div class='fo-sch-wkh'>" + E(weekName(w)) + "</div>" +
-        "<div class='fo-sch-list'>" + rows + "</div></div>";
+    // the forty-two days, each one asked of the clock
+    var days = [];
+    for (var di = 0; di < 42; di++) {
+      var p = dayPhase(pl, season, di);
+      days.push({ di: di, p: p, cls: CLS[p.kind] || "re",
+        rest: p.kind === "rest", fin: p.stage === "final",
+        hr: (p.kind === "rest" || p.kind === "transition") ? "" : hourTxt });
+    }
+    // the next first ball still ahead of the clock - not merely the next day
+    // with cricket on it, because on a match afternoon that day is today and
+    // its ball has already been bowled
+    var next = null;
+    for (var n = 0; n < days.length; n++) {
+      if (days[n].rest || days[n].di < today) continue;
+      var t = ballAt(pl, season, days[n].di, myHour);
+      if (t > now) { next = days[n]; next.__t = t; break; }
     }
 
-    var note =
-      "<div class='fo-sch-note'><h3>The rhythm of a week</h3><ul>" +
-      "<li><b>Matches</b> start at your nation&rsquo;s own hour and run about three hours. England plays at 14:00 UTC; every other country has its own slot, shown on each fixture.</li>" +
-      "<li><b>Orders lock at the first ball.</b> Anything you change after that applies to the next match, not this one.</li>" +
-      "<li><b>The nets run on rest days.</b> Training, scouting trips and the academy all take the days with no cricket on them.</li>" +
-      "<li><b>The transfer window is three days per listing</b> &mdash; a man goes on the board and the bidding closes three world days later.</li>" +
-      "<li><b>The books settle every round.</b> Wages, the gate, the sponsor and upkeep all move when a round is played.</li>" +
-      "<li><b>Day 38 is the turning of the year.</b> Everyone ages, the oldest retire, the boys come through, and clubs are promoted and relegated.</li>" +
-      "</ul></div>";
+    var head =
+      "<div class='fo-sch-hd'><h1>Schedule</h1>" +
+      (next
+        ? "<div class='fo-sch-nx'><i>Next</i><b>" + longOf(next.p) + "</b></div>" +
+          "<div class='fo-sch-cd'><span id='fo-sch-cd'>" + E(cdText(next.__t - now)) + "</span> <em>to first ball</em></div>"
+        : "<div class='fo-sch-nx'><i>Next</i><b>The season is played out</b></div>") +
+      "</div>" +
+      "<div class='fo-sch-tr'><span>Day " + (today >= 0 ? today + 1 : "&mdash;") + "</span>" +
+      "<u><b style='width:" + Math.max(0, Math.min(100, Math.round(((today + 1) / 42) * 100))) + "%'></b></u>" +
+      "<span>42</span></div>";
 
-    page.innerHTML = "<div class='fo-sch'>" + hero + body + note + "</div>";
+    var legend = "<div class='fo-sch-lg'>" +
+      [["lg", "League"], ["fa", "Cup"], ["co", "Colts"], ["po", "Play-offs"],
+       ["ch", "Champions"], ["tr", "New year"]].map(function (k) {
+        return "<span><i style='background:" + COL[k[0]] + "'></i>" + k[1] + "</span>";
+      }).join("") + "</div>";
+
+    var body = "<div class='fo-sch-sp'>";
+    for (var w = 0; w < 6; w++) {
+      body += "<div class='fo-sch-wk'><b>" + E(WK[w] || ("Week " + (w + 1))) + "</b><u></u></div>";
+      for (var d = 0; d < 7; d++) {
+        var x = days[w * 7 + d], isToday = (x.di === today);
+        if (x.rest) {
+          body += "<div class='fo-sch-rest" + (isToday ? " today" : "") + "'>" +
+            "<span class='dn'>" + (x.di + 1) + "</span><u></u></div>";
+          continue;
+        }
+        body += "<div class='fo-sch-row" + (x.fin ? " fin" : "") + (isToday ? " today" : "") +
+          "' style='--c:" + COL[x.cls] + "'>" +
+          "<span class='dn'>" + (x.di + 1) + "</span>" +
+          "<span class='ev'>" + label(x.p) + "</span>" +
+          "<span class='hr'>" + (x.hr || "&mdash;") + "</span></div>";
+      }
+    }
+    body += "</div>";
+
+    var fine = "<p class='fo-sch-fine'>All times UTC" +
+      (hourTxt ? " &middot; " + E(myNat || "your league") + " plays at " + hourTxt : "") +
+      " &middot; orders lock at the first ball &middot; the nets, scouting and the market run on the rest days" +
+      " &middot; day 38 turns the year: everyone ages, the oldest retire, and clubs go up and down.</p>";
+
+    page.innerHTML = "<div class='fo-sch'>" + head + legend + body + fine + "</div>";
+
+    // the countdown is the one live thing on the page, so it is the one thing
+    // that ticks; the calendar behind it does not move. When it runs out the
+    // page repaints once, which advances "next" and re-lights today.
+    stopTick();
+    if (next) {
+      TICK = setInterval(function () {
+        var el = document.getElementById("fo-sch-cd");
+        if (!el || (location.hash || "").split("?")[0] !== "#/schedule") { stopTick(); return; }
+        var left = next.__t - Date.now();
+        if (left <= 0) { stopTick(); try { window.foRenderSchedulePage(); } catch (e) {} return; }
+        el.textContent = cdText(left);
+      }, 1000);
+    }
   };
 
   // THE ONE PLACE A DAY BECOMES A PHASE.
