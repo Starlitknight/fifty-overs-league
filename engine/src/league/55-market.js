@@ -462,6 +462,32 @@
     try { return m && window.foPkOvr ? (foPkOvr(m) | 0) : -1; } catch (e) { return -1; }
   }
   function ageOf(L) { var m = manOf(L); return m && m.age ? +m.age : 0; }
+  /* THE BOARD IS NOT SORTED BY WHERE A MAN IS FROM.
+   *
+   * Every free agent walked on for a given world day is given the SAME closing
+   * day, and the umpire builds them one country at a time - so they arrive
+   * with consecutive ids in national blocks. Sort by "closing soon" and every
+   * one of those ties compares equal; a stable sort then keeps the order they
+   * arrived in, and the board reads as sixteen national squads stacked on top
+   * of one another rather than as a market.
+   *
+   * So every comparison ends in a seeded shuffle of the listing's own id. It
+   * is deterministic - the same board draws the same order on every repaint
+   * and every device, nothing jumps under a thumb mid-scroll - and it is
+   * blind to nationality, which is the whole point. A reader who DOES want
+   * one country still has the league filter; he should just never get it by
+   * accident.
+   */
+  function mixOf(L) {
+    var s2 = "mix|" + ((L && L.id) | 0), h = 2166136261 >>> 0;
+    for (var i = 0; i < s2.length; i++) { h ^= s2.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+    h ^= h >>> 15; h = Math.imul(h, 2246822519) >>> 0;
+    h ^= h >>> 13; h = Math.imul(h, 3266489917) >>> 0;
+    return (h ^ (h >>> 16)) >>> 0;
+  }
+  function mixed(cmp) {
+    return function (a, b) { return cmp(a, b) || (mixOf(a) - mixOf(b)); };
+  }
   function closeKey(L) {
     var ms = +(L.closesMs != null ? L.closesMs : L.closes_ms) || 0;
     return ms || (+L.closes_day || 0) * 86400000;
@@ -484,20 +510,25 @@
     var rows = MK.listings.slice();
     if (MK.nat !== "all") rows = rows.filter(function (L) { return L.country_id === MK.nat; });
     if (MK.role !== "all") rows = rows.filter(function (L) { return bucketOf(L) === MK.role; });
-    if (MK.sort === "close") rows.sort(function (a, b) { return closeKey(a) - closeKey(b); });
+    if (MK.sort === "close") rows.sort(mixed(function (a, b) { return closeKey(a) - closeKey(b); }));
     else if (MK.sort === "new") rows.sort(function (a, b) { return (b.id | 0) - (a.id | 0); });
-    else if (MK.sort === "hi") rows.sort(function (a, b) { return (+(b.high || b.asking) || 0) - (+(a.high || a.asking) || 0); });
-    else if (MK.sort === "lo") rows.sort(function (a, b) { return (+(a.high || a.asking) || 0) - (+(b.high || b.asking) || 0); });
-    else if (MK.sort === "ovr") rows.sort(function (a, b) { return ovrOf(b) - ovrOf(a); });
-    else if (MK.sort === "young") rows.sort(function (a, b) { return (ageOf(a) || 99) - (ageOf(b) || 99); });
-    else if (MK.sort === "old") rows.sort(function (a, b) { return ageOf(b) - ageOf(a); });
-    else if (MK.sort === "wage") rows.sort(function (a, b) {
+    else if (MK.sort === "hi") rows.sort(mixed(function (a, b) { return (+(b.high || b.asking) || 0) - (+(a.high || a.asking) || 0); }));
+    else if (MK.sort === "lo") rows.sort(mixed(function (a, b) { return (+(a.high || a.asking) || 0) - (+(b.high || b.asking) || 0); }));
+    else if (MK.sort === "ovr") rows.sort(mixed(function (a, b) { return ovrOf(b) - ovrOf(a); }));
+    else if (MK.sort === "young") rows.sort(mixed(function (a, b) { return (ageOf(a) || 99) - (ageOf(b) || 99); }));
+    else if (MK.sort === "old") rows.sort(mixed(function (a, b) { return ageOf(b) - ageOf(a); }));
+    else if (MK.sort === "wage") rows.sort(mixed(function (a, b) {
       var wa = (manOf(a) || {}).wage || 0, wb = (manOf(b) || {}).wage || 0; return wb - wa;
-    });
+    }));
     else if (MK.sort.indexOf("s:") === 0) {
       var k9 = MK.sort.slice(2);
-      rows.sort(function (a, b) { return readOf(manOf(b), k9) - readOf(manOf(a), k9); });
+      rows.sort(mixed(function (a, b) { return readOf(manOf(b), k9) - readOf(manOf(a), k9); }));
     }
+    // AND THE ORDER THE BOARD ARRIVED IN IS NEVER THE ORDER IT IS READ IN.
+    // "Newest" is the one sort where the id genuinely IS the answer, so it
+    // keeps its own order; everything else - including a board with no sort
+    // chosen at all - is shuffled off nationality by the tiebreak above.
+    else rows.sort(mixed(function () { return 0; }));
     if (MK.view === "table") return tableHtml(rows, cl, myBids);
     var vis = rows.slice(0, MK.shown);
     var more = rows.length > vis.length
