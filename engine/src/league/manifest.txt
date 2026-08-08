@@ -49,4 +49,5 @@
 53-fa-cup.js
 54-colts-cup.js
 55-market.js
+56-schedule.js
 61-notifications.js

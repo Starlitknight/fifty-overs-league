@@ -70,7 +70,8 @@
       ["market", "coin", "The transfer market"],
       ["finance", "coin", "Finances"],
       ["ground", "house", "The ground"],
-      ["fixtures", "cal", "The fixture list"]
+      ["fixtures", "cal", "The fixture list"],
+      ["schedule", "cal", "The season schedule"]
     ] },
     { k: "Tournaments", rooms: [
       ["colts", "star", "The Colts Cup"],
