@@ -809,20 +809,28 @@
 
   // ---- the deeds ------------------------------------------------------------
   // one door for both bidding paths: validate, place, log on the wire
-  function placeBid(id, amt, min, inEl) {
+  function placeBid(id, amt, min, inEl, isRetry) {
     var nm = "";
     try { nm = ((MK.listings || []).filter(function (L) { return Number(L.id) === Number(id); })[0] || {}).player || ""; } catch (e) {}
-    rpc("world_market_bid", { p_id: id, p_amount: amt }).then(function () {
+    rpc("world_market_bid", { p_id: id, p_amount: amt == null ? null : amt }).then(function (r) {
       // the word lands ON the card, not in a popup: MK.ok paints a green
-      // strip in this listing's own rail for the next few repaints
-      MK.ok = { id: id, amt: amt, at: Date.now() };
-      wireAdd("in", "Your offer of " + money(amt) + " on " + (nm || "a listed man") + " is in &mdash; you lead", { lid: id });
+      // strip in this listing's own rail for the next few repaints - and the
+      // figure it speaks is the one the UMPIRE placed, not the one predicted
+      var placed = (r && +r.amount) || amt || 0;
+      MK.ok = { id: id, amt: placed, at: Date.now() };
+      wireAdd("in", "Your offer of " + money(placed) + " on " + (nm || "a listed man") + " is in &mdash; you lead", { lid: id });
       if (inEl) inEl.value = "";
       paint();
       refetch(true);
       setTimeout(wireCheck, 1500);
       setTimeout(function () { try { if (MK.ok && Number(MK.ok.id) === Number(id)) { MK.ok = null; paint(); } } catch (e) {} }, 12500);
     }).catch(function (e) {
+      // an umpire still on the old law answers an auto bid with the exact
+      // figure he wants - take him at his word, once
+      if (amt == null && !isRetry) {
+        var m9 = /offer at least (\d+)/.exec(String((e && e.message) || e));
+        if (m9) { placeBid(id, +m9[1], min, inEl, true); return; }
+      }
       // refusals land inline too - under the input on the very card
       var msg = String((e && e.message) || e).replace(/^error:\s*/i, "");
       var el = document.getElementById("fo-mk-msg-" + id);
@@ -1039,9 +1047,13 @@
       MK.open[idF] = !MK.open[idF];
       paint(); return;
     }
-    // AUTO BID: one press places the exact next minimum - no dialog
+    // AUTO BID: one press, and the UMPIRE names the figure (067). The
+    // button used to send the minimum it computed at paint time, and a raise
+    // landing between paint and press left it carrying yesterday's number -
+    // refused by the very law it was quoting. Sending null asks the server
+    // for the smallest lawful raise at the moment the bid lands.
     if ((b = t9.closest("[data-mk-bid-auto]"))) {
-      placeBid(+b.getAttribute("data-mk-bid-auto"), +b.getAttribute("data-min") || STEP, +b.getAttribute("data-min") || STEP, null);
+      placeBid(+b.getAttribute("data-mk-bid-auto"), null, +b.getAttribute("data-min") || STEP, null);
       return;
     }
     // or a figure of your own, typed on the card itself

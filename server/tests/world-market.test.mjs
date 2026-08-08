@@ -493,3 +493,32 @@ test('a career carried is a career added, not replaced', () => {
   assert.deepEqual(withCarry(here, null), here);
   assert.equal(withCarry(null, carry).runs, 300);
 });
+
+test('auto bid: the umpire names the smallest lawful figure (067)', async () => {
+  // a fresh listing of the umpire's own, far from the suite's other hammers
+  await pool.query(`INSERT INTO claims(user_id, display_name, country_id, slot)
+                    VALUES ($1,'Rival','eng',2) ON CONFLICT DO NOTHING`, [U2]);
+  const ins = await pool.query(
+    `INSERT INTO listings(country_id, slot, player, player_json, asking, reserve, opened_day, closes_day)
+     VALUES ('eng', 5, 'Auto Test Man', '{"name":"Auto Test Man","age":26,"rating":30000}'::jsonb,
+             1000000, 600000, $1, $2) RETURNING id`, [START + 8, START + 8 + WINDOW_DAYS]);
+  const id = ins.rows[0].id;
+  const at = atDay(START + 8, 10);
+  // 1. a clean board: auto opens at the 55% floor
+  const r1 = await as(U2, `SELECT public.world_market_bid($1, NULL) AS r`, [id], at);
+  assert.equal(r1.rows[0].r.ok, true);
+  assert.equal(+r1.rows[0].r.amount, Math.ceil(1000000 * 0.55), 'auto on a clean board is the opening floor');
+  // 2. auto while leading is refused, not raised against yourself
+  await assert.rejects(
+    as(U2, `SELECT public.world_market_bid($1, NULL)`, [id], at),
+    /already lead/);
+  // 3. a rival takes the board; auto answers with high + max($500, 3%)
+  const rivalBid = 700000;
+  await as(U1, `SELECT public.world_market_bid($1, $2)`, [id, rivalBid], at);
+  const r2 = await as(U2, `SELECT public.world_market_bid($1, NULL) AS r`, [id], at);
+  const want = rivalBid + Math.max(500, Math.ceil(rivalBid * 0.03));
+  assert.equal(+r2.rows[0].r.amount, want, 'auto over a standing high is the three-percent law, exactly');
+  const board = (await pool.query(
+    `SELECT country_id, slot, amount FROM bids WHERE listing_id=$1 ORDER BY amount DESC`, [id])).rows;
+  assert.equal(+board[0].amount, want, 'and the board agrees');
+});
