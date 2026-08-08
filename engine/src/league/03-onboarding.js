@@ -3523,22 +3523,14 @@
   var foOrigClub = window.pgClub;
   if (typeof foOrigClub === "function") window.pgClub = foPremiumClub;
 
-  // Solo-first: the career is the front door. A returning solo manager goes
-  // straight back into their game; a fresh visitor meets the Gaffer and can
-  // found a club with no account; leagues remain one tap away.
-  function foFrontDoor() {
-    // fresh visitors meet the door; a returning boss on a refresh goes
-    // straight back into the game (Log out reopens the door on demand)
-    var welcomed = false;
-    try { welcomed = !!(typeof window.store === "function" ? window.store("fo_welcomed") : localStorage.getItem("fo_welcomed")); } catch (eW) {}
-    if (welcomed && foHasSoloSave()) { openWrap(false); return; }
-    renderWelcome();
-  }
-  // the nav's Log out returns here (solo: leaving the room, not deleting it)
+  // THE DOOR ASKS WHO YOU ARE. It used to let a fresh visitor straight past on
+  // the strength of a flag this device set for itself - fo_welcomed - because
+  // the game behind it ran with no account and no server. That game is gone;
+  // a club lives in the world now, and the world has to know whose it is.
+  function foFrontDoor() { renderWelcome(); }
+  // the nav's Log out returns here
   window.foDoorOpen = function () { try { openWrap(true); renderWelcome(); } catch (e) {} };
-  // Solo-first boot: a stored league session (commissioner / league manager)
-  // signs back in silently; everyone else gets the solo front door, which
-  // resumes the save or asks for a club name. No login screen on refresh.
+  // A stored session signs back in silently; everyone else meets the door.
   var _authRedirect = null;
   try { _authRedirect = foConsumeAuthHash(); } catch (eAH) {}
   openWrap(true);

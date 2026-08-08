@@ -17,11 +17,15 @@
   // =================================================================
   function doJoinSignup() {
     var email = val("folEmail"), password = wrap.querySelector("#folPass").value;
-    var code = val("folCode"), dn = val("folDn"), tn = val("folTn");
+    var dn = val("folDn"), tn = val("folTn");
     if (!email || !password) { say("Enter your email and password"); return; }
-    if (!code || !dn) { say("Enter your invite code and manager name"); return; }
-    // Remember the invite so we can finish joining after email confirmation + login.
-    lsSet(PEND, JSON.stringify({ code: code, dn: dn, tn: tn }));
+    if (!dn) { say("Enter the name that goes on the teamsheet"); return; }
+    // THE TWO NAMES SURVIVE THE ROUND TRIP. Supabase may send a confirmation
+    // email before it hands back a token, so the manager can be gone for
+    // minutes and come back through a link. autoClaim reads these when it
+    // takes the seat, so the club is christened with what was typed here
+    // rather than with whatever the baked data happened to be called.
+    try { lsSet("fo_new_mgr", dn); if (tn) lsSet("fo_new_club", tn); } catch (eN) {}
     busyBtn("joinNew", "Creating account\u2026");
     fetch(URL + "/auth/v1/signup?redirect_to=" + encodeURIComponent(APP_URL), { method: "POST", headers: { apikey: ANON, "content-type": "application/json" }, body: JSON.stringify({ email: email, password: password, options: { email_redirect_to: APP_URL } }) })
       .then(function (r) { return r.json().then(function (d) { if (!r.ok) throw new Error(d.error_description || d.msg || d.error || ("HTTP " + r.status)); return d; }); })

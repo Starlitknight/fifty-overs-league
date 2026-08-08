@@ -1502,46 +1502,13 @@ const WXTIP={Sunny:'Clear and true - neutral conditions.',Overcast:'Cloud cover 
 const wxTip=w=>WXTIP[w]||'Match-day conditions.';const pitchTip=p=>PITCHTIP[p]||'A fair surface.';
 const GPITCH={'Headingley':'green','The Oval':'balanced','Wankhede Stadium':'flat','M. Chinnaswamy Stadium':'twoPaced','Sydney Cricket Ground':'dry','Eden Park':'balanced','SuperSport Park':'green','National Stadium':'slow',"Queen's Park Oval":'dry','Basin Reserve':'cracked'};
 function groundPitch(g){const t=GD.teams.find(x=>x.ground===g);return (t&&t.homePitch)||GPITCH[g]||'balanced'}
-/* A WAGE IS DERIVED, NOT REMEMBERED.
- *
- * The baked squads ship with a wage written into the data, and it had stopped
- * meaning anything: a cricketer rated 29,200 was paid $1,638 and one rated
- * 50,350 was paid $1,835, so seventy-two per cent more cricketer cost twelve
- * per cent more money, and the man at the tenth percentile was paid MORE than
- * the median. There was no rule behind those numbers to move; there were a
- * hundred and sixty separate numbers. foWageOf was only ever asked about men
- * the game generated itself, so the curve could be rewritten and the league it
- * was written for would not feel it.
- *
- * So a wage is recomputed from what a man IS, every time the books open. It
- * costs a walk of a hundred and sixty players and it makes the price of a
- * squad a fact about the squad - a side that trains its way to better
- * cricketers pays for them, and one that sells its best saves his wage
- * exactly. This runs BEFORE the early return, so a career already under way
- * gets the corrected books on its next load rather than carrying the old
- * numbers to the end of its days.
- */
-function foSoloWages(){
-  try{
-    if(typeof GD==='undefined'||!GD.teams)return;
-    // AND IT IS THE SOLO CURVE, SO IT ONLY TOUCHES A SOLO SQUAD. A device that
-    // manages a club in the served world has had its eleven REPLACED by that
-    // world's own (adoptWorldSquad writes them straight onto GD.teams), and
-    // their wages are the served world's - calibrated to a $26 ticket and a
-    // $9,290 median. Re-deriving those here would price a served international
-    // at about twelve hundred dollars and put that number on his own club's
-    // squad page. The world's men keep the world's wages.
-    let claimed=false;
-    try{claimed=!!(window.__foWorldClaim||JSON.parse(localStorage.getItem('fo_world_claim')||'null'))}catch(eC){}
-    if(claimed)return;
-    for(const t of GD.teams){
-      for(const p of (t.players||[]))
-        if(p&&p.rating)p.wage=foWageOf(p.rating,(p.talents||[]).length,1);
-    }
-  }catch(e){}
-}
+/* A SERVED SQUAD ARRIVES WITH ITS WAGES. foSoloWages used to recompute every
+   man's price from his rating whenever the books opened, because the offline
+   league shipped a wage baked into the data that had stopped tracking rating
+   at all. The world sends the real figure with the squad, so there is nothing
+   left here to derive - and deriving it would overwrite the truth with a
+   guess. */
 function econInit(){
-  foSoloWages();
   if(App.fin)return;
   App.fin={bank:500000,ledger:[]};
   App.seasonNo=1;App.history=[];
@@ -1863,14 +1830,21 @@ function route(){
   if(GONE[App.page]){location.hash='#/home';App.page='home';return}
   // the conquest Circuit is retired; its hub folds into the repurposed World map
   if(App.page==='circuit'||App.page==='tour'){location.hash='#/world';App.page='world';return}
-  // #9 Draft lock: a new player cannot navigate away until they've confirmed a legal squad.
-  // founderConfirm sets fo_welcomed; until then, keep them in the draft/onboarding.
+  /* THE GATE USED TO ASK THE DEVICE, AND THE DEVICE ANSWERED FOR ITSELF.
+     fo_welcomed was set by the solo front door - name a club, play - so it
+     meant "this browser has started a career". With the career moved to the
+     world, nothing sets it, and a manager signed in on a fresh phone would
+     have been bounced back to the club home from every single page.
+     What the gate is actually for is: do not let somebody wander the club
+     rooms before they hold a club. So it asks the WORLD that question now. */
   try{
-    if(!store('fo_welcomed') && App.page!=='manual' && App.page!=='help'){
-      // the overlay front door (name your club) owns entry; park the page on
-      // the league behind it (the Circuit hub is retired)
-      if(App.page!=='home'){location.hash='#/home';return}
-    }
+    var seated=false;
+    try{seated=!!(window.__foWorldClaim||JSON.parse(localStorage.getItem('fo_world_claim')||'null')||(window.__foJWT&&window.__foJWT()))}catch(eS){}
+    // the rooms anybody may read: the world is public, only a club is not
+    var OPEN={home:1,league:1,nation:1,world:1,planet:1,rankings:1,nations:1,natteams:1,
+              stats:1,schedule:1,almanack:1,atlas:1,champions:1,facup:1,colts:1,watch:1,
+              feed:1,paper:1,lore:1,star:1,team:1,player:1,manual:1,help:1};
+    if(!seated && !OPEN[App.page]){ location.hash='#/home'; return; }
   }catch(e){}
   // Squad Intelligence stopped being a page of its own: it is the third way to
   // read the squad, beside the Roster and the Grid, and it lives at #/squad.
@@ -3340,46 +3314,13 @@ const FO_WAGE_K=2.0;                // how fast the price of quality climbs
 // club is DEALT its fifteen, it does not draft them. All the six did was set a
 // $6m budget against a solo bank of $1m. One.
 const FO_DRAFT_SCALE=1;
-// TWO ECONOMIES, AND THIS CURVE BELONGS TO ONE OF THEM.
-//
-// The solo career and a friends league are settled in the browser against
-// their own constants - a $9 ticket, a $25,000 sponsor, a bank of a million -
-// and 03-onboarding says it plainly: the two sets of figures are meant to
-// differ, and neither is a stale copy of the other. The curve below is
-// calibrated to the SERVED world's income and nothing else.
-//
-// jsDerive is shared by both, so applying it everywhere quietly multiplied a
-// solo club's wage bill by five while its gate stayed at nine pounds a head -
-// a squad that cost $459k a season now costing $2.43m against unchanged
-// income, which is every offline career bankrupt on the day it is founded.
-//
-// The service sets __foServedEcon when it loads this engine; a browser playing
-// solo never does. One function, two calibrations, chosen by which world is
-// asking.
-//
-// AND THE SOLO SIDE GOT ITS OWN CURVE IN THE END. It was left on the flat rule
-// - 200 + rating x 0.037 - because the served curve, applied to a $9 ticket,
-// bankrupted every offline career on the day it was founded. But flat was the
-// exact fault the convex curve was written to cure: the best cricketer in the
-// solo game (73,050) cost $2,903 and a man at 29,200 cost $1,280, so two and a
-// half times the cricketer came to two and a third times the price, and the
-// difference between good and great was worth nothing at all.
-//
-// So the solo world gets the same SHAPE against its own numbers. Its ratings
-// sit in a different, narrower, higher band than the served world's - p10
-// 39,350, p50 50,350, p90 63,950 - so it takes its own midpoint and its own
-// median; k is shared, because how fast quality should climb is a statement
-// about cricket, not about which economy is settling it. Measured across the
-// founding league this puts the mean wage bill at 55% of a season's income.
-const FO_SOLO_R50=50350;            // the solo game's median rating, measured
-const FO_SOLO_MID=1140;             // what the median man earns a round
+// ONE ECONOMY. There were two: the served world's, calibrated to a $26 ticket
+// and a crowd that follows a club's standing, and the browser's own - a $9
+// ticket, a $25,000 sponsor, a bank of a million - for a career that ran with
+// no account and no server. That career is gone, so its constants and its
+// branch went with it. Every club is a served club and the world prices it.
 function foWageOf(rating,talents,scar){
   const r=Math.max(1,+rating||0);
-  let served=false; try{served=!!globalThis.__foServedEcon}catch(eS){}
-  if(!served){
-    const sb=FO_SOLO_MID*Math.pow(r/FO_SOLO_R50,FO_WAGE_K)*(1+0.06*Math.max(0,talents|0));
-    return Math.max(300,Math.round(sb*(+scar||1)/10)*10);
-  }
   const base=FO_WAGE_MID*Math.pow(r/FO_WAGE_R50,FO_WAGE_K);
   // a talent is a premium ON what he already is, not a flat fee: it is worth
   // more on a great cricketer than on a poor one, the way it plays
@@ -4849,7 +4790,6 @@ completeRound=function(){
   if(byName>=0)App.teamIx=byName;
   else{const saved=store('fo_club');
     if(saved!==null&&saved!==undefined&&GD.teams[+saved])App.teamIx=+saved;}
-  if(!store('fo_welcomed'))location.hash='#/welcome';
 })();
 
 // ---- Circuit-only era: the retired engine pages render NOTHING. Their

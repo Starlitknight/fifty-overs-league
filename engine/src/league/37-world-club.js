@@ -366,8 +366,12 @@
       if (!jwt()) return;
       var nat = "eng";
       try { nat = (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || "eng"; } catch (eN) {}
-      var clubNm = ""; try { clubNm = userTeam().name || ""; } catch (eC) {}
-      var mgr = mgrForClaim();
+      // the names the manager typed at the door, if he has just come through it
+      var clubNm = "", mgr = "";
+      try { clubNm = localStorage.getItem("fo_new_club") || ""; } catch (eNC) {}
+      try { mgr = localStorage.getItem("fo_new_mgr") || ""; } catch (eNM) {}
+      if (!clubNm) { try { clubNm = userTeam().name || ""; } catch (eC) {} }
+      if (!mgr) mgr = mgrForClaim();
       // TWO SQUADS, ONE CLUB. This used to stop at the door - "already
       // seated, nothing to do" - and go home without ever asking the world
       // what it thinks the club's players are. So the squad the manager
@@ -400,6 +404,7 @@
         rpc("world_auto_claim", { p_country: nat, p_name: mgr, p_club_name: clubNm || null }).then(function (r) {
           if (!r || !r.ok) return;
           var cl = { country: r.country, slot: r.slot, club: r.club, name: mgr };
+          try { localStorage.removeItem("fo_new_club"); localStorage.removeItem("fo_new_mgr"); } catch (eRm) {}
           window.__foWorldClaim = cl;
           try { localStorage.setItem("fo_world_claim", JSON.stringify(cl)); localStorage.removeItem("fo_world_nm_" + r.country); } catch (eS2) {}
           rpc("world_my_status").then(adoptWorldSquad).catch(function () {});

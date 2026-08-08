@@ -3208,17 +3208,11 @@
     var a = t.getAttribute("data-act");
     if (a === "close") { openWrap(false); return; }
     ev.preventDefault();
-    // The solo career is the front door; the league/auth actions live on so
-    // a commissioner can sign in and run their league (Admin lobby).
+    // one door, one set of actions: sign in, create an account, or recover one
     var acts = {
       login: doLogin, logout: doLogout,
       showLogin: renderLogin, showJoin: renderJoin, showForgot: renderForgot,
       showWelcome: renderWelcome,
-      soloStart: function () {
-        var nmEl = wrap.querySelector("#folClubNm");
-        foSoloBegin(nmEl ? nmEl.value : "");
-      },
-      soloContinue: function () { foSoloBegin(""); },
       sendReset: sendReset, joinNew: doJoinSignup,
       reload: function () { location.reload(); },
       backToGame: function () { openWrap(false); if (typeof window.route === "function") window.route(); }
@@ -3373,44 +3367,40 @@
       '<div class="fol-side"><div class="fol-card">' + LOGO + card + "</div></div></div>";
   }
 
-  // ---- solo-first front door -------------------------------------------------
-  // The career is the front door; leagues are the bonus built on the same
-  // engine. Solo runs entirely locally — no account, no server.
-  function foHasSoloSave() {
-    try { return localStorage.getItem("fo_welcomed") === "1"; } catch (e) {}
-    return false;
-  }
-  function foSoloBegin(name) {
-    try {
-      var nm = String(name || "").trim().slice(0, 26);
-      try { window.store("fo_welcomed", "1"); window.store("fo_club", "0"); } catch (e0) {
-        try { localStorage.setItem("fo_welcomed", "1"); localStorage.setItem("fo_club", "0"); } catch (e1) {}
-      }
-      if (nm && typeof GD !== "undefined" && GD.teams && GD.teams[0]) GD.teams[0].name = nm;
-      try { if (typeof saveGame === "function") saveGame(false); } catch (e3) {}
-      openWrap(false);
-      // the Circuit is retired: a new manager walks into their own club
-      location.hash = "#/home";
-      if (typeof window.route === "function") window.route();
-    } catch (e) { say(e); }
-  }
+  /* ---- THE DOOR IS AN ACCOUNT NOW -------------------------------------------
+     There were two games behind this screen. One ran entirely on the device -
+     ten baked county clubs, an eighteen-round season simulated in the browser,
+     its own money - and it was the front door: name a club, no account, play.
+     The other is the world: sixteen served leagues the umpire settles every
+     round whether or not you are awake, with a market, cups, rankings and
+     other managers in it.
+
+     Keeping both meant every room had to answer twice - which squad, whose
+     money, which fixture list - and the offline half could never have another
+     manager in it, which is the whole point of the thing. So the career is the
+     world's now, and the door asks who you are.
+
+     The door is modal, so this is the whole surface until somebody signs in.
+     The world's own pages read fine without a club - they always did, and the
+     router still lets a seated manager reach every one of them - but nobody
+     gets past this card without an account, which is the point. */
   function renderWelcome() {
     wrap.querySelector("#folWho").textContent = "";
     setNavy(true);
-    var has = foHasSoloSave() && !window.__folSoloForce;
     main.innerHTML = folAuthShell(
-      "<h1>" + (has ? "Welcome back, boss" : "Your club is waiting") + "</h1>" +
+      "<h1>Take a club</h1>" +
       '<div class="fol-sub" style="display:flex;gap:10px;align-items:center;text-align:left">' +
-      '<img src="' + FO_ART + 'gaffer.png" alt="" style="width:52px;height:52px;border-radius:10px;object-fit:cover;object-position:50% 8%;flex:0 0 52px">' +
-      "<span>&ldquo;" + (has ? "The Circuit doesn&rsquo;t wait and neither do I. Pick up where we left off."
-        : "I&rsquo;m the Gaffer. Give the club a name and I&rsquo;ll walk you through the rest &mdash; squad, captain, first match. No account needed.") + "&rdquo;</span></div>" +
+      '<img src="' + FO_ART + 'gaffer.png" alt="" style="width:52px;height:52px;border-radius:10px;object-fit:cover;object-position:50% 8%;flex:0 0 auto">' +
+      "<span>&ldquo;I&rsquo;m the Gaffer. Sign in and a club is yours &mdash; a ground, a following, " +
+      "a squad and a league that plays every round whether you turn up or not.&rdquo;</span></div>" +
       '<div class="fol-form">' +
-      (has ? '<button class="fol-cta" data-act="soloContinue">Continue playing ▸</button>'
-           : '<div><label for="folClubNm">Club name</label><input id="folClubNm" type="text" maxlength="26" placeholder="e.g. Harbour Town CC"></div>' +
-             '<button class="fol-cta" data-act="soloStart">Start playing ▸</button>') +
+      '<div><label for="folEmail">Email address</label><input id="folEmail" type="email" autocomplete="email" placeholder="you@club.com"></div>' +
+      '<div><label for="folPass">Password</label><input id="folPass" type="password" autocomplete="current-password" placeholder="&bull;&bull;&bull;&bull;&bull;&bull;&bull;&bull;"></div>' +
+      '<button class="fol-cta" data-act="login">Sign in ▸</button>' +
       "</div>" +
-      '<div class="fol-or">or play with friends</div>' +
-      '<div class="fol-links"><a data-act="showLogin">Sign in to a league</a><a data-act="showJoin">' + ICON_JOIN + "Join with invite code</a></div>" +
+      '<div class="fol-or">new here?</div>' +
+      '<div class="fol-links"><a data-act="showJoin">' + ICON_JOIN + "Create an account</a>" +
+      '<a data-act="showForgot">Forgot password?</a></div>' +
       FOOT);
   }
   function renderLogin() {
@@ -3426,25 +3416,32 @@
       '<button class="fol-cta" data-act="login">Log In</button>' +
       "</div>" +
       '<div class="fol-or">or</div>' +
-      '<div class="fol-links"><a data-act="showWelcome">&#9666; Solo career</a><a data-act="showJoin">' + ICON_JOIN + "Join with invite code</a></div>" +
+      '<div class="fol-links"><a data-act="showJoin">' + ICON_JOIN + "Create an account</a></div>" +
       FOOT);
   }
 
   // New manager: create an account and step straight into a league with an invite code.
+  /* CREATING AN ACCOUNT USED TO NEED A COMMISSIONER'S INVITE CODE, because the
+     only thing you could sign up TO was somebody else's friends league - the
+     world was reached by playing solo first and signing in later. With the
+     solo door closed that left a new manager with no way in at all: sign in
+     needs an account, and creating one needed a code from a stranger.
+
+     It is self-serve now. Name yourself, name your club, and the world seats
+     you in the first free chair in your own country. */
   function renderJoin() {
     setNavy(true);
     main.innerHTML = folAuthShell(
-      "<h1>Join your league</h1>" +
-      '<div class="fol-sub">Create your account with the invite code from your commissioner.</div>' +
+      "<h1>Found your club</h1>" +
+      '<div class="fol-sub">A ground, a following and a squad, in a league that plays every round.</div>' +
       '<div class="fol-form">' +
       '<div><label for="folEmail">Email address</label><input id="folEmail" type="email" autocomplete="email" placeholder="you@club.com"></div>' +
       '<div><label for="folPass">Password</label><input id="folPass" type="password" autocomplete="new-password" placeholder="choose a password"></div>' +
-      '<div><label for="folCode">Invite code</label><input id="folCode" placeholder="from your commissioner"></div>' +
-      '<div><label for="folDn">Manager name</label><input id="folDn" placeholder="your name"></div>' +
-      '<div><label for="folTn">Team name</label><input id="folTn" placeholder="your club"></div>' +
-      '<button class="fol-cta" data-act="joinNew">Create account and join</button>' +
+      '<div><label for="folDn">Your name</label><input id="folDn" placeholder="the name on the teamsheet"></div>' +
+      '<div><label for="folTn">Club name</label><input id="folTn" maxlength="26" placeholder="e.g. Harbour Town CC"></div>' +
+      '<button class="fol-cta" data-act="joinNew">Create account ▸</button>' +
       "</div>" +
-      '<div class="fol-links"><a class="fol-mut" data-act="showLogin">Back to log in</a></div>' +
+      '<div class="fol-links"><a class="fol-mut" data-act="showLogin">Back to sign in</a></div>' +
       FOOT);
   }
 
