@@ -110,9 +110,15 @@
    * league table knowing which club it meant.
    */
   var CLOSED = {
-    news: "#/home",            // the bell says everything this page said
     matchday: "#/fixtures",    // the fixture list carries the build-up now
     milestones: "#/home",
+    // #/news CAME OFF THIS LIST TOO, for #/team's exact reason. Closing it
+    // said "the bell says everything this page said" - but the bell's popover
+    // shows fourteen lines and the page is the whole book, with the asks
+    // pinned and every item in full. The popover's own foot door pointed
+    // here, and this entry was quietly turning that door back to the front
+    // hall. The renderer has existed all along (61-notifications); the
+    // address works the moment the redirect stops eating it.
     planet: "#/world",         // world cricket folds into the world map
     atlas: "#/world"
     // #/team CAME OFF THIS LIST. Closing it was meant to say "a club is read
