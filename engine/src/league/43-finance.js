@@ -71,7 +71,6 @@
           : n >= 1000 ? Math.round(n / 1000) + "k" : String(Math.round(n));
     return (neg ? "-$" : "$") + s;
   }
-  function Msign(v) { var n = Math.round(Number(v) || 0); return (n > 0 ? "+" : "") + M(n); }
   function pct(a, b) { return b > 0 ? Math.max(0, Math.min(100, Math.round(100 * a / b))) : 0; }
 
   function foFinCss() {
@@ -101,7 +100,6 @@
       ".fo-fin-admin b{display:block;font-family:Inter,sans-serif;font-size:12px;letter-spacing:.14em;text-transform:uppercase;color:#9E3520;margin-bottom:5px}",
       ".fo-fin-admin p{margin:0;font:400 13px/1.6 Inter,sans-serif;color:rgba(20,28,40,.8)}",
       // the two ledgers
-      // the net line
       // the crowd + the ground
       // the levers
       "html body #page button.fo-fin-btn[disabled]{background:rgba(20,28,40,.14) !important;color:rgba(20,28,40,.42) !important;cursor:not-allowed}",
@@ -176,10 +174,6 @@
       ".fo-tre-tot{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 0 2px;margin-top:4px;border-top:2px solid var(--ink)}",
       ".fo-tre-tot u{text-decoration:none;font:700 13px/1.2 Inter,sans-serif;color:var(--ink)}",
       "html body #page .fo-tre-tot b{font:700 16px/1.2 Inter,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}",
-      ".fo-tre-net{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:18px 0;margin-top:6px;border-bottom:2.5px solid var(--ink)}",
-      ".fo-tre-net .fo-tre-lbl{color:var(--ink)}",
-      "html body #page .fo-tre-net b{font:800 27px/1 Inter,Inter,sans-serif;color:var(--grn);font-variant-numeric:tabular-nums}",
-      "html body #page .fo-tre-net b.dn{color:var(--red)}",
       ".fo-tre-drift{margin-top:10px;font:600 12px/1.5 Inter,sans-serif;color:var(--red)}",
       ".fo-tre-desk{display:grid;grid-template-columns:1fr 1fr;gap:8px 60px;align-items:start;margin-top:26px}",
       ".fo-tre-line{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--edge)}",
@@ -575,8 +569,6 @@
       "<div class='fo-tre-tot num'><u>Total</u><b>" + M(totOut) + "</b></div>" +
       "</div></div>";
 
-    html2 += "<div class='fo-tre-net num'><span class='fo-tre-lbl'>Net, since the founding</span>" +
-      "<b" + (net < 0 ? " class='dn'" : "") + ">" + Msign(net) + "</b></div>";
     if (Math.abs(drift) >= 1) html2 += "<div class='fo-tre-drift'>The bank and the ledger disagree by " + M(drift) + " &mdash; a line has gone missing from the books.</div>";
 
     if (f.administration) html2 += "<div class='fo-fin-admin'><b>The club is in administration</b><p>The bank has reached the floor of " +
