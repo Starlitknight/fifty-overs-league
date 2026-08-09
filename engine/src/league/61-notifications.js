@@ -118,11 +118,18 @@
     markSeen: function () {
       var fresh = (N.news || []).some(function (x) { return x.fresh; });
       if (!fresh) return;
-      rpc("world_notifications_seen").then(function () {
-        (N.news || []).forEach(function (x) { x.fresh = false; });
-        N.unread = (N.asks || []).length;
-        try { window.__foMktBell && __foMktBell(); } catch (e) {}
-      }).catch(function () {});
+      // READING IS LOCAL AND INSTANT. The first cut cleared the flags only
+      // after world_notifications_seen came back, so the popover repainted
+      // with everything still unread and "Mark all read" looked dead - and
+      // on a phone that dropped the request it WAS dead for the session.
+      // The reader has read: the list and the badge go quiet now, and the
+      // watermark write follows. If it fails, the next refresh honestly
+      // brings the flags back rather than lying that the server knows.
+      (N.news || []).forEach(function (x) { x.fresh = false; });
+      N.unread = (N.asks || []).length;
+      badge();
+      try { window.__foMktBell && __foMktBell(); } catch (e) {}
+      rpc("world_notifications_seen").catch(function () {});
     }
   };
 
@@ -145,10 +152,9 @@
     var old = document.getElementById("fo-nbell"); if (old) old.remove();
     if (!jwt() || !claimed()) return;
     css();
-    a.addEventListener("click", function () {
-      // the hash router takes it from here; the read mark is set by the page
-      setTimeout(function () { try { if (typeof window.route === "function") window.route(); } catch (e) {} }, 0);
-    });
+    // (the click wiring for the retired #fo-nbell used to live here, and its
+    // ghost - a listener on an element no longer made - threw on every call
+    // and silently killed the poll that shares its interval)
     badge();
   }
   window.__foNotifWire = wire;
@@ -202,10 +208,11 @@
     // their place in the badge until they are actually done, which is the
     // whole distinction the old localStorage bell never made.
     if (news.some(function (x) { return x.fresh; })) {
-      rpc("world_notifications_seen").then(function () {
-        news.forEach(function (x) { x.fresh = false; });
-        N.unread = asks.length; badge();
-      }).catch(function () {});
+      // read now, tell the server after - the same law as markSeen above
+      news.forEach(function (x) { x.fresh = false; });
+      N.unread = asks.length; badge();
+      try { window.__foMktBell && __foMktBell(); } catch (eMk) {}
+      rpc("world_notifications_seen").catch(function () {});
     } else { N.unread = asks.length; badge(); }
   }
   function hero(nAsk) {
