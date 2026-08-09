@@ -675,11 +675,29 @@
     // the exact position of the innings: the last delivery's own number
     var posOv = I.lastNo ? parseFloat(I.lastNo) : (tp ? tp.over : 0);
     var ovLabel = I.lastNo ? I.lastNo : (tp ? tp.over + ".0" : "0.0");
+    // WHOSE RUNS ARE THESE? The stage printed 111/3 and left the reader to
+    // deduce the batting side and the innings from the toss line. The over
+    // summaries name the side; before the first of them arrives the toss
+    // decides it - the winner who chose to bat is the side batting, and the
+    // one who chose to bowl is not. Never guessed from home/away, which is
+    // wrong half the time.
+    var batNm = I.team || null;
+    if (!batNm && meta && meta.tossWin && meta.tossDo) {
+      var batFirst = /bat/i.test(meta.tossDo) ? meta.tossWin
+        : (meta.tossWin === m.home.name ? m.away.name : m.home.name);
+      batNm = innNow ? (batFirst === m.home.name ? m.away.name : m.home.name) : batFirst;
+    }
+    var batBits = [];
+    if (batNm) batBits.push(E(batNm) + " batting");
+    batBits.push(innNow ? "2nd innings" : "1st innings");
+    if (innNow && inns[1].target) batBits.push("chasing " + inns[1].target);
+    var batLine = (!done && (tp || I.open))
+      ? "<div class='fd-batline'><s></s>" + batBits.join(" &middot; ") + "</div>" : "";
     var scoreHtml;
     if (tp) {
       scoreHtml = "<div class='fd-scorerow'><em>" + tp.runs + "/" + tp.wkts + "</em><span>" + ovLabel + " <u>OVERS</u></span></div>";
     } else {
-      scoreHtml = "<div class='fd-scorerow'><span class='op'>" + E(innNow ? m.away.name : m.home.name) + " &middot; the innings is under way</span></div>";
+      scoreHtml = "<div class='fd-scorerow'><span class='op'>" + E(batNm || (innNow ? m.away.name : m.home.name)) + " &middot; the innings is under way</span></div>";
     }
     // the three reads under the score, all arithmetic on the umpire's prints
     var mets = "";
@@ -733,9 +751,12 @@
       "<div class='fd-stage" + (art ? " hasart" : "") + "'" +
       (art ? " style=\"background-image:linear-gradient(90deg,rgba(10,26,48,.97) 0%,rgba(10,26,48,.9) 48%,rgba(10,26,48,.68) 100%),url('" + art + "')\"" : "") + ">" +
       "<div class='fd-stagein'>" +
-      "<div class='fd-teams'><b>" + tlink(m.home.name, m.home.slot, m.home.__c || rid) + "</b><i>vs</i><b>" + tlink(m.away.name, m.away.slot, m.away.__c || rid) + "</b></div>" +
+      "<div class='fd-teams'><b" + (!done && batNm === m.home.name ? " class='bat'" : "") + ">" +
+      tlink(m.home.name, m.home.slot, m.home.__c || rid) + "</b><i>vs</i>" +
+      "<b" + (!done && batNm === m.away.name ? " class='bat'" : "") + ">" +
+      tlink(m.away.name, m.away.slot, m.away.__c || rid) + "</b></div>" +
       (condBits.length ? "<div class='fd-cond'>" + condBits.join(" &middot; ") + "</div>" : "") +
-      scoreHtml + mets +
+      batLine + scoreHtml + mets +
       (done && cal.__fr ? (function () {
         // the post-match read the page was missing: FULL TIME and the
         // umpire's own result line, fetched once the server unseals it
@@ -1270,7 +1291,13 @@
       ".fo-fd .fd-teams b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(22px,2.4vw,30px);color:#FFFEFC;letter-spacing:.01em}",
       ".fo-fd .fd-teams i{font-style:normal;font-family:Fraunces,Georgia,serif;font-size:15px;color:var(--foor)}",
       ".fo-fd .fd-cond{font:500 13.5px/1.6 Inter,sans-serif;color:#8FA8CC;margin-top:4px}",
-      ".fo-fd .fd-scorerow{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-top:12px}",
+      // whose runs these are: the batting side wears a gold mark on the
+      // billing, and the line above the score says the side, the innings and
+      // the chase - the score is never an orphan number again
+      ".fo-fd .fd-teams b.bat:after{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--fogold);margin-left:8px;vertical-align:middle}",
+      ".fo-fd .fd-batline{display:flex;align-items:center;gap:8px;margin-top:13px;font:700 10px/1.4 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--fogold)}",
+      ".fo-fd .fd-batline s{width:7px;height:7px;border-radius:2px;background:var(--fogold);text-decoration:none;flex:none}",
+      ".fo-fd .fd-scorerow{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-top:8px}",
       ".fo-fd .fd-scorerow em{font-style:normal;font:700 clamp(48px,6vw,68px)/1 Inter,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums;letter-spacing:.01em}",
       ".fo-fd .fd-scorerow span{font:700 21px/1 Inter,sans-serif;color:var(--fogold);font-variant-numeric:tabular-nums}",
       ".fo-fd .fd-scorerow span u{text-decoration:none;font-size:13px;letter-spacing:.16em}",
