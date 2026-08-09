@@ -880,7 +880,7 @@
       var atCrease = {}; if (tk.s) atCrease[tk.s.n] = 1; if (tk.ns) atCrease[tk.ns.n] = 1;
       var bat = orderBat.map(function (n) {
         var x = seenBat[n];
-        var st2 = atCrease[n] ? "<span style='color:#15803D;font-weight:700'>batting</span>" : E(outTxt[n] && outTxt[n] !== "not out" ? outTxt[n] : "");
+        var st2 = atCrease[n] ? "<span style='color:#177A57;font-weight:700'>batting</span>" : E(outTxt[n] && outTxt[n] !== "not out" ? outTxt[n] : "");
         var star2 = (atCrease[n] || !outTxt[n] || outTxt[n] === "not out") ? "*" : "";
         return "<tr><td><b>" + E(n) + "</b><div class='small'>" + st2 + "</div></td><td class='n'><b>" + (x.r || 0) + star2 + "</b></td><td class='n'>" + (x.b || 0) + "</td><td class='n'>" + (x.f4 || 0) + "</td><td class='n'>" + (x.f6 || 0) + "</td><td class='n'>" + (x.b ? (100 * x.r / x.b).toFixed(1) : 0) + "</td></tr>";
       }).join("");
@@ -1229,8 +1229,8 @@
             var hasOrd = false; try { hasOrd = !!(c.orders && c.orders[me]); } catch (eO) {}
             var lkd = c.play_at && (new Date(c.play_at) - Date.now() <= 60 * 60000);
             act = "<span class='fo-frs-on'>ON</span> " + (lkd
-              ? "<span class='small'>&#128274; lineups locked" + (hasOrd ? " \u00b7 <span style='color:#15803D'>&#10003; yours is in</span>" : " \u00b7 auto XI plays") + "</span> <a href='#/friendly?id=" + c.id + "'>Preview &rsaquo;</a>"
-              : "<button class='mini fo-ch-ord' data-id='" + c.id + "'>" + (hasOrd ? "Edit lineup" : "Prepare lineup") + "</button>" + (hasOrd ? " <span class='small' style='color:#15803D'>&#10003; lineup attached</span>" : ""));
+              ? "<span class='small'>&#128274; lineups locked" + (hasOrd ? " \u00b7 <span style='color:#177A57'>&#10003; yours is in</span>" : " \u00b7 auto XI plays") + "</span> <a href='#/friendly?id=" + c.id + "'>Preview &rsaquo;</a>"
+              : "<button class='mini fo-ch-ord' data-id='" + c.id + "'>" + (hasOrd ? "Edit lineup" : "Prepare lineup") + "</button>" + (hasOrd ? " <span class='small' style='color:#177A57'>&#10003; lineup attached</span>" : ""));
           }
           else if (c.status === "declined") act = "<span class='small'>declined</span>";
           else if (c.status === "expired") act = "<span class='small'>expired</span>";
@@ -1270,7 +1270,7 @@
         (typeof foUserFixtures === "function" ? foUserFixtures() : []).forEach(function (x9) {
           var isN9 = App.season && x9.round === App.season.round;
           var subIn9 = !!((SYNC && SYNC.submitted && SYNC.submitted[x9.round]) || (App.orders && App.orders.saved && App.season && x9.round === App.season.round));
-          entries.push({ ts: lgAt9(x9.round), up: true, html: "<tr" + (isN9 ? " class='fo-fx-fr'" : "") + "><td>" + E(foWhenTxt(lgAt9(x9.round))) + "</td><td>League <span class='small'>R" + (x9.round + 1) + "</span></td><td>" + (x9.isHome ? "vs " : "@ ") + E(x9.opp.name) + " <span class='small'>" + E(foPitchName(x9.pitch) || "") + (x9.weather ? ", " + E(x9.weather) : "") + "</span></td><td class='r'><button class='mini fo-setr' data-r='" + x9.round + "'>" + (subIn9 ? "Edit lineup" : (isN9 ? "Set lineup" : "Plan lineup")) + "</button>" + (subIn9 ? " <span class='small' style='color:#15803D'>&#10003;</span>" : "") + "</td></tr>" });
+          entries.push({ ts: lgAt9(x9.round), up: true, html: "<tr" + (isN9 ? " class='fo-fx-fr'" : "") + "><td>" + E(foWhenTxt(lgAt9(x9.round))) + "</td><td>League <span class='small'>R" + (x9.round + 1) + "</span></td><td>" + (x9.isHome ? "vs " : "@ ") + E(x9.opp.name) + " <span class='small'>" + E(foPitchName(x9.pitch) || "") + (x9.weather ? ", " + E(x9.weather) : "") + "</span></td><td class='r'><button class='mini fo-setr' data-r='" + x9.round + "'>" + (subIn9 ? "Edit lineup" : (isN9 ? "Set lineup" : "Plan lineup")) + "</button>" + (subIn9 ? " <span class='small' style='color:#177A57'>&#10003;</span>" : "") + "</td></tr>" });
         });
       } catch (eLgRows) {}
       // one straight chronology, oldest match first; only the deep history
@@ -2553,7 +2553,7 @@
       "body.fo-dash .fo-db-bar .sp{flex:1}" +
       "html body.fo-dash #fo-db-act{background:#C9571F !important;color:#fff !important;font-family:Inter,sans-serif;font-weight:600;font-size:12px;letter-spacing:1.8px;text-transform:uppercase;border:none !important;border-radius:9px;padding:12px 26px;cursor:pointer;box-shadow:none !important}" +
       "html body.fo-dash #fo-db-act:hover{filter:brightness(1.08)}" +
-      "html body.fo-dash .fo-db-bar .fo-mst-next{position:static !important;width:auto !important;min-height:0 !important;padding:12px 26px !important;font-size:12px !important;letter-spacing:1.8px !important;background:linear-gradient(180deg,#E8B96A,#C9A24B) !important;color:#0C1B2E !important;border:none !important;border-radius:9px !important;box-shadow:none !important;transform:none !important}" +
+      "html body.fo-dash .fo-db-bar .fo-mst-next{position:static !important;width:auto !important;min-height:0 !important;padding:12px 26px !important;font-size:12px !important;letter-spacing:1.8px !important;background:linear-gradient(180deg,#E8B96A,#8F6A1C) !important;color:#0C1B2E !important;border:none !important;border-radius:9px !important;box-shadow:none !important;transform:none !important}" +
       // the retired phone sheet's backdrop must never shade the dashboard
       "body.fo-dash #fo-mstage::after{content:none !important}" +
       // the LIVE BALL oval docks into the field-map card; its geometry is
@@ -2730,7 +2730,7 @@
       "html body.fo-th #page{overflow:visible !important;padding-bottom:0 !important}" +
       "html body.fo-th #fo-mstage{position:fixed !important;inset:0 !important;height:100vh !important;min-height:100vh !important;width:100vw;max-width:none !important;border-radius:0 !important;margin:0 !important;z-index:1}" +
       // the stage sits on body now: restate the #page-scoped control styling
-      "html body.fo-th #fo-mstage .fo-mst-next{font-family:Inter,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:12.5px;background:linear-gradient(180deg,#E8B96A,#C9A24B) !important;color:#0C1B2E !important;border:none !important;border-radius:999px;padding:11px 22px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.35),0 8px 22px rgba(201,162,75,.3) !important}" +
+      "html body.fo-th #fo-mstage .fo-mst-next{font-family:Inter,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:12.5px;background:linear-gradient(180deg,#E8B96A,#8F6A1C) !important;color:#0C1B2E !important;border:none !important;border-radius:999px;padding:11px 22px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.35),0 8px 22px rgba(201,162,75,.3) !important}" +
       "html body.fo-th #fo-mstage .fo-mst-next:hover{filter:brightness(1.06)}" +
       "html body.fo-th #fo-mstage .fo-mst-next:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(16,27,45,.35) !important}" +
       // the accelerator docks right under the LIVE BALL pane, big enough to
@@ -2738,7 +2738,7 @@
       "@media(min-width:761px){html body.fo-th #fo-mstage .fo-mst-next{position:fixed;right:212px;top:calc(50% + 208px);z-index:56;width:252px;min-height:56px;font-size:15px;letter-spacing:2.4px;padding:17px 20px !important;text-align:center}}" +
       "body.fo-th #fo-mst-spd{display:flex;gap:8px;align-items:center}" +
       "html body.fo-th #fo-mst-spd button{flex:1;min-height:48px;min-width:64px;font-family:Inter,sans-serif !important;font-weight:600 !important;font-size:15px;letter-spacing:1.5px;background:rgba(5,20,40,.72) !important;border:1.5px solid rgba(255,255,255,.3) !important;color:rgba(255,255,255,.85) !important;border-radius:12px;cursor:pointer;backdrop-filter:blur(8px);padding:10px 0;box-shadow:none !important}" +
-      "html body.fo-th #fo-mst-spd button.on{background:linear-gradient(180deg,#E8B96A,#C9A24B) !important;border-color:#E8B96A !important;color:#0C1B2E !important;box-shadow:0 4px 0 rgba(16,27,45,.35),0 8px 22px rgba(201,162,75,.3) !important}" +
+      "html body.fo-th #fo-mst-spd button.on{background:linear-gradient(180deg,#E8B96A,#8F6A1C) !important;border-color:#E8B96A !important;color:#0C1B2E !important;box-shadow:0 4px 0 rgba(16,27,45,.35),0 8px 22px rgba(201,162,75,.3) !important}" +
       "@media(min-width:761px){body.fo-th #fo-mst-spd{position:fixed;right:212px;top:calc(50% + 208px);z-index:56;width:252px}}" +
       "body.fo-th.fo-thd #fo-mst-spd{display:none}" +
       "@media(min-width:761px){body.fo-th.fo-th-ov0 #fo-mst-spd{top:50%;transform:translateY(-50%)}}" +
@@ -2746,7 +2746,7 @@
       "@media(min-width:761px){body.fo-th.fo-th-ov0 #fo-mstage .fo-mst-next{top:50%;transform:translateY(-50%)}}" +
       "@media(min-width:761px){body.fo-th.fo-th-ov0 #fo-mstage .fo-mst-next:active{transform:translateY(calc(-50% + 2px))}}" +
       "html body.fo-th .fo-mst-ask .ask-opts button{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;font-size:13.5px;font-weight:700;color:#fff !important;background:rgba(255,255,255,.07) !important;border:1.5px solid rgba(255,255,255,.22) !important;border-radius:11px;padding:11px 14px;cursor:pointer;box-shadow:none !important}" +
-      "html body.fo-th .fo-mst-ask .ask-opts button:hover{border-color:#F3D37A !important;background:rgba(240,185,78,.12) !important}" +
+      "html body.fo-th .fo-mst-ask .ask-opts button:hover{border-color:#E8B96A !important;background:rgba(240,185,78,.12) !important}" +
       "html body.fo-th .fo-mst-ask .ask-opts button.def{border-color:rgba(240,185,78,.55) !important;background:rgba(240,185,78,.14) !important}" +
       "body.fo-th .fo-mst-bg img{object-position:var(--thfocal,center 50%)}" +
       // the painting is the star: NO mood dimming, whatever the forecast -
@@ -2763,14 +2763,14 @@
       "body.fo-th .fo-mst-score{top:8px;left:50%;right:auto;transform:translateX(-50%);width:auto;min-width:230px;padding:9px 24px 10px;background:rgba(5,20,40,.74);border:1px solid rgba(255,255,255,.2);border-radius:13px;backdrop-filter:blur(12px);box-shadow:0 10px 30px rgba(0,0,0,.4);z-index:61}" +
       "body.fo-th .fo-mst-score .tm{display:inline-block;font-family:Inter,sans-serif;font-weight:600;font-size:15px;letter-spacing:1px;color:#fff;margin-right:9px;vertical-align:baseline}" +
       "body.fo-th .fo-mst-score b{display:inline-block;font-size:30px;vertical-align:baseline}" +
-      "body.fo-th .fo-mst-score .ovs{display:block;font-family:Inter,sans-serif;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:#F3D37A;margin-top:3px}" +
+      "body.fo-th .fo-mst-score .ovs{display:block;font-family:Inter,sans-serif;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:#E8B96A;margin-top:3px}" +
       "body.fo-th .fo-mst-score i{display:block;color:rgba(255,255,255,.8);font-size:11px;margin-top:3px}" +
       "body.fo-th .fo-mst-score i.tossl{color:rgba(255,255,255,.62);font-size:10px;letter-spacing:1.2px}" +
       "body.fo-th .fo-mst-ctlg{position:relative}" +
       "html body.fo-th #page .fo-mst-ic{width:40px;height:40px;display:inline-flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(5,22,43,.72) !important;color:rgba(255,255,255,.9) !important;border:1.5px solid rgba(255,255,255,.3) !important;font-size:13px;font-weight:700;font-family:Inter,sans-serif;cursor:pointer;backdrop-filter:blur(8px);box-shadow:none !important;padding:0}" +
-      "html body.fo-th #page .fo-mst-ic:hover{border-color:#F3D37A !important;color:#F3D37A !important}" +
+      "html body.fo-th #page .fo-mst-ic:hover{border-color:#E8B96A !important;color:#E8B96A !important}" +
       "html body.fo-th #page .fo-mst-ic.play.on{color:#8fe3a4 !important;border-color:rgba(143,227,164,.6) !important}" +
-      "html body.fo-th #page .fo-mst-ic.next{background:linear-gradient(180deg,#E8B96A,#C9A24B) !important;color:#0C1B2E !important;border:none !important;font-size:20px}" +
+      "html body.fo-th #page .fo-mst-ic.next{background:linear-gradient(180deg,#E8B96A,#8F6A1C) !important;color:#0C1B2E !important;border:none !important;font-size:20px}" +
       // ---- player chips: circular portrait + name plate, not a mural ----
       "body.fo-th .fo-mst-p{position:absolute;top:auto;bottom:22px;height:auto;width:auto;max-width:330px;display:flex;flex-direction:row;align-items:center;gap:12px;padding:7px 20px 7px 8px;background:rgba(5,20,40,.74);border:1px solid rgba(255,255,255,.2);border-radius:999px;backdrop-filter:blur(10px);box-shadow:0 10px 30px rgba(0,0,0,.45)}" +
       "body.fo-th .fo-mst-p.pbat{left:20px}" +
@@ -2799,7 +2799,7 @@
       "body.fo-th .fo-mst-moment .t.settle{opacity:0}" +
       "body.fo-th .fo-mst-moment .rib{display:flex;align-items:center;gap:10px;max-width:100%;padding:9px 16px;background:rgba(5,20,40,.72);border:1px solid rgba(255,255,255,.16);border-radius:12px;backdrop-filter:blur(10px)}" +
       "body.fo-th .fo-mst-moment .rib:not(:has(p)):not(:has(.chip)){display:none}" +
-      "body.fo-th .fo-mst-moment .rib .chip{border:none;background:none;padding:0;color:#F3D37A;backdrop-filter:none;font-size:12.5px}" +
+      "body.fo-th .fo-mst-moment .rib .chip{border:none;background:none;padding:0;color:#E8B96A;backdrop-filter:none;font-size:12.5px}" +
       "body.fo-th .fo-mst-moment .rib .kph{font-family:Inter,sans-serif;font-size:12.5px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:#22D3E0;white-space:nowrap}" +
       "body.fo-th .fo-mst-moment .rib p{margin:0;font-family:Inter,sans-serif;font-size:12px;font-weight:500;letter-spacing:.9px;text-transform:uppercase;color:rgba(255,255,255,.96);white-space:normal;overflow:visible;text-overflow:clip;max-width:none;text-align:center;line-height:1.35}" +
       "body.fo-th .fo-mst-score .mbs{display:flex;gap:5px;justify-content:center;margin-top:7px;min-height:20px}" +
@@ -2824,16 +2824,16 @@
       "@media(min-width:761px){body.fo-th.fo-th-ov0 #fo-th-gauge{top:50%;transform:translateY(calc(-50% + 52px))}}" +
       "body.fo-th #fo-th-gauge .gv{position:absolute;left:0;right:0;bottom:-3px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.8)}" +
       "body.fo-th #fo-th-gauge .gv b{font-family:Inter,sans-serif;font-weight:600;font-size:19px;letter-spacing:1px}" +
-      "body.fo-th #fo-th-gauge .gv i{font-style:normal;font-family:Inter,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#F3D37A;margin-left:4px}" +
+      "body.fo-th #fo-th-gauge .gv i{font-style:normal;font-family:Inter,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#E8B96A;margin-left:4px}" +
       "@media (prefers-reduced-motion:reduce){body.fo-th #fo-th-gauge .ndl,body.fo-th #fo-th-gauge .arc{transition:none !important}}" +
       "@media(max-width:760px){body.fo-th #fo-th-gauge{display:none !important}}" +
       // ---- analysis rail ----
       "#fo-th-rail{position:fixed;right:14px;top:50%;transform:translateY(-50%);z-index:55;display:flex;flex-direction:column;gap:10px}" +
       "#fo-th-rail button{position:relative;width:44px;height:44px;display:flex;align-items:center;justify-content:center;border-radius:999px;background:rgba(5,20,40,.72);border:1.5px solid rgba(255,255,255,.28);color:rgba(255,255,255,.85);cursor:pointer;backdrop-filter:blur(10px);transition:border-color .15s ease,color .15s ease;padding:0}" +
       "#fo-th-rail button svg{width:19px;height:19px}" +
-      "#fo-th-rail button:hover{border-color:#F3D37A;color:#F3D37A}" +
+      "#fo-th-rail button:hover{border-color:#E8B96A;color:#E8B96A}" +
       "#fo-th-rail button.on{border-color:#E8B96A;color:#E8B96A;box-shadow:0 0 0 3px rgba(240,185,78,.25)}" +
-      "#fo-th-rail button.ping::after{content:'';position:absolute;top:3px;right:3px;width:9px;height:9px;border-radius:50%;background:#C8674A;border:1.5px solid rgba(5,20,40,.9)}" +
+      "#fo-th-rail button.ping::after{content:'';position:absolute;top:3px;right:3px;width:9px;height:9px;border-radius:50%;background:#C9571F;border:1.5px solid rgba(5,20,40,.9)}" +
       // ---- the drawer: the old match-centre lives on, translucent ----
       "html body.fo-th #page .ftp-match-shell{display:none !important}" +
       "html body.fo-th.fo-thd #page .ftp-match-shell{display:block !important;position:fixed !important;z-index:56;right:74px;top:62px;bottom:16px;left:auto;width:min(560px,calc(100vw - 150px));overflow:auto;background:rgba(7,18,36,.86);border:1px solid rgba(255,255,255,.18);border-radius:16px;backdrop-filter:blur(14px);padding:14px;box-shadow:0 24px 70px rgba(0,0,0,.55);margin:0}" +
@@ -2860,10 +2860,10 @@
       "body.fo-th #fo-oval .ov-board,body.fo-th #fo-oval .ov-who{display:none !important}" +
       "body.fo-th #fo-oval .ov-svg{background:transparent}" +
       "#fo-ovhd{display:flex;align-items:center;gap:8px;padding:9px 12px 7px;color:#fff}" +
-      "#fo-ovhd b{font-family:Inter,sans-serif;font-weight:600;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:#F3D37A}" +
+      "#fo-ovhd b{font-family:Inter,sans-serif;font-weight:600;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:#E8B96A}" +
       "#fo-ovhd span{flex:1;font-family:Inter,sans-serif;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:rgba(255,255,255,.7);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       "#fo-ovhd button{width:24px;height:24px;display:flex;align-items:center;justify-content:center;border-radius:7px;background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.22);color:rgba(255,255,255,.85);font-size:12px;line-height:1;cursor:pointer;padding:0}" +
-      "#fo-ovhd button:hover{border-color:#F3D37A;color:#F3D37A}" +
+      "#fo-ovhd button:hover{border-color:#E8B96A;color:#E8B96A}" +
       "#fo-ovhd #fo-ovpin.on{color:#E8B96A;border-color:#E8B96A}" +
       "body.fo-th #fo-mst-talk{background:transparent;border-top:1px solid rgba(255,255,255,.12)}" +
       "body.fo-th #fo-oval .ov-note{color:rgba(255,255,255,.4)}" +
@@ -2874,13 +2874,13 @@
       "@keyframes foThGfIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}" +
       "#fo-th-gf img{width:40px;height:40px;border-radius:50%;object-fit:cover;object-position:50% 8%;border:1.5px solid rgba(240,185,78,.6);flex:0 0 40px}" +
       "#fo-th-gf span{font-size:12px;line-height:1.45;color:rgba(255,255,255,.9)}" +
-      "#fo-th-gf b{display:block;font-family:Inter,sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#F3D37A;margin-bottom:2px}" +
+      "#fo-th-gf b{display:block;font-family:Inter,sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#E8B96A;margin-bottom:2px}" +
       "#fo-th-cut{position:fixed;left:-8px;bottom:0;z-index:53;height:min(60vh,540px);pointer-events:none;animation:foThCutIn .38s ease}" +
       "#fo-th-cut.out{opacity:0;transition:opacity .5s ease}" +
       "@keyframes foThCutIn{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}" +
       "#fo-th-cut img{height:100%;filter:drop-shadow(0 12px 34px rgba(0,0,0,.6));mask-image:linear-gradient(to bottom,#000 78%,transparent 100%);-webkit-mask-image:linear-gradient(to bottom,#000 78%,transparent 100%)}" +
       "#fo-th-cut .ct{position:absolute;left:16px;bottom:16vh;display:flex;flex-direction:column;color:#fff;text-shadow:0 3px 16px rgba(0,0,0,.9)}" +
-      "#fo-th-cut .ct b{font-family:Inter,sans-serif;font-weight:600;font-size:30px;letter-spacing:5px;color:#F3D37A}" +
+      "#fo-th-cut .ct b{font-family:Inter,sans-serif;font-weight:600;font-size:30px;letter-spacing:5px;color:#E8B96A}" +
       "#fo-th-cut .ct i{font-style:normal;font-family:Inter,sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase}" +
       // holo-card cut-in: the real card, big enough to read
       "#fo-th-cut.pcut{left:30px;bottom:auto;top:50%;transform:translateY(-50%);height:auto;display:flex;align-items:center;gap:20px;animation:foThCutIn .38s ease}" +
@@ -2890,7 +2890,7 @@
       "@media(max-width:1250px){#fo-th-cut.pcut .cardbox{width:259px;height:340px}#fo-th-cut.pcut .cardscale{transform:scale(.6)}#fo-th-cut.pcut .ct b{font-size:24px}}" +
       "@media(max-width:760px){#fo-th-cut.pcut{left:8px;gap:10px}#fo-th-cut.pcut .cardbox{width:194px;height:255px}#fo-th-cut.pcut .cardscale{transform:scale(.45)}#fo-th-cut.pcut .ct b{font-size:19px;letter-spacing:3px}}" +
       // the on-demand bowling change lives with the field talk
-      "html body #page #fo-mst-talk .tb.tbc,html body.ftpskin #page #fo-mst-talk .tb.tbc{margin-left:auto;color:#F3D37A !important;border-color:rgba(243,211,122,.55) !important}" +
+      "html body #page #fo-mst-talk .tb.tbc,html body.ftpskin #page #fo-mst-talk .tb.tbc{margin-left:auto;color:#E8B96A !important;border-color:rgba(243,211,122,.55) !important}" +
       "body.fo-th .fo-mst-ask{position:fixed;z-index:80}" +
       "body.fo-th #fo-toasts{top:64px;bottom:auto;z-index:81}" +
       "#fo-commfull{z-index:3000}" +
@@ -2976,7 +2976,7 @@
       "body.fo-th .fo-mst.m-ground .fo-mst-bg img[src*='-ground-m']{object-position:50% 50%}" +
       // scorebug: ONE horizontal bug - team, score dominant, overs
       "body.fo-th .fo-mst-score{top:calc(56px + env(safe-area-inset-top));left:50%;right:auto;transform:translateX(-50%);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;gap:2px 12px;width:max-content;min-width:0;max-width:calc(100vw - 20px);padding:8px 17px 9px;border-radius:14px}" +
-      "body.fo-th .fo-mst-score .tm{font-size:11.5px;letter-spacing:1.6px;text-transform:uppercase;color:#F3D37A;margin:0}" +
+      "body.fo-th .fo-mst-score .tm{font-size:11.5px;letter-spacing:1.6px;text-transform:uppercase;color:#E8B96A;margin:0}" +
       "body.fo-th .fo-mst-score b{font-size:27px;line-height:1}" +
       "body.fo-th .fo-mst-score .ovs{display:inline;font-size:10px;letter-spacing:2px;margin:0}" +
       "body.fo-th .fo-mst-score i{display:none}" +
@@ -2987,7 +2987,7 @@
       // conditions: one small centred pill - CITY / WEATHER / PITCH / FIELD
       "body.fo-th .fo-mst-top{position:static !important;display:contents}" +
       "body.fo-th .fo-mst-wx{position:fixed;z-index:52;top:calc(122px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 16px);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;background:rgba(6,14,26,.62);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:6px 15px;backdrop-filter:blur(8px)}" +
-      "body.fo-th .fo-mst-wx span{background:none !important;border:none !important;padding:0 !important;margin:0 !important;font-size:10px;letter-spacing:1px;white-space:nowrap;color:#F5EFDC}" +
+      "body.fo-th .fo-mst-wx span{background:none !important;border:none !important;padding:0 !important;margin:0 !important;font-size:10px;letter-spacing:1px;white-space:nowrap;color:#F4EFE3}" +
       "body.fo-th .fo-mst-wx span+span::before{content:'\\2022';margin:0 6px;color:#E8B96A}" +
       "body.fo-th .fo-mst-wx .gnd{display:none}" +
       "body.fo-th .fo-mst-wx .cty-m{display:inline}" +
@@ -3002,7 +3002,7 @@
       "body.fo-th .fo-mst-p.pbowl .pc{text-align:right}" +
       // the role line carries the matchup facts: hand for the batter, the
       // bowler's type for the bowler
-      "body.fo-th .fo-mst-p .rl{display:block;font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:#F3D37A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px}" +
+      "body.fo-th .fo-mst-p .rl{display:block;font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:#E8B96A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px}" +
       "body.fo-th .fo-mst-p .nm{font-size:11.5px;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       "body.fo-th .fo-mst-p .st{font-size:10.5px}" +
       "body.fo-th .fo-mst-p .stars{display:block;font-size:10px;letter-spacing:1px;line-height:1.2;margin-top:1px;white-space:nowrap}" +
@@ -3032,7 +3032,7 @@
       "body.fo-th:has(#fo-mst-done) .fo-mst-moment{bottom:calc(126px + env(safe-area-inset-bottom))}" +
       "body.fo-th .fo-mst-moment .t{height:auto;min-height:0;font-size:10px;letter-spacing:1.8px;padding:4px 10px;border:1px solid rgba(255,255,255,.24);border-radius:999px;background:rgba(6,14,26,.62);flex:0 0 auto;text-shadow:none;animation:none !important}" +
       "body.fo-th .fo-mst-moment .rib{flex:1;min-width:0;min-height:0;justify-content:flex-start;background:none;border:none;padding:0;backdrop-filter:none}" +
-      "body.fo-th .fo-mst-moment .rib p{font-size:12.5px;letter-spacing:.2px;text-transform:none;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#F5EFDC;text-shadow:0 1px 6px rgba(0,0,0,.7)}" +
+      "body.fo-th .fo-mst-moment .rib p{font-size:12.5px;letter-spacing:.2px;text-transform:none;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#F4EFE3;text-shadow:0 1px 6px rgba(0,0,0,.7)}" +
       "body.fo-th .fo-mst-moment .rib .kph{display:none}" +
       "body.fo-th[data-mobsheet='score'] .fo-mst-moment{display:none !important}" +
       "body.fo-th[data-mobsheet='oval'] .fo-mst-moment{top:calc(230px + env(safe-area-inset-top));bottom:auto;transition:opacity .2s ease}" +
@@ -3059,7 +3059,7 @@
       "body.fo-th[data-mobsheet='oval'] #fo-oval .ov-svg{width:100%;height:100% !important;max-height:none;background:transparent}" +
       "body.fo-th[data-mobsheet='oval'] #fo-oval .ov-snd{position:absolute;top:4px;right:6px;z-index:2}" +
       // the big centre-screen ball result flash
-      "#fo-mob-flash{display:block;position:fixed;left:0;right:0;top:40%;z-index:56;text-align:center;font-family:Inter,sans-serif;font-weight:600;font-size:62px;letter-spacing:7px;color:#F5EFDC;text-shadow:0 4px 26px rgba(0,0,0,.9),0 0 70px rgba(0,0,0,.55);pointer-events:none;animation:foMobFlash 1.5s ease forwards}" +
+      "#fo-mob-flash{display:block;position:fixed;left:0;right:0;top:40%;z-index:56;text-align:center;font-family:Inter,sans-serif;font-weight:600;font-size:62px;letter-spacing:7px;color:#F4EFE3;text-shadow:0 4px 26px rgba(0,0,0,.9),0 0 70px rgba(0,0,0,.55);pointer-events:none;animation:foMobFlash 1.5s ease forwards}" +
       "#fo-mob-flash.k-boundary{color:#f9c957}#fo-mob-flash.k-wicket{color:#ff6c61;letter-spacing:9px}#fo-mob-flash.k-dot{color:#c7e4e8;font-size:52px}" +
       "@keyframes foMobFlash{0%{opacity:0;transform:scale(.72)}14%{opacity:1;transform:scale(1)}72%{opacity:1}100%{opacity:0;transform:scale(1.05)}}" +
       "@media (prefers-reduced-motion:reduce){#fo-mob-flash{animation:none}}" +
@@ -3070,10 +3070,10 @@
       // when batting, pinned above the tab bar with the active choice lit
       "body.fo-th #fo-oval #fo-mst-talk{display:none}" +
       "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk{display:flex;position:fixed;left:10px;right:10px;bottom:calc(64px + env(safe-area-inset-bottom));z-index:56;flex-wrap:wrap;align-items:center;justify-content:center;gap:7px;background:transparent;border:none;padding:0}" +
-      "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk .tl{flex-basis:100%;text-align:center;font-family:Inter,sans-serif;font-size:10px;font-weight:600;letter-spacing:2.2px;text-transform:uppercase;color:#F3D37A;margin:0}" +
+      "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk .tl{flex-basis:100%;text-align:center;font-family:Inter,sans-serif;font-size:10px;font-weight:600;letter-spacing:2.2px;text-transform:uppercase;color:#E8B96A;margin:0}" +
       "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk .tb{min-height:36px;font-size:11.5px;font-weight:600;padding:7px 12px;border-radius:999px;background:rgba(5,20,40,.72) !important;border:1.5px solid rgba(255,255,255,.25) !important;color:#fff !important;cursor:pointer;box-shadow:none !important;backdrop-filter:blur(6px)}" +
       "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk .tb.on{background:#E8B96A !important;border-color:#E8B96A !important;color:#0C1B2E !important}" +
-      "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk .tb.tbc{margin-left:0;color:#F3D37A !important;border-color:rgba(243,211,122,.55) !important;background:rgba(243,211,122,.1) !important}" +
+      "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk .tb.tbc{margin-left:0;color:#E8B96A !important;border-color:rgba(243,211,122,.55) !important;background:rgba(243,211,122,.1) !important}" +
       // gaffer bubble rides above the sheet
       "#fo-th-gf{left:10px;right:10px;bottom:calc(206px + env(safe-area-inset-bottom));max-width:none}" +
       // SCORE / TACTICS: the engine tabs render inside the tall sheet
@@ -3617,7 +3617,7 @@
       ".fo-mst-wx{display:inline-flex;gap:2px;align-items:center;padding:5px 6px;border-radius:12px;background:rgba(5,22,43,.72);border:1px solid rgba(255,255,255,.16);backdrop-filter:blur(10px)}" +
       ".fo-mst-wx span{padding:4px 8px;color:rgba(255,255,255,.85);font-family:Inter,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;white-space:nowrap}" +
       ".fo-mst-ctlg{display:inline-flex;gap:8px;align-items:center}" +
-      "html body #page .fo-mst-next,html body.ftpskin #page .fo-mst-next{font-family:Inter,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:12.5px;background:linear-gradient(180deg,#E8B96A,#C9A24B) !important;color:#0C1B2E !important;border:none !important;border-radius:999px;padding:11px 22px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.35),0 8px 22px rgba(201,162,75,.3) !important}" +
+      "html body #page .fo-mst-next,html body.ftpskin #page .fo-mst-next{font-family:Inter,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:12.5px;background:linear-gradient(180deg,#E8B96A,#8F6A1C) !important;color:#0C1B2E !important;border:none !important;border-radius:999px;padding:11px 22px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.35),0 8px 22px rgba(201,162,75,.3) !important}" +
       "html body #page .fo-mst-next:hover{filter:brightness(1.06)}" +
       "html body #page .fo-mst-next:active{transform:translateY(2px);box-shadow:0 2px 0 rgba(16,27,45,.35) !important}" +
       "html body #page .fo-mst-autob,html body.ftpskin #page .fo-mst-autob{font-family:Inter,sans-serif !important;font-weight:600 !important;letter-spacing:1.5px;text-transform:uppercase;font-size:10.5px;background:rgba(5,22,43,.72) !important;color:rgba(255,255,255,.8) !important;border:1.5px solid rgba(255,255,255,.3) !important;border-radius:999px;padding:10px 16px;cursor:pointer;backdrop-filter:blur(8px);box-shadow:none !important}" +
@@ -3633,29 +3633,29 @@
       ".fo-mst-ask .askopt .who{display:block;text-align:center;color:#fff;line-height:1.3;margin-top:2px}" +
       ".fo-mst-ask .askopt .who b{display:block;font-family:Inter,sans-serif;font-weight:600;font-size:13.5px;letter-spacing:.5px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".fo-mst-ask .askopt .who i{font-style:normal;font-family:Inter,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.72)}" +
-      ".fo-mst-ask .askopt:hover{transform:translateY(-5px);border-color:#F3D37A;box-shadow:0 14px 34px rgba(0,0,0,.5)}" +
+      ".fo-mst-ask .askopt:hover{transform:translateY(-5px);border-color:#E8B96A;box-shadow:0 14px 34px rgba(0,0,0,.5)}" +
       ".fo-mst-ask .askopt.def{border-color:rgba(240,185,78,.6);background:rgba(240,185,78,.08)}" +
       ".fo-mst-ask .phc-tals,.fo-mst-ask .phc-meta,.fo-mst-ask .phc-ft{display:none !important}" +
       ".fo-mst-ask .cardbox{display:block;width:190px;height:250px;overflow:hidden;border-radius:9px}" +
       ".fo-mst-ask .cardscale{display:block;width:430px;transform:scale(.4418);transform-origin:top left}" +
-      ".fo-mst-ask .askopt .tag{position:static;transform:none;font-family:Inter,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:#F3D37A;white-space:nowrap}" +
+      ".fo-mst-ask .askopt .tag{position:static;transform:none;font-family:Inter,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:#E8B96A;white-space:nowrap}" +
       ".fo-mst-ask .askopt.def .tag{color:#8fe3a4}" +
       "@media(max-width:760px){.fo-mst-ask .cardbox{width:132px;height:175px}.fo-mst-ask .cardscale{transform:scale(.307)}.fo-mst-ask .ask-opts.cards{gap:7px}.fo-mst-ask .askopt{padding:4px 4px 6px}.fo-mst-ask .askopt .who b{font-size:12px;max-width:132px}.fo-mst-ask .ask-bx.wide{padding:12px 10px}}" +
-      ".fo-mst-ask .ask-t{font-family:Inter,sans-serif;font-weight:600;font-size:19px;letter-spacing:1.6px;text-transform:uppercase;color:#F3D37A}" +
+      ".fo-mst-ask .ask-t{font-family:Inter,sans-serif;font-weight:600;font-size:19px;letter-spacing:1.6px;text-transform:uppercase;color:#E8B96A}" +
       ".fo-mst-ask .ask-s{font-size:12.5px;color:rgba(255,255,255,.8);margin-top:3px}" +
       ".fo-mst-ask .ask-opts{display:flex;flex-direction:column;gap:7px;margin-top:12px}" +
       "html body #page .fo-mst-ask .ask-opts button,html body.ftpskin #page .fo-mst-ask .ask-opts button{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;font-size:13.5px;font-weight:700;color:#fff !important;background:rgba(255,255,255,.07) !important;border:1.5px solid rgba(255,255,255,.22) !important;border-radius:11px;padding:11px 14px;cursor:pointer;box-shadow:none !important}" +
-      "html body #page .fo-mst-ask .ask-opts button:hover{border-color:#F3D37A !important;background:rgba(240,185,78,.12) !important}" +
+      "html body #page .fo-mst-ask .ask-opts button:hover{border-color:#E8B96A !important;background:rgba(240,185,78,.12) !important}" +
       "html body #page .fo-mst-ask .ask-opts button.def{border-color:rgba(240,185,78,.55) !important;background:rgba(240,185,78,.14) !important}" +
-      ".fo-mst-ask .ask-opts button i{font-style:normal;font-family:Inter,sans-serif;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#F3D37A}" +
+      ".fo-mst-ask .ask-opts button i{font-style:normal;font-family:Inter,sans-serif;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#E8B96A}" +
       ".fo-mst-ask .ask-bar{height:4px;border-radius:99px;background:rgba(255,255,255,.14);margin-top:13px;overflow:hidden}" +
-      ".fo-mst-ask .ask-bar i{display:block;height:100%;background:linear-gradient(90deg,#E8B96A,#C9A24B);animation:foMstAskT linear forwards}" +
+      ".fo-mst-ask .ask-bar i{display:block;height:100%;background:linear-gradient(90deg,#E8B96A,#8F6A1C);animation:foMstAskT linear forwards}" +
       "@keyframes foMstAskT{from{width:100%}to{width:0}}" +
       // team talk in the centre theatre
       "#fo-mst-talk{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:9px 12px;background:#0F1A2E;border-top:1px solid #24334f}" +
       "#fo-mst-talk .tl{font-family:Inter,sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#8ea0c0;margin-right:4px}" +
       "html body #page #fo-mst-talk .tb,html body.ftpskin #page #fo-mst-talk .tb{font-size:11px;font-weight:700;color:#c7d2e4 !important;background:rgba(255,255,255,.06) !important;border:1.5px solid rgba(255,255,255,.18) !important;border-radius:9px;padding:7px 13px;cursor:pointer;box-shadow:none !important}" +
-      "html body #page #fo-mst-talk .tb.on,html body.ftpskin #page #fo-mst-talk .tb.on{color:#0C1B2E !important;background:linear-gradient(180deg,#E8B96A,#C9A24B) !important;border-color:#F3D37A !important}" +
+      "html body #page #fo-mst-talk .tb.on,html body.ftpskin #page #fo-mst-talk .tb.on{color:#0C1B2E !important;background:linear-gradient(180deg,#E8B96A,#8F6A1C) !important;border-color:#E8B96A !important}" +
       // the old ways retire: engine speed row, display filter, sim button and
       // the commentary-column team talk all step aside for the new controls
       "body.fo-stage-on .mc-controls .ctlrow{display:none !important}" +
@@ -3665,7 +3665,7 @@
       ".fo-mst-score{position:absolute;z-index:6;top:58px;left:0;right:0;text-align:center;color:#fff;text-shadow:0 2px 12px rgba(0,0,0,.8);pointer-events:none}" +
       ".fo-mst-score b{display:block;font-family:Inter,sans-serif;font-weight:600;font-size:44px;line-height:1;letter-spacing:1px}" +
       ".fo-mst-score span{display:block;font-size:12px;color:rgba(255,255,255,.85);margin-top:2px}" +
-      ".fo-mst-score i{display:block;font-style:normal;font-family:Inter,sans-serif;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#F3D37A;margin-top:3px}" +
+      ".fo-mst-score i{display:block;font-style:normal;font-family:Inter,sans-serif;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#E8B96A;margin-top:3px}" +
       ".fo-mst-p{position:absolute;z-index:3;top:auto;bottom:70px;height:64%;width:17%;max-width:235px;display:flex;flex-direction:column;justify-content:flex-end;pointer-events:none}" +
       ".fo-mst-p.pbat{left:0}.fo-mst-p.pbowl{right:0}" +
       ".fo-mst-p img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 30%;opacity:.94;filter:saturate(.94) contrast(1.03);mask-image:linear-gradient(to bottom,#000 45%,rgba(0,0,0,.93) 72%,transparent 100%)}" +

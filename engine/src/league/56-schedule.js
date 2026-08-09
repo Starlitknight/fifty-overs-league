@@ -48,7 +48,7 @@
   var CLS = { league: "lg", facup: "fa", colts: "co", cup: "ch", playoff: "po", transition: "tr", rest: "re" };
   // the colours, one per competition, defined once so a competition can never
   // wear two different ones on the same page
-  var COL = { lg: "#14243A", fa: "#22635F", co: "#C9571F", po: "#B23230",
+  var COL = { lg: "#14243A", fa: "#22635F", co: "#C9571F", po: "#C08A2E",
               ch: "#C08A2E", tr: "#6A6354", re: "rgba(20,28,40,.14)" };
 
   function label(p) {

@@ -880,10 +880,10 @@
     // inside its own box, so the page body never moves sideways.
     "html body #page .fo-lgx-books{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 12px}",
     "html body #page .fo-lgx-books a{font:700 11px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.6) !important;background:rgba(20,28,40,.045);border:1px solid rgba(20,28,40,.14);border-radius:999px;padding:0 15px;min-height:38px;display:inline-flex;align-items:center;text-decoration:none !important}",
-    "html body #page .fo-lgx-books a.on{color:#FFFDF7 !important;background:#14243A;border-color:#14243A}",
+    "html body #page .fo-lgx-books a.on{color:#FFFEFC !important;background:#14243A;border-color:#14243A}",
     ".fo-lgx-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}",
     "html body #page table.fo-lgx-stat{border-collapse:collapse;width:100%;min-width:640px;font-variant-numeric:tabular-nums}",
-    "html body #page table.fo-lgx-stat th{position:sticky;top:0;background:#14243A;color:#FFFDF7;font:700 11px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;text-align:right;padding:9px 7px;white-space:nowrap}",
+    "html body #page table.fo-lgx-stat th{position:sticky;top:0;background:#14243A;color:#FFFEFC;font:700 11px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;text-align:right;padding:9px 7px;white-space:nowrap}",
     "html body #page table.fo-lgx-stat th.rk,html body #page table.fo-lgx-stat th.nm,html body #page table.fo-lgx-stat th.cl{text-align:left}",
     "html body #page table.fo-lgx-stat td{padding:8px 7px;text-align:right;white-space:nowrap;font:600 12px/1.2 Inter,sans-serif;color:#1B2432;border-bottom:1px solid rgba(20,28,40,.07)}",
     "html body #page table.fo-lgx-stat td.rk{text-align:left;font-weight:400;color:rgba(20,28,40,.4)}",

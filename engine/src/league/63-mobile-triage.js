@@ -21,7 +21,7 @@
     s.textContent = [
       ".fo-tri-hide{display:none !important}",
       "html body #page button.fo-tri-btn{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;margin:10px 0;padding:12px 16px !important;border-radius:13px !important;background:#FFFEFC !important;border:1px solid rgba(27,36,50,.14) !important;box-shadow:0 1px 3px rgba(14,35,63,.05) !important;cursor:pointer;text-align:left}",
-      "html body #page button.fo-tri-btn b{flex:1;min-width:0;font:700 12px/1.3 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#14243A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      "html body #page button.fo-tri-btn b{flex:1;min-width:0;font:700 13px/1.3 Inter,sans-serif;letter-spacing:.01em;color:#14243A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       "html body #page button.fo-tri-btn span{font:700 11px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22}",
       "html body #page button.fo-tri-btn s{text-decoration:none;font:400 19px/1 Fraunces,Georgia,serif;color:#B44A22}",
       "html body #page button.fo-tri-btn.dark{background:rgba(255,253,247,.06) !important;border-color:rgba(232,185,106,.35) !important;box-shadow:none !important}",
@@ -80,6 +80,10 @@
     if (!p) { setTimeout(boot, 400); return; }
     try { new MutationObserver(later).observe(p, { childList: true }); } catch (e) {}
     run();
+    // a page that renders after every timer has fired still gets its fold:
+    // run() is idempotent, so a slow heartbeat costs nothing and ends the
+    // race between the router, the world derivation and the observer
+    setInterval(run, 1500);
   }
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", boot);
   else boot();

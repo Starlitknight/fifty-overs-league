@@ -29,7 +29,7 @@
   // what each program actually trains, rendered straight from the weight map
   // so the explanation can never drift from the mechanics
   var FO_SK_COLOR = {
-    vsPace: "#C9571F", vsSpin: "#D98B5F", rotation: "#E8B08C", temperament: "#A34A28", power: "#F59E0B",
+    vsPace: "#C9571F", vsSpin: "#D98B5F", rotation: "#E8B08C", temperament: "#A34A28", power: "#C08A2E",
     wicket: "#14243A", economy: "#2E4A73", discipline: "#4A6B99", moveTurn: "#6E8FBD", variation: "#98B3D9",
     stamina: "#16A34A", fielding: "#2F7A6B", catching: "#4DA6A2", keeping: "#1F5F58", stumping: "#6BBFA3"
   };

@@ -22,7 +22,7 @@
       ".fo-cp-scroll table{width:100%;font-size:11.5px}.fo-cp-scroll th,.fo-cp-scroll td{padding:6px 4px;white-space:nowrap}" +
       "@media(max-width:1000px){#page .fo-cp-x{display:none}}" +
       ".fo-mu-troph{display:flex;gap:10px;flex-wrap:wrap;margin:4px 0 10px}" +
-      ".fo-mu-cup{background:linear-gradient(135deg,#F59E0B,#c08a2b);color:#fff;border-radius:10px;padding:8px 14px;font-weight:800;font-size:12.5px;box-shadow:0 3px 10px rgba(160,110,20,.3)}" +
+      ".fo-mu-cup{background:linear-gradient(135deg,#C08A2E,#c08a2b);color:#fff;border-radius:10px;padding:8px 14px;font-weight:800;font-size:12.5px;box-shadow:0 3px 10px rgba(160,110,20,.3)}" +
       ".fo-mu-leg{background:#FFFEFC;border:1px solid rgba(28,36,51,.1);border-radius:11px;padding:11px 14px;margin:7px 0}" +
       ".fo-mu-leg b{font-size:14px;color:#14243A}.fo-mu-leg .small{margin-top:2px}" +
       ".fo-ms-row{display:flex;gap:9px;align-items:baseline;font-size:12.5px;margin:5px 0;color:#3a4353}" +
@@ -41,7 +41,7 @@
       ".fo-race-l b{font-size:11.5px}.fo-race-l span{font-size:10px}.fo-race-n{font-size:10.5px}}" +
       ".fo-race{display:grid;grid-template-columns:minmax(120px,1.1fr) minmax(90px,1.6fr) auto;gap:10px;align-items:center;margin:7px 0}" +
       ".fo-race-l b{display:block;font-size:12.5px;color:#14243A;line-height:1.25}.fo-race-l span{font-size:11px;color:#9FB0C6}" +
-      ".fo-race-bar{height:10px;border-radius:5px;background:#E8EAEE;overflow:hidden}.fo-race-bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#4DA6A2,#2b6b68);transition:width .6s ease}" +
+      ".fo-race-bar{height:10px;border-radius:5px;background:#E8EAEE;overflow:hidden}.fo-race-bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#4DA6A2,#22635F);transition:width .6s ease}" +
       ".fo-race-n{font-size:11.5px;font-weight:800;color:#14243A;white-space:nowrap;font-variant-numeric:tabular-nums}";
     document.head.appendChild(foChCss);
   } catch (e) {}
@@ -568,7 +568,7 @@
   function foRaceBar(r) {
     var hot = r.pct >= 90;
     return "<div class='fo-race'><div class='fo-race-l'><b>" + E(r.nm) + "</b><span>" + r.label + "</span></div>" +
-      "<div class='fo-race-bar'><i style='width:" + Math.min(100, r.pct) + "%" + (hot ? ";background:linear-gradient(90deg,#F59E0B,#c08a2b)" : "") + "'></i></div>" +
+      "<div class='fo-race-bar'><i style='width:" + Math.min(100, r.pct) + "%" + (hot ? ";background:linear-gradient(90deg,#C08A2E,#c08a2b)" : "") + "'></i></div>" +
       "<div class='fo-race-n'>" + r.cur.toLocaleString() + " / " + r.target.toLocaleString() + "</div></div>";
   }
   // league-wide season races for the Stats page: watch the leaders pull away
@@ -1146,7 +1146,7 @@
       ".fo-trx-lg b{color:#1B2432}" +
       ".fo-trx>b{font-size:13px;color:#1B2432}" +
       ".fo-trx-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}" +
-      ".fo-trx-chip{font-size:11px;background:#FFFEFC;border:1px solid #DDD8CF;border-radius:999px;padding:3px 9px;color:#6A6354}" +
+      ".fo-trx-chip{font-size:11px;background:#FFFEFC;border:1px solid #E3DCCB;border-radius:999px;padding:3px 9px;color:#6A6354}" +
       ".fo-trx-chip b{color:#1B2432}" +
       ".fo-trx-main{background:#fdf3e2;border-color:#ecd9ae;color:#8a5a1d}.fo-trx-main b{color:#8a5a1d}" +
       ".fo-trx-rest{font-size:12px;color:#6A6354;font-style:normal}" +

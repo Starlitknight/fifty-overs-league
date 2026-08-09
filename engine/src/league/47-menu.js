@@ -139,6 +139,27 @@
       if (typeof window.route === "function") window.route();
     } catch (e) {}
   }
+  // THE CHROME BREATHES ON A PHONE. Reading scrolls the menu row away under
+  // the masthead (~52px of pinned chrome remain); the first upward nudge
+  // brings it back. Desktop merges the two rows already and is untouched.
+  (function () {
+    var lastY = 0, slim = false, tick = false;
+    function judge() {
+      tick = false;
+      var y = window.scrollY || 0, dy = y - lastY; lastY = y;
+      if (window.innerWidth > 899) { if (slim) { slim = false; document.body.classList.remove("fo-chrome-slim"); } return; }
+      var want = slim;
+      // a page with no real scroll never folds - there is no gesture left
+      // to bring the bar back
+      var room = document.documentElement.scrollHeight - window.innerHeight;
+      if (y < 80 || dy < -6 || room < 240) want = false;
+      else if (dy > 8) want = true;
+      if (want !== slim) { slim = want; document.body.classList.toggle("fo-chrome-slim", slim); }
+    }
+    window.addEventListener("scroll", function () {
+      if (!tick) { tick = true; requestAnimationFrame(judge); }
+    }, { passive: true });
+  })();
   window.addEventListener("hashchange", turnAtClosedDoor);
   turnAtClosedDoor();
   // rooms that are really the same door, so the lamp lights in one place.
@@ -179,7 +200,7 @@
      ======================================================================== */
   var BAR = [
     { k: "Your club", short: "Club" },
-    { k: "Tournaments", short: "Tournaments" },
+    { k: "Tournaments", short: "Cups" },
     { k: "The world", short: "World" },
     { k: "The record", short: "Record" }
   ];
@@ -210,7 +231,7 @@
       "#fo-menubar.off{display:none}",
       "#fo-menubar .fo-mb-in{display:flex;align-items:stretch;gap:2px;max-width:1120px;margin:0 auto;padding:0 8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}",
       "#fo-menubar .fo-mb-in::-webkit-scrollbar{display:none}",
-      "html body #fo-menubar button.fo-mb-t{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;background:transparent !important;border:0 !important;border-bottom:2px solid transparent !important;color:rgba(255,254,252,.78) !important;font:600 11px/1 Inter,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;padding:13px 13px 11px !important;margin:0;cursor:pointer;white-space:nowrap;box-shadow:none !important;border-radius:0 !important;transition:color .14s,border-color .14s,background .14s}",
+      "html body #fo-menubar button.fo-mb-t{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;background:transparent !important;border:0 !important;border-bottom:2px solid transparent !important;color:rgba(255,254,252,.78) !important;font:600 13px/1 Inter,sans-serif !important;letter-spacing:.01em;padding:13px 13px 11px !important;margin:0;cursor:pointer;white-space:nowrap;box-shadow:none !important;border-radius:0 !important;transition:color .14s,border-color .14s,background .14s}",
       "html body #fo-menubar button.fo-mb-t:hover{color:#FFFEFC !important;background:rgba(255,255,255,.06) !important}",
       "html body #fo-menubar button.fo-mb-t.here{color:#E8B96A !important;border-bottom-color:#C9571F !important}",
       "html body #fo-menubar button.fo-mb-t.open{color:#FFFEFC !important;background:rgba(201,85,50,.24) !important;border-bottom-color:#E8B96A !important}",
@@ -225,14 +246,16 @@
       // A PHONE BAR NEVER SCROLLS. Four menus, one row, evenly set - each
       // button takes a quarter of the width and the type is cut to fit, so
       // nothing is ever guillotined at the edge.
+      "@media(max-width:899px){#fo-menubar{transition:transform .18s ease,opacity .18s ease}",
+      "body.fo-chrome-slim #fo-menubar{transform:translateY(-110%);opacity:0;pointer-events:none}",
       "@media(max-width:720px){",
       "#fo-menubar .fo-mb-in{padding:0 6px;gap:0;overflow-x:hidden}",
-      "html body #fo-menubar button.fo-mb-t{flex:1 1 0;justify-content:center;gap:4px;min-width:0;padding:13px 2px 11px !important;font:600 11px/1 Inter,sans-serif !important;letter-spacing:.07em}",
+      "html body #fo-menubar button.fo-mb-t{flex:1 1 0;justify-content:center;gap:4px;min-width:0;padding:13px 2px 11px !important;font:600 12.5px/1 Inter,sans-serif !important;letter-spacing:0}",
       "#fo-menubar button.fo-mb-t span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       "#fo-menubar .fo-mb-cv{width:9px;height:9px;flex:none}",
       "html body #fo-menubar button.fo-mb-out{display:none !important}",
       "}",
-      "@media(max-width:370px){html body #fo-menubar button.fo-mb-t{font:600 10.5px/1 Inter,sans-serif !important;letter-spacing:.02em}}",
+      "@media(max-width:370px){html body #fo-menubar button.fo-mb-t{font:600 12px/1 Inter,sans-serif !important;letter-spacing:0}}",
       // ONE HEADER, NOT TWO. On a desk wide enough that the masthead's empty
       // middle can hold the menus, the bar stops being its own row and rides
       // INSIDE the masthead - fixed, centred, the full height of the band -

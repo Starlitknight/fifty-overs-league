@@ -13,7 +13,7 @@
       ".fo-of-kpis{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin:10px 0}" +
       ".fo-of-kpi{background:#FFFEFC;border:1px solid rgba(28,36,51,.08);border-radius:12px;padding:12px 16px;box-shadow:0 2px 10px rgba(7,22,46,.05)}" +
       ".fo-of-kpi span{display:block;font-size:10.5px;letter-spacing:.08em;text-transform:uppercase;color:#9FB0C6;font-weight:700;margin-bottom:4px}" +
-      ".fo-of-kpi b{font-size:21px;color:#14243A}.fo-of-kpi b.fo-pos{color:#15803D}.fo-of-kpi b.fo-neg{color:#b3402a}" +
+      ".fo-of-kpi b{font-size:21px;color:#14243A}.fo-of-kpi b.fo-pos{color:#177A57}.fo-of-kpi b.fo-neg{color:#b3402a}" +
       ".fo-of-kpi i{display:block;font-style:normal;font-size:12px;color:#6A6354;margin-top:3px}" +
       ".fo-of-warn div{display:flex;gap:8px;align-items:baseline;font-size:12.5px;margin:5px 0;color:#3a4353}" +
       ".fo-keep .pad{font-size:12.5px}.fo-keep .pad .small{font-size:12px}.fo-keep table.kv td{font-size:12.5px;padding:4px 6px}" +

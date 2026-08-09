@@ -428,8 +428,8 @@
             // that had the most cricket in them.
             "<b>" + (function () {
               var bits = [];
-              if (rw.wc) bits.push("&#127942; " + E(rw.wc.nm) + " won the World Cup");
-              if (rw.crown) bits.push("&#127942; " + E(rw.crown.nm) + " took the Champions Cup");
+              if (rw.wc) bits.push("<svg style='width:13px;height:13px;vertical-align:-2px' viewBox='0 0 24 24' aria-hidden='true' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M7 4h10v5a5 5 0 0 1-10 0V4Z'/><path d='M7 5H4.5c0 2.8 1.1 4.4 2.9 4.9M17 5h2.5c0 2.8-1.1 4.4-2.9 4.9'/><path d='M12 14v3M9.5 20h5'/></svg> " + E(rw.wc.nm) + " won the World Cup");
+              if (rw.crown) bits.push("<svg style='width:13px;height:13px;vertical-align:-2px' viewBox='0 0 24 24' aria-hidden='true' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M7 4h10v5a5 5 0 0 1-10 0V4Z'/><path d='M7 5H4.5c0 2.8 1.1 4.4 2.9 4.9M17 5h2.5c0 2.8-1.1 4.4-2.9 4.9'/><path d='M12 14v3M9.5 20h5'/></svg> " + E(rw.crown.nm) + " took the Champions Cup");
               return bits.length ? bits.join(" &middot; ")
                 : rw.past ? "No world tournament that season" : "World Cup to come";
             })() + "</b>") +

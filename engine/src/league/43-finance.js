@@ -49,13 +49,23 @@
     }); });
   }
   // money, three ways: the full figure, the short one, and a signed delta
+  // MFull: the one sanctioned exception - the page's largest numeral may
+  // print in full (the Sheet's bank figure). Everything else follows the rule.
+  function MFull(v) {
+    var n = Math.round(Number(v) || 0), neg = n < 0;
+    n = Math.abs(n);
+    var s = String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return (neg ? "-$" : "$") + s;
+  }
   function M(v) {
+    if (window.foMoney) return window.foMoney(v);
     var n = Math.round(Number(v) || 0), neg = n < 0;
     n = Math.abs(n);
     var s = String(n).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
     return (neg ? "-$" : "$") + s;
   }
   function Mk(v) {
+    if (window.foMoney) return window.foMoney(v);
     var n = Number(v) || 0, neg = n < 0; n = Math.abs(n);
     var s = n >= 1000000 ? (n / 1000000).toFixed(n >= 10000000 ? 1 : 2) + "m"
           : n >= 1000 ? Math.round(n / 1000) + "k" : String(Math.round(n));
@@ -77,13 +87,13 @@
       ".fo-fin h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(30px,4vw,46px);letter-spacing:-.02em;line-height:1.02;margin:11px 0 6px}",
       // the bank
       ".fo-fin-bank{background:linear-gradient(160deg,#14243A,#0A1A34 72%);border-radius:18px;padding:22px 24px;color:#EAF0FB;box-shadow:0 18px 44px rgba(10,26,52,.28);border-bottom:3px solid var(--brand)}",
-      ".fo-fin-bank .lb{font-family:Inter,sans-serif;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#8FA8CC}",
+      ".fo-fin-bank .lb{font-family:Inter,sans-serif;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#9FB0C6}",
       // the skin colours bare b and i, so the treasury card has to out-rank it
       // or the biggest number on the page is navy ink on a navy card
       "html body #page .fo-fin-bank b,html body.ftpskin #page .fo-fin-bank b{display:block;font-family:Inter,sans-serif;font-weight:700;font-size:clamp(34px,5vw,54px);line-height:1;margin:6px 0 2px;font-variant-numeric:tabular-nums;color:#FFFEFC !important}",
       ".fo-fin-walk{display:flex;flex-wrap:wrap;gap:8px 22px;margin-top:14px;padding-top:13px;border-top:1px solid rgba(143,168,204,.22)}",
       ".fo-fin-walk div{display:flex;flex-direction:column;gap:3px}",
-      ".fo-fin-walk span{font-family:Inter,sans-serif;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#8FA8CC}",
+      ".fo-fin-walk span{font-family:Inter,sans-serif;font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:#9FB0C6}",
       "html body #page .fo-fin-walk i{font-style:normal;font-family:Inter,sans-serif;font-size:15px;font-variant-numeric:tabular-nums;color:#FFFEFC !important}",
       "html body #page .fo-fin-walk i.fo-fin-up{color:#7BD3A6 !important}html body #page .fo-fin-walk i.fo-fin-dn{color:#F0A090 !important}",
       // the administration banner
@@ -174,10 +184,10 @@
       ".fo-tre-line u b{color:var(--ink)}",
       "html body #page .fo-tre-line .pj{font:800 20px/1 Inter,Inter,sans-serif;color:var(--grn);font-variant-numeric:tabular-nums;white-space:nowrap}",
       "html body #page a.fo-tre-door{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:50px;padding:8px 0;border-bottom:1px solid var(--edge);text-decoration:none !important;cursor:pointer}",
-      "a.fo-tre-door .fo-tre-lbl{color:var(--ink)}",
+      "a.fo-tre-door .fo-tre-lbl{color:var(--ink);text-transform:none;font:700 13px/1.2 Inter,sans-serif;letter-spacing:.01em}",
       "a.fo-tre-door i{font-style:normal;font:400 12.5px/1.3 Inter,sans-serif;color:var(--mut);text-align:right}",
       "a.fo-tre-door .ch{font:400 19px/1 Georgia,serif;color:var(--brand)}",
-      "html body #page button.fo-tre-act{font:700 11px/1 Inter,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;color:var(--brand) !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;padding:0 0 0 14px !important;min-height:44px;cursor:pointer}",
+      "html body #page button.fo-tre-act{font:700 11px/1 Inter,sans-serif !important;letter-spacing:.13em;color:var(--brand) !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;padding:0 0 0 14px !important;min-height:44px;cursor:pointer}",
       "html body #page button.fo-tre-act[disabled]{color:#a09a8d !important;cursor:not-allowed}",
       ".fo-tre-word{font:italic 500 14px/1.6 Fraunces,Georgia,serif;color:#5a5344;margin:20px 0 0}",
       ".fo-tre-word b{font-style:normal;color:var(--ink)}",
@@ -188,6 +198,7 @@
       ".fo-tre-strip{grid-template-columns:1fr 1fr;gap:16px 10px}",
       ".fo-tre-cols,.fo-tre-desk{grid-template-columns:minmax(0,1fr)}",
       ".fo-tre-cols>div+div{margin-top:22px}",
+      ".fo-tre-row{padding:8px 0}",
       ".fo-tre-bank{font-size:clamp(40px,11.5vw,64px)}",
       "}",
       // ---- MATCHDAY ECONOMY: premium club-commercial dashboard ----
@@ -198,7 +209,7 @@
       ".fo-me-head h1{margin:0;color:var(--ink);font:600 clamp(38px,4.2vw,58px)/1 Fraunces,Georgia,serif;letter-spacing:-.032em}",
       ".fo-me-head p{margin:9px 0 0;color:#526074;font:450 13px/1.5 Inter,sans-serif}",
       ".fo-me-actions{display:flex;align-items:center;gap:9px;margin-left:auto;padding-bottom:1px}",
-      "html body #page .fo-me-btn,html body #page button.fo-me-btn{display:inline-flex;align-items:center;justify-content:center;height:45px;min-width:142px;padding:1px 18px 0 !important;border:1px solid #CFC6B6 !important;border-radius:10px !important;background:#FFFEFA !important;color:var(--ink) !important;font:700 11px/1 Inter,sans-serif !important;letter-spacing:.12em;text-transform:uppercase;text-decoration:none !important;box-shadow:0 1px 0 rgba(19,37,60,.04) !important}",
+      "html body #page .fo-me-btn,html body #page button.fo-me-btn{display:inline-flex;align-items:center;justify-content:center;height:45px;min-width:142px;padding:1px 18px 0 !important;border:1px solid #CFC6B6 !important;border-radius:10px !important;background:#FFFEFA !important;color:var(--ink) !important;font:700 11px/1 Inter,sans-serif !important;letter-spacing:.12em;text-decoration:none !important;box-shadow:0 1px 0 rgba(19,37,60,.04) !important}",
       "html body #page .fo-me-btn.primary,html body #page button.fo-me-btn.primary{border-color:var(--orange) !important;background:linear-gradient(180deg,#E85720,#D94313) !important;color:#fff !important;box-shadow:0 5px 13px rgba(217,67,19,.16) !important}",
       "html body #page button.fo-me-btn[disabled]{background:#D7D2C7 !important;border-color:#D7D2C7 !important;color:#8D877C !important;box-shadow:none !important;cursor:not-allowed}",
       ".fo-me-top{display:grid;grid-template-columns:minmax(360px,1.02fr) minmax(620px,1.98fr);gap:15px;align-items:stretch}",
@@ -233,6 +244,8 @@
       ".fo-me-mixrow{display:grid;grid-template-columns:9px minmax(0,1fr) auto;gap:9px;align-items:center;padding:8px 0;border-bottom:1px solid #ECE7DE;color:#526073;font:500 12px/1 Inter,sans-serif}.fo-me-mixrow:last-child{border-bottom:0}.fo-me-mixrow i{width:8px;height:8px;border-radius:3px}.fo-me-mixrow b{color:var(--ink);font-size:11px;font-variant-numeric:tabular-nums}",
       ".fo-me-bottom{display:grid;grid-template-columns:minmax(0,1.55fr) minmax(410px,1fr);gap:15px}",
       ".fo-me-levers{padding:0 13px 13px}",
+      ".fo-me-levers.flat{background:transparent;border:0;box-shadow:none;border-radius:0;padding:0}",
+      ".fo-me-levers.flat .fo-me-panelhead{border-bottom:0;padding-left:2px}",
       ".fo-me-levergrid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:9px}",
       ".fo-me-lever{min-height:145px;border:1px solid #E1D8C8;border-radius:11px;padding:12px;background:#FFFEFA;display:flex;flex-direction:column}",
       ".fo-me-lever .top{display:flex;align-items:center;gap:9px}.fo-me-lever .ic{width:32px;height:32px;border:1px solid #D7C49B;border-radius:10px;display:grid;place-items:center;color:var(--orange);background:#FFF8F0;font:700 13px/1 Inter,sans-serif}.fo-me-lever span{color:#536074;font:700 11px/1.25 Inter,sans-serif;letter-spacing:.11em;text-transform:uppercase}",
@@ -489,7 +502,7 @@
         "<div class='fo-me-card fo-me-kpi green'><div class='ico'>" + foMeIcon("mood") + "</div><div><span>Supporter mood</span><b>" + E(moodWord.toUpperCase()) + "</b></div></div>" +
         "</div></div></div>";
 
-      html += "<div class='fo-me-bottom'><section class='fo-me-card fo-me-levers'><div class='fo-me-panelhead'>Ground decisions</div>" +
+      html += "<div class='fo-me-bottom'><section class='fo-me-levers flat'><div class='fo-me-panelhead'>Ground decisions</div>" +
         "<div class='fo-me-levergrid'>" +
         "<div class='fo-me-lever'><div class='top'><div class='ic'>" + foMeIcon("price") + "</div><span>Ticket price</span></div><b>" + M(ticket) + "</b><em>Set by the competition for every turnstile.</em><button type='button' disabled>League controlled</button></div>" +
         "<div class='fo-me-lever'><div class='top'><div class='ic'>" + foMeIcon("ground") + "</div><span>Stadium capacity</span></div><b>" + seats.toLocaleString() + " &middot; " + full + "% full</b><em>" +
@@ -533,7 +546,7 @@
       "<span class='rt'>" + (rounds ? "Round " + rounds : "Pre-season") + (seasonN ? " &middot; Season " + seasonN : "") + "</span></div>";
 
     html2 += "<div class='fo-tre-head'><div>" +
-      "<div class='fo-tre-bank num'>" + M(bank) + "</div>" +
+      "<div class='fo-tre-bank num'>" + MFull(bank) + "</div>" +
       "<div class='fo-tre-under'><span class='fo-tre-lbl'>At the bank</span>" +
       "<i class='fo-tre-delta num" + (net < 0 ? " dn" : "") + "'>" + Msign(net) + " since the founding</i></div>" +
       "</div>" + foShSpark(bank) + "</div>";

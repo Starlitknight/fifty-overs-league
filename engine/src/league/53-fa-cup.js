@@ -60,7 +60,7 @@
       return "<div class='fo-kb-natsw'><i>Every nation&rsquo;s cup</i><div class='fo-kb-nats'>" +
         regs.map(function (r) {
           return "<a class='fo-kb-nat" + (r.id === rid ? " on" : "") + "' href='" + base + "?n=" + r.id + "'>" +
-            "<img src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\"><span>" + E(r.nm) + "</span></a>";
+            "<img src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\" title='" + E(r.nm) + "'><span title='" + E(r.nm) + "'>" + E(String(r.id || "").toUpperCase()) + "</span></a>";
         }).join("") + "</div></div>";
     } catch (e) { return ""; }
   }
@@ -131,7 +131,7 @@
         "<div class='fo-kb-hero'><div><span class='eb'>The national knockout &middot; season&nbsp;" + (window.foSeasonN ? foSeasonN(seasonNo) : seasonNo) + "</span>" +
         "<h1>The " + E(natNm) + " Cup</h1>" +
         "<p>Sixteen clubs, four Sundays, one trophy. Every round a fresh draw.</p></div>" +
-        "<span class='tro' aria-hidden='true'>&#127942;</span></div>" +
+        "<svg class='tro' viewBox='0 0 24 24' aria-hidden='true' fill='none' stroke='#E8B96A' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M7 4h10v5a5 5 0 0 1-10 0V4Z'/><path d='M7 5H4.5a0 0 0 0 0 0 0c0 2.8 1.1 4.4 2.9 4.9M17 5h2.5c0 2.8-1.1 4.4-2.9 4.9'/><path d='M12 14v3M9.5 20h5M10 17h4'/></svg></div>" +
         natRail(rid, "#/facup");
       if (body && body.champion) {
         html += "<div class='fo-fa-champ'><span>&#127942;</span><div><i>Cup winners, season " + (window.foSeasonN ? foSeasonN(seasonNo) : seasonNo) + "</i><b>" +
@@ -195,8 +195,8 @@
       "html body #page .fo-kb-hero .eb{font:700 11px/1 Inter,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#E8B96A}",
       "html body #page .fo-kb-hero h1{font-family:Fraunces,serif;font-weight:600;font-size:clamp(26px,6vw,38px);margin:6px 0 4px;color:#FFFEFC}",
       "html body #page .fo-kb-hero p{margin:0;font:400 12.5px/1.5 Fraunces,serif;color:rgba(255,254,252,.7)}",
-      "html body #page .fo-kb-hero .tro{font-size:52px;line-height:1;opacity:.9;filter:drop-shadow(0 4px 10px rgba(0,0,0,.4))}",
-      "html body #page .fo-kb{overflow-x:auto;scrollbar-width:thin;margin:0 -14px;padding:2px 14px 8px;-webkit-overflow-scrolling:touch}",
+      "html body #page .fo-kb-hero .tro{width:52px;height:52px;opacity:.95;filter:drop-shadow(0 4px 10px rgba(0,0,0,.4))}",
+      "html body #page .fo-kb{overflow-x:auto;scrollbar-width:thin;margin:0 -14px;padding:2px 14px 8px;-webkit-overflow-scrolling:touch;mask-image:linear-gradient(90deg,#000 92%,transparent)}",
       "html body #page .fo-kb-in{display:flex;gap:28px;min-width:max-content}",
       "html body #page .fo-kb-col{flex:none;width:216px;display:flex;flex-direction:column}",
       "html body #page .fo-kb-col h4{display:flex;justify-content:space-between;align-items:baseline;gap:8px;margin:0 0 8px;font:700 11px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#14202F;border-bottom:2px solid #14243A;padding-bottom:7px}",
@@ -300,7 +300,7 @@
         "<div class='fo-kb-hero'><div><span class='eb'>The sixteen champions &middot; season&nbsp;" + (window.foSeasonN ? foSeasonN(seasonNo) : seasonNo) + "</span>" +
         "<h1>The Champions Cup</h1>" +
         "<p>The champions of the national leagues meet in the closing week: three group days, then a straight knockout.</p></div>" +
-        "<span class='tro' aria-hidden='true'>&#127942;</span></div>";
+        "<svg class='tro' viewBox='0 0 24 24' aria-hidden='true' fill='none' stroke='#E8B96A' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M7 4h10v5a5 5 0 0 1-10 0V4Z'/><path d='M7 5H4.5a0 0 0 0 0 0 0c0 2.8 1.1 4.4 2.9 4.9M17 5h2.5c0 2.8-1.1 4.4-2.9 4.9'/><path d='M12 14v3M9.5 20h5M10 17h4'/></svg></div>";
       if (banked && body.champion) {
         html += "<div class='fo-fa-champ'><span>&#127942;</span><div><i>Champions of the world, season " + (window.foSeasonN ? foSeasonN(seasonNo) : seasonNo) +
           "</i><b>" + E(body.champion) + "</b></div></div>";

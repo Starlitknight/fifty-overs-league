@@ -78,6 +78,7 @@
       .catch(function () { return null; });
   }
   function money(v) {
+    if (window.foMoney) return window.foMoney(v);
     var n = Number(v);
     if (!isFinite(n)) return "&mdash;";
     var neg = n < 0; n = Math.abs(n);
@@ -108,7 +109,7 @@
   var NAT_SPINE = {
     eng: "#2F6B45", ire: "#2E8B67", ned: "#D06A19", win: "#B78926", rsa: "#B7352B",
     zim: "#D15B22", aus: "#D59600", nzl: "#079B99", slk: "#216DB5", sub: "#7A44C5",
-    pak: "#1E7F5C", afg: "#5B4A91", bgd: "#0E6E4F", nep: "#B5304C", sco: "#2B5AA6",
+    pak: "#1E7F5C", afg: "#5B4A91", bgd: "#177A57", nep: "#B5304C", sco: "#2B5AA6",
     wal: "#A62A2E", ken: "#237A46", usa: "#33366E", can: "#C2483B"
   };
   function spineOf(rid) { return NAT_SPINE[rid] || "#6A6354"; }
@@ -1203,15 +1204,15 @@
       "html body #page .fo-mk-row .facts{display:flex;gap:0;margin-top:4px;border-top:1px solid rgba(27,36,50,.08);padding-top:10px;flex-wrap:wrap}",
       "html body #page .fo-mk-row .facts span{padding:0 18px 0 0;margin-right:18px;border-right:1px solid rgba(27,36,50,.1)}",
       "html body #page .fo-mk-row .facts span:last-child{border-right:0}",
-      "html body #page .fo-mk-row .facts i{display:block;font:600 11px/1 Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#98a0ae;font-style:normal;margin-bottom:4px}",
-      "html body #page .fo-mk-row .facts b{font:600 13px/1 Fraunces,Georgia,serif;color:#14243A;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-row .facts i{display:block;font:600 11px/1 Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#6A6354;font-style:normal;margin-bottom:4px}",
+      "html body #page .fo-mk-row .facts b{font:650 13px/1 Inter,sans-serif;color:#14243A;font-variant-numeric:tabular-nums}",
       // the deed's word, ON the card: a green strip, never a popup
       "html body #page .fo-mk-row .rail .bidok{margin-top:10px;font:600 13px/1.5 Inter,sans-serif;color:#8FD6B5;background:rgba(23,122,87,.22);border:1px solid rgba(143,214,181,.35);border-radius:8px;padding:9px 11px;animation:fo-mk-drop2 .2s ease}",
       "html body #page .fo-mk-row .rail .bidmsg{display:none;font:500 12px/1.5 Inter,sans-serif;color:#FFB4A0;margin-top:7px}",
       "html body #page .fo-mk-row .rail .bidmsg.on{display:block;animation:fo-mk-drop2 .2s ease}",
       // THE CATALOGUE HEAD: gilt eyebrow, title, three almanack figures,
       // one double rule - then a single deck for tabs, roles and sorts.
-      "html body #page .fo-mk-hd .eb{font:600 11px/1 Inter,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#B8933A;margin-bottom:9px}",
+      "html body #page .fo-mk-hd .eb{font:600 11px/1 Inter,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#C08A2E;margin-bottom:9px}",
       "html body #page .fo-mk-hd .row{display:flex;align-items:flex-end;gap:30px;flex-wrap:wrap}",
       "html body #page .fo-mk-hd h1{font:700 31px/1 Inter,sans-serif;text-transform:uppercase;color:#14243A;margin:0;letter-spacing:.015em}",
       "html body #page .fo-mk-hd .figs{margin-left:auto;display:flex;text-align:right}",
@@ -1220,7 +1221,7 @@
       "html body #page .fo-mk-hd .f b{display:block;font:600 21px/1 Fraunces,Georgia,serif;color:#14243A;font-variant-numeric:tabular-nums}",
       "html body #page .fo-mk-hd .f.hot b{color:#8E1F13}",
       "html body #page .fo-mk-hd .f.you b{color:#177A57}",
-      "html body #page .fo-mk-hd .f i{display:block;font:600 11px/1 Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#98a0ae;font-style:normal;margin-top:5px}",
+      "html body #page .fo-mk-hd .f i{display:block;font:600 11px/1 Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#6A6354;font-style:normal;margin-top:5px}",
       "html body #page .fo-mk-hd .rule{border-bottom:3px double rgba(20,36,58,.25);margin-top:14px}",
       // the deck: rooms, shelves and sorts on one baseline, no boxes
       "html body #page .fo-mk-deck{display:flex;align-items:center;gap:22px;padding:12px 0 14px;flex-wrap:wrap;overflow:visible}",
@@ -1237,7 +1238,7 @@
       "html body #page .fo-mk-deck .sel{position:relative;display:inline-flex;align-items:center}",
       "html body #page .fo-mk-deck .sel.nat{margin-left:auto}",
       "html body #page .fo-mk-deck .sel select{appearance:none !important;-webkit-appearance:none !important;border:0 !important;background:transparent !important;font:600 13px/1.4 Inter,sans-serif !important;color:#14243A !important;padding:6px 16px 6px 0 !important;cursor:pointer;min-height:0 !important;box-shadow:none !important}",
-      "html body #page .fo-mk-deck .sel:after{content:'';position:absolute;right:2px;top:50%;width:7px;height:7px;border-right:1.8px solid #98a0ae;border-bottom:1.8px solid #98a0ae;transform:translateY(-70%) rotate(45deg);pointer-events:none}",
+      "html body #page .fo-mk-deck .sel:after{content:'';position:absolute;right:2px;top:50%;width:7px;height:7px;border-right:1.8px solid #6A6354;border-bottom:1.8px solid #6A6354;transform:translateY(-70%) rotate(45deg);pointer-events:none}",
       // THE BID RAIL CARD: identity and reads on paper, the money in navy
       // the spine is a real left border, not an inner bar: the card's own edge
       // carries the colour, so nothing inside has to move to make room for it
@@ -1257,7 +1258,7 @@
       // three role-picked gauges: what he is BOUGHT for, big and calm
       "html body #page .fo-mk-row .gg{display:flex;gap:34px;margin-top:16px}",
       "html body #page .fo-mk-row .gg .g{width:96px;min-width:0}",
-      "html body #page .fo-mk-row .gg .lb{display:block;font:600 11px/1 Inter,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:#98a0ae}",
+      "html body #page .fo-mk-row .gg .lb{display:block;font:600 11px/1 Inter,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:#6A6354}",
       "html body #page .fo-mk-row .gg .vl{display:block;font:600 26px/1.2 Inter,sans-serif;color:#14243A;font-variant-numeric:tabular-nums}",
       "html body #page .fo-mk-row .gg .tr{display:block;height:3.5px;border-radius:2px;background:#EDE8DC;margin-top:3px;overflow:hidden}",
       "html body #page .fo-mk-row .gg .fl{display:block;height:100%;border-radius:2px}",
@@ -1274,7 +1275,7 @@
       "html body #page .fo-mk-row .fold.on svg{transform:rotate(180deg)}",
       "html body #page .fo-mk-full{margin-top:11px;padding:13px 0 3px;border-top:1px dashed rgba(27,36,50,.18);display:grid;grid-template-columns:1fr 1fr;gap:7px 34px}",
       "html body #page .fo-mk-full .fb{display:grid;grid-template-columns:72px 1fr 30px;gap:10px;align-items:center}",
-      "html body #page .fo-mk-full .fb i{font-style:normal;font:600 11px/1 Inter,sans-serif;letter-spacing:.15em;text-transform:uppercase;color:#98a0ae}",
+      "html body #page .fo-mk-full .fb i{font-style:normal;font:600 11px/1 Inter,sans-serif;letter-spacing:.15em;text-transform:uppercase;color:#6A6354}",
       "html body #page .fo-mk-full .fb u{display:block;height:6px;background:#EDE8DC;border-radius:3px;overflow:hidden;text-decoration:none}",
       "html body #page .fo-mk-full .fb u s{display:block;height:100%;border-radius:3px;text-decoration:none}",
       "html body #page .fo-mk-full .fb u s.t1{background:#C05B45}",
@@ -1291,14 +1292,14 @@
       // THE AUCTIONEER'S LINE (B3): cream carries every fact, gold is spent
       // on the clock alone, orange on the one button alone
       "html body #page .fo-mk-row .rail{background:linear-gradient(170deg,#14243A,#0C1C31);color:#F6EFDF;padding:18px 20px;display:flex;flex-direction:column;gap:5px;justify-content:center}",
-      "html body #page .fo-mk-row.lead .rail{background:linear-gradient(170deg,#14313A,#0C2420)}",
+      "html body #page .fo-mk-row.lead .rail{background:linear-gradient(170deg,#14243A,#0C1B2E)}",
       "html body #page .fo-mk-row .rail .lb2{font:600 11px/1 Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(246,239,223,.42)}",
       "html body #page .fo-mk-row .rail .lb2.hm{margin-top:7px}",
-      "html body #page .fo-mk-row .rail .club{font:600 13px/1.4 Inter,sans-serif;color:#FFFDF7;text-decoration:none;border-bottom:1px solid rgba(255,253,247,.3);align-self:flex-start}",
-      "html body #page .fo-mk-row .rail a.club:hover{border-bottom-color:#FFFDF7;color:#FFFDF7}",
+      "html body #page .fo-mk-row .rail .club{font:600 13px/1.4 Inter,sans-serif;color:#FFFEFC;text-decoration:none;border-bottom:1px solid rgba(255,253,247,.3);align-self:flex-start}",
+      "html body #page .fo-mk-row .rail a.club:hover{border-bottom-color:#FFFEFC;color:#FFFEFC}",
       "html body #page .fo-mk-row .rail .club.you{color:#8FD6B5;border-bottom-color:transparent}",
       "html body #page .fo-mk-row .rail .club.none{color:rgba(246,239,223,.5);border-bottom-color:transparent;font-weight:400}",
-      "html body #page .fo-mk-row .rail .amt{font:600 32px/1 Inter,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums;margin-top:5px}",
+      "html body #page .fo-mk-row .rail .amt{font:600 32px/1 Inter,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums;margin-top:5px}",
       "html body #page .fo-mk-row .rail .amt i{font:600 11px/1 Inter,sans-serif;font-style:normal;color:rgba(246,239,223,.5);letter-spacing:.08em;margin-left:6px}",
       "html body #page .fo-mk-row .rail .rsv{font:400 12px/1.4 Inter,sans-serif;color:rgba(246,239,223,.55)}",
       "html body #page .fo-mk-row .rail .hmwrap{display:block}",
@@ -1313,7 +1314,7 @@
       "html body #page .fo-mk-row .rail .go{margin-top:10px;font:600 13px/1 Inter,sans-serif !important;letter-spacing:.14em;text-transform:uppercase;color:#FFFEFC !important;background:#C9571F !important;border:0 !important;border-radius:9px !important;padding:13px 0 !important;width:100%;cursor:pointer;transition:background .15s}",
       "html body #page .fo-mk-row .rail .go:hover{background:#B44A22 !important}",
       "html body #page .fo-mk-row .rail .cust{display:flex;align-items:center;gap:8px;margin-top:8px}",
-      "html body #page .fo-mk-row .rail .cust input.fo-mk-in{flex:1;min-width:0;background:transparent !important;border:0 !important;border-bottom:1px solid rgba(246,239,223,.28) !important;border-radius:0 !important;color:#FFFDF7 !important;font:600 13px/1 Inter,sans-serif !important;padding:8px 2px !important;font-variant-numeric:tabular-nums;box-shadow:none !important;min-height:0 !important}",
+      "html body #page .fo-mk-row .rail .cust input.fo-mk-in{flex:1;min-width:0;background:transparent !important;border:0 !important;border-bottom:1px solid rgba(246,239,223,.28) !important;border-radius:0 !important;color:#FFFEFC !important;font:600 13px/1 Inter,sans-serif !important;padding:8px 2px !important;font-variant-numeric:tabular-nums;box-shadow:none !important;min-height:0 !important}",
       "html body #page .fo-mk-row .rail .cust input.fo-mk-in::placeholder{color:rgba(246,239,223,.35);font-weight:400}",
       "html body #page .fo-mk-row .rail .cust input.fo-mk-in:focus{outline:none !important;border-bottom-color:#E8B96A !important}",
       "html body #page .fo-mk-row .rail .cust input.fo-mk-in.no{animation:fo-mk-shake .4s}",
@@ -1342,16 +1343,16 @@
       "html body #page .fo-mk-swho a.bdoor{text-decoration:none}",
       "html body #page .fo-mk-swho a.bdoor b{border-bottom:1px dotted rgba(201,87,31,.5)}",
       "html body #page .fo-mk-swho a.bdoor:hover b{color:#C9571F;border-bottom-color:#C9571F}",
-      "html body #page .fo-mk-swho .amt2{font:600 12.5px/1 Fraunces,Georgia,serif;color:#14243A;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-swho .amt2{font:650 12.5px/1 Inter,sans-serif;color:#14243A;font-variant-numeric:tabular-nums}",
       "html body #page .fo-mk-swho .st{display:block;font:600 12px/1.5 Inter,sans-serif;font-style:normal;margin-top:3px}",
       "html body #page .fo-mk-swho .st.lead{color:#177A57}",
       "html body #page .fo-mk-swho .st.out{color:#8E1F13}",
-      "html body #page .fo-mk-swho .st.gone{color:#98a0ae}",
+      "html body #page .fo-mk-swho .st.gone{color:#6A6354}",
       "html body #page .fo-mk-shammer{flex:0 0 auto;text-align:right}",
-      "html body #page .fo-mk-shammer i{display:block;font:600 11px/1 Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#98a0ae;font-style:normal;margin-bottom:4px}",
-      "html body #page .fo-mk-shammer .clk{font:600 14px/1.15 Inter,sans-serif;letter-spacing:.05em;color:#B8933A;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-shammer i{display:block;font:600 11px/1 Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#6A6354;font-style:normal;margin-bottom:4px}",
+      "html body #page .fo-mk-shammer .clk{font:600 14px/1.15 Inter,sans-serif;letter-spacing:.05em;color:#C08A2E;font-variant-numeric:tabular-nums}",
       "html body #page .fo-mk-shammer .clk.soon,html body #page .fo-mk-shammer .clk.final{color:#8E1F13;animation:none}",
-      "html body #page .fo-mk-shammer .clk.gone{color:#98a0ae}",
+      "html body #page .fo-mk-shammer .clk.gone{color:#6A6354}",
       "html body #page .fo-mk-shammer .hnote{display:none}",
       "html body #page .fo-mk-swho{min-width:0;flex:1}",
       "html body #page .fo-mk-swho b{font:600 14px/1.25 Fraunces,Georgia,serif;color:#1B2432}",
@@ -1412,7 +1413,7 @@
       "html body #page .fo-mk-tbl td .yth{vertical-align:1px;margin-left:6px}",
       "html body #page .fo-mk-tbl .hmwrap.tbl .clk{display:inline;font:600 12.5px/1.2 Inter,sans-serif;letter-spacing:.04em;color:#14243A;font-variant-numeric:tabular-nums}",
       "html body #page .fo-mk-tbl .hmwrap.tbl .clk.soon,html body #page .fo-mk-tbl .hmwrap.tbl .clk.final{color:#8E1F13;animation:none}",
-      "html body #page .fo-mk-tbl .hmwrap.tbl .clk.gone{color:#98a0ae}",
+      "html body #page .fo-mk-tbl .hmwrap.tbl .clk.gone{color:#6A6354}",
       "html body #page .fo-mk-tbl .hmwrap.tbl .hnote{display:none}",
       "html body #page .fo-mk-tbl .qb{font:600 11px/1 Inter,sans-serif !important;letter-spacing:.1em;text-transform:uppercase;color:#FFFEFC !important;background:#C9571F !important;border:0 !important;border-radius:999px !important;padding:8px 12px !important;cursor:pointer;box-shadow:none !important}",
       "html body #page .fo-mk-tbl .qb:hover{background:#B44A22 !important}",
@@ -1435,10 +1436,10 @@
       "#fo-wire-pop .ic{flex:none;width:30px;height:30px;border-radius:9px;display:flex;align-items:center;justify-content:center;font-size:12px}",
       "#fo-wire-pop .ic.out{background:rgba(142,31,19,.1);color:#8E1F13}",
       "#fo-wire-pop .ic.in{background:rgba(23,122,87,.1);color:#177A57}",
-      "#fo-wire-pop .ic.won{background:rgba(232,185,106,.2);color:#B8933A}",
+      "#fo-wire-pop .ic.won{background:rgba(232,185,106,.2);color:#C08A2E}",
       "#fo-wire-pop .ic.gone{background:rgba(27,36,50,.07);color:#67748a}",
       "#fo-wire-pop .tx{min-width:0;font:400 13px/1.5 Inter,sans-serif;color:#2a3444;white-space:normal}",
-      "#fo-wire-pop .tx i{display:block;font-style:normal;font:400 12px/1.5 Inter,sans-serif;color:#98a0ae;margin-top:2px}",
+      "#fo-wire-pop .tx i{display:block;font-style:normal;font:400 12px/1.5 Inter,sans-serif;color:#6A6354;margin-top:2px}",
       "#fo-wire-pop .none{padding:24px 18px;font:400 12.5px/1.6 Fraunces,Georgia,serif;color:rgba(20,28,40,.5);text-align:center}",
       // the pinned asks: things to do, with the urgent ones wearing the ember
       "#fo-wire-pop .it.ask{background:#F8F6EF;border-left:3px solid rgba(180,74,34,.4)}",

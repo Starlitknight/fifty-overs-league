@@ -805,10 +805,10 @@
         return "<div class='fd-ftime'><u>FULL TIME</u><b>" +
           (rTx ? E(rTx) : "the umpire is signing the card&hellip;") + "</b></div>";
       })() : "") +
-      (done && !cal.__fr ? "<a class='fd-enter' href='#/report?n=" + encodeURIComponent(rid) + "&w=" + encodeURIComponent(id) + "'>The full report and scorecard &rsaquo;</a>" : "") +
+      (done && !cal.__fr ? "<a class='fd-enter' href='#/report?n=" + encodeURIComponent(rid) + "&w=" + encodeURIComponent(id) + "'>The full report &rsaquo;</a>" : "") +
       // A FRIENDLY GETS THE FULL REPORT NOW, the same Journal page a league
       // match opens - so the stage sends the reader there rather than to a tab
-      (done && cal.__fr ? "<a class='fd-enter' href='#/report?fr=" + E(String(id).replace(/^fr:/, "")) + "'>The full report and scorecard &rsaquo;</a>" : "") +
+      (done && cal.__fr ? "<a class='fd-enter' href='#/report?fr=" + E(String(id).replace(/^fr:/, "")) + "'>The full report &rsaquo;</a>" : "") +
       strip +
       "</div></div>";
 
@@ -989,12 +989,12 @@
     if (!out) {
       return "<div class='fd-panel fd-crease'><div class='fd-bh'><div class='tl'><b>HOW IT FINISHED</b></div></div>" +
         "<p class='fd-dim'>The card carries the full account of it.</p>" +
-        "<button type='button' class='fd-viewsc' onclick='foFeedTab(\"card\")'>VIEW FULL SCORECARD</button></div>";
+        "<button type='button' class='fd-viewsc' onclick='foFeedTab(\"card\")'>View the scorecard</button></div>";
     }
     return "<div class='fd-panel fd-crease'>" +
       "<div class='fd-bh'><div class='tl'><b>HOW IT FINISHED</b></div></div>" +
       out +
-      "<button type='button' class='fd-viewsc' onclick='foFeedTab(\"card\")'>VIEW FULL SCORECARD</button>" +
+      "<button type='button' class='fd-viewsc' onclick='foFeedTab(\"card\")'>View the scorecard</button>" +
       "</div>";
   }
 
@@ -1039,14 +1039,14 @@
     if (!rows && !bowl) {
       return "<div class='fd-panel fd-crease'><div class='fd-bh'><div class='tl'><b>AT THE CREASE</b></div></div>" +
         "<p class='fd-dim'>The umpire names the men at the crease from the first over.</p>" +
-        "<button type='button' class='fd-viewsc' onclick='foFeedTab(\"card\")'>VIEW FULL SCORECARD</button></div>";
+        "<button type='button' class='fd-viewsc' onclick='foFeedTab(\"card\")'>View the scorecard</button></div>";
     }
     return "<div class='fd-panel fd-crease'>" +
       "<div class='fd-bh'><div class='tl'><b>AT THE CREASE</b></div></div>" +
       rows +
       (bowl ? "<div class='dv'></div>" + bowl : "") +
       ((pship || curOv) ? "<div class='dv'></div>" + pship + curOv : "") +
-      "<button type='button' class='fd-viewsc' onclick='foFeedTab(\"card\")'>VIEW FULL SCORECARD</button>" +
+      "<button type='button' class='fd-viewsc' onclick='foFeedTab(\"card\")'>View the scorecard</button>" +
       "</div>";
   }
 
@@ -1358,12 +1358,12 @@
       ".fo-fd .fd-bugchips .ch i{width:9px;height:9px;border-radius:3px;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}",
       ".fo-fd .fd-bugchips .ch.toss{margin-left:auto}",
       ".fo-fd .fd-bug{display:flex;align-items:center;gap:10px}",
-      ".fo-fd .fd-bug b{font:700 clamp(24px,6.4vw,32px)/1 Inter,sans-serif;text-transform:uppercase;letter-spacing:.02em;color:#FFFDF7;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".fo-fd .fd-bug b{font:700 clamp(24px,6.4vw,32px)/1 Inter,sans-serif;text-transform:uppercase;letter-spacing:.02em;color:#FFFEFC;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       ".fo-fd .fd-bug b a{color:inherit !important;text-decoration:none !important}",
       ".fo-fd .fd-bug s{width:9px;height:9px;border-radius:50%;background:var(--fogold);text-decoration:none;flex:none}",
       ".fo-fd .fd-bugsub{margin-top:6px;font:600 11px/1.5 Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(244,239,228,.55)}",
       ".fo-fd .fd-bugsub a{color:rgba(244,239,228,.75) !important;text-decoration:none !important}",
-      ".fo-fd .fd-bugsub a:hover{color:#FFFDF7 !important}",
+      ".fo-fd .fd-bugsub a:hover{color:#FFFEFC !important}",
       ".fo-fd .fd-scorerow{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-top:8px}",
       ".fo-fd .fd-scorerow em{font-style:normal;font:700 clamp(48px,6vw,68px)/1 Inter,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums;letter-spacing:.01em}",
       ".fo-fd .fd-scorerow span{font:700 21px/1 Inter,sans-serif;color:var(--fogold);font-variant-numeric:tabular-nums}",
@@ -1386,7 +1386,7 @@
       ".fo-fd .fd-strip .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,var(--fogold),var(--foor))}",
       ".fo-fd .fd-strip .bar em{position:absolute;top:50%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:var(--fogold);color:var(--fon9);font:700 11px/24px Inter,sans-serif;font-style:normal;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.35)}",
       ".fo-fd .fd-sub{font:400 14px/1.6 Fraunces,Georgia,serif;color:rgba(255,254,252,.78);margin-top:10px}",
-      "html body #page .fo-fd .fd-enter{display:inline-block;margin-top:14px;font:700 11.5px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:var(--foor) !important;border:none;border-radius:999px;padding:12px 22px;cursor:pointer;text-align:center;text-decoration:none !important;align-self:flex-start}",
+      "html body #page .fo-fd .fd-enter{display:inline-block;margin-top:14px;font:600 14px/1 Inter,sans-serif;letter-spacing:.01em;color:#FFFEFC !important;background:var(--foor) !important;border:none;border-radius:999px;padding:12px 22px;cursor:pointer;text-align:center;text-decoration:none !important;align-self:flex-start}",
       "html body #page .fo-fd .fd-ftime{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;margin:12px 0 0}",
       "html body #page .fo-fd .fd-ftime u{text-decoration:none;flex:none;font:700 11px/1 Inter,sans-serif;letter-spacing:.22em;color:#E8B96A}",
       "html body #page .fo-fd .fd-ftime b{font:600 16px/1.35 Fraunces,Georgia,serif;font-weight:600;color:#FFFEFC}",
@@ -1456,7 +1456,7 @@
       ".fo-fd .fd-crease .pv{font:700 13px Inter,sans-serif;letter-spacing:.06em;color:var(--foink);margin-bottom:10px}",
       "html body #page .fo-fd .fd-allbtn{display:block;width:100%;margin-top:10px;font:700 11px Inter,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;color:#C9571F !important;background:transparent !important;border:1px dashed #e0b9a4 !important;border-radius:10px;padding:11px;cursor:pointer}",
       "html body #page .fo-fd .fd-allbtn:hover{border-style:solid !important}",
-      "html body #page .fo-fd .fd-viewsc{display:block;width:100%;margin-top:14px;font:700 11px Inter,sans-serif !important;letter-spacing:.16em;color:var(--foink) !important;background:transparent !important;border:1px solid rgba(20,36,58,.3) !important;border-radius:12px;padding:11px;min-height:44px;background:#FFFEFC !important;cursor:pointer;text-align:center;transition:border-color .15s}",
+      "html body #page .fo-fd .fd-viewsc{display:block;width:100%;margin-top:14px;font:600 13px Inter,sans-serif !important;letter-spacing:.01em;color:var(--foink) !important;background:transparent !important;border:1px solid rgba(20,36,58,.3) !important;border-radius:12px;padding:11px;min-height:44px;background:#FFFEFC !important;cursor:pointer;text-align:center;transition:border-color .15s}",
       "html body #page .fo-fd .fd-viewsc:hover{border-color:var(--foor) !important;color:var(--foor) !important}",
       // ---- the scorecard tables
       ".fo-fd .fd-ch{font:700 11px Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fomut);margin:2px 0 8px}",

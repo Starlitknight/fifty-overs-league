@@ -56,7 +56,10 @@
     return "";
   }
   function ART() { try { return FO_ART; } catch (e) { return (location.pathname.indexOf("/client/") !== -1) ? "art/" : "client/art/"; } }
-  function money(n) { n = Math.round(n || 0); return "$" + (n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "K" : n); }
+  function money(n) {
+    if (window.foMoney) return window.foMoney(n);
+    n = Math.round(n || 0); return "$" + (n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "K" : n);
+  }
   function num(v) { return Math.max(0, Math.min(99, Math.round(v || 0))); }
   function h32(s) { var h = 2166136261 >>> 0; s = String(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
   function cap(s) { s = String(s || ""); return s.charAt(0).toUpperCase() + s.slice(1); }
@@ -163,7 +166,7 @@
     var shape = vals.map(function (v, i) { return pt(i, R * Math.max(0.06, Math.min(1, (v[1] || 0) / 100))).join(","); }).join(" ");
     var dots = vals.map(function (v, i) {
       var q = pt(i, R * Math.max(0.06, Math.min(1, (v[1] || 0) / 100)));
-      return "<circle cx='" + q[0] + "' cy='" + q[1] + "' r='2.6' fill='#C9A24B'></circle>";
+      return "<circle cx='" + q[0] + "' cy='" + q[1] + "' r='2.6' fill='#8F6A1C'></circle>";
     }).join("");
     var labs = vals.map(function (v, i) {
       var q = pt(i, R + 15), a = -Math.PI / 2 + i * 2 * Math.PI / n;
@@ -171,7 +174,7 @@
       return "<text x='" + q[0] + "' y='" + (+q[1] + 3).toFixed(1) + "' text-anchor='" + anc + "' class='fo-pp-rlab'>" + E(v[0].toUpperCase()) + "</text>";
     }).join("");
     return "<svg class='fo-pp-radar' viewBox='-34 -10 224 172' role='img' aria-label='Skill shape'>" + web + spokes +
-      "<polygon points='" + shape + "' fill='rgba(201,162,75,.28)' stroke='#C9A24B' stroke-width='1.6'></polygon>" +
+      "<polygon points='" + shape + "' fill='rgba(201,162,75,.28)' stroke='#8F6A1C' stroke-width='1.6'></polygon>" +
       dots + labs + "</svg>";
   }
 
@@ -1272,7 +1275,7 @@
   window.addEventListener("hashchange", function () { setTimeout(harvest, 120); setTimeout(harvest, 400); });
 
   var CSS = [
-    "html body #page .fo-pp{position:relative;max-width:1000px;margin:14px auto 44px;padding:0 12px;color:#1B2432;--navy:#0C1B2E;--gold:#C9A24B;--nac:#C9571F}",
+    "html body #page .fo-pp{position:relative;max-width:1000px;margin:14px auto 44px;padding:0 12px;color:#1B2432;--navy:#0C1B2E;--gold:#8F6A1C;--nac:#C9571F}",
     "html body #page .fo-pp-attic{display:none}",
     // ---- the umpire's match log --------------------------------------------
     "html body #page .fo-pp-slot[data-slot='recent'] .pad{overflow-x:auto}",
@@ -1374,7 +1377,7 @@
     "html body #page .fo-pp-learn i{font:600 12.5px/1.3 Inter,sans-serif;font-style:normal;color:#1B2432}",
     "html body #page .fo-pp-learn em{font:700 12.5px/1.3 Inter,sans-serif;font-style:normal;color:#B08409;font-variant-numeric:tabular-nums;text-align:right}",
     "html body #page .fo-pp-learn u{grid-column:1/-1;display:block;height:5px;border-radius:3px;background:rgba(20,28,40,.09);text-decoration:none;overflow:hidden}",
-    "html body #page .fo-pp-learn u b{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#E8B96A,#C9A24B)}",
+    "html body #page .fo-pp-learn u b{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#E8B96A,#8F6A1C)}",
     // a talent he EARNED is not a talent he was dealt, and the card says which
     "html body #page .fo-pp-talk.won{background:#14243A;color:#E8B96A}",
     "html body #page .fo-pp-body{display:block}",
@@ -1403,7 +1406,7 @@
     "html body #page .fo-pp-bar{display:grid;grid-template-columns:74px minmax(0,1fr) 26px;align-items:center;gap:9px}",
     "html body #page .fo-pp-bar i{font:700 11px/1 Inter,sans-serif;letter-spacing:.12em;color:rgba(20,28,40,.5);font-style:normal}",
     "html body #page .fo-pp-bar u{display:block;height:6px;border-radius:999px;background:rgba(20,28,40,.08);overflow:hidden;text-decoration:none}",
-    "html body #page .fo-pp-bar u b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#C9A24B,#E8C06A)}",
+    "html body #page .fo-pp-bar u b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#8F6A1C,#E8C06A)}",
     "html body #page .fo-pp-bar em{text-align:right;font:600 13px/1 Inter,sans-serif;font-style:normal;color:#1B2432;font-variant-numeric:tabular-nums}",
     "html body #page .fo-pp-adv{margin-top:12px}",
     "html body #page .fo-pp-adv summary{font:600 13px/1 Inter,sans-serif;color:var(--nac);cursor:pointer}",

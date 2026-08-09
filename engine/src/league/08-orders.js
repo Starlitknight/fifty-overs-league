@@ -6,7 +6,7 @@
   // the AI captain see exactly what they always saw. Sub-panels re-render
   // in place - no page rebuilds.
   // =========================================================================
-  var FO_ORD_COLS = ["#22635F", "#a33328", "#1c5537", "#c08a2b", "#6a4a8f", "#0E6E6A", "#8f5a2d"];
+  var FO_ORD_COLS = ["#22635F", "#B23230", "#1c5537", "#c08a2b", "#6a4a8f", "#0E6E6A", "#8f5a2d"];
   try {
     // (set-XI honoring — ordersMap / saved user XI — now lives in the
     // engine's pickXI itself)
@@ -407,11 +407,11 @@
   // then anyone with a bowling type, then the pure batter.
   var FO_RIC = {
     // an angled willow bat: handle top-right, blade bottom-left
-    bat: "<svg viewBox='0 0 16 16'><g transform='rotate(40 8 8)'><rect x='7' y='1' width='2' height='3.4' rx='.9' fill='#7a5230'/><rect x='5.5' y='4.2' width='5' height='9.6' rx='2.1' fill='#C9A24B'/></g></svg>",
+    bat: "<svg viewBox='0 0 16 16'><g transform='rotate(40 8 8)'><rect x='7' y='1' width='2' height='3.4' rx='.9' fill='#7a5230'/><rect x='5.5' y='4.2' width='5' height='9.6' rx='2.1' fill='#8F6A1C'/></g></svg>",
     // a solid red cricket ball with a quiet darker-red seam
     bwl: "<svg viewBox='0 0 16 16'><circle cx='8' cy='8' r='6.4' fill='#C2352A'/><path d='M4 5.2c2.5 1.3 5.5 1.3 8 0M4 10.8c2.5-1.3 5.5-1.3 8 0' stroke='#8f231b' stroke-width='.9' fill='none' stroke-linecap='round'/></svg>",
     // both: an angled bat on the left, a red ball on the right
-    ar: "<svg viewBox='0 0 16 16'><g transform='rotate(40 5 8)'><rect x='4.4' y='1.6' width='1.5' height='2.5' rx='.7' fill='#7a5230'/><rect x='3.4' y='3.9' width='3.6' height='7.2' rx='1.5' fill='#C9A24B'/></g><circle cx='11.3' cy='10.6' r='4.1' fill='#C2352A'/><path d='M8.3 8.9c1.9.8 4.1.8 6 0' stroke='#8f231b' stroke-width='.7' fill='none' stroke-linecap='round'/></svg>",
+    ar: "<svg viewBox='0 0 16 16'><g transform='rotate(40 5 8)'><rect x='4.4' y='1.6' width='1.5' height='2.5' rx='.7' fill='#7a5230'/><rect x='3.4' y='3.9' width='3.6' height='7.2' rx='1.5' fill='#8F6A1C'/></g><circle cx='11.3' cy='10.6' r='4.1' fill='#C2352A'/><path d='M8.3 8.9c1.9.8 4.1.8 6 0' stroke='#8f231b' stroke-width='.7' fill='none' stroke-linecap='round'/></svg>",
     // three brown stumps with two bails that BOTH rest on the middle stump
     // (bail 1 bridges left+middle, bail 2 bridges middle+right)
     wk: "<svg viewBox='0 0 16 16'><g fill='#7a5230'><rect x='2.7' y='2.4' width='2.2' height='11.4' rx='.6'/><rect x='6.9' y='2.4' width='2.2' height='11.4' rx='.6'/><rect x='11.1' y='2.4' width='2.2' height='11.4' rx='.6'/></g><g fill='#a9803f'><rect x='3.4' y='1.1' width='4.9' height='1.5' rx='.7'/><rect x='7.7' y='1.1' width='4.9' height='1.5' rx='.7'/></g></svg>"
@@ -1349,7 +1349,7 @@
       // look never flashes while the star decorator catches up
       "table.fo-sct .fo-tal-tag,table.ftp-scorecard .fo-tal-tag,table.ftp-bowling .fo-tal-tag{display:none!important}" +
       ".fo-ord-cond{background:#F0F4F8;border:1px solid rgba(31,78,107,.16);border-radius:10px;padding:9px 13px;font-size:12.5px;color:#243244;margin:6px 0 10px}" +
-      ".fo-ord-read{background:#FBF7EC;border:1px solid rgba(201,162,75,.35);border-left:4px solid #C9A24B;border-radius:10px;padding:9px 13px;color:#4a4234;margin:0 0 10px;line-height:1.5}" +
+      ".fo-ord-read{background:#FBF7EC;border:1px solid rgba(201,162,75,.35);border-left:4px solid #8F6A1C;border-radius:10px;padding:9px 13px;color:#4a4234;margin:0 0 10px;line-height:1.5}" +
       ".fo-ord-strat{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px;margin:2px 0 4px}" +
       "@media(max-width:640px){.fo-ord-strat{grid-template-columns:1fr}}" +
       "html body.ftpskin #page button.fo-ord-pcard,html body #page button.fo-ord-pcard{text-align:left;border:2px solid rgba(28,36,51,.12) !important;background:#FFFEFC !important;border-radius:12px;padding:10px 12px;cursor:pointer;display:flex;flex-direction:column;gap:3px;min-width:0}" +
@@ -1807,7 +1807,7 @@
       // colour every engine skill bar by its value (green-only bars read as noise)
       page.querySelectorAll(".bar>i").forEach(function (i) {
         var v = parseFloat(i.style.width) || 0;
-        i.style.background = v >= 75 ? "#16A34A" : v >= 50 ? "#4DA6A2" : v >= 30 ? "#F59E0B" : "#B23230";
+        i.style.background = v >= 75 ? "#16A34A" : v >= 50 ? "#4DA6A2" : v >= 30 ? "#C08A2E" : "#B23230";
       });
       // the grid's Capt header is hard-coded unsortable · wire it up
       page.querySelectorAll("th").forEach(function (th) {

@@ -259,8 +259,8 @@
       ".fo-nt-row i{display:block;margin-top:2px;font:400 13px/1.45 Inter,sans-serif;color:#6d6455;font-style:normal}",
       ".fo-nt-row .wh{font:600 11px Inter,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#b3aa96;white-space:nowrap;align-self:start;padding-top:3px}",
       // an ask reads as a thing to do, not a thing that happened
-      ".fo-nt-row.ask .ic{background:#FBF2E2;color:#B8933A}",
-      ".fo-nt-row.ask .wh{color:#B8933A}",
+      ".fo-nt-row.ask .ic{background:#FBF2E2;color:#C08A2E}",
+      ".fo-nt-row.ask .wh{color:#C08A2E}",
       ".fo-nt-row.urgent .ic{background:#FBEAE0;color:#C9571F}",
       ".fo-nt-row.urgent .wh{color:#C9571F}",
       ".fo-nt-row.urgent b{color:#B44A22}",

@@ -107,14 +107,14 @@
     if (document.getElementById("fo-si-css")) return;
     var s = document.createElement("style"); s.id = "fo-si-css";
     s.textContent = [
-      ".fo-si{--nv:#14243A;--nv2:#0C1B2E;--cr:#F1EEE6;--pp:#FFFEFC;--gd:#E8B96A;--gdD:#B8933A;--or:#C9571F;--hair:rgba(27,36,50,.12);--mut:#7B8698}",
+      ".fo-si{--nv:#14243A;--nv2:#0C1B2E;--cr:#F1EEE6;--pp:#FFFEFC;--gd:#E8B96A;--gdD:#C08A2E;--or:#C9571F;--hair:rgba(27,36,50,.12);--mut:#7B8698}",
       ".fo-si *{box-sizing:border-box}",
 
       /* ---- the band: navy desk over the daylight working area ---- */
       ".fo-si-band{background:linear-gradient(168deg,#182B44,#0C1B2E);border-radius:14px;padding:18px 20px 20px;margin:0 0 16px}",
       ".fo-si-bhd{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin:0 0 16px}",
       ".fo-si-ey{font:600 11px/1 Inter,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:var(--gd);margin:0 0 9px}",
-      ".fo-si-bhd h2{margin:0;font:700 27px/1 Inter,sans-serif;letter-spacing:.02em;text-transform:uppercase;color:#FFFDF7}",
+      ".fo-si-bhd h2{margin:0;font:700 27px/1 Inter,sans-serif;letter-spacing:.02em;text-transform:uppercase;color:#FFFEFC}",
       ".fo-si-actions{display:flex;align-items:center;gap:8px}",
       "html body #page .fo-si select{appearance:none;-webkit-appearance:none;min-width:118px;height:36px;border:1px solid rgba(232,185,106,.32) !important;border-radius:9px !important;background:rgba(255,253,247,.06) url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%23E8B96A' stroke-width='1.4'/%3E%3C/svg%3E\") no-repeat right 12px center/9px 6px !important;color:#F1EEE6 !important;font:600 11px Inter,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;padding:0 32px 0 13px !important;box-shadow:none !important;cursor:pointer}",
       "html body #page .fo-si select option{color:#14243A;background:#FFFEFC}",
@@ -122,7 +122,7 @@
       ".fo-si-kpi{border:1px solid rgba(232,185,106,.18);border-radius:11px;background:rgba(255,253,247,.05);padding:12px 13px 13px}",
       ".fo-si-kpi span{display:block;font:600 11px/1 Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(241,238,230,.5)}",
       ".fo-si-kpi .v{display:flex;align-items:flex-end;gap:11px;margin-top:10px}",
-      ".fo-si-kpi b{font:700 25px/1 Inter,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums}",
+      ".fo-si-kpi b{font:700 25px/1 Inter,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums}",
       // the note stays beside the figure it qualifies. Pushed to the far edge
       // of a card this wide it read as a separate, unrelated word.
       ".fo-si-kpi em{font-style:normal;font:600 11px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#5FBF98;padding-bottom:3px}",
@@ -173,7 +173,7 @@
       "html body #page button.fo-si-dot{position:absolute;width:34px !important;height:34px !important;min-width:0 !important;min-height:0 !important;margin:-17px 0 0 -17px;padding:0 !important;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,254,252,.9) !important;border-radius:50% !important;font:700 13px/1 Inter,sans-serif !important;font-variant-numeric:tabular-nums;color:#F1EEE6 !important;background:var(--nv) !important;box-shadow:0 2px 7px rgba(20,36,58,.2) !important;cursor:pointer;z-index:3;transition:transform .14s ease}",
       "html body #page button.fo-si-dot.bat{background:#C9571F !important}",
       "html body #page button.fo-si-dot.ar{background:#177A57 !important}",
-      "html body #page button.fo-si-dot.wk{background:#B8933A !important}",
+      "html body #page button.fo-si-dot.wk{background:#C08A2E !important}",
       "html body #page button.fo-si-dot:hover{transform:scale(1.1);z-index:5}",
       "html body #page button.fo-si-dot.on{box-shadow:0 0 0 3px var(--gd),0 2px 9px rgba(20,36,58,.3) !important;z-index:6}",
       ".fo-si-dl{position:absolute;margin:-.5em 0 0 20px;font:500 10px/1 Inter,sans-serif;color:#4C5867;white-space:nowrap;z-index:4;pointer-events:none;text-shadow:0 0 3px #FFFEFC,0 0 3px #FFFEFC,0 0 3px #FFFEFC}",
@@ -181,7 +181,7 @@
       ".fo-si-key{display:flex;flex-wrap:wrap;gap:14px;padding:0 16px 15px}",
       ".fo-si-key span{display:inline-flex;align-items:center;gap:6px;font:600 11px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}",
       ".fo-si-key i{width:9px;height:9px;border-radius:50%;background:var(--nv)}",
-      ".fo-si-key i.bat{background:#C9571F}.fo-si-key i.ar{background:#177A57}.fo-si-key i.wk{background:#B8933A}",
+      ".fo-si-key i.bat{background:#C9571F}.fo-si-key i.ar{background:#177A57}.fo-si-key i.wk{background:#C08A2E}",
 
       ".fo-si-bar{height:6px;border-radius:4px;background:#E7E1D3;overflow:hidden}",
       ".fo-si-bar i{display:block;height:100%;border-radius:4px;background:#177A57}",
@@ -191,9 +191,9 @@
       ".fo-si-hero{position:relative;padding:18px 18px 20px;min-height:230px;overflow:hidden;background:linear-gradient(168deg,#182B44,#0C1B2E)}",
       ".fo-si-hero .lb{position:relative;z-index:3;display:block;font:600 11px/1 Inter,sans-serif;letter-spacing:.21em;text-transform:uppercase;color:var(--gd)}",
       ".fo-si-idw{position:relative;z-index:3;width:150px}",
-      ".fo-si-hero h3{margin:13px 0 4px;font:600 25px/.98 Fraunces,Fraunces,Georgia,serif;color:#FFFDF7}",
+      ".fo-si-hero h3{margin:13px 0 4px;font:600 25px/.98 Fraunces,Fraunces,Georgia,serif;color:#FFFEFC}",
       ".fo-si-hero .mt{font:400 10px/1.45 Inter,sans-serif;color:rgba(246,239,223,.6)}",
-      ".fo-si-hero .big{position:relative;z-index:3;margin-top:16px;font:700 50px/.8 Inter,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums}",
+      ".fo-si-hero .big{position:relative;z-index:3;margin-top:16px;font:700 50px/.8 Inter,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums}",
       ".fo-si-hero .big span{display:block;margin-top:9px;font:600 11px/1 Inter,sans-serif;letter-spacing:.19em;text-transform:uppercase;color:rgba(246,239,223,.55)}",
       ".fo-si-plate{position:absolute;right:14px;bottom:0;z-index:2;width:110px;height:186px;object-fit:cover;object-position:50% 22%;border-radius:9px 9px 0 0;box-shadow:0 0 0 1px rgba(232,185,106,.34),0 -6px 26px rgba(0,0,0,.4)}",
       ".fo-si-stats{padding:15px 17px 17px}",

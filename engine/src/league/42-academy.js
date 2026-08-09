@@ -43,6 +43,7 @@
       .catch(function () { return null; });
   }
   function money(v) {
+    if (window.foMoney) return window.foMoney(v);
     var n = Number(v);
     if (!isFinite(n)) return "&mdash;";
     var neg = n < 0; n = Math.abs(n);

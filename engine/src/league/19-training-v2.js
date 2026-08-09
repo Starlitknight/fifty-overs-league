@@ -277,7 +277,7 @@
   // THE CHART PALETTE IS THE WORLD'S PALETTE. Rust, green, navy and gold
   // first, then four muted relatives of the same - so eight series still read
   // apart without a purple or a blue wandering in from another game.
-  var LINE_C = ["#C9571F", "#177A57", "#14243A", "#B8933A",
+  var LINE_C = ["#C9571F", "#177A57", "#14243A", "#C08A2E",
                 "#8C3B1B", "#4B7F5A", "#A6763A", "#5C6B57"];
 
   // Only the flat programme bar may be stretched to fill its box; anything
@@ -762,8 +762,8 @@
       ".fo-t2-hero h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:34px;color:#FFFEFC;margin:4px 0 0}",
       ".fo-t2-hero .cr svg{width:56px;height:74px}",
       // the academy strip: one building, and what it is worth and costs
-      "html body #page a.fo-t2-acad{display:flex;align-items:center;gap:14px;background:#FFFEFC;border:1px solid #e3dccb;border-left:4px solid #B8933A;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);padding:11px 14px;margin-bottom:12px;text-decoration:none;color:#14243A !important}",
-      "html body #page a.fo-t2-acad:hover{border-color:#B8933A}",
+      "html body #page a.fo-t2-acad{display:flex;align-items:center;gap:14px;background:#FFFEFC;border:1px solid #e3dccb;border-left:4px solid #C08A2E;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);padding:11px 14px;margin-bottom:12px;text-decoration:none;color:#14243A !important}",
+      "html body #page a.fo-t2-acad:hover{border-color:#C08A2E}",
       ".fo-t2-acad>span{min-width:0}",
       ".fo-t2-acad b{display:block;font:700 15px Inter,sans-serif;color:#14243A;white-space:nowrap}",
       ".fo-t2-acad i{display:block;margin-top:1px;font:600 11px Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#8a8272;font-style:normal;white-space:nowrap}",
@@ -773,7 +773,7 @@
       ".fo-t2-pip.on{background:linear-gradient(180deg,#E8B96A,#C08A2E);border-color:rgba(138,106,31,.55)}",
       ".fo-t2-acad .rt b{color:#177A57}",
       ".fo-t2-acad .rt,.fo-t2-acad .bill,.fo-t2-acad .nx{flex:1 1 0}",
-      ".fo-t2-acad .go{flex:0 0 auto;text-decoration:none;font:700 22px Inter,sans-serif;color:#B8933A;line-height:1}",
+      ".fo-t2-acad .go{flex:0 0 auto;text-decoration:none;font:700 22px Inter,sans-serif;color:#C08A2E;line-height:1}",
       // the plan
       ".fo-t2-card{background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);padding:14px 16px;margin-bottom:12px}",
       ".fo-t2-ck{font:700 11px Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#14243A;margin-bottom:8px}",
@@ -791,10 +791,10 @@
       ".fo-t2-tab i{font:700 11px/1 Inter,sans-serif;font-style:normal;letter-spacing:.02em;",
       "  color:#d3cab5;transition:color .2s ease}",
       "html body #page button.fo-t2-tab:hover{color:#6d6455 !important}",
-      "html body #page button.fo-t2-tab:hover i{color:#B8933A}",
+      "html body #page button.fo-t2-tab:hover i{color:#C08A2E}",
       "html body #page button.fo-t2-tab.on{color:#14243A !important}",
-      "html body #page button.fo-t2-tab.on i{color:#B8933A}",
-      "html body #page button.fo-t2-tab:focus-visible{outline:2px solid #B8933A;outline-offset:4px;border-radius:3px}",
+      "html body #page button.fo-t2-tab.on i{color:#C08A2E}",
+      "html body #page button.fo-t2-tab:focus-visible{outline:2px solid #C08A2E;outline-offset:4px;border-radius:3px}",
       // the rule is as long as the name it marks, and grows from its first letter
       ".fo-t2-tab:after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:2px;border-radius:2px;",
       "  background:linear-gradient(90deg,#C9571F,#E8B96A);",
@@ -812,12 +812,12 @@
       ".fo-t2-shirt svg{width:32px;height:32px;display:block}",
       ".fo-t2-shirt b{position:absolute;inset:5px 0 0 0;text-align:center;font:800 11px Inter,sans-serif;color:#F6F3EB}",
       ".fo-t2-who{min-width:0}",
-      ".fo-t2-who a{display:block;font:650 13.5px/1.25 Inter,sans-serif;color:#14243A !important;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.005em}",
+      ".fo-t2-who a{display:block;font:650 13.5px/1.25 Inter,sans-serif;color:#14243A !important;text-decoration:none;letter-spacing:-.005em}",
       "html body #page .fo-t2-row:hover .fo-t2-who a{color:#B44A22 !important}",
       ".fo-t2-who i{display:block;margin-top:2px;font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;",
       "  font:600 11px Inter,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#a49b86}",
       // the age rides in front of the craft like a shirt detail, not a sentence
-      ".fo-t2-who i u{text-decoration:none;color:#B8933A;margin-right:7px;font-weight:700}",
+      ".fo-t2-who i u{text-decoration:none;color:#C08A2E;margin-right:7px;font-weight:700}",
       // THE PICKERS. Twelve pairs of native selects read as a tax return, so
       // the chrome comes off: each is type on the paper, with a small caret
       // to say it moves, and it grows a frame only under the hand. The base
@@ -831,7 +831,7 @@
       "  padding:7px 24px 7px 9px !important;min-height:44px;cursor:pointer;box-shadow:none !important;",
       "  transition:border-color .15s ease,background-color .15s ease,color .15s ease}",
       "html body #page .fo-t2-row select:hover{border-color:#e2d9c5 !important;background-color:#FBF8F0 !important;color:#14243A !important}",
-      "html body #page .fo-t2-row select:focus{outline:none;border-color:#B8933A !important;background-color:#FFFDF7 !important;color:#14243A !important}",
+      "html body #page .fo-t2-row select:focus{outline:none;border-color:#C08A2E !important;background-color:#FFFEFC !important;color:#14243A !important}",
       "html body #page .fo-t2-row select:focus-visible{box-shadow:0 0 0 3px rgba(184,147,58,.18) !important}",
       // a focus actually set reads lit, so one glance down the column shows
       // which men are being aimed somewhere and which are just working
@@ -853,7 +853,7 @@
       "  color:#14243A !important;border:1px solid #e2d9c5 !important;border-radius:9px !important;",
       "  background:#FDFBF5 url(\"data:image/svg+xml;charset=UTF-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 10 6'%3E%3Cpath d='M1 1l4 4 4-4' fill='none' stroke='%23B8933A' stroke-width='1.7' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E\") no-repeat right 10px center/9px 6px !important;",
       "  padding:9px 28px 9px 12px !important;box-shadow:none !important;transition:border-color .15s ease}",
-      "html body #page .fo-t2-bay select:hover{border-color:#B8933A !important}",
+      "html body #page .fo-t2-bay select:hover{border-color:#C08A2E !important}",
       ".fo-t2-cbar{display:flex;align-items:center;gap:10px;margin-bottom:8px}",
       ".fo-t2-cbar i{font:600 11px Inter,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#8a8272;font-style:normal}",
       "html body #page select.fo-t2-who-pick{max-width:230px}",
@@ -899,7 +899,7 @@
       "  background:linear-gradient(180deg,#D2632A,#C9571F) !important;color:#FFFEFC !important;",
       "  border-color:#B34A18 !important;box-shadow:0 6px 18px rgba(201,87,31,.26) !important}",
       "html body #page button.fo-t2-save.dirty:hover{background:#B84D19 !important;color:#FFFEFC !important}",
-      "html body #page button.fo-t2-save:focus-visible{outline:2px solid #B8933A;outline-offset:3px}",
+      "html body #page button.fo-t2-save:focus-visible{outline:2px solid #C08A2E;outline-offset:3px}",
       ".fo-t2-fine{margin:9px 0 0;text-align:center;font:400 13px Fraunces,Georgia,serif;color:#8a8272;line-height:1.6}",
       "@media(max-width:640px){.fo-t2-acad{flex-wrap:wrap;gap:8px 12px}.fo-t2-acad .rt,.fo-t2-acad .bill,.fo-t2-acad .nx{flex:0 0 auto}.fo-t2-acad .go{display:none}}",
       "@media(max-width:560px){.fo-t2-hero h1{font-size:27px}.fo-t2-hero .cr svg{width:42px;height:55px}",

@@ -334,7 +334,7 @@
       "html body #page .fo-cl-ent:last-child{border-bottom:none}",
       "html body #page .fo-cl-ent i{font-style:normal;font-size:10.5px;color:rgba(20,28,40,.4);width:18px;font-variant-numeric:tabular-nums}",
       "html body #page .fo-cl-ent img{width:24px;height:17px;object-fit:cover;border-radius:3px}",
-      "html body #page .fo-cl-ent b{font:600 13px/1.2 Inter,sans-serif;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      "html body #page .fo-cl-ent b{font:600 13px/1.3 Inter,sans-serif;flex:1;min-width:0}",
       "html body #page .fo-cl-ent b u{text-decoration:none;font:800 11px/1 Inter,sans-serif;color:#B44A22;letter-spacing:.14em;margin-left:5px;vertical-align:1px}",
       "html body #page a.fo-cl-tl{color:inherit;text-decoration:none}",
       "html body #page a.fo-cl-tl:hover{color:#B44A22;text-decoration:underline}",

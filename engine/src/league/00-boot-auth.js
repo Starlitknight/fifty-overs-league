@@ -791,6 +791,17 @@
       document.head.appendChild(ff);
     }
   } catch (e) {}
+
+  // DESIGN.md's one money rule: full figures with commas below $1m, "$1.4m"
+  // above, the sign carried when asked. Every room delegates here.
+  window.foMoney = function (v, signed) {
+    var n = Math.round(Number(v) || 0);
+    if (!isFinite(n)) return "\u2014";
+    var neg = n < 0, a = Math.abs(n), s;
+    if (a >= 1000000) s = "$" + (a / 1000000).toFixed(1).replace(/\.0$/, "") + "m";
+    else s = "$" + String(a).replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+    return (neg ? "-" : (signed && n > 0 ? "+" : "")) + s;
+  };
   function bumpBrand() { try { var b3 = document.getElementById("fo-brand"); if (b3 && (b3.parentNode !== document.body || document.body.lastChild !== b3)) document.body.appendChild(b3); } catch (e) {} }
   // Add a "Clubs" nav link -> the game's players browser (pick any club, bot or
   // human, and see its roster). The game ships the page but never links to it.

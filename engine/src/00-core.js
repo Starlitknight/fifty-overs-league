@@ -1401,7 +1401,7 @@ function effBowl(bat,bowl,ctx){
   if(T.includes('partnershipBreaker')&&(ctx.pship??0)>=50)v+=5;
   return Math.max(5,Math.min(97,Math.round(v)));
 }
-function meter(v,lbl){const col=v>=70?'#2c7a2c':v>=45?'#C08A2E':'#a33328';
+function meter(v,lbl){const col=v>=70?'#2c7a2c':v>=45?'#C08A2E':'#B23230';
   return `<div style="margin:2px 0"><span class="sklbl">${lbl}</span><span class="skbar" style="width:130px"><i style="width:${v}%;background:${col}"></i></span><span class="skword" style="color:${col}">${word(v)}</span></div>`}
 const word=x=>WORDS[wIx(x)], abbr=x=>ABBR[wIx(x)];
 const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
@@ -1954,7 +1954,7 @@ function pgClub(){
 function pgOffice(){
   econInit();
   const t=userTeam();
-  const led=App.fin.ledger.slice(0,18).map(l=>`<tr><td>${l.wk}</td><td>${esc(l.label)}</td><td class="n" style="color:${l.amt<0?'#a33328':'#1c5537'}">${l.amt<0?'−':'+'}$${Math.abs(l.amt).toLocaleString()}</td></tr>`).join('')||'<tr><td colspan=3 class="small">No transactions yet - the ledger fills as rounds complete.</td></tr>';
+  const led=App.fin.ledger.slice(0,18).map(l=>`<tr><td>${l.wk}</td><td>${esc(l.label)}</td><td class="n" style="color:${l.amt<0?'#B23230':'#1c5537'}">${l.amt<0?'−':'+'}$${Math.abs(l.amt).toLocaleString()}</td></tr>`).join('')||'<tr><td colspan=3 class="small">No transactions yet - the ledger fills as rounds complete.</td></tr>';
   const upSeat=Math.round(2000*120);
   $('#page').innerHTML=crumb(t.name,'Office')+
   `<div class="grid2"><div class="col">
@@ -1977,7 +1977,7 @@ function pgOffice(){
     <div class="panel" style="border-left:4px solid #C08A2E"><h4>Start a founder league (commissioner)</h4><div class="pad">
       ${(()=>{const q=App.mergeQueue||[];const mine=userTeam();
         return `<div class="small" style="margin-bottom:5px">Collect each founder's exported club file, import them here, then start the season. Your own club (<b>${esc(mine.name)}</b>) is included automatically; empty slots fill with bots up to 10 teams.</div>
-        <div style="margin-bottom:4px"><b>In the league:</b> <span class="phasechip" style="background:#e2f0e2">${esc(mine.name)} (you)</span> ${q.map(c=>`<span class="phasechip">${esc(c.name)} <a onclick="removeFromMerge('${esc(c.name)}')" style="cursor:pointer;color:#a33328">✕</a></span>`).join(' ')||'<span class="small">no founder clubs imported yet</span>'}</div>
+        <div style="margin-bottom:4px"><b>In the league:</b> <span class="phasechip" style="background:#e2f0e2">${esc(mine.name)} (you)</span> ${q.map(c=>`<span class="phasechip">${esc(c.name)} <a onclick="removeFromMerge('${esc(c.name)}')" style="cursor:pointer;color:#B23230">✕</a></span>`).join(' ')||'<span class="small">no founder clubs imported yet</span>'}</div>
         <div class="ctlrow">
           <label style="display:inline-block"><input type="file" accept=".json" style="display:none" onchange="importFounderClub(this.files[0]);this.value=''"><button class="primary" onclick="this.previousElementSibling.click()">Import a founder club file</button></label>
           <button ${q.length?'':'disabled'} onclick="if(confirm('Start the season with '+(${q.length}+1)+' founder clubs? This resets the current standings.'))startLeagueFromMerge()">Start the season ▸</button>
@@ -2057,7 +2057,7 @@ function pgSquad(){
   $('#page').innerHTML=crumb(t.name,'Squad')+ctl+body;
 }
 const ROLEICON={opener:'OP',topOrderBat:'TOP',middleOrderBat:'MID',wicketkeeper:'WK',allRounder:'AR',seamFast:'FST',seamFastMedium:'FM',seamMedium:'MED',wristSpin:'WS',fingerSpin:'FS'};
-const FORMDOT=f=>{const c=['#7a1d1d','#a33328','#c07a3a','#999','#7a9a3a','#2c7a2c','#1c5537'][f??3];return `<span title="form: ${FORMW_UI[f??3]}" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c}"></span>`};
+const FORMDOT=f=>{const c=['#7a1d1d','#B23230','#c07a3a','#999','#7a9a3a','#2c7a2c','#1c5537'][f??3];return `<span title="form: ${FORMW_UI[f??3]}" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c}"></span>`};
 const FORMW_UI=['abysmal','poor','shaky','steady','good','strong','excellent'];
 function miniBar(v,tip){return `<span title="${tip}: ${word(v)} (rank ${wIx(v)+1}/16)\n${SKILLTIP}"><span class="skbar" style="width:56px;height:8px"><i style="width:${Math.max(2,Math.min(100,v))}%"></i></span> <b class="sknum">${Math.round(v)}</b></span>`}
 function cardsView(ps){
@@ -2486,7 +2486,7 @@ function spellRowsHTML(end){
     <span class="phasechip">${ph}</span><button class="warn" onclick="App.orders.spells['${end}'].splice(${i},1);pgOrders()">x</button></div>`;
   }).join('')+`<button onclick="App.orders.spells['${end}'].push({bowler:'',first:${end==='north'?1:2},n:5,field:'bal'});pgOrders()">+ add spell</button>`;
 }
-const BOWLCOLS=['#22635F','#a33328','#2c7a2c','#C08A2E','#6a4a8f','#1c5537','#8f5a2d'];
+const BOWLCOLS=['#22635F','#B23230','#2c7a2c','#C08A2E','#6a4a8f','#1c5537','#8f5a2d'];
 function ordersTimeline(){
   const v=App.orders;const names=[...new Set(v.compiled.filter(Boolean))];
   const cells=v.compiled.map((nm,i)=>{const ci=names.indexOf(nm);
@@ -2646,7 +2646,7 @@ function pgOrders(){
     const nm=App.orders.batOrder[i];const p=byName(nm);
     return `<div class="ctlrow" style="margin:1px 0">
       <span class="n small" style="width:16px;color:#999">${i+1}</span>
-      <select style="${dupes[nm]>1?'border-color:#a33328;background:#fbe9e7':''}" onchange="App.orders.batOrder[${i}]=this.value;pgOrders()">${names.map(n=>`<option ${nm===n?'selected':''}>${esc(n)}</option>`).join('')}</select>
+      <select style="${dupes[nm]>1?'border-color:#B23230;background:#fbe9e7':''}" onchange="App.orders.batOrder[${i}]=this.value;pgOrders()">${names.map(n=>`<option ${nm===n?'selected':''}>${esc(n)}</option>`).join('')}</select>
       ${p?`${sdot(aggBat(p),'Batting')}<span class="small" title="${prole(p.role)}">${ROLEICON[p.role]||''}</span>${p.keeper?' †':''}`:''}
       <input type="radio" name="capt" title="captain" ${App.orders.captain===nm?'checked':''} onchange="App.orders.captain='${esc(nm)}';pgOrders()">
       <input type="radio" name="wkpr" title="wicketkeeper" ${App.orders.keeper===nm?'checked':''} onchange="App.orders.keeper='${esc(nm)}';pgOrders()">
@@ -2667,10 +2667,10 @@ function pgOrders(){
       const owner=App.orders.grid[o];
       const mine=owner===nm&&nm;
       const other=owner&&owner!==nm;
-      cells.push(`<span onclick="gridClick('${esc(nm)}',${o})" title="over ${o}${owner?' - '+esc(owner):''}" style="display:inline-block;width:15px;height:15px;line-height:15px;text-align:center;font-size:7.5px;margin:0 1px 1px 0;cursor:${nm?'pointer':'default'};border:1px solid ${mine?col:'#c9c2ae'};background:${mine?col:(other?'#eee6d4':'#fffdf7')};color:${mine?'#fff':(other?'#bbb':'#776')}">${o}</span>`);
+      cells.push(`<span onclick="gridClick('${esc(nm)}',${o})" title="over ${o}${owner?' - '+esc(owner):''}" style="display:inline-block;width:15px;height:15px;line-height:15px;text-align:center;font-size:7.5px;margin:0 1px 1px 0;cursor:${nm?'pointer':'default'};border:1px solid ${mine?col:'#c9c2ae'};background:${mine?col:(other?'#eee6d4':'#FFFEFC')};color:${mine?'#fff':(other?'#bbb':'#776')}">${o}</span>`);
     }
     const n=counts[nm]||0;
-    return `<div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:4px;padding:3px;border:1px solid #e8e2d2;background:#fffdf7">
+    return `<div style="display:flex;gap:6px;align-items:flex-start;margin-bottom:4px;padding:3px;border:1px solid #e8e2d2;background:#FFFEFC">
      <div style="min-width:190px">
       <select onchange="gridBowlerSet(${i},this.value)"><option value="">- pick bowler -</option>${allBowlers.map(b=>`<option ${nm===b.name?'selected':''} value="${esc(b.name)}">${esc(b.name)} (${esc(shortBT(b))})</option>`).join('')}</select>
       <div class="small" style="margin-top:2px">${p?sdot(aggBowl(p),'Bowling'):''} <b class="${n>10?'warntxt':''}">${n} ov</b> ${n>10?'over limit!':''} ${nm?`<a onclick="gridClearRow(${i})" style="cursor:pointer">clear</a>`:''}</div>
@@ -2965,7 +2965,7 @@ function renderMatch(){
   // headpiece v2: striker / bowler / non-striker - THE centerpiece
   let head='';
   {const ctxH={faced:s1?(inn.faced[s1.p.name]||0):0,over:Math.floor(inn.legal/6),pitch:M.pitch,weather:((M.meta.weather||'sunny')+'').toLowerCase(),chase:M.inns===1,rrDef:press,pship:inn.pshipR};
-   const fatbar=n=>{const f=Math.min(1,M.fat&&M.fat[n]||0);return `<span class="skbar" style="width:84px;height:8px;vertical-align:middle"><i style="width:${Math.round(100*f)}%;background:${f>0.65?'#a33328':f>0.4?'#C08A2E':'#7a9a3a'}"></i></span><span class="small"> ${f>0.65?'tired':f>0.4?'working':'fresh'}</span>`};
+   const fatbar=n=>{const f=Math.min(1,M.fat&&M.fat[n]||0);return `<span class="skbar" style="width:84px;height:8px;vertical-align:middle"><i style="width:${Math.round(100*f)}%;background:${f>0.65?'#B23230':f>0.4?'#C08A2E':'#7a9a3a'}"></i></span><span class="small"> ${f>0.65?'tired':f>0.4?'working':'fresh'}</span>`};
    const hint=(p,sbv)=>{if(!sbv)return '';
      if(sbv.r>=90&&sbv.r<100)return `<span class="phasechip" style="background:#f4ecd2;border-color:#C08A2E">${100-sbv.r} to a HUNDRED</span>`;
      if(sbv.r>=40&&sbv.r<50)return `<span class="phasechip" style="background:#f4ecd2;border-color:#C08A2E">${50-sbv.r} to fifty</span>`;
@@ -2977,8 +2977,8 @@ function renderMatch(){
    const card=(kind,who,sub2,val,extra,typ,tals)=>{
      const isBowl=kind==='BOWLER';
      const chips=(tals&&tals.length)?tals.map(t=>`<span class="talchip" title="${ptal(t)}: ${TALTIPS[t]||''}">${ptal(t)}</span>`).join(''):'';
-     return `<div style="flex:1;min-width:210px;background:${isBowl?'#fdf1ef':'#eff5ec'};border:1px solid ${isBowl?'#d9b3ad':'#bccbb4'};border-top:4px solid ${isBowl?'#a33328':'#2c7a2c'};padding:7px 10px">
-     <div class="small" style="letter-spacing:.8px;color:${isBowl?'#a33328':'#2c7a2c'};font-weight:bold">${kind} <span style="float:right;color:#777;font-weight:normal">${typ||''}</span></div>
+     return `<div style="flex:1;min-width:210px;background:${isBowl?'#fdf1ef':'#eff5ec'};border:1px solid ${isBowl?'#d9b3ad':'#bccbb4'};border-top:4px solid ${isBowl?'#B23230':'#2c7a2c'};padding:7px 10px">
+     <div class="small" style="letter-spacing:.8px;color:${isBowl?'#B23230':'#2c7a2c'};font-weight:bold">${kind} <span style="float:right;color:#777;font-weight:normal">${typ||''}</span></div>
      <div style="font-size:14px;line-height:1.25"><b>${who}</b></div>
      <div style="font-size:12px">${sub2}</div>
      <div>${meter(val,'strength')}</div>
@@ -3002,7 +3002,7 @@ function renderMatch(){
       let big=null;
       if(o==='6')big=['SIX','#b8860b'];
       else if(o==='4')big=['FOUR','#1c4d7a'];
-      else if(isWkt(o))big=['WICKET','#a33328'];
+      else if(isWkt(o))big=['WICKET','#B23230'];
       if(big){
         const el=document.createElement('div');el.className='bigflash';el.textContent=big[0];el.style.color=big[1];
         document.body.appendChild(el);
@@ -3015,7 +3015,7 @@ function renderMatch(){
   if(!M.done&&M.log.length&&!M.log[0].mile){
     const o=M.log[0].out;
     const map={'6':['SIX!','#b8860b','#fdf6df'],'4':['FOUR!','#1c4d7a','#e8f1fa']};
-    let f=map[o];if(!f&&isWkt(o))f=['WICKET!','#a33328','#fbe9e7'];
+    let f=map[o];if(!f&&isWkt(o))f=['WICKET!','#B23230','#fbe9e7'];
     if(!f&&o==='dot')f=['·','#888','transparent'];
     if(f&&f[0].length>1)flash=`<div class="evflash" key="${inn.legal}" style="color:${f[1]};background:${f[2]};border:1px solid ${f[1]}">${f[0]}</div>`;
   }
@@ -3101,7 +3101,7 @@ function pgScorecard(q){
       if(!w||w.length<2)return '';
       const per=[];for(let i=1;i<w.length;i++)per.push({o:w[i][0],r:w[i][1]-w[i-1][1],wk:(w[i][2]||0)-(w[i-1][2]||0)});
       const mx=Math.max(8,...per.map(x=>x.r));
-      const bars=per.map(x=>`<div title="over ${x.o}: ${x.r} run${x.r===1?'':'s'}${x.wk?', wicket':''}" style="display:inline-block;width:9px;margin-right:1px;height:${Math.max(2,46*x.r/mx)}px;background:${x.wk?'#a33328':(ix?'#C08A2E':'#22635F')};vertical-align:bottom"></div>`).join('');
+      const bars=per.map(x=>`<div title="over ${x.o}: ${x.r} run${x.r===1?'':'s'}${x.wk?', wicket':''}" style="display:inline-block;width:9px;margin-right:1px;height:${Math.max(2,46*x.r/mx)}px;background:${x.wk?'#B23230':(ix?'#C08A2E':'#22635F')};vertical-align:bottom"></div>`).join('');
       return `<div class="small"><b>${esc(innings[ix]?innings[ix].batTeam:'')}</b> - runs per over (red = wicket over)</div><div style="height:50px;border-bottom:1px solid #bbb;margin-bottom:8px">${bars}</div>`;
     }).join('');
   }
@@ -3116,7 +3116,7 @@ function pgScorecard(q){
     let xax='';for(let o=0;o<=mo;o+=10){const x=px(o);xax+=`<line x1="${x.toFixed(1)}" y1="${yB}" x2="${x.toFixed(1)}" y2="${yB+4}" stroke="#999"/><text x="${x.toFixed(1)}" y="${yB+15}" font-size="9" fill="#666" text-anchor="middle">${o}</text>`;}
     const axes=`<line x1="${xL}" y1="${yT}" x2="${xL}" y2="${yB}" stroke="#999"/><line x1="${xL}" y1="${yB}" x2="${xR}" y2="${yB}" stroke="#999"/>${yax}${xax}<text x="${(xL+xR)/2}" y="176" font-size="10" fill="#555" text-anchor="middle">Overs</text><text x="11" y="${(yT+yB)/2}" font-size="10" fill="#555" text-anchor="middle" transform="rotate(-90 11 ${(yT+yB)/2})">Total runs</text>`;
     const line=(w,col)=>`<polyline fill="none" stroke="${col}" stroke-width="1.8" points="${w.map(p=>(px(p[0]).toFixed(1))+','+(py(p[1]).toFixed(1))).join(' ')}"/>`+
-      w.filter((p,i)=>i>0&&(p[2]||0)>(w[i-1][2]||0)).map(p=>`<circle cx="${px(p[0]).toFixed(1)}" cy="${py(p[1]).toFixed(1)}" r="2.6" fill="#a33328"/>`).join('');
+      w.filter((p,i)=>i>0&&(p[2]||0)>(w[i-1][2]||0)).map(p=>`<circle cx="${px(p[0]).toFixed(1)}" cy="${py(p[1]).toFixed(1)}" r="2.6" fill="#B23230"/>`).join('');
     return `<svg viewBox="0 0 440 184" width="100%" style="max-width:460px">${axes}${worm[0]?line(worm[0],'#22635F'):''}${worm[1]?line(worm[1],'#C08A2E'):''}</svg>
      <div class="small"><span style="color:#22635F">■</span> ${esc(innings[0]?innings[0].batTeam:'')} &nbsp; <span style="color:#C08A2E">■</span> ${esc(innings[1]?innings[1].batTeam:'')} &nbsp; ● wicket</div>`;
   }
@@ -3182,7 +3182,7 @@ function fantasyPoints(r){
   return Object.entries(pts).sort((a,b)=>b[1]-a[1]).slice(0,5);
 }
 function sdot(v,lbl){
-  const _L=SKILLTIP;const col=v>=76?'#1c5537':v>=64?'#2c7a2c':v>=52?'#C08A2E':v>=40?'#c07a3a':'#a33328';
+  const _L=SKILLTIP;const col=v>=76?'#1c5537':v>=64?'#2c7a2c':v>=52?'#C08A2E':v>=40?'#c07a3a':'#B23230';
   return `<span class="sbar" title="${lbl}: ${word(v)} - rank ${wIx(v)+1} of 16\n${_L}"><i style="width:${Math.max(4,Math.min(100,v))}%;background:${col}"></i></span><span class="sknum">${Math.round(v)}</span>`;
 }
 function pshipBars(inn){
@@ -3497,7 +3497,7 @@ function pgNets(){
       else if(['wide','noball','bye','legbye'].includes(k))agg.extras+=R.counts[k];
       else agg[k]=(agg[k]||0)+R.counts[k];
     }
-    const COL={dot:'#9aa79c','1':'#7cb87c','2':'#5aa05a','3':'#3f8f3f','4':'#22635F','6':'#1c5537',wicket:'#a33328',extras:'#C08A2E'};
+    const COL={dot:'#9aa79c','1':'#7cb87c','2':'#5aa05a','3':'#3f8f3f','4':'#22635F','6':'#1c5537',wicket:'#B23230',extras:'#C08A2E'};
     const total=R.n;let a0=-Math.PI/2;let paths='';let legend='';
     for(const k of ['dot','1','2','3','4','6','wicket','extras']){
       const v=agg[k];if(!v)continue;
@@ -4003,7 +4003,7 @@ function pgFounder(){
     <div class="col draftside">
      <div class="panel budgetcard"><div class="pad">
        <div class="small">BUDGET REMAINING</div>
-       <div class="budgetbig" style="color:${left<0?'#a33328':'#1c5537'}">$${left.toLocaleString()}</div>
+       <div class="budgetbig" style="color:${left<0?'#B23230':'#1c5537'}">$${left.toLocaleString()}</div>
        <div class="budgetbar"><i style="width:${budgetPct}%"></i></div>
        <div class="small" style="margin-top:3px">Spent $${spent.toLocaleString()} of $${F.budget.toLocaleString()}</div>
        <div class="squadmeta">
@@ -4554,7 +4554,7 @@ pgFounder=function(){
      ${SUBS[App._draftRole]?`<div class="ctlrow" style="margin-bottom:4px"><span class="small" style="min-width:32px"></span>${SUBS[App._draftRole].map(([v,l])=>`<button class="chip ${App._draftSub===v?'on':''}" onclick="App._draftSub='${v}';pgFounder()">${l}</button>`).join('')}</div>`:''}
      <div class="ctlrow"><span class="small" style="min-width:32px">Sort</span>${['fee','rating','bat','bowl','power','field','keep','age'].map(sf).join('')}</div>
    </div></div>${list.map(p=>draftBlock(p,F.picked.includes(p),spent+p.fee<=F.budget,spent)).join('')}</div>
-   <div class="col draftside"><div class="panel budgetcard"><div class="pad"><div class="small">BUDGET REMAINING</div><div class="budgetbig" style="color:${left<0?'#a33328':'#07513c'}">${money(left)}</div><div class="budgetbar"><i style="width:${budgetPct}%"></i></div><div class="small" style="margin-top:3px">Spent ${money(spent)} of ${money(F.budget)}</div><div class="squadmeta"><span><b>${F.picked.length}</b> players <span class="small">(min 11, max 16 - fewer than 16 is fine)</span></span><span class="${c.wk>=1?'':'need'}">${c.wk} WK</span><span class="${bowlOptions>=5?'':'need'}">${bowlOptions} bowl</span><span>${c.bat} bat</span><span>${c.ar} all-r</span></div><button class="primary confirmbtn" ${ready?'':'disabled'} onclick="founderConfirm()">Confirm squad &amp; finish ▸</button>${warn.length?`<div class="warntxt" style="margin-top:4px;font-size:11px">Still need: ${warn.join(' · ')}</div>`:'<div class="oktxt" style="margin-top:4px;font-size:11px">Legal squad. Confirm when ready.</div>'}</div></div><div class="panel"><h4>Your squad (${F.picked.length})</h4><div class="pad" style="padding:3px 5px;max-height:340px;overflow-y:auto">${squadRows}</div></div></div></div>`;
+   <div class="col draftside"><div class="panel budgetcard"><div class="pad"><div class="small">BUDGET REMAINING</div><div class="budgetbig" style="color:${left<0?'#B23230':'#07513c'}">${money(left)}</div><div class="budgetbar"><i style="width:${budgetPct}%"></i></div><div class="small" style="margin-top:3px">Spent ${money(spent)} of ${money(F.budget)}</div><div class="squadmeta"><span><b>${F.picked.length}</b> players <span class="small">(min 11, max 16 - fewer than 16 is fine)</span></span><span class="${c.wk>=1?'':'need'}">${c.wk} WK</span><span class="${bowlOptions>=5?'':'need'}">${bowlOptions} bowl</span><span>${c.bat} bat</span><span>${c.ar} all-r</span></div><button class="primary confirmbtn" ${ready?'':'disabled'} onclick="founderConfirm()">Confirm squad &amp; finish ▸</button>${warn.length?`<div class="warntxt" style="margin-top:4px;font-size:11px">Still need: ${warn.join(' · ')}</div>`:'<div class="oktxt" style="margin-top:4px;font-size:11px">Legal squad. Confirm when ready.</div>'}</div></div><div class="panel"><h4>Your squad (${F.picked.length})</h4><div class="pad" style="padding:3px 5px;max-height:340px;overflow-y:auto">${squadRows}</div></div></div></div>`;
 };
 
 draftView=function(nm){
@@ -4680,7 +4680,7 @@ function foWormMini(){
   let yaxis='';for(let i=0;i<=4;i++){const v=mx*i/4,y=py(v);yaxis+=`<line x1="${xL}" y1="${y.toFixed(1)}" x2="${xR}" y2="${y.toFixed(1)}" stroke="#eee"/><line x1="${xL-4}" y1="${y.toFixed(1)}" x2="${xL}" y2="${y.toFixed(1)}" stroke="#999"/><text x="${xL-7}" y="${(y+3).toFixed(1)}" font-size="9" fill="#666" text-anchor="end">${Math.round(v)}</text>`;}
   let xaxis='';for(let o=0;o<=mo;o+=10){const x=px(o);xaxis+=`<line x1="${x.toFixed(1)}" y1="${yB}" x2="${x.toFixed(1)}" y2="${yB+4}" stroke="#999"/><text x="${x.toFixed(1)}" y="${yB+15}" font-size="9" fill="#666" text-anchor="middle">${o}</text>`;}
   const axes=`<line x1="${xL}" y1="${yT}" x2="${xL}" y2="${yB}" stroke="#999"/><line x1="${xL}" y1="${yB}" x2="${xR}" y2="${yB}" stroke="#999"/>${yaxis}${xaxis}<text x="${(xL+xR)/2}" y="205" font-size="10" fill="#555" text-anchor="middle">Overs</text><text x="13" y="${(yT+yB)/2}" font-size="10" fill="#555" text-anchor="middle" transform="rotate(-90 13 ${(yT+yB)/2})">Total runs</text>`;
-  const line=(w,col)=>`<polyline fill="none" stroke="${col}" stroke-width="2" points="${w.map(p=>(px(p[0]).toFixed(1))+','+(py(p[1]).toFixed(1))).join(' ')}"/>`+w.filter((p,i)=>i>0&&(p[2]||0)>(w[i-1][2]||0)).map(p=>`<circle cx="${px(p[0]).toFixed(1)}" cy="${py(p[1]).toFixed(1)}" r="3" fill="#a33328"/>`).join('');
+  const line=(w,col)=>`<polyline fill="none" stroke="${col}" stroke-width="2" points="${w.map(p=>(px(p[0]).toFixed(1))+','+(py(p[1]).toFixed(1))).join(' ')}"/>`+w.filter((p,i)=>i>0&&(p[2]||0)>(w[i-1][2]||0)).map(p=>`<circle cx="${px(p[0]).toFixed(1)}" cy="${py(p[1]).toFixed(1)}" r="3" fill="#B23230"/>`).join('');
   return `<svg viewBox="0 0 552 214" style="width:100%;max-width:640px;height:240px">${axes}${M.worm[0]?line(M.worm[0],'#22635F'):''}${M.worm[1]?line(M.worm[1],'#C08A2E'):''}</svg><div class="small"><span style="color:#22635F">■</span> ${esc(M.innings[0]?M.innings[0].batTeam:'1st innings')} &nbsp; <span style="color:#C08A2E">■</span> ${esc(M.innings[1]?M.innings[1].batTeam:'2nd innings')} &nbsp; ● wicket</div>`;
 }
 function foOrdersPanel(){

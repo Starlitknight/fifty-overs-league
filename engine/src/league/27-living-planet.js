@@ -1708,7 +1708,7 @@
                 "</" + tag + ">";
             }).join("") + "</div>";
         }).join("");
-        var champLine = stagesDone >= 4 ? "<div class='fo-pl-crown'>&#127942; <b>" + E(wcChampion(p.season).nm) + "</b> are champions of the world</div>" : "";
+        var champLine = stagesDone >= 4 ? "<div class='fo-pl-crown'><svg style='width:13px;height:13px;vertical-align:-2px' viewBox='0 0 24 24' aria-hidden='true' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M7 4h10v5a5 5 0 0 1-10 0V4Z'/><path d='M7 5H4.5c0 2.8 1.1 4.4 2.9 4.9M17 5h2.5c0 2.8-1.1 4.4-2.9 4.9'/><path d='M12 14v3M9.5 20h5'/></svg> <b>" + E(wcChampion(p.season).nm) + "</b> are champions of the world</div>" : "";
         cupHTML = "<div class='fo-pl-cup'><div class='fo-pl-cuph'><i>" + seasonLabel(p.season) + " &middot; World Cup</i>" +
           (myIn ? "<span class='in'>" + E(myRegion.nm) + " are in" + (ups.length ? " &middot; called up: " + ups.map(E).join(", ") : "") + "</span>" : "<span class='in'>" + E(myRegion.nm) + " missed the cut this season</span>") +
           (abroad.length ? "<span class='in'>Your dressing room at the cup: " + abroad.map(E).join(", ") + "</span>" : "") +
@@ -1776,7 +1776,7 @@
           var c = championOf(r.id, p.season);
           return "<a class='fo-pl-nat' href='#/nation?n=" + encodeURIComponent(r.id) + "'>" +
             "<img class='fo-pl-flag' src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\">" +
-            "<span class='fo-pl-natt'><b>" + E(r.nm) + "</b><em class='fx'>&#127942; " + E(c ? c.name : "") + ", champions</em></span><i>&rsaquo;</i></a>";
+            "<span class='fo-pl-natt'><b>" + E(r.nm) + "</b><em class='fx'><svg style='width:13px;height:13px;vertical-align:-2px' viewBox='0 0 24 24' aria-hidden='true' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M7 4h10v5a5 5 0 0 1-10 0V4Z'/><path d='M7 5H4.5c0 2.8 1.1 4.4 2.9 4.9M17 5h2.5c0 2.8-1.1 4.4-2.9 4.9'/><path d='M12 14v3M9.5 20h5'/></svg> " + E(c ? c.name : "") + ", champions</em></span><i>&rsaquo;</i></a>";
         }).join("");
       }
 
