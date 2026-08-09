@@ -477,10 +477,14 @@
       "html body #page a.fo-stw-mini span{display:block;font:700 7.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,239,228,.5)}",
       "html body #page a.fo-stw-mini b{display:block;font:700 22px/1 Inter,sans-serif;color:#FFFDF7;margin-top:7px;font-variant-numeric:tabular-nums}",
       "html body #page a.fo-stw-mini i{display:block;font:500 10px/1.35 Inter,sans-serif;font-style:normal;color:rgba(244,239,228,.55);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      "html body #page .fo-stw-chips{display:flex;flex-wrap:wrap;gap:7px;padding:12px 2px 2px}",
-      "html body #page a.fo-stw-chip{font:700 9px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#EBC271 !important;border:1px solid rgba(235,194,113,.4);border-radius:999px;padding:10px 14px;text-decoration:none !important}",
-      "html body #page a.fo-stw-chip:hover{border-color:#EBC271}",
-      "html body #page a.fo-stw-chip.hot{background:linear-gradient(180deg,#E8B96A,#C08A2E);color:#14243A !important;border-color:transparent}",
+      // the contents list: doors, not a remote control of pills
+      "html body #page .fo-stw-doors{margin-top:10px;border:1px solid rgba(232,185,106,.16);border-radius:14px;background:rgba(255,253,247,.04);overflow:hidden}",
+      "html body #page a.fo-stw-door{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:baseline;gap:12px;padding:13px 15px;border-top:1px solid rgba(232,185,106,.12);text-decoration:none !important;min-height:46px}",
+      "html body #page a.fo-stw-door:first-child{border-top:0}",
+      "html body #page a.fo-stw-door:hover{background:rgba(255,253,247,.04)}",
+      "html body #page a.fo-stw-door b{font:700 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#EBC271 !important;white-space:nowrap}",
+      "html body #page a.fo-stw-door i{font:400 11px/1.4 Inter,sans-serif;font-style:normal;color:rgba(244,239,228,.5);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;text-align:right}",
+      "html body #page a.fo-stw-door s{text-decoration:none;font:400 17px/1 Fraunces,Georgia,serif;color:rgba(235,194,113,.6);align-self:center}",
       "html body #page .fo-stw-dim{margin:12px 4px 4px;font:400 12.5px/1.55 Fraunces,Georgia,serif;color:rgba(244,239,228,.6)}"
     ].join("\n");
     document.head.appendChild(s);
@@ -555,19 +559,19 @@
       charts = "<p class='fo-stw-dim'>No cricket has been played yet this season. The wall fills with the first round.</p>";
     }
 
-    var chip = function (label, to, hot) {
-      return "<a class='fo-stw-chip" + (hot ? " hot" : "") + "' href='" + to + "'>" + label + "</a>";
+    // NO BUTTON MENUS - the manager's standing rule. A wall of pills is a
+    // remote control; a reader wants a contents list. Each book is a door: a
+    // name, what is inside it, and a chevron. The scope pills went entirely -
+    // every book carries its own scope line once it is open.
+    var door = function (label, note, to) {
+      return "<a class='fo-stw-door' href='" + to + "'><b>" + label + "</b><i>" + note + "</i><s>&rsaquo;</s></a>";
     };
-    var chips = "<div class='fo-stw-chips'>" +
-      chip("Batting", href("bat", "league"), true) +
-      chip("Bowling", href("bowl", "league"), true) +
-      chip("Fielding", href("field", "league"), true) +
-      (mine ? chip("My club", href("bat", "club")) : "") +
-      chip("The world", href("bat", "world")) +
-      chip("The record", "#/stats?v=hist&n=" + encodeURIComponent(natId)) +
-      chip("Careers", "#/stats?v=career&n=" + encodeURIComponent(natId)) +
-      chip("Rankings", "#/rankings") +
-      chip("Almanack", "#/almanack") +
+    var chips = "<div class='fo-stw-doors'>" +
+      door("Batting", "runs &middot; average &middot; strike rate", href("bat", "league")) +
+      door("Bowling", "wickets &middot; economy &middot; best figures", href("bowl", "league")) +
+      door("Fielding", "catches &middot; stumpings &middot; run-outs", href("field", "league")) +
+      door("The record", "every season this league has played", "#/stats?v=hist&n=" + encodeURIComponent(natId)) +
+      door("All-time careers", "whole careers, ranked", "#/stats?v=career&n=" + encodeURIComponent(natId)) +
       "</div>";
 
     return "<div class='fo-stw'>" +
