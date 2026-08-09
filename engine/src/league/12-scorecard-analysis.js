@@ -2676,6 +2676,8 @@
       ".fo-hg2 .hg-id{position:absolute;z-index:3;left:26px;bottom:74px;color:#fff;max-width:56%;text-shadow:0 2px 14px rgba(0,0,0,.75)}" +
       ".fo-hg2 .hg-id i{display:block;font-style:normal;font-family:Inter,sans-serif;font-size:10.5px;font-weight:600;letter-spacing:3px;color:#E8B96A}" +
       ".fo-hg2 .hg-id b{display:block;font-family:Inter,sans-serif;font-weight:600;font-size:clamp(34px,5.4vw,62px);line-height:.98;letter-spacing:1px;text-transform:uppercase;margin:6px 0 8px}" +
+      "html body #page .fo-hg2 .hg-id b a.hg-nml{color:inherit !important;text-decoration:none;cursor:pointer}" +
+      "html body #page .fo-hg2 .hg-id b a.hg-nml:hover{text-decoration:underline;text-underline-offset:6px;text-decoration-thickness:2px}" +
       ".fo-hg2 .hg-id .hg-sub{display:block;font-size:13px;color:rgba(255,255,255,.85)}" +
       ".fo-hg2 .hg-id .hg-form{display:flex;gap:5px;align-items:center;margin-top:9px}" +
       ".fo-hg2 .hg-id .hg-form u{text-decoration:none;font-family:Inter,sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;color:rgba(255,255,255,.6);margin-right:3px}" +
@@ -5443,8 +5445,15 @@
       page.__foHomeSig = sig;
       var btn = function (id, lf, ls) { return "<button type='button' id='" + id + "'><span class='hg-lf'>" + lf + "</span><span class='hg-ls'>" + ls + "</span></button>"; };
       var wxHtml = "<b>HOME GROUND</b><span>" + (FO_HG_WX[v] || "") + (window.__foHgWx ? " &middot; forecast: " + E(window.__foHgWx) : "") + "</span>";
+      // the name on the door opens the club's own dossier - crest, heritage,
+      // honours, the lot - when the world holds a seat to point at
+      var heroHref = "";
+      try {
+        if (wClaim && wClaim.country && wClaim.slot != null)
+          heroHref = "#/team?c=" + encodeURIComponent(wClaim.country) + "&s=" + (wClaim.slot | 0);
+      } catch (eHh) {}
       var idHtml = "<i>YOUR CLUB &middot; THE ELEVEN ARCHES</i>" +
-        "<b>" + E(heroName) + "</b>" +
+        "<b>" + (heroHref ? "<a class='hg-nml' href='" + heroHref + "'>" + E(heroName) + "</a>" : E(heroName)) + "</b>" +
         "<span class='hg-sub'>" + posLine + "</span>" +
         "<span class='hg-form'><u>FORM</u>" + beads + "</span>";
       // the next match is the door that matters; Squad and League ride beside

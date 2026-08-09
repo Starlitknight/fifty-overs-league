@@ -157,6 +157,20 @@ test('mark all read clears news stamped ahead of the clock (071)', async () => {
   await pool.query('DELETE FROM notif_seen');
 });
 
+test('being outbid is the wire\'s story, not a standing ask (072)', async () => {
+  const ins = await pool.query(
+    `INSERT INTO listings(country_id, slot, player, player_json, asking, reserve, opened_day, closes_day, status)
+     VALUES ('eng', 5, 'Rufus Underbid', '{}'::jsonb, 100000, 80000, $1, $2, 'open') RETURNING id`, [START, START + 3]);
+  const lid = ins.rows[0].id;
+  await pool.query(
+    `INSERT INTO bids(listing_id, country_id, slot, amount, user_id) VALUES ($1,'eng',1,90000,$2)`, [lid, UID]);
+  await pool.query(
+    `INSERT INTO bids(listing_id, country_id, slot, amount, user_id) VALUES ($1,'eng',7,120000,NULL)`, [lid]);
+  const n = await notif();
+  assert.ok(!ask(n, 'outbid'), 'no pinned outbid ask, however the board stands');
+  await pool.query(`DELETE FROM listings WHERE id = $1`, [lid]);
+});
+
 test('the money speaks for itself, and administration shouts', async () => {
   await pool.query(`UPDATE clubs SET bank=-40000, finance='{}'::jsonb WHERE country_id='eng' AND slot=1`);
   let a = ask(await notif(), 'money');
