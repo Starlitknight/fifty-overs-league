@@ -1636,7 +1636,7 @@
       // ---- the four views ------------------------------------------------
       ".fo-mr-tabs{display:flex;gap:4px;overflow-x:auto;margin:0 0 22px;padding-bottom:2px;border-bottom:1px solid rgba(230,177,94,.22);scrollbar-width:none}",
       ".fo-mr-tabs::-webkit-scrollbar{display:none}",
-      "html body #page a.fo-mr-tab{flex:0 0 auto;min-height:44px;display:inline-flex;align-items:center;padding:0 15px;font-family:Inter,sans-serif;text-transform:uppercase;letter-spacing:.14em;font-size:11px;font-weight:700;color:#9FB0C6 !important;text-decoration:none !important;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}",
+      "html body #page a.fo-mr-tab{flex:0 0 auto;min-height:44px;display:inline-flex;align-items:center;padding:0 15px;font-family:Inter,sans-serif;letter-spacing:.01em;font-size:13px;font-weight:700;color:#9FB0C6 !important;text-decoration:none !important;border-bottom:2px solid transparent;margin-bottom:-1px;white-space:nowrap}",
       "html body #page a.fo-mr-tab:hover{color:#d6e0f2 !important}",
       "html body #page a.fo-mr-tab.on{color:var(--gold) !important;border-bottom-color:var(--gold)}",
       // the scorecard and fantasy tables are the game's own panels, borrowed

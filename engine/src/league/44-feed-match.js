@@ -1393,7 +1393,7 @@
       // ---- the tab rail: an almanack rule with an underline
       ".fo-fd .fd-tabs{display:flex;gap:2px;margin:18px 0 0;border-bottom:1px solid #d8d0bd;overflow-x:auto;scrollbar-width:none}",
       ".fo-fd .fd-tabs::-webkit-scrollbar{display:none}",
-      "html body #page .fo-fd .fd-tabs button{flex:0 0 auto;font:700 11px Inter,sans-serif !important;letter-spacing:.14em;text-transform:uppercase;color:#6A6354 !important;background:transparent !important;border:none !important;border-bottom:2px solid transparent !important;border-radius:0 !important;box-shadow:none !important;padding:14px 16px 12px !important;margin:0 0 -1px !important;cursor:pointer;transition:color .15s}",
+      "html body #page .fo-fd .fd-tabs button{flex:0 0 auto;font:700 13px Inter,sans-serif !important;letter-spacing:.01em;color:#6A6354 !important;background:transparent !important;border:none !important;border-bottom:2px solid transparent !important;border-radius:0 !important;box-shadow:none !important;padding:14px 16px 12px !important;margin:0 0 -1px !important;cursor:pointer;transition:color .15s}",
       "html body #page .fo-fd .fd-tabs button.on{color:#14243A !important;font-weight:700 !important;border-bottom-color:#C9571F !important}",
       "html body #page .fo-fd .fd-tabs button:hover{color:#14243A !important}",
       // ---- the two-column live workspace

@@ -53,6 +53,7 @@
   // EVERY NATION RUNS THIS CUP. The umpire plays a knockout in all nineteen
   // leagues, so both cup pages carry the same flag rail: tap a flag, read
   // that nation's bracket.
+  var FO_NAT_CODE = { win: "WI", rsa: "SA", nzl: "NZ", slk: "SL", bgd: "BAN" };
   function natRail(rid, base) {
     try {
       var regs = (window.__foCxAPI.regions() || []).filter(function (r) { return !r.final; });
@@ -60,7 +61,7 @@
       return "<div class='fo-kb-natsw'><i>Every nation&rsquo;s cup</i><div class='fo-kb-nats'>" +
         regs.map(function (r) {
           return "<a class='fo-kb-nat" + (r.id === rid ? " on" : "") + "' href='" + base + "?n=" + r.id + "'>" +
-            "<img src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\" title='" + E(r.nm) + "'><span title='" + E(r.nm) + "'>" + E(String(r.id || "").toUpperCase()) + "</span></a>";
+            "<img src='" + flagOf(r.id) + "' alt='' onerror=\"this.style.display='none'\" title='" + E(r.nm) + "'><span title='" + E(r.nm) + "'>" + E(FO_NAT_CODE[r.id] || String(r.id || "").toUpperCase()) + "</span></a>";
         }).join("") + "</div></div>";
     } catch (e) { return ""; }
   }

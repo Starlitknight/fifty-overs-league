@@ -749,7 +749,7 @@
         "<span class='t'>" + d.time + "</span>" +
         "<span class='w'><b>" + E(type) + "</b>" + (det ? "<i>" + E(det) + "</i>" : "") + "</span>" +
         "<span class='a'>" + (income ? "+" : "&minus;") + M(Math.abs(l.amount)) + "</span>" +
-        "<span class='b'>" + M(l.balance) + "</span>" +
+        "<span class='b'>" + MFull(l.balance) + "</span>" +
         "</div>";
     });
     return out;
@@ -765,7 +765,7 @@
     }).length;
     page.innerHTML = shell(
       "<header class='fo-nvmast'><div class='k'>The statement</div><h1>" + E(SM.club || "Your club") + "</h1></header>" +
-      "<div class='fo-fin-bank'><div class='lb'>In the treasury</div><b>" + M(SM.bank) + "</b>" +
+      "<div class='fo-fin-bank'><div class='lb'>In the treasury</div><b>" + MFull(SM.bank) + "</b>" +
       "<div class='fo-fin-walk'><div><span>Entries on file</span><i>" + SM.entries + "</i></div>" +
       "<div><span>Showing</span><i>" + shown + "</i></div></div></div>" +
       "<div class='fo-seg fo-st-tabs'>" + tabs + "</div>" +
