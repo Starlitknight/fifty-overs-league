@@ -92,8 +92,16 @@
           var isHome = f[0] === cl.slot, oppSlot = isHome ? f[1] : f[0];
           var href = null;
           try { href = window.foPreviewHref ? window.foPreviewHref(cl.country, r0 + 1, f[0], f[1]) : null; } catch (eH) {}
+          // the first ball's moment, so a caller can weigh this fixture
+          // against a friendly that falls sooner
+          var t0 = 0;
+          try {
+            var P0 = window.__foPlanet;
+            var d0 = P0.dayOfSeasonRound(season, r0 + 1);
+            t0 = P0.EPOCH + d0 * P0.DAY + P0.natHour(cl.country) * 3600000;
+          } catch (eT0) {}
           return {
-            served: true, r: r0 + 1, round: r0 + 1, isHome: isHome, href: href,
+            served: true, r: r0 + 1, round: r0 + 1, isHome: isHome, href: href, t0: t0,
             world: { nat: cl.country, season: season, round: r0 + 1, h: f[0], a: f[1] },
             opp: { name: bySlot[oppSlot] || "a club", slot: oppSlot },
             ground: (mgr && mgr["g" + f[0]]) || ((bySlot[f[0]] || "the ground") + "'s ground")

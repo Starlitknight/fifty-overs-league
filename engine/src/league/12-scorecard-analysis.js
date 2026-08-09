@@ -5434,7 +5434,11 @@
       }
       var heroName = wName || localNm || "Your Club";
 
-      var sig = "home|" + v + "|" + heroName + "|" + localNm + "|" + pos + "|" + round + "|" + posLine;
+      // the friendly ledger lands after the first paint; its stamp joins the
+      // signature so the PLAY button relabels when it does
+      var frMark = "";
+      try { var frS = window.foNextFriendly && window.foNextFriendly(); if (frS) frMark = "|fr" + frS.t0; } catch (eFs) {}
+      var sig = "home|" + v + "|" + heroName + "|" + localNm + "|" + pos + "|" + round + "|" + posLine + frMark;
       if (page.__foHomeSig === sig && page.querySelector(".fo-home2")) return;
       page.__foHomeSig = sig;
       var btn = function (id, lf, ls) { return "<button type='button' id='" + id + "'><span class='hg-lf'>" + lf + "</span><span class='hg-ls'>" + ls + "</span></button>"; };
@@ -5504,7 +5508,24 @@
         if (nxB) {
           var mp = false; try { mp = !!(SYNC && SYNC.started && !SYNC.practice); } catch (eMp) {}
           var fx2 = null; try { fx2 = (typeof window.foNextFixture === "function") ? window.foNextFixture() : null; } catch (eFx) {}
-          if (!fx2) { nxB.style.display = "none"; }
+          // THE NEXT CRICKET, NOT THE NEXT ROUND. A friendly arranged for
+          // this evening comes before Sunday's league match, and the one
+          // button on the front door should walk to whichever is first.
+          var fr2 = null;
+          try { fr2 = (typeof window.foNextFriendly === "function") ? window.foNextFriendly() : null; } catch (eFr2) {}
+          var toFr = !!(fr2 && (fr2.live || !fx2 || (fx2.t0 && fr2.t0 < fx2.t0)));
+          if (!fx2 && !fr2) { nxB.style.display = "none"; }
+          else if (toFr) {
+            var lfF = nxB.querySelector(".hg-lf");
+            if (lfF) lfF.textContent = (fr2.live ? "LIVE NOW" : "FRIENDLY") + " \u00B7 v " + String(fr2.opp || "").toUpperCase();
+            nxB.classList.add("hg-cta");
+            nxB.addEventListener("click", function () {
+              try {
+                location.hash = fr2.href;
+                if (typeof window.route === "function") window.route();
+              } catch (eGoF) {}
+            });
+          }
           else {
             var planned = false; try { planned = !!(App.orders && App.orders.saved && App.pending); } catch (eP) {}
             var lf = nxB.querySelector(".hg-lf"), ls = nxB.querySelector(".hg-ls");

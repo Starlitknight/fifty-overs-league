@@ -807,7 +807,6 @@
         ic("<circle cx='12' cy='12' r='9'/><path d='M5.4 8.2c4 1.6 9.2 1.6 13.2 0M5.4 15.8c4-1.6 9.2-1.6 13.2 0'/>") +
         "<div><b>" + foPmE(whenT + (tzA ? " " + tzA : "")) + "</b><i>First ball &middot; " + foPmE(utcT) + " UTC</i></div></div>" +
         "</div>" +
-        "<p class='fo-pm-dim'>A friendly &mdash; nothing is banked. No points, no table, no place in the record; the sheet you file is the side that walks out.</p>" +
         "</div>" +
 
         "<div class='fo-pm-rail'>" +

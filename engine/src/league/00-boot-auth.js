@@ -183,23 +183,32 @@
     if (document.getElementById("fo-dec-css")) return;
     var s = document.createElement("style"); s.id = "fo-dec-css";
     s.textContent = [
-      ".fo-dec{display:block;margin:8px 0;padding:12px 14px;border-radius:12px;background:#FFFEFC;",
-      "border:1px solid rgba(20,28,40,.16);border-left:3px solid #C9571F;",
+      // THE DECISION STRIP dresses like the page it opens on: a paper card,
+      // the question in ink, the verb wearing the game's own primary button.
+      // Selectors carry #page variants so no room's blanket button styling
+      // can bleach the verb, and rings appear only for keyboard focus - the
+      // strip autofocuses Cancel for safety, which must not LOOK pressed.
+      ".fo-dec{display:block;margin:10px 0;padding:14px 15px;border-radius:12px;background:#FFFEFC;",
+      "border:1px solid #E3DCCB;box-shadow:0 6px 18px rgba(20,36,58,.08);",
       "font:400 13px/1.5 Inter,system-ui,sans-serif;color:#1B2432;text-align:left}",
-      ".fo-dec.dngr{border-left-color:#B3372B}",
-      ".fo-dec b{display:block;font:600 13.5px/1.4 Inter,system-ui,sans-serif;color:#1B2432}",
-      ".fo-dec p{margin:4px 0 0;font:400 13px/1.5 Inter,system-ui,sans-serif;color:rgba(20,28,40,.62)}",
-      ".fo-dec .fo-dec-in{display:block;width:100%;max-width:220px;margin-top:9px;min-height:40px;",
-      "padding:0 12px;border-radius:9px;border:1px solid rgba(20,28,40,.24);background:#FFFEFC;",
+      ".fo-dec b{display:block;font:600 14px/1.4 Inter,system-ui,sans-serif;color:#14243A}",
+      ".fo-dec p{margin:5px 0 0;font:400 12.5px/1.5 Inter,system-ui,sans-serif;color:#6A6354}",
+      ".fo-dec .fo-dec-in{display:block;width:100%;max-width:220px;margin-top:10px;min-height:42px;",
+      "padding:0 12px;border-radius:10px;border:1px solid #CFC6B6;background:#FFFEFC;",
       "font:600 15px/1 Inter,system-ui,sans-serif;color:#1B2432;font-variant-numeric:tabular-nums}",
       ".fo-dec .fo-dec-in:focus{outline:none;border-color:#C9571F;box-shadow:0 0 0 3px rgba(201,85,47,.16)}",
-      ".fo-dec .fo-dec-act{display:flex;gap:8px;margin-top:10px}",
-      ".fo-dec button{flex:0 0 auto;min-height:38px;padding:0 16px;border-radius:9px;cursor:pointer;",
-      "font:700 11px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
-      ".fo-dec .fo-dec-no{background:transparent;border:1px solid rgba(20,28,40,.24);color:rgba(20,28,40,.7)}",
-      ".fo-dec .fo-dec-yes{background:#C9571F;border:1px solid #C9571F;color:#FFFEFC}",
-      ".fo-dec.dngr .fo-dec-yes{background:#B3372B;border-color:#B3372B}",
-      ".fo-dec .fo-dec-no:focus,.fo-dec .fo-dec-yes:focus{outline:2px solid rgba(201,85,47,.5);outline-offset:2px}"
+      ".fo-dec .fo-dec-act{display:flex;gap:9px;margin-top:12px;flex-wrap:wrap}",
+      ".fo-dec .fo-dec-act button,html body #page .fo-dec .fo-dec-act button{flex:0 0 auto;min-height:42px;",
+      "padding:0 17px !important;border-radius:10px !important;cursor:pointer;box-shadow:none !important;",
+      "font:700 11px/1 Inter,sans-serif !important;letter-spacing:.12em;text-transform:uppercase;min-width:0}",
+      ".fo-dec .fo-dec-no,html body #page .fo-dec button.fo-dec-no{background:#FFFEFA !important;",
+      "border:1px solid #CFC6B6 !important;color:#4A4438 !important}",
+      ".fo-dec .fo-dec-yes,html body #page .fo-dec button.fo-dec-yes{border:1px solid transparent !important;",
+      "background:linear-gradient(180deg,#E85720,#D94313) !important;color:#FFFEFC !important;",
+      "box-shadow:0 5px 13px rgba(217,67,19,.16) !important}",
+      ".fo-dec.dngr .fo-dec-yes,html body #page .fo-dec.dngr button.fo-dec-yes{background:#B3372B !important;border-color:#B3372B !important}",
+      ".fo-dec .fo-dec-no:focus,.fo-dec .fo-dec-yes:focus{outline:none}",
+      ".fo-dec .fo-dec-no:focus-visible,.fo-dec .fo-dec-yes:focus-visible{outline:2px solid rgba(201,85,47,.5);outline-offset:2px}"
     ].join("");
     document.body.appendChild(s);
   }

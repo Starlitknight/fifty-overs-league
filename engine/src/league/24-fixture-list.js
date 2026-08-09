@@ -59,7 +59,7 @@
       var t0 = +f.playAtMs; if (!(t0 > 0)) return;
       var atHome = !!f.mine;                       // the challenger hosts
       var o = { t0: t0, atHome: atHome, host: f.home,
-        opp: atHome ? f.away : f.home, id: f.id, world: true };
+        opp: atHome ? f.away : f.home, id: f.id, world: true, myOrders: !!f.myOrders };
       var now = Date.now();
       if (f.status === "played" && f.text) {
         var tx = String(f.text);
@@ -102,6 +102,23 @@
     });
     return out;
   }
+  // THE NEXT FRIENDLY, for anyone weighing the calendar - the club home's
+  // PLAY button asks so it can point at whichever cricket comes first.
+  window.foNextFriendly = function () {
+    try {
+      var my = "";
+      try {
+        var cl9 = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+        my = (cl9 && cl9.club) || "";
+      } catch (e0) {}
+      try { if (!my && typeof userTeam === "function") my = (userTeam() || {}).name || ""; } catch (e1) {}
+      var up = frRows(my).up.filter(function (f) { return f.live || f.t0 > Date.now(); });
+      up.sort(function (a, b) { return a.t0 - b.t0; });
+      var f0 = up[0]; if (!f0) return null;
+      return { t0: f0.t0, live: !!f0.live, opp: f0.opp, myOrders: !!f0.myOrders,
+               href: (f0.world ? "#/feed?fr=" : "#/friendly?id=") + f0.id };
+    } catch (e) { return null; }
+  };
   // the manager's friendlies off the world post, cached a minute at a time
   var FRW = { rows: null, at: 0, busy: false };
   function frWorld() {
@@ -162,7 +179,9 @@
       "<span class='nk'>" + (u.live ? "<b class='dot'></b>" : "") + u.kick + "</span>" +
       "<span class='nvs'>" + u.name + " <u>" + (u.isHome ? "Home" : "Away") + "</u></span>" +
       "<span class='nw'>" + u.when + "</span></span>" +
-      "<span class='ncta'>" + (u.live ? "Watch live &rsaquo;" : "Match preview &rsaquo;") + "</span></a>";
+      "<span class='ncta" + (u.set ? " set" : "") + "'>" +
+      (u.live ? "Watch live &rsaquo;" : u.set ? "Lineup set &#10003; &middot; preview &rsaquo;" : "Match preview &rsaquo;") +
+      "</span></a>";
   }
 
   // ---------------------------------------------------------------------------
@@ -339,18 +358,23 @@
     fr.up.forEach(function (f) {
       var href = (f.world ? "#/feed?fr=" : "#/friendly?id=") + f.id;
       var gr = frGround(f.host);
-      upItems.push({ ts: f.t0, href: href, isHome: f.atHome, live: f.live,
+      // a friendly whose sheet is filed says so, in the green the league's
+      // own teamsheet button wears - the manager's question here is "am I
+      // ready", and the row should answer it without a tap
+      var set9 = !f.live && !f.wait && f.myOrders;
+      upItems.push({ ts: f.t0, href: href, isHome: f.atHome, live: f.live, set: set9,
         kick: f.live ? "Live now &middot; Friendly" : "Up next &middot; Friendly",
         name: (f.atHome ? "v " : "at ") + E(f.opp),
         when: E(frDt(f.t0) + " · " + frHH(f.t0) + " · " + gr),
         html: rowHtml({ href: href, dt: frDt(f.t0),
-          cmp: "FR", cmpCls: "fr", chip: f.live ? "&#9679;" : f.atHome ? "H" : "A",
-          chipCls: f.live ? "lv" : "f", cls: f.live ? "up live" : "up",
+          cmp: "FR", cmpCls: "fr", chip: f.live ? "&#9679;" : set9 ? "&#10003;" : f.atHome ? "H" : "A",
+          chipCls: f.live ? "lv" : set9 ? "s" : "f", cls: f.live ? "up live" : "up",
           name: (f.atHome ? "v " : "at ") + E(f.opp),
           sub: f.live ? "LIVE &middot; ball by ball now"
             : f.wait ? "full time &middot; waiting on the league engine"
             : E(frHH(f.t0)) + " &middot; " + E(gr) + " &middot; Friendly",
-          right: f.live ? "Watch &rsaquo;" : "Preview &rsaquo;", rightCls: "act" }) });
+          right: set9 ? "Lineup set &#10003;" : f.live ? "Watch &rsaquo;" : "Preview &rsaquo;",
+          rightCls: set9 ? "set" : "act" }) });
     });
     upItems.sort(function (a, b) { return a.ts - b.ts; });
     var upRows = upItems.map(function (x) { return x.html; }).join("");
@@ -571,6 +595,8 @@
     "html body #page a.fo-fl-next.live{border-color:rgba(194,40,35,.5);border-left-color:#C22823;box-shadow:0 14px 34px rgba(194,40,35,.14)}",
     "html body #page a.fo-fl-next.live .nk{color:#C22823}",
     "html body #page a.fo-fl-next.live .ncta{background:#C22823}",
+    "html body #page .fo-fl-next .ncta.set{background:#177A57}",
+    "html body #page a.fo-fl-next:hover .ncta.set{background:#136A4B}",
     // ---- section kickers ----------------------------------------------------
     "html body #page .fo-fl-k{display:flex;align-items:center;gap:12px;font-family:Inter,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#14243A;margin:26px 2px 9px}",
     "html body #page .fo-fl-k:after{content:'';flex:1;border-top:1px solid rgba(20,28,40,.14)}",
@@ -602,6 +628,8 @@
     "html body #page .fo-fl-row u.n{background:rgba(20,28,40,.05);color:rgba(20,28,40,.55);border:1px solid rgba(20,28,40,.15)}",
     "html body #page .fo-fl-row u.c{background:rgba(176,132,9,.14);color:#8A6A1F;border:1px solid rgba(176,132,9,.4)}",
     "html body #page .fo-fl-row u.f{background:rgba(201,85,50,.12);color:#B44A22;border:1px solid rgba(201,85,50,.35)}",
+    "html body #page .fo-fl-row u.s{background:rgba(31,158,114,.14);color:#177A57;border:1px solid rgba(31,158,114,.4)}",
+    "html body #page .fo-fl-set{font:700 12px/1.3 Inter,sans-serif;color:#177A57;text-align:right;white-space:nowrap}",
     "html body #page .fo-fl-who{min-width:0}",
     "html body #page .fo-fl-who b{display:block;font:600 13.5px/1.25 Inter,sans-serif;color:#1B2432;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     "html body #page .fo-fl-who>span{display:block;font:400 13px/1.35 Inter,sans-serif;color:rgba(20,28,40,.5);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
@@ -623,7 +651,7 @@
       "html body #page .fo-fl-form{width:100%;margin-left:0}" +
       "html body #page .fo-fl-next{flex-wrap:wrap;gap:10px}" +
       "html body #page .fo-fl-next .nvs{font-size:20px;white-space:normal}" +
-      "html body #page .fo-fl-res,html body #page .fo-fl-act{display:none}" +
+      "html body #page .fo-fl-res,html body #page .fo-fl-act,html body #page .fo-fl-set{display:none}" +
       "html body #page .fo-fl-row{grid-template-columns:44px 34px 24px minmax(0,1fr) 12px;gap:8px;padding:10px 12px}" +
       "html body #page .fo-fl-row.nodt{grid-template-columns:34px 24px minmax(0,1fr) 12px}" +
     "}"

@@ -373,9 +373,7 @@
           stageShell(m, null, Date.now() < winStart
             ? "Friendly &middot; first ball <b>" + E(whenT) + (tz9 ? " " + E(tz9) : "") + " your time</b> (" + E(utcT) + " UTC)"
             : "Friendly &middot; the umpire is walking out") +
-          preMatch(rid, cal, m, winStart,
-            "Nothing is at stake and nothing is banked \u2014 no points, no table, no place in the record. " +
-            "The teamsheet you filed is the side that walks out.") +
+          preMatch(rid, cal, m, winStart, "") +
           teamsPanel(m, rid));
         clearTimeout(T.timer);
         T.timer = setTimeout(function () { frFetch(frId, true).then(function () { window.foRenderFeedPage(); }); },
