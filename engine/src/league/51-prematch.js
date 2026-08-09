@@ -921,7 +921,12 @@
       ".fo-pm-fact i{display:block;margin-top:3px;font-family:Inter,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.14em;font-size:10px;color:#9FB0C6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       "#page .fo-pm-fact[data-k=live] b{color:#B23230}",
       "#page .fo-pm-fact[data-k=live] .fo-pm-ic{color:#B23230;opacity:1}",
-      "@media(max-width:430px){.fo-pm-fact{flex-direction:column;align-items:flex-start;gap:6px;padding:10px 8px}}",
+      "@media(max-width:430px){.fo-pm-fact{flex-direction:column;align-items:flex-start;gap:6px;padding:10px 8px}",
+      // the stacked fact's inner block must take the cell's width, not its
+      // text's - shrink-wrapped, a long ground name or label painted straight
+      // across the neighbouring cell
+      ".fo-pm-fact>div{width:100%}",
+      ".fo-pm-fact i{white-space:normal;overflow:visible;text-overflow:clip}}",
       ".fo-pm-cap{font-family:Inter,sans-serif;text-transform:uppercase;letter-spacing:.14em;font-size:10px;color:var(--navy);font-weight:600}",
       ".fo-pm-cap:before{content:'';display:inline-block;width:7px;height:7px;background:var(--acc);border-radius:2px;margin-right:8px;vertical-align:1px}",
       ".fo-pm-wp{padding:13px 14px;border-radius:12px;background:linear-gradient(0deg,#FBF6EA,#FDFAF2);border:1px solid var(--edge);display:flex;flex-direction:column;gap:9px}",

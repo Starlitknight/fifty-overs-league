@@ -747,7 +747,7 @@
           if (wd && !/^S\d+ R\d+$/.test(wd)) when = wd;
         } catch (eW) {}
         return "<div class='fo-cp-ev'><i>" + E(when) + "</i><span>" + E(c.txt) + "</span></div>";
-      }).join("") || "<div class='small'>The story starts with the next matchday.</div>";
+      }).join("");
       var card = document.createElement("div");
       card.className = "panel fo-keep"; card.id = "fo-career"; card.setAttribute("data-n", name);
       var mh = function (s0) { return "<div class='small' style='margin:9px 0 4px;text-transform:uppercase;letter-spacing:.07em;font-size:10px;color:#9FB0C6'>" + s0 + "</div>"; };
@@ -769,12 +769,12 @@
           var one = mkAgg(); entries.forEach(function (e) { feed1(one, e); });
           rows.push({ lbl: "All friendlies", b: one, cls: "" });
         }
-        if (!rows.length) return "<div class='small' style='margin:8px 0 2px'>" + emptyTxt + "</div>";
+        if (!rows.length) return emptyTxt ? "<div class='small' style='margin:8px 0 2px'>" + emptyTxt + "</div>" : "";
         return mh("Batting") + "<div class='fo-cp-scroll'><table>" + BAT_HEAD + rows.map(function (x) { return batRow(x.lbl, x.b, x.cls); }).join("") + "</table></div>" +
           mh("Bowling / fielding") + "<div class='fo-cp-scroll'><table>" + BOWL_HEAD + rows.map(function (x) { return bowlRow(x.lbl, x.b, x.cls); }).join("") + "</table></div>" +
           fldLine;
       };
-      var lgHtml = tabBody(h, true, "No league innings yet - the record starts on the next matchday.");
+      var lgHtml = tabBody(h, true, "");
       // A CLAIMED CLUB'S ROUNDS ARE PLAYED ON THE SERVER and never land in the
       // local history - but the adopted man carries the umpire's own book.
       // When that book has matches and the local record has none, read his:
@@ -801,7 +801,7 @@
         "<div class='fo-cp-prov'>" + E(provTxt) + "</div>" +
         "<div class='fo-cp-tabs'><a class='fo-cp-tab' data-t='league'>League</a><a class='fo-cp-tab' data-t='fr'>Friendly</a></div>" +
         "<div class='fo-cp-body'></div>" +
-        mh("Moments") + evs +
+        (evs ? mh("Moments") + evs : "") +
         "</div></div>";
       var cpBody = card.querySelector(".fo-cp-body");
       var setCpTab = function (tb) {

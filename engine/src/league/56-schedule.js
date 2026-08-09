@@ -64,6 +64,13 @@
     if (p.kind === "rest") return "Rest day";
     return (COMP[p.kind] || "") + " &middot; " + label(p).toLowerCase();
   }
+  // the row's own line: the competition named and wearing its colour, the
+  // stage in plain ink beside it
+  function evOf(p) {
+    if (p.kind === "transition") return "<em class='cn'>" + COMP.transition + "</em>";
+    var stage = p.kind === "league" ? "round " + p.round : label(p).toLowerCase();
+    return "<em class='cn'>" + (COMP[p.kind] || "") + "</em> &middot; " + stage;
+  }
 
   // the weeks a reader thinks in, named for what they are
   var WK = ["Opening", "Second", "Third", "Colts", "Finals", "Champions Cup"];
@@ -110,7 +117,8 @@
       "html body #page .fo-sch-you.t u{background:#6b6355}",
       "html body #page .fo-sch-you.none{color:rgba(20,28,40,.3)}",
       "html body #page .fo-sch-wk .wc{font:500 12px/1 Inter,sans-serif;color:rgba(20,28,40,.28);font-variant-numeric:tabular-nums}",
-      "html body #page .fo-sch-row{display:flex;align-items:center;gap:12px;background:#FFFEFC;border-left:3px solid var(--c);border-radius:0 9px 9px 0;padding:11px 13px;margin-bottom:4px;box-shadow:0 4px 14px rgba(30,38,52,.05)}",
+      "html body #page .fo-sch-row{display:flex;align-items:center;gap:12px;background:#FFFEFC;background:color-mix(in srgb,var(--c) 5%,#FFFEFC);border-left:3px solid var(--c);border-radius:0 9px 9px 0;padding:11px 13px;margin-bottom:4px;box-shadow:0 4px 14px rgba(30,38,52,.05)}",
+      "html body #page .fo-sch-row .ev em.cn{font-style:normal;font-weight:700;color:var(--c)}",
       "html body #page .fo-sch-row .dn{flex:0 0 26px;font:600 13px/1 Inter,sans-serif;color:rgba(20,28,40,.34);font-variant-numeric:tabular-nums}",
       "html body #page .fo-sch-row .ev{flex:1;min-width:0;font:600 13.5px/1.25 Inter,sans-serif;color:#1B2432}",
       "html body #page .fo-sch-row .hr{font:500 13px/1 Inter,sans-serif;color:rgba(20,28,40,.34);font-variant-numeric:tabular-nums}",
@@ -324,7 +332,7 @@
           "' style='--c:" + COL[x.cls] + "'>" +
           "<span class='dn'>" + (x.di + 1) + "</span>" +
           "<span class='dt'>" + E(WD[x.di % 7]) + "<u>" + E(dayDate(pl, season, x.di)) + "</u></span>" +
-          "<span class='ev'>" + (x.p.kind === "league" ? label(x.p) : longOf(x.p)) + mine + "</span>" +
+          "<span class='ev'>" + evOf(x.p) + mine + "</span>" +
           "<span class='hr'>" + (x.hr || "&mdash;") + "</span></" + (pv ? "a" : "div") + ">";
       }
     }

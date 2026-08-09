@@ -385,6 +385,15 @@
       "html body #page .fo-stc-ldg td.who b{display:block;font:600 13.5px/1.2 Inter,system-ui,sans-serif;color:#1B2432;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       "html body #page .fo-stc-ldg td.who em{font-style:normal;font:400 12px/1.4 Inter,system-ui,sans-serif;color:rgba(20,28,40,.42);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;display:block}",
       "html body #page .fo-stc-ldg td.who b .bs{font-style:normal;color:#C9571F;font-size:10px;margin-right:4px;vertical-align:1px}",
+      "html body #page .fo-stc-ldg td.who a.mn{display:block;min-width:0;text-decoration:none;color:inherit}",
+      "html body #page .fo-stc-ldg td.who a.mn:hover b{color:#A63D14}",
+      // the man's own page
+      "html body #page .fo-stc-mnm{display:flex;align-items:center;gap:10px;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:29px;letter-spacing:-.01em;color:#14243A;margin:6px 0 4px}",
+      "html body #page .fo-stc-mnm img{width:26px;height:18px;object-fit:cover;border-radius:2px;box-shadow:0 0 0 1px rgba(20,28,40,.14)}",
+      "html body #page .fo-stc-mnm .bs{font-style:normal;color:#C9571F;font-size:14px}",
+      "html body #page .fo-stc-mgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(96px,1fr));gap:10px 12px;margin-top:4px}",
+      "html body #page .fo-stc-mgrid div b{display:block;font:700 17px/1.15 Inter,sans-serif;color:#1B2432;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-stc-mgrid div i{display:block;margin-top:3px;font:600 10px/1.2 Inter,sans-serif;font-style:normal;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.42)}",
       "html body #page .fo-stc-ldg th:nth-child(3),html body #page .fo-stc-ldg td.big{width:56px}html body #page .fo-stc-ldg td.big{font-weight:700;color:#1B2432}",
       "html body #page .fo-stc-ldg th:nth-child(4),html body #page .fo-stc-ldg td:nth-child(4){width:42px}",
       "html body #page .fo-stc-ldg th:nth-child(5),html body #page .fo-stc-ldg td:nth-child(5){width:46px}",
@@ -799,13 +808,14 @@
         try { bk = P.seasonBook ? P.seasonBook(natId, year) : null; } catch (e) { return ""; }
         if (!bk || (!bk.bat.length && !bk.bowl.length)) return "";
         var ave = function (r, i, n) { var d = i - n; return d > 0 ? (r / d).toFixed(2) : "&mdash;"; };
+        var manH = function (x) { return "#/stats?v=man&n=" + encodeURIComponent(natId) + "&s=" + (x.slot | 0) + "&p=" + encodeURIComponent(x.name); };
         var bat = bk.bat.slice(0, 5).map(function (x, i) {
-          return "<tr><td class='r'>" + (i + 1) + "</td><td>" + E(x.name) + "<u>" + E(nmOf(x.slot)) + "</u></td>" +
+          return "<tr><td class='r'>" + (i + 1) + "</td><td><a href='" + manH(x) + "'>" + E(x.name) + "</a><u>" + E(nmOf(x.slot)) + "</u></td>" +
             "<td class='r'>" + x.inns + "</td><td class='r'><b>" + x.runs + "</b></td>" +
             "<td class='r'>" + x.hs + (x.hsNo ? "*" : "") + "</td><td class='r'>" + ave(x.runs, x.inns, x.no) + "</td></tr>";
         }).join("");
         var bowl = bk.bowl.slice(0, 5).map(function (x, i) {
-          return "<tr><td class='r'>" + (i + 1) + "</td><td>" + E(x.name) + "<u>" + E(nmOf(x.slot)) + "</u></td>" +
+          return "<tr><td class='r'>" + (i + 1) + "</td><td><a href='" + manH(x) + "'>" + E(x.name) + "</a><u>" + E(nmOf(x.slot)) + "</u></td>" +
             "<td class='r'>" + x.ov.toFixed(0) + "</td><td class='r'><b>" + x.wkts + "</b></td>" +
             "<td class='r'>" + (x.bbW ? x.bbW + "/" + x.bbR : "&mdash;") + "</td>" +
             "<td class='r'>" + (x.wkts ? (x.rc / x.wkts).toFixed(2) : "&mdash;") + "</td></tr>";
@@ -871,11 +881,13 @@
       // tour is built on are in this list on the same terms as everybody else
       // - same qualification, same sort, no seat reserved - so the only thing
       // marking them is a star saying "you have met this one".
-      var who = "<td class='who'><div class='wr'>" +
+      // every name in the record is a door: his own page, retired or not
+      var manHref = "#/stats?v=man&n=" + encodeURIComponent(rid) + "&s=" + (x.slot | 0) + "&p=" + encodeURIComponent(x.name);
+      var who = "<td class='who'><a class='mn' href='" + manHref + "'><div class='wr'>" +
         (fl ? "<img src='" + fl + "' alt='" + E(natOf[rid] || "") + "' title='" + E(natOf[rid] || "") + "'>" : "") +
         "<span><b>" + (x.boss ? "<i class='bs' title='One of the great names'>&#9733;</i>" : "") +
         E(shortName(x.name)) + "</b><em>" + E(clubOf(x)) + " &middot; " + span +
-        (x.boss && x.craft ? " &middot; " + E(x.craft) : "") + "</em></span></div></td>";
+        (x.boss && x.craft ? " &middot; " + E(x.craft) : "") + "</em></span></div></a></td>";
       return bk === "bat"
         ? "<tr><td class='rk'>" + (i + 1) + "</td>" + who +
           "<td class='big'>" + x.runs.toLocaleString() + "</td>" +
@@ -903,6 +915,94 @@
       "<div class='fo-stc-sec'><table class='fo-stc-ldg fo-fits'><thead>" + head +
       "</thead><tbody>" + body + "</tbody></table></div>" +
       "<div class='fo-stc-foot'><a href='#/stats'>&lsaquo; The Stats Centre</a>" +
+      "<a href='#/stats?v=hist&n=" + encodeURIComponent(natId) + "'>Walk the seasons &rsaquo;</a></div>";
+  }
+
+  /* THE MAN HIMSELF (#/stats?v=man) — every career in the record opens, the
+     retired on the same terms as the playing, the way cricinfo keeps a page
+     for everybody who ever took the field. Derived from the same seasons the
+     ledgers are summed from - nothing new is stored, so nothing can disagree
+     with the tables that link here. */
+  function manBody(natId, slotQ, name) {
+    var P = PL9();
+    if (!P || !P.careerBook) return "<div class='fo-stc-sec'><p class='fo-stc-dim'>The record is still waking up.</p></div>";
+    var slot = (slotQ === "" || slotQ == null) ? null : (parseInt(slotQ, 10) | 0);
+    var all = [];
+    try { all = P.careerBook(natId) || []; } catch (e) {}
+    var c = null;
+    for (var i = 0; i < all.length; i++) {
+      if (all[i].name !== name) continue;
+      if (slot == null || (all[i].slot | 0) === slot) { c = all[i]; break; }
+    }
+    var backA = "<div class='fo-stc-foot'><a href='#/stats?v=career&n=" + encodeURIComponent(natId) + "'>&lsaquo; All-time careers</a></div>";
+    if (!c) return "<div class='fo-stc-sec'><p class='fo-stc-dim'>" + E(name || "That name") + " is not in " +
+      E(natName(natId)) + "&rsquo;s record.</p></div>" + backA;
+
+    var sN = function (yy) { return P.sIdx ? P.sIdx(yy) : yy; };
+    var span = P.histSpan(natId);
+    var playing = P.HIST_END != null && c.to >= P.HIST_END;
+    var club = "";
+    try { (P.sidesOf(natId) || []).forEach(function (s2) { if ((s2.slot | 0) === (c.slot | 0)) club = s2.name; }); } catch (e2) {}
+    var fl = "";
+    try { fl = ((typeof FO_ART !== "undefined") ? FO_ART : "client/art/") + "flags/" + window.__foCxAPI.flagFile(natId) + ".svg"; } catch (e3) {}
+    var roleTxt = String(c.role || "").replace(/([A-Z])/g, " $1").toLowerCase().replace(/\bbat\b/, "batsman");
+    roleTxt = roleTxt ? roleTxt.charAt(0).toUpperCase() + roleTxt.slice(1) : "";
+    var d = c.inns - c.no;
+    var kv = function (k, v2) { return "<div><b>" + v2 + "</b><i>" + k + "</i></div>"; };
+    var batCard = "<div class='fo-stc-sec'><div class='fo-stc-sech'>Batting</div><div class='fo-stc-mgrid'>" +
+      kv("Matches", c.m) + kv("Innings", c.inns) + kv("Not outs", c.no) +
+      kv("Runs", c.runs.toLocaleString()) + kv("Highest", c.hs + (c.hsNo ? "*" : "")) +
+      kv("Average", d > 0 ? (c.runs / d).toFixed(1) : "&mdash;") +
+      kv("Strike rate", c.bf > 0 ? (100 * c.runs / c.bf).toFixed(1) : "&mdash;") +
+      kv("Hundreds", c.h100) + kv("Fifties", c.h50) +
+      "</div></div>";
+    var bowlCard = (c.ov > 0 || c.wkts > 0)
+      ? "<div class='fo-stc-sec'><div class='fo-stc-sech'>Bowling</div><div class='fo-stc-mgrid'>" +
+        kv("Overs", c.ov.toFixed(0)) + kv("Runs", c.rc.toLocaleString()) + kv("Wickets", c.wkts) +
+        kv("Best", c.bbW ? c.bbW + "/" + c.bbR : "&mdash;") +
+        kv("Average", c.wkts ? (c.rc / c.wkts).toFixed(1) : "&mdash;") +
+        kv("Economy", c.ov > 0 ? (c.rc / c.ov).toFixed(2) : "&mdash;") +
+        kv("Five-fors", c.fifers) +
+        "</div></div>"
+      : "";
+    // the seasons, one line each, off the same book the season pages print
+    var srows = "";
+    for (var y = Math.max(c.from, span.from); y <= Math.min(c.to, span.to); y++) {
+      var bk2 = null, r2 = null;
+      try { bk2 = P.seasonBook(natId, y); } catch (e4) {}
+      if (bk2) {
+        (bk2.bat || []).some(function (x2) { if (x2.name === c.name && (x2.slot | 0) === (c.slot | 0)) { r2 = x2; return true; } return false; });
+        if (!r2) (bk2.bowl || []).some(function (x3) { if (x3.name === c.name && (x3.slot | 0) === (c.slot | 0)) { r2 = x3; return true; } return false; });
+      }
+      if (!r2) continue;
+      var dd = r2.inns - r2.no;
+      srows += "<tr><td><a href='#/stats?v=hist&n=" + encodeURIComponent(natId) + "&y=" + y + "'>S" + sN(y) + "</a></td>" +
+        "<td class='r'>" + r2.inns + "</td><td class='r'><b>" + r2.runs + "</b></td>" +
+        "<td class='r'>" + r2.hs + (r2.hsNo ? "*" : "") + "</td>" +
+        "<td class='r'>" + (dd > 0 ? (r2.runs / dd).toFixed(1) : "&mdash;") + "</td>" +
+        "<td class='r'>" + r2.wkts + "</td>" +
+        "<td class='r'>" + (r2.bbW ? r2.bbW + "/" + r2.bbR : "&mdash;") + "</td></tr>";
+    }
+    var seasonsTbl = srows
+      ? "<div class='fo-stc-sec'><div class='fo-stc-sech'>Season by season</div>" +
+        "<div class='fo-stc-scroll'><table class='fo-stc-htb bk'><thead>" +
+        "<tr><th>Season</th><th class='r'>Inns</th><th class='r'>Runs</th><th class='r'>HS</th><th class='r'>Ave</th>" +
+        "<th class='r'>Wkts</th><th class='r'>BB</th></tr></thead><tbody>" + srows + "</tbody></table></div></div>"
+      : "";
+    var liveLink = playing && club
+      ? " &middot; <a href='#/player?c=" + encodeURIComponent(natId) + "&s=" + (c.slot | 0) + "&n=" + encodeURIComponent(c.name) + "'>his page today &rsaquo;</a>"
+      : "";
+    return "<div class='fo-stc-sec fo-stc-hhead'>" +
+      "<div class='fo-stc-ck'>" + E(natName(natId)) + " &middot; the record</div>" +
+      "<h2 class='fo-stc-mnm'>" + (fl ? "<img src='" + fl + "' alt=''>" : "") + E(c.name) +
+      (c.boss ? "<i class='bs' title='One of the great names'>&#9733;</i>" : "") + "</h2>" +
+      "<p class='fo-stc-dim'>" + (club ? "<a href='#/team?c=" + encodeURIComponent(natId) + "&s=" + (c.slot | 0) + "'>" + E(club) + "</a> &middot; " : "") +
+      (roleTxt ? E(roleTxt) + " &middot; " : "") +
+      "S" + sN(c.from) + "&ndash;S" + sN(c.to) + " &middot; " + c.seasons + " season" + (c.seasons === 1 ? "" : "s") +
+      " &middot; " + (playing ? "still playing" : "retired") + liveLink + "</p>" +
+      (c.boss && c.craft ? "<p class='fo-stc-dim'>" + E(c.craft) + "</p>" : "") +
+      "</div>" + batCard + bowlCard + seasonsTbl +
+      "<div class='fo-stc-foot'><a href='#/stats?v=career&n=" + encodeURIComponent(natId) + "'>&lsaquo; All-time careers</a>" +
       "<a href='#/stats?v=hist&n=" + encodeURIComponent(natId) + "'>Walk the seasons &rsaquo;</a></div>";
   }
 
@@ -934,6 +1034,10 @@
     var v = qparam("v"), scope = qparam("sc");
     if (v === "career") {
       page.innerHTML = "<div class='fo-stc'>" + careerBody(natId, qparam("b"), qparam("sc")) + "</div>";
+      return;
+    }
+    if (v === "man") {
+      page.innerHTML = "<div class='fo-stc'>" + manBody(natId, qparam("s"), qparam("p")) + "</div>";
       return;
     }
     if (v === "hist") {

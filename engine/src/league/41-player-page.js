@@ -283,6 +283,7 @@
   // of a phone into a scroll nobody goes looking for.
   var TABS = [["overview", "Overview"], ["story", "Story"], ["talents", "Talents"], ["career", "Career"], ["country", "Country"], ["matches", "Matches"], ["dev", "Development"]];
   var TAB = "overview";
+  var MINE_LAST = "";
   function qp(k) { var m = new RegExp("[?&]" + k + "=([^&]*)").exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : ""; }
 
   // THE MATCH ON SCREEN KNOWS WHOSE MEN THESE ARE. The theatre records the
@@ -370,6 +371,20 @@
     if (!hit || !hit.p) { if (fromTheatre(name)) return; }
     if (!hit || !hit.p) { notInRecord(name); return; }
     var p = hit.p, team = hit.team || {}, mine = isMine(p.name);
+    // MINE DOES NOT FLAP. Between two served snapshots the local mirror can
+    // briefly hold another shape and isMine answers false for a man this
+    // manager employs - so a tap on Development rebuilt the page without its
+    // Development tab, the strip ended at Career, and the tap read as landing
+    // on the wrong one. A man whose club is the claim's club is mine; and a
+    // man this page has already treated as mine stays mine for the visit.
+    try {
+      if (!mine && hit.world) {
+        var clM = worldClaim();
+        if (clM && clM.country === hit.world.rid && (clM.slot | 0) === (hit.world.slot | 0)) mine = true;
+      }
+    } catch (eMn) {}
+    if (mine) MINE_LAST = p.name;
+    else if (MINE_LAST === p.name) mine = true;
     // the dark dossier stage is retired; make sure its backdrop goes with it
     try { document.body.classList.remove("fo-pl-on"); var bg = document.getElementById("fo-pl-bg"); if (bg) bg.remove(); } catch (eB) {}
     if (!mine && TAB === "dev") TAB = "overview";
@@ -496,9 +511,6 @@
         meter("Fitness", cond.fitPct + "%", cond.fitPct) +
         meter("Freshness", cap(cond.fatWord), 100 - cond.fatPct) +
         "</div>" +
-        "<div class='fo-pp-card'><h3>What is tracked</h3><div class='fo-pp-track'>" +
-        ["Runs", "Strike rate", "Wickets", "Catches", "Milestones"].map(function (t) { return "<span>" + t + "</span>"; }).join("") +
-        "</div><p class='fo-pp-dim'>Every league innings is banked by the umpire and joins the record above.</p></div>" +
         "</div>";
     } else if (TAB === "talents") {
       // WHAT HE HAS, AND WHAT HE IS ON HIS WAY TO.
@@ -518,7 +530,7 @@
         return "<div class='fo-pp-tal'><span class='fo-pp-talk" + (t === earned ? " won" : "") + "'>" +
           (t === earned ? "Earned" : "Born with") + "</span><div><b>" + E(talNm(t)) + "</b>" +
           (talTip(t) ? "<p>" + E(talTip(t)) + "</p>" : "") + "</div></div>";
-      }).join("") : "<p class='fo-pp-dim'>He was dealt none. Most cricketers are - roughly one man in nine arrives with one, which is what makes them worth having.</p>";
+      }).join("") : "";
 
       // everything he is part of the way to, closest first
       var prog = (p.talProg && typeof p.talProg === "object") ? p.talProg : {};
@@ -582,8 +594,8 @@
         "</h3>" + learnBody +
         "</div></div>" +
         "<div class='fo-pp-rail'>" +
-        "<div class='fo-pp-card'><h3>What he has" + (has.length ? "<span>" + has.length + "</span>" : "") + "</h3>" +
-        hasRows + "</div>" +
+        (hasRows ? "<div class='fo-pp-card'><h3>What he has<span>" + has.length + "</span></h3>" +
+        hasRows + "</div>" : "") +
         (Object.keys(carr).length
           ? "<div class='fo-pp-card'><h3>Brought with him</h3>" +
             "<p class='fo-pp-dim'>Work he did at another club, or in the academy before he was signed. It counts " +
@@ -622,8 +634,7 @@
         (ms1.length ? "<div class='fo-pp-story'>" + ms1.map(function (m) {
           return "<div class='fo-pp-ev done'><i></i><span><u>" + E(m.when) + "</u>" + E(m.txt) + "</span></div>";
         }).join("") + "</div>"
-          : "<div class='fo-pp-story'><div class='fo-pp-ev'><i></i><span><u>Next match</u>League debut</span></div></div>" +
-            "<p class='fo-pp-dim'>His first page is unwritten.</p>") +
+          : "<div class='fo-pp-story'><div class='fo-pp-ev'><i></i><span><u>Next match</u>League debut</span></div></div>") +
         "</div>" +
         "</div>";
     } else {
@@ -650,7 +661,7 @@
         // reader neither asked nor needs: the facets are on their way, and the
         // only honest thing to say is that they are not here yet.
         adv = "<details class='fo-pp-adv'><summary>Advanced engine view</summary>" +
-          "<p class='fo-pp-dim'>Loading&hellip;</p></details>";
+          "<p class='fo-pp-dim'>Loading&hellip; try refreshing the page if this doesn't load in 30 seconds.</p></details>";
       } else if (mine) {
         var sk = skills(p);
         adv = "<details class='fo-pp-adv'><summary>Advanced engine view</summary>" +
@@ -706,6 +717,14 @@
         build(); harvest();
       });
     });
+    // THE STRIP KEEPS ITS PLACE. On a phone the tab rail scrolls, and a
+    // rebuild reset it to the left edge - so tapping Development painted the
+    // right room but the rail snapped back to Overview..Career and the tap
+    // read as landing on the wrong tab. The active tab stays under the finger.
+    try {
+      var bar9 = wrap.querySelector(".fo-pp-tabs"), on9 = bar9 && bar9.querySelector("a.on");
+      if (bar9 && on9) bar9.scrollLeft = Math.max(0, on9.offsetLeft - (bar9.clientWidth - on9.offsetWidth) / 2);
+    } catch (eSb) {}
     wrap.querySelectorAll(".fo-pp-filt a").forEach(function (a) {
       a.addEventListener("click", function () {
         wrap.querySelectorAll(".fo-pp-filt a").forEach(function (b) { b.classList.remove("on"); });
@@ -1260,9 +1279,19 @@
   // ---- the page paints after the engine, and files after the decorators -----
   if (typeof window.pgPlayer === "function" && !window.pgPlayer.__foPP2) {
     var prev = window.pgPlayer;
+    var PG_LAST = null;
     window.pgPlayer = function () {
       var out = prev.apply(this, arguments);
-      try { TAB = "overview"; build(); } catch (e) { try { console.warn("foPlayerPage", e); } catch (e2) {} }
+      try {
+        // THE TAB SURVIVES A REPAINT. The engine re-routes for reasons of its
+        // own - a snapshot landing, a decorator's route() - and this wrapper
+        // was resetting the tab to Overview on every one of them, so a tap on
+        // Development held for the ~50ms until the next repaint threw it
+        // away. A NEW man starts on Overview; the same man keeps his room.
+        var nm9 = qName();
+        if (nm9 !== PG_LAST) { PG_LAST = nm9; TAB = "overview"; }
+        build();
+      } catch (e) { try { console.warn("foPlayerPage", e); } catch (e2) {} }
       return out;
     };
     window.pgPlayer.__foPP2 = 1;

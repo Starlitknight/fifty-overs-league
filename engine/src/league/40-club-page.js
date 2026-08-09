@@ -813,7 +813,10 @@
           "<div class='top'>" + crestHTML +
           "<div class='nm'><h1>" + E(name) + "</h1>" +
           "<div class='loc'><img src='" + flagOf(cid) + "' alt=''>" + E(natName(cid)) +
-          (boss ? " &middot; The flagship" : isMine ? " &middot; Your club" : "") + "</div></div></div>" +
+          (boss ? " &middot; The flagship" : isMine ? " &middot; Your club" : "") + "</div>" +
+          "<div class='est'>Est. " + (foundedTxt === "&mdash;" ? "&mdash;"
+            : foundedTxt.charAt(0) === "T" ? "this season"
+            : foundedTxt.charAt(0) === "B" ? "before the record" : foundedTxt) + "</div></div></div>" +
           "<div class='meta'>" + idMeta + "</div>" +
           "<div class='acts'>" + idActs + "</div>" +
           "<div class='foot'>" + idFoot + "</div>" +
@@ -1379,6 +1382,7 @@
       ".fo-cd-id h1{font:700 22px/1.1 Inter,sans-serif;text-transform:uppercase;letter-spacing:.02em;color:var(--navy);margin:0}",
       ".fo-cd-id .loc{display:flex;align-items:center;gap:7px;margin-top:6px;font:600 11px/1.3 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--acc)}",
       ".fo-cd-id .loc img{width:18px;height:12px;object-fit:cover;border-radius:2px}",
+      ".fo-cd-id .est{margin-top:4px;font:500 12px/1.3 Inter,sans-serif;color:rgba(12,27,51,.55)}",
       ".fo-cd-id .meta{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px;margin-top:13px;border-top:1px solid var(--edge);padding-top:12px}",
       ".fo-cd-id .meta span{font:600 11px/1 Inter,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#9FB0C6}",
       ".fo-cd-id .meta b{display:block;font:600 12.5px/1.3 Inter,sans-serif;color:var(--ink);margin-top:4px;letter-spacing:0;text-transform:none}",
