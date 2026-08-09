@@ -1213,8 +1213,14 @@ test('018: the academy is paid for, and it recomputes', async () => {
   assert.equal(Number((await pool.query(
     `SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank), bank1, 'settling twice settles the same figure');
 
-  // THE MANAGER'S TWO CALLS: hand a boy a senior shirt, or let him go. There
-  // is no cap on the list any more - the wage bill is the only brake there is.
+  // THE MANAGER'S TWO CALLS: hand a boy a senior shirt, or let him go.
+  // 075 empties the academy lists, but world_colt keeps its law for any
+  // stale client that still calls it - seed two boys to hold it to that.
+  await pool.query(`UPDATE clubs SET youth=$1::jsonb WHERE country_id='eng' AND slot=1`,
+    [JSON.stringify([
+      { name: 'Wilf Hartle', age: 18, role: 'opener', wage: 400, colt: true, skills: { vsPace: 40, temperament: 44 } },
+      { name: 'Ned Crowther', age: 17, role: 'seamer', wage: 300, colt: true, skills: { wicket: 38, economy: 41 } }
+    ])]);
   const mine = (await pool.query(`SELECT academy, youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
   assert.ok(mine.youth.length > 0, 'there are boys on the books to make a call about');
   await assert.rejects(pool.query(`SELECT public.world_colt('anyone','promote')`), /sign in/);

@@ -284,34 +284,19 @@ test('the focus arithmetic the page quotes is the engine\'s own', () => {
   assert.equal(run(`JSON.stringify(window.FO_PLAN_ENTRY({p:'Batting',f:'vsSpin'}))`), '{"p":"Batting","f":"vsSpin"}');
 });
 
-test('the two crews are two tabs, and each holds only its own men', () => {
+test('the youth crew is retired (075): the nets show the seniors and nobody else', () => {
+  // even with boys still sitting in the team object (a stale local save), the
+  // page offers no crew tabs and never lists a boy
   const sen = draw('climb', undefined, 'sen');
-  assert.ok(sen.indexOf("data-t2crew='sen'") >= 0 && sen.indexOf("data-t2crew='yth'") >= 0,
-    'both tabs are offered');
-  assert.ok(sen.indexOf('Senior squad</span><i>' + SQUAD.length + '<') >= 0, 'the senior tab counts the five men');
-  assert.ok(sen.indexOf('Youth squad</span><i>' + BOYS.length + '<') >= 0, 'and the youth tab counts the three boys');
-  for (const p of SQUAD) assert.ok(sen.indexOf(`data-t2p='${p.name}'`) >= 0, p.name + ' is on the senior tab');
+  assert.ok(sen.indexOf('data-t2crew') < 0, 'no crew tabs are offered');
+  for (const p of SQUAD) assert.ok(sen.indexOf(`data-t2p='${p.name}'`) >= 0, p.name + ' is on the page');
   for (const b of BOYS) assert.ok(sen.indexOf(`data-t2p='${b.name}'`) < 0, b.name + ' is not');
-
+  assert.ok(sen.indexOf('>Player</span>') >= 0 && sen.indexOf('>Colt</span>') < 0,
+    'the page speaks of players, never colts');
+  // and asking for the retired crew changes nothing
   const yth = draw('climb', undefined, 'yth');
-  for (const b of BOYS) assert.ok(yth.indexOf(`data-t2p='${b.name}'`) >= 0, b.name + ' is on the academy tab');
-  for (const p of SQUAD) assert.ok(yth.indexOf(`data-t2p='${p.name}'`) < 0, p.name + ' is not');
-  // and each boy gets the same two decisions a senior gets
-  for (const b of BOYS) assert.ok(yth.indexOf(`data-t2f='${b.name}'`) >= 0, b.name + ' has a focus picker');
-  assert.ok(yth.indexOf('>Colt</span>') >= 0, 'and the youth tab calls them colts, not players');
-  assert.ok(sen.indexOf('>Player</span>') >= 0, 'while the senior tab calls them players');
-  // NEITHER NAME IS EVER A BOX. Each tab is only as wide as its own words -
-  // the lit rule is drawn by the live tab's own ::after, so it can never span
-  // half a card the way a segmented control does.
-  assert.ok(sen.indexOf(`data-t2crew='sen'`) >= 0 && sen.indexOf("class='fo-t2-tab on'") >= 0,
-    'the senior tab is the live one');
-  assert.ok(yth.indexOf(`aria-selected='true'`) >= 0 && yth.indexOf("role='tablist'") >= 0,
-    'and the pair reads as a tablist to anything that is not looking at it');
-  // exactly one tab is lit at a time, on either side
-  for (const [html, who] of [[sen, 'senior'], [yth, 'youth']]) {
-    assert.equal((html.match(/class='fo-t2-tab on'/g) || []).length, 1, who + ': one tab is live');
-    assert.equal((html.match(/aria-selected='true'/g) || []).length, 1, who + ': and says so once');
-  }
+  for (const p of SQUAD) assert.ok(yth.indexOf(`data-t2p='${p.name}'`) >= 0, p.name + ' still stands');
+  for (const b of BOYS) assert.ok(yth.indexOf(`data-t2p='${b.name}'`) < 0, b.name + ' still does not');
 });
 
 test('a club with no boys is not shown a door to an empty room', () => {
@@ -371,12 +356,11 @@ test('saving from one tab never files a plan with the other half missing', () =>
   assert.ok(plan, 'a plan was filed with the world');
   const named = Object.keys(plan);
   for (const p of SQUAD) assert.ok(named.indexOf(p.name) >= 0,
-    p.name + ' is missing from a plan filed off the academy tab: ' + named.join(', '));
-  for (const b of BOYS) assert.ok(named.indexOf(b.name) >= 0,
-    b.name + ' is missing from the plan: ' + named.join(', '));
-  assert.equal(named.length, SQUAD.length + BOYS.length, 'the whole club is filed, not the visible half');
-  // the colt keeper is filed as a keeper, same law as the senior one
+    p.name + ' is missing from the plan: ' + named.join(', '));
+  // the boys are retired (075): the filed plan is the seniors, whole and alone
+  for (const b of BOYS) assert.ok(named.indexOf(b.name) < 0,
+    b.name + ' is a boy and boys are not filed any more: ' + named.join(', '));
+  assert.equal(named.length, SQUAD.length, 'the whole senior staff is filed, no more and no fewer');
   const read = n => (typeof plan[n] === 'string' ? plan[n] : plan[n] && plan[n].p);
-  assert.equal(read('Tobias Ng'), 'Keeping', 'the colt keeper is filed as a keeper');
-  assert.equal(read('Cass Iremonger'), 'Keeping', 'and so is the senior one');
+  assert.equal(read('Cass Iremonger'), 'Keeping', 'the keeper is filed as a keeper');
 });

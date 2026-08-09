@@ -108,7 +108,7 @@
           if (e && progsOf()[e.p]) sv.plan[k] = e;
         }
       } else {
-        var me = userTeam(), all = (me.players || []).concat(me.youth || []);
+        var me = userTeam(), all = (me.players || []).slice();
         all.forEach(function (p) {
           var t = p.training || {};
           if (t.program && progsOf()[t.program]) {
@@ -127,10 +127,9 @@
   // the umpire works, with nothing left to a default the manager cannot see.
   // A man on auto files the bare string, which is the shape every round
   // before this one banked: no focus, no new key, nothing to replay wrong.
-  // THE FILED PLAN COVERS THE WHOLE CLUB, whichever crew is on screen. The
-  // page shows the men or the boys, never both; a save that walked only the
-  // visible rows would file a plan with half the club missing, and the umpire
-  // puts every unnamed man back on his default programme.
+  // THE FILED PLAN COVERS THE WHOLE CLUB: a save that walked only some rows
+  // would file a plan with half the club missing, and the umpire puts every
+  // unnamed man back on his default programme.
   function buildPlan(squad) {
     var plan = {};
     squad.forEach(function (p) {
@@ -541,17 +540,8 @@
   // whole on every keystroke - a plan saved, a picker moved. The choice lives
   // on the window and is read fresh each render, so it survives a rebuild
   // without surviving a change of club.
-  // WHICH SIDE OF THE CLUB. The men and the boys are two crews - the umpire
-  // replays them separately, they answer to different laws (a colt is never
-  // left out of an eleven, so the match-day half-rate never touches him), and
-  // they are read for different reasons: you check the seniors before a round
-  // and the boys once a season. Held on the window, like the chart choice,
-  // because the page rebuilds itself whole on every keystroke.
-  function crewId() {
-    var c = "sen";
-    try { if (window.__foNetsCrew === "yth") c = "yth"; } catch (e) {}
-    return c;
-  }
+  // (The youth crew and its tab retired with the youth system, 075 - the
+  //  nets train the seniors, who are the whole club now.)
   function chartId() {
     var ch = "climb";
     try { if (window.__foNetsChart) ch = String(window.__foNetsChart); } catch (e) {}
@@ -581,10 +571,7 @@
     try { document.body.classList.add("fo-nets-on"); } catch (eB) {}
     var st = loadState(), me = userTeam();
     var seniors = (me.players || []).slice();
-    var boys = (me.youth || []).slice();
-    // a club with no academy at all is not shown a door to an empty room
-    var crew = boys.length ? crewId() : "sen";
-    var squad = crew === "yth" ? boys : seniors;
+    var squad = seniors;
     var bk = bookOf();
     var chart = chartId(), who = whoFor(squad, bk);
 
@@ -601,29 +588,10 @@
     for (var pi = 1; pi <= ACAD_MAX; pi++) pips += "<s class='fo-t2-pip" + (pi <= lv ? " on" : "") + "'></s>";
     var acad = "";
 
-    // ---- THE TWO CREWS ------------------------------------------------------
-    // TWO NAMES, SET LIKE A CONTENTS LINE. Stretched across half a card each
-    // they were a segmented control pulled out of shape - and a full-width
-    // rule under a full-width label is a button however it is coloured. They
-    // shrink to their own words now, sit left where reading starts, and the
-    // rule that marks the live one is exactly as long as the name it marks.
-    var tab = function (id, label, n) {
-      return "<button type='button' role='tab' aria-selected='" + (crew === id) + "'" +
-        " class='fo-t2-tab" + (crew === id ? " on" : "") + "' data-t2crew='" + id + "'>" +
-        "<span>" + label + "</span><i>" + n + "</i></button>";
-    };
-    var tabs = boys.length
-      ? "<div class='fo-t2-tabs' role='tablist'>" +
-        tab("sen", "Senior squad", seniors.length) +
-        tab("yth", "Youth squad", boys.length) +
-        "</div>"
-      : "";
-
     // ---- THE TRAINING PLAN, man by man --------------------------------------
     var nos = squadNumbers(squad);
-    var roster = "<div class='fo-t2-card'>" + tabs +
-      "<div class='fo-t2-head'><span></span><span>" +
-        (crew === "yth" ? "Colt" : "Player") + "</span><span>Programme</span><span>Focus</span></div>" +
+    var roster = "<div class='fo-t2-card'>" +
+      "<div class='fo-t2-head'><span></span><span>Player</span><span>Programme</span><span>Focus</span></div>" +
       squad.map(function (p) {
         var e = entryFor(p);
         var foc = focusOptions(e.p);
@@ -698,14 +666,6 @@
         st.dirty = 1; rep();
       });
     });
-    page.querySelectorAll("button[data-t2crew]").forEach(function (b) {
-      b.addEventListener("click", function () {
-        try { window.__foNetsCrew = b.getAttribute("data-t2crew"); } catch (eC1) {}
-        // the charts are about a man, and that man is on the other crew now
-        try { window.__foNetsWho = null; } catch (eC2) {}
-        rep();
-      });
-    });
     var chartSel = page.querySelector("#fo-t2-chart");
     if (chartSel) chartSel.addEventListener("change", function () {
       try { window.__foNetsChart = chartSel.value; } catch (eS1) {}
@@ -720,12 +680,12 @@
     var save = page.querySelector("#fo-t2-save");
     if (save) save.addEventListener("click", function () {
       try {
-        var plan = buildPlan(seniors.concat(boys));
+        var plan = buildPlan(seniors);
         if (served()) {
           if (window.__foWorldPushTraining) window.__foWorldPushTraining(plan);
           window.__foWorldPlan = plan;
         } else {
-          seniors.concat(boys).forEach(function (p) {
+          seniors.forEach(function (p) {
             if (!p.training || typeof p.training !== "object") p.training = { progressBySkill: {} };
             var e = readEntry(plan[p.name]) || { p: defaultProg(p), f: null };
             p.training.program = e.p;
