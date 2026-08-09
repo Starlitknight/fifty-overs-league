@@ -125,6 +125,10 @@ export const TICKET = 26;                    // the league's price, and every bo
 // and the clock, which is why the board a manager watches can never
 // disagree with the gate the umpire banks.
 // ---------------------------------------------------------------------------
+// DIVISION TWO PLAYS TO THINNER STANDS, as a rule of the world and not only
+// as a consequence of smaller support: the same club, the same mood, draws
+// four-fifths of the crowd the top flight would bring through its gates.
+export const DIV2_CROWD = 0.8;
 export const TICKET_MIN = 10, TICKET_MAX = 100;
 export const TICKET_ELASTICITY = 1.15;
 export const TICKET_LOCK_MS = 24 * 3600000;
@@ -414,9 +418,15 @@ export async function computeFinance(pool, country, opts = {}) {
   let starts = [];
   try {
     starts = (await pool.query(
-      'SELECT season_no, start_day FROM seasons WHERE country_id=$1', [country])).rows;
+      'SELECT season_no, start_day, divisions FROM seasons WHERE country_id=$1', [country])).rows;
   } catch (eS0) { starts = []; }
   const startOf = Object.fromEntries(starts.map(x => [x.season_no, x.start_day]));
+  // who played the second flight, season by season - their gates run thinner
+  const div2Of = {};
+  for (const t of starts) {
+    const d2 = t.divisions && t.divisions['2'];
+    if (Array.isArray(d2) && d2.length) div2Of[t.season_no] = new Set(d2.map(Number));
+  }
   for (const t of purse) {
     const won = t.result && t.result.winner === t.b.name ? t.b : t.a;
     const lost = won === t.a ? t.b : t.a;
@@ -523,7 +533,8 @@ export async function computeFinance(pool, country, opts = {}) {
       const H = S[m.home_slot], A = S[m.away_slot];
       if (!H || !A) continue;
       const w = weatherOf(m.seed != null ? m.seed : m.id);
-      const demand = H.sup * moodMult(H.mood) * drawMult(A, pos[A.slot]) * w.mult;
+      const dv = div2Of[m.season_no] && div2Of[m.season_no].has(m.home_slot) ? DIV2_CROWD : 1;
+      const demand = H.sup * moodMult(H.mood) * drawMult(A, pos[A.slot]) * w.mult * dv;
       const matchMs = EPOCH + ((startOf[m.season_no] ?? 0) +
         (dayOfRound(m.round) ?? (m.round - 1))) * DAY + HOUR;
       const sale = gateSale(demand, H.seats, matchMs, priceRows[H.slot] || null, null);

@@ -273,7 +273,7 @@
       ".fo-gb-row .tk u{display:block;margin-top:2px;text-decoration:none;font:600 9.5px/1.2 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#9E978A}",
       ".fo-gb-row .tk em{display:block;margin-top:3px;font:600 10.5px/1.2 Inter,sans-serif;font-style:normal;color:#C08A2E}",
       ".fo-gb-row .tk em.lk{color:#177A57}",
-      ".fo-me-forecast{padding-bottom:13px}.fo-me-forecastbody{display:grid;grid-template-columns:138px minmax(0,1fr);gap:14px;padding:13px 16px 0;align-items:stretch}.fo-me-opp{display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #E5DFD4;text-align:center}.fo-me-shield{width:55px;height:61px;clip-path:polygon(8% 0,92% 0,88% 70%,50% 100%,12% 70%);display:grid;place-items:center;background:linear-gradient(150deg,#E0B53E,#C8951F);color:#102641;font:700 16px/1 Fraunces,serif}.fo-me-opp b{margin-top:8px;font:650 16px/1.1 Fraunces,Georgia,serif}.fo-me-opp span{margin-top:6px;color:var(--mut);font:700 11px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
+      ".fo-me-forecast{padding-bottom:13px}.fo-me-forecastbody{display:grid;grid-template-columns:138px minmax(0,1fr);gap:14px;padding:13px 16px 0;align-items:stretch}.fo-me-opp{display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #E5DFD4;text-align:center}.fo-me-shield{width:55px;height:61px;clip-path:polygon(8% 0,92% 0,88% 70%,50% 100%,12% 70%);display:grid;place-items:center;background:linear-gradient(150deg,#E0B53E,#C8951F);color:#102641;font:700 16px/1 Fraunces,serif}.fo-me-shield.arms,.fo-me-shield.crest{clip-path:none;background:none;width:auto;min-width:52px;height:61px;display:flex;align-items:center;justify-content:center}.fo-me-shield.crest{object-fit:contain;max-width:64px}.fo-me-shield.arms svg{display:block}.fo-me-opp b{margin-top:8px;font:650 16px/1.1 Fraunces,Georgia,serif}.fo-me-opp span{margin-top:6px;color:var(--mut);font:700 11px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
       ".fo-me-fgrid{display:grid;grid-template-columns:1fr 1fr}.fo-me-fstat{padding:11px;border-bottom:1px solid #E9E4DB}.fo-me-fstat:nth-child(odd){border-right:1px solid #E9E4DB}.fo-me-fstat span{display:block;color:#778294;font:700 11px/1.25 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase}.fo-me-fstat b{display:block;margin-top:6px;color:var(--ink);font:750 14px/1.1 Inter,sans-serif;font-variant-numeric:tabular-nums}.fo-me-fstat.green b{color:var(--green)}",
       ".fo-me-recon{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;padding:13px 16px;border:1px solid var(--edge);border-radius:13px;background:#FAF8F3;color:#667387;font:500 13px/1.5 Inter,sans-serif}",
       "html body #page .fo-me-recon b{color:var(--ink);font-weight:750;font-variant-numeric:tabular-nums}",
@@ -536,7 +536,7 @@
     try {
       if ((!nf || !nf.opp || !nf.opp.name) && window.foMyNextLeagueFixture) {
         var kf9 = window.foMyNextLeagueFixture();
-        if (kf9) nf = { opp: { name: kf9.opp.name }, isHome: kf9.home, round: kf9.round };
+        if (kf9) nf = { opp: { name: kf9.opp.name, slot: kf9.opp.slot }, isHome: kf9.home, round: kf9.round };
       }
     } catch (eKf) {}
     var oppNm = String((nf && nf.opp && nf.opp.name) || "Season played out");
@@ -609,7 +609,20 @@
         "</em><button type='button' id='fo-fin-seats2'" + (canSeats ? "" : " disabled") + ">Explore expansion</button></div>" +
         "</div><div class='fo-fin-msg' id='fo-fin-msg'></div></section>" +
         "<section class='fo-me-card fo-me-forecast'><div class='fo-me-panelhead'><span>Next match</span><em>" + E(basis.toLowerCase()) + "</em></div><div class='fo-me-forecastbody'>" +
-        "<div class='fo-me-opp'><div class='fo-me-shield'>" + E(oppNm.slice(0, 2).toUpperCase()) + "</div><b>" + E(oppNm) + "</b><span>" + (atHome ? "At home" : "Away fixture") + "</span></div>" +
+        "<div class='fo-me-opp'>" + (function () {
+          // the visitor wears his own crest, not a monogram: the flagship its
+          // painted arms, everybody else the drawn coat the whole game uses
+          var oS = nf && nf.opp && nf.opp.slot != null ? (nf.opp.slot | 0) : null;
+          var nat9 = (st.claim && st.claim.country) || "";
+          if (oS === 0 && nat9) {
+            try { var c9 = window.__foCxAPI.crest(nat9);
+              if (c9) return "<img class='fo-me-shield crest' src='" + c9 + "' alt='' onerror=\"this.style.display='none'\">"; } catch (e9) {}
+          }
+          if (nf && nf.opp && nf.opp.name && window.foClubCrest) {
+            try { return "<span class='fo-me-shield arms'>" + foClubCrest(oppNm, 52) + "</span>"; } catch (e8) {}
+          }
+          return "<div class='fo-me-shield'>" + E(oppNm.slice(0, 2).toUpperCase()) + "</div>";
+        })() + "<b>" + E(oppNm) + "</b><span>" + (atHome ? "At home" : "Away fixture") + "</span></div>" +
         "<div class='fo-me-fgrid'>" +
         (atHome
           ? "<div class='fo-me-fstat'><span>Projected crowd</span><b>" + projectedCrowd.toLocaleString() + "</b></div>" +
@@ -632,8 +645,14 @@
         var hist = tkHist();
         var now = Date.now();
         var mm = 0.72 + Math.max(0, Math.min(6, mood)) * 0.08;
+        // division two plays to thinner stands - the same rule the walk banks
+        var dv = 1;
+        try {
+          var lg9 = window.__foWorldLg && window.__foWorldLg.get(cl.country);
+          if (lg9 && lg9.divisions && (lg9.divisions["2"] || []).indexOf(cl.slot | 0) >= 0) dv = 0.8;
+        } catch (eDv) {}
         var rows9 = fxs.map(function (x) {
-          var demand = sup * mm * tkDraw(cl, x.opp.slot);
+          var demand = sup * mm * dv * tkDraw(cl, x.opp.slot);
           var cur = tkSale(demand, seats, x.t0, hist, now);
           var fin = tkSale(demand, seats, x.t0, hist, null);
           var locked = now >= x.t0 - TK.LOCK;

@@ -91,6 +91,25 @@ test('a dearer ticket thins the crowd and the walk reprices only what came after
   await pool.query('DELETE FROM ticket_prices');
 });
 
+test('division two plays to thinner stands', async () => {
+  const before9 = await computeFinance(pool, 'eng');
+  const divs = (await pool.query(
+    `SELECT divisions FROM seasons WHERE country_id='eng' ORDER BY season_no DESC LIMIT 1`)).rows[0].divisions;
+  // take a first-division club that hosted something and demote it on paper
+  const hosts = new Set((await pool.query(
+    `SELECT DISTINCT home_slot FROM matches WHERE country_id='eng'`)).rows.map(r => r.home_slot | 0));
+  const d1 = ((divs && divs['1']) || []).map(Number).filter(sl => hosts.has(sl));
+  if (!d1.length) return;                       // a world with no divisions has no rule to test
+  const mark = d1[d1.length - 1];
+  const moved = { 1: divs['1'].filter(x => (x | 0) !== mark), 2: (divs['2'] || []).concat([mark]) };
+  await pool.query(`UPDATE seasons SET divisions=$1::jsonb WHERE country_id='eng'`, [JSON.stringify(moved)]);
+  const after9 = await computeFinance(pool, 'eng');
+  const a9 = before9.filter(r => r.slot === mark)[0], b9 = after9.filter(r => r.slot === mark)[0];
+  assert.ok(b9.finance.avgAttendance < a9.finance.avgAttendance,
+    'the demoted club draws less at home (' + a9.finance.avgAttendance + ' -> ' + b9.finance.avgAttendance + ')');
+  await pool.query(`UPDATE seasons SET divisions=$1::jsonb WHERE country_id='eng'`, [JSON.stringify(divs)]);
+});
+
 test('the crowd locks 24 hours out', () => {
   const matchMs = EPOCH + 200 * DAY + 14 * 3600000;
   const early = [{ at: matchMs - 10 * DAY, price: 60 }];
