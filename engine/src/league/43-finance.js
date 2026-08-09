@@ -322,8 +322,13 @@
   // on its day; a dearer ticket thins every remaining tranche by
   // (26/price)^1.15.
   // ==========================================================================
-  var TK = { BASE: 26, MIN: 10, MAX: 100, EL: 1.15, LOCK: 24 * 3600000,
+  var TK = { BASE: 26, MIN: 10, MAX: 100, EL: 1.4, KNEE: 62, KW: 9, BCAST: 7.5, LOCK: 24 * 3600000,
              FR: [0.10, 0.12, 0.15, 0.18, 0.22, 0.23] };
+  function tkCliff(p) { return 1 / (1 + Math.exp((p - TK.KNEE) / TK.KW)); }
+  function tkMult(p) {
+    p = Math.max(1, p);
+    return Math.pow(TK.BASE / p, TK.EL) * (tkCliff(p) / tkCliff(TK.BASE));
+  }
   function tkPriceAt(hist, ms) {
     var p = TK.BASE;
     for (var i = 0; i < (hist || []).length; i++) { if (hist[i].at <= ms) p = hist[i].price; else break; }
@@ -335,7 +340,7 @@
       var at = lockAt - (TK.FR.length - 1 - k) * 86400000;
       if (nowMs != null && at > nowMs) break;
       var pr = tkPriceAt(hist, at);
-      var n = demand * TK.FR[k] * Math.pow(TK.BASE / Math.max(1, pr), TK.EL);
+      var n = demand * TK.FR[k] * tkMult(pr);
       if (sold + n > seats) n = seats - sold;
       if (n <= 0) continue;
       sold += n; take += n * pr;
@@ -476,10 +481,10 @@
     // contracts, and anything written off at the floor were all missing, so
     // "Net this season" was a number that reconciled with nothing. (A head
     // coach was among them until 056 withdrew him and refunded every club.)
-    var inGate = Number(f.gate) || 0, inAway = Number(f.awayCut) || 0;
+    var inGate = Number(f.gate) || 0, inAway = Number(f.awayCut) || 0, inBcast = Number(f.broadcast) || 0;
     var inSpon = Number(f.sponsor) || 0, inComp = Number(f.compensation) || 0, inFees = Number(f.feesIn) || 0;
     var inPurse = Number(f.coltsPurse) || 0, inWriteOff = Number(f.writtenOff) || 0;
-    var totIn = inGate + inAway + inSpon + inComp + inFees + inPurse + inWriteOff;
+    var totIn = inGate + inAway + inBcast + inSpon + inComp + inFees + inPurse + inWriteOff;
     var outWage = Number(f.wages) || 0, outUp = Number(f.upkeep) || 0, outInt = Number(f.interest) || 0;
     var outFees = Number(f.feesOut) || 0, outScout = Number(f.scouting) || 0;
     var outAcadSpend = Number(f.academySpend) || 0;
@@ -494,7 +499,7 @@
     // rounds played while excluding the fees out - one-off money inflating a
     // rate. This is the operating result only: what the club earns by playing,
     // less what it costs to field and run.
-    var opIn = inGate + inAway + inSpon + inComp;
+    var opIn = inGate + inAway + inBcast + inSpon + inComp;
     var opOut = outWage + outUp + outInt;
     var perRound = rounds ? (opIn - opOut) / rounds : 0;
 
@@ -543,7 +548,7 @@
     var atHome = !nf || nf.isHome !== false;
     // the crowd the umpire's own arithmetic would expect: his mood curve, not
     // an invented one, and never more than there are seats
-    var moodCrowd = Math.round(sup * (0.72 + mood * 0.08));
+    var moodCrowd = Math.round(sup * (0.55 + mood * 0.065));
     var basis = lastAtt ? "Last home crowd" : avgAtt ? "Season average" : "Support and mood";
     var projectedCrowd = Math.max(0, Math.min(seats || moodCrowd, lastAtt || avgAtt || moodCrowd));
     // and only the home club's share of it. The full gate was being quoted as
@@ -644,7 +649,7 @@
         if (!cl || !fxs.length) return;
         var hist = tkHist();
         var now = Date.now();
-        var mm = 0.72 + Math.max(0, Math.min(6, mood)) * 0.08;
+        var mm = 0.55 + Math.max(0, Math.min(6, mood)) * 0.065;
         // division two plays to thinner stands - the same rule the walk banks
         var dv = 1;
         try {
@@ -668,7 +673,7 @@
             "<s>" + (!locked && now < cur.lockAt - 5 * 86400000
               ? "sales open in " + Math.max(1, Math.round((cur.lockAt - 5 * 86400000 - now) / 86400000)) + "d"
               : (locked ? fin.sold : cur.sold).toLocaleString() + " / " + seats.toLocaleString() + " sold" + (locked ? "" : " so far")) + "</s></span>" +
-            "<span class='tk'><b>~" + M(Math.round(fin.take * (Number(f.homeCut) || 2 / 3))) + "</b><u>your share</u>" +
+            "<span class='tk'><b>~" + M(Math.round(fin.take * (Number(f.homeCut) || 2 / 3) + fin.sold * TK.BCAST)) + "</b><u>your matchday</u>" +
             "<em class='" + (locked ? "lk" : "") + "'>" + lockTxt + "</em></span></div>";
         }).join("");
         html += "<section class='fo-me-card fo-gb'><div class='fo-me-panelhead'><span>The gate board</span>" +
@@ -706,6 +711,7 @@
     html2 += "<div class='fo-tre-cols'><div>" +
       "<div class='fo-tre-sec'><span class='fo-tre-lbl'>In</span></div>" +
       row("Gate receipts", inGate, totIn, true) + row("Away gate share", inAway, totIn, true) +
+      row("Broadcast fees", inBcast, totIn) +
       row("Sponsorship", inSpon, totIn, true) + row("International fees", inComp, totIn) +
       row("Transfer fees in", inFees, totIn) + row("Colts Cup purse", inPurse, totIn) +
       row("Written off at the floor", inWriteOff, totIn) +
@@ -825,7 +831,7 @@
         if (!window.foDecide) { go9(); return; }
         window.foDecide(setB, {
           q: "Sell tickets at $" + v + "?",
-          note: v > cur ? "Dearer thins every crowd still to buy. Matches inside 24 hours are already locked."
+          note: v > cur ? "Dearer thins every crowd still to buy" + (v > 55 ? " - and past $60 they start staying home altogether" : "") + ". Matches inside 24 hours are already locked."
                         : "Cheaper fills the ground earlier and gives up the top of the gate.",
           ok: "Set $" + v, onYes: go9 });
       });
@@ -879,7 +885,7 @@
   var STK = {
     founding: "Founding capital", academy: "Academy building",
     stadium: "Stadium building", gate: "Gate takings",
-    "gate-away": "Away share", sponsor: "Sponsor",
+    "gate-away": "Away share", broadcast: "Broadcast fee", sponsor: "Sponsor",
     compensation: "International compensation", wages: "Player wages",
     upkeep: "Academy upkeep", interest: "Overdraft interest",
     "player-sale": "Player sales", "player-buy": "Player purchases",

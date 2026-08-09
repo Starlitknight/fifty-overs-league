@@ -111,10 +111,11 @@ export const MAX_SEATS = 45000;
 export const TICKET = 26;                    // the league's price, and every bot club's
 // ---------------------------------------------------------------------------
 // THE TURNSTILE IS YOURS (073). The home club prices its own gate, $10-$100,
-// and the crowd answers: demand scales by (26/price)^1.15, so once the
-// ground stops selling out, every extra dollar on the ticket loses a little
-// more crowd than it gains in price. The skill is the price that JUST fills
-// the stands - and it moves with the mood, the visitor and the weather.
+// and the crowd answers: demand scales by (26/price)^1.4 times an
+// affordability cliff with its knee at $62, so a modest premium thins the
+// crowd and a gouged one empties the ground. The skill is the price that
+// JUST fills the stands - and it moves with the mood, the visitor and the
+// weather.
 //
 // A GATE IS SOLD IN ADVANCE. Six daily tranches, accelerating toward the
 // match, the last of them 24 hours before the first ball - after which the
@@ -130,10 +131,27 @@ export const TICKET = 26;                    // the league's price, and every bo
 // four-fifths of the crowd the top flight would bring through its gates.
 export const DIV2_CROWD = 0.8;
 export const TICKET_MIN = 10, TICKET_MAX = 100;
-export const TICKET_ELASTICITY = 1.15;
+// THE BROADCAST VAN PAYS BY THE HEAD. The turnout recalibration thinned the
+// stands by about a quarter, and the wage curve was priced against the old
+// gates - so the income that does not depend on a full house arrives with
+// it: the league's broadcaster pays the host $7.50 a head. At the default
+// ticket this restores the old matchday income almost exactly; what changed
+// is where it comes from, and that a sold-out house is now an occasion.
+export const BROADCAST_PER_HEAD = 7.5;
+export const TICKET_ELASTICITY = 1.4;
+// THE AFFORDABILITY CLIFF. A crowd has a reference price; past it they do
+// not grumble and pay, they stay home. The logistic knee sits at $62 and is
+// normalised at $26, so the league price is exactly itself and everything
+// below ~$45 barely feels the cliff - while $80 leaves the die-hards alone
+// in the ground and $100 is an empty stand and a ruined gate.
+export const TICKET_KNEE = 62, TICKET_KNEE_W = 9;
+const cliffAt = p => 1 / (1 + Math.exp((p - TICKET_KNEE) / TICKET_KNEE_W));
 export const TICKET_LOCK_MS = 24 * 3600000;
 export const SALES_FRACS = [0.10, 0.12, 0.15, 0.18, 0.22, 0.23];
-export function priceMult(price) { return Math.pow(TICKET / Math.max(1, price), TICKET_ELASTICITY); }
+export function priceMult(price) {
+  const p = Math.max(1, price);
+  return Math.pow(TICKET / p, TICKET_ELASTICITY) * (cliffAt(p) / cliffAt(TICKET));
+}
 // the price a club's dated decisions put in force at a moment; $26 before
 // any decision, and for every club that never touches the dial
 export function priceAtMs(prices, ms) {
@@ -258,9 +276,12 @@ export function moodOf(last5, pos, clubs) {
   const posF = clubs > 1 ? (clubs - pos) / (clubs - 1) : 0.5;
   return clamp(Math.round((rate * 0.65 + posF * 0.35) * 6), 0, 6);
 }
-// how full a ground gets: a settled crowd is most of the support, a mutinous
-// one stays home, and an ecstatic one brings the neighbours
-const moodMult = m => 0.72 + m * 0.08;
+// how full a ground gets. A FOLLOWING IS NOT AN ATTENDANCE: on an ordinary
+// settled Sunday about three-quarters of the interested crowd actually walks
+// up, a mutinous one stays half home, and even an ecstatic one only fills
+// the ground when a big visitor or a warm day joins it - so a sold-out
+// house is an occasion, not the default, and rarer still in division two.
+const moodMult = m => 0.55 + m * 0.065;
 // and who is visiting matters - the flagship and the leaders draw a crowd
 const drawMult = (opp, oppPos) => (opp.is_boss ? 1.22 : 1) * (oppPos <= 3 ? 1.09 : 1);
 
@@ -460,7 +481,7 @@ export async function computeFinance(pool, country, opts = {}) {
       bank: foundingBank(c.slot, c.is_boss) - (+c.academy_paid || 0) - (+c.seats_paid || 0),
       sup: foundingSupport(c.slot, c.is_boss),
       mood: 3, pts: 0, played: 0, form: [], sPts: 0, sPlayed: 0,
-      gate: 0, awayCut: 0, sponsor: 0, wagesPaid: 0, upkeep: 0, interest: 0,
+      gate: 0, awayCut: 0, bcast: 0, sponsor: 0, wagesPaid: 0, upkeep: 0, interest: 0,
       compensation: 0, capsAway: 0,
       feesIn: 0, feesOut: 0, scouting: 0, soldN: 0, boughtN: 0, academySpend: 0, coltsPurse: 0,
       writtenOff: 0, admin: false, adminRounds: 0,
@@ -559,10 +580,12 @@ export async function computeFinance(pool, country, opts = {}) {
       const sale = gateSale(demand, H.seats, matchMs, priceRows[H.slot] || null, null);
       const att = sale.sold, gate = sale.take;
       const home = Math.round(gate * HOME_CUT), away = gate - Math.round(gate * HOME_CUT);
-      H.gate += home; H.atts.push(att); H.lastAtt = att; H.lastWeather = w.word;
+      const bc = Math.round(att * BROADCAST_PER_HEAD);
+      H.gate += home; H.bcast += bc; H.atts.push(att); H.lastAtt = att; H.lastWeather = w.word;
       A.awayCut += away;
-      takings[H.slot] += home; takings[A.slot] += away;
+      takings[H.slot] += home + bc; takings[A.slot] += away;
       gates[H.slot].push({ kind: 'gate', label: 'Gate v ' + m.away_name + ' \u00b7 ' + att.toLocaleString('en-US') + ' through the turnstiles' + (sale.price !== TICKET ? ' at $' + sale.price : ''), amount: home });
+      gates[H.slot].push({ kind: 'broadcast', label: 'Broadcast fee v ' + m.away_name + ' \u00b7 $7.50 a head', amount: bc });
       gates[A.slot].push({ kind: 'gate-away', label: 'Away share at ' + m.home_name, amount: away });
     }
     // the world moment this round's books are settled: its nation's own hour
@@ -645,7 +668,7 @@ export async function computeFinance(pool, country, opts = {}) {
         seats: s.seats, lastAttendance: s.lastAtt || 0, lastWeather: s.lastWeather || null,
         // the club's standing price: the latest dated decision, $26 before any
         avgAttendance: avg, ticket: priceAtMs(priceRows[c.slot] || null, Infinity),
-        gate: s.gate, awayCut: s.awayCut, sponsor: s.sponsor,
+        gate: s.gate, awayCut: s.awayCut, broadcast: s.bcast, sponsor: s.sponsor,
         compensation: s.compensation, capsAway: s.capsAway,
         feesIn: s.feesIn, feesOut: s.feesOut, scouting: s.scouting, academySpend: s.academySpend,
         coltsPurse: s.coltsPurse,

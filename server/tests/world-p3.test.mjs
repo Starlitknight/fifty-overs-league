@@ -1393,7 +1393,7 @@ test('020: the books are a ledger, and they recompute from the record', async ()
   // board paid for the men it took, walked from genesis with the rest.
   for (const r of rows) {
     const f = r.finance;
-    const expect = f.founded + f.gate + f.awayCut + f.sponsor + (f.compensation || 0)
+    const expect = f.founded + f.gate + f.awayCut + (f.broadcast || 0) + f.sponsor + (f.compensation || 0)
       + (f.feesIn || 0) + f.writtenOff
       - f.wages - f.upkeep - f.interest - f.academyPaid - f.seatsPaid
       - (f.feesOut || 0) - (f.scouting || 0) - (f.academySpend || 0);
@@ -1554,7 +1554,7 @@ test('020: the books are a ledger, and they recompute from the record', async ()
     'the same club earns less in administration than it did solvent (' +
     broke.finance.sponsor + ' v ' + solventSponsor + ')');
   // and the books still add up with the write-off in them
-  assert.equal(red, Math.round(broke.finance.founded + broke.finance.gate + broke.finance.awayCut
+  assert.equal(red, Math.round(broke.finance.founded + broke.finance.gate + broke.finance.awayCut + (broke.finance.broadcast || 0)
     + broke.finance.sponsor + (broke.finance.compensation || 0) + (broke.finance.feesIn || 0)
     + broke.finance.writtenOff
     - broke.finance.wages - broke.finance.upkeep

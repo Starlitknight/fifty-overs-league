@@ -299,7 +299,7 @@ test('the books walk the deal, and settling twice pays once', async () => {
   // the ledger identity still closes with the market in it
   for (const f of fin) {
     const x = f.finance;
-    const expect = x.founded + x.gate + x.awayCut + x.sponsor + (x.compensation || 0)
+    const expect = x.founded + x.gate + x.awayCut + (x.broadcast || 0) + x.sponsor + (x.compensation || 0)
       + (x.feesIn || 0) + x.writtenOff
       - x.wages - x.upkeep - x.interest - x.academyPaid - x.seatsPaid
       - (x.feesOut || 0) - (x.scouting || 0);
@@ -460,7 +460,7 @@ test('quick-sell and release: a manager\'s own two doors out', async () => {
   const fin = await computeFinance(pool, 'eng');
   for (const f of fin) {
     const x = f.finance;
-    const expect = x.founded + x.gate + x.awayCut + x.sponsor + (x.compensation || 0)
+    const expect = x.founded + x.gate + x.awayCut + (x.broadcast || 0) + x.sponsor + (x.compensation || 0)
       + (x.feesIn || 0) + x.writtenOff
       - x.wages - x.upkeep - x.interest - x.academyPaid - x.seatsPaid
       - (x.feesOut || 0) - (x.scouting || 0);
