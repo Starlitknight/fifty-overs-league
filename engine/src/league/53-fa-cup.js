@@ -131,7 +131,7 @@
       var html = "<div class='fo-fa-page'>" +
         "<div class='fo-kb-hero'><div><span class='eb'>The national knockout &middot; season&nbsp;" + (window.foSeasonN ? foSeasonN(seasonNo) : seasonNo) + "</span>" +
         "<h1>The " + E(natNm) + " Cup</h1>" +
-        "<p>Sixteen clubs, four Sundays, one trophy. Every round a fresh draw.</p></div>" +
+        "</div>" +
         "<svg class='tro' viewBox='0 0 24 24' aria-hidden='true' fill='none' stroke='#E8B96A' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'><path d='M7 4h10v5a5 5 0 0 1-10 0V4Z'/><path d='M7 5H4.5a0 0 0 0 0 0 0c0 2.8 1.1 4.4 2.9 4.9M17 5h2.5c0 2.8-1.1 4.4-2.9 4.9'/><path d='M12 14v3M9.5 20h5M10 17h4'/></svg></div>" +
         natRail(rid, "#/facup");
       if (body && body.champion) {

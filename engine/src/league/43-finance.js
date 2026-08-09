@@ -165,7 +165,7 @@
       ".fo-tre-strip b{display:block;font:700 21px/1.15 Inter,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}",
       ".fo-tre-strip b.up{color:var(--grn)}.fo-tre-strip b.dn{color:var(--red)}",
       ".fo-tre-strip .fo-tre-lbl{color:var(--mut);margin-top:6px;display:block}",
-      ".fo-tre-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px 60px;align-items:start}",
+      ".fo-tre-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px 60px;align-items:start;margin-top:30px}",
       ".fo-tre-sec{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding-bottom:4px}",
       ".fo-tre-sec .fo-tre-lbl{color:var(--brand)}",
       "html body #page .fo-tre-sec b{font:700 15px/1.2 Inter,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}",
@@ -173,6 +173,9 @@
       ".fo-tre-row u{text-decoration:none;flex:1;min-width:0;font:600 14px/1.35 Inter,sans-serif;color:#4A4438}",
       "html body #page .fo-tre-row b{font:700 15px/1.2 Inter,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}",
       ".fo-tre-row s{text-decoration:none;font:600 11px/1 Inter,sans-serif;color:#a09a8d;min-width:38px;text-align:right;font-variant-numeric:tabular-nums}",
+      ".fo-tre-tot{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 0 2px;margin-top:4px;border-top:2px solid var(--ink)}",
+      ".fo-tre-tot u{text-decoration:none;font:700 13px/1.2 Inter,sans-serif;color:var(--ink)}",
+      "html body #page .fo-tre-tot b{font:700 16px/1.2 Inter,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}",
       ".fo-tre-net{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:18px 0;margin-top:6px;border-bottom:2.5px solid var(--ink)}",
       ".fo-tre-net .fo-tre-lbl{color:var(--ink)}",
       "html body #page .fo-tre-net b{font:800 27px/1 Inter,Inter,sans-serif;color:var(--grn);font-variant-numeric:tabular-nums}",
@@ -223,7 +226,7 @@
       ".fo-me-occ{text-align:center}.fo-me-occ>span{display:block;margin-top:6px;color:var(--mut);font:700 11px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase}",
       ".fo-me-ring{width:76px;height:76px;border-radius:50%;display:grid;place-items:center;position:relative;background:conic-gradient(var(--green) var(--fill),#E6E2DA 0);margin:auto}",
       ".fo-me-ring:after{content:'';position:absolute;inset:8px;border-radius:50%;background:var(--paper)}",
-      ".fo-me-ring b{position:relative;z-index:2;color:var(--ink);font:750 21px/1 Inter,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.03em}",
+      ".fo-me-ring b{position:relative;z-index:2;color:var(--ink);font:750 16px/1 Inter,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.04em}",
       ".fo-me-cap b{display:block;color:var(--ink);font:750 25px/1.08 Inter,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:-.035em;white-space:nowrap}.fo-me-cap span{display:block;margin-top:9px;padding-top:9px;border-top:1px solid #D6CDBB;color:var(--mut);font:700 11px/1.3 Inter,sans-serif;letter-spacing:.13em;text-transform:uppercase}.fo-me-cap em{color:var(--orange);font-style:normal}",
       ".fo-me-right{display:grid;grid-template-rows:auto 1fr;gap:15px;min-width:0}",
       ".fo-me-kpis{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px}",
@@ -444,7 +447,11 @@
     if (jwt()) wantTx();
 
     var nf = null;
-    try { if (typeof nextFixture === "function") nf = nextFixture(); } catch (e) {}
+    try {
+      var sv9 = window.__foServed;
+      if (sv9 && sv9.on()) nf = (sv9.fixtures(1) || [])[0] || null;
+    } catch (e) {}
+    try { if (!nf && typeof nextFixture === "function") nf = nextFixture(); } catch (e) {}
     var oppNm = String((nf && nf.opp && nf.opp.name) || "Awaiting the draw");
     var atHome = !nf || nf.isHome !== false;
     // the crowd the umpire's own arithmetic would expect: his mood curve, not
@@ -547,28 +554,25 @@
 
     html2 += "<div class='fo-tre-head'><div>" +
       "<div class='fo-tre-bank num'>" + MFull(bank) + "</div>" +
-      "<div class='fo-tre-under'><span class='fo-tre-lbl'>At the bank</span>" +
-      "<i class='fo-tre-delta num" + (net < 0 ? " dn" : "") + "'>" + Msign(net) + " since the founding</i></div>" +
+
       "</div>" + foShSpark(bank) + "</div>";
 
-    html2 += "<div class='fo-tre-strip num'>" +
-      "<div><b class='" + (perRound >= 0 ? "up" : "dn") + "'>" + (perRound > 0 ? "+" : "") + Mk(Math.round(perRound)) + "</b><span class='fo-tre-lbl'>Per round &middot; operating</span></div>" +
-      "<div><b>" + M(billNow) + "</b><span class='fo-tre-lbl'>Wage bill / round</span></div>" +
-      "<div><b>" + wageShare + "%</b><span class='fo-tre-lbl'>Wage share of income</span></div>" +
-      "<div><b>" + (avgAtt || lastAtt || 0).toLocaleString() + "</b><span class='fo-tre-lbl'>Avg crowd &middot; " + full + "% full</span></div></div>";
+    html2 += "";
 
     html2 += "<div class='fo-tre-cols'><div>" +
-      "<div class='fo-tre-sec'><span class='fo-tre-lbl'>In</span><b>" + M(totIn) + "</b></div>" +
+      "<div class='fo-tre-sec'><span class='fo-tre-lbl'>In</span></div>" +
       row("Gate receipts", inGate, totIn, true) + row("Away gate share", inAway, totIn, true) +
       row("Sponsorship", inSpon, totIn, true) + row("International fees", inComp, totIn) +
       row("Transfer fees in", inFees, totIn) + row("Colts Cup purse", inPurse, totIn) +
       row("Written off at the floor", inWriteOff, totIn) +
+      "<div class='fo-tre-tot num'><u>Total</u><b>" + M(totIn) + "</b></div>" +
       "</div><div>" +
-      "<div class='fo-tre-sec'><span class='fo-tre-lbl'>Out</span><b>" + M(totOut) + "</b></div>" +
+      "<div class='fo-tre-sec'><span class='fo-tre-lbl'>Out</span></div>" +
       row("Player wages", outWage, totOut, true) + row("Ground & academy upkeep", outUp, totOut, true) +
       row("Transfer fees out", outFees, totOut) + row("Scouting", outScout, totOut) +
       row("Academy trips & contracts", outAcadSpend, totOut) +
       row("Building", outAcad + outSeats, totOut) + row("Overdraft interest", outInt, totOut) +
+      "<div class='fo-tre-tot num'><u>Total</u><b>" + M(totOut) + "</b></div>" +
       "</div></div>";
 
     html2 += "<div class='fo-tre-net num'><span class='fo-tre-lbl'>Net, since the founding</span>" +
@@ -591,7 +595,7 @@
       "<div class='fo-tre-line num'><u>The academy &middot; <b>level " + acad + " of 5</b>" +
       (acad >= 5 ? " &middot; fully built" : " &middot; level " + (acad + 1) + " costs " + M(nextAcadCost)) + "</u>" +
       (acad < 5 ? "<button type='button' class='fo-tre-act' id='fo-fin-acad'" + (canAcad ? "" : " disabled") + ">Invest &rsaquo;</button>" : "") + "</div>" +
-      "<div class='fo-fin-msg' id='fo-fin-msg'></div>" + treasurerWord(f, wageShare, perRound, rounds) +
+      "<div class='fo-fin-msg' id='fo-fin-msg'></div>" +
       "</div><div>" +
       "<a class='fo-tre-door' href='#/statement'><span class='fo-tre-lbl'>The statement</span><i>every entry, dated</i><span class='ch'>&rsaquo;</span></a>" +
       "<a class='fo-tre-door' href='#/ground'><span class='fo-tre-lbl'>The ground</span><i class='num'>" + seats.toLocaleString() + " seats &middot; " + full + "% full &middot; " + M(ticket) + "</i><span class='ch'>&rsaquo;</span></a>" +
@@ -602,17 +606,7 @@
     wire(page, f, bank, st);
   }
 
-  // the treasurer's one-line read, derived from the same figures the page
-  // shows - never a stored opinion, so it can disagree with nothing
-  function treasurerWord(f, wageShare, perRound, rounds) {
-    if (!rounds) return "";
-    var grade, read;
-    if (f.administration) { grade = "Under"; read = "the club is in administration, and <b>the gate is the route out</b>"; }
-    else if (perRound <= 0) { grade = "Tight"; read = "the rounds are running at a loss &mdash; <b>the wage bill is the lever</b>"; }
-    else if (wageShare <= 65) { grade = "Sound"; read = "wages well covered; <b>the gate is carrying the club</b>"; }
-    else { grade = "Steady"; read = "the club earns more than it spends, but <b>the wage bill is heavy</b>"; }
-    return "<p class='fo-tre-word'>&ldquo;" + grade + ". " + read + ".&rdquo; &mdash; the treasurer</p>";
-  }
+
 
   function wire(page, f, bank, st) {
     var msg = page.querySelector("#fo-fin-msg");

@@ -114,7 +114,7 @@
       var html = "<div class='fo-cc-page'>" +
         "<div class='fo-kb-hero'><div><span class='eb'>The academies&rsquo; week &middot; season&nbsp;" + (window.foSeasonN ? foSeasonN(seasonNo) : seasonNo) + "</span>" +
         "<h1>The " + E(natNm) + " Colts Cup</h1>" +
-        "<p>Sixteen clubs, both divisions, one hat. Name fifteen men under twenty-one or forfeit the tie.</p></div>" +
+        "</div>" +
         "<span class='tro' aria-hidden='true'>&#127942;</span></div>" +
         (window.__foKbNatRail ? window.__foKbNatRail(rid, "#/colts") : "");
       if (body && body.champion) {

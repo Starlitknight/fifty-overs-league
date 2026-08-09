@@ -180,16 +180,13 @@ test('a focus offers exactly the skills his programme trains, and no others', ()
   assert.ok(krow.indexOf('stumping') >= 0 && krow.indexOf('keeping') >= 0, 'a keeper works the gloves');
 });
 
-test('the academy strip quotes the real ladder', () => {
+test('the academy box stays off the nets page', () => {
+  // the manager sent it away: the academy has its own room, and the nets
+  // page does not repeat it
   const html = draw(null);
-  // level seven: 1.24 + 0.05 x 2 = 1.34, so +34% a session, $112k a round to
-  // run, and $4.9m to reach level eight
-  assert.ok(html.indexOf('Level 7') >= 0, 'the level is named');
-  assert.ok(html.indexOf('+34%') >= 0, 'and what it is worth in the nets');
-  assert.ok(html.indexOf('$112k') >= 0, 'and what it costs to run');
-  assert.ok(html.indexOf('$4.9m') >= 0, 'and what the next rung costs');
-  assert.ok(html.indexOf('fo-t2-pip') >= 0, 'with the ten rungs drawn');
-  assert.equal((html.match(/fo-t2-pip/g) || []).length, 10, 'ten rungs exactly');
+  assert.equal(html.indexOf('fo-t2-acad'), -1, 'no academy card');
+  assert.equal(html.indexOf('to reach level'), -1, 'no ladder quote');
+  assert.equal(html.indexOf('a round to run'), -1, 'no upkeep quote');
 });
 
 test('every chart view draws, on a full book and on none at all', () => {

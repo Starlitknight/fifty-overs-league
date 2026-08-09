@@ -214,7 +214,7 @@
 
     // status line: the race, the countdown, the rounds, or the crown
     var status, chip;
-    if (p.di < 18) { status = "Nineteen leagues are deciding their champions. The draw is made on day 19."; chip = "THE RACE IS ON"; }
+    if (p.di < 18) { status = ""; chip = "THE RACE IS ON"; }
     else if (done === 0) { status = "The nineteen are known. The play-ins open the cup at " + when("pi") + "."; chip = "THE DRAW IS MADE"; }
     else if (done < 5) { var nxt = ORDER[done]; status = STAGE_NM[nxt] + " " + (done === 4 ? "crowns the champion" : "come next") + " · " + when(nxt) + "."; chip = "CUP IN PROGRESS"; }
     else { status = (br && br.champion ? br.champion.name + " are champions of the world's clubs." : "The cup is decided."); chip = "CHAMPIONS CROWNED"; }
@@ -259,13 +259,13 @@
 
     var myLine = my
       ? (provisional ? "You lead England - hold the top and the cup is yours to enter." : "Your club carries England's flag into the cup.")
-      : (eng ? E(eng.name) + " carry England. Win your league and this stage is yours." : "");
+      : "";
 
     page.innerHTML = "<div class='fo-cl'><div class='fo-cl-in'>" +
       "<div class='fo-cl-hero'>" +
       "<div class='fo-cl-k'>World cricket &middot; season " + (window.foSeasonN ? foSeasonN(season) : season) + " &middot; the clubs' crown</div>" +
       "<h1>The Champions Cup</h1>" +
-      "<p>" + E(status) + "</p>" +
+      (status ? "<p>" + E(status) + "</p>" : "") +
       "<span class='fo-cl-chip'>" + chip + "</span>" +
       (myLine ? "<div class='fo-cl-my'>" + myLine + "</div>" : "") +
       "</div>" +

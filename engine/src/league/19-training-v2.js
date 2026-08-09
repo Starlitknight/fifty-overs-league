@@ -599,14 +599,7 @@
     var nextC = lv < ACAD_MAX ? ACAD_BUILD[lv] : null;
     var pips = "";
     for (var pi = 1; pi <= ACAD_MAX; pi++) pips += "<s class='fo-t2-pip" + (pi <= lv ? " on" : "") + "'></s>";
-    var acad = "<a class='fo-t2-acad' href='#/academy'>" +
-      "<span class='lv'><i>Academy</i><b>Level " + lv + "</b></span>" +
-      "<span class='pips'>" + pips + "</span>" +
-      "<span class='rt'><b>" + (rate >= 1 ? "+" : "") + Math.round((rate - 1) * 100) + "%</b><i>on every session</i></span>" +
-      "<span class='bill'><b>" + money(ACAD_UPKEEP[lv]) + "</b><i>a round to run</i></span>" +
-      (nextC ? "<span class='nx'><b>" + money(nextC) + "</b><i>to reach level " + (lv + 1) + "</i></span>"
-             : "<span class='nx'><b>Top</b><i>nowhere further to go</i></span>") +
-      "<s class='go'>&rsaquo;</s></a>";
+    var acad = "";
 
     // ---- THE TWO CREWS ------------------------------------------------------
     // TWO NAMES, SET LIKE A CONTENTS LINE. Stretched across half a card each

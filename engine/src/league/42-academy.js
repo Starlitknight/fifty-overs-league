@@ -262,9 +262,29 @@
     var fl = flagOf(posted);
 
     var stateTag = pend ? "Report in" : ac.restDay ? (ac.scoutedToday ? "Report filed" : "Rest day") : "Cricket on";
+    // the fact is a countdown: how long until the next boy can be brought
+    // in. Rest days carry the reports, and the schedule's own day taxonomy
+    // says when the next one falls.
     var nextRep = pend ? { b: "On the table", cls: " class='go'" }
       : (ac.restDay && !ac.scoutedToday) ? { b: "Today", cls: " class='go'" }
-      : { b: "Next rest day", cls: "" };
+      : { b: "&mdash;", cls: "", cd: true };
+    try {
+      if (nextRep.cd && window.foDayPhase && window.__foPlanet) {
+        var pl9 = window.__foPlanet, ph9 = pl9.phaseOf(Date.now());
+        for (var dd = ph9.di + 1; dd <= ph9.di + 45; dd++) {
+          var season9 = ph9.season, di9 = dd, cyc9 = pl9.CYCLE || 42;
+          if (di9 >= cyc9) { season9 += Math.floor(di9 / cyc9); di9 = di9 % cyc9; }
+          var k9 = window.foDayPhase(season9, di9);
+          if (k9 && k9.kind === "rest") {
+            var at9 = pl9.EPOCH + (pl9.seasonStart(season9) + di9) * pl9.DAY;
+            var lf9 = at9 - Date.now();
+            nextRep.b = lf9 > 0 ? (Math.floor(lf9 / 86400000) ? Math.floor(lf9 / 86400000) + "d " : "") +
+              Math.floor(lf9 % 86400000 / 3600000) + "h " + Math.floor(lf9 % 3600000 / 60000) + "m" : "Today";
+            break;
+          }
+        }
+      }
+    } catch (eCd) {}
 
     var folio = "<div class='fo-ac2-folio'>" +
       (fl ? "<img src='" + fl + "' alt='' onerror=\"this.style.display='none'\">" : "") +
@@ -275,7 +295,7 @@
       "<label class='mv'><select id='fo-ac-nat' aria-label='Post the scout'>" + opts + "</select><em>Move him</em></label>" +
       "</div>";
     var facts = "<div class='fo-ac2-facts'>" +
-      "<div><b" + nextRep.cls + ">" + nextRep.b + "</b><i>Next report</i></div>" +
+      "<div><b" + nextRep.cls + ">" + nextRep.b + "</b><i>Next recruit</i></div>" +
       "<div><b>" + (Number(here.fee) ? money(here.fee) : "Free") + "</b><i>Report fee" + (Number(here.fee) ? "" : " &middot; home") + "</i></div>" +
       "<div><b>Level " + lv + "</b><i>Academy &middot; " + money(bank) + " banked</i></div>" +
       "</div>";
@@ -297,16 +317,12 @@
         (can ? "Level " + (lv + 1) + " &middot; " + money(cost) : "Level " + (lv + 1) + " needs " + money(cost)) + "</button>";
     }
     var strip = "<div class='fo-ac2-strip'>" +
-      "<div class='tx'><span class='fo-ac-pips'>" + pips + "</span>" +
-      "<i>" + money(ac.upkeep || UPKEEP[lv]) + " a round to run &middot; boys&rsquo; wages " + wage(wages) + "</i></div>" +
+      "<div class='tx'><span class='fo-ac-pips'>" + pips + "</span></div>" +
       upBtn + "</div>";
 
     // THE BOYS DO NOT LIVE HERE ANY MORE. A signed colt stands in the squad
     // room under the Youth toggle; this room keeps a door through to them.
-    var list = boys.length
-      ? "<a class='fo-ac-sqlink' href='#/squad'><span><b>" + boys.length + (boys.length === 1 ? " boy" : " boys") +
-        " on the books</b><i>They stand with the squad &mdash; Show: Youth</i></span><s>&rsaquo;</s></a>"
-      : "";
+    var list = "";
 
     page.innerHTML = shell(
       "<div class='fo-ac2-card'>" + folio + bill + facts + mid +

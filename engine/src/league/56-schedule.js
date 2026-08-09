@@ -342,6 +342,9 @@
   // the planet's own, so this asks the world's clock what it plays on a given
   // day and never decides for itself. Noon is used so no rounding at a
   // boundary can land the answer on the day before.
+  // the academy's recruit countdown asks the same question this page does,
+  // so the answer is exported rather than copied
+  window.foDayPhase = function (season, di) { return dayPhase(planet(), season, di); };
   function dayPhase(pl, season, di) {
     try {
       var start = pl.seasonStart(season);                 // world day this season began

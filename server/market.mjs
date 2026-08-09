@@ -292,6 +292,15 @@ export async function placeBotBids(pool, now = Date.now()) {
       AND ((closes_ms IS NOT NULL AND closes_ms > $2) OR (closes_ms IS NULL AND closes_day > $1))
       ORDER BY id`, [today, now])).rows;
   const placed = [];
+  // THE RICH SCAN EVERY BOARD. Same-country clubs always look; beyond them,
+  // the wealthiest unmanaged clubs in the world read every listing the way
+  // a manager can - and the same botBid() cap still decides whether the man
+  // actually improves them and what a quarter of the bank allows.
+  const rich = (await pool.query(
+    `SELECT cl.country_id, cl.slot, cl.squad, cl.bank, (c.user_id IS NOT NULL) AS managed
+       FROM clubs cl LEFT JOIN claims c ON c.country_id=cl.country_id AND c.slot=cl.slot
+      WHERE c.user_id IS NULL
+      ORDER BY cl.bank DESC, cl.country_id, cl.slot LIMIT 8`)).rows;
   for (const L of open) {
     // OPEN OUTCRY. botBid() is the club's CAP, seeded once and forever. On
     // the board it opens low - the floor, or one step over the standing high
@@ -307,7 +316,11 @@ export async function placeBotBids(pool, now = Date.now()) {
         WHERE cl.country_id=$1 AND NOT (cl.country_id=$1 AND cl.slot=$2)
         ORDER BY cl.slot`,
       [L.country_id, L.slot])).rows;
-    for (const cl of clubs) {
+    const seen = new Set(clubs.map(c => c.country_id + ':' + c.slot));
+    const field = clubs.concat(rich.filter(r =>
+      !seen.has(r.country_id + ':' + r.slot) &&
+      !(r.country_id === L.country_id && r.slot === L.slot)));
+    for (const cl of field) {
       if (cl.managed) continue;                   // a manager bids for himself
       const cap = botBid({ ...L, buyerKey: cl.country_id + ':' + cl.slot }, cl.squad || [], Number(cl.bank || 0), L.player_json);
       if (!cap) continue;
