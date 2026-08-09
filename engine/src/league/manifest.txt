@@ -52,5 +52,4 @@
 56-schedule.js
 57-stats-centre.js
 61-notifications.js
-62-bottom-nav.js
 63-mobile-triage.js

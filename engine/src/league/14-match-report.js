@@ -299,6 +299,27 @@
       "</div>";
   }
 
+  // every stand of both innings as a ladder - a chart, so it lives on the
+  // charts tab and never on the card
+  function foMrPshipLadders(rec, f) {
+    var out = "";
+    [0, 1].forEach(function (ix) {
+      var inn = ((rec && rec.innings) || [])[ix];
+      var ps = (inn && inn.pships) || [];
+      if (!ps.length) return;
+      var side = ix === 0 ? (f && f.first) : (f && f.second);
+      var team = (side && side.team) || inn.batTeam || (ix ? "Second innings" : "First innings");
+      var mx = Math.max.apply(null, ps.map(function (p) { return p.runs | 0; }).concat([1]));
+      out += "<div class='fo-mr-pshb'><b>" + E(team) + "</b>" + ps.map(function (p) {
+        return "<div class='fo-mr-pshr'><span class='w'>" + foMrOrd(p.w | 0) + " wkt</span>" +
+          "<span class='bar'><i style='width:" + Math.max(4, Math.round((p.runs | 0) / mx * 100)) + "%'></i></span>" +
+          "<b>" + (p.runs | 0) + "</b>" +
+          "<span class='nm'>" + E(String(p.pair || "").replace(" / ", " &amp; ")) + (p.balls ? " &middot; " + p.balls + "b" : "") + "</span></div>";
+      }).join("") + "</div>";
+    });
+    return out;
+  }
+
   function foMrGroundArt(f) {
     var slug = FO_MR_GROUND[f.ground] || "";
     return slug ? (ART + "cities/" + slug + "-ground.webp") : (ART + "home/hgm-dressing-room.webp");
@@ -1182,10 +1203,12 @@
       } else {
         var inner;
         if (tab === "chart") {
+          var pshSec = foMrPshipLadders(rec, f);
           inner =
             "<div class='fo-mr-row2'>" + turnCard + momCard + "</div>" +
             "<div class='fo-mr-cards fo-mr-cards--row'>" + foMrCard(f.first) + foMrCard(f.second) + "</div>" +
             "<section class='fo-mr-wormsec'><div class='fo-mr-rule'><span>How it was scored</span></div>" + foMrWorm(f) + "</section>" +
+            (pshSec ? "<section class='fo-mr-wormsec'><div class='fo-mr-rule'><span>Partnerships</span></div>" + pshSec + "</section>" : "") +
             moreHTML;
         } else if (tab === "card") {
           inner = "<div class='fo-mr-panel'>" + foMrScorecard(rec) + "</div>";
@@ -1581,6 +1604,15 @@
       ".fo-mr-sub{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:10px;color:#7d8fad;margin:11px 0 2px}",
       // rules + worm
       ".fo-mr-rule{display:flex;align-items:center;gap:15px;margin:38px 0 14px}",
+      // the partnership ladders on the charts tab: label, bar, runs, the pair
+      ".fo-mr-pshb{background:#FFFEFC;border:1px solid rgba(27,36,50,.1);border-radius:13px;padding:14px 16px;margin-bottom:12px}",
+      ".fo-mr-pshb>b{display:block;font:700 11px/1.2 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#14243A;margin-bottom:8px}",
+      ".fo-mr-pshr{display:grid;grid-template-columns:64px minmax(0,1fr) 40px;gap:3px 10px;align-items:center;padding:4px 0}",
+      ".fo-mr-pshr .w{font:700 10px/1.2 Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#5b5344}",
+      ".fo-mr-pshr .bar{height:9px;background:#F1EEE6;border-radius:99px;overflow:hidden}",
+      ".fo-mr-pshr .bar i{display:block;height:100%;background:#C9571F;border-radius:99px}",
+      "html body #page .fo-mr-pshr>b{text-align:right;font:700 12.5px/1.2 Inter,sans-serif;color:#1B2432;font-variant-numeric:tabular-nums}",
+      ".fo-mr-pshr .nm{grid-column:2/4;font:400 12.5px/1.45 Fraunces,Georgia,serif;color:#6a6354;margin-top:-2px}",
       ".fo-mr-rule:before{content:'';height:1px;flex:0 0 40px;background:linear-gradient(90deg,transparent,rgba(230,177,94,.45))}",
       ".fo-mr-rule:after{content:'';height:1px;flex:1;background:linear-gradient(90deg,rgba(230,177,94,.45),transparent)}",
       ".fo-mr-rule span{font-family:Oswald,sans-serif;text-transform:uppercase;letter-spacing:.32em;font-size:10.5px;font-weight:600;color:var(--gold);white-space:nowrap}",

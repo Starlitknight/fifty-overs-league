@@ -1081,7 +1081,6 @@
             return "<tr><td>" + plink(w9.nm) + pstar(w9.nm, T.rid) + "<span class='ss'>" + sStars(w9.nm, "bowl") + "</span></td><td class='r'>" + w9.o + "</td><td class='r'>" + w9.r + "</td><td class='r'>" + w9.w + "</td>" +
               "<td class='r'>" + (ec9 != null ? ec9 : "&mdash;") + "</td></tr>";
           }).join("") + "</table></div>";
-      if (I.fow.length || I.top) out += partHtml(I);
       if (ix === 0 && I.brk) out += "<div class='fd-note'>" + E(I.brk) + "</div>";
     }
     if (!out) out = "<p class='fd-dim'>The umpire prints the first tallies at the end of over one.</p>";
@@ -1095,21 +1094,26 @@
       "</div>";
   }
   // the partnership ladder: every stand from the umpire's fall-of-wicket
-  // lines, and the unbroken stand as the difference of his two latest scores
+  // lines, and the unbroken stand as the difference of his two latest scores.
+  // It lives on the charts tab - it IS a chart - so the scorecard stays the
+  // two tables a card is.
   function partHtml(I) {
     var tp = I.close || (I.top ? (function (t9) { return t9 ? { runs: t9.runs, wkts: t9.wkts } : null; })(parseTop(I.top.txt)) : null);
     var items = I.fow.map(function (fw) {
       return { lbl: ordinal(fw.w) + " wicket", p: fw.p, note: E(fw.nm) + " " + fw.r + " (" + fw.b + "b) &middot; fell at " + fw.score + "/" + fw.w + (fw.no ? " &middot; ov " + fw.no : "") };
     });
-    if (tp && (!I.close)) {
+    // the stand still standing - and at stumps the stand that WON, which the
+    // old guard dropped the moment the innings closed. An all-out innings has
+    // no unbroken stand: its last fall IS the total.
+    if (tp && tp.wkts < 10) {
       var lastF = I.fow.length ? I.fow[I.fow.length - 1].score : 0;
       var cur = tp.runs - lastF;
       if (cur >= 0 && (!I.fow.length || tp.wkts === I.fow[I.fow.length - 1].w))
-        items.push({ lbl: ordinal(tp.wkts + 1) + " wicket", p: cur, note: "unbroken", live: true });
+        items.push({ lbl: ordinal(tp.wkts + 1) + " wicket", p: cur, note: "unbroken", live: !I.close });
     }
     if (!items.length) return "";
     var mx = Math.max.apply(null, items.map(function (x) { return x.p; }).concat([1]));
-    return "<div class='fd-ph'>Partnerships</div>" + items.map(function (x) {
+    return items.map(function (x) {
       return "<div class='fd-pr" + (x.live ? " lv" : "") + "'><span class='l'>" + x.lbl + "</span>" +
         "<span class='bar'><i style='width:" + Math.max(3, Math.round(x.p / mx * 100)) + "%'></i></span>" +
         "<span class='v'>" + x.p + "</span><span class='nt'>" + x.note + "</span></div>";
@@ -1224,9 +1228,17 @@
       });
     });
     var mhSvg = "<svg viewBox='0 0 " + W + " " + H2 + "' class='fd-svg'>" + defs + bars + "</svg>";
+    // the partnership ladders, one per innings that has begun
+    var psh = "";
+    inns.forEach(function (I, ix) {
+      if (!I.fow.length && !I.top) return;
+      var lad = partHtml(I);
+      if (lad) psh += "<div class='fd-ch' style='margin-top:18px'>Partnerships &middot; " +
+        E(I.team || (ix ? m.away.name : m.home.name)) + "</div>" + lad;
+    });
     return "<div class='fd-panel'><div class='fd-ch'>The worm &middot; from the end-of-over prints</div>" +
       "<div class='fd-leg'>" + leg + ask + "</div>" + wormSvg +
-      "<div class='fd-ch' style='margin-top:18px'>The manhattan &middot; runs each over, wickets flagged</div>" + mhSvg + "</div>";
+      "<div class='fd-ch' style='margin-top:18px'>The manhattan &middot; runs each over, wickets flagged</div>" + mhSvg + psh + "</div>";
   }
 
   // ---- THE LINEUPS: the sheets the managers filed --------------------------
