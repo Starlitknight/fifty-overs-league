@@ -200,18 +200,24 @@
         el.id = "fo-wclock"; el.href = "#/planet";
         el.addEventListener("click", function (e) { e.preventDefault(); location.hash = "#/planet"; if (typeof window.route === "function") window.route(); });
       }
-      // SELF-HEALING. The clock is an <a> so it can be tapped through to the
-      // planet, and the topbar has more than one decorator that rounds up
-      // anchors and files them elsewhere - one of them sweeps them into the
-      // nav strip, which phones hide outright. Rather than trusting every
-      // such pass to know about this element, check on each mount that the
-      // clock is still a DIRECT child of the header, and put it back if it
-      // is not. Costs a parent comparison; survives decorators not yet
-      // written.
-      if (el.parentNode !== tb) {
-        var brand = tb.querySelector(".brand");
-        if (brand && brand.parentNode === tb) tb.insertBefore(el, brand.nextSibling);
-        else tb.appendChild(el);
+      // SELF-HEALING, WITH TWO LAWFUL HOMES. The clock is an <a>, and the
+      // topbar has decorators that round up anchors and file them elsewhere -
+      // one sweeps them into the nav strip, which phones hide outright. So on
+      // each mount the clock is put back if it has strayed. But #fo-hdr-right
+      // is not straying: it IS the masthead's right edge now, and this check
+      // used to yank the clock out of it back to a direct child of the bar -
+      // where the anti-flash guard hides direct children until the group
+      // adopts them. Two owners took turns, and the date blinked out and back
+      // on every single navigation. The group is home; the bare bar is the
+      // fallback when the group has not been built yet.
+      var rt9 = tb.querySelector("#fo-hdr-right");
+      if (el.parentNode !== tb && el.parentNode !== rt9) {
+        if (rt9) rt9.appendChild(el);
+        else {
+          var brand = tb.querySelector(".brand");
+          if (brand && brand.parentNode === tb) tb.insertBefore(el, brand.nextSibling);
+          else tb.appendChild(el);
+        }
       }
       var c = clockTxt();
       el.innerHTML = "<b>" + (c.day || "WORLD CRICKET") + (c.live ? " <i>&#9679; " + c.live + " LIVE</i>" : "") + "</b>" +
