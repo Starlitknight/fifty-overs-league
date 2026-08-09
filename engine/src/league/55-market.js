@@ -111,7 +111,7 @@
     pak: "#1E7F5C", afg: "#5B4A91", bgd: "#0E6E4F", nep: "#B5304C", sco: "#2B5AA6",
     wal: "#A62A2E", ken: "#237A46", usa: "#33366E", can: "#C2483B"
   };
-  function spineOf(rid) { return NAT_SPINE[rid] || "#5A6472"; }
+  function spineOf(rid) { return NAT_SPINE[rid] || "#6A6354"; }
 
   function toastMsg(m) { try { toast(m); } catch (e) { try { console.info("[fifty-overs] " + m); } catch (e2) {} } }
   // the market's decisions are taken on the board itself
@@ -389,7 +389,7 @@
       "' style='--sp:" + spineOf(L.country_id) + "'>" +
       "<div class='bd'>" +
       "<div class='tp'>" +
-      (ovr != null ? "<span class='ovr' title='Overall'>" + ovr + "</span>" : "") +
+      (ovr != null ? "<span class='ovr' title='Overall'><b>" + ovr + "</b><i>OVR</i></span>" : "") +
       "<span class='nm'>" +
       (door ? "<a class='pdoor' href='" + door + "'><b>" + E(L.player) + (man && man.keeper ? " &dagger;" : "") + "</b></a>"
             : "<span class='pdoor fa' data-mk-fa='" + L.id + "' title='Open his full card'><b>" + E(L.player) + (man && man.keeper ? " &dagger;" : "") + "</b></span>") +
@@ -543,10 +543,7 @@
     return (vis.length ? vis.map(function (L) { return rowHtml(L, cl, myBids); }).join("")
         : "<div class='fo-mk-none'>Nobody of that kind on the board today.</div>") +
       more +
-      "<p class='fo-mk-note'>Every listed man's card is open &mdash; age, wages and all seven summary reads sit on the board for all to see. " +
-      "The hammer has a minute hand: a bid landed inside the final ten minutes pushes it back to ten minutes out, " +
-      "so an auction ends in a bidding war, never a snipe. The umpire settles the sale on his next pass; " +
-      "the highest offer at or above the reserve takes the man whether you are awake or not.</p>";
+      "<p class='fo-mk-note'>A bid inside the final ten minutes pushes the hammer back to ten minutes out. The highest offer at or above the reserve takes the man whether you are awake or not.</p>";
   }
 
   // THE TABLE: the whole board as one sortable page of the books. Every
@@ -614,7 +611,7 @@
     }).join("");
     return "<div class='fo-mk-tblwrap'><table class='fo-mk-tbl'><thead><tr>" + head + "</tr></thead>" +
       "<tbody>" + (body || "<tr><td colspan='14' class='dim' style='text-align:center;padding:26px'>Nobody of that kind on the board today.</td></tr>") + "</tbody></table>" +
-      "<div class='tbf'>" + rows.length + " men on the board &middot; every column head sorts &middot; Auto bid places the lawful next raise</div></div>";
+      "<div class='tbf'>" + rows.length + " men on the board &middot; Auto bid places the lawful next raise</div></div>";
   }
 
   function sellHtml(cl) {
@@ -662,7 +659,7 @@
     return (myBids ? "<div class='fo-mk-k'>Offers you have out</div>" + myBids : "") +
       "<div class='fo-mk-k'>Your men</div>" + rows +
       "<p class='fo-mk-note'>Listing puts him up for exactly three days at a reserve you name &mdash; his full card open on the board &mdash; and late bids stretch the hammer, ten minutes at a time. Unsold, he simply comes home. " +
-      "A quick-sell is the bank's money, instantly, at half his valuation &mdash; it lands with the next settle of the books. A release is for nothing.</p>";
+      "A quick-sell pays half his valuation at the next settle. A release is for nothing.</p>";
   }
 
   function registerHtml() {
@@ -1201,12 +1198,12 @@
       "html body #page .fo-mk-row .pdoor.fa:hover b{color:#C9571F}",
       // TALENTS, in gold - the marks the scouts trade in
       "html body #page .fo-mk-row .tlts{display:flex;gap:7px;flex-wrap:wrap;margin-top:2px}",
-      "html body #page .fo-mk-row .tlts em{font-style:normal;font:700 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#7A5210;background:linear-gradient(120deg,#F6E7C0,#EED9A0);border:1px solid rgba(184,147,58,.35);border-radius:6px;padding:5px 8px}",
+      "html body #page .fo-mk-row .tlts em{font-style:normal;font:700 11px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#7A5210;background:linear-gradient(120deg,#F6E7C0,#EED9A0);border:1px solid rgba(184,147,58,.35);border-radius:6px;padding:5px 8px}",
       // THE DOSSIER FOOT: the almanack facts that fill the card's floor
       "html body #page .fo-mk-row .facts{display:flex;gap:0;margin-top:4px;border-top:1px solid rgba(27,36,50,.08);padding-top:10px;flex-wrap:wrap}",
       "html body #page .fo-mk-row .facts span{padding:0 18px 0 0;margin-right:18px;border-right:1px solid rgba(27,36,50,.1)}",
       "html body #page .fo-mk-row .facts span:last-child{border-right:0}",
-      "html body #page .fo-mk-row .facts i{display:block;font:600 10px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#98a0ae;font-style:normal;margin-bottom:4px}",
+      "html body #page .fo-mk-row .facts i{display:block;font:600 11px/1 Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#98a0ae;font-style:normal;margin-bottom:4px}",
       "html body #page .fo-mk-row .facts b{font:600 13px/1 Fraunces,Georgia,serif;color:#14243A;font-variant-numeric:tabular-nums}",
       // the deed's word, ON the card: a green strip, never a popup
       "html body #page .fo-mk-row .rail .bidok{margin-top:10px;font:600 13px/1.5 Inter,sans-serif;color:#8FD6B5;background:rgba(23,122,87,.22);border:1px solid rgba(143,214,181,.35);border-radius:8px;padding:9px 11px;animation:fo-mk-drop2 .2s ease}",
@@ -1214,26 +1211,26 @@
       "html body #page .fo-mk-row .rail .bidmsg.on{display:block;animation:fo-mk-drop2 .2s ease}",
       // THE CATALOGUE HEAD: gilt eyebrow, title, three almanack figures,
       // one double rule - then a single deck for tabs, roles and sorts.
-      "html body #page .fo-mk-hd .eb{font:600 10px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#B8933A;margin-bottom:9px}",
+      "html body #page .fo-mk-hd .eb{font:600 11px/1 Inter,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#B8933A;margin-bottom:9px}",
       "html body #page .fo-mk-hd .row{display:flex;align-items:flex-end;gap:30px;flex-wrap:wrap}",
-      "html body #page .fo-mk-hd h1{font:700 31px/1 Oswald,sans-serif;text-transform:uppercase;color:#14243A;margin:0;letter-spacing:.015em}",
+      "html body #page .fo-mk-hd h1{font:700 31px/1 Inter,sans-serif;text-transform:uppercase;color:#14243A;margin:0;letter-spacing:.015em}",
       "html body #page .fo-mk-hd .figs{margin-left:auto;display:flex;text-align:right}",
       "html body #page .fo-mk-hd .f{padding-left:26px;margin-left:26px;border-left:1px solid rgba(27,36,50,.14)}",
       "html body #page .fo-mk-hd .f:first-child{border-left:0;margin-left:0;padding-left:0}",
       "html body #page .fo-mk-hd .f b{display:block;font:600 21px/1 Fraunces,Georgia,serif;color:#14243A;font-variant-numeric:tabular-nums}",
       "html body #page .fo-mk-hd .f.hot b{color:#8E1F13}",
       "html body #page .fo-mk-hd .f.you b{color:#177A57}",
-      "html body #page .fo-mk-hd .f i{display:block;font:600 10px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#98a0ae;font-style:normal;margin-top:5px}",
+      "html body #page .fo-mk-hd .f i{display:block;font:600 11px/1 Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#98a0ae;font-style:normal;margin-top:5px}",
       "html body #page .fo-mk-hd .rule{border-bottom:3px double rgba(20,36,58,.25);margin-top:14px}",
       // the deck: rooms, shelves and sorts on one baseline, no boxes
       "html body #page .fo-mk-deck{display:flex;align-items:center;gap:22px;padding:12px 0 14px;flex-wrap:wrap;overflow:visible}",
       "html body #page .fo-mk-tabs{display:flex;gap:22px}",
-      "html body #page .fo-mk-tabs button{font:600 10.5px/1 Oswald,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;color:#8a93a2 !important;background:transparent !important;border:0 !important;border-radius:0 !important;padding:6px 0 !important;cursor:pointer;white-space:nowrap;box-shadow:none !important;transition:color .15s}",
+      "html body #page .fo-mk-tabs button{font:600 11px/1 Inter,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;color:#9FB0C6 !important;background:transparent !important;border:0 !important;border-radius:0 !important;padding:6px 0 !important;cursor:pointer;white-space:nowrap;box-shadow:none !important;transition:color .15s}",
       "html body #page .fo-mk-tabs button:hover{color:#1B2432 !important;background:transparent !important}",
       "html body #page .fo-mk-tabs button.on{color:#14243A !important;box-shadow:0 2.5px 0 #C9571F !important}",
       "html body #page .fo-mk-deck .dv{width:1px;height:20px;background:rgba(27,36,50,.14);flex:none}",
       "html body #page .fo-mk-rlinks{display:flex;gap:18px}",
-      "html body #page .fo-mk-rlinks button{font:600 10px/1 Oswald,sans-serif !important;letter-spacing:.11em;text-transform:uppercase;color:#8a93a2 !important;background:transparent !important;border:0 !important;border-radius:0 !important;padding:6px 0 !important;cursor:pointer;box-shadow:none !important;transition:color .15s}",
+      "html body #page .fo-mk-rlinks button{font:600 11px/1 Inter,sans-serif !important;letter-spacing:.11em;text-transform:uppercase;color:#9FB0C6 !important;background:transparent !important;border:0 !important;border-radius:0 !important;padding:6px 0 !important;cursor:pointer;box-shadow:none !important;transition:color .15s}",
       "html body #page .fo-mk-rlinks button:hover{color:#1B2432 !important;background:transparent !important}",
       "html body #page .fo-mk-rlinks button.on{color:#C9571F !important;box-shadow:0 2.5px 0 #C9571F !important}",
       // the dressed select: no OS chrome, a drawn chevron
@@ -1244,12 +1241,12 @@
       // THE BID RAIL CARD: identity and reads on paper, the money in navy
       // the spine is a real left border, not an inner bar: the card's own edge
       // carries the colour, so nothing inside has to move to make room for it
-      "html body #page .fo-mk-row{position:relative;display:grid;grid-template-columns:1fr 225px;background:#FFFEFC;border:1px solid rgba(27,36,50,.14);border-left:4px solid var(--sp,#5A6472);border-radius:3px 16px 16px 3px;overflow:hidden;margin-bottom:13px;box-shadow:0 3px 12px rgba(14,35,63,.06)}",
-      "html body #page .fo-mk-row.lead{border-color:rgba(27,36,50,.2);border-left-color:var(--sp,#5A6472);box-shadow:0 4px 16px rgba(14,35,63,.10)}",
+      "html body #page .fo-mk-row{position:relative;display:grid;grid-template-columns:1fr 225px;background:#FFFEFC;border:1px solid rgba(27,36,50,.14);border-left:4px solid var(--sp,#6A6354);border-radius:3px 16px 16px 3px;overflow:hidden;margin-bottom:13px;box-shadow:0 3px 12px rgba(14,35,63,.06)}",
+      "html body #page .fo-mk-row.lead{border-color:rgba(27,36,50,.2);border-left-color:var(--sp,#6A6354);box-shadow:0 4px 16px rgba(14,35,63,.10)}",
       "html body #page .fo-mk-row.lead{border-color:rgba(23,122,87,.4)}",
       "html body #page .fo-mk-row .bd{padding:19px 26px 15px;min-width:0}",
       "html body #page .fo-mk-row .tp{display:flex;align-items:center;gap:13px}",
-      "html body #page .fo-mk-row .ovr{flex:none;width:42px;height:42px;display:flex;align-items:center;justify-content:center;background:#14243A;color:#F6EFDF;border-radius:11px;font:600 17px/1 Inter,sans-serif;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-mk-row .ovr{flex:none;width:44px;height:44px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;background:#14243A;color:#F6EFDF;border-radius:11px;font:600 16px/1 Inter,sans-serif;font-variant-numeric:tabular-nums}.fo-mk-row .ovr b{font-weight:700}.fo-mk-row .ovr i{font-style:normal;font:700 11px/1 Inter,sans-serif;letter-spacing:.06em;color:#9FB0C6}",
       "html body #page .fo-mk-row .nm{min-width:0}",
       "html body #page .fo-mk-row .nm b{display:block;font:600 19px/1.15 Fraunces,Georgia,serif;color:#1B2432;letter-spacing:.005em}",
       "html body #page .fo-mk-row .nm a.pdoor{text-decoration:none;color:inherit}",
@@ -1260,7 +1257,7 @@
       // three role-picked gauges: what he is BOUGHT for, big and calm
       "html body #page .fo-mk-row .gg{display:flex;gap:34px;margin-top:16px}",
       "html body #page .fo-mk-row .gg .g{width:96px;min-width:0}",
-      "html body #page .fo-mk-row .gg .lb{display:block;font:600 10px/1 Oswald,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:#98a0ae}",
+      "html body #page .fo-mk-row .gg .lb{display:block;font:600 11px/1 Inter,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:#98a0ae}",
       "html body #page .fo-mk-row .gg .vl{display:block;font:600 26px/1.2 Inter,sans-serif;color:#14243A;font-variant-numeric:tabular-nums}",
       "html body #page .fo-mk-row .gg .tr{display:block;height:3.5px;border-radius:2px;background:#EDE8DC;margin-top:3px;overflow:hidden}",
       "html body #page .fo-mk-row .gg .fl{display:block;height:100%;border-radius:2px}",
@@ -1271,13 +1268,13 @@
       "html body #page .fo-mk-row .gg .g.off .vl{color:#c3c9d2}",
       "html body #page .fo-mk-row .gg .g.off .fl{background:#E3DECF}",
       // the fold: Full card opens the seven reads as toned bars
-      "html body #page .fo-mk-row .fold{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:2px 0 !important;font:600 10px/1 Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;color:#C9571F !important;background:transparent !important;border:0 !important;border-radius:0 !important;cursor:pointer;box-shadow:none !important}",
+      "html body #page .fo-mk-row .fold{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:2px 0 !important;font:600 11px/1 Inter,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;color:#C9571F !important;background:transparent !important;border:0 !important;border-radius:0 !important;cursor:pointer;box-shadow:none !important}",
       "html body #page .fo-mk-row .fold:hover{color:#B44A22 !important;background:transparent !important}",
       "html body #page .fo-mk-row .fold svg{width:11px;height:11px;transition:transform .18s}",
       "html body #page .fo-mk-row .fold.on svg{transform:rotate(180deg)}",
       "html body #page .fo-mk-full{margin-top:11px;padding:13px 0 3px;border-top:1px dashed rgba(27,36,50,.18);display:grid;grid-template-columns:1fr 1fr;gap:7px 34px}",
       "html body #page .fo-mk-full .fb{display:grid;grid-template-columns:72px 1fr 30px;gap:10px;align-items:center}",
-      "html body #page .fo-mk-full .fb i{font-style:normal;font:600 10px/1 Oswald,sans-serif;letter-spacing:.15em;text-transform:uppercase;color:#98a0ae}",
+      "html body #page .fo-mk-full .fb i{font-style:normal;font:600 11px/1 Inter,sans-serif;letter-spacing:.15em;text-transform:uppercase;color:#98a0ae}",
       "html body #page .fo-mk-full .fb u{display:block;height:6px;background:#EDE8DC;border-radius:3px;overflow:hidden;text-decoration:none}",
       "html body #page .fo-mk-full .fb u s{display:block;height:100%;border-radius:3px;text-decoration:none}",
       "html body #page .fo-mk-full .fb u s.t1{background:#C05B45}",
@@ -1288,21 +1285,21 @@
       "html body #page .fo-mk-full .fb.off i,html body #page .fo-mk-full .fb.off b{color:#c9ceda}",
       // provenance: whose man, which league, the scout's word
       "html body #page .fo-mk-row .prov{display:flex;align-items:center;gap:11px;margin-top:13px;flex-wrap:wrap}",
-      "html body #page .fo-mk-row .prov .tag{flex:none;font:600 10px/1 Oswald,sans-serif;letter-spacing:.11em;text-transform:uppercase;color:#7A5480;background:rgba(122,84,128,.07);border:1px solid rgba(122,84,128,.22);border-radius:6px;padding:5px 8px}",
+      "html body #page .fo-mk-row .prov .tag{flex:none;font:600 11px/1 Inter,sans-serif;letter-spacing:.11em;text-transform:uppercase;color:#7A5480;background:rgba(122,84,128,.07);border:1px solid rgba(122,84,128,.22);border-radius:6px;padding:5px 8px}",
       "html body #page .fo-mk-row .prov .tag.fa{color:#1F6F4A;background:rgba(31,111,74,.07);border-color:rgba(31,111,74,.22)}",
       "html body #page .fo-mk-row .prov .imp{flex:1;min-width:0;font:400 13px/1.5 Fraunces,Georgia,serif;color:rgba(20,28,40,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       // THE AUCTIONEER'S LINE (B3): cream carries every fact, gold is spent
       // on the clock alone, orange on the one button alone
       "html body #page .fo-mk-row .rail{background:linear-gradient(170deg,#14243A,#0C1C31);color:#F6EFDF;padding:18px 20px;display:flex;flex-direction:column;gap:5px;justify-content:center}",
       "html body #page .fo-mk-row.lead .rail{background:linear-gradient(170deg,#14313A,#0C2420)}",
-      "html body #page .fo-mk-row .rail .lb2{font:600 10px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(246,239,223,.42)}",
+      "html body #page .fo-mk-row .rail .lb2{font:600 11px/1 Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(246,239,223,.42)}",
       "html body #page .fo-mk-row .rail .lb2.hm{margin-top:7px}",
       "html body #page .fo-mk-row .rail .club{font:600 13px/1.4 Inter,sans-serif;color:#FFFDF7;text-decoration:none;border-bottom:1px solid rgba(255,253,247,.3);align-self:flex-start}",
       "html body #page .fo-mk-row .rail a.club:hover{border-bottom-color:#FFFDF7;color:#FFFDF7}",
       "html body #page .fo-mk-row .rail .club.you{color:#8FD6B5;border-bottom-color:transparent}",
       "html body #page .fo-mk-row .rail .club.none{color:rgba(246,239,223,.5);border-bottom-color:transparent;font-weight:400}",
       "html body #page .fo-mk-row .rail .amt{font:600 32px/1 Inter,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums;margin-top:5px}",
-      "html body #page .fo-mk-row .rail .amt i{font:600 11px/1 Oswald,sans-serif;font-style:normal;color:rgba(246,239,223,.5);letter-spacing:.08em;margin-left:6px}",
+      "html body #page .fo-mk-row .rail .amt i{font:600 11px/1 Inter,sans-serif;font-style:normal;color:rgba(246,239,223,.5);letter-spacing:.08em;margin-left:6px}",
       "html body #page .fo-mk-row .rail .rsv{font:400 12px/1.4 Inter,sans-serif;color:rgba(246,239,223,.55)}",
       "html body #page .fo-mk-row .rail .hmwrap{display:block}",
       "html body #page .fo-mk-row .rail .clk{display:block;font:600 18px/1.15 Inter,sans-serif;letter-spacing:.06em;font-variant-numeric:tabular-nums;color:#E8B96A}",
@@ -1313,7 +1310,7 @@
       "@keyframes fo-mk-beat{0%,100%{opacity:1}50%{opacity:.55}}",
       "@media(prefers-reduced-motion:reduce){html body #page .fo-mk-row .rail .clk.final{animation:none}}",
       // the deed: AUTO BID at the next minimum, or a figure on one line
-      "html body #page .fo-mk-row .rail .go{margin-top:10px;font:600 13px/1 Oswald,sans-serif !important;letter-spacing:.14em;text-transform:uppercase;color:#FFFEFC !important;background:#C9571F !important;border:0 !important;border-radius:9px !important;padding:13px 0 !important;width:100%;cursor:pointer;transition:background .15s}",
+      "html body #page .fo-mk-row .rail .go{margin-top:10px;font:600 13px/1 Inter,sans-serif !important;letter-spacing:.14em;text-transform:uppercase;color:#FFFEFC !important;background:#C9571F !important;border:0 !important;border-radius:9px !important;padding:13px 0 !important;width:100%;cursor:pointer;transition:background .15s}",
       "html body #page .fo-mk-row .rail .go:hover{background:#B44A22 !important}",
       "html body #page .fo-mk-row .rail .cust{display:flex;align-items:center;gap:8px;margin-top:8px}",
       "html body #page .fo-mk-row .rail .cust input.fo-mk-in{flex:1;min-width:0;background:transparent !important;border:0 !important;border-bottom:1px solid rgba(246,239,223,.28) !important;border-radius:0 !important;color:#FFFDF7 !important;font:600 13px/1 Inter,sans-serif !important;padding:8px 2px !important;font-variant-numeric:tabular-nums;box-shadow:none !important;min-height:0 !important}",
@@ -1323,7 +1320,7 @@
       "@keyframes fo-mk-shake{0%,100%{transform:none}25%{transform:translateX(-4px)}50%{transform:translateX(4px)}75%{transform:translateX(-3px)}}",
       "html body #page .fo-mk-row .rail .cust .snd{flex:none;width:34px;height:34px;border-radius:8px !important;background:transparent !important;border:1px solid rgba(246,239,223,.32) !important;color:#F6EFDF !important;cursor:pointer;font-size:14px;padding:0 !important;box-shadow:none !important}",
       "html body #page .fo-mk-row .rail .cust .snd:hover{background:rgba(255,255,255,.08) !important}",
-      "html body #page .fo-mk-row .rail .act.ghost{margin-top:10px;font:600 10px/1 Oswald,sans-serif !important;letter-spacing:.14em;text-transform:uppercase;color:rgba(246,239,223,.85) !important;background:transparent !important;border:1px solid rgba(246,239,223,.35) !important;border-radius:999px !important;padding:12px 0 !important;width:100%;cursor:pointer}",
+      "html body #page .fo-mk-row .rail .act.ghost{margin-top:10px;font:600 11px/1 Inter,sans-serif !important;letter-spacing:.14em;text-transform:uppercase;color:rgba(246,239,223,.85) !important;background:transparent !important;border:1px solid rgba(246,239,223,.35) !important;border-radius:999px !important;padding:12px 0 !important;width:100%;cursor:pointer}",
       "html body #page .fo-mk-row .rail .act.ghost:hover{background:rgba(255,255,255,.08) !important}",
       // the gold youth mark for the under-21s
       // SCOPED TO THE MARKET, and it must stay that way. Unscoped, this rule
@@ -1331,12 +1328,12 @@
       // academy rows <tr class='fo-sqg-r yth'>, so every colt in the Youth
       // and Everyone views became an inline-flex gold chip, fell out of the
       // table, and took the column widths with it.
-      "html body #page .fo-mk .yth{display:inline-flex;font:700 10px/1 Oswald,sans-serif;letter-spacing:.14em;color:#7A5210;background:linear-gradient(120deg,#F3DFA9,#E8B96A);border-radius:5px;padding:3.5px 6px;vertical-align:3px;margin-left:8px;text-transform:uppercase;white-space:nowrap}",
+      "html body #page .fo-mk .yth{display:inline-flex;font:700 11px/1 Inter,sans-serif;letter-spacing:.14em;color:#7A5210;background:linear-gradient(120deg,#F3DFA9,#E8B96A);border-radius:5px;padding:3.5px 6px;vertical-align:3px;margin-left:8px;text-transform:uppercase;white-space:nowrap}",
       // the door to the rest of a big board
-      "html body #page .fo-mk-more{display:block;width:100%;margin:2px 0 0;padding:13px !important;font:600 10px/1 Oswald,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;color:#67748a !important;background:#FFFEFC !important;border:1px dashed rgba(27,36,50,.25) !important;border-radius:12px !important;cursor:pointer}",
+      "html body #page .fo-mk-more{display:block;width:100%;margin:2px 0 0;padding:13px !important;font:600 11px/1 Inter,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;color:#67748a !important;background:#FFFEFC !important;border:1px dashed rgba(27,36,50,.25) !important;border-radius:12px !important;cursor:pointer}",
       "html body #page .fo-mk-more:hover{color:#B44A22 !important;border-color:rgba(201,87,31,.5) !important;background:#FFFEFC !important}",
       // the manager's own desk + the register, kept in the same voice
-      "html body #page .fo-mk-k{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#B44A22;margin:22px 2px 9px}",
+      "html body #page .fo-mk-k{font-family:Inter,sans-serif;font-size:10px;letter-spacing:.22em;text-transform:uppercase;color:#B44A22;margin:22px 2px 9px}",
       "html body #page .fo-mk-k:after{content:'';display:block;width:34px;border-top:2px solid #C9571F;margin-top:6px}",
       "html body #page .fo-mk-srow{display:flex;align-items:center;gap:12px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:12px;padding:11px 15px;margin-bottom:8px}",
       "html body #page .fo-mk-srow.slim{border-style:solid;border-left:3px solid #E8B96A}",
@@ -1351,7 +1348,7 @@
       "html body #page .fo-mk-swho .st.out{color:#8E1F13}",
       "html body #page .fo-mk-swho .st.gone{color:#98a0ae}",
       "html body #page .fo-mk-shammer{flex:0 0 auto;text-align:right}",
-      "html body #page .fo-mk-shammer i{display:block;font:600 10px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#98a0ae;font-style:normal;margin-bottom:4px}",
+      "html body #page .fo-mk-shammer i{display:block;font:600 11px/1 Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#98a0ae;font-style:normal;margin-bottom:4px}",
       "html body #page .fo-mk-shammer .clk{font:600 14px/1.15 Inter,sans-serif;letter-spacing:.05em;color:#B8933A;font-variant-numeric:tabular-nums}",
       "html body #page .fo-mk-shammer .clk.soon,html body #page .fo-mk-shammer .clk.final{color:#8E1F13;animation:none}",
       "html body #page .fo-mk-shammer .clk.gone{color:#98a0ae}",
@@ -1360,7 +1357,7 @@
       "html body #page .fo-mk-swho b{font:600 14px/1.25 Fraunces,Georgia,serif;color:#1B2432}",
       "html body #page .fo-mk-swho span{display:block;font:400 13px/1.4 Inter,sans-serif;color:rgba(20,28,40,.5);margin-top:2px}",
       "html body #page .fo-mk-sbtns{display:flex;gap:7px;flex:0 0 auto;flex-wrap:wrap;justify-content:flex-end}",
-      "html body #page .fo-mk-b{font:600 10px/1 Oswald,sans-serif !important;letter-spacing:.11em;text-transform:uppercase;color:#FFFEFC !important;background:#C9571F !important;border:1px solid #C9571F !important;border-radius:999px !important;padding:9px 14px !important;cursor:pointer;min-height:32px;transition:background .15s,color .15s}",
+      "html body #page .fo-mk-b{font:600 11px/1 Inter,sans-serif !important;letter-spacing:.11em;text-transform:uppercase;color:#FFFEFC !important;background:#C9571F !important;border:1px solid #C9571F !important;border-radius:999px !important;padding:9px 14px !important;cursor:pointer;min-height:32px;transition:background .15s,color .15s}",
       "html body #page .fo-mk-b:hover{background:#B44A22 !important;border-color:#B44A22 !important}",
       "html body #page .fo-mk-b.ghost{background:#FFFEFC !important;color:#67748a !important;border-color:rgba(27,36,50,.2) !important}",
       "html body #page .fo-mk-b.ghost:hover{color:#B44A22 !important;border-color:rgba(201,87,31,.5) !important;background:#FFFEFC !important}",
@@ -1377,7 +1374,7 @@
       "html body #page .fo-mk-foot a:hover{color:#B44A22;text-decoration:none}",
       // the view toggle: cards or the whole book
       "html body #page .fo-mk-vt{display:inline-flex;gap:2px;background:#FFFEFC;border:1px solid rgba(27,36,50,.14);border-radius:9px;padding:3px}",
-      "html body #page .fo-mk-vt button{display:inline-flex;align-items:center;gap:6px;font:600 10px/1 Oswald,sans-serif !important;letter-spacing:.12em;text-transform:uppercase;color:#67748a !important;background:transparent !important;border:0 !important;border-radius:7px !important;padding:7px 11px !important;cursor:pointer;box-shadow:none !important}",
+      "html body #page .fo-mk-vt button{display:inline-flex;align-items:center;gap:6px;font:600 11px/1 Inter,sans-serif !important;letter-spacing:.12em;text-transform:uppercase;color:#67748a !important;background:transparent !important;border:0 !important;border-radius:7px !important;padding:7px 11px !important;cursor:pointer;box-shadow:none !important}",
       "html body #page .fo-mk-vt button svg{width:12px;height:12px}",
       "html body #page .fo-mk-vt button.on{background:#14243A !important;color:#F1EEE6 !important}",
       // THE TABLE: the whole board as one sortable page of the books
@@ -1386,7 +1383,7 @@
       // roomy rows, and every number set in tabular figures
       "html body #page .fo-mk-tblwrap{background:#FFFEFC;border:1px solid rgba(27,36,50,.14);border-radius:16px;overflow-x:auto;-webkit-overflow-scrolling:touch;margin-bottom:4px;box-shadow:0 22px 48px rgba(10,22,42,.09)}",
       "html body #page .fo-mk-tbl{border-collapse:collapse;width:100%;min-width:1080px}",
-      "html body #page .fo-mk-tbl thead th{background:linear-gradient(180deg,#1A2C47,#0E1E33) !important;color:#D9CBA8 !important;font:600 10px/1.3 Oswald,sans-serif !important;letter-spacing:.15em;text-transform:uppercase;padding:14px 10px !important;text-align:right;white-space:nowrap;cursor:pointer;position:sticky;top:0;z-index:2;border:0 !important;box-shadow:inset 0 -3px 0 rgba(201,87,31,.55)}",
+      "html body #page .fo-mk-tbl thead th{background:linear-gradient(180deg,#1A2C47,#0E1E33) !important;color:#D9CBA8 !important;font:600 11px/1.3 Inter,sans-serif !important;letter-spacing:.15em;text-transform:uppercase;padding:14px 10px !important;text-align:right;white-space:nowrap;cursor:pointer;position:sticky;top:0;z-index:2;border:0 !important;box-shadow:inset 0 -3px 0 rgba(201,87,31,.55)}",
       "html body #page .fo-mk-tbl thead th:first-child{text-align:left;padding-left:18px !important;border-top-left-radius:15px}",
       "html body #page .fo-mk-tbl thead th:last-child{border-top-right-radius:15px}",
       "html body #page .fo-mk-tbl thead th:hover{color:#F6EFDF !important}",
@@ -1399,10 +1396,10 @@
       "html body #page .fo-mk-tbl td .ovch{display:inline-block;min-width:30px;background:#14243A;color:#F6EFDF;font:700 12.5px/1 Inter,sans-serif;border-radius:8px;padding:6px 5px;text-align:center;font-variant-numeric:tabular-nums}",
       "html body #page .fo-mk-tbl td .pn{font:600 14.5px/1.25 Fraunces,Georgia,serif;color:#1B2432;text-decoration:none}",
       "html body #page .fo-mk-tbl td a.pn:hover,html body #page .fo-mk-tbl td .pn.lk:hover{color:#C9571F;text-decoration:underline;text-underline-offset:3px;cursor:pointer}",
-      "html body #page .fo-mk-tbl td .sub{display:block;font:400 12px/1.6 Inter,sans-serif;color:#8a93a2;margin-top:1px}",
+      "html body #page .fo-mk-tbl td .sub{display:block;font:400 12px/1.6 Inter,sans-serif;color:#9FB0C6;margin-top:1px}",
       "html body #page .fo-mk-tbl td .sub img{width:19px;height:13px;object-fit:cover;border-radius:2px;vertical-align:-2.5px;box-shadow:0 1px 2px rgba(10,22,42,.25),0 0 0 1px rgba(27,36,50,.12)}",
       "html body #page .fo-mk-tbl .tbf,html body #page .fo-mk-tblwrap .tbf{padding:12px 18px;font:400 13px/1.5 Fraunces,Georgia,serif;color:rgba(20,28,40,.5);border-top:1px solid rgba(27,36,50,.08)}",
-      "html body #page .fo-mk-tbl td .qok{font:700 10px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#177A57}",
+      "html body #page .fo-mk-tbl td .qok{font:700 11px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#177A57}",
       "html body #page .fo-mk-tbl td .sub a.cl{color:#7A5480;text-decoration:none;border-bottom:1px dotted rgba(122,84,128,.5)}",
       "html body #page .fo-mk-tbl td .sub a.cl:hover{color:#C9571F;border-bottom-color:#C9571F}",
       "html body #page .fo-mk-tbl td.hot{color:#14243A;font-weight:700}",
@@ -1417,7 +1414,7 @@
       "html body #page .fo-mk-tbl .hmwrap.tbl .clk.soon,html body #page .fo-mk-tbl .hmwrap.tbl .clk.final{color:#8E1F13;animation:none}",
       "html body #page .fo-mk-tbl .hmwrap.tbl .clk.gone{color:#98a0ae}",
       "html body #page .fo-mk-tbl .hmwrap.tbl .hnote{display:none}",
-      "html body #page .fo-mk-tbl .qb{font:600 10px/1 Oswald,sans-serif !important;letter-spacing:.1em;text-transform:uppercase;color:#FFFEFC !important;background:#C9571F !important;border:0 !important;border-radius:999px !important;padding:8px 12px !important;cursor:pointer;box-shadow:none !important}",
+      "html body #page .fo-mk-tbl .qb{font:600 11px/1 Inter,sans-serif !important;letter-spacing:.1em;text-transform:uppercase;color:#FFFEFC !important;background:#C9571F !important;border:0 !important;border-radius:999px !important;padding:8px 12px !important;cursor:pointer;box-shadow:none !important}",
       "html body #page .fo-mk-tbl .qb:hover{background:#B44A22 !important}",
       "html body #page .fo-mk-tbl .qb.gh{color:#67748a !important;background:transparent !important;border:1px solid rgba(27,36,50,.25) !important}",
       // THE WIRE: the bell in the masthead and its ledger
@@ -1431,7 +1428,7 @@
       "@keyframes fo-mk-drop2{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}",
       "#fo-wire-pop .ph{display:flex;align-items:baseline;gap:10px;padding:13px 16px;border-bottom:1px solid rgba(27,36,50,.1);position:sticky;top:0;background:#FFFEFC}",
       "#fo-wire-pop .ph b{font:600 13.5px/1 Fraunces,Georgia,serif}",
-      "#fo-wire-pop .ph span{margin-left:auto;font:600 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#C9571F;cursor:pointer}",
+      "#fo-wire-pop .ph span{margin-left:auto;font:600 11px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#C9571F;cursor:pointer}",
       "#fo-wire-pop .it{display:flex;gap:11px;padding:12px 16px;border-bottom:1px solid rgba(27,36,50,.06);cursor:pointer}",
       "#fo-wire-pop .it:hover{background:#FBFAF5}",
       "#fo-wire-pop .it.unread{background:#FBF7EE}",
@@ -1448,7 +1445,7 @@
       "#fo-wire-pop .it.ask.urgent{border-left-color:#B4351F;background:#FBF3EC}",
       "#fo-wire-pop .ic.ask{background:rgba(180,74,34,.12);color:#B4351F}",
       "#fo-wire-pop .tx b{display:block;font:600 12.5px/1.4 Inter,sans-serif;color:#1B2432}",
-      "html body #fo-wire-pop a.pf{display:block;padding:12px 16px;text-align:center;font:600 10px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#C9571F !important;text-decoration:none;border-top:1px solid rgba(27,36,50,.08)}",
+      "html body #fo-wire-pop a.pf{display:block;padding:12px 16px;text-align:center;font:600 11px/1 Inter,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#C9571F !important;text-decoration:none;border-top:1px solid rgba(27,36,50,.08)}",
       // narrower grounds: the rail becomes the card's foot, gauges close ranks
       "@media(max-width:640px){",
       "html body #page .fo-mk-row{grid-template-columns:1fr}",

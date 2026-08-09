@@ -573,8 +573,8 @@ FOC.oval = (function () {
       ".ov-who .owstars{font-size:13px;letter-spacing:1.2px;line-height:1;white-space:nowrap}" +
       ".ov-who .owstars .st{text-decoration:none}" +
       ".ov-who .owstars em{font-style:normal;color:#394561}" +
-      ".ov-who .ow-bat .owstars em.f{color:#F0B94E}" +
-      ".ov-who .ow-bat .owstars em.h{background:linear-gradient(90deg,#F0B94E 50%,#394561 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
+      ".ov-who .ow-bat .owstars em.f{color:#E8B96A}" +
+      ".ov-who .ow-bat .owstars em.h{background:linear-gradient(90deg,#E8B96A 50%,#394561 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       ".ov-who .owb .owstars em.f{color:#22D3E0}" +
       ".ov-who .owb .owstars em.h{background:linear-gradient(90deg,#22D3E0 50%,#394561 50%);-webkit-background-clip:text;background-clip:text;color:transparent}" +
       "@media(max-width:520px){.ov-who .own{font-size:16px}.ov-who .ows{font-size:13.5px}.ov-who .ow{padding:8px 11px}}" +
@@ -636,7 +636,7 @@ FOC.oval = (function () {
       ".fo-teamtalk .tt-b.on{background:#C8674A;border-color:#C8674A;color:#fff}" +
       ".fo-rowin{animation:foRowIn .38s ease;overflow:hidden}" +
       "@keyframes foRowIn{0%{opacity:0;max-height:0}100%{opacity:1;max-height:200px}}" +
-      ".ov-fld{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;border-radius:99px;padding:3px 10px;background:#1f2d4a;color:#cfd6e4}" +
+      ".ov-fld{font-family:Inter,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;border-radius:99px;padding:3px 10px;background:#1f2d4a;color:#cfd6e4}" +
       ".ov-fld.f-att{background:#C8674A;color:#fff}.ov-fld.f-def{background:#2E5A7A;color:#fff}.ov-fld.f-bal{background:#4E7A4E;color:#fff}" +
       ".ov-board{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;padding:9px 14px;background:#14213D;color:#F1EADA}" +
       ".ov-score{display:flex;gap:8px;align-items:baseline}" +
@@ -657,7 +657,7 @@ FOC.oval = (function () {
       ".ov-f.ov-hotw circle{animation:ovHotW .9s ease}" +
       "@keyframes ovHot{0%{stroke:#C9A24B;stroke-width:1.2}35%{stroke:#C9A24B;stroke-width:5.5}100%{stroke:#fff;stroke-width:1.2}}" +
       "@keyframes ovHotW{0%{stroke:#e04b3a;stroke-width:1.2}35%{stroke:#e04b3a;stroke-width:6}100%{stroke:#fff;stroke-width:1.2}}" +
-      ".ov-pop{font-family:Oswald,sans-serif;font-size:30px;letter-spacing:4px;font-weight:600;opacity:0;paint-order:stroke;stroke:#0F1A2E;stroke-width:4px}" +
+      ".ov-pop{font-family:Inter,sans-serif;font-size:30px;letter-spacing:4px;font-weight:600;opacity:0;paint-order:stroke;stroke:#0F1A2E;stroke-width:4px}" +
       ".ov-pop.on{animation:ovPop 1.05s ease}" +
       "@keyframes ovPop{0%{opacity:0;transform:scale(.6)}18%{opacity:1;transform:scale(1.12)}70%{opacity:1;transform:scale(1)}100%{opacity:0}}" +
       // delivery grammar: pitch pulse, boundary ripple, dismissal detail, lbw ray
@@ -666,7 +666,7 @@ FOC.oval = (function () {
       ".ov-rip{fill:none;stroke-width:2;transform-box:fill-box;transform-origin:center;animation:ovRip .85s ease-out forwards}" +
       ".ov-rip.big{stroke-width:2.6;animation-duration:1s}" +
       "@keyframes ovRip{0%{opacity:.95;transform:scale(.7)}100%{opacity:0;transform:scale(4.4)}}" +
-      ".ov-pop2{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2.6px;font-weight:600;fill:#F1EADA;text-transform:uppercase;opacity:0;paint-order:stroke;stroke:#0F1A2E;stroke-width:3px}" +
+      ".ov-pop2{font-family:Inter,sans-serif;font-size:11px;letter-spacing:2.6px;font-weight:600;fill:#F1EADA;text-transform:uppercase;opacity:0;paint-order:stroke;stroke:#0F1A2E;stroke-width:3px}" +
       ".ov-pop2.on{animation:ovPop 1.45s ease}" +
       ".ov-lbw{stroke:#e04b3a;stroke-width:1.6;stroke-dasharray:3 3;animation:ovLbw .7s ease forwards}" +
       "@keyframes ovLbw{0%{opacity:0}30%{opacity:1}100%{opacity:0}}" +
@@ -675,11 +675,11 @@ FOC.oval = (function () {
       // the broadcast tempo control lives INSIDE the pane, under the field map
       ".ov-ctl{display:flex;justify-content:center;gap:8px;padding:9px 12px 3px}" +
       ".ov-ctl:empty{display:none}" +
-      ".ov-ctl button{font-family:Oswald,sans-serif;font-weight:600;font-size:13px;letter-spacing:1px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.26);color:rgba(255,255,255,.82);border-radius:9px;padding:6px 18px;cursor:pointer;transition:.12s}" +
+      ".ov-ctl button{font-family:Inter,sans-serif;font-weight:600;font-size:13px;letter-spacing:1px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.26);color:rgba(255,255,255,.82);border-radius:9px;padding:6px 18px;cursor:pointer;transition:.12s}" +
       ".ov-ctl button:hover{border-color:#F3D37A;color:#F3D37A}" +
-      ".ov-ctl button.on{background:linear-gradient(180deg,#F0B94E,#C9A24B);border-color:#F0B94E;color:#0C1B2E}" +
+      ".ov-ctl button.on{background:linear-gradient(180deg,#E8B96A,#C9A24B);border-color:#E8B96A;color:#0C1B2E}" +
       ".ov-snd{background:none;border:1px solid #24334f;border-radius:7px;color:#8fa0bd;font-size:12px;line-height:1;padding:3px 7px;cursor:pointer;margin-right:auto}" +
-      ".ov-need{font-family:Oswald,sans-serif;font-size:13px;letter-spacing:1.5px;color:#fff;background:#a3242b;border-radius:8px;padding:3px 10px;display:none}" +
+      ".ov-need{font-family:Inter,sans-serif;font-size:13px;letter-spacing:1.5px;color:#fff;background:#a3242b;border-radius:8px;padding:3px 10px;display:none}" +
       ".ov-need.on{display:inline-block;animation:ovNeed 1.1s ease infinite}" +
       "@keyframes ovNeed{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.85}}" +
       "@media(prefers-reduced-motion:reduce){.ov-pop.on{animation:none;opacity:1}}";

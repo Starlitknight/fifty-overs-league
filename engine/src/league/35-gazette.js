@@ -252,7 +252,7 @@
       ".fo-gz-mast h1{font-family:Fraunces,Fraunces,Georgia,serif;font-weight:700;font-size:clamp(30px,6vw,52px);line-height:1.05;margin:10px 0;color:#1B1710;letter-spacing:.01em}",
       // lead
       ".fo-gz-lead{border-bottom:1px solid rgba(34,30,22,.25);padding:6px 0 18px;margin:0 0 18px}",
-      ".fo-gz-k{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#8E2F1C;margin:0 0 6px}",
+      ".fo-gz-k{font-family:Inter,sans-serif;font-size:10px;letter-spacing:.24em;text-transform:uppercase;color:#8E2F1C;margin:0 0 6px}",
       ".fo-gz-lead h2{font-family:Fraunces,Fraunces,Georgia,serif;font-weight:600;font-size:clamp(24px,4.6vw,38px);line-height:1.08;margin:0 0 12px;color:#1B1710;text-wrap:balance}",
       ".fo-gz-body{font-family:Fraunces,Georgia,serif;font-size:14.5px;line-height:1.65;color:#2A2519;max-width:66ch;text-align:justify;hyphens:auto;-webkit-hyphens:auto}",
       ".fo-gz-body p{margin:0 0 10px}",
@@ -264,7 +264,7 @@
       ".fo-gz-cols{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0 26px}",
       "@media(max-width:760px){.fo-gz-cols{grid-template-columns:minmax(0,1fr)}}",
       ".fo-gz-sec{border-bottom:1px solid rgba(34,30,22,.18);padding:0 0 15px;margin:0 0 15px;break-inside:avoid}",
-      ".fo-gz-sec h3{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#1B1710;border-bottom:1.5px solid #221E16;padding:0 0 5px;margin:0 0 10px}",
+      ".fo-gz-sec h3{font-family:Inter,sans-serif;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:#1B1710;border-bottom:1.5px solid #221E16;padding:0 0 5px;margin:0 0 10px}",
       ".fo-gz-wln{font-family:Fraunces,Georgia,serif;font-size:12px;line-height:1.5;color:#2A2519;padding:5px 0;border-bottom:1px dotted rgba(34,30,22,.2)}",
       ".fo-gz-wln::first-line{font-variant-caps:normal}",
       ".fo-gz-wln:last-child{border-bottom:none}",

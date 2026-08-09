@@ -1758,7 +1758,7 @@
         ["Nationality", "Home country. The two best performers per country earn international call-ups during the season."]
       ]),
       reading: gsec("Reading the page", "", [
-        ["Words &amp; colours", "Every number wears an honest word (atrocious at the bottom, legendary at the top) and a colour: <b style='color:#DC2626'>red</b> is a liability, <b style='color:#F59E0B'>amber</b> does a job, <b style='color:#2d7a76'>teal</b> is good, <b style='color:#16A34A'>green</b> wins matches."],
+        ["Words &amp; colours", "Every number wears an honest word (atrocious at the bottom, legendary at the top) and a colour: <b style='color:#B23230'>red</b> is a liability, <b style='color:#F59E0B'>amber</b> does a job, <b style='color:#2d7a76'>teal</b> is good, <b style='color:#16A34A'>green</b> wins matches."],
         ["Hand &amp; style", "RHB or LHB, plus the bowling type: genuine fast, fast medium, medium, finger spin or wrist spin. The types and their rarity are explained on the bowler&rsquo;s page."],
         ["Age", "Young players train faster and recover quicker. Past 30 they fade late in innings and decline between seasons."],
         ["Fee &amp; wage", "The fee is paid once, at the draft. The wage is paid every matchday, all season, so a full squad of stars will drain the bank twice over."]
@@ -2227,13 +2227,13 @@
       ".pk-in{border:1.5px solid var(--tc);border-radius:15px;padding:13px 16px;position:relative;background:radial-gradient(circle at 30% 8%, #FDFAF1 0%, var(--paper) 60%)}" +
       ".pk-notch{position:absolute;top:-8px;left:50%;transform:translateX(-50%) rotate(45deg);width:12px;height:12px;background:var(--paper);border:2px solid var(--tc)}" +
       ".pk-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}" +
-      ".pk-role-lbl{font-family:Oswald,sans-serif;font-size:13.5px;letter-spacing:2.2px;color:var(--tcD);text-transform:uppercase;font-weight:600}" +
-      ".pk-name{font-family:Oswald,sans-serif;font-weight:800;font-size:28px;color:var(--ink);line-height:1.04;letter-spacing:-.2px;margin-top:2px}" +
+      ".pk-role-lbl{font-family:Inter,sans-serif;font-size:13.5px;letter-spacing:2.2px;color:var(--tcD);text-transform:uppercase;font-weight:600}" +
+      ".pk-name{font-family:Inter,sans-serif;font-weight:800;font-size:28px;color:var(--ink);line-height:1.04;letter-spacing:-.2px;margin-top:2px}" +
       ".pk-flag{font-size:21px;line-height:1;margin-top:6px;display:inline-block}.pk-flag img{width:26px;vertical-align:middle}" +
       ".pk-ovc{text-align:right;flex:0 0 auto;display:flex;flex-direction:column;align-items:flex-end}" +
-      ".pk-ovr i{font-style:normal;font-family:Oswald,sans-serif;font-size:13px;letter-spacing:2px;color:var(--ink);font-weight:500;vertical-align:12px;margin-right:5px}" +
-      ".pk-ovr b{font-family:Oswald,sans-serif;font-size:36px;font-weight:600;color:var(--tcD)}" +
-      ".pk-hand{display:block;margin-top:4px;font-family:Oswald,sans-serif;font-size:12px;letter-spacing:1.8px;font-weight:600;color:var(--tcD);border:1.4px solid var(--tc);border-radius:8px;padding:2.5px 10px;background:rgba(255,255,255,.4);cursor:help;text-align:center}" +
+      ".pk-ovr i{font-style:normal;font-family:Inter,sans-serif;font-size:13px;letter-spacing:2px;color:var(--ink);font-weight:500;vertical-align:12px;margin-right:5px}" +
+      ".pk-ovr b{font-family:Inter,sans-serif;font-size:36px;font-weight:600;color:var(--tcD)}" +
+      ".pk-hand{display:block;margin-top:4px;font-family:Inter,sans-serif;font-size:12px;letter-spacing:1.8px;font-weight:600;color:var(--tcD);border:1.4px solid var(--tc);border-radius:8px;padding:2.5px 10px;background:rgba(255,255,255,.4);cursor:help;text-align:center}" +
       // v2 art: the painted role-x-nation figure fills a full-bleed panel -
       // the national brush-stroke background IS the card's hero
       ".pk-art{height:236px;position:relative;margin:2px -6px 8px;border-radius:12px;overflow:hidden;box-shadow:inset 0 0 0 1.5px rgba(20,33,61,.3),0 4px 12px rgba(16,27,45,.2)}" +
@@ -2242,7 +2242,7 @@
       ".pk-art:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 78%,rgba(20,25,40,.22));pointer-events:none}" +
       ".pk-meta{border:1.3px solid rgba(20,33,61,.25);border-radius:11px;padding:6px 12px;display:flex;gap:7px;align-items:center;justify-content:center;font-style:normal;font-size:14px;color:#2b3550;background:rgba(255,255,255,.35);flex-wrap:wrap}" +
       ".pk-meta i{font-style:normal;color:var(--tcD)}.pk-meta .fl{font-style:normal;font-size:14px}.pk-meta .fl img{width:22px;vertical-align:middle}" +
-      ".pk-tal-h{display:flex;align-items:center;gap:11px;margin:9px 0 6px;font-family:Oswald,sans-serif;font-size:12.5px;letter-spacing:2.6px;color:var(--tcD);font-weight:600}" +
+      ".pk-tal-h{display:flex;align-items:center;gap:11px;margin:9px 0 6px;font-family:Inter,sans-serif;font-size:12.5px;letter-spacing:2.6px;color:var(--tcD);font-weight:600}" +
       ".pk-tal-h i{flex:1;height:1.3px;background:rgba(20,33,61,.18);font-style:normal}" +
       ".pk-tals{display:flex;gap:9px;justify-content:center;flex-wrap:wrap}" +
       ".pk-tal{border:1.3px solid rgba(20,33,61,.28);border-radius:10px;padding:4px 14px;font-size:13.5px;font-weight:600;color:var(--ink);background:rgba(255,255,255,.4);cursor:help}" +
@@ -2250,19 +2250,19 @@
       ".pk-st{display:flex;align-items:center;gap:11px;padding:3.5px 0;cursor:help;border-radius:8px}.pk-st:hover{background:rgba(255,255,255,.5)}" +
       ".pk-en{width:24px;height:24px;border-radius:50%;flex:0 0 24px;display:grid;place-items:center;background:var(--tc);border:1.5px solid var(--tcD)}" +
       ".pk-en svg{width:13px;height:13px;stroke:#fff;fill:none;stroke-width:2.1;stroke-linecap:round;stroke-linejoin:round}" +
-      ".pk-st b{font-family:Oswald,sans-serif;font-weight:600;font-size:15px;letter-spacing:1.3px;flex:0 0 102px;color:var(--ink)}" +
+      ".pk-st b{font-family:Inter,sans-serif;font-weight:600;font-size:15px;letter-spacing:1.3px;flex:0 0 102px;color:var(--ink)}" +
       ".pk-bar{flex:1;height:9px;border-radius:99px;background:rgba(20,33,61,.1);overflow:hidden}" +
       ".pk-bar i{display:block;height:100%;border-radius:99px;background:var(--tc)}" +
-      ".pk-st em{font-style:normal;font-family:Oswald,sans-serif;font-weight:600;font-size:17px;flex:0 0 30px;text-align:right;color:var(--ink)}" +
+      ".pk-st em{font-style:normal;font-family:Inter,sans-serif;font-weight:600;font-size:17px;flex:0 0 30px;text-align:right;color:var(--ink)}" +
       ".pk-mid{display:flex;border-top:1.3px solid rgba(20,33,61,.18);margin-top:7px;padding-top:7px}" +
       ".pk-foot{display:flex;border-top:1.3px solid rgba(20,33,61,.14);margin-top:7px;padding-top:7px}" +
       ".pk-fc{flex:1;display:flex;gap:7px;align-items:center;padding:0 4px;cursor:help;min-width:0}" +
       ".pk-fc + .pk-fc{border-left:1.3px solid rgba(20,33,61,.14)}" +
       ".pk-fc svg{width:20px;height:20px;stroke:var(--tcD);fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round;flex:0 0 20px}" +
-      ".pk-fc i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.3px;color:var(--tcD);font-weight:600}" +
-      ".pk-fc b{font-family:Oswald,sans-serif;font-weight:600;font-size:14px;color:var(--ink);white-space:nowrap}" +
+      ".pk-fc i{display:block;font-style:normal;font-family:Inter,sans-serif;font-size:10px;letter-spacing:1.3px;color:var(--tcD);font-weight:600}" +
+      ".pk-fc b{font-family:Inter,sans-serif;font-weight:600;font-size:14px;color:var(--ink);white-space:nowrap}" +
       ".pk-risk{color:#B23A2E;font-size:13px;font-weight:600;margin-top:7px;text-align:center}" +
-      "html body .pk-cta,html body.ftpskin .pk-cta{display:block;width:100%;margin-top:9px;font-family:Oswald,sans-serif !important;letter-spacing:3.5px;text-transform:uppercase;font-weight:600 !important;font-size:18px;background:var(--tc) !important;color:#FDFAF1 !important;border:none !important;border-radius:11px;padding:10px;cursor:pointer;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}" +
+      "html body .pk-cta,html body.ftpskin .pk-cta{display:block;width:100%;margin-top:9px;font-family:Inter,sans-serif !important;letter-spacing:3.5px;text-transform:uppercase;font-weight:600 !important;font-size:18px;background:var(--tc) !important;color:#FDFAF1 !important;border:none !important;border-radius:11px;padding:10px;cursor:pointer;box-shadow:inset 0 -3px 0 rgba(0,0,0,.18)}" +
       "html body .pk-cta:hover,html body.ftpskin .pk-cta:hover,html body .pk-cta:focus,html body.ftpskin .pk-cta:focus{background:var(--tcD) !important;color:#FDFAF1 !important}" +
       // compact variant: the journey's signing row shows three cards at once -
       // hand-of-cards scale, so the choice reads side by side without scrolling
@@ -2294,19 +2294,19 @@
       ".fo-jrv-wrap{background:radial-gradient(120% 80% at 50% 0%,#FFFDF7 0%,#F5EFE1 62%,#F1E9D8 100%);border-radius:20px;margin:6px auto 0;max-width:1200px;padding:20px 16px 26px;box-shadow:inset 0 0 0 1.5px rgba(201,162,75,.4),0 12px 34px rgba(16,27,45,.14)}" +
       ".fo-jrv{text-align:center;position:relative}" +
       ".fo-jrv-spot{position:absolute;top:-30px;left:50%;transform:translateX(-50%);width:340px;height:280px;background:radial-gradient(circle,rgba(201,162,75,.22),transparent 66%);pointer-events:none;filter:blur(4px)}" +
-      ".fo-jrv-eyebrow{position:relative;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:4px;text-transform:uppercase;font-size:11px;color:#C8674A}" +
+      ".fo-jrv-eyebrow{position:relative;font-family:Inter,sans-serif;font-weight:600;letter-spacing:4px;text-transform:uppercase;font-size:11px;color:#C8674A}" +
       "html body #fo-onb .fo-jrv-h1,html body.ftpskin #fo-onb .fo-jrv-h1{color:#0C1B2E !important;margin:2px 0 4px;font-size:clamp(30px,6vw,44px);text-shadow:0 1px 0 rgba(255,255,255,.6)}" +
       "html body #fo-onb .fo-jrv-pack{position:relative;display:inline-flex;flex-direction:column;align-items:center;gap:6px;margin:10px auto 4px;padding:20px 34px 15px;cursor:pointer;font:inherit;color:#F5EFDC;background:radial-gradient(circle at 50% 22%,#22345a 0%,#141f38 72%);border:2.5px solid #C9A24B;border-radius:18px;box-shadow:0 12px 30px rgba(16,27,45,.35),0 0 30px rgba(201,162,75,.3),inset 0 0 0 1.5px rgba(201,162,75,.45);transition:transform .35s,opacity .35s;animation:foJrvFloat 3s ease-in-out infinite}" +
       "@keyframes foJrvFloat{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}" +
       "html body #fo-onb .fo-jrv-pack:hover{transform:translateY(-3px) scale(1.02)}" +
       ".fo-jrv-pack img.fo-j-crimg{width:82px;height:82px;filter:drop-shadow(0 3px 8px rgba(0,0,0,.5))}" +
-      ".fo-jrv-pack .pk1{font-family:Oswald,sans-serif;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;font-size:16px}" +
-      ".fo-jrv-pack .pk2{font-family:Oswald,sans-serif;font-weight:500;letter-spacing:2px;text-transform:uppercase;font-size:10.5px;color:#E4C463;animation:foJb 1.6s infinite}" +
+      ".fo-jrv-pack .pk1{font-family:Inter,sans-serif;font-weight:600;letter-spacing:2.5px;text-transform:uppercase;font-size:16px}" +
+      ".fo-jrv-pack .pk2{font-family:Inter,sans-serif;font-weight:500;letter-spacing:2px;text-transform:uppercase;font-size:10.5px;color:#E4C463;animation:foJb 1.6s infinite}" +
       "html body #fo-onb .fo-jrv-pack.open{animation:none;transition:none;visibility:hidden;transform:scale(.4) rotate(-8deg);opacity:0;pointer-events:none;position:absolute;left:50%;top:70px;margin-left:-90px}" +
       ".fo-jrv-burst{position:absolute;left:50%;top:44%;width:20px;height:20px;border-radius:50%;transform:translate(-50%,-50%);pointer-events:none;box-shadow:0 0 0 0 rgba(201,162,75,.7)}" +
       ".fo-jrv-pack.open .fo-jrv-burst{animation:foJrvBurst .6s ease-out}" +
       "@keyframes foJrvBurst{0%{box-shadow:0 0 0 0 rgba(201,162,75,.7)}100%{box-shadow:0 0 0 220px rgba(201,162,75,0)}}" +
-      ".fo-jrv-lab{position:relative;min-height:22px;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:3px;text-transform:uppercase;font-size:14px;color:#C8674A;margin:4px 0 12px}" +
+      ".fo-jrv-lab{position:relative;min-height:22px;font-family:Inter,sans-serif;font-weight:600;letter-spacing:3px;text-transform:uppercase;font-size:14px;color:#C8674A;margin:4px 0 12px}" +
       ".fo-jrv-lab.pop{animation:foJrvPop .4s ease-out}" +
       "@keyframes foJrvPop{0%{transform:scale(.7);opacity:0}100%{transform:scale(1);opacity:1}}" +
       ".fo-jrv-grid{position:relative;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;text-align:left}" +
@@ -2327,7 +2327,7 @@
       "#fo-onb .fo-jrv-cell .pkm-art:after{display:none}" +
       "#fo-onb .fo-jrv-cell .pkm-id{flex:1 1 100%;padding:0 9px}" +
       "#fo-onb .fo-jrv-cell .pkm-ovc{position:absolute;top:6px;right:6px;background:rgba(11,19,34,.82);border:1px solid rgba(201,162,75,.5);border-radius:9px;padding:3px 7px 2px}" +
-      "#fo-onb .fo-jrv-cell .pkm-ovc b{font-size:19px;color:#F0B94E}" +
+      "#fo-onb .fo-jrv-cell .pkm-ovc b{font-size:19px;color:#E8B96A}" +
       "#fo-onb .fo-jrv-cell .pkm-ovc i{color:#cfd6e4}" +
       "#fo-onb .fo-jrv-cell .pkm-hand{display:none}" +
       "#fo-onb .fo-jrv-cell .pkm-bars{padding:0 9px;margin:8px 0 0}" +
@@ -2379,44 +2379,44 @@
       ".pkm-art img{width:100%;height:100%;max-height:none;max-width:none;object-fit:cover;object-position:50% 12%;display:block}" +
       ".pkm-art:after{content:'';position:absolute;inset:0;background:linear-gradient(90deg,transparent 70%,rgba(247,242,228,.45));pointer-events:none}" +
       ".pkm-id{flex:1;min-width:0}" +
-      ".pkm-tag{display:inline-block;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;font-weight:600;color:#fff;background:var(--tcD);border-radius:6px;padding:1px 7px;margin-bottom:2px}" +
-      ".pkm-nm{font-family:Oswald,sans-serif;font-weight:800;font-size:17px;color:var(--ink);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
+      ".pkm-tag{display:inline-block;font-family:Inter,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;font-weight:600;color:#fff;background:var(--tcD);border-radius:6px;padding:1px 7px;margin-bottom:2px}" +
+      ".pkm-nm{font-family:Inter,sans-serif;font-weight:800;font-size:17px;color:var(--ink);line-height:1.1;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".pkm-nm img{width:18px;vertical-align:-3px}" +
       ".pkm-sub{font-size:12px;color:#5b6472;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       ".pkm-ovc{flex:0 0 auto;text-align:center;line-height:1}" +
-      ".pkm-ovc b{font-family:Oswald,sans-serif;font-weight:600;font-size:26px;color:var(--tcD)}" +
-      ".pkm-ovc i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.5px;color:#8a90a0;margin-top:-1px}" +
-      ".pkm-hand{display:inline-block;margin-top:3px;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1px;font-weight:600;color:var(--tcD);border:1.2px solid var(--tc);border-radius:6px;padding:1px 6px}" +
+      ".pkm-ovc b{font-family:Inter,sans-serif;font-weight:600;font-size:26px;color:var(--tcD)}" +
+      ".pkm-ovc i{display:block;font-style:normal;font-family:Inter,sans-serif;font-size:10px;letter-spacing:1.5px;color:#8a90a0;margin-top:-1px}" +
+      ".pkm-hand{display:inline-block;margin-top:3px;font-family:Inter,sans-serif;font-size:10px;letter-spacing:1px;font-weight:600;color:var(--tcD);border:1.2px solid var(--tc);border-radius:6px;padding:1px 6px}" +
       ".pkm-bars{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px 10px;margin:9px 0 2px}" +
       ".pkm-b{display:flex;align-items:center;gap:5px;cursor:help}" +
-      ".pkm-b i{font-style:normal;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.5px;color:#8a90a0;flex:0 0 24px}" +
+      ".pkm-b i{font-style:normal;font-family:Inter,sans-serif;font-size:10px;letter-spacing:.5px;color:#8a90a0;flex:0 0 24px}" +
       ".pkm-b u{flex:1;height:6px;border-radius:99px;background:rgba(20,33,61,.1);overflow:hidden;text-decoration:none}" +
       ".pkm-b u b{display:block;height:100%;border-radius:99px;background:var(--tc)}" +
-      ".pkm-b em{font-style:normal;font-family:Oswald,sans-serif;font-weight:600;font-size:12.5px;color:var(--ink);flex:0 0 20px;text-align:right}" +
+      ".pkm-b em{font-style:normal;font-family:Inter,sans-serif;font-weight:600;font-size:12.5px;color:var(--ink);flex:0 0 20px;text-align:right}" +
       ".pkm-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;padding-top:8px;border-top:1px solid rgba(20,33,61,.12);flex-wrap:wrap}" +
-      ".pkm-fee{font-size:12.5px;color:#5b6472}.pkm-fee b{color:var(--ink);font-family:Oswald,sans-serif;font-weight:600}" +
-      "html body .pkm-act,html body.ftpskin .pkm-act{font-family:Oswald,sans-serif !important;letter-spacing:1px;text-transform:uppercase;font-weight:600 !important;font-size:12.5px;background:var(--tc) !important;color:#FDFAF1 !important;border:none !important;border-radius:8px;padding:7px 14px;cursor:pointer;box-shadow:inset 0 -2px 0 rgba(0,0,0,.18)}" +
+      ".pkm-fee{font-size:12.5px;color:#5b6472}.pkm-fee b{color:var(--ink);font-family:Inter,sans-serif;font-weight:600}" +
+      "html body .pkm-act,html body.ftpskin .pkm-act{font-family:Inter,sans-serif !important;letter-spacing:1px;text-transform:uppercase;font-weight:600 !important;font-size:12.5px;background:var(--tc) !important;color:#FDFAF1 !important;border:none !important;border-radius:8px;padding:7px 14px;cursor:pointer;box-shadow:inset 0 -2px 0 rgba(0,0,0,.18)}" +
       "html body .pkm-act:hover,html body.ftpskin .pkm-act:hover{background:var(--tcD) !important;color:#FDFAF1 !important}" +
       ".pkm-act[disabled]{opacity:.5;cursor:not-allowed}" +
       ".pkm-gone{font-size:12.5px;color:#5b6472;font-style:normal}" +
       ".pkm-cell{cursor:pointer;text-decoration:none;color:inherit;display:block}" +
-      ".pkm-warn .pkm{border-color:#DC2626}" +
+      ".pkm-warn .pkm{border-color:#B23230}" +
       ".pkm-chips{display:block;margin-top:3px}" +
       ".pkm-chip{display:inline-block;font-size:10.5px;font-weight:600;color:#5b6472;background:rgba(20,33,61,.07);border-radius:6px;padding:1px 7px;margin:2px 4px 0 0}" +
       ".pkm-chip-lo{color:#b02a1e;background:rgba(220,38,38,.1)}" +
-      ".pkm-energy{display:flex;align-items:center;gap:5px;font-size:11px;color:#8a90a0}.pkm-energy i{font-style:normal;font-family:Oswald,sans-serif;letter-spacing:.5px}.pkm-energy u{width:46px;height:6px;border-radius:99px;background:rgba(20,33,61,.1);overflow:hidden;text-decoration:none}.pkm-energy u b{display:block;height:100%;border-radius:99px}" +
+      ".pkm-energy{display:flex;align-items:center;gap:5px;font-size:11px;color:#8a90a0}.pkm-energy i{font-style:normal;font-family:Inter,sans-serif;letter-spacing:.5px}.pkm-energy u{width:46px;height:6px;border-radius:99px;background:rgba(20,33,61,.1);overflow:hidden;text-decoration:none}.pkm-energy u b{display:block;height:100%;border-radius:99px}" +
       // player-page hero strip (art + card-consistent OVR / role label)
       ".fo-plh{display:flex;align-items:center;gap:16px;background:linear-gradient(180deg,#FDFAF1,#F7F2E4);border:2px solid var(--tc);border-radius:14px;padding:11px 18px;margin:0 0 14px;box-shadow:0 3px 10px rgba(16,27,45,.1)}" +
       ".fo-plh-art{width:72px;height:78px;flex:0 0 72px;display:grid;place-items:end center;background:radial-gradient(ellipse at 50% 92%,rgba(20,33,61,.13),transparent 62%)}" +
       ".fo-plh-art img{max-height:76px;max-width:70px;width:auto;height:auto;object-fit:contain}" +
       ".fo-plh-id{flex:1;min-width:0}" +
-      ".fo-plh-role{font-family:Oswald,sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--tcD);font-weight:600}" +
-      ".fo-plh-name{font-family:Oswald,sans-serif;font-weight:800;font-size:26px;color:#14213D;line-height:1.05}" +
+      ".fo-plh-role{font-family:Inter,sans-serif;font-size:13px;letter-spacing:2px;text-transform:uppercase;color:var(--tcD);font-weight:600}" +
+      ".fo-plh-name{font-family:Inter,sans-serif;font-weight:800;font-size:26px;color:#14213D;line-height:1.05}" +
       ".fo-plh-name img{width:20px;vertical-align:-3px}" +
       ".fo-plh-meta{font-size:13.5px;color:#5b6472;margin-top:2px}.fo-plh-meta img{width:19px;vertical-align:-3px}" +
       ".fo-plh-ovr{text-align:center;flex:0 0 auto}" +
-      ".fo-plh-ovr b{font-family:Oswald,sans-serif;font-weight:600;font-size:40px;color:var(--tcD)}" +
-      ".fo-plh-ovr i{display:block;font-style:normal;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:2px;color:#8a90a0;margin-top:-4px}" +
+      ".fo-plh-ovr b{font-family:Inter,sans-serif;font-weight:600;font-size:40px;color:var(--tcD)}" +
+      ".fo-plh-ovr i{display:block;font-style:normal;font-family:Inter,sans-serif;font-size:10px;letter-spacing:2px;color:#8a90a0;margin-top:-4px}" +
       "@media(max-width:640px){.fo-j-bars{grid-template-columns:1fr}.fo-j-dbox .tx{font-size:16px}}" +
       // the ftpskin sheet paints EVERY button (and its focus state) - out-gun it
       "html body #fo-onb .fo-j-soul,html body.ftpskin #fo-onb .fo-j-soul{background:#FFFEFC !important;color:#1B2432 !important;border:1.5px solid rgba(16,27,45,.16) !important}" +
@@ -2434,7 +2434,7 @@
       // Spline Sans for prose, Oswald for headers/labels/CTAs, Georgia for the
       // newspaper. Weights come DOWN across the board - elegance over bold.
       "html body #fo-onb .fo-ob-shell,html body #fo-onb .fo-ob-shell button,html body #fo-onb .fo-ob-shell input,html body #fo-onb .fo-ob-shell select{font-family:'Spline Sans','Inter',ui-sans-serif,system-ui,sans-serif !important}" +
-      "html body #fo-onb .fo-j-chap,html body #fo-onb .fo-j-chap span,html body #fo-onb .fo-j-badge b,html body #fo-onb .fo-j-dbox .sp,html body #fo-onb .fo-j-gbox .sp,html body #fo-onb .fo-j-marq,html body #fo-onb .fo-j-rule b,html body #fo-onb .fo-j-soul .nm,html body #fo-onb .fo-j-card h3,html body #fo-onb .fo-j-sec,html body #fo-onb .fo-j-stat span,html body #fo-onb .fo-j-bar,html body #fo-onb .fo-j-rivnm,html body #fo-onb .fo-j-stamp,html body #fo-onb .fo-ob-h1,html body #fo-onb .fo-ob-eyebrow,html body #fo-onb .fo-ob-lbl,html body #fo-onb .fo-ob-shell .fo-ob-cta,html body #fo-onb .fo-ob-shell .fo-ob-ghost{font-family:'Oswald','Inter',sans-serif !important}" +
+      "html body #fo-onb .fo-j-chap,html body #fo-onb .fo-j-chap span,html body #fo-onb .fo-j-badge b,html body #fo-onb .fo-j-dbox .sp,html body #fo-onb .fo-j-gbox .sp,html body #fo-onb .fo-j-marq,html body #fo-onb .fo-j-rule b,html body #fo-onb .fo-j-soul .nm,html body #fo-onb .fo-j-card h3,html body #fo-onb .fo-j-sec,html body #fo-onb .fo-j-stat span,html body #fo-onb .fo-j-bar,html body #fo-onb .fo-j-rivnm,html body #fo-onb .fo-j-stamp,html body #fo-onb .fo-ob-h1,html body #fo-onb .fo-ob-eyebrow,html body #fo-onb .fo-ob-lbl,html body #fo-onb .fo-ob-shell .fo-ob-cta,html body #fo-onb .fo-ob-shell .fo-ob-ghost{font-family:Inter,'Inter',sans-serif !important}" +
       "html body #fo-onb .fo-ob-h1{font-weight:600 !important;text-transform:uppercase;letter-spacing:1.5px;font-size:clamp(22px,4.6vw,30px);color:#0C1B2E}" +
       "html body #fo-onb .fo-ob-eyebrow{font-weight:500 !important;letter-spacing:3px !important}" +
       "html body #fo-onb .fo-ob-lbl{font-weight:500 !important;letter-spacing:.14em !important;color:#6b7280 !important;font-size:11.5px !important}" +
@@ -2450,12 +2450,12 @@
       "html body #fo-onb .fo-j-pros{font-weight:500}" +
       "html body #fo-onb .fo-j-pnm{font-weight:600}" +
       "html body #fo-onb .fo-j-wire,html body #fo-onb .fo-j-wire p,html body #fo-onb .fo-j-wire .by,html body #fo-onb .fo-j-wcap{font-family:Fraunces,Georgia,'Times New Roman',serif !important}" +
-      "html body #fo-onb .fo-j-wire .mast,html body #fo-onb .fo-j-wire .dl,html body #fo-onb .fo-j-wire h3{font-family:'Oswald',sans-serif !important;font-weight:600}" +
-      "html body #fo-onb .fo-j-ledger .lmast,html body #fo-onb .fo-j-money td:last-child,html body #fo-onb .fo-j-card .bk i,html body #fo-onb .fo-j-card .bk b{font-family:'Oswald','Inter',sans-serif !important}" +
+      "html body #fo-onb .fo-j-wire .mast,html body #fo-onb .fo-j-wire .dl,html body #fo-onb .fo-j-wire h3{font-family:Inter,sans-serif !important;font-weight:600}" +
+      "html body #fo-onb .fo-j-ledger .lmast,html body #fo-onb .fo-j-money td:last-child,html body #fo-onb .fo-j-card .bk i,html body #fo-onb .fo-j-card .bk b{font-family:Inter,'Inter',sans-serif !important}" +
       // the warm-up banner lives OUTSIDE #fo-onb, pinned on the live match page
       "#fo-j-tutbar{background:#0C1B2E;color:#F5EFDC;border:1.5px solid #C9A24B;border-radius:12px;padding:12px 16px 13px;margin:0 0 14px;text-align:center}" +
-      "#fo-j-tutbar .t1{font-family:'Oswald',sans-serif;font-size:11px;letter-spacing:2.5px;color:#D9B75A;text-transform:uppercase}" +
-      "#fo-j-tutbar .t2{font-family:'Oswald',sans-serif;font-weight:700;font-size:clamp(24px,5vw,38px);letter-spacing:2px;text-transform:uppercase;line-height:1.12;margin:3px 0 4px}" +
+      "#fo-j-tutbar .t1{font-family:Inter,sans-serif;font-size:11px;letter-spacing:2.5px;color:#D9B75A;text-transform:uppercase}" +
+      "#fo-j-tutbar .t2{font-family:Inter,sans-serif;font-weight:700;font-size:clamp(24px,5vw,38px);letter-spacing:2px;text-transform:uppercase;line-height:1.12;margin:3px 0 4px}" +
       "#fo-j-tutbar .t2 .vs{font-size:.42em;font-weight:500;color:#b9b29a;letter-spacing:1.5px}" +
       "#fo-j-tutbar .t3{font-size:12.5px;color:#cfc9b4;line-height:1.5;max-width:640px;margin:0 auto}";
     document.head.appendChild(st);

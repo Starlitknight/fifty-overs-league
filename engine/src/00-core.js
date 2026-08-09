@@ -1401,7 +1401,7 @@ function effBowl(bat,bowl,ctx){
   if(T.includes('partnershipBreaker')&&(ctx.pship??0)>=50)v+=5;
   return Math.max(5,Math.min(97,Math.round(v)));
 }
-function meter(v,lbl){const col=v>=70?'#2c7a2c':v>=45?'#c8a13a':'#a33328';
+function meter(v,lbl){const col=v>=70?'#2c7a2c':v>=45?'#C08A2E':'#a33328';
   return `<div style="margin:2px 0"><span class="sklbl">${lbl}</span><span class="skbar" style="width:130px"><i style="width:${v}%;background:${col}"></i></span><span class="skword" style="color:${col}">${word(v)}</span></div>`}
 const word=x=>WORDS[wIx(x)], abbr=x=>ABBR[wIx(x)];
 const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
@@ -1974,7 +1974,7 @@ function pgOffice(){
       <button class="warn" onclick="if(confirm('Reset the game completely? This wipes the save, your club, and all results from this browser. Exported files are unaffected.'))foResetGame()">Reset game (wipe save &amp; start over)</button>
       <div class="small" style="margin-top:3px">The game saves to this browser's local storage, so old decisions survive new game files. Reset clears everything and returns you to the founding screen. Export a save first if you want a backup.</div>
     </div></div>
-    <div class="panel" style="border-left:4px solid #c8a13a"><h4>Start a founder league (commissioner)</h4><div class="pad">
+    <div class="panel" style="border-left:4px solid #C08A2E"><h4>Start a founder league (commissioner)</h4><div class="pad">
       ${(()=>{const q=App.mergeQueue||[];const mine=userTeam();
         return `<div class="small" style="margin-bottom:5px">Collect each founder's exported club file, import them here, then start the season. Your own club (<b>${esc(mine.name)}</b>) is included automatically; empty slots fill with bots up to 10 teams.</div>
         <div style="margin-bottom:4px"><b>In the league:</b> <span class="phasechip" style="background:#e2f0e2">${esc(mine.name)} (you)</span> ${q.map(c=>`<span class="phasechip">${esc(c.name)} <a onclick="removeFromMerge('${esc(c.name)}')" style="cursor:pointer;color:#a33328">✕</a></span>`).join(' ')||'<span class="small">no founder clubs imported yet</span>'}</div>
@@ -2255,7 +2255,7 @@ function completeRound(){
   mpInit();for(const k in App.mp.packets)if(App.mp.packets[k].round<S.round)delete App.mp.packets[k];
   saveGame(false);
   const digest=App.results.filter(r=>r.comp==='league'&&r.round===S.round-1).map(r=>`<div class="bl">${esc(r.result.text)} <span class="small">(${esc(r.home)} v ${esc(r.away)})</span></div>`).join('');
-  App._digest=`<div class="panel" style="border-left:4px solid #2d6a8f"><h4>Round ${S.round} digest</h4><div class="pad">${digest}<div class="small" style="margin-top:3px">Youth round simmed · training applied (+1 focus skill league-wide).</div></div></div>`;
+  App._digest=`<div class="panel" style="border-left:4px solid #22635F"><h4>Round ${S.round} digest</h4><div class="pad">${digest}<div class="small" style="margin-top:3px">Youth round simmed · training applied (+1 focus skill league-wide).</div></div></div>`;
   pgMatches();
 }
 function promoteYouth(club,nm){const t=GD.teams[club];const i=t.youth.findIndex(p=>p.name===nm);
@@ -2486,7 +2486,7 @@ function spellRowsHTML(end){
     <span class="phasechip">${ph}</span><button class="warn" onclick="App.orders.spells['${end}'].splice(${i},1);pgOrders()">x</button></div>`;
   }).join('')+`<button onclick="App.orders.spells['${end}'].push({bowler:'',first:${end==='north'?1:2},n:5,field:'bal'});pgOrders()">+ add spell</button>`;
 }
-const BOWLCOLS=['#2d6a8f','#a33328','#2c7a2c','#c8a13a','#6a4a8f','#1c5537','#8f5a2d'];
+const BOWLCOLS=['#22635F','#a33328','#2c7a2c','#C08A2E','#6a4a8f','#1c5537','#8f5a2d'];
 function ordersTimeline(){
   const v=App.orders;const names=[...new Set(v.compiled.filter(Boolean))];
   const cells=v.compiled.map((nm,i)=>{const ci=names.indexOf(nm);
@@ -2638,7 +2638,7 @@ function pgOrders(){
     const past=App.results.filter(r=>(r.home===me&&r.away===them)||(r.home===them&&r.away===me));
     const w=past.filter(r=>r.result.winner===me).length;
     if(past.length)h2h=` · H2H vs ${esc(them)}: ${w}–${past.length-w}`;}
-  const condBanner=App.pending?`<div class="panel" style="border-left:4px solid #c8a13a"><div class="pad"><b>Conditions at ${esc(App.pending.ground)}:</b> <span title="${pitchTip(App.pending.pitch)}">${esc(App.pending.pitch)} pitch</span> · forecast <span title="${wxTip(App.pending.weather)}">${esc(App.pending.weather)}</span>${h2h} <span class="small">- ${App.pending.pitch==='dry'?'spin grips from mid-innings':App.pending.pitch==='green'?'seam help, big new-ball window':App.pending.pitch==='flat'?'a road, pack the batting':App.pending.pitch==='slow'?'sixes die, rotate instead':App.pending.pitch==='cracked'?'variable bounce all day':App.pending.pitch==='twoPaced'?'timing is hard here':'a fair surface'}.</span></div></div>`:'';
+  const condBanner=App.pending?`<div class="panel" style="border-left:4px solid #C08A2E"><div class="pad"><b>Conditions at ${esc(App.pending.ground)}:</b> <span title="${pitchTip(App.pending.pitch)}">${esc(App.pending.pitch)} pitch</span> · forecast <span title="${wxTip(App.pending.weather)}">${esc(App.pending.weather)}</span>${h2h} <span class="small">- ${App.pending.pitch==='dry'?'spin grips from mid-innings':App.pending.pitch==='green'?'seam help, big new-ball window':App.pending.pitch==='flat'?'a road, pack the batting':App.pending.pitch==='slow'?'sixes die, rotate instead':App.pending.pitch==='cracked'?'variable bounce all day':App.pending.pitch==='twoPaced'?'timing is hard here':'a fair surface'}.</span></div></div>`:'';
   // batting: 11 dropdowns with duplicate detection
   const names=xi.map(p=>p.name);
   const dupes={};App.orders.batOrder.slice(0,11).forEach(n=>dupes[n]=(dupes[n]||0)+1);
@@ -2961,14 +2961,14 @@ function renderMatch(){
    if(w&&w.length>2){const mx=Math.max(M.target||0,...w.map(p=>p[1]))+8;
      const pts=w.map(p=>`${(8+p[0]/50*180).toFixed(1)},${(46-p[1]/mx*40).toFixed(1)}`).join(' ');
      const tl=M.target?`<line x1="8" y1="${(46-M.target/mx*40).toFixed(1)}" x2="188" y2="${(46-M.target/mx*40).toFixed(1)}" stroke="#a33" stroke-dasharray="3 3"/>`:'';
-     wormHtml=`<svg width="192" height="50" style="vertical-align:middle">${tl}<polyline points="${pts}" fill="none" stroke="#2d6a8f" stroke-width="1.6"/>${w.filter((p,i)=>i>0&&p[2]>w[i-1][2]).map(p=>`<circle cx="${(8+p[0]/50*180).toFixed(1)}" cy="${(46-p[1]/mx*40).toFixed(1)}" r="2.2" fill="#a33"/>`).join('')}</svg>`;}}
+     wormHtml=`<svg width="192" height="50" style="vertical-align:middle">${tl}<polyline points="${pts}" fill="none" stroke="#22635F" stroke-width="1.6"/>${w.filter((p,i)=>i>0&&p[2]>w[i-1][2]).map(p=>`<circle cx="${(8+p[0]/50*180).toFixed(1)}" cy="${(46-p[1]/mx*40).toFixed(1)}" r="2.2" fill="#a33"/>`).join('')}</svg>`;}}
   // headpiece v2: striker / bowler / non-striker - THE centerpiece
   let head='';
   {const ctxH={faced:s1?(inn.faced[s1.p.name]||0):0,over:Math.floor(inn.legal/6),pitch:M.pitch,weather:((M.meta.weather||'sunny')+'').toLowerCase(),chase:M.inns===1,rrDef:press,pship:inn.pshipR};
-   const fatbar=n=>{const f=Math.min(1,M.fat&&M.fat[n]||0);return `<span class="skbar" style="width:84px;height:8px;vertical-align:middle"><i style="width:${Math.round(100*f)}%;background:${f>0.65?'#a33328':f>0.4?'#c8a13a':'#7a9a3a'}"></i></span><span class="small"> ${f>0.65?'tired':f>0.4?'working':'fresh'}</span>`};
+   const fatbar=n=>{const f=Math.min(1,M.fat&&M.fat[n]||0);return `<span class="skbar" style="width:84px;height:8px;vertical-align:middle"><i style="width:${Math.round(100*f)}%;background:${f>0.65?'#a33328':f>0.4?'#C08A2E':'#7a9a3a'}"></i></span><span class="small"> ${f>0.65?'tired':f>0.4?'working':'fresh'}</span>`};
    const hint=(p,sbv)=>{if(!sbv)return '';
-     if(sbv.r>=90&&sbv.r<100)return `<span class="phasechip" style="background:#f4ecd2;border-color:#c8a13a">${100-sbv.r} to a HUNDRED</span>`;
-     if(sbv.r>=40&&sbv.r<50)return `<span class="phasechip" style="background:#f4ecd2;border-color:#c8a13a">${50-sbv.r} to fifty</span>`;
+     if(sbv.r>=90&&sbv.r<100)return `<span class="phasechip" style="background:#f4ecd2;border-color:#C08A2E">${100-sbv.r} to a HUNDRED</span>`;
+     if(sbv.r>=40&&sbv.r<50)return `<span class="phasechip" style="background:#f4ecd2;border-color:#C08A2E">${50-sbv.r} to fifty</span>`;
      return ''};
    const bHint=(rec)=>{if(!rec)return '';
      if(rec.w===4)return '<span class="phasechip" style="background:#f6dede;border-color:#c99">one away from a FIVE-FOR</span>';
@@ -3028,7 +3028,7 @@ function renderMatch(){
     const crowd=homeT?attendance(homeT).toLocaleString():'a good crowd';
     const op1=inn.bat[inn.striker],op2=inn.bat[inn.nonstriker];
     const openBowler=inn.bxi.find(p=>p.name===inn.curBowlerName);
-    startBanner=`<div class="panel" style="border-left:4px solid #c8a13a"><div class="pad">
+    startBanner=`<div class="panel" style="border-left:4px solid #C08A2E"><div class="pad">
       <b>${M.inns===0?'PLAY BEGINS':'THE CHASE BEGINS'}</b> - ${esc(M.meta.home)} v ${esc(M.meta.away)} at ${esc(M.meta.ground)}, in front of ${crowd} spectators. ${esc(M.meta.weather||'Sunny')}, ${esc(M.pitch)} pitch.<br>
       <span class="small">${esc(op1?op1.p.name:'')} and ${esc(op2?op2.p.name:'')} stride out for ${esc(inn.batTeam)}${op1&&op1.p.talents&&op1.p.talents.length?' ('+op1.p.talents.map(ptal).join(', ')+')':''}. ${openBowler?esc(openBowler.name)+' ('+word(aggBowl(openBowler))+') takes the new ball.':''}
       ${M.inns===1?' Target: <b>'+M.target+'</b>.':''}</span>
@@ -3101,7 +3101,7 @@ function pgScorecard(q){
       if(!w||w.length<2)return '';
       const per=[];for(let i=1;i<w.length;i++)per.push({o:w[i][0],r:w[i][1]-w[i-1][1],wk:(w[i][2]||0)-(w[i-1][2]||0)});
       const mx=Math.max(8,...per.map(x=>x.r));
-      const bars=per.map(x=>`<div title="over ${x.o}: ${x.r} run${x.r===1?'':'s'}${x.wk?', wicket':''}" style="display:inline-block;width:9px;margin-right:1px;height:${Math.max(2,46*x.r/mx)}px;background:${x.wk?'#a33328':(ix?'#c8a13a':'#2d6a8f')};vertical-align:bottom"></div>`).join('');
+      const bars=per.map(x=>`<div title="over ${x.o}: ${x.r} run${x.r===1?'':'s'}${x.wk?', wicket':''}" style="display:inline-block;width:9px;margin-right:1px;height:${Math.max(2,46*x.r/mx)}px;background:${x.wk?'#a33328':(ix?'#C08A2E':'#22635F')};vertical-align:bottom"></div>`).join('');
       return `<div class="small"><b>${esc(innings[ix]?innings[ix].batTeam:'')}</b> - runs per over (red = wicket over)</div><div style="height:50px;border-bottom:1px solid #bbb;margin-bottom:8px">${bars}</div>`;
     }).join('');
   }
@@ -3117,8 +3117,8 @@ function pgScorecard(q){
     const axes=`<line x1="${xL}" y1="${yT}" x2="${xL}" y2="${yB}" stroke="#999"/><line x1="${xL}" y1="${yB}" x2="${xR}" y2="${yB}" stroke="#999"/>${yax}${xax}<text x="${(xL+xR)/2}" y="176" font-size="10" fill="#555" text-anchor="middle">Overs</text><text x="11" y="${(yT+yB)/2}" font-size="10" fill="#555" text-anchor="middle" transform="rotate(-90 11 ${(yT+yB)/2})">Total runs</text>`;
     const line=(w,col)=>`<polyline fill="none" stroke="${col}" stroke-width="1.8" points="${w.map(p=>(px(p[0]).toFixed(1))+','+(py(p[1]).toFixed(1))).join(' ')}"/>`+
       w.filter((p,i)=>i>0&&(p[2]||0)>(w[i-1][2]||0)).map(p=>`<circle cx="${px(p[0]).toFixed(1)}" cy="${py(p[1]).toFixed(1)}" r="2.6" fill="#a33328"/>`).join('');
-    return `<svg viewBox="0 0 440 184" width="100%" style="max-width:460px">${axes}${worm[0]?line(worm[0],'#2d6a8f'):''}${worm[1]?line(worm[1],'#c8a13a'):''}</svg>
-     <div class="small"><span style="color:#2d6a8f">■</span> ${esc(innings[0]?innings[0].batTeam:'')} &nbsp; <span style="color:#c8a13a">■</span> ${esc(innings[1]?innings[1].batTeam:'')} &nbsp; ● wicket</div>`;
+    return `<svg viewBox="0 0 440 184" width="100%" style="max-width:460px">${axes}${worm[0]?line(worm[0],'#22635F'):''}${worm[1]?line(worm[1],'#C08A2E'):''}</svg>
+     <div class="small"><span style="color:#22635F">■</span> ${esc(innings[0]?innings[0].batTeam:'')} &nbsp; <span style="color:#C08A2E">■</span> ${esc(innings[1]?innings[1].batTeam:'')} &nbsp; ● wicket</div>`;
   }
   const chartBody=App._scTab==='Partnerships'
     ? innings.filter(Boolean).map(inn=>`<div class="small"><b>${esc(inn.batTeam)}</b></div>${pshipBars(inn)||'<span class="small">-</span>'}`).join('<div style="height:6px"></div>')
@@ -3182,7 +3182,7 @@ function fantasyPoints(r){
   return Object.entries(pts).sort((a,b)=>b[1]-a[1]).slice(0,5);
 }
 function sdot(v,lbl){
-  const _L=SKILLTIP;const col=v>=76?'#1c5537':v>=64?'#2c7a2c':v>=52?'#c8a13a':v>=40?'#c07a3a':'#a33328';
+  const _L=SKILLTIP;const col=v>=76?'#1c5537':v>=64?'#2c7a2c':v>=52?'#C08A2E':v>=40?'#c07a3a':'#a33328';
   return `<span class="sbar" title="${lbl}: ${word(v)} - rank ${wIx(v)+1} of 16\n${_L}"><i style="width:${Math.max(4,Math.min(100,v))}%;background:${col}"></i></span><span class="sknum">${Math.round(v)}</span>`;
 }
 function pshipBars(inn){
@@ -3497,7 +3497,7 @@ function pgNets(){
       else if(['wide','noball','bye','legbye'].includes(k))agg.extras+=R.counts[k];
       else agg[k]=(agg[k]||0)+R.counts[k];
     }
-    const COL={dot:'#9aa79c','1':'#7cb87c','2':'#5aa05a','3':'#3f8f3f','4':'#2d6a8f','6':'#1c5537',wicket:'#a33328',extras:'#c8a13a'};
+    const COL={dot:'#9aa79c','1':'#7cb87c','2':'#5aa05a','3':'#3f8f3f','4':'#22635F','6':'#1c5537',wicket:'#a33328',extras:'#C08A2E'};
     const total=R.n;let a0=-Math.PI/2;let paths='';let legend='';
     for(const k of ['dot','1','2','3','4','6','wicket','extras']){
       const v=agg[k];if(!v)continue;
@@ -3788,7 +3788,7 @@ function mpBanner(){
   const me=myMgrName();
   const myClubIx=names.find(([i,n])=>n===me);
   const waiting=names.filter(([i,n])=>+i!==App.teamIx&&!App.mp.packets[i]).map(([i,n])=>n+' ('+GD.teams[i].name+')');
-  return `<div class="panel" style="border-left:4px solid #2d6a8f"><div class="pad">
+  return `<div class="panel" style="border-left:4px solid #22635F"><div class="pad">
    <b>FRIENDS LEAGUE - Round ${S.round+1} of 18</b> &nbsp;
    <span class="small">You are: </span><select onchange="store('fo_mgr',this.value);if(this.value){const e=${JSON.stringify(0)};}route()" style="font-size:10px">
      <option value="">commissioner / pick name</option>${names.map(([i,n])=>`<option ${me===n?'selected':''}>${esc(n)}</option>`).join('')}</select>
@@ -4681,7 +4681,7 @@ function foWormMini(){
   let xaxis='';for(let o=0;o<=mo;o+=10){const x=px(o);xaxis+=`<line x1="${x.toFixed(1)}" y1="${yB}" x2="${x.toFixed(1)}" y2="${yB+4}" stroke="#999"/><text x="${x.toFixed(1)}" y="${yB+15}" font-size="9" fill="#666" text-anchor="middle">${o}</text>`;}
   const axes=`<line x1="${xL}" y1="${yT}" x2="${xL}" y2="${yB}" stroke="#999"/><line x1="${xL}" y1="${yB}" x2="${xR}" y2="${yB}" stroke="#999"/>${yaxis}${xaxis}<text x="${(xL+xR)/2}" y="205" font-size="10" fill="#555" text-anchor="middle">Overs</text><text x="13" y="${(yT+yB)/2}" font-size="10" fill="#555" text-anchor="middle" transform="rotate(-90 13 ${(yT+yB)/2})">Total runs</text>`;
   const line=(w,col)=>`<polyline fill="none" stroke="${col}" stroke-width="2" points="${w.map(p=>(px(p[0]).toFixed(1))+','+(py(p[1]).toFixed(1))).join(' ')}"/>`+w.filter((p,i)=>i>0&&(p[2]||0)>(w[i-1][2]||0)).map(p=>`<circle cx="${px(p[0]).toFixed(1)}" cy="${py(p[1]).toFixed(1)}" r="3" fill="#a33328"/>`).join('');
-  return `<svg viewBox="0 0 552 214" style="width:100%;max-width:640px;height:240px">${axes}${M.worm[0]?line(M.worm[0],'#2d6a8f'):''}${M.worm[1]?line(M.worm[1],'#c8a13a'):''}</svg><div class="small"><span style="color:#2d6a8f">■</span> ${esc(M.innings[0]?M.innings[0].batTeam:'1st innings')} &nbsp; <span style="color:#c8a13a">■</span> ${esc(M.innings[1]?M.innings[1].batTeam:'2nd innings')} &nbsp; ● wicket</div>`;
+  return `<svg viewBox="0 0 552 214" style="width:100%;max-width:640px;height:240px">${axes}${M.worm[0]?line(M.worm[0],'#22635F'):''}${M.worm[1]?line(M.worm[1],'#C08A2E'):''}</svg><div class="small"><span style="color:#22635F">■</span> ${esc(M.innings[0]?M.innings[0].batTeam:'1st innings')} &nbsp; <span style="color:#C08A2E">■</span> ${esc(M.innings[1]?M.innings[1].batTeam:'2nd innings')} &nbsp; ● wicket</div>`;
 }
 function foOrdersPanel(){
   const O=App.orders||{}; const bat=(O.batOrder||[]).slice(0,11).map((n,i)=>`<tr><td class="n">${i+1}</td><td>${esc(n)}</td></tr>`).join('');
@@ -4794,7 +4794,7 @@ completeRound=function(){
   S.round=roundNo+1; App.round=S.round+1;
   mpInit(); for(const k in App.mp.packets)if(App.mp.packets[k].round<S.round)delete App.mp.packets[k];
   const digest=App.results.filter(r=>r.comp==='league'&&r.round===roundNo).map(r=>`<div class="bl">${esc(r.result.text)} <span class="small">(${esc(r.home)} v ${esc(r.away)})</span></div>`).join('');
-  App._digest=`<div class="panel" style="border-left:4px solid #2d6a8f"><h4>Round ${roundNo+1} digest</h4><div class="pad">${digest}<div class="small" style="margin-top:3px">Round advanced to ${S.round+1}${S.round>=S.schedule.length?' (season complete)':''}. Training applied.</div></div></div>`;
+  App._digest=`<div class="panel" style="border-left:4px solid #22635F"><h4>Round ${roundNo+1} digest</h4><div class="pad">${digest}<div class="small" style="margin-top:3px">Round advanced to ${S.round+1}${S.round>=S.schedule.length?' (season complete)':''}. Training applied.</div></div></div>`;
   saveGame(false); location.hash='#/matches'; pgMatches(); foUpdateLiveTopbar();
 };
 
@@ -4889,7 +4889,7 @@ window.foClubCrest = (function () {
       "<path d='M12 130 L30 124 L30 142 L12 148 L18 139 Z' fill='" + GOLD2 + "'/>" +
       "<path d='M108 130 L90 124 L90 142 L108 148 L102 139 Z' fill='" + GOLD2 + "'/>" +
       "<path d='M28 124 C44 130 76 130 92 124 L92 140 C76 146 44 146 28 140 Z' fill='url(#" + id + "g)' stroke='" + GOLD3 + "' stroke-width='.9'/>" +
-      "<text x='60' y='137.5' text-anchor='middle' font-family='Oswald,sans-serif' font-weight='600' font-size='7.4' fill='#5C4514' letter-spacing='1.6'>CRICKET CLUB</text></g>";
+      "<text x='60' y='137.5' text-anchor='middle' font-family='Inter,sans-serif' font-weight='600' font-size='7.4' fill='#5C4514' letter-spacing='1.6'>CRICKET CLUB</text></g>";
     return "<svg class='fo-arms' width='" + px + "' height='" + Math.round(px * 1.32) + "' viewBox='0 0 120 158'" +
       " role='img' aria-label='" + esc(name || "club") + " crest'>" + defs + coronet + laurel + shieldD + mono + ribbon + "</svg>";
   };

@@ -365,12 +365,10 @@
       // match ball for ball, and inventing the balls is not on offer
       if (rec && rec.__servedCard) {
         return foMrNone("The commentary has aged out",
-          "The umpire keeps every ball of the running season; when a season ends, its commentary goes with it - " +
-          "the scorecard, the chart and the points above are his own record and are kept forever.");
+          "A season&rsquo;s commentary goes when the season ends; the scorecard and the record are kept forever.");
       }
       return foMrNone("The commentary has been let go",
-        "Only the two most recent matches keep their ball-by-ball; older ones are trimmed so a whole career still fits on your phone. " +
-        "The scorecard and the report are kept for every match, forever.");
+        "Only the two most recent matches keep their ball-by-ball; the scorecard and report are kept forever.");
     }
     // the engine writes the log newest-first, which is what a live feed wants
     // and the opposite of what a retelling wants: a match is read from the
@@ -1682,14 +1680,14 @@
       ".fo-mr-ball{display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;align-items:baseline;padding:8px 9px;border-radius:7px;background:#F6F2E6}",
       ".fo-mr-ball b{font-family:Inter,sans-serif;font-size:11px;letter-spacing:.06em;color:#7a7566;font-variant-numeric:tabular-nums}",
       ".fo-mr-ball span{font-family:Fraunces,Georgia,serif;font-size:13.5px;line-height:1.6;color:#2a2b2e}",
-      ".fo-mr-ball.four{background:#E8F0F8}.fo-mr-ball.four b{color:#2d6a8f}",
+      ".fo-mr-ball.four{background:#E8F0F8}.fo-mr-ball.four b{color:#22635F}",
       ".fo-mr-ball.six{background:#FBF0D6}.fo-mr-ball.six b{color:#9a6b12}",
       ".fo-mr-ball.wkt{background:#F8E4E0}.fo-mr-ball.wkt b{color:#A6392B}",
       ".fo-mr-ball.mile{box-shadow:inset 3px 0 0 #C9A24B}",
       ".fo-mr-comm .fo-mr-by{color:#7a7566;border-top:1px solid rgba(20,28,40,.12);margin-top:12px;padding-top:10px}",
       ".fo-mr-cf{display:flex;align-items:center;gap:6px;margin:0 0 12px;flex-wrap:wrap}",
       "html body #page .fo-mr-cf a{min-height:36px;display:inline-flex;align-items:center;padding:0 13px;border-radius:999px;font-family:Inter,sans-serif;text-transform:uppercase;letter-spacing:.13em;font-size:10px;font-weight:600;color:#5c5647 !important;text-decoration:none !important;background:#EFEADA !important;border:1px solid rgba(20,28,40,.10) !important}",
-      "html body #page .fo-mr-cf a.on{color:#0C1B2E !important;background:#F0B94E !important;border-color:#DDA83F !important}",
+      "html body #page .fo-mr-cf a.on{color:#0C1B2E !important;background:#E8B96A !important;border-color:#DDA83F !important}",
       ".fo-mr-cf b{margin-left:auto;font-family:Inter,sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8F6A1C;font-weight:600}",
       ".fo-mr-innmark{margin:14px 0 6px;font-family:Inter,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:10px;font-weight:600;color:#8F6A1C;border-bottom:1px solid rgba(20,28,40,.12);padding-bottom:5px}",
       ".fo-mr-innmark:first-child{margin-top:0}",
@@ -1702,7 +1700,7 @@
       ".fo-mr-foot{display:flex;gap:10px;flex-wrap:wrap;margin-top:38px}",
       "html body #page a.fo-mr-back{font-family:Inter,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:10.5px;font-weight:600;color:#F5EFDC !important;text-decoration:none !important;background:rgba(12,20,36,.6);border:1.5px solid rgba(235,194,113,.42) !important;border-radius:999px !important;padding:11px 19px !important;transition:.16s}",
       "html body #page a.fo-mr-back:hover{color:#F3D37A !important;border-color:var(--gold) !important}",
-      "html body #page a.fo-mr-jump{display:inline-block;margin:0 0 10px;font-family:Inter,sans-serif;text-transform:uppercase;letter-spacing:.18em;font-size:10.5px;font-weight:600;color:#0d1526 !important;text-decoration:none !important;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;border:0 !important;border-radius:999px !important;padding:9px 17px !important;box-shadow:0 5px 16px rgba(230,177,94,.22)}",
+      "html body #page a.fo-mr-jump{display:inline-block;margin:0 0 10px;font-family:Inter,sans-serif;text-transform:uppercase;letter-spacing:.18em;font-size:10.5px;font-weight:600;color:#0d1526 !important;text-decoration:none !important;background:linear-gradient(180deg,#E8B96A,#C9A24B) !important;border:0 !important;border-radius:999px !important;padding:9px 17px !important;box-shadow:0 5px 16px rgba(230,177,94,.22)}",
       "html body #page a.fo-mr-jump:hover{filter:brightness(1.06)}",
       "@media(max-width:900px){.fo-mr-body{grid-template-columns:1fr;gap:24px}.fo-mr-in{padding-top:62px}",
       ".fo-mr-mrow span{display:none}.fo-mr-report p.lead:first-letter{font-size:44px}}",

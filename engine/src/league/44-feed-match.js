@@ -1093,9 +1093,8 @@
     // the footnote below it both describe a book still being written, and
     // both were still saying so an hour after the last ball.
     return "<div class='fd-panel'><div class='fd-ch'>" +
-      (done ? "The scorecard &middot; as the umpire signed it" : "The live scorecard &middot; as the umpire prints it") + "</div>" + out +
-      (done ? ""
-            : "<div class='fd-note'>Current batters read as at the umpire&rsquo;s last end-of-over print; dismissed men are final.</div>") +
+      (done ? "The scorecard" : "The live scorecard") + "</div>" + out +
+      
       "</div>";
   }
   // the partnership ladder: every stand from the umpire's fall-of-wicket

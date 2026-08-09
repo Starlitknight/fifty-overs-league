@@ -195,7 +195,7 @@
       ".fo-dec .fo-dec-in:focus{outline:none;border-color:#C9571F;box-shadow:0 0 0 3px rgba(201,85,47,.16)}",
       ".fo-dec .fo-dec-act{display:flex;gap:8px;margin-top:10px}",
       ".fo-dec button{flex:0 0 auto;min-height:38px;padding:0 16px;border-radius:9px;cursor:pointer;",
-      "font:700 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
+      "font:700 11px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
       ".fo-dec .fo-dec-no{background:transparent;border:1px solid rgba(20,28,40,.24);color:rgba(20,28,40,.7)}",
       ".fo-dec .fo-dec-yes{background:#C9571F;border:1px solid #C9571F;color:#FFFEFC}",
       ".fo-dec.dngr .fo-dec-yes{background:#B3372B;border-color:#B3372B}",
@@ -557,7 +557,7 @@
     var ds = document.createElement("style"); ds.id = "fo-door-css";
     ds.textContent =
       "html body button.fo-door-btn,html body.ftpskin #page button.fo-door-btn{display:inline-block;margin-top:13px;" +
-      "font:700 12px Oswald,sans-serif !important;letter-spacing:.18em;text-transform:uppercase;" +
+      "font:700 12px Inter,sans-serif !important;letter-spacing:.18em;text-transform:uppercase;" +
       "background:#C9571F !important;color:#fff !important;border:none !important;border-radius:10px;" +
       "padding:12px 26px;cursor:pointer;min-height:0}" +
       "html body button.fo-door-btn:hover{background:#B44A22 !important}";
@@ -778,8 +778,8 @@
       var ff = document.createElement("style");
       ff.id = "fo-font";
       ff.textContent =
-        "@font-face{font-family:'Oswald';font-style:normal;font-weight:200 700;font-display:swap;src:url(" + fbase + "oswald-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}" +
-        "@font-face{font-family:'Oswald';font-style:normal;font-weight:200 700;font-display:swap;src:url(" + fbase + "oswald-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}" +
+        "@font-face{font-family:Inter;font-style:normal;font-weight:200 700;font-display:swap;src:url(" + fbase + "oswald-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}" +
+        "@font-face{font-family:Inter;font-style:normal;font-weight:200 700;font-display:swap;src:url(" + fbase + "oswald-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}" +
         "@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url(" + fbase + "inter-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}" +
         "@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url(" + fbase + "inter-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}" +
         // Fraunces: the almanack voice - variable optical-size serif for display

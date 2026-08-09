@@ -21,8 +21,8 @@
     s.textContent = [
       ".fo-tri-hide{display:none !important}",
       "html body #page button.fo-tri-btn{display:flex;align-items:center;gap:10px;width:100%;min-height:52px;margin:10px 0;padding:12px 16px !important;border-radius:13px !important;background:#FFFEFC !important;border:1px solid rgba(27,36,50,.14) !important;box-shadow:0 1px 3px rgba(14,35,63,.05) !important;cursor:pointer;text-align:left}",
-      "html body #page button.fo-tri-btn b{flex:1;min-width:0;font:700 12px/1.3 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#14243A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
-      "html body #page button.fo-tri-btn span{font:700 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22}",
+      "html body #page button.fo-tri-btn b{flex:1;min-width:0;font:700 12px/1.3 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#14243A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      "html body #page button.fo-tri-btn span{font:700 11px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22}",
       "html body #page button.fo-tri-btn s{text-decoration:none;font:400 19px/1 Fraunces,Georgia,serif;color:#B44A22}",
       "html body #page button.fo-tri-btn.dark{background:rgba(255,253,247,.06) !important;border-color:rgba(232,185,106,.35) !important;box-shadow:none !important}",
       "html body #page button.fo-tri-btn.dark b{color:#F1EEE6}",
@@ -51,10 +51,12 @@
   }
   function run() {
     try {
-      if (!mobile()) return;
       var page = document.getElementById("page"); if (!page) return;
       css();
       var h = (location.hash || "").split("?")[0];
+      // the Book of the League is 18 screens on a desk without the fold -
+      // the reading decision applies at every width; the almanack keeps its
+      // fold to phones where the squeeze is real
       if (h === "#/lore") {
         var feats = [].slice.call(page.querySelectorAll(".fo-lx-feat"));
         if (feats.length > 2) {
@@ -63,6 +65,7 @@
             fold(rest, "The other " + rest.length + " legends", true);
         }
       } else if (h === "#/almanack") {
+        if (!mobile()) return;
         [].slice.call(page.querySelectorAll(".fo-al-sec")).slice(2).forEach(function (sec) {
           var head = sec.querySelector("h2,h3");
           fold([sec], head ? head.textContent.trim() : "More of the record", false);

@@ -151,8 +151,8 @@
     // == the match centre ======================================================
     "html body #page .fo-mc{max-width:760px;margin:26px auto 40px;padding:0 14px}",
     "html body #page .fo-mc-hero{background:linear-gradient(150deg,#FFFEFB,#F7F3E9 70%,#F2ECDD) !important;border:1px solid rgba(20,28,40,.09);border-radius:22px;padding:30px 30px 26px;color:#1B2432;box-shadow:0 22px 50px rgba(30,38,52,.13)}",
-    "html body #page .fo-mc-kick{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:#B44A22}",
-    "html body #page .fo-mc-hero h1{font-family:Oswald,sans-serif;font-weight:600;font-size:34px;letter-spacing:.04em;text-transform:uppercase;margin:6px 0 8px;color:#1B2432}",
+    "html body #page .fo-mc-kick{font-family:Inter,sans-serif;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:#B44A22}",
+    "html body #page .fo-mc-hero h1{font-family:Inter,sans-serif;font-weight:600;font-size:34px;letter-spacing:.04em;text-transform:uppercase;margin:6px 0 8px;color:#1B2432}",
     "html body #page .fo-mc-hero p{font:400 14px/1.55 Fraunces,Georgia,serif;font-style:normal;color:rgba(20,28,40,.6);margin:0;max-width:46ch}",
     "html body #page .fo-mc-list{margin-top:14px;display:flex;flex-direction:column;gap:8px}",
     "html body #page .fo-mc-row{display:grid;grid-template-columns:auto 1fr auto 14px;gap:12px;align-items:baseline;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:14px;padding:13px 16px;color:#1B2432;text-decoration:none;box-shadow:0 4px 14px rgba(30,38,52,.06);transition:border-color .15s ease,transform .12s ease}",

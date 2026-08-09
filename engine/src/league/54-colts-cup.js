@@ -208,7 +208,7 @@
       "html body #page .fo-cc-champ i{display:block;font-size:11px;letter-spacing:.1em;text-transform:uppercase;color:#8a6d3b;font-style:normal}",
       "html body #page .fo-cc-champ b{font-family:Fraunces,serif;font-size:20px}",
       "html body #page .fo-cc-purse{background:#fff;border:1px solid #e6e3da;border-radius:12px;padding:12px 16px;margin:12px 0}",
-      "html body #page .fo-cc-purse h4{margin:0 0 8px;font:600 10px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#8a6d3b}",
+      "html body #page .fo-cc-purse h4{margin:0 0 8px;font:600 11px/1 Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#8a6d3b}",
       "html body #page .fo-cc-prow{display:flex;flex-wrap:wrap;gap:8px}",
       "html body #page .fo-cc-prow span{flex:1 1 120px;background:#faf8f2;border:1px solid #eee9dc;border-radius:9px;padding:8px 10px}",
       "html body #page .fo-cc-prow span.me{background:#fdf6e3;border-color:#e8d9ab}",
@@ -226,14 +226,14 @@
       "html body #page .fo-cc-tie .side.me .nm{color:#C9571F}",
       "html body #page .fo-cc-tie .side u{flex:none;text-decoration:none;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:#C9571F}",
       "html body #page .fo-cc-tie .vs{flex:none;font-size:10.5px;color:#b4aa98;font-style:normal}",
-      "html body #page .fo-cc-tie .ff{flex:none;font:600 10px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#C9571F;font-style:normal}",
+      "html body #page .fo-cc-tie .ff{flex:none;font:600 11px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#C9571F;font-style:normal}",
       "html body #page .fo-cc-line{margin:0 0 6px;font-size:12px;color:#8a857c}",
       "html body #page .fo-cc-lead{display:grid;gap:4px}",
       "html body #page .fo-cc-lrow{display:flex;gap:8px;align-items:baseline;padding:5px 0;border-top:1px solid #f0ede4}",
       "html body #page .fo-cc-lrow b{font-size:13.5px}",
       "html body #page .fo-cc-lrow i{flex:1 1 0;min-width:0;font-size:11.5px;color:#98938a;font-style:normal;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       "html body #page .fo-cc-lrow u{text-decoration:none;font-size:12px;color:#6b6862;font-variant-numeric:tabular-nums;white-space:nowrap}",
-      "html body #page .fo-cc-foot{display:flex;justify-content:space-between;gap:10px;margin:18px 0 0;font:600 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
+      "html body #page .fo-cc-foot{display:flex;justify-content:space-between;gap:10px;margin:18px 0 0;font:600 11px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
       "html body #page .fo-cc-foot a{color:#8a6d3b;text-decoration:none}"
     ].join("\n");
     document.head.appendChild(s);

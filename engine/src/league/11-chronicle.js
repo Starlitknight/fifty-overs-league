@@ -12,10 +12,10 @@
       ".fo-sq-nickchip{display:inline-block;background:#F6E3B4;color:#7a5c13;border-radius:7px;padding:1px 7px;font-size:10.5px;font-weight:800;margin-left:6px;vertical-align:1px}" +
       ".fo-cp-prov{background:#F0F4F8;border:1px solid rgba(31,78,107,.16);border-radius:10px;padding:10px 13px;font-size:12.5px;color:#243244;margin-bottom:10px}" +
       ".fo-cp-ev{display:flex;gap:9px;align-items:baseline;font-size:12.5px;margin:4px 0;color:#3a4353}" +
-      ".fo-cp-ev i{font-style:normal;flex:0 0 82px;color:#8A93A2;font-size:11px;font-weight:700;white-space:nowrap}" +
-      ".fo-cp-fr td{color:#8A93A2}.fo-cp-fr td:first-child{font-style:normal}" +
+      ".fo-cp-ev i{font-style:normal;flex:0 0 82px;color:#9FB0C6;font-size:11px;font-weight:700;white-space:nowrap}" +
+      ".fo-cp-fr td{color:#9FB0C6}.fo-cp-fr td:first-child{font-style:normal}" +
       ".fo-cp-fld{font-size:12.5px;color:#3a4353}" +
-      ".fo-fr-tag{display:inline-block;background:#E8EAEE;color:#5a6472;border-radius:6px;padding:0 6px;font-size:10px;font-weight:700;vertical-align:1px;white-space:nowrap}" +
+      ".fo-fr-tag{display:inline-block;background:#E8EAEE;color:#6A6354;border-radius:6px;padding:0 6px;font-size:10px;font-weight:700;vertical-align:1px;white-space:nowrap}" +
       ".fo-cp-tabs{display:flex;gap:6px;margin:10px 0 2px}" +
       "html body #page a.fo-cp-tab{display:inline-block;border:1px solid rgba(28,36,51,.18);background:#FFFEFC;color:#14243A !important;border-radius:999px;padding:4px 14px;font-size:12px;font-weight:800;cursor:pointer;text-decoration:none}" +
       "html body #page a.fo-cp-tab.on{background:#14243A;color:#FFFEFC !important;border-color:#14243A}" +
@@ -40,7 +40,7 @@
       ".fo-race{grid-template-columns:minmax(90px,1fr) minmax(70px,1.2fr) auto;gap:7px}" +
       ".fo-race-l b{font-size:11.5px}.fo-race-l span{font-size:10px}.fo-race-n{font-size:10.5px}}" +
       ".fo-race{display:grid;grid-template-columns:minmax(120px,1.1fr) minmax(90px,1.6fr) auto;gap:10px;align-items:center;margin:7px 0}" +
-      ".fo-race-l b{display:block;font-size:12.5px;color:#14243A;line-height:1.25}.fo-race-l span{font-size:11px;color:#8A93A2}" +
+      ".fo-race-l b{display:block;font-size:12.5px;color:#14243A;line-height:1.25}.fo-race-l span{font-size:11px;color:#9FB0C6}" +
       ".fo-race-bar{height:10px;border-radius:5px;background:#E8EAEE;overflow:hidden}.fo-race-bar i{display:block;height:100%;border-radius:5px;background:linear-gradient(90deg,#4DA6A2,#2b6b68);transition:width .6s ease}" +
       ".fo-race-n{font-size:11.5px;font-weight:800;color:#14243A;white-space:nowrap;font-variant-numeric:tabular-nums}";
     document.head.appendChild(foChCss);
@@ -750,12 +750,12 @@
       }).join("") || "<div class='small'>The story starts with the next matchday.</div>";
       var card = document.createElement("div");
       card.className = "panel fo-keep"; card.id = "fo-career"; card.setAttribute("data-n", name);
-      var mh = function (s0) { return "<div class='small' style='margin:9px 0 4px;text-transform:uppercase;letter-spacing:.07em;font-size:10px;color:#8A93A2'>" + s0 + "</div>"; };
+      var mh = function (s0) { return "<div class='small' style='margin:9px 0 4px;text-transform:uppercase;letter-spacing:.07em;font-size:10px;color:#9FB0C6'>" + s0 + "</div>"; };
       var fsF = (App.fieldStats && App.fieldStats[name]) || { ct: 0, st: 0, ro: 0 };
       var fldBits = [(fsF.ct || 0) + (fsF.ct === 1 ? " catch" : " catches")];
       if (p.keeper || fsF.st) fldBits.push((fsF.st || 0) + (fsF.st === 1 ? " stumping" : " stumpings"));
       fldBits.push((fsF.ro || 0) + (fsF.ro === 1 ? " run-out" : " run-outs"));
-      var fldLine = "<div class='fo-cp-fld'>" + fldBits.join(" &middot; ") + " <span style='color:#8A93A2'>&middot; all matches</span></div>";
+      var fldLine = "<div class='fo-cp-fld'>" + fldBits.join(" &middot; ") + " <span style='color:#9FB0C6'>&middot; all matches</span></div>";
       // one tab per record, FTP-style: a Batting card and a Bowling/Fielding card
       var tabBody = function (entries, perSeason, emptyTxt) {
         var rows = [];
@@ -793,7 +793,7 @@
               "<tr class='fo-cp-tot'><td>Career</td><td class='n'>" + (svB.wkts || 0) +
               "</td><td class='n'>" + (svB.bb ? svB.bb.w + "/" + svB.bb.r : "&ndash;") +
               "</td><td class='n'>" + erV + "</td><td class='n'>" + Math.floor(svB.ovb / 6) + "</td></tr></table></div>" : "") +
-            "<div class='small' style='margin-top:7px;color:#8A93A2'>The umpire's book &middot; updated after every round.</div>";
+            "<div class='small' style='margin-top:7px;color:#9FB0C6'>The umpire's book &middot; updated after every round.</div>";
         }
       } catch (eSvB) {}
       var frHtml = tabBody(frE, false, "No friendlies or practice games yet.");
@@ -894,7 +894,7 @@
           items.sort(function (a, b) { return b.at - a.at; });
           var head0 = rmTb.querySelector("tr");
           var rows2 = items.slice(0, 8).map(function (x) {
-            var cls = x.fr ? "One Day<div class='small' style='color:#8A93A2'>Friendly</div>" : "One Day";
+            var cls = x.fr ? "One Day<div class='small' style='color:#9FB0C6'>Friendly</div>" : "One Day";
             var tCell = x.id ? "<a href='#/friendly?id=" + x.id + "'>" + E(x.teams) + "</a>"
               : (x.sc != null ? "<a href='#/scorecard?i=" + x.sc + "'>" + E(x.teams) + "</a>" : E(x.teams));
             return "<tr><td>" + x.dateTxt + "</td><td>" + cls + "</td><td>" + tCell + "</td><td>" + E(x.bat) + "</td><td>" + E(x.bowl) + "</td><td>-</td></tr>";
@@ -1126,30 +1126,30 @@
 
     var foCommCss = document.createElement("style");
     foCommCss.textContent =
-      "body.ftpskin #ftpcomm .rslt .wicket{background:#DC2626 !important}" +
+      "body.ftpskin #ftpcomm .rslt .wicket{background:#B23230 !important}" +
       "body.ftpskin #ftpcomm .line.wkt .text{color:#8f231b !important}" +
-      "body.ftpskin #ftpcomm .rslt .four{background:#2d6a8f !important}" +
+      "body.ftpskin #ftpcomm .rslt .four{background:#22635F !important}" +
       "#ftpcomm .fo-ctag{font-weight:800;color:#14243A;font-style:normal}" +
       "#ftpcomm .fo-c-mile{background:#f7f2fb;border-bottom:1px solid #e6daf2;padding:4px 8px;color:#6b3fa0;font-style:normal;font-weight:600}" +
       "#ftpcomm .fo-c-fow{background:#fbf0ee;border-bottom:1px solid #efd6cf;padding:4px 8px;color:#8f231b;font-weight:600}" +
       "#ftpcomm .fo-c-flag{background:#fdf7e8;border-bottom:1px solid #efe2bd;padding:4px 8px;color:#7b5a0a}" +
       "#ftpcomm .fo-c-mile .text,#ftpcomm .fo-c-fow .text,#ftpcomm .fo-c-flag .text{float:none;width:auto;padding:0;color:inherit}" +
-      ".fo-trx-gh{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#667085;margin:12px 0 7px}" +
+      ".fo-trx-gh{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:#6A6354;margin:12px 0 7px}" +
       ".fo-trx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(230px,1fr));gap:9px}" +
       ".fo-trx{background:#FFFEFC;border:1px solid #e8e3d6;border-radius:11px;padding:10px 12px}" +
       ".fo-trx-stack{display:flex;height:18px;border-radius:99px;overflow:hidden;margin:8px 0 7px;box-shadow:inset 0 0 0 1px rgba(18,32,58,.08)}" +
       ".fo-trx-stack i{display:flex;align-items:center;justify-content:center;height:100%}" +
       ".fo-trx-stack i em{font-style:normal;font-size:10px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25)}" +
       ".fo-trx-legend{display:flex;flex-wrap:wrap;gap:4px 10px}" +
-      ".fo-trx-lg{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:#667085}" +
+      ".fo-trx-lg{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:#6A6354}" +
       ".fo-trx-lg u{width:8px;height:8px;border-radius:3px;display:inline-block;text-decoration:none}" +
       ".fo-trx-lg b{color:#1B2432}" +
       ".fo-trx>b{font-size:13px;color:#1B2432}" +
       ".fo-trx-chips{display:flex;flex-wrap:wrap;gap:5px;margin-top:7px}" +
-      ".fo-trx-chip{font-size:11px;background:#FFFEFC;border:1px solid #DDD8CF;border-radius:999px;padding:3px 9px;color:#667085}" +
+      ".fo-trx-chip{font-size:11px;background:#FFFEFC;border:1px solid #DDD8CF;border-radius:999px;padding:3px 9px;color:#6A6354}" +
       ".fo-trx-chip b{color:#1B2432}" +
       ".fo-trx-main{background:#fdf3e2;border-color:#ecd9ae;color:#8a5a1d}.fo-trx-main b{color:#8a5a1d}" +
-      ".fo-trx-rest{font-size:12px;color:#667085;font-style:normal}" +
+      ".fo-trx-rest{font-size:12px;color:#6A6354;font-style:normal}" +
       // phones: wide stats tables scroll inside their panel instead of being
       // crushed into ellipsis dots (engine's fo-stattbl is table-layout:fixed)
       "@media(max-width:820px){" +

@@ -45,11 +45,11 @@
       var keys = Object.keys(w).sort(function (a2, b2) { return w[b2] - w[a2]; });
       if (prog === "Rest") return "<div class='fo-trx'><b>Rest</b><div class='fo-trx-rest'>No skill work: the week goes to recovery. Fatigue falls instead of rising.</div></div>";
       var segs = keys.map(function (k) {
-        var c = FO_SK_COLOR[k] || "#667085";
+        var c = FO_SK_COLOR[k] || "#6A6354";
         return "<i style='width:" + w[k] + "%;background:" + c + "' title='" + E(foSkillLabel(k)) + " " + w[k] + "%'>" + (w[k] >= 20 ? "<em>" + w[k] + "</em>" : "") + "</i>";
       }).join("");
       var leg = keys.map(function (k) {
-        return "<span class='fo-trx-lg'><u style='background:" + (FO_SK_COLOR[k] || "#667085") + "'></u>" + E(foSkillLabel(k)) + " <b>" + w[k] + "%</b></span>";
+        return "<span class='fo-trx-lg'><u style='background:" + (FO_SK_COLOR[k] || "#6A6354") + "'></u>" + E(foSkillLabel(k)) + " <b>" + w[k] + "%</b></span>";
       }).join("");
       return "<div class='fo-trx'><b>" + E(prog) + "</b><div class='fo-trx-stack'>" + segs + "</div><div class='fo-trx-legend'>" + leg + "</div></div>";
     };

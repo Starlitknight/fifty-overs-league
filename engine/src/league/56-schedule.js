@@ -48,8 +48,8 @@
   var CLS = { league: "lg", facup: "fa", colts: "co", cup: "ch", playoff: "po", transition: "tr", rest: "re" };
   // the colours, one per competition, defined once so a competition can never
   // wear two different ones on the same page
-  var COL = { lg: "#14243A", fa: "#17636B", co: "#C9571F", po: "#8C2B2B",
-              ch: "#6B3E8F", tr: "#4A5567", re: "rgba(20,28,40,.14)" };
+  var COL = { lg: "#14243A", fa: "#22635F", co: "#C9571F", po: "#B23230",
+              ch: "#C08A2E", tr: "#6A6354", re: "rgba(20,28,40,.14)" };
 
   function label(p) {
     if (p.kind === "league") return "Round " + p.round;
@@ -77,31 +77,31 @@
       "html body #page .fo-sch-hd{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;padding:0 2px 15px;border-bottom:1px solid rgba(20,28,40,.1)}",
       "html body #page .fo-sch-hd h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:33px;letter-spacing:-.02em;line-height:1;margin:0;flex:0 0 auto;color:#14243A}",
       "html body #page .fo-sch-nx{flex:1 1 200px;min-width:0}",
-      "html body #page .fo-sch-nx i{display:block;font-style:normal;font:600 10px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#B44A22}",
+      "html body #page .fo-sch-nx i{display:block;font-style:normal;font:600 11px/1 Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#B44A22}",
       "html body #page .fo-sch-nx b{display:block;font:600 15px/1.2 Inter,sans-serif;margin-top:6px;color:#1B2432}",
       "html body #page .fo-sch-cd{flex:0 0 auto;white-space:nowrap;font:600 15px/1 Inter,sans-serif;font-variant-numeric:tabular-nums;color:rgba(20,28,40,.55)}",
       "html body #page .fo-sch-cd em{font-style:normal;font-size:11px;color:rgba(20,28,40,.34)}",
       "html body #page .fo-sch-tr{display:flex;align-items:center;gap:10px;padding:11px 2px 0}",
       "html body #page .fo-sch-tr u{flex:1;height:3px;border-radius:2px;background:rgba(20,28,40,.1);overflow:hidden;text-decoration:none}",
       "html body #page .fo-sch-tr u b{display:block;height:100%;background:#C9571F}",
-      "html body #page .fo-sch-tr span{font:600 10px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.34)}",
+      "html body #page .fo-sch-tr span{font:600 11px/1 Inter,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.34)}",
       // ---- the legend: a colour and a word ---------------------------------
       "html body #page .fo-sch-lg{display:flex;flex-wrap:wrap;gap:5px 14px;padding:12px 2px 0}",
-      "html body #page .fo-sch-lg span{display:inline-flex;align-items:center;gap:6px;font:600 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.34)}",
+      "html body #page .fo-sch-lg span{display:inline-flex;align-items:center;gap:6px;font:600 11px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.34)}",
       "html body #page .fo-sch-lg i{width:7px;height:7px;border-radius:2px;display:block}",
       // ---- the spine --------------------------------------------------------
       "html body #page .fo-sch-sp{margin-top:14px}",
       "html body #page .fo-sch-wk{display:flex;align-items:center;gap:10px;margin:16px 0 6px}",
-      "html body #page .fo-sch-wk b{font:600 10px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(20,28,40,.34)}",
+      "html body #page .fo-sch-wk b{font:600 11px/1 Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(20,28,40,.34)}",
       "html body #page .fo-sch-wk u{flex:1;border-top:1px solid rgba(20,28,40,.1);text-decoration:none}",
       // the date column, and your own fixture inside the event
-      "html body #page .fo-sch-row .dt{flex:0 0 46px;font:600 10px/1.25 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(20,28,40,.34)}",
+      "html body #page .fo-sch-row .dt{flex:0 0 46px;font:600 11px/1.25 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(20,28,40,.34)}",
       "html body #page .fo-sch-row .dt u{display:block;margin-top:3px;font:500 12px/1 Inter,sans-serif;letter-spacing:0;text-transform:none;color:rgba(20,28,40,.3);text-decoration:none;font-variant-numeric:tabular-nums}",
       "html body #page .fo-sch-rest .dt{flex:0 0 auto;font:500 12px/1 Inter,sans-serif;letter-spacing:0;text-transform:none;color:rgba(20,28,40,.26)}",
       "html body #page .fo-sch-rest .rw{font:500 12px/1 Inter,sans-serif;color:rgba(20,28,40,.26);white-space:nowrap}",
       "html body #page .fo-sch-you{display:flex;align-items:center;gap:7px;margin-top:5px;font:500 13px/1.2 Inter,sans-serif;color:rgba(20,28,40,.55)}",
-      "html body #page .fo-sch-you i{font-style:normal;font:600 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.34);background:rgba(20,28,40,.05);border-radius:4px;padding:4px 6px 3px}",
-      "html body #page .fo-sch-you u{text-decoration:none;font:700 10px/1 Oswald,sans-serif;letter-spacing:.14em;border-radius:4px;padding:4px 7px 3px;color:#FFFEFC}",
+      "html body #page .fo-sch-you i{font-style:normal;font:600 11px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.34);background:rgba(20,28,40,.05);border-radius:4px;padding:4px 6px 3px}",
+      "html body #page .fo-sch-you u{text-decoration:none;font:700 11px/1 Inter,sans-serif;letter-spacing:.14em;border-radius:4px;padding:4px 7px 3px;color:#FFFEFC}",
       "html body #page .fo-sch-you.w u{background:#2F6B45}",
       "html body #page .fo-sch-you.l u{background:#8C2B2B}",
       "html body #page .fo-sch-you.t u{background:#6b6355}",
@@ -316,8 +316,7 @@
 
     var fine = "<p class='fo-sch-fine'>All times shown on your own clock" +
       (hourTxt ? " &middot; " + E(myNat || "your league") + " plays at " + hourTxt : "") +
-      " &middot; orders lock at the first ball &middot; the nets, scouting and the market run on the rest days" +
-      " &middot; day 38 turns the year: everyone ages, the oldest retire, and clubs go up and down.</p>";
+      " &middot; orders lock at the first ball &middot; day 38 turns the year.</p>";
 
     page.innerHTML = "<div class='fo-sch'>" + head + legend + body + fine + "</div>";
 
