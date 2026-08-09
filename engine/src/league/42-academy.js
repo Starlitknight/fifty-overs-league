@@ -186,33 +186,44 @@
       "</div></div>";
   }
 
-  // THE SCOUTING TRIP. One a rest day, a nation of your choosing, and the boy
-  // is shown in full before you decide - because the decision IS the reading.
+  function flagOf(rid) {
+    var base = (typeof FO_ART !== "undefined") ? FO_ART : "client/art/";
+    try { return base + "flags/" + window.__foCxAPI.flagFile(rid) + ".svg"; } catch (e) { return ""; }
+  }
+  // THE POSTED SCOUT (068), the way From the Pavilion runs him: a man with a
+  // suitcase, not a button. He works in ONE country until you move him; each
+  // rest day's boy comes from where he stands. The board says where he is,
+  // what a report from there costs, and when the next one lands - and moving
+  // him is one inline choice, not a dialog.
   function scoutHTML(ac) {
     var pend = ac.pending;
     if (pend && pend.recruit) return recruitHTML(pend, ac);
 
+    var posted = ac.scoutNation || ac.country;
     var nations = ac.nations || [];
+    var here = nations.filter(function (n) { return n.id === posted; })[0] || { id: posted, name: posted, fee: 0 };
     var opts = nations.map(function (n) {
-      return "<option value='" + E(n.id) + "'" + (n.id === ac.country ? " selected" : "") + ">" +
+      return "<option value='" + E(n.id) + "'" + (n.id === posted ? " selected" : "") + ">" +
         E(n.name) + (Number(n.fee) ? " · " + money(n.fee) : " · home, free") + "</option>";
     }).join("");
+    var fl = flagOf(posted);
+    var board =
+      "<div class='fo-ac-post'>" +
+      (fl ? "<img class='pf' src='" + fl + "' alt='' onerror=\"this.style.visibility='hidden'\">" : "") +
+      "<div class='pw'><i>Your scout is in</i><b>" + E(here.name || posted) + "</b>" +
+      "<u>" + (Number(here.fee) ? "a report from there costs " + money(here.fee) : "home ground &middot; his reports are free") + "</u></div>" +
+      "<label class='mv'><select id='fo-ac-nat' aria-label='Post the scout'>" + opts + "</select><s>Move him</s></label>" +
+      "</div>";
 
     if (!ac.restDay) {
-      return "<div class='fo-ac-note'><b>Cricket on today.</b> The scout travels on rest days.</div>";
+      return board + "<div class='fo-ac-note'><b>Cricket on today.</b> His next report comes on the next rest day.</div>";
     }
     if (ac.scoutedToday) {
-      return "<div class='fo-ac-note'><b>Today&rsquo;s trip is made.</b> Out again on the next rest day.</div>";
+      return board + "<div class='fo-ac-note'><b>Today&rsquo;s report is in.</b> The next on the next rest day, from wherever he stands.</div>";
     }
-    return "<div class='fo-ac-scout'>" +
-      "<div class='fo-ac-srow'><select id='fo-ac-nat' class='fo-ac-sel'>" + opts + "</select>" +
-      "<button type='button' class='fo-ac-btn' id='fo-ac-go'>Scout a recruit</button></div>" +
-      // WHAT A NATION LEANS TOWARD, in a line. The paragraph this replaces
-      // spent forty-six words saying that no country is better than another,
-      // which is the one thing a manager can work out by seeing the same
-      // prices on every door.
-      "<div class='fo-ac-note thin'>A country leans toward its own kind of cricketer. None of them is a better shop.</div>" +
-      "</div>";
+    return board +
+      "<div class='fo-ac-srow one'><button type='button' class='fo-ac-btn' id='fo-ac-go'>Bring me his report</button></div>" +
+      "<div class='fo-ac-note thin'>A country leans toward its own kind of cricketer. None of them is a better shop.</div>";
   }
 
   // THE BOY ON THE TABLE. Everything about him, and two buttons.
@@ -227,6 +238,9 @@
         "<div class='fo-ac-oh'><div><b>" + E(p.name) + "</b>" +
           "<i>" + E(roleOf(p)) + " &middot; " + E(p.age) + " years old &middot; found in " + E((nat && nat.name) || pend.nation) + "</i></div>" +
           (rb ? "<u class='rng'>" + (+rb.lo) + "&ndash;" + (+rb.hi) + "</u>" : "") + "</div>" +
+        // THE WHISPER - the scout's one sentence on how much growing is left.
+        // It is an opinion sharpened by the academy's level, never a number.
+        (p.whisper ? "<div class='fo-ac-whisper'>&ldquo;" + E(p.whisper) + "&rdquo;<i>&mdash; your scout</i></div>" : "") +
         "<div class='fo-ac-orow'>" +
           "<span><i>Wage if signed</i><b>" + wage(p.wage) + "</b><u>a round, every round</u></span>" +
           "<span><i>He is yours for</i><b>" + yearsLeft(p.age) + "</b><u>" + (yearsLeft(p.age) === 1 ? "season" : "seasons") + "</u></span>" +
@@ -311,11 +325,17 @@
       (boys.length ? list : "<div class='fo-ac-card'><h3>On the books<span>0 of " + floor + "</span></h3>" + list + "</div>") +
       "");
 
+    // moving the scout is its own deed: the select IS the control
+    var natSel = document.getElementById("fo-ac-nat");
+    if (natSel) natSel.addEventListener("change", function () {
+      rpc("world_scout_post", { p_nation: natSel.value })
+        .then(function () { window.foRenderAcademyPage && foRenderAcademyPage(); })
+        .catch(function (e2) { try { window.foSayAt && foSayAt(natSel, String((e2 && e2.message) || e2), "error"); } catch (e3) {} });
+    });
     var go = document.getElementById("fo-ac-go");
     if (go) go.addEventListener("click", function () {
-      var sel2 = document.getElementById("fo-ac-nat");
       go.disabled = true; go.textContent = "Travelling…";
-      rpc("world_scout", { p_nation: sel2 ? sel2.value : ac.country })
+      rpc("world_scout", { p_nation: null })
         .then(function () { window.foRenderAcademyPage(); })
         .catch(function (e) { go.disabled = false; go.textContent = "Scout a recruit"; sayAt(go, String(e.message).slice(0, 200)); });
     });
@@ -472,6 +492,22 @@
       "html body #page .fo-ac-p{font:400 13px/1.6 Inter,sans-serif;color:rgba(20,28,40,.72);margin:0 0 10px}",
       "html body #page .fo-ac-p:last-child{margin-bottom:0}",
       "html body #page .fo-ac-note{font:400 12.5px/1.5 Fraunces,Georgia,serif;color:rgba(20,28,40,.55);margin-top:10px}",
+      // the scout's board: a navy plate, his flag, and one ghost control
+      "html body #page .fo-ac-post{display:flex;align-items:center;gap:14px;background:linear-gradient(135deg,#0B1D33,#132E4E);border-radius:14px;padding:14px 16px;box-shadow:0 12px 28px rgba(11,29,51,.24)}",
+      "html body #page .fo-ac-post .pf{width:44px;height:30px;object-fit:cover;border-radius:3px;box-shadow:0 0 0 1.5px rgba(235,194,113,.5);flex:none}",
+      "html body #page .fo-ac-post .pw{flex:1;min-width:0}",
+      "html body #page .fo-ac-post .pw i{display:block;font:600 9px/1 Oswald,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#EBC271;font-style:normal;margin-bottom:4px}",
+      "html body #page .fo-ac-post .pw b{display:block;font:600 19px/1.1 Fraunces,Georgia,serif;color:#FFFEFC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      "html body #page .fo-ac-post .pw u{display:block;text-decoration:none;font:400 11px/1.5 Inter,system-ui,sans-serif;color:rgba(244,239,228,.62);margin-top:2px}",
+      "html body #page .fo-ac-post .mv{position:relative;flex:none;display:flex;flex-direction:column;align-items:flex-end;gap:4px}",
+      "html body #page .fo-ac-post .mv select{appearance:none!important;-webkit-appearance:none!important;max-width:150px;min-height:34px!important;padding:0 16px 0 4px!important;border:0!important;border-bottom:1px solid rgba(235,194,113,.5)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;font:600 12px/1 Inter,system-ui,sans-serif!important;color:#F4EFE4!important;cursor:pointer;text-overflow:ellipsis}",
+      "html body #page .fo-ac-post .mv:after{content:'\\25BE';position:absolute;right:2px;top:10px;pointer-events:none;font-size:9px;color:#EBC271}",
+      "html body #page .fo-ac-post .mv select option{color:#141C28;background:#FFFEFC}",
+      "html body #page .fo-ac-post .mv s{text-decoration:none;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,239,228,.5)}",
+      "html body #page .fo-ac-srow.one{margin-top:12px}",
+      // the whisper: the scout speaks, and the page keeps his voice
+      "html body #page .fo-ac-whisper{font:400 14.5px/1.55 Fraunces,Georgia,serif;font-style:italic;color:#2A2519;border-left:3px solid #C9571F;padding:6px 2px 6px 12px;margin:10px 0 2px}",
+      "html body #page .fo-ac-whisper i{display:block;font-size:11px;font-style:normal;color:rgba(20,28,40,.5);margin-top:3px}",
       "html body #page .fo-ac-lvl{display:flex;align-items:center;gap:12px;flex-wrap:wrap}",
       "html body #page .fo-ac-pips{display:flex;flex-wrap:wrap;gap:4px}",
       "html body #page .fo-ac-pip{display:block;width:15px;height:15px;border-radius:5px;background:rgba(20,28,40,.1);border:1px solid rgba(20,28,40,.14)}",

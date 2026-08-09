@@ -149,6 +149,11 @@ export function makeRecruit(host, nat, arch, tier, seed) {
   // mistaken for training he has not done
   boy.baseSkills = JSON.parse(JSON.stringify(boy.skills || {}));
   boy.baseExp = boy.exp;
+  // HIS BIRTH SEED RIDES WITH HIM. The hidden growth rate (youthPot) is a
+  // pure function of this seed - stored like matches.seed is stored, as the
+  // input to a derivation, never the answer. The formula lives only on the
+  // server, so the seed on his card tells a reader nothing.
+  boy.yseed = seed;
   delete boy.career; delete boy.formIx; delete boy.formWord;
   delete boy.fatN; delete boy.fatWord; delete boy.trainProgress;
   return boy;
@@ -181,6 +186,71 @@ function archOf(host, country) {
   return r ? { nat: r.nat, arch: r.arch } : { nat: 'England', arch: 'balanced' };
 }
 
+// ---------------------------------------------------------------------------
+// THE HIDDEN RATE — the one thing about a boy nobody is shown.
+//
+// Until now the academy's whole game was the starting card: the nets moved
+// every boy at the same lawful pace, so what he was at sixteen was what he
+// would be at twenty-one, give or take a tenth. From the Pavilion's academy
+// plays a deeper game, and this world now plays it too: every boy carries a
+// GROWTH RATE, seeded at birth, never stored, never served. Most boys train
+// at about the ordinary pace. A rare one is a late bloomer who gains at
+// better than twice it - a boy whose card undersold him. A few are already
+// close to their ceiling. Seniors are untouched: the rate expires with the
+// academy, at twenty-one, like everything else about being a boy.
+//
+// The rate is a pure function of the boy's birth seed (yseed, stamped at
+// makeRecruit). Nothing writes it anywhere; the umpire computes it at the
+// moment the nets are replayed, and the formula lives in this file only -
+// not in the shipped client - so no card, no read RPC and no bundle betrays
+// it. A manager learns a boy's rate the only honest way: by watching him
+// season over season. Boys signed before the seed existed fall back to a
+// hash of who they are, so their rate is just as fixed and just as hidden.
+// ---------------------------------------------------------------------------
+// FNV alone clusters on near-identical keys (the planet learned this the
+// hard way); the rate must be honestly uniform, so its draw is avalanched
+function mix01(s) {
+  let h = h32(s);
+  h ^= h >>> 15; h = Math.imul(h, 2246822519) >>> 0;
+  h ^= h >>> 13; h = Math.imul(h, 3266489917) >>> 0;
+  h ^= h >>> 16;
+  return (h >>> 0) / 4294967296;
+}
+export function youthPot(boy) {
+  const seed = (boy && boy.yseed) || ('ypotfb|' + ((boy && boy.name) || '') + '|' + ((boy && (boy.from || boy.nat)) || ''));
+  const r = mix01('ypot|' + seed);
+  // mass at the ordinary pace, a thin honest tail of late bloomers:
+  // r=0 -> 0.75x, median ~1.0x, one boy in fourteen over 2x, best ~2.9x
+  return Math.round((0.75 + 0.5 * r + 1.65 * Math.pow(r, 9)) * 100) / 100;
+}
+
+// THE SCOUT'S WHISPER - his opinion of the hidden rate, in words.
+//
+// From the Pavilion's scouts never hand you a number; they hand you a
+// sentence, and the sentence is right more often from a better academy.
+// The whisper is the hidden rate read through seeded noise: a level-one
+// academy's man mishears by up to a third, a level-ten's by a twentieth.
+// The WORDS are stored on the boy's card (words carry no formula); the rate
+// itself still exists nowhere but the derivation.
+const WHISPERS = [
+  [2.1,  'the best young talent I have seen in years - sign him and clear a shirt'],
+  [1.6,  'he will grow far past this card, mark me'],
+  [1.25, 'there is real growth left in him'],
+  [0.95, 'he will come along at the usual pace'],
+  [0.8,  'what you see is close to what you will get'],
+  [0,    'near the finished article already, for better or worse']
+];
+export function whisperOf(pot, level, seed) {
+  const noise = 0.7 - 0.06 * Math.max(1, Math.min(10, +level || 1));
+  const heard = pot * (1 + (mix01('wn|' + seed) - 0.5) * noise);
+  for (const [cut, words] of WHISPERS) if (heard >= cut) return words;
+  return WHISPERS[WHISPERS.length - 1][1];
+}
+export function withWhisper(boy, level) {
+  if (boy) boy.whisper = whisperOf(youthPot(boy), level, boy.yseed || boy.name || '');
+  return boy;
+}
+
 // THE SEED A SCOUTING TRIP RUNS ON. One boy per club per world day per nation,
 // and the academy level is in it - so a club that builds a better academy is
 // not handed the same boys it would have been handed anyway.
@@ -191,7 +261,7 @@ export function scoutRecruit(host, { country, slot, worldDay, nation, level }) {
   const cfg = archOf(host, nation);
   const seed = scoutSeed(country, slot, worldDay, nation, level);
   const tier = tierOf(level, seed);
-  const boy = makeRecruit(host, cfg.nat, cfg.arch, tier, seed);
+  const boy = withWhisper(makeRecruit(host, cfg.nat, cfg.arch, tier, seed), level);
   return boy ? { tier, nation, recruit: boy } : null;
 }
 
@@ -213,7 +283,7 @@ export function foundAcademy(host, country, slot, level, tag) {
   // through no decision of anybody's. Walk on past the collision instead.
   for (let i = 0; out.length < ACADEMY_FLOOR && i < ACADEMY_FLOOR * 6; i++) {
     const seed = 'academy|' + country + '|' + slot + '|' + (tag || 'found') + '|' + i;
-    const boy = makeRecruit(host, cfg.nat, cfg.arch, tierOf(level, seed), seed);
+    const boy = withWhisper(makeRecruit(host, cfg.nat, cfg.arch, tierOf(level, seed), seed), level);
     if (boy && !out.some(y => y.name === boy.name)) out.push(boy);
   }
   return out;
@@ -236,7 +306,7 @@ export async function stockAcademies(pool, host, country, { worldDay }) {
     const joined = await joinedNow(pool, country, c.slot);
     while (youth.length < ACADEMY_FLOOR && n < ACADEMY_FLOOR * 3) {
       const seed = 'stock|' + country + '|' + c.slot + '|d' + worldDay + '|' + (n++);
-      const boy = makeRecruit(host, cfg.nat, cfg.arch, tierOf(c.academy, seed), seed);
+      const boy = withWhisper(makeRecruit(host, cfg.nat, cfg.arch, tierOf(c.academy, seed), seed), c.academy);
       if (boy && !youth.some(y => y && y.name === boy.name)) { boy.joined = joined; youth.push(boy); added++; }
     }
     await pool.query('UPDATE clubs SET youth=$3::jsonb WHERE country_id=$1 AND slot=$2',
@@ -269,7 +339,7 @@ export async function dealYouthToAll(pool, host, country, { count = 16 } = {}) {
     // been here all along and work every round the club has ever banked
     while (youth.length < count && n < count * 4) {
       const seed = 'deal16|' + country + '|' + c.slot + '|' + (n++);
-      const boy = makeRecruit(host, cfg.nat, cfg.arch, tierOf(c.academy, seed), seed);
+      const boy = withWhisper(makeRecruit(host, cfg.nat, cfg.arch, tierOf(c.academy, seed), seed), c.academy);
       if (boy && !youth.some(y => y && y.name === boy.name)) { youth.push(boy); added++; }
     }
     await pool.query('UPDATE clubs SET youth=$3::jsonb WHERE country_id=$1 AND slot=$2',

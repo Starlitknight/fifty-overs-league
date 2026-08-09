@@ -125,7 +125,12 @@ globalThis.__svcTrain = function (playersJson, planJson, rate, xiJson) {
     worked[p.name] = { p: prog, f: (ent.f && PROGS[prog] && PROGS[prog][ent.f] !== undefined) ? ent.f : null };
     if (prog === 'Rest' || !PROGS[prog]) return;
     var pts = 24 * ageFactor(p.age || 27) * potFactor(p) * fresh(p) * RATE * intensityOf(p)
-            * (xiSet ? (xiSet[p.name] ? 1 : 0.5) : 1);
+            * (xiSet ? (xiSet[p.name] ? 1 : 0.5) : 1)
+            // THE HIDDEN RATE (068): a boy's seeded growth multiplier, set by
+            // the replay on the crew copy only - absent on every senior and
+            // on every crew built before the rate existed, so history replays
+            // exactly as it always did
+            * ((+p.__ypot > 0) ? +p.__ypot : 1);
     if (prog === 'All-rounder') pts *= 0.85;
     var w = focusWeights(prog, ent.f) || PROGS[prog], total = 0;
     for (var k in w) total += w[k];

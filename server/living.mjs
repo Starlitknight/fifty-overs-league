@@ -23,6 +23,7 @@
 // identical match forever after.
 import { dayIx, dayOfRound } from './clock.mjs';
 import { fantasyPoints, ratePoints } from './ratings.mjs';
+import { youthPot } from './youth.mjs';
 
 const FORMW = ['abysmal', 'poor', 'shaky', 'steady', 'good', 'strong', 'excellent'];
 const EXPLAD = ['atrocious', 'dreadful', 'poor', 'ordinary', 'average', 'reasonable',
@@ -276,7 +277,7 @@ async function trainedSquad(pool, host, country, slot, squad, hist = null, youth
     // eleven trained at half pace that day, and a sixteen-year-old was never
     // in contention to be left out of anything. So the boys are worked with
     // no teamsheet at all - full session, every round they were here for.
-    const runCrew = (pool2, xi) => {
+    const runCrew = (pool2, xi, isBoys) => {
       const here = [];
       pool2.forEach((p, i) => {
         if (wasHere(p, r) && !away.has(r.season_no + '|' + r.round + '|' + p.name)) here.push(i);
@@ -284,15 +285,23 @@ async function trainedSquad(pool, host, country, slot, squad, hist = null, youth
       if (!here.length) return null;
       const crew = here.map(i => Object.assign({}, pool2[i],
         back ? { age: Math.max(16, (pool2[i].age || 27) - back) } : null,
-        { fatN: 0, fatWord: 'rested', fatigue: 'rested' }));
+        { fatN: 0, fatWord: 'rested', fatigue: 'rested' },
+        // THE HIDDEN RATE rides the crew copy and only the crew copy: a boy
+        // trains at his seeded pace, and the rate is stripped again below so
+        // no read surface ever serves it. Seniors never carry one.
+        isBoys ? { __ypot: youthPot(pool2[i]) } : null));
       const res = host.trainRound(crew, r.plan || {},
         academyRate(r.academy) * coachRate(r.coach), xi);
-      // the work is his; the age he is today is still today's
-      here.forEach((i, k) => { pool2[i] = Object.assign({}, res.players[k], { age: pool2[i].age }); });
+      // the work is his; the age he is today is still today's - and the
+      // rate goes back in the drawer
+      here.forEach((i, k) => {
+        pool2[i] = Object.assign({}, res.players[k], { age: pool2[i].age });
+        delete pool2[i].__ypot;
+      });
       return res;
     };
-    const out = runCrew(men, Array.isArray(r.xi) ? r.xi : null);
-    const outY = boys.length ? runCrew(boys, null) : null;
+    const out = runCrew(men, Array.isArray(r.xi) ? r.xi : null, false);
+    const outY = boys.length ? runCrew(boys, null, true) : null;
     if (!out && !outY) continue;
     if (hist) {
       for (const res of [out, outY]) {
