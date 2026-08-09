@@ -142,7 +142,7 @@
       "html body #page button.fo-si-row.on{background:linear-gradient(90deg,rgba(232,185,106,.18),rgba(232,185,106,0) 70%) !important;box-shadow:inset 3px 0 0 var(--gd) !important}",
       ".fo-si-thumb{width:36px;height:36px;border-radius:9px;display:block;object-fit:cover;object-position:50% 20%;background:#16283F;box-shadow:0 0 0 1px rgba(27,36,50,.16)}",
       ".fo-si-rid{min-width:0}",
-      ".fo-si-rid b{display:block;font:600 13.5px/1.2 Fraunces,Fraunces,Georgia,serif;color:var(--nv);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}",
+      ".fo-si-rid b{display:block;font:650 13.5px/1.2 Inter,sans-serif;color:var(--nv);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}",
       ".fo-si-rid b:hover{color:#B44A22;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}",
       ".fo-si-rid b:focus-visible{outline:2px solid #C9571F;outline-offset:1px;border-radius:3px}",
       ".fo-si-rid i{display:block;margin-top:3px;font:600 11px/1 Inter,sans-serif;font-style:normal;letter-spacing:.15em;text-transform:uppercase;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",

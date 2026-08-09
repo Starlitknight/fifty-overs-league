@@ -602,7 +602,7 @@
       // use - "34.20" read as a decimal and meant nothing at a glance
       if (c.k === "age") {
         var ag9 = foAgeParts(p);
-        return "<td class='n c-age' title='" + E(foAgeLong(p)) + "'>" + ag9.y + "y " + ag9.d + "d</td>";
+        return "<td class='n c-age' title='" + E(foAgeLong(p)) + "'>" + ag9.y + "y " + (ag9.d < 10 ? "&#8199;" : "") + ag9.d + "d</td>";
       }
       if (c.k === "wage") return "<td class='n c-wage'>" + (typeof money === "function" ? money(p.wage || 0) : "$" + (p.wage | 0)) + "</td>";
       if (c.k === "form") return "<td class='n c-form'>" + foSqFormGlyph(p) + "</td>";
@@ -1577,14 +1577,7 @@
       // one below the title - the same three words in two different shapes,
       // moving as you toggled. There is one switch now, the Grid/Int one, and
       // the roster shows it where the other two do.
-      var band =
-        "<div class='fo-s2-bandwrap'>" +
-        "<div class='fo-s2-band'>" +
-        "<div class='fo-s2-cell'><span>Total players</span><b>" + seniors.length + (youths.length ? "<i> +" + youths.length + " youth</i>" : "") + "</b></div>" +
-        "<div class='fo-s2-cell'><span>Avg age</span><b>" + ageAvg.toFixed(1) + "</b></div>" +
-        "<div class='fo-s2-cell'><span>Overseas</span><b>" + overseas.length + "</b></div>" +
-        "<div class='fo-s2-cell wage'><span>Weekly wages</span><b>" + foS2Money(wageSum) + "</b></div>" +
-        "</div></div>";
+      var band = "";
 
       var header =
         "<header class='fo-s2-hd'>" +
