@@ -95,9 +95,12 @@
       "html body #page .fo-sch-wk b{font:600 11px/1 Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(20,28,40,.34)}",
       "html body #page .fo-sch-wk u{flex:1;border-top:1px solid rgba(20,28,40,.1);text-decoration:none}",
       // the date column, and your own fixture inside the event
-      "html body #page .fo-sch-row .dt{flex:0 0 46px;font:600 11px/1.25 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:rgba(20,28,40,.34)}",
-      "html body #page .fo-sch-row .dt u{display:block;margin-top:3px;font:500 12px/1 Inter,sans-serif;letter-spacing:0;text-transform:none;color:rgba(20,28,40,.3);text-decoration:none;font-variant-numeric:tabular-nums}",
-      "html body #page .fo-sch-rest .dt{flex:0 0 auto;font:500 12px/1 Inter,sans-serif;letter-spacing:0;text-transform:none;color:rgba(20,28,40,.26)}",
+      "html body #page .fo-sch-row .dt{flex:0 0 50px;font:700 11px/1.25 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#4A4438}",
+      "html body #page a.fo-sch-row{text-decoration:none !important;color:inherit !important;cursor:pointer}",
+      "html body #page a.fo-sch-row:hover{border-color:rgba(201,87,31,.45)}",
+      ".fo-sch-tz{font:700 11px/1.2 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6A6354;text-align:right;margin:6px 0 10px}",
+      "html body #page .fo-sch-row .dt u{display:block;margin-top:3px;font:500 12px/1 Inter,sans-serif;letter-spacing:0;text-transform:none;color:#6A6354;text-decoration:none;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-sch-rest .dt{flex:0 0 auto;font:500 12px/1 Inter,sans-serif;letter-spacing:0;text-transform:none;color:#6A6354}",
       "html body #page .fo-sch-rest .rw{font:500 12px/1 Inter,sans-serif;color:rgba(20,28,40,.26);white-space:nowrap}",
       "html body #page .fo-sch-you{display:flex;align-items:center;gap:7px;margin-top:5px;font:500 13px/1.2 Inter,sans-serif;color:rgba(20,28,40,.55)}",
       "html body #page .fo-sch-you i{font-style:normal;font:600 11px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.34);background:rgba(20,28,40,.05);border-radius:4px;padding:4px 6px 3px}",
@@ -242,13 +245,24 @@
     if (myHour == null || !(myHour >= 0)) { try { myHour = pl.natHour("eng"); } catch (eH) { myHour = 14; } }
     var hourTxt = hh(myHour);
 
-    // the forty-two days, each one asked of the clock
+    // the forty-two days, each one asked of the clock - and every hour is
+    // printed on the reader's own clock, not the nation's UTC hour
+    var tzShort = "";
+    try {
+      tzShort = (new Intl.DateTimeFormat([], { timeZoneName: "short" })
+        .formatToParts(new Date()).find(function (q) { return q.type === "timeZoneName"; }) || {}).value || "";
+    } catch (eTz) {}
+    var localHM = function (t) {
+      try { return new Date(t).toLocaleTimeString([], { hour: "numeric", minute: "2-digit" }); }
+      catch (eL) { return hh(myHour); }
+    };
     var days = [];
     for (var di = 0; di < 42; di++) {
       var p = dayPhase(pl, season, di);
+      var playing = p.kind !== "rest" && p.kind !== "transition";
       days.push({ di: di, p: p, cls: CLS[p.kind] || "re",
         rest: p.kind === "rest", fin: p.stage === "final",
-        hr: (p.kind === "rest" || p.kind === "transition") ? "" : hourTxt });
+        hr: playing ? localHM(ballAt(pl, season, di, myHour)) : "" });
     }
     // the next first ball still ahead of the clock - not merely the next day
     // with cricket on it, because on a match afternoon that day is today and
@@ -271,11 +285,7 @@
       "<u><b style='width:" + Math.max(0, Math.min(100, Math.round(((today + 1) / 42) * 100))) + "%'></b></u>" +
       "<span>42</span></div>";
 
-    var legend = "<div class='fo-sch-lg'>" +
-      [["lg", "League"], ["fa", "Cup"], ["co", "Colts"], ["po", "Play-offs"],
-       ["ch", "Champions"], ["tr", "New year"]].map(function (k) {
-        return "<span><i style='background:" + COL[k[0]] + "'></i>" + k[1] + "</span>";
-      }).join("") + "</div>";
+    var legend = tzShort ? "<div class='fo-sch-tz'>Times in " + E(tzShort) + " &middot; your clock</div>" : "";
 
     var seat = mySeat(pl);
     var body = "<div class='fo-sch-sp'>";
@@ -304,19 +314,23 @@
         } else if (x.p.kind === "league" && seat) {
           mine = "<span class='fo-sch-you none'>Draw not made</span>";
         }
-        body += "<div class='fo-sch-row" + (x.fin ? " fin" : "") + (isToday ? " today" : "") +
+        var pv = "";
+        if (fx && fx.opp && fx.opp.slot != null && seat) {
+          var hS = fx.home ? seat.slot : (fx.opp.slot | 0), aS = fx.home ? (fx.opp.slot | 0) : seat.slot;
+          pv = "#/preview?n=" + encodeURIComponent(seat.rid) + "&r=" + x.p.round + "&h=" + hS + "&a=" + aS;
+        }
+        var tag9 = pv ? "a href='" + pv + "'" : "div";
+        body += "<" + tag9 + " class='fo-sch-row" + (x.fin ? " fin" : "") + (isToday ? " today" : "") +
           "' style='--c:" + COL[x.cls] + "'>" +
           "<span class='dn'>" + (x.di + 1) + "</span>" +
           "<span class='dt'>" + E(WD[x.di % 7]) + "<u>" + E(dayDate(pl, season, x.di)) + "</u></span>" +
-          "<span class='ev'>" + label(x.p) + mine + "</span>" +
-          "<span class='hr'>" + (x.hr || "&mdash;") + "</span></div>";
+          "<span class='ev'>" + (x.p.kind === "league" ? label(x.p) : longOf(x.p)) + mine + "</span>" +
+          "<span class='hr'>" + (x.hr || "&mdash;") + "</span></" + (pv ? "a" : "div") + ">";
       }
     }
     body += "</div>";
 
-    var fine = "<p class='fo-sch-fine'>All times shown on your own clock" +
-      (hourTxt ? " &middot; " + E(myNat || "your league") + " plays at " + hourTxt : "") +
-      " &middot; orders lock at the first ball &middot; day 38 turns the year.</p>";
+    var fine = "";
 
     page.innerHTML = "<div class='fo-sch'>" + head + legend + body + fine + "</div>";
 
