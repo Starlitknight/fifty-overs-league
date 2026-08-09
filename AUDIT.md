@@ -30,7 +30,7 @@
 
 ## 2 · Visual hierarchy failures
 
-1. **The scrolled sub-nav goes transparent on desktop.** Once the page scrolls, CLUB/TOURNAMENTS/WORLD/RECORD float over page content with no ground behind them (screenshots: training, schedule). Every desktop page inherits this collision. Worst single shell defect.
+1. ~~The scrolled sub-nav goes transparent on desktop.~~ **CORRECTED in Phase 3:** this was an artifact of the audit's own test harness (it force-hid the login overlay without running its close path, leaving the overlay's intended scroll-lock behind, which broke `position:sticky`). With the overlay closed properly the masthead sticks and the nav keeps its ground — confirmed by re-test and by the live phone screenshots. No player-facing defect.
 2. **Topbar right corner is a pile-up.** The status toast ("New club setup pending") renders on top of the season/clock chip; bell, chip and toast all fight for the same corner (visible in all four phone screenshots).
 3. **Squad roster buries the numbers it exists to compare.** Names truncate ("Sebastian …", badge clipped to "ROCK…"), a dangling "–" placeholder follows every age, and a 10-star row (mostly empty stars) takes half of each row to encode one number that's already printed beside it. The one column a manager scans — rating — is right-most and duplicated.
 4. **Lore on desktop is a wall.** 18.1 screens tall, 17 distinct type sizes from 10px eyebrows to 110px display, no index or fold (mobile got the fold treatment; desktop never did).
@@ -45,7 +45,7 @@
 
 ## 3 · Inconsistencies — actual values found
 
-**Typefaces: 3 declared, 0 loaded.** `Oswald` ×869 declarations, `Inter` ×511, `Fraunces` ×268 — but there is **no `@font-face`, no font link, anywhere**. Every player sees system sans (for both Oswald *and* Inter — they render identically) and Georgia (for Fraunces). The entire intended contrast between condensed scoreboard labels, workhorse UI, and editorial serif currently does not exist in the shipped product. Stragglers: Courier New, Verdana, Futura, Spline Sans, ui-monospace (one-offs).
+**Typefaces: 3 families in use** — `Oswald` ×869 declarations, `Inter` ×511, `Fraunces` ×268. ~~and none loaded~~ **CORRECTED in Phase 3:** the fonts *are* self-hosted (`client/fonts/*.woff2`) and declared by a runtime injector in `00-boot-auth.js`; the census searched only the shell and skin CSS and missed it. Two real findings survive the correction: (a) **three families is one over the brief's maximum** — DESIGN.md retires Oswald in favor of Inter label styles; (b) **the italic Fraunces files sit on disk undeclared**, so every italic (the treasurer's asides, Gazette prose) has been a synthesized slant, not the real face. Stragglers: Courier New, Verdana, Futura, Spline Sans, ui-monospace (one-offs).
 
 **Font sizes: 51 distinct px values.** 10px ×715 · 13 ×460 · 11 ×312 · 12 ×301 · 12.5 ×266 · 10.5 ×193 · 11.5 ×121 · 13.5 ×97 · 14.5 ×29 · plus 7.5, 8, 8.5, 9, 9.5, 15.5, 16.5 … Half-pixel steps between 10 and 14 mean six "different" sizes within 2px of each other.
 
@@ -98,8 +98,8 @@ The brief's ask — "dense data stays dense, make it scannable" — is currently
 
 ## 6 · The five worst offenders, by player impact
 
-1. **No fonts are actually loaded (869 Oswald + 268 Fraunces declarations render as fallbacks).** Every screen the player ever sees is a downgraded version of the intended design; fixing this one build-level gap upgrades the entire game at once.
-2. **The scrolled sub-nav has no ground on desktop** — navigation collides with content on every page, permanently, above the fold.
+1. ~~No fonts are actually loaded~~ — **withdrawn** (the loader lives in the league layer; see §3). The surviving type findings: three families where the brief allows two, and italics synthesized because the italic files were never declared.
+2. ~~The scrolled sub-nav has no ground on desktop~~ — **withdrawn** (test-harness artifact; see §2.1). Replacing it in the ranking: **the topbar's right corner pile-up** — status toasts render over the season/clock chip on every surface.
 3. **Color and cascade entropy (1,462 hexes, 2,754 !important)** — the reason screens visibly drift (two greys, four golds, two reds on the same page) and the reason every new room needs `!important` or inline styles to render as designed.
 4. **The squad screen fails its one job** — truncated names, placeholder dashes, half-empty star rows, and the comparison numbers pushed to the edge; this is the screen a manager opens most after match day.
 5. **10px-uppercase-everywhere (715 uses) on cream at 2–4:1 contrast** — the system's own label style is below legibility and below AA at the sizes and colors it ships at.

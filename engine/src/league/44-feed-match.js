@@ -234,7 +234,10 @@
       if (!p) return "";
       var comp = mode === "bowl" ? FS.bowl(p) : FS.bat(p);
       if (!(comp > 0)) return "";
-      return "<span class='fd-strn " + (mode === "bowl" ? "bw" : "bt") + "'>" + FS.html(FS.stars(comp)) + "</span>";
+      // a strip of ten hollow stars says nothing a blank cannot say better
+      var n9 = FS.stars(comp);
+      if (!(n9 >= 0.5)) return "";
+      return "<span class='fd-strn " + (mode === "bowl" ? "bw" : "bt") + "'>" + FS.html(n9) + "</span>";
     } catch (e) { return ""; }
   }
   // EVERY NAME IS A DOOR. A player named anywhere outside the commentary
@@ -707,10 +710,10 @@
     };
     var WX_IC = {
       sun: "<svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='#E8C97A' stroke-width='2' stroke-linecap='round'><circle cx='12' cy='12' r='4.2'/><path d='M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9L19 19M19 5l-2.1 2.1M7.1 16.9L5 19'/></svg>",
-      cloud: "<svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='#B9CCE8' stroke-width='2' stroke-linejoin='round'><path d='M6.5 19a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19 12.2 3.5 3.5 0 0 1 18 19z'/></svg>",
-      rain: "<svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='#B9CCE8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6.5 15a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19 8.2 3.5 3.5 0 0 1 18 15z'/><path d='M8 18.5v2M12 18.5v2M16 18.5v2'/></svg>"
+      cloud: "<svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='#9FB0C6' stroke-width='2' stroke-linejoin='round'><path d='M6.5 19a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19 12.2 3.5 3.5 0 0 1 18 19z'/></svg>",
+      rain: "<svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='#9FB0C6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6.5 15a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19 8.2 3.5 3.5 0 0 1 18 15z'/><path d='M8 18.5v2M12 18.5v2M16 18.5v2'/></svg>"
     };
-    var PITCH_DOT = { green: "#3E8A5A", flat: "#C8B98A", dry: "#B08D4F", crumbling: "#B08D4F",
+    var PITCH_DOT = { green: "#3E8A5A", flat: "#C8B98A", dry: "#C08A2E", crumbling: "#C08A2E",
       balanced: "#7BA37B", slow: "#8A8A6F", cracked: "#A0693C", sticky: "#A0693C", "two-paced": "#9B8262" };
     var bugHead = "";
     if (!done && batNm) {
@@ -810,7 +813,9 @@
       "</div></div>";
 
     // ---- TABS + WORKSPACE --------------------------------------------------
-    var tabs = ["live|Live", "card|Scorecard", "charts|Charts", "teams|Lineups"].map(function (t9) {
+    // the first tab tells the truth about the state of play: it is only
+    // "Live" while the umpire is still reading the overs out
+    var tabs = [(done ? "live|Stumps" : "live|Live"), "card|Scorecard", "charts|Charts", "teams|Lineups"].map(function (t9) {
       var p9 = t9.split("|");
       return "<button type='button' class='" + (T.tab === p9[0] ? "on" : "") + "' onclick='foFeedTab(\"" + p9[0] + "\")'>" + p9[1] + "</button>";
     }).join("");
@@ -1168,7 +1173,7 @@
       worm += "<path d='" + line + "' class='wl' style='stroke:" + COL[ix] + "'/>";
       I.fow.forEach(function (fw) {
         var ov9 = parseFloat(fw.no) || null;
-        if (ov9 != null) dots += "<circle cx='" + X(ov9) + "' cy='" + Y(fw.score) + "' r='4.5' class='wd' style='fill:#8E1F13'/>";
+        if (ov9 != null) dots += "<circle cx='" + X(ov9) + "' cy='" + Y(fw.score) + "' r='4.5' class='wd' style='fill:#B23230'/>";
       });
       // the endpoint wears its score: a chip at the head of the worm, and a
       // pulse while that innings is still being read out
@@ -1224,7 +1229,7 @@
         bars += "<rect x='" + x0 + "' y='" + Y2(o.ovRuns) + "' width='" + bw + "' height='" + Math.max(0, Y2(0) - Y2(o.ovRuns)) + "' rx='2.5' fill='url(#fdB" + ix + ")'" + (crown ? " class='crown'" : "") + "/>";
         var nw = wkByOver[o.over] || 0;
         for (var w9 = 0; w9 < nw; w9++)
-          bars += "<circle cx='" + (x0 + bw / 2) + "' cy='" + (Y2(o.ovRuns) - 7 - w9 * 9) + "' r='3.4' class='wd' style='fill:#8E1F13'/>";
+          bars += "<circle cx='" + (x0 + bw / 2) + "' cy='" + (Y2(o.ovRuns) - 7 - w9 * 9) + "' r='3.4' class='wd' style='fill:#B23230'/>";
       });
     });
     var mhSvg = "<svg viewBox='0 0 " + W + " " + H2 + "' class='fd-svg'>" + defs + bars + "</svg>";
@@ -1286,7 +1291,7 @@
     var s = document.createElement("style"); s.id = "fo-fd-css";
     s.textContent = [
       // the page's tokens, drawn from the game's standing palette
-      ".fo-fd{--fon9:#0A1A30;--fon:#14243A;--focream:#F1EEE6;--fopaper:#FFFEFC;--foor:#C9571F;--fogold:#E8B96A;--fowkt:#8E1F13;--foink:#14243A;--fomut:#8a8272;--fobrd:#e3dccb;--fosoftred:#FBEFEA}",
+      ".fo-fd{--fon9:#0A1A30;--fon:#14243A;--focream:#F1EEE6;--fopaper:#FFFEFC;--foor:#C9571F;--fogold:#E8B96A;--fowkt:#B23230;--foink:#14243A;--fomut:#8a8272;--fobrd:#e3dccb;--fosoftred:#FBEFEA}",
       // the theatre's clean cream room, given the full width of the house
       "html body.ftpskin.fo-fd-on,html body.fo-fd-on{background:#F1EEE6 !important}",
       "html body.fo-fd-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
@@ -1300,17 +1305,17 @@
       // ---- the build-up, before a ball is bowled
       ".fo-fd .fd-pm{margin-top:14px;padding:18px 20px 20px}",
       ".fo-fd .fd-pmc{display:flex;align-items:baseline;gap:12px;flex-wrap:wrap;padding-bottom:14px;border-bottom:1px solid var(--fobrd)}",
-      ".fo-fd .fd-pmc span{font:600 10px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fomut)}",
+      ".fo-fd .fd-pmc span{font:600 11px/1 Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fomut)}",
       ".fo-fd .fd-pmc b{font:700 26px/1 Inter,sans-serif;letter-spacing:-.02em;color:var(--foink);font-variant-numeric:tabular-nums}",
       ".fo-fd .fd-pmnote{margin:13px 0 0;font:400 13px/1.6 Inter,sans-serif;color:#5d6472;max-width:66ch}",
       ".fo-fd .fd-pmrow{display:grid;grid-template-columns:repeat(auto-fit,minmax(190px,1fr));gap:12px;margin-top:16px}",
       ".fo-fd .fd-pmk{border-left:3px solid var(--foor);padding:2px 0 2px 12px}",
-      ".fo-fd .fd-pmk span{display:block;font:600 10px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fomut)}",
+      ".fo-fd .fd-pmk span{display:block;font:600 11px/1 Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fomut)}",
       ".fo-fd .fd-pmk b{display:block;margin-top:7px;font:600 16px/1.15 Inter,sans-serif;letter-spacing:-.01em;color:var(--foink)}",
       ".fo-fd .fd-pmk u{display:block;margin-top:5px;font:400 13px/1.5 Inter,sans-serif;color:#6c7382;text-decoration:none}",
       ".fo-fd .fd-pmsides{display:grid;grid-template-columns:1fr auto 1fr;gap:14px;align-items:start;margin-top:20px;padding-top:18px;border-top:1px solid var(--fobrd)}",
-      ".fo-fd .fd-pmv{align-self:center;font:600 12px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fomut)}",
-      ".fo-fd .fd-pmst{font:600 10px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fomut)}",
+      ".fo-fd .fd-pmv{align-self:center;font:600 12px/1 Inter,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fomut)}",
+      ".fo-fd .fd-pmst{font:600 11px/1 Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fomut)}",
       "html body #page .fo-fd .fd-pmsn{display:block;margin-top:7px;font:600 17px/1.15 Inter,sans-serif;letter-spacing:-.015em;color:var(--foink) !important;text-decoration:none !important}",
       "html body #page .fo-fd .fd-pmsn:hover{color:#B44A22 !important}",
       ".fo-fd .fd-pmmen{margin-top:11px;display:flex;flex-direction:column;gap:6px}",
@@ -1318,46 +1323,46 @@
       ".fo-fd .fd-pmmen span:last-child{border-bottom:0}",
       ".fo-fd .fd-pmmen u{text-decoration:none;font:700 12.5px/1 Inter,sans-serif;color:var(--foink);font-variant-numeric:tabular-nums}",
       ".fo-fd .fd-pmtags{display:flex;flex-wrap:wrap;gap:5px;margin-top:9px}",
-      ".fo-fd .fd-pmtags em{font:600 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--fomut);background:rgba(20,36,58,.05);border-radius:999px;padding:6px 10px 5px}",
+      ".fo-fd .fd-pmtags em{font:600 11px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--fomut);background:rgba(20,36,58,.05);border-radius:999px;padding:6px 10px 5px}",
       ".fo-fd .fd-pmtags em.fl{color:#8a6a1f;background:rgba(232,185,106,.2)}",
       ".fo-fd .fd-pmtags em.tt{color:#2F6B45;background:rgba(47,107,69,.11)}",
       ".fo-fd .fd-pmform{display:flex;gap:4px;margin-top:11px}",
-      ".fo-fd .fd-pmform i{width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font:700 10px/1 Oswald,sans-serif;color:#FFFEFC}",
+      ".fo-fd .fd-pmform i{width:20px;height:20px;border-radius:5px;display:flex;align-items:center;justify-content:center;font:700 11px/1 Inter,sans-serif;color:#FFFEFC}",
       ".fo-fd .fd-pmform i.w{background:#2F6B45}.fo-fd .fd-pmform i.l{background:#8C2B2B}.fo-fd .fd-pmform i.t{background:#8a8272}",
       ".fo-fd .fd-pmnone{color:var(--fomut);font:400 13px/1.4 Inter,sans-serif}",
       "@media(max-width:640px){.fo-fd .fd-pm{padding:15px 14px 16px}.fo-fd .fd-pmc b{font-size:22px}",
       ".fo-fd .fd-pmsides{grid-template-columns:1fr;gap:16px}.fo-fd .fd-pmv{display:none}}",
       // ---- the metadata row, one line above the stage
       ".fo-fd .fd-meta{display:flex;align-items:center;gap:11px;flex-wrap:wrap;min-height:46px;margin-bottom:10px}",
-      "html body #page .fo-fd .fd-back{font:600 13px/1 Inter,sans-serif;color:#3a4353 !important;text-decoration:none !important;white-space:nowrap}",
+      "html body #page .fo-fd .fd-back{display:inline-flex;align-items:center;min-height:44px;font:600 13px/1 Inter,sans-serif;color:#14243A !important;text-decoration:none !important;white-space:nowrap}",
       ".fo-fd .fd-flag{width:24px;height:16px;object-fit:cover;border-radius:2.5px;box-shadow:0 1px 3px rgba(14,35,63,.25)}",
-      ".fo-fd .fd-lg{font:700 12px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--foink);white-space:nowrap}",
+      ".fo-fd .fd-lg{font:700 12px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--foink);white-space:nowrap}",
       ".fo-fd .fd-meta .vd{width:1px;height:16px;background:rgba(20,36,58,.18)}",
       ".fo-fd .fd-meta .gr{font:400 13.5px/1.3 Inter,sans-serif;color:var(--fomut)}",
-      ".fo-fd .fd-live{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:800 11px/1 Oswald,sans-serif;letter-spacing:.16em;color:#B23230}",
+      ".fo-fd .fd-live{margin-left:auto;display:inline-flex;align-items:center;gap:6px;font:800 11px/1 Inter,sans-serif;letter-spacing:.16em;color:#B23230}",
       ".fo-fd .fd-live i{width:8px;height:8px;border-radius:50%;background:#B23230;animation:foFdPulse 1.6s ease-in-out infinite}",
       "@keyframes foFdPulse{0%,100%{opacity:1}50%{opacity:.3}}",
-      ".fo-fd .fd-fin{margin-left:auto;font:700 10px/1 Oswald,sans-serif;letter-spacing:.14em;color:rgba(20,32,47,.55)}",
+      ".fo-fd .fd-fin{margin-left:auto;font:700 11px/1 Inter,sans-serif;letter-spacing:.14em;color:rgba(20,32,47,.55)}",
       // ---- THE MATCH STAGE: home ground behind a deep navy wash
       ".fo-fd .fd-stage{position:relative;overflow:hidden;min-height:250px;border-radius:16px;background:linear-gradient(120deg,var(--fon9),var(--fon));background-size:cover;background-position:center;color:#FFFEFC;box-shadow:0 10px 30px rgba(14,35,63,.2);display:flex;align-items:stretch}",
       ".fo-fd .fd-stagein{position:relative;flex:1;display:flex;flex-direction:column;padding:26px 30px 18px;min-width:0}",
       ".fo-fd .fd-teams{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap}",
       ".fo-fd .fd-teams b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(22px,2.4vw,30px);color:#FFFEFC;letter-spacing:.01em}",
       ".fo-fd .fd-teams i{font-style:normal;font-family:Fraunces,Georgia,serif;font-size:15px;color:var(--foor)}",
-      ".fo-fd .fd-cond{font:500 13.5px/1.6 Inter,sans-serif;color:#8FA8CC;margin-top:4px}",
+      ".fo-fd .fd-cond{font:500 13.5px/1.6 Inter,sans-serif;color:#F1EEE6;text-shadow:0 1px 10px rgba(7,22,46,.65);margin-top:4px}",
       // THE SCORE BUG: while the cricket is on, the batting side owns the
       // header with a gold dot; the opponent is one small caps line; the sky,
       // the square and the toss are chips, not a sentence
       ".fo-fd .fd-bugchips{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 13px}",
-      ".fo-fd .fd-bugchips .ch{display:inline-flex;align-items:center;gap:6px;font:700 10px/1 Oswald,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(244,239,228,.75);background:rgba(255,253,247,.08);border:1px solid rgba(255,253,247,.14);border-radius:999px;padding:6px 10px;white-space:nowrap}",
+      ".fo-fd .fd-bugchips .ch{display:inline-flex;align-items:center;gap:6px;font:700 11px/1 Inter,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(244,239,228,.75);background:rgba(255,253,247,.08);border:1px solid rgba(255,253,247,.14);border-radius:999px;padding:6px 10px;white-space:nowrap}",
       ".fo-fd .fd-bugchips .ch svg{display:block;flex:none}",
       ".fo-fd .fd-bugchips .ch i{width:9px;height:9px;border-radius:3px;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}",
       ".fo-fd .fd-bugchips .ch.toss{margin-left:auto}",
       ".fo-fd .fd-bug{display:flex;align-items:center;gap:10px}",
-      ".fo-fd .fd-bug b{font:700 clamp(24px,6.4vw,32px)/1 Oswald,sans-serif;text-transform:uppercase;letter-spacing:.02em;color:#FFFDF7;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".fo-fd .fd-bug b{font:700 clamp(24px,6.4vw,32px)/1 Inter,sans-serif;text-transform:uppercase;letter-spacing:.02em;color:#FFFDF7;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       ".fo-fd .fd-bug b a{color:inherit !important;text-decoration:none !important}",
       ".fo-fd .fd-bug s{width:9px;height:9px;border-radius:50%;background:var(--fogold);text-decoration:none;flex:none}",
-      ".fo-fd .fd-bugsub{margin-top:6px;font:600 10.5px/1.5 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(244,239,228,.55)}",
+      ".fo-fd .fd-bugsub{margin-top:6px;font:600 11px/1.5 Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(244,239,228,.55)}",
       ".fo-fd .fd-bugsub a{color:rgba(244,239,228,.75) !important;text-decoration:none !important}",
       ".fo-fd .fd-bugsub a:hover{color:#FFFDF7 !important}",
       ".fo-fd .fd-scorerow{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-top:8px}",
@@ -1368,7 +1373,7 @@
       ".fo-fd .fd-mets{display:flex;gap:0;margin-top:14px;flex-wrap:wrap}",
       ".fo-fd .fd-mets .mt{padding:0 22px;border-left:1px solid rgba(255,254,252,.16)}",
       ".fo-fd .fd-mets .mt:first-child{padding-left:0;border-left:none}",
-      ".fo-fd .fd-mets u{display:block;text-decoration:none;font:700 10px/1 Oswald,sans-serif;letter-spacing:.2em;color:rgba(255,254,252,.5);margin-bottom:5px}",
+      ".fo-fd .fd-mets u{display:block;text-decoration:none;font:700 11px/1 Inter,sans-serif;letter-spacing:.2em;color:rgba(255,254,252,.5);margin-bottom:5px}",
       ".fo-fd .fd-mets b{font:700 21px/1 Inter,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums}",
       ".fo-fd .fd-mets b s{text-decoration:none;font-size:13px;color:var(--fogold)}",
       // the final totals name two clubs rather than three short captions,
@@ -1377,19 +1382,19 @@
       ".fo-fd .fd-mets .mt.wide u{font-size:10px;line-height:1.3;letter-spacing:.12em;white-space:normal;overflow-wrap:anywhere}",
       // the innings-progress strip along the stage floor
       ".fo-fd .fd-strip{display:flex;align-items:center;gap:10px;margin-top:auto;padding-top:18px}",
-      ".fo-fd .fd-strip .s0,.fo-fd .fd-strip .s1{font:700 10px Oswald,sans-serif;color:rgba(255,254,252,.45)}",
+      ".fo-fd .fd-strip .s0,.fo-fd .fd-strip .s1{font:700 11px Inter,sans-serif;color:rgba(255,254,252,.45)}",
       ".fo-fd .fd-strip .bar{position:relative;flex:1;height:4px;border-radius:99px;background:rgba(143,168,204,.28)}",
       ".fo-fd .fd-strip .bar i{position:absolute;left:0;top:0;bottom:0;border-radius:99px;background:linear-gradient(90deg,var(--fogold),var(--foor))}",
-      ".fo-fd .fd-strip .bar em{position:absolute;top:50%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:var(--fogold);color:var(--fon9);font:700 10.5px/24px Oswald,sans-serif;font-style:normal;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.35)}",
+      ".fo-fd .fd-strip .bar em{position:absolute;top:50%;transform:translate(-50%,-50%);width:24px;height:24px;border-radius:50%;background:var(--fogold);color:var(--fon9);font:700 11px/24px Inter,sans-serif;font-style:normal;text-align:center;box-shadow:0 2px 8px rgba(0,0,0,.35)}",
       ".fo-fd .fd-sub{font:400 14px/1.6 Fraunces,Georgia,serif;color:rgba(255,254,252,.78);margin-top:10px}",
-      "html body #page .fo-fd .fd-enter{display:inline-block;margin-top:14px;font:700 11.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:var(--foor) !important;border:none;border-radius:999px;padding:12px 22px;cursor:pointer;text-align:center;text-decoration:none !important;align-self:flex-start}",
+      "html body #page .fo-fd .fd-enter{display:inline-block;margin-top:14px;font:700 11.5px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#FFFEFC !important;background:var(--foor) !important;border:none;border-radius:999px;padding:12px 22px;cursor:pointer;text-align:center;text-decoration:none !important;align-self:flex-start}",
       "html body #page .fo-fd .fd-ftime{display:flex;align-items:baseline;gap:11px;flex-wrap:wrap;margin:12px 0 0}",
-      "html body #page .fo-fd .fd-ftime u{text-decoration:none;flex:none;font:700 10px/1 Oswald,sans-serif;letter-spacing:.22em;color:#E8B96A}",
+      "html body #page .fo-fd .fd-ftime u{text-decoration:none;flex:none;font:700 11px/1 Inter,sans-serif;letter-spacing:.22em;color:#E8B96A}",
       "html body #page .fo-fd .fd-ftime b{font:600 16px/1.35 Fraunces,Georgia,serif;font-weight:600;color:#FFFEFC}",
       // ---- the tab rail: an almanack rule with an underline
       ".fo-fd .fd-tabs{display:flex;gap:2px;margin:18px 0 0;border-bottom:1px solid #d8d0bd;overflow-x:auto;scrollbar-width:none}",
       ".fo-fd .fd-tabs::-webkit-scrollbar{display:none}",
-      "html body #page .fo-fd .fd-tabs button{flex:0 0 auto;font:600 12px Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;color:#8a8272 !important;background:transparent !important;border:none !important;border-bottom:2px solid transparent !important;border-radius:0 !important;box-shadow:none !important;padding:14px 16px 12px !important;margin:0 0 -1px !important;cursor:pointer;transition:color .15s}",
+      "html body #page .fo-fd .fd-tabs button{flex:0 0 auto;font:700 11px Inter,sans-serif !important;letter-spacing:.14em;text-transform:uppercase;color:#6A6354 !important;background:transparent !important;border:none !important;border-bottom:2px solid transparent !important;border-radius:0 !important;box-shadow:none !important;padding:14px 16px 12px !important;margin:0 0 -1px !important;cursor:pointer;transition:color .15s}",
       "html body #page .fo-fd .fd-tabs button.on{color:#14243A !important;font-weight:700 !important;border-bottom-color:#C9571F !important}",
       "html body #page .fo-fd .fd-tabs button:hover{color:#14243A !important}",
       // ---- the two-column live workspace
@@ -1402,17 +1407,17 @@
       ".fo-fd .fd-work .fd-panel{margin-top:0}",
       // ---- the ball-by-ball header
       ".fo-fd .fd-bh{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}",
-      ".fo-fd .fd-bh .tl b{font:700 13px Oswald,sans-serif;letter-spacing:.18em;color:var(--foink)}",
+      ".fo-fd .fd-bh .tl b{font:700 13px Inter,sans-serif;letter-spacing:.18em;color:var(--foink)}",
       ".fo-fd .fd-bh .tl span{display:block;font:400 13px Fraunces,Georgia,serif;color:var(--fomut);margin-top:2px}",
       ".fo-fd .fd-bh .tr{display:flex;align-items:center;gap:10px;flex-wrap:wrap}",
-      ".fo-fd .fd-bh .ov9{font:700 11px Oswald,sans-serif;letter-spacing:.14em;color:var(--foor)}",
+      ".fo-fd .fd-bh .ov9{font:700 11px Inter,sans-serif;letter-spacing:.14em;color:var(--foor)}",
       ".fo-fd .fd-bh .lo{font:400 13px Inter,sans-serif;color:var(--fomut)}",
       ".fo-fd .seq{display:inline-flex;gap:5px;flex-wrap:wrap}",
-      ".fo-fd .seq i,.fo-fd .fd-ev .dot i{font-style:normal;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#F1EEE6;border:1px solid var(--fobrd);font:700 11px/1 Oswald,sans-serif;color:#6d6455}",
+      ".fo-fd .seq i,.fo-fd .fd-ev .dot i{font-style:normal;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;border-radius:50%;background:#F1EEE6;border:1px solid var(--fobrd);font:700 11px/1 Inter,sans-serif;color:#6d6455}",
       // boundaries ring green, wickets ring red - the reading at a glance
       ".fo-fd .seq i.b,.fo-fd .fd-ev .dot i.b{background:#177A57;border-color:#177A57;color:#fff}",
       ".fo-fd .seq i.w,.fo-fd .fd-ev .dot i.w{background:#B23230;border-color:#B23230;color:#fff}",
-      "html body #page .fo-fd .fd-fsel{font:600 13px Inter,sans-serif;color:#5b5344;background:#F6F3EB;border:1px solid var(--fobrd);border-radius:8px;padding:6px 9px;cursor:pointer}",
+      "html body #page .fo-fd .fd-fsel{font:600 13px Inter,sans-serif;color:#6A6354;background:#F6F3EB;border:1px solid var(--fobrd);border-radius:8px;padding:6px 9px;cursor:pointer}",
       // ---- the timeline of events
       ".fo-fd .fd-tl{position:relative;padding-left:2px}",
       ".fo-fd .fd-tl:before{content:'';position:absolute;left:14px;top:10px;bottom:10px;width:1px;background:#ece5d3}",
@@ -1425,7 +1430,7 @@
       ".fo-fd .fd-ev p{margin:3px 0 0;font:400 13px/1.55 Inter,sans-serif;color:#4a4436}",
       // wickets: restrained fire
       ".fo-fd .fd-ev.wkt{background:var(--fosoftred);border-radius:10px;border-bottom:none;padding:13px 12px;margin:4px 0}",
-      ".fo-fd .fd-ev.wkt .hl{font:700 13px Oswald,sans-serif;letter-spacing:.08em;color:var(--fowkt)}",
+      ".fo-fd .fd-ev.wkt .hl{font:700 13px Inter,sans-serif;letter-spacing:.08em;color:var(--fowkt)}",
       ".fo-fd .fd-ev.wkt .fowchip{display:inline-block;margin-top:8px;font:600 13px Inter,sans-serif;color:#6d4a42;background:rgba(255,254,252,.72);border:1px solid #e8c9b8;border-radius:8px;padding:5px 9px}",
       // notes: marginalia, not cards
       ".fo-fd .fd-ev.note{border-bottom:none;padding:6px 2px}",
@@ -1443,22 +1448,22 @@
       ".fo-fd .fd-crease .cb .rv{font:700 14px Inter,sans-serif;color:var(--foink);font-variant-numeric:tabular-nums}",
       ".fo-fd .fd-crease .cb .rv.new{font:400 13px Fraunces,Georgia,serif;color:var(--fomut)}",
       ".fo-fd .fd-crease .cb .bv{font:400 12.5px Inter,sans-serif;color:var(--fomut);font-variant-numeric:tabular-nums}",
-      ".fo-fd .fd-crease .cb .wv{font:700 16px Oswald,sans-serif;color:var(--foor)}",
-      ".fo-fd .fd-crease .lbl{display:flex;justify-content:flex-end;gap:14px;font:700 10px Oswald,sans-serif;letter-spacing:.14em;color:#b3ab99}",
+      ".fo-fd .fd-crease .cb .wv{font:700 16px Inter,sans-serif;color:var(--foor)}",
+      ".fo-fd .fd-crease .lbl{display:flex;justify-content:flex-end;gap:14px;font:700 11px Inter,sans-serif;letter-spacing:.14em;color:#b3ab99}",
       ".fo-fd .fd-crease .lbl.cap{justify-content:flex-start;letter-spacing:.08em;text-transform:none;font:400 12px/1.4 Inter,sans-serif;color:var(--fomut);margin-top:3px}",
       ".fo-fd .fd-crease .lbl span:first-child{flex:1}",
       ".fo-fd .fd-crease .dv{height:1px;background:#efe9d9;margin:10px 0}",
-      ".fo-fd .fd-crease .sh{font:700 10px Oswald,sans-serif;letter-spacing:.18em;color:var(--fomut);margin:2px 0 6px}",
-      ".fo-fd .fd-crease .pv{font:700 13px Oswald,sans-serif;letter-spacing:.06em;color:var(--foink);margin-bottom:10px}",
-      "html body #page .fo-fd .fd-allbtn{display:block;width:100%;margin-top:10px;font:700 10.5px Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;color:#C9571F !important;background:transparent !important;border:1px dashed #e0b9a4 !important;border-radius:10px;padding:11px;cursor:pointer}",
+      ".fo-fd .fd-crease .sh{font:700 11px Inter,sans-serif;letter-spacing:.18em;color:var(--fomut);margin:2px 0 6px}",
+      ".fo-fd .fd-crease .pv{font:700 13px Inter,sans-serif;letter-spacing:.06em;color:var(--foink);margin-bottom:10px}",
+      "html body #page .fo-fd .fd-allbtn{display:block;width:100%;margin-top:10px;font:700 11px Inter,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;color:#C9571F !important;background:transparent !important;border:1px dashed #e0b9a4 !important;border-radius:10px;padding:11px;cursor:pointer}",
       "html body #page .fo-fd .fd-allbtn:hover{border-style:solid !important}",
-      "html body #page .fo-fd .fd-viewsc{display:block;width:100%;margin-top:14px;font:700 11px Oswald,sans-serif !important;letter-spacing:.16em;color:var(--foink) !important;background:transparent !important;border:1px solid rgba(20,36,58,.3) !important;border-radius:10px;padding:11px;cursor:pointer;text-align:center;transition:border-color .15s}",
+      "html body #page .fo-fd .fd-viewsc{display:block;width:100%;margin-top:14px;font:700 11px Inter,sans-serif !important;letter-spacing:.16em;color:var(--foink) !important;background:transparent !important;border:1px solid rgba(20,36,58,.3) !important;border-radius:12px;padding:11px;min-height:44px;background:#FFFEFC !important;cursor:pointer;text-align:center;transition:border-color .15s}",
       "html body #page .fo-fd .fd-viewsc:hover{border-color:var(--foor) !important;color:var(--foor) !important}",
       // ---- the scorecard tables
-      ".fo-fd .fd-ch{font:700 10px Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fomut);margin:2px 0 8px}",
+      ".fo-fd .fd-ch{font:700 11px Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fomut);margin:2px 0 8px}",
       ".fo-fd .fd-ih{display:flex;align-items:baseline;gap:10px;margin:12px 0 6px}",
       ".fo-fd .fd-ih b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:16px;color:var(--foink)}",
-      ".fo-fd .fd-ih span{font:700 13px Oswald,sans-serif;color:var(--foor)}",
+      ".fo-fd .fd-ih span{font:700 13px Inter,sans-serif;color:var(--foor)}",
       // THE SCORECARD RAN OFF THE PHONE. The table was width:100% inside a
       // panel with eighteen pixels of padding each side, and nothing said what
       // to do when its contents were wider than that - so the strike-rate
@@ -1470,16 +1475,16 @@
       // and the ten-star strip is what made it too wide: on a narrow screen it
       // is the thing a reader needs least standing beside the runs
       "@media(max-width:520px){.fo-fd .fd-tb .ss{display:none}}",
-      ".fo-fd .fd-tb th{font:700 10px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fomut);text-align:left;padding:4px 6px;border-bottom:1px solid var(--fobrd)}",
+      ".fo-fd .fd-tb th{font:700 11px Inter,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fomut);text-align:left;padding:4px 6px;border-bottom:1px solid var(--fobrd)}",
       ".fo-fd .fd-tb td{padding:5px 6px;border-bottom:1px solid #f3eee1;color:var(--foink)}",
       ".fo-fd .fd-tb .r{text-align:right;font-variant-numeric:tabular-nums}",
       ".fo-fd .fd-tb td.h{font-size:11.5px;color:var(--fomut);font-style:normal}",
       ".fo-fd .fd-tb tr.no td:first-child{font-weight:600}",
       ".fo-fd .fd-note{font:400 13px/1.6 Fraunces,Georgia,serif;color:var(--fomut);margin:8px 0 2px}",
       // partnerships
-      ".fo-fd .fd-ph{font:700 10px Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fomut);margin:10px 0 6px}",
+      ".fo-fd .fd-ph{font:700 11px Inter,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fomut);margin:10px 0 6px}",
       ".fo-fd .fd-pr{display:grid;grid-template-columns:74px 1fr 34px;gap:4px 10px;align-items:center;padding:3px 0;font:400 13px Inter,sans-serif}",
-      ".fo-fd .fd-pr .l{font:700 10px Oswald,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#5b5344}",
+      ".fo-fd .fd-pr .l{font:700 11px Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#6A6354}",
       ".fo-fd .fd-pr .bar{height:9px;background:#F1EEE6;border-radius:99px;overflow:hidden}",
       ".fo-fd .fd-pr .bar i{display:block;height:100%;background:var(--foink);border-radius:99px}",
       ".fo-fd .fd-pr.lv .bar i{background:var(--foor)}",
@@ -1498,32 +1503,32 @@
       ".fo-fd .fd-svg .lvp{animation:fdPing 1.8s ease-in-out infinite;transform-box:fill-box;transform-origin:center}",
       "@keyframes fdPing{0%,100%{transform:scale(.6);opacity:.28}50%{transform:scale(1.25);opacity:.1}}",
       "@media(prefers-reduced-motion:reduce){.fo-fd .fd-svg .lvp,.fo-fd .fd-live i{animation:none}}",
-      ".fo-fd .fd-svg .chip{font:700 10px Oswald,sans-serif;letter-spacing:.06em;fill:#FFFEFC;text-anchor:middle}",
+      ".fo-fd .fd-svg .chip{font:700 11px Inter,sans-serif;letter-spacing:.06em;fill:#FFFEFC;text-anchor:middle}",
       ".fo-fd .fd-svg .tl{stroke:#E8B96A;stroke-width:1.8;stroke-dasharray:6 5}",
       ".fo-fd .fd-svg .tchip{fill:#F8ECD4;stroke:#E8B96A;stroke-width:1}",
-      ".fo-fd .fd-svg .ttxt{font:700 10px Oswald,sans-serif;letter-spacing:.12em;fill:#8a6a1f;text-anchor:middle}",
+      ".fo-fd .fd-svg .ttxt{font:700 11px Inter,sans-serif;letter-spacing:.12em;fill:#8a6a1f;text-anchor:middle}",
       ".fo-fd .fd-svg .crown{stroke:#E8B96A;stroke-width:1.6}",
       ".fo-fd .fd-leg{display:flex;gap:12px;margin:0 0 8px;flex-wrap:wrap;align-items:center}",
-      ".fo-fd .fd-leg .lg{display:inline-flex;align-items:center;gap:6px;font:600 13px Inter,sans-serif;color:#5b5344;background:#F6F3EB;border:1px solid #e8e1cf;border-radius:999px;padding:4px 11px}",
+      ".fo-fd .fd-leg .lg{display:inline-flex;align-items:center;gap:6px;font:600 13px Inter,sans-serif;color:#6A6354;background:#F6F3EB;border:1px solid #e8e1cf;border-radius:999px;padding:4px 11px}",
       ".fo-fd .fd-leg .lg i{width:14px;height:4px;border-radius:2px;display:inline-block}",
-      ".fo-fd .fd-leg .lg b{font:700 10.5px Oswald,sans-serif;letter-spacing:.04em;color:#14243A;margin-left:2px}",
+      ".fo-fd .fd-leg .lg b{font:700 11px Inter,sans-serif;letter-spacing:.04em;color:#14243A;margin-left:2px}",
       ".fo-fd .fd-leg .lg.ask{background:#FBEFEA;border-color:#e8c9b8}",
-      ".fo-fd .fd-leg .lg.ask b{color:#8E1F13}",
+      ".fo-fd .fd-leg .lg.ask b{color:#B23230}",
       // lineups
       ".fo-fd .fd-xic{display:grid;grid-template-columns:1fr 1fr;gap:14px}",
       ".fo-fd .fd-xic .c b{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:14px;color:var(--foink);margin-bottom:2px}",
-      ".fo-fd .fd-xic .c u{display:block;text-decoration:none;font:700 10px Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--foor);margin-bottom:6px}",
+      ".fo-fd .fd-xic .c u{display:block;text-decoration:none;font:700 11px Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--foor);margin-bottom:6px}",
       ".fo-fd .fd-xic .c u.t2{margin-top:8px;color:var(--fomut)}",
       ".fo-fd .fd-xic .c span{display:flex;align-items:baseline;gap:6px;font:400 13px/1.6 Inter,sans-serif;color:var(--foink)}",
-      ".fo-fd .fd-xic .c span i{font-style:normal;font:700 10px/1 Oswald,sans-serif;color:#b3ab99;width:13px;text-align:right}",
-      ".fo-fd .fd-xic .c span em{font-style:normal;font:700 10px Oswald,sans-serif;color:var(--foor)}",
+      ".fo-fd .fd-xic .c span i{font-style:normal;font:700 11px/1 Inter,sans-serif;color:#b3ab99;width:13px;text-align:right}",
+      ".fo-fd .fd-xic .c span em{font-style:normal;font:700 11px Inter,sans-serif;color:var(--foor)}",
       // strength stars: the roster's ladder, gold for the bat, teal for the ball
       ".fo-fd .fd-strn{display:inline-flex;line-height:1}",
       ".fo-fd .fd-strn .st{display:inline-flex;text-decoration:none}",
       ".fo-fd .fd-strn em{font-style:normal;font-size:13px;line-height:1;color:#ddd5c7;letter-spacing:.5px}",
-      ".fo-fd .fdtag{display:inline-block;margin-left:8px;vertical-align:1px;font:700 10px Oswald,sans-serif;letter-spacing:.14em;border-radius:5px;padding:2.5px 6px}",
+      ".fo-fd .fdtag{display:inline-block;margin-left:8px;vertical-align:1px;font:700 11px Inter,sans-serif;letter-spacing:.14em;border-radius:5px;padding:2.5px 6px}",
       ".fo-fd .fdtag.g{color:#177A57;background:#E8F3ED;border:1px solid #bfdccf}",
-      ".fo-fd .fdtag.b{color:#8E1F13;background:#FBEFEA;border:1px solid #e8c9b8}",
+      ".fo-fd .fdtag.b{color:#B23230;background:#FBEFEA;border:1px solid #e8c9b8}",
       ".fo-fd .fd-strn.bt em.f{color:#E8B96A}",
       ".fo-fd .fd-strn.bt em.h{color:#E8B96A;opacity:.45}",
       ".fo-fd .fd-strn.bw em.f{color:#0FB4C4}",
@@ -1538,9 +1543,9 @@
       ".fo-fd .fd-rest{display:flex;flex-direction:column;gap:8px;padding:34px 6px 10px;max-width:430px}",
       ".fo-fd .fd-rest b{font:600 21px/1.25 Fraunces,Georgia,serif;color:var(--foink)}",
       ".fo-fd .fd-rest span{font:400 13.5px/1.6 Inter,system-ui,sans-serif;color:var(--fomut)}",
-      "html body #page .fo-fd .fd-rest a{font:600 11.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#C9571F !important;text-decoration:none;margin-top:4px}",
+      "html body #page .fo-fd .fd-rest a{font:600 11.5px/1 Inter,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#C9571F !important;text-decoration:none;margin-top:4px}",
       ".fo-fd .fd-foot{display:flex;justify-content:space-between;margin-top:16px}",
-      "html body #page .fo-fd .fd-foot a{font:700 10px Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#C9571F !important;text-decoration:none !important}",
+      "html body #page .fo-fd .fd-foot a{font:700 11px Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#C9571F !important;text-decoration:none !important}",
       // ---- the phone: stacked, the crease first, the stage tighter
       "@media(max-width:640px){",
       ".fo-fd .fd-in{padding:12px 16px 50px}",

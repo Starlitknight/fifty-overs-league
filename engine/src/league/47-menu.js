@@ -210,7 +210,7 @@
       "#fo-menubar.off{display:none}",
       "#fo-menubar .fo-mb-in{display:flex;align-items:stretch;gap:2px;max-width:1120px;margin:0 auto;padding:0 8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}",
       "#fo-menubar .fo-mb-in::-webkit-scrollbar{display:none}",
-      "html body #fo-menubar button.fo-mb-t{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;background:transparent !important;border:0 !important;border-bottom:2px solid transparent !important;color:rgba(255,254,252,.78) !important;font:600 11px/1 Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;padding:13px 13px 11px !important;margin:0;cursor:pointer;white-space:nowrap;box-shadow:none !important;border-radius:0 !important;transition:color .14s,border-color .14s,background .14s}",
+      "html body #fo-menubar button.fo-mb-t{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;background:transparent !important;border:0 !important;border-bottom:2px solid transparent !important;color:rgba(255,254,252,.78) !important;font:600 11px/1 Inter,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;padding:13px 13px 11px !important;margin:0;cursor:pointer;white-space:nowrap;box-shadow:none !important;border-radius:0 !important;transition:color .14s,border-color .14s,background .14s}",
       "html body #fo-menubar button.fo-mb-t:hover{color:#FFFEFC !important;background:rgba(255,255,255,.06) !important}",
       "html body #fo-menubar button.fo-mb-t.here{color:#E8B96A !important;border-bottom-color:#C9571F !important}",
       "html body #fo-menubar button.fo-mb-t.open{color:#FFFEFC !important;background:rgba(201,85,50,.24) !important;border-bottom-color:#E8B96A !important}",
@@ -227,12 +227,12 @@
       // nothing is ever guillotined at the edge.
       "@media(max-width:720px){",
       "#fo-menubar .fo-mb-in{padding:0 6px;gap:0;overflow-x:hidden}",
-      "html body #fo-menubar button.fo-mb-t{flex:1 1 0;justify-content:center;gap:4px;min-width:0;padding:13px 2px 11px !important;font:600 10px/1 Oswald,sans-serif !important;letter-spacing:.09em}",
+      "html body #fo-menubar button.fo-mb-t{flex:1 1 0;justify-content:center;gap:4px;min-width:0;padding:13px 2px 11px !important;font:600 11px/1 Inter,sans-serif !important;letter-spacing:.07em}",
       "#fo-menubar button.fo-mb-t span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       "#fo-menubar .fo-mb-cv{width:9px;height:9px;flex:none}",
       "html body #fo-menubar button.fo-mb-out{display:none !important}",
       "}",
-      "@media(max-width:370px){html body #fo-menubar button.fo-mb-t{font:600 10px/1 Oswald,sans-serif !important;letter-spacing:.05em}}",
+      "@media(max-width:370px){html body #fo-menubar button.fo-mb-t{font:600 10.5px/1 Inter,sans-serif !important;letter-spacing:.02em}}",
       // ONE HEADER, NOT TWO. On a desk wide enough that the masthead's empty
       // middle can hold the menus, the bar stops being its own row and rides
       // INSIDE the masthead - fixed, centred, the full height of the band -

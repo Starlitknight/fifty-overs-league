@@ -10,7 +10,7 @@ Every ratio quoted below was computed, not assumed.
 
 ## 1 · Type
 
-**Two faces, actually embedded.** The audit's headline was that no font loads at all. Phase 3 step zero is self-hosting two woff2 subsets through the existing fingerprinted-asset pipeline (so the service worker caches them), `font-display: swap`.
+**Two faces.** *(Phase 3 correction: the audit's "no fonts load" was wrong — a runtime loader in `00-boot-auth.js` serves self-hosted woff2 for all three families. What stands is the max-two rule: Oswald retires in favor of Inter label styles, and the italic Fraunces faces — on disk but never declared — get their `@font-face`.)*
 
 **Chosen pairing — "the illustrated county annual":**
 - **Display: Fraunces** (weights 500, 600 + italic). Headlines, club and player names in heroes, narrative surfaces, the treasurer's asides. It harmonizes with the painterly art the way the current Georgia fallback already hints at, and it is the face the Gazette/almanack identity depends on.

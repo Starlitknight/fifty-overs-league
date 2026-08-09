@@ -177,7 +177,22 @@ body.ftpskin #ftpcomm{max-height:640px;overflow-y:auto}.commfeed{max-height:640p
 
 
 
-<style id="fo-brand">/* NO ITALICS. Every <i> and <em> in this program is a label, an icon slot or a
+<style id="fo-brand">/* DESIGN.md's full token sheet (Phase 3). The eight canonical colors above
+   stay; these extend them with the semantic layer every migrated room
+   consumes. A value that is not a token does not ship. */
+:root{
+--fo-muted:#6A6354;--fo-muted-dark:#9FB0C6;--fo-faint:#8A8272;--fo-faint-dark:#6E7F96;
+--fo-accent-text:#A63D14;--fo-accent-deep:#B4441C;--fo-accent-darkroom:#E06A32;
+--fo-gold-text:#8F6A1C;
+--fo-wicket:#B23230;--fo-wicket-dark:#FF8A7A;--fo-four:#22635F;--fo-six:#8F6A1C;
+--fo-win:#177A57;--fo-win-dark:#4CC38A;
+--fo-border:rgba(27,36,50,.12);--fo-border-dark:rgba(241,238,230,.14);
+--fo-surface-raised:#FFFFFF;--fo-surface-raised-dark:#1B3050;
+--fo-r-chip:6px;--fo-r-card:12px;--fo-r-hero:18px;
+--fo-e-card:0 1px 3px rgba(14,35,63,.06);--fo-e-float:0 18px 44px rgba(10,26,52,.25);
+--fo-sans:Inter,system-ui,-apple-system,sans-serif;--fo-serif:Fraunces,Georgia,serif;
+}
+/* NO ITALICS. Every <i> and <em> in this program is a label, an icon slot or a
    unit marker - not emphasis - and the browser's default slant made a
    scoreboard read like a letter. One reset, so no page has to remember. */
 html body i,html body em,html body cite,html body address,html body var,html body dfn{font-style:normal}html body .fol-word i{font-style:normal}/* ONE PALETTE. The shell stacked three successive 'final' themes and let
@@ -197,5 +212,5 @@ html body.fo-home-on,html body.fo-lore-on,html body.fo-ov-on,html body.fo-boss-o
    this quietly replaces the engine's platform-default body font. */
 body,button,input,select,textarea{font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}
 </style>
-<script src="assets/fo-20260809-0637-dd4260.js"></script>
+<script src="assets/fo-20260809-0726-95221f.js"></script>
 </body></html>
