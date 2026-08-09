@@ -188,7 +188,7 @@
       "font:400 13px/1.5 Inter,system-ui,sans-serif;color:#1B2432;text-align:left}",
       ".fo-dec.dngr{border-left-color:#B3372B}",
       ".fo-dec b{display:block;font:600 13.5px/1.4 Inter,system-ui,sans-serif;color:#1B2432}",
-      ".fo-dec p{margin:4px 0 0;font:400 12px/1.5 Inter,system-ui,sans-serif;color:rgba(20,28,40,.62)}",
+      ".fo-dec p{margin:4px 0 0;font:400 13px/1.5 Inter,system-ui,sans-serif;color:rgba(20,28,40,.62)}",
       ".fo-dec .fo-dec-in{display:block;width:100%;max-width:220px;margin-top:9px;min-height:40px;",
       "padding:0 12px;border-radius:9px;border:1px solid rgba(20,28,40,.24);background:#FFFEFC;",
       "font:600 15px/1 Inter,system-ui,sans-serif;color:#1B2432;font-variant-numeric:tabular-nums}",

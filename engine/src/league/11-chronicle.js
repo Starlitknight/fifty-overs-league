@@ -1139,7 +1139,7 @@
       ".fo-trx{background:#FFFEFC;border:1px solid #e8e3d6;border-radius:11px;padding:10px 12px}" +
       ".fo-trx-stack{display:flex;height:18px;border-radius:99px;overflow:hidden;margin:8px 0 7px;box-shadow:inset 0 0 0 1px rgba(18,32,58,.08)}" +
       ".fo-trx-stack i{display:flex;align-items:center;justify-content:center;height:100%}" +
-      ".fo-trx-stack i em{font-style:normal;font-size:9.5px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25)}" +
+      ".fo-trx-stack i em{font-style:normal;font-size:10px;font-weight:800;color:#fff;text-shadow:0 1px 2px rgba(0,0,0,.25)}" +
       ".fo-trx-legend{display:flex;flex-wrap:wrap;gap:4px 10px}" +
       ".fo-trx-lg{display:inline-flex;align-items:center;gap:5px;font-size:10.5px;color:#667085}" +
       ".fo-trx-lg u{width:8px;height:8px;border-radius:3px;display:inline-block;text-decoration:none}" +

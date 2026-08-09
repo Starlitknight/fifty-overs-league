@@ -2471,7 +2471,7 @@
       // section voices: burnt-orange card headers, warm gold labels inside
       "body.fo-dash .db-card .hd .k.nv,body.fo-dash #fo-ovhd b{color:#C9571F}" +
       "body.fo-dash .db-cg .k,body.fo-dash .db-p .k,body.fo-dash .fo-db-bug .st .k,body.fo-dash .fo-db-bug .k{color:#b3803f}" +
-      "body.fo-dash .db-b{display:inline-flex;min-width:26px;height:26px;padding:0 4px;border-radius:50%;align-items:center;justify-content:center;font:700 12px Inter,sans-serif;background:#EFE9DB;color:#6b6154;border:1px solid #e0d8c8;font-style:normal}" +
+      "body.fo-dash .db-b{display:inline-flex;min-width:26px;height:26px;padding:0 4px;border-radius:50%;align-items:center;justify-content:center;font:700 13px Inter,sans-serif;background:#EFE9DB;color:#6b6154;border:1px solid #e0d8c8;font-style:normal}" +
       "body.fo-dash .db-b.r1{background:#FFFEFC;color:#4c4437}" +
       "body.fo-dash .db-b.r4{background:#C9571F;color:#fff;border-color:#C9571F}" +
       "body.fo-dash .db-b.r6{background:#14243A;color:#E8B96A;border-color:#14243A}" +
@@ -2483,7 +2483,7 @@
       "body.fo-dash .fo-db-bug{min-height:64px;display:flex;align-items:center;gap:20px;row-gap:8px;padding:9px 18px;flex-wrap:wrap}" +
       "body.fo-dash .fo-db-bug .cr svg{display:block;width:44px;height:48px}" +
       "body.fo-dash .fo-db-bug .tm b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:15px;letter-spacing:1.3px;text-transform:uppercase}" +
-      "body.fo-dash .fo-db-bug .tm b .dot{color:#C9571F;font-size:9px;font-style:normal}" +
+      "body.fo-dash .fo-db-bug .tm b .dot{color:#C9571F;font-size:10px;font-style:normal}" +
       "body.fo-dash .fo-db-bug .tm span{font-size:11px;color:#8a7f6e}" +
       "body.fo-dash a.fo-db-tml{color:inherit !important;text-decoration:none}" +
       "body.fo-dash a.fo-db-tml:hover{color:#C9571F !important;text-decoration:underline}" +
@@ -2507,7 +2507,7 @@
       "body.fo-dash .db-p .pt{flex:1;min-width:0;overflow:hidden}" +
       "body.fo-dash .db-p .nm{font-family:Fraunces,Fraunces,Georgia,serif;font-weight:600;font-size:14px;line-height:1.1;margin-top:1px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       "body.fo-dash .db-p .rw{display:flex;gap:7px;align-items:center;margin-top:3px;overflow:hidden}" +
-      "body.fo-dash .db-p .rw .k{white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;font-size:8.5px}" +
+      "body.fo-dash .db-p .rw .k{white-space:nowrap;max-width:52px;overflow:hidden;text-overflow:ellipsis;font-size:10px}" +
       // the ten stars read exactly as the scorecard reads them: filled gold,
       // half faded, the rest parchment - never all-gold
       "body.fo-dash .db-p .stars{font-size:12.5px;letter-spacing:.5px;white-space:nowrap}" +
@@ -2520,7 +2520,7 @@
       "body.fo-dash .db-p .pr b.fig{font-size:13.5px}" +
       "body.fo-dash .db-p .pr b i{color:#C9571F;font-style:normal}" +
       "body.fo-dash .db-p .pr span{font-size:10.5px;color:#8a7f6e;margin-left:3px}" +
-      "body.fo-dash .db-p .pr u{display:block;text-decoration:none;font-family:Oswald,sans-serif;font-size:8.5px;letter-spacing:1.2px;text-transform:uppercase;color:#8a7f6e;margin-top:2px}" +
+      "body.fo-dash .db-p .pr u{display:block;text-decoration:none;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.2px;text-transform:uppercase;color:#8a7f6e;margin-top:2px}" +
       "body.fo-dash .fo-db-info{display:grid;grid-template-columns:1.45fr 1fr;gap:12px}" +
       "body.fo-dash .fo-db-info>div{min-height:286px}" +
       "body.fo-dash .fo-db-field{border-radius:14px}" +
@@ -2664,11 +2664,11 @@
       "body.fo-dash .fo-db-bug{gap:10px 14px;padding:9px 12px;min-height:0}" +
       "body.fo-dash .fo-db-bug .cr svg{width:30px;height:33px}" +
       "body.fo-dash .fo-db-bug .tm b{font-size:12px;letter-spacing:.8px}" +
-      "body.fo-dash .fo-db-bug .tm span{font-size:9.5px}" +
+      "body.fo-dash .fo-db-bug .tm span{font-size:10px}" +
       "body.fo-dash .fo-db-bug .sc b{font-size:22px}" +
       "body.fo-dash .fo-db-bug .st{padding-left:12px}" +
       "body.fo-dash .fo-db-bug .st b{font-size:15px}" +
-      "body.fo-dash .fo-db-bug .bb9 .db-b{min-width:17px;height:17px;font-size:9px}" +
+      "body.fo-dash .fo-db-bug .bb9 .db-b{min-width:17px;height:17px;font-size:10px}" +
       // the column tells the story in reading order: art, the men, the words,
       // THEN the field and the numbers - the wrappers dissolve so CSS can sort
       "body.fo-dash .fo-db-grid,body.fo-dash .fo-db-left{display:contents}" +
@@ -2824,7 +2824,7 @@
       "@media(min-width:761px){body.fo-th.fo-th-ov0 #fo-th-gauge{top:50%;transform:translateY(calc(-50% + 52px))}}" +
       "body.fo-th #fo-th-gauge .gv{position:absolute;left:0;right:0;bottom:-3px;color:#fff;text-shadow:0 2px 8px rgba(0,0,0,.8)}" +
       "body.fo-th #fo-th-gauge .gv b{font-family:Oswald,sans-serif;font-weight:600;font-size:19px;letter-spacing:1px}" +
-      "body.fo-th #fo-th-gauge .gv i{font-style:normal;font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:2px;text-transform:uppercase;color:#F3D37A;margin-left:4px}" +
+      "body.fo-th #fo-th-gauge .gv i{font-style:normal;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:2px;text-transform:uppercase;color:#F3D37A;margin-left:4px}" +
       "@media (prefers-reduced-motion:reduce){body.fo-th #fo-th-gauge .ndl,body.fo-th #fo-th-gauge .arc{transition:none !important}}" +
       "@media(max-width:760px){body.fo-th #fo-th-gauge{display:none !important}}" +
       // ---- analysis rail ----
@@ -2874,7 +2874,7 @@
       "@keyframes foThGfIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}" +
       "#fo-th-gf img{width:40px;height:40px;border-radius:50%;object-fit:cover;object-position:50% 8%;border:1.5px solid rgba(240,185,78,.6);flex:0 0 40px}" +
       "#fo-th-gf span{font-size:12px;line-height:1.45;color:rgba(255,255,255,.9)}" +
-      "#fo-th-gf b{display:block;font-family:Oswald,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#F3D37A;margin-bottom:2px}" +
+      "#fo-th-gf b{display:block;font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#F3D37A;margin-bottom:2px}" +
       "#fo-th-cut{position:fixed;left:-8px;bottom:0;z-index:53;height:min(60vh,540px);pointer-events:none;animation:foThCutIn .38s ease}" +
       "#fo-th-cut.out{opacity:0;transition:opacity .5s ease}" +
       "@keyframes foThCutIn{from{opacity:0;transform:translateX(-40px)}to{opacity:1;transform:none}}" +
@@ -2980,14 +2980,14 @@
       "body.fo-th .fo-mst-score b{font-size:27px;line-height:1}" +
       "body.fo-th .fo-mst-score .ovs{display:inline;font-size:10px;letter-spacing:2px;margin:0}" +
       "body.fo-th .fo-mst-score i{display:none}" +
-      "body.fo-th .fo-mst-score i.chase{display:block;flex-basis:100%;text-align:center;font-size:9.5px;letter-spacing:.6px;color:rgba(255,255,255,.78);margin-top:1px}" +
+      "body.fo-th .fo-mst-score i.chase{display:block;flex-basis:100%;text-align:center;font-size:10px;letter-spacing:.6px;color:rgba(255,255,255,.78);margin-top:1px}" +
       // the last six deliveries ride under the bug
       "body.fo-th .fo-mst-score .mbs{display:flex;flex-basis:100%;justify-content:center;gap:5px;margin-top:4px;min-height:0}" +
       "body.fo-th .fo-mst-score .mb{width:21px;height:21px;font-size:10.5px;border-width:1px}" +
       // conditions: one small centred pill - CITY / WEATHER / PITCH / FIELD
       "body.fo-th .fo-mst-top{position:static !important;display:contents}" +
       "body.fo-th .fo-mst-wx{position:fixed;z-index:52;top:calc(122px + env(safe-area-inset-top));left:50%;transform:translateX(-50%);width:max-content;max-width:calc(100vw - 16px);display:flex;align-items:center;justify-content:center;flex-wrap:wrap;background:rgba(6,14,26,.62);border:1px solid rgba(255,255,255,.16);border-radius:999px;padding:6px 15px;backdrop-filter:blur(8px)}" +
-      "body.fo-th .fo-mst-wx span{background:none !important;border:none !important;padding:0 !important;margin:0 !important;font-size:8.5px;letter-spacing:1px;white-space:nowrap;color:#F5EFDC}" +
+      "body.fo-th .fo-mst-wx span{background:none !important;border:none !important;padding:0 !important;margin:0 !important;font-size:10px;letter-spacing:1px;white-space:nowrap;color:#F5EFDC}" +
       "body.fo-th .fo-mst-wx span+span::before{content:'\\2022';margin:0 6px;color:#F0B94E}" +
       "body.fo-th .fo-mst-wx .gnd{display:none}" +
       "body.fo-th .fo-mst-wx .cty-m{display:inline}" +
@@ -3002,10 +3002,10 @@
       "body.fo-th .fo-mst-p.pbowl .pc{text-align:right}" +
       // the role line carries the matchup facts: hand for the batter, the
       // bowler's type for the bowler
-      "body.fo-th .fo-mst-p .rl{display:block;font-size:7.5px;letter-spacing:1.1px;text-transform:uppercase;color:#F3D37A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px}" +
+      "body.fo-th .fo-mst-p .rl{display:block;font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:#F3D37A;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-bottom:1px}" +
       "body.fo-th .fo-mst-p .nm{font-size:11.5px;letter-spacing:.3px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
       "body.fo-th .fo-mst-p .st{font-size:10.5px}" +
-      "body.fo-th .fo-mst-p .stars{display:block;font-size:8.5px;letter-spacing:1px;line-height:1.2;margin-top:1px;white-space:nowrap}" +
+      "body.fo-th .fo-mst-p .stars{display:block;font-size:10px;letter-spacing:1px;line-height:1.2;margin-top:1px;white-space:nowrap}" +
       "body.fo-th[data-mobsheet='score'] .fo-mst-p{display:none !important}" +
       "body.fo-th[data-mobsheet='score'] .fo-mst-wx{display:none !important}" +
       "body.fo-th[data-mobsheet='oval'] .fo-mst-p{top:calc(158px + env(safe-area-inset-top)) !important;bottom:auto !important;z-index:53;background:transparent;border-color:transparent;backdrop-filter:none;box-shadow:none}" +
@@ -3023,7 +3023,7 @@
       "html body #fo-mob-nav{display:flex;position:fixed;left:0;right:0;bottom:0;z-index:58;justify-content:space-around;padding:2px 6px calc(4px + env(safe-area-inset-bottom))}" +
       "html body #fo-mob-nav button{flex:1;max-width:120px;min-height:48px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;background:none !important;border:none !important;box-shadow:none !important;color:rgba(255,255,255,.7);cursor:pointer;padding:5px 0;border-radius:10px}" +
       "html body #fo-mob-nav button svg{width:20px;height:20px}" +
-      "html body #fo-mob-nav button span{font-family:Oswald,sans-serif;font-size:9px;font-weight:600;letter-spacing:2px;text-transform:uppercase}" +
+      "html body #fo-mob-nav button span{font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase}" +
       "html body #fo-mob-nav button.on{color:#F0B94E}" +
       "html body #fo-mob-nav button.on span{border-bottom:2px solid #F0B94E;padding-bottom:1px}" +
       // latest delivery: chip + line, result as a small badge on the right
@@ -3070,7 +3070,7 @@
       // when batting, pinned above the tab bar with the active choice lit
       "body.fo-th #fo-oval #fo-mst-talk{display:none}" +
       "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk{display:flex;position:fixed;left:10px;right:10px;bottom:calc(64px + env(safe-area-inset-bottom));z-index:56;flex-wrap:wrap;align-items:center;justify-content:center;gap:7px;background:transparent;border:none;padding:0}" +
-      "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk .tl{flex-basis:100%;text-align:center;font-family:Oswald,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:2.2px;text-transform:uppercase;color:#F3D37A;margin:0}" +
+      "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk .tl{flex-basis:100%;text-align:center;font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:2.2px;text-transform:uppercase;color:#F3D37A;margin:0}" +
       "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk .tb{min-height:36px;font-size:11.5px;font-weight:600;padding:7px 12px;border-radius:999px;background:rgba(5,20,40,.72) !important;border:1.5px solid rgba(255,255,255,.25) !important;color:#fff !important;cursor:pointer;box-shadow:none !important;backdrop-filter:blur(6px)}" +
       "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk .tb.on{background:#F0B94E !important;border-color:#F0B94E !important;color:#0C1B2E !important}" +
       "html body.fo-th[data-mobsheet='oval'] #fo-oval #fo-mst-talk .tb.tbc{margin-left:0;color:#F3D37A !important;border-color:rgba(243,211,122,.55) !important;background:rgba(243,211,122,.1) !important}" +
@@ -3632,13 +3632,13 @@
       ".fo-mst-ask .askopt{position:relative;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:3px;border-radius:12px;padding:5px 5px 7px;border:2px solid rgba(255,255,255,.16);background:rgba(255,255,255,.04);transition:transform .16s ease,border-color .16s ease,box-shadow .16s ease}" +
       ".fo-mst-ask .askopt .who{display:block;text-align:center;color:#fff;line-height:1.3;margin-top:2px}" +
       ".fo-mst-ask .askopt .who b{display:block;font-family:Oswald,sans-serif;font-weight:600;font-size:13.5px;letter-spacing:.5px;max-width:180px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}" +
-      ".fo-mst-ask .askopt .who i{font-style:normal;font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.72)}" +
+      ".fo-mst-ask .askopt .who i{font-style:normal;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;color:rgba(255,255,255,.72)}" +
       ".fo-mst-ask .askopt:hover{transform:translateY(-5px);border-color:#F3D37A;box-shadow:0 14px 34px rgba(0,0,0,.5)}" +
       ".fo-mst-ask .askopt.def{border-color:rgba(240,185,78,.6);background:rgba(240,185,78,.08)}" +
       ".fo-mst-ask .phc-tals,.fo-mst-ask .phc-meta,.fo-mst-ask .phc-ft{display:none !important}" +
       ".fo-mst-ask .cardbox{display:block;width:190px;height:250px;overflow:hidden;border-radius:9px}" +
       ".fo-mst-ask .cardscale{display:block;width:430px;transform:scale(.4418);transform-origin:top left}" +
-      ".fo-mst-ask .askopt .tag{position:static;transform:none;font-family:Oswald,sans-serif;font-size:9px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:#F3D37A;white-space:nowrap}" +
+      ".fo-mst-ask .askopt .tag{position:static;transform:none;font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase;color:#F3D37A;white-space:nowrap}" +
       ".fo-mst-ask .askopt.def .tag{color:#8fe3a4}" +
       "@media(max-width:760px){.fo-mst-ask .cardbox{width:132px;height:175px}.fo-mst-ask .cardscale{transform:scale(.307)}.fo-mst-ask .ask-opts.cards{gap:7px}.fo-mst-ask .askopt{padding:4px 4px 6px}.fo-mst-ask .askopt .who b{font-size:12px;max-width:132px}.fo-mst-ask .ask-bx.wide{padding:12px 10px}}" +
       ".fo-mst-ask .ask-t{font-family:Oswald,sans-serif;font-weight:600;font-size:19px;letter-spacing:1.6px;text-transform:uppercase;color:#F3D37A}" +
@@ -3647,13 +3647,13 @@
       "html body #page .fo-mst-ask .ask-opts button,html body.ftpskin #page .fo-mst-ask .ask-opts button{display:flex;justify-content:space-between;align-items:center;gap:10px;text-align:left;font-size:13.5px;font-weight:700;color:#fff !important;background:rgba(255,255,255,.07) !important;border:1.5px solid rgba(255,255,255,.22) !important;border-radius:11px;padding:11px 14px;cursor:pointer;box-shadow:none !important}" +
       "html body #page .fo-mst-ask .ask-opts button:hover{border-color:#F3D37A !important;background:rgba(240,185,78,.12) !important}" +
       "html body #page .fo-mst-ask .ask-opts button.def{border-color:rgba(240,185,78,.55) !important;background:rgba(240,185,78,.14) !important}" +
-      ".fo-mst-ask .ask-opts button i{font-style:normal;font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:1.6px;text-transform:uppercase;color:#F3D37A}" +
+      ".fo-mst-ask .ask-opts button i{font-style:normal;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.6px;text-transform:uppercase;color:#F3D37A}" +
       ".fo-mst-ask .ask-bar{height:4px;border-radius:99px;background:rgba(255,255,255,.14);margin-top:13px;overflow:hidden}" +
       ".fo-mst-ask .ask-bar i{display:block;height:100%;background:linear-gradient(90deg,#F0B94E,#C9A24B);animation:foMstAskT linear forwards}" +
       "@keyframes foMstAskT{from{width:100%}to{width:0}}" +
       // team talk in the centre theatre
       "#fo-mst-talk{display:flex;gap:6px;align-items:center;flex-wrap:wrap;padding:9px 12px;background:#0F1A2E;border-top:1px solid #24334f}" +
-      "#fo-mst-talk .tl{font-family:Oswald,sans-serif;font-size:9.5px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#8ea0c0;margin-right:4px}" +
+      "#fo-mst-talk .tl{font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:2px;text-transform:uppercase;color:#8ea0c0;margin-right:4px}" +
       "html body #page #fo-mst-talk .tb,html body.ftpskin #page #fo-mst-talk .tb{font-size:11px;font-weight:700;color:#c7d2e4 !important;background:rgba(255,255,255,.06) !important;border:1.5px solid rgba(255,255,255,.18) !important;border-radius:9px;padding:7px 13px;cursor:pointer;box-shadow:none !important}" +
       "html body #page #fo-mst-talk .tb.on,html body.ftpskin #page #fo-mst-talk .tb.on{color:#0C1B2E !important;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;border-color:#F3D37A !important}" +
       // the old ways retire: engine speed row, display filter, sim button and
@@ -3674,7 +3674,7 @@
       ".fo-mst-p::after{content:'';position:absolute;inset:0;z-index:1;background:linear-gradient(to top,rgba(5,19,38,.95),transparent 58%)}" +
       ".fo-mst-p .pc{position:relative;z-index:2;padding:0 14px 12px;color:#fff;text-shadow:0 2px 10px rgba(0,0,0,.8)}" +
       ".fo-mst-p.pbowl .pc{text-align:right}" +
-      ".fo-mst-p .rl{color:#f5c85b;font-family:Oswald,sans-serif;font-size:8.5px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase}" +
+      ".fo-mst-p .rl{color:#f5c85b;font-family:Oswald,sans-serif;font-size:10px;font-weight:600;letter-spacing:1.8px;text-transform:uppercase}" +
       ".fo-mst-p .nm{font-family:Oswald,sans-serif;font-weight:600;font-size:16.5px;letter-spacing:.4px;line-height:1.12;margin:2px 0 2px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}" +
       ".fo-mst-p .st{color:rgba(255,255,255,.88);font-size:12px;font-weight:700}" +
       ".fo-mst-p .stars{font-size:11.5px;letter-spacing:1px;line-height:1;margin-top:3px;white-space:nowrap}" +
@@ -3717,9 +3717,9 @@
       // moment card, beads - so nothing ever prints over anything else
       "@media(max-width:760px){.fo-mst,#fo-oval .fo-mst{min-height:600px;border-radius:12px}" +
       ".fo-mst-top{flex-direction:column;align-items:flex-end;gap:6px}.fo-mst-wx{align-self:flex-start;flex-wrap:wrap;row-gap:4px}" +
-      ".fo-mst-wx span{font-size:8.5px;padding:3px 6px}" +
+      ".fo-mst-wx span{font-size:10px;padding:3px 6px}" +
       "html body #page .fo-mst-next{font-size:11px;padding:10px 16px}" +
-      "html body #page .fo-mst-autob{font-size:9.5px;padding:9px 12px}" +
+      "html body #page .fo-mst-autob{font-size:10px;padding:9px 12px}" +
       ".fo-mst-score,#fo-oval .fo-mst-score{top:118px}" +
       ".fo-mst-score b,#fo-oval .fo-mst-score b{font-size:32px}" +
       ".fo-mst-p,#fo-oval .fo-mst-p{top:205px;bottom:auto;height:160px;width:36%}" +

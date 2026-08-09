@@ -256,8 +256,8 @@
       ".fo-nt-row .ic svg{width:16px;height:16px}",
       ".fo-nt-row .tx{min-width:0}",
       ".fo-nt-row b{display:block;font:650 13.5px/1.3 Inter,sans-serif;color:#14243A}",
-      ".fo-nt-row i{display:block;margin-top:2px;font:400 12px/1.45 Inter,sans-serif;color:#6d6455;font-style:normal}",
-      ".fo-nt-row .wh{font:600 8.5px Oswald,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#b3aa96;white-space:nowrap;align-self:start;padding-top:3px}",
+      ".fo-nt-row i{display:block;margin-top:2px;font:400 13px/1.45 Inter,sans-serif;color:#6d6455;font-style:normal}",
+      ".fo-nt-row .wh{font:600 10px Oswald,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#b3aa96;white-space:nowrap;align-self:start;padding-top:3px}",
       // an ask reads as a thing to do, not a thing that happened
       ".fo-nt-row.ask .ic{background:#FBF2E2;color:#B8933A}",
       ".fo-nt-row.ask .wh{color:#B8933A}",

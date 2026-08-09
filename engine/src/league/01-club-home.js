@@ -1795,7 +1795,7 @@
       ".fo-net-v{align-self:center;justify-self:center;width:30px;height:30px;border-radius:50%;background:#efece2;color:#667085;font-weight:800;font-size:13px;display:flex;align-items:center;justify-content:center}" +
       "#page.fo-nets .fo-net-ctl{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:10px 12px;align-items:end}" +
       ".fo-nc{display:flex;flex-direction:column;gap:4px;min-width:0}" +
-      ".fo-nc label{font-size:9.5px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#9a9484}" +
+      ".fo-nc label{font-size:10px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#9a9484}" +
       ".fo-nc select,.fo-nc input{width:100%;padding:8px 10px;border:1px solid rgba(7,22,46,.15);border-radius:9px;background:#FFFEFC;font-size:12.5px;box-sizing:border-box}" +
       "#page.fo-nets .fo-net-ctl button.primary{grid-column:1/-1;padding:12px 16px;border-radius:11px;font-weight:800;font-size:14px}" +
       "@media(max-width:760px){#fo-nets-cards{grid-template-columns:1fr}.fo-net-v{margin:-4px auto}}";
@@ -2283,7 +2283,7 @@
       ".fo-cxh-title{font-family:Oswald,sans-serif;font-weight:600;font-size:clamp(27px,4.5vw,42px);letter-spacing:1.5px;text-transform:uppercase;line-height:1.04;color:#FFFEFC;margin:3px 0 9px}" +
       ".fo-cxh-prog{height:7px;background:rgba(255,255,255,.16);border-radius:99px;max-width:330px;overflow:hidden}" +
       ".fo-cxh-prog u{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#C9A24B,#F0B94E)}" +
-      ".fo-cxh-progk{font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:2.2px;text-transform:uppercase;color:#cdd5e3;margin:5px 0 13px}" +
+      ".fo-cxh-progk{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:2.2px;text-transform:uppercase;color:#cdd5e3;margin:5px 0 13px}" +
       ".fo-cxh-next{display:flex;align-items:center;gap:11px;font-size:15px;line-height:1.35}" +
       ".fo-cxh-next .fo-cxh-face{width:46px;height:46px;border-radius:50%;object-fit:cover;object-position:50% 10%;border:2px solid #C9A24B;background:#FFFEFC;flex:0 0 46px}" +
       ".fo-cxh-next .fo-cxh-face.crest{object-fit:contain;padding:6px;background:rgba(255,254,252,.92)}" +
@@ -2299,7 +2299,7 @@
       ".fo-cxh-crown{position:absolute;right:26px;top:50%;transform:translateY(-50%);height:72%;max-height:210px;filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}" +
       "@media(max-width:640px){.fo-cxh-in{padding:16px 15px 15px}.fo-cxh-veil{background:linear-gradient(180deg,rgba(7,16,32,.9) 0%,rgba(7,16,32,.72) 100%)}.fo-cxh-crown{display:none}}" +
       // the league mode card: everything multiplayer in one place
-      ".fo-mp-badge{font-family:Oswald,sans-serif;font-size:8.5px;letter-spacing:1.8px;background:#14243A;color:#FFFEFC;border-radius:6px;padding:2.5px 8px;vertical-align:2px;margin-left:7px;font-weight:600}" +
+      ".fo-mp-badge{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.8px;background:#14243A;color:#FFFEFC;border-radius:6px;padding:2.5px 8px;vertical-align:2px;margin-left:7px;font-weight:600}" +
       ".fo-mp-prog{font-size:12px;color:#5a6472;margin:2px 0 10px}.fo-mp-prog .fo-progress-bar{height:6px;background:rgba(20,36,58,.09);border-radius:99px;overflow:hidden;margin-top:5px}.fo-mp-prog .fo-progress-bar u{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#C9571F,#F59E0B)}" +
       ".fo-mp-card .fo-c2-next{display:block;background:transparent;border:none;box-shadow:none;padding:0;margin:0}" +
       ".fo-mp-card .fo-c2-nl{margin-bottom:8px}" +
@@ -2325,7 +2325,7 @@
       ".phc-fl img{width:24px;vertical-align:-2px}" +
       ".phc-ovr{flex:0 0 auto;text-align:center;background:rgba(255,255,255,.08);border:1.5px solid rgba(201,162,75,.55);border-radius:12px;padding:4px 11px;line-height:1}" +
       ".phc-ovr b{font-family:Oswald,sans-serif;font-size:30px;font-weight:600;color:#F0B94E;display:block}" +
-      ".phc-ovr i{font-style:normal;font-family:Oswald,sans-serif;font-size:8.5px;letter-spacing:2px;color:#b9c2d4}" +
+      ".phc-ovr i{font-style:normal;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:2px;color:#b9c2d4}" +
       ".phc-art{height:min(52vh,352px);border-radius:12px;overflow:hidden;position:relative;box-shadow:inset 0 0 0 2px rgba(255,255,255,.14),0 4px 14px rgba(0,0,0,.35)}" +
       ".phc-art img{width:100%;height:100%;object-fit:cover;object-position:50% 14%;display:block}" +
       // the sheen: a prismatic band that slides with the cursor (holo tiers),
@@ -2344,12 +2344,12 @@
       ".phr > em{font-style:normal;font-family:Oswald,sans-serif;font-weight:600;font-size:16px;color:#FFFEFC;margin-left:auto}" +
       ".phc-tals{display:flex;flex-direction:column;gap:6px;margin:10px 0 2px}" +
       ".pht{display:flex;gap:9px;align-items:flex-start;background:rgba(255,255,255,.06);border:1px solid rgba(201,162,75,.35);border-radius:10px;padding:7px 10px}" +
-      ".pht-k{flex:0 0 auto;font-family:Oswald,sans-serif;font-size:8.5px;letter-spacing:1.6px;color:#0B1322;background:#C9A24B;border-radius:6px;padding:2.5px 7px;font-weight:600;margin-top:1px}" +
+      ".pht-k{flex:0 0 auto;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.6px;color:#0B1322;background:#C9A24B;border-radius:6px;padding:2.5px 7px;font-weight:600;margin-top:1px}" +
       ".pht b{font-size:13px;color:#FFFEFC}.pht p{margin:1px 0 0;font-size:11.5px;line-height:1.45;color:#b9c2d4}" +
       ".phc-meta{display:flex;gap:7px;justify-content:center;align-items:center;flex-wrap:wrap;font-style:normal;font-size:12px;color:#c7cede;margin-top:10px}" +
       ".phc-meta.phc-m2{margin-top:2px;font-size:11px;color:#a7b1c6}" +
       ".phc-meta s{text-decoration:none;color:#C9A24B}" +
-      ".phc-ft{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12);font-family:Oswald,sans-serif;font-size:9px;letter-spacing:1.6px;color:#8A93A2}" +
+      ".phc-ft{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12);font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.6px;color:#8A93A2}" +
       ".phc-ft .rr{color:#F0B94E;font-size:12px;letter-spacing:0}" +
       "@media(max-width:520px){.phc-nm{font-size:21px}.phc-art{height:min(46vh,300px)}}" +
       // the signing modal: the holo card on the dark backdrop, money + Sign under it
@@ -3299,7 +3299,7 @@
     LOAD_AT = Date.now(); LOAD_MSG = msg || "Loading";
     main.innerHTML = '<div class="folbody"><div class="folcard"><div class="folpad" style="text-align:center;padding:28px 12px">' +
       '<div class="folsmall">' + E(msg || "Loading…") + "</div>" +
-      '<div data-fo-pulse style="margin-top:10px;font:600 10px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;opacity:.55;white-space:pre-line"></div>' +
+      '<div data-fo-pulse style="margin-top:10px;font:600 12px/1.6 ui-monospace,SFMono-Regular,Menlo,monospace;opacity:.55;white-space:pre-line"></div>' +
       "</div></div></div>";
     try { foBeat(); } catch (e0) {}
   }

@@ -322,7 +322,7 @@
       "html body #page .fo-cl-crown em{display:block;font:700 11px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:#B44A22;margin-top:10px}",
       "html body #page .fo-cl-stage{margin-top:16px;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:16px;padding:14px 16px}",
       "html body #page .fo-cl-stage h3,html body #page .fo-cl-sec h3,html body #page .fo-cl-sched h3{margin:0 0 10px;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#8A6A1F;display:flex;justify-content:space-between;align-items:baseline}",
-      "html body #page .fo-cl-stage h3 span,html body #page .fo-cl-sec h3 span{font-size:9px;color:rgba(20,28,40,.45);letter-spacing:.12em}",
+      "html body #page .fo-cl-stage h3 span,html body #page .fo-cl-sec h3 span{font-size:10px;color:rgba(20,28,40,.45);letter-spacing:.12em}",
       "html body #page .fo-cl-tie{border:1px solid rgba(20,28,40,.09);border-radius:11px;padding:8px 11px;margin-bottom:8px}",
       "html body #page .fo-cl-tie.mine{border-color:rgba(200,154,46,.55);background:rgba(200,154,46,.05)}",
       "html body #page .fo-cl-tie .s{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:12.5px;color:rgba(20,28,40,.55)}",
@@ -335,7 +335,7 @@
       "html body #page .fo-cl-ent i{font-style:normal;font-size:10.5px;color:rgba(20,28,40,.4);width:18px;font-variant-numeric:tabular-nums}",
       "html body #page .fo-cl-ent img{width:24px;height:17px;object-fit:cover;border-radius:3px}",
       "html body #page .fo-cl-ent b{font:600 13px/1.2 Inter,sans-serif;flex:1;min-width:0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      "html body #page .fo-cl-ent b u{text-decoration:none;font:800 8px/1 Oswald,sans-serif;color:#B44A22;letter-spacing:.14em;margin-left:5px;vertical-align:1px}",
+      "html body #page .fo-cl-ent b u{text-decoration:none;font:800 10px/1 Oswald,sans-serif;color:#B44A22;letter-spacing:.14em;margin-left:5px;vertical-align:1px}",
       "html body #page a.fo-cl-tl{color:inherit;text-decoration:none}",
       "html body #page a.fo-cl-tl:hover{color:#B44A22;text-decoration:underline}",
       "html body #page .fo-cl-ent span{font-size:10.5px;color:rgba(20,28,40,.5);white-space:nowrap}",
@@ -348,7 +348,7 @@
       "html body #page .fo-cl-schrow.done b{color:rgba(20,28,40,.4);text-decoration:line-through}",
       "html body #page .fo-cl-schrow.next b{color:#B44A22}",
       "html body #page .fo-cl-foot{display:flex;gap:10px;justify-content:space-between;margin-top:18px;flex-wrap:wrap}",
-      "html body #page .fo-cl-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
+      "html body #page .fo-cl-foot a{font:600 13px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
       "html body #page .fo-cl-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5)}"
     ].join("\n");
     document.head.appendChild(s);

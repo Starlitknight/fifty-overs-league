@@ -113,27 +113,27 @@
       /* ---- the band: navy desk over the daylight working area ---- */
       ".fo-si-band{background:linear-gradient(168deg,#182B44,#0C1B2E);border-radius:14px;padding:18px 20px 20px;margin:0 0 16px}",
       ".fo-si-bhd{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin:0 0 16px}",
-      ".fo-si-ey{font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:var(--gd);margin:0 0 9px}",
+      ".fo-si-ey{font:600 10px/1 Oswald,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:var(--gd);margin:0 0 9px}",
       ".fo-si-bhd h2{margin:0;font:700 27px/1 Oswald,sans-serif;letter-spacing:.02em;text-transform:uppercase;color:#FFFDF7}",
       ".fo-si-actions{display:flex;align-items:center;gap:8px}",
-      "html body #page .fo-si select{appearance:none;-webkit-appearance:none;min-width:118px;height:36px;border:1px solid rgba(232,185,106,.32) !important;border-radius:9px !important;background:rgba(255,253,247,.06) url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%23E8B96A' stroke-width='1.4'/%3E%3C/svg%3E\") no-repeat right 12px center/9px 6px !important;color:#F1EEE6 !important;font:600 9px Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;padding:0 32px 0 13px !important;box-shadow:none !important;cursor:pointer}",
+      "html body #page .fo-si select{appearance:none;-webkit-appearance:none;min-width:118px;height:36px;border:1px solid rgba(232,185,106,.32) !important;border-radius:9px !important;background:rgba(255,253,247,.06) url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%23E8B96A' stroke-width='1.4'/%3E%3C/svg%3E\") no-repeat right 12px center/9px 6px !important;color:#F1EEE6 !important;font:600 10px Oswald,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;padding:0 32px 0 13px !important;box-shadow:none !important;cursor:pointer}",
       "html body #page .fo-si select option{color:#14243A;background:#FFFEFC}",
       ".fo-si-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}",
       ".fo-si-kpi{border:1px solid rgba(232,185,106,.18);border-radius:11px;background:rgba(255,253,247,.05);padding:12px 13px 13px}",
-      ".fo-si-kpi span{display:block;font:600 8px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(241,238,230,.5)}",
+      ".fo-si-kpi span{display:block;font:600 10px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(241,238,230,.5)}",
       ".fo-si-kpi .v{display:flex;align-items:flex-end;gap:11px;margin-top:10px}",
       ".fo-si-kpi b{font:700 25px/1 Inter,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums}",
       // the note stays beside the figure it qualifies. Pushed to the far edge
       // of a card this wide it read as a separate, unrelated word.
-      ".fo-si-kpi em{font-style:normal;font:600 8px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#5FBF98;padding-bottom:3px}",
+      ".fo-si-kpi em{font-style:normal;font:600 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#5FBF98;padding-bottom:3px}",
       ".fo-si-kpi em.watch{color:#E0906F}",
 
       /* ---- the working area ---- */
       ".fo-si-work{display:grid;grid-template-columns:320px minmax(0,1fr) 306px;gap:14px;align-items:start}",
       ".fo-si-card{background:var(--pp);border:1px solid var(--hair);border-radius:13px;overflow:hidden}",
       ".fo-si-ch{display:flex;align-items:baseline;gap:10px;padding:13px 15px;border-bottom:1px solid var(--hair)}",
-      ".fo-si-ch b{font:700 9px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--nv)}",
-      ".fo-si-ch span{margin-left:auto;font:600 7.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}",
+      ".fo-si-ch b{font:700 10px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--nv)}",
+      ".fo-si-ch span{margin-left:auto;font:600 10px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:var(--mut)}",
 
       /* ranking - every man on the books, never a silent top-N */
       ".fo-si-list{max-height:600px;overflow:auto;overscroll-behavior:contain}",
@@ -145,8 +145,8 @@
       ".fo-si-rid b{display:block;font:600 13.5px/1.2 Fraunces,Fraunces,Georgia,serif;color:var(--nv);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}",
       ".fo-si-rid b:hover{color:#B44A22;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}",
       ".fo-si-rid b:focus-visible{outline:2px solid #C9571F;outline-offset:1px;border-radius:3px}",
-      ".fo-si-rid i{display:block;margin-top:3px;font:600 7.5px/1 Oswald,sans-serif;font-style:normal;letter-spacing:.15em;text-transform:uppercase;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      ".fo-si-trend{font:600 7.5px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;color:#4E8A72}",
+      ".fo-si-rid i{display:block;margin-top:3px;font:600 10px/1 Oswald,sans-serif;font-style:normal;letter-spacing:.15em;text-transform:uppercase;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-si-trend{font:600 10px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;color:#4E8A72}",
       ".fo-si-trend.up{color:#177A57}.fo-si-trend.down{color:#B4432C}",
       ".fo-si-rat{text-align:right;font:700 17px/1 Inter,sans-serif;color:var(--nv);font-variant-numeric:tabular-nums;letter-spacing:-.02em}",
       ".fo-si-go{display:flex;align-items:center;justify-content:center;width:18px;height:26px;border-radius:6px;font:400 17px/1 Inter,sans-serif;color:rgba(27,36,50,.3);cursor:pointer;transition:color .12s ease,background .12s ease}",
@@ -154,32 +154,32 @@
       ".fo-si-go:focus-visible{outline:2px solid #C9571F;outline-offset:1px}",
       ".fo-si-open{color:inherit !important;text-decoration:none !important}",
       ".fo-si-open:hover{color:#B44A22 !important}",
-      ".fo-si-empty{padding:22px 16px;font:400 12px/1.6 Fraunces,Fraunces,Georgia,serif;color:var(--mut)}",
+      ".fo-si-empty{padding:22px 16px;font:400 13px/1.6 Fraunces,Fraunces,Georgia,serif;color:var(--mut)}",
 
       /* the chart: age across, rating up */
       ".fo-si-chart{position:relative;padding:16px 16px 44px 52px;height:452px}",
       ".fo-si-plot{position:relative;height:100%;border-left:1px solid rgba(27,36,50,.22);border-bottom:1px solid rgba(27,36,50,.22)}",
       ".fo-si-gl{position:absolute;background:rgba(27,36,50,.07)}",
       ".fo-si-gl.v{top:0;bottom:0;width:1px}.fo-si-gl.h{left:0;right:0;height:1px}",
-      ".fo-si-tk{position:absolute;font:600 8px/1 Inter,sans-serif;letter-spacing:.1em;color:var(--mut);font-variant-numeric:tabular-nums}",
+      ".fo-si-tk{position:absolute;font:600 10px/1 Inter,sans-serif;letter-spacing:.1em;color:var(--mut);font-variant-numeric:tabular-nums}",
       ".fo-si-tk.x{bottom:-19px;transform:translateX(-50%)}",
       ".fo-si-tk.y{left:-11px;transform:translate(-100%,-50%)}",
-      ".fo-si-axl{position:absolute;font:600 8px/1 Oswald,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:var(--nv)}",
+      ".fo-si-axl{position:absolute;font:600 10px/1 Oswald,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:var(--nv)}",
       ".fo-si-axl.x{left:52px;right:16px;bottom:14px;text-align:center}",
       ".fo-si-axl.y{left:14px;top:50%;transform:translate(-50%,-50%) rotate(-90deg);transform-origin:center}",
       // min-width/min-height are held down on purpose: the phone skin gives
       // every button a 38px minimum, which turned a 28px round dot into an
       // egg. A dot is a dot at every width.
-      "html body #page button.fo-si-dot{position:absolute;width:34px !important;height:34px !important;min-width:0 !important;min-height:0 !important;margin:-17px 0 0 -17px;padding:0 !important;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,254,252,.9) !important;border-radius:50% !important;font:700 11px/1 Inter,sans-serif !important;font-variant-numeric:tabular-nums;color:#F1EEE6 !important;background:var(--nv) !important;box-shadow:0 2px 7px rgba(20,36,58,.2) !important;cursor:pointer;z-index:3;transition:transform .14s ease}",
+      "html body #page button.fo-si-dot{position:absolute;width:34px !important;height:34px !important;min-width:0 !important;min-height:0 !important;margin:-17px 0 0 -17px;padding:0 !important;display:flex;align-items:center;justify-content:center;border:2px solid rgba(255,254,252,.9) !important;border-radius:50% !important;font:700 13px/1 Inter,sans-serif !important;font-variant-numeric:tabular-nums;color:#F1EEE6 !important;background:var(--nv) !important;box-shadow:0 2px 7px rgba(20,36,58,.2) !important;cursor:pointer;z-index:3;transition:transform .14s ease}",
       "html body #page button.fo-si-dot.bat{background:#C9571F !important}",
       "html body #page button.fo-si-dot.ar{background:#177A57 !important}",
       "html body #page button.fo-si-dot.wk{background:#B8933A !important}",
       "html body #page button.fo-si-dot:hover{transform:scale(1.1);z-index:5}",
       "html body #page button.fo-si-dot.on{box-shadow:0 0 0 3px var(--gd),0 2px 9px rgba(20,36,58,.3) !important;z-index:6}",
-      ".fo-si-dl{position:absolute;margin:-.5em 0 0 20px;font:500 8px/1 Inter,sans-serif;color:#4C5867;white-space:nowrap;z-index:4;pointer-events:none;text-shadow:0 0 3px #FFFEFC,0 0 3px #FFFEFC,0 0 3px #FFFEFC}",
+      ".fo-si-dl{position:absolute;margin:-.5em 0 0 20px;font:500 10px/1 Inter,sans-serif;color:#4C5867;white-space:nowrap;z-index:4;pointer-events:none;text-shadow:0 0 3px #FFFEFC,0 0 3px #FFFEFC,0 0 3px #FFFEFC}",
       ".fo-si-dl.lf{margin-left:-20px;transform:translateX(-100%)}",
       ".fo-si-key{display:flex;flex-wrap:wrap;gap:14px;padding:0 16px 15px}",
-      ".fo-si-key span{display:inline-flex;align-items:center;gap:6px;font:600 7.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}",
+      ".fo-si-key span{display:inline-flex;align-items:center;gap:6px;font:600 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--mut)}",
       ".fo-si-key i{width:9px;height:9px;border-radius:50%;background:var(--nv)}",
       ".fo-si-key i.bat{background:#C9571F}.fo-si-key i.ar{background:#177A57}.fo-si-key i.wk{background:#B8933A}",
 
@@ -189,17 +189,17 @@
 
       /* the selected man */
       ".fo-si-hero{position:relative;padding:18px 18px 20px;min-height:230px;overflow:hidden;background:linear-gradient(168deg,#182B44,#0C1B2E)}",
-      ".fo-si-hero .lb{position:relative;z-index:3;display:block;font:600 8px/1 Oswald,sans-serif;letter-spacing:.21em;text-transform:uppercase;color:var(--gd)}",
+      ".fo-si-hero .lb{position:relative;z-index:3;display:block;font:600 10px/1 Oswald,sans-serif;letter-spacing:.21em;text-transform:uppercase;color:var(--gd)}",
       ".fo-si-idw{position:relative;z-index:3;width:150px}",
       ".fo-si-hero h3{margin:13px 0 4px;font:600 25px/.98 Fraunces,Fraunces,Georgia,serif;color:#FFFDF7}",
-      ".fo-si-hero .mt{font:400 9.5px/1.45 Inter,sans-serif;color:rgba(246,239,223,.6)}",
+      ".fo-si-hero .mt{font:400 10px/1.45 Inter,sans-serif;color:rgba(246,239,223,.6)}",
       ".fo-si-hero .big{position:relative;z-index:3;margin-top:16px;font:700 50px/.8 Inter,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums}",
-      ".fo-si-hero .big span{display:block;margin-top:9px;font:600 8px/1 Oswald,sans-serif;letter-spacing:.19em;text-transform:uppercase;color:rgba(246,239,223,.55)}",
+      ".fo-si-hero .big span{display:block;margin-top:9px;font:600 10px/1 Oswald,sans-serif;letter-spacing:.19em;text-transform:uppercase;color:rgba(246,239,223,.55)}",
       ".fo-si-plate{position:absolute;right:14px;bottom:0;z-index:2;width:110px;height:186px;object-fit:cover;object-position:50% 22%;border-radius:9px 9px 0 0;box-shadow:0 0 0 1px rgba(232,185,106,.34),0 -6px 26px rgba(0,0,0,.4)}",
       ".fo-si-stats{padding:15px 17px 17px}",
       ".fo-si-st{display:grid;grid-template-columns:74px minmax(0,1fr) 30px;gap:10px;align-items:center;padding:7px 0}",
-      ".fo-si-st span{font:600 8px/1 Oswald,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:var(--mut)}",
-      ".fo-si-st b{text-align:right;font:700 12px/1 Inter,sans-serif;color:var(--nv);font-variant-numeric:tabular-nums}",
+      ".fo-si-st span{font:600 10px/1 Oswald,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:var(--mut)}",
+      ".fo-si-st b{text-align:right;font:700 13px/1 Inter,sans-serif;color:var(--nv);font-variant-numeric:tabular-nums}",
 
       "@media(max-width:1240px){.fo-si-work{grid-template-columns:290px minmax(0,1fr) 280px}}",
       "@media(max-width:1040px){.fo-si-work{grid-template-columns:290px minmax(0,1fr)}.fo-si-player{grid-column:1/-1;display:grid;grid-template-columns:330px minmax(0,1fr)}}",
@@ -209,18 +209,18 @@
       // content - the cards stood inset with dead air either side and the
       // chart lost a fifth of its width. Stretch puts them back on the edges.
       "@media(max-width:760px){.fo-si-band{padding:14px 13px 15px;border-radius:12px;margin-bottom:12px}" +
-        ".fo-si-bhd{display:block;margin-bottom:12px}.fo-si-bhd h2{font-size:22px}.fo-si-ey{font-size:8px;margin-bottom:7px}" +
+        ".fo-si-bhd{display:block;margin-bottom:12px}.fo-si-bhd h2{font-size:22px}.fo-si-ey{font-size:10px;margin-bottom:7px}" +
         ".fo-si-actions{margin-top:11px;display:grid;grid-template-columns:1fr 1fr;gap:7px}" +
-        "html body #page .fo-si select{min-width:0;height:34px;font-size:8.5px !important;padding:0 24px 0 10px !important;background-position:right 9px center !important}" +
+        "html body #page .fo-si select{min-width:0;height:34px;font-size:10px !important;padding:0 24px 0 10px !important;background-position:right 9px center !important}" +
         ".fo-si-kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}" +
-        ".fo-si-kpi{padding:9px 9px 10px;border-radius:9px}.fo-si-kpi span{font-size:7px;letter-spacing:.13em}" +
+        ".fo-si-kpi{padding:9px 9px 10px;border-radius:9px}.fo-si-kpi span{font-size:10px;letter-spacing:.13em}" +
         ".fo-si-kpi .v{display:block;margin-top:6px}.fo-si-kpi b{font-size:19px}" +
-        ".fo-si-kpi em{display:block;margin:5px 0 0;padding:0;font-size:7px}" +
+        ".fo-si-kpi em{display:block;margin:5px 0 0;padding:0;font-size:10px}" +
         ".fo-si-work{display:flex;flex-direction:column;align-items:stretch}.fo-si-player{display:block}" +
         ".fo-si-chart{padding:14px 14px 40px 34px;height:380px}" +
-        ".fo-si-tk{font-size:7.5px}.fo-si-tk.y{left:-8px}" +
-        ".fo-si-axl{font-size:7.5px;letter-spacing:.16em}.fo-si-axl.y{left:9px}.fo-si-axl.x{left:34px;bottom:12px}" +
-        ".fo-si-key{gap:9px;padding:0 14px 14px}.fo-si-key span{font-size:7px}" +
+        ".fo-si-tk{font-size:10px}.fo-si-tk.y{left:-8px}" +
+        ".fo-si-axl{font-size:10px;letter-spacing:.16em}.fo-si-axl.y{left:9px}.fo-si-axl.x{left:34px;bottom:12px}" +
+        ".fo-si-key{gap:9px;padding:0 14px 14px}.fo-si-key span{font-size:10px}" +
         /* on a phone the plot is barely wider than the dots: the ratings stay,
            the names go, and a tap still opens the man */
         ".fo-si-dl{display:none}html body #page button.fo-si-dot{width:28px !important;height:28px !important;margin:-14px 0 0 -14px;font-size:10px !important}.fo-si-list{max-height:none}}"

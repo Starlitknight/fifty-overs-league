@@ -232,7 +232,7 @@
       "#fo-menubar .fo-mb-cv{width:9px;height:9px;flex:none}",
       "html body #fo-menubar button.fo-mb-out{display:none !important}",
       "}",
-      "@media(max-width:370px){html body #fo-menubar button.fo-mb-t{font:600 9.5px/1 Oswald,sans-serif !important;letter-spacing:.05em}}",
+      "@media(max-width:370px){html body #fo-menubar button.fo-mb-t{font:600 10px/1 Oswald,sans-serif !important;letter-spacing:.05em}}",
       // ONE HEADER, NOT TWO. On a desk wide enough that the masthead's empty
       // middle can hold the menus, the bar stops being its own row and rides
       // INSIDE the masthead - fixed, centred, the full height of the band -

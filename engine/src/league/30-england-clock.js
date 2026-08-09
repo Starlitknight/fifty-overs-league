@@ -247,12 +247,12 @@
     // had the same radius and wore it as a pill. The rule that made the box
     // work is the rule that breaks the line.
     "#topbar#topbar #fo-wclock{position:absolute;right:10px;top:50%;transform:translateY(-50%);display:flex;flex-direction:column;align-items:flex-end;gap:3px;text-decoration:none;padding:2px 0 2px 13px;border:0;border-left:1px solid rgba(232,185,106,.34);border-radius:0;background:none;cursor:pointer;z-index:5}",
-    "#topbar#topbar #fo-wclock b{font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.18em;color:#E8B96A;white-space:nowrap;text-transform:uppercase}",
+    "#topbar#topbar #fo-wclock b{font:600 10px/1 Oswald,sans-serif;letter-spacing:.18em;color:#E8B96A;white-space:nowrap;text-transform:uppercase}",
     // Inter, not Oswald: the second line is a real date and a real clock, and
     // tabular figures stop the minutes shuffling the line every sixty seconds
-    "#topbar#topbar #fo-wclock span{font:400 9.5px/1 Inter,-apple-system,sans-serif;letter-spacing:.02em;color:rgba(241,238,230,.46);white-space:nowrap;font-variant-numeric:tabular-nums}",
-    "#topbar#topbar #fo-wclock i{font:700 9px/1 Oswald,sans-serif;letter-spacing:.06em;color:#FF6B5E;font-style:normal;white-space:nowrap}",
-    "@media(max-width:400px){#topbar#topbar #fo-wclock{padding-left:10px;gap:2.5px}#topbar#topbar #fo-wclock b{font-size:8.5px;letter-spacing:.14em}#topbar#topbar #fo-wclock span{font-size:8.5px}}",
+    "#topbar#topbar #fo-wclock span{font:400 10px/1 Inter,-apple-system,sans-serif;letter-spacing:.02em;color:rgba(241,238,230,.46);white-space:nowrap;font-variant-numeric:tabular-nums}",
+    "#topbar#topbar #fo-wclock i{font:700 10px/1 Oswald,sans-serif;letter-spacing:.06em;color:#FF6B5E;font-style:normal;white-space:nowrap}",
+    "@media(max-width:400px){#topbar#topbar #fo-wclock{padding-left:10px;gap:2.5px}#topbar#topbar #fo-wclock b{font-size:10px;letter-spacing:.14em}#topbar#topbar #fo-wclock span{font-size:10px}}",
     // THE CLOCK IS ABSOLUTE, SO NOTHING IN THE ROW KNOWS IT IS THERE.
     // The wordmark simply ran underneath it - by seventy pixels at 320, and
     // touching at 390. The old pill hid that because it was opaque and painted
