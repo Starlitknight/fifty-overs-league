@@ -1049,7 +1049,7 @@
       ".fo-s2-seck{display:flex;align-items:center;justify-content:space-between;background:#14243A;color:#F6F3EB;border-radius:9px 9px 0 0;padding:7px 14px;font:700 11px Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase}",
       ".fo-s2-seck em{font-style:normal;color:#E8B96A}",
       // ---- rows ----
-      ".fo-s2-row{display:grid;grid-template-columns:44px minmax(170px,1.5fr) 92px 58px minmax(104px,.9fr) 136px 74px 78px 46px 26px;gap:10px;align-items:center;background:#FFFEFC;border:1px solid #eee7d9;border-top:none;padding:8px 14px;cursor:pointer}",
+      ".fo-s2-row{display:grid;grid-template-columns:44px minmax(170px,1.5fr) 92px 58px 136px 74px 78px 46px 26px;gap:10px;align-items:center;background:#FFFEFC;border:1px solid #eee7d9;border-top:none;padding:8px 14px;cursor:pointer}",
       // the standing switch sits above the band, where Grid and Int show it
       ".fo-s2-swrap{margin:0 0 12px}",
       // FORM AND FITNESS, set to read down the column rather than across the
@@ -1081,6 +1081,8 @@
       ".fo-s2-age i{font-style:normal;color:#8a8272}",
       // a talent is one man in nine, so the chip is allowed to be seen from
       // across the page: gold on navy, not a pale cream badge every row wears
+      "html body #page .fo-s2-tchip{display:inline-block;font:700 10px/1 Inter,sans-serif;font-style:normal;letter-spacing:.03em;text-transform:uppercase;background:#14243A;color:#E8B96A;border-radius:5px;padding:2px 5px;margin-right:2px;vertical-align:1px}",
+      "html body #page .fo-s2-tchip.learn{background:none;border:1px dashed #cbbf9f;color:#8F6A1C}",
       ".fo-s2-trait{justify-self:start;font:700 11px Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;background:#14243A;color:#E8B96A;border:1px solid #14243A;border-radius:6px;padding:4px 8px;white-space:nowrap;max-width:100%;overflow:hidden;text-overflow:ellipsis}",
       ".fo-s2-trait i{font-style:normal}.fo-s2-trait .sm{display:none}",
       // and the men without one hold the column with a mark that is plainly
@@ -1183,14 +1185,14 @@
       ".fo-s2-cell span{font-size:10px;letter-spacing:.1em;margin-bottom:2px}",
       ".fo-s2-cell b{font-size:14px}.fo-s2-cell b i{display:none}",
       ".fo-s2-tools{display:none}",
-      ".fo-s2-row{grid-template-columns:30px minmax(0,1.2fr) auto auto 28px 12px;gap:4px 6px;padding:8px 6px}.fo-s2-pic{grid-column:1;grid-row:1 / span 2}.fo-s2-id{grid-column:2;grid-row:1}.fo-s2-age{grid-column:3;grid-row:1}.fo-s2-st10{grid-column:4;grid-row:1}.fo-s2-ovr{grid-column:5;grid-row:1}.fo-s2-car{grid-column:6;grid-row:1}",
+      ".fo-s2-row{grid-template-columns:30px minmax(0,1.2fr) auto auto 28px 12px;gap:4px 6px;padding:8px 6px}.fo-s2-pic{grid-column:1;grid-row:1}.fo-s2-id{grid-column:2;grid-row:1;min-width:0}.fo-s2-age{grid-column:3;grid-row:1}.fo-s2-st10{grid-column:4;grid-row:1}.fo-s2-ovr{grid-column:5;grid-row:1}.fo-s2-car{grid-column:6;grid-row:1}",
       ".fo-s2-hand,.fo-s2-form,.fo-s2-fit{display:none}",
       ".fo-s2-pic{width:30px;height:30px}.fo-s2-pic img.face{width:30px;height:30px}",
       ".fo-s2-flag{width:13px;height:9px;left:-4px;bottom:-2px}",
       ".fo-s2-id b{font-size:11.5px}.fo-s2-id span{font-size:10px}",
       ".fo-s2-age{font-size:10px;padding-left:3px}.fo-s2-age i{font-size:10px}",
       // the short name below fits the column, so the chip never ellipses
-      ".fo-s2-trait{font-size:11px;letter-spacing:0;padding:3px 7px;grid-column:2/7;grid-row:2;justify-self:start;margin-top:1px}.fo-s2-trait.none{display:none}",
+      ".fo-s2-tchip{font-size:10px;padding:2px 4px}",
       ".fo-s2-trait .lg{display:none}.fo-s2-trait .sm{display:inline}",
       // the learning chip carries a name AND a number in the same column, so
       // it gets the tighter setting or the name ellipses away to nothing
@@ -1638,18 +1640,16 @@
         return "<div class='fo-s2-row" + (open ? " open" : "") + "' data-open='" + E(p.name) + "'>" +
           "<span class='fo-s2-pic'><img class='face' src='" + FO_ART + foPkArt(p) + "' alt='' loading='lazy' decoding='async'>" +
           (flg && p.nat ? "<em class='fo-s2-flag'><img src='" + flg + "' alt='" + E(p.nat) + "' onerror=\"this.parentNode.style.display='none'\"></em>" : "") + "</span>" +
-          "<span class='fo-s2-id'><b>" + E(p.name) + foSqStar(p) + "</b><span>" + roleNm + " &middot; " + E(det) + (p.__y ? " &middot; Youth" : "") + "</span></span>" +
-          "<span class='fo-s2-hand'>" + (p.hand === "L" ? "Left Hand" : "Right Hand") + "</span>" +
-          "<span class='fo-s2-age'><i>Age</i> " + (p.age | 0) + "</span>" +
+          "<span class='fo-s2-id'><b>" + E(p.name) + foSqStar(p) + "</b><span>" +
           (function () {
             if ((p.talents || []).length)
-              return "<span class='fo-s2-trait' title='" + E(foS2TraitTip(p)) + "'>" +
-                "<i class='lg'>" + E(foS2Trait(p)) + "</i><i class='sm'>" + E(foS2Trait(p, 1)) + "</i></span>";
+              return "<em class='fo-s2-tchip' title='" + E(foS2TraitTip(p)) + "'>" + E(foS2Trait(p, 1)) + "</em> ";
             var L = foS2Learning(p);
-            if (L) return "<span class='fo-s2-trait learn' title='" + E(foS2LearnTip(L)) + "'>" +
-              "<i>" + E(FO_TAL_SHORT[L.t] || L.t) + "</i><em>" + Math.round(L.r * 100) + "%</em></span>";
-            return "<span class='fo-s2-trait none'>&middot;</span>";
-          })() +
+            if (L) return "<em class='fo-s2-tchip learn' title='" + E(foS2LearnTip(L)) + "'>" + E(FO_TAL_SHORT[L.t] || L.t) + " " + Math.round(L.r * 100) + "%</em> ";
+            return "";
+          })() + roleNm + " &middot; " + E(det) + (p.__y ? " &middot; Youth" : "") + "</span></span>" +
+          "<span class='fo-s2-hand'>" + (p.hand === "L" ? "Left Hand" : "Right Hand") + "</span>" +
+          "<span class='fo-s2-age'><i>Age</i> " + (p.age | 0) + "</span>" +
           foS2RoleStars(p, rCls, ovr) +
           // FORM AND FITNESS READ ON THE ROW. They are the two things that
           // decide whether a man is worth picking this week, and they were

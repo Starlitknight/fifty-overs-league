@@ -114,7 +114,7 @@
       ".fo-si-band{background:linear-gradient(168deg,#182B44,#0C1B2E);border-radius:14px;padding:18px 20px 20px;margin:0 0 16px}",
       ".fo-si-bhd{display:flex;align-items:flex-end;justify-content:space-between;gap:20px;flex-wrap:wrap;margin:0 0 16px}",
       ".fo-si-ey{font:600 11px/1 Inter,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:var(--gd);margin:0 0 9px}",
-      ".fo-si-bhd h2{margin:0;font:700 27px/1 Inter,sans-serif;letter-spacing:.02em;text-transform:uppercase;color:#FFFEFC}",
+      ".fo-si-bhd h2{margin:0;font:600 26px/1.05 Fraunces,Georgia,serif;letter-spacing:-.01em;color:#FFFEFC}",
       ".fo-si-actions{display:flex;align-items:center;gap:8px}",
       "html body #page .fo-si select{appearance:none;-webkit-appearance:none;min-width:118px;height:36px;border:1px solid rgba(232,185,106,.32) !important;border-radius:9px !important;background:rgba(255,253,247,.06) url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='m1 1 4 4 4-4' fill='none' stroke='%23E8B96A' stroke-width='1.4'/%3E%3C/svg%3E\") no-repeat right 12px center/9px 6px !important;color:#F1EEE6 !important;font:600 11px Inter,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;padding:0 32px 0 13px !important;box-shadow:none !important;cursor:pointer}",
       "html body #page .fo-si select option{color:#14243A;background:#FFFEFC}",
@@ -209,7 +209,7 @@
       // content - the cards stood inset with dead air either side and the
       // chart lost a fifth of its width. Stretch puts them back on the edges.
       "@media(max-width:760px){.fo-si-band{padding:14px 13px 15px;border-radius:12px;margin-bottom:12px}" +
-        ".fo-si-bhd{display:block;margin-bottom:12px}.fo-si-bhd h2{font-size:22px}.fo-si-ey{font-size:10px;margin-bottom:7px}" +
+        ".fo-si-bhd{display:block;margin-bottom:12px}.fo-si-bhd h2{font-size:21px}.fo-si-ey{font-size:10px;margin-bottom:7px}" +
         ".fo-si-actions{margin-top:11px;display:grid;grid-template-columns:1fr 1fr;gap:7px}" +
         "html body #page .fo-si select{min-width:0;height:34px;font-size:10px !important;padding:0 24px 0 10px !important;background-position:right 9px center !important}" +
         ".fo-si-kpis{grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}" +
