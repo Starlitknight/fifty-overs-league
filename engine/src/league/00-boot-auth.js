@@ -840,7 +840,7 @@
      masthead goes in the box that owns the right of the masthead - then the
      flex gap keeps them apart and no z-index has to arbitrate.
      It leads the row: on air outranks a notification, which outranks a clock. */
-  var FO_HDR_RIGHT = ["#fo-mlive", "#fo-bell", "#fo-wire-btn", "#fo-clock", "#fo-wclock"];
+  var FO_HDR_RIGHT = ["#fo-mlive", "#fo-bell", "#fo-nbell", "#fo-wire-btn", "#fo-clock", "#fo-wclock"];
   function foHdrRight(tb) {
     try {
       if (!tb) tb = document.getElementById("topbar");
@@ -871,7 +871,7 @@
           "display:flex;align-items:center;gap:9px;z-index:5}",
         // the clock stops pinning itself now that the box it sits in does
         "html body #topbar#topbar #fo-hdr-right #fo-wclock{position:static;transform:none;right:auto;top:auto;margin:0}",
-        "html body #topbar #fo-hdr-right #fo-wire-btn,html body #topbar #fo-hdr-right #fo-bell,html body #topbar #fo-hdr-right #fo-mlive{position:relative;margin:0;flex:none;top:auto;right:auto;left:auto;bottom:auto;transform:none}",
+        "html body #topbar #fo-hdr-right #fo-wire-btn,html body #topbar #fo-hdr-right #fo-bell,html body #topbar #fo-hdr-right #fo-nbell,html body #topbar #fo-hdr-right #fo-mlive{position:relative;margin:0;flex:none;top:auto;right:auto;left:auto;bottom:auto;transform:none}",
         "html body #topbar #fo-hdr-right:empty{display:none}",
         /* THE BELL USED TO FLY ACROSS THE MASTHEAD ON EVERY PAINT.
            It is created by the matchday module as a direct child of #topbar,
@@ -884,7 +884,7 @@
            lands inside #fo-hdr-right it stops being a direct child of the bar
            and this rule stops applying to it, so nothing has to remember to
            turn it back on. */
-        "html body #topbar > #fo-bell,html body #topbar > #fo-wire-btn,html body #topbar > #fo-mlive," +
+        "html body #topbar > #fo-bell,html body #topbar > #fo-nbell,html body #topbar > #fo-wire-btn,html body #topbar > #fo-mlive," +
           "html body #topbar > #fo-clock,html body #topbar > #fo-wclock{visibility:hidden}",
         // THE MASTHEAD KEEPS ITS HEIGHT. Its 46px came from nothing but the
         // 44px menu button standing in it; with the button gone the bar

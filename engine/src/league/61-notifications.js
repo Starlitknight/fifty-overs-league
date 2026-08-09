@@ -133,6 +133,11 @@
       "<i id='fo-nbell-n' style='display:none'></i>";
     var status = tb.querySelector("#fo-top-status");
     if (status && status.parentNode === tb) tb.insertBefore(a, status); else tb.appendChild(a);
+    // the masthead's right-edge group owns every control in that corner; ask
+    // it to adopt the bell NOW rather than on its next sweep, so the bell is
+    // never painted loose in the bar (the anti-flash guard hides it until
+    // this call lands it)
+    try { if (typeof window.foHdrRight === "function") foHdrRight(tb); } catch (eG) {}
     a.addEventListener("click", function () {
       // the hash router takes it from here; the read mark is set by the page
       setTimeout(function () { try { if (typeof window.route === "function") window.route(); } catch (e) {} }, 0);

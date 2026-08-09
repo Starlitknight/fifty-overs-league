@@ -1,17 +1,18 @@
 // youth.mjs — THE YOUTH ACADEMY
 //
-// docs/ACADEMY.md is the authority. In short: a manager scouts one boy per
-// rest day from a nation of his choosing, sees everything about him, and
-// either signs him onto the wage bill or lets him go. He trains in the
-// ordinary nets on the ordinary curve. He leaves at twenty-one whether or not
-// anyone gave him a senior shirt.
+// docs/ACADEMY.md is the authority. In short: the club's scout stands POSTED
+// in one nation (068) and files one report per rest day from there - bands
+// and a whisper, not the boy's file (050). The manager signs him onto the
+// wage bill or lets him go. He trains in the ordinary nets at his own hidden
+// rate, and leaves at twenty-one whether or not anyone gave him a senior
+// shirt.
 //
-// THERE IS NO POTENTIAL ATTRIBUTE. Nothing here stores what a boy will become,
-// because nothing knows: what he becomes is what the shipped training law does
-// to the skills he already has, and that law is not ours to touch. A tier only
-// decides WHERE HE STARTS. Everything the manager needs in order to judge him
-// is therefore on the card in front of him - his skills, his rating, his age -
-// which is the whole of the game the academy plays.
+// THE HIDDEN RATE (068). A boy carries a growth multiplier seeded at his
+// birth - youthPot, below - stored nowhere and served to nobody; the umpire
+// computes it when the nets replay. A tier decides WHERE HE STARTS; the rate
+// decides how fast the nets move him; the scout's WHISPER is the one clue a
+// manager is given, and it is words through noise, never the number. The
+// full account is docs/ACADEMY.md section 1.
 //
 // The consequence is worth stating plainly, because it is the design and not
 // an accident: the nets move a boy about a tenth of his rating over four

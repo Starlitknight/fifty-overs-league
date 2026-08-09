@@ -21,12 +21,27 @@ other cricketer in the world is generated — the same fifteen skills, the same
 engine deriving his rating and his wage from them. Nothing about him is special
 cased.
 
-**There is no potential attribute.** A boy's ceiling is not stored, not hidden,
-and not revealed later, because it does not exist. What he becomes is what the
-ordinary training curve does to the skills he already has, and the training
-curve is the one that is already shipped and already fixed: younger men gain
-faster. A sixteen-year-old improves quickly from a low base; a twenty-year-old
-improves slowly from a higher one.
+**There is a hidden rate — and only a rate.** (Changed by 068; this section
+previously read "there is no potential attribute", and for two years of world
+time that was true.) Every boy carries a growth multiplier seeded at his birth:
+a pure function of the seed stamped on his card (`yseed`), computed by the
+umpire at the moment the nets are replayed, stored nowhere, served to nobody.
+Most boys train at about the ordinary pace (the median is ~1.0×); one in
+fourteen is a late bloomer above 2×, whose card at sixteen undersells him; some
+are near the finished article already (floor 0.75×). The rate multiplies the
+training law's points and does nothing else — no ceiling, no destiny, no
+stored answer — and it expires with the academy at twenty-one. Seniors never
+carry one.
+
+What a manager gets of it is THE WHISPER: his scout's one-sentence opinion,
+computed from the true rate through level-dependent noise (a level-one academy
+mishears by up to a third, a level-ten by a twentieth), printed on the report
+and on the boy's card. Words, never a number. The honest way to learn a boy's
+rate is still the only way: watch him season over season.
+
+Everything else about the curve holds: younger men gain faster, a
+sixteen-year-old improves quickly from a low base, a twenty-year-old slowly
+from a higher one — the rate scales that motion, it does not replace it.
 
 **And until 059 that was a promise the umpire did not keep.** The living layer
 replayed `clubs.squad` and nothing else, so a colt aged a year at every rollover
