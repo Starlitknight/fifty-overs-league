@@ -57,8 +57,26 @@
     }); });
   }
 
-  var N = { asks: [], news: [], unread: 0, at: 0, loading: false };
+  var N = { asks: [], news: [], unread: 0, at: 0, loading: false, readMark: 0 };
   window.__foNotifState = N;
+
+  // READING, in one place. Clears the flags locally and at once, remembers
+  // the newest stamp that was cleared, and tells the server after. The
+  // remembered mark matters: a poll whose request left BEFORE the server
+  // write landed comes back with the old flags, and without the mark that
+  // stale answer would relight everything "Mark all read" had just put out.
+  function readNews() {
+    var news = N.news || [];
+    if (!news.some(function (x) { return x.fresh; })) return;
+    news.forEach(function (x) {
+      N.readMark = Math.max(N.readMark, +x.at || 0);
+      x.fresh = false;
+    });
+    N.unread = (N.asks || []).length;
+    badge();
+    try { window.__foMktBell && __foMktBell(); } catch (e) {}
+    rpc("world_notifications_seen").catch(function () {});
+  }
 
   // WHAT EACH KIND LOOKS LIKE. One glyph a category, the way an inbox has to
   // be scannable before it is readable - a manager should know from the shape
@@ -105,7 +123,10 @@
     rpc("world_my_notifications", { p_limit: 40 }).then(function (d) {
       N.loading = false;
       if (!d || !d.ok) return;
-      N.asks = d.asks || []; N.news = d.news || []; N.unread = +d.unread || 0; N.at = Date.now();
+      N.asks = d.asks || []; N.news = d.news || []; N.at = Date.now();
+      // honour a read the server may not have heard about yet
+      if (N.readMark) N.news.forEach(function (x) { if (x.fresh && (+x.at || 0) <= N.readMark) x.fresh = false; });
+      N.unread = N.asks.length + N.news.filter(function (x) { return x.fresh; }).length;
       badge(); try { window.__foMktBell && __foMktBell(); } catch (eB) {} if (cb) cb();
       if ((location.hash || "").split("?")[0] === "#/news") draw();
     }).catch(function () { N.loading = false; if (cb) cb(); });
@@ -115,22 +136,14 @@
   window.__foNews = {
     get: function () { return N; },
     refresh: refresh,
-    markSeen: function () {
-      var fresh = (N.news || []).some(function (x) { return x.fresh; });
-      if (!fresh) return;
-      // READING IS LOCAL AND INSTANT. The first cut cleared the flags only
-      // after world_notifications_seen came back, so the popover repainted
-      // with everything still unread and "Mark all read" looked dead - and
-      // on a phone that dropped the request it WAS dead for the session.
-      // The reader has read: the list and the badge go quiet now, and the
-      // watermark write follows. If it fails, the next refresh honestly
-      // brings the flags back rather than lying that the server knows.
-      (N.news || []).forEach(function (x) { x.fresh = false; });
-      N.unread = (N.asks || []).length;
-      badge();
-      try { window.__foMktBell && __foMktBell(); } catch (e) {}
-      rpc("world_notifications_seen").catch(function () {});
-    }
+    // READING IS LOCAL AND INSTANT. The first cut cleared the flags only
+    // after world_notifications_seen came back, so the popover repainted
+    // with everything still unread and "Mark all read" looked dead - and
+    // on a phone that dropped the request it WAS dead for the session.
+    // The reader has read: the list and the badge go quiet now, and the
+    // watermark write follows. If it fails, the next refresh honestly
+    // brings the flags back rather than lying that the server knows.
+    markSeen: readNews
   };
 
   // ---- the bell in the topbar ----------------------------------------------
@@ -207,13 +220,10 @@
     // OPENING THE PAGE READS THE NEWS - and only the news. The asks keep
     // their place in the badge until they are actually done, which is the
     // whole distinction the old localStorage bell never made.
-    if (news.some(function (x) { return x.fresh; })) {
-      // read now, tell the server after - the same law as markSeen above
-      news.forEach(function (x) { x.fresh = false; });
-      N.unread = asks.length; badge();
-      try { window.__foMktBell && __foMktBell(); } catch (eMk) {}
-      rpc("world_notifications_seen").catch(function () {});
-    } else { N.unread = asks.length; badge(); }
+    // read now, tell the server after - readNews is the one law for both
+    readNews();
+    N.unread = asks.length + news.filter(function (x) { return x.fresh; }).length;
+    badge();
   }
   function hero(nAsk) {
     var club = "";

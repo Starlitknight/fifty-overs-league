@@ -121,6 +121,42 @@ test('news goes stale when it is read; the watermark is the whole mechanism', as
   assert.ok(n.news.length >= 1, 'the news is still there to re-read');
 });
 
+test('mark all read clears news stamped ahead of the clock (071)', async () => {
+  // A settled transfer is stamped at the day's play hour whatever o'clock the
+  // hammer fell, and a training report at a round's play hour though the
+  // round banks an hour early - so the bell can SHOW news whose stamp is
+  // still ahead of the clock. Reading it must clear it: the old watermark
+  // sat at now(), behind those stamps, and "Mark all read" looked dead.
+  await pool.query('DELETE FROM notif_seen');
+  await pool.query(
+    `INSERT INTO listings(country_id, slot, player, player_json, asking, reserve,
+                          opened_day, closes_day, status, buyer_country, buyer_slot, fee, settled_day)
+     VALUES ('eng', 4, 'Herbert Futurestamp', '{}'::jsonb, 100000, 80000,
+             $1, $1, 'sold', 'eng', 1, 120000, $1)`, [START]);
+  // half past one on the world's clock: the day's play hour is still ahead
+  const MID = EPOCH + START * DAY + 13 * 3600000 + 30 * 60000;
+  const atMid = async sql => {
+    const c = await pool.connect();
+    try {
+      await c.query(`SELECT set_config('world.now_ms', $1, false)`, [String(MID)]);
+      return await c.query(sql);
+    } finally {
+      await c.query(`SELECT set_config('world.now_ms', '', false)`).catch(() => {});
+      c.release();
+    }
+  };
+  let n = (await atMid('SELECT world_my_notifications(60) n')).rows[0].n;
+  const future = n.news.filter(x => x.fresh && +x.at > MID);
+  assert.ok(future.length >= 1, 'the bell shows news stamped ahead of the clock');
+  await atMid('SELECT world_notifications_seen()');
+  n = (await atMid('SELECT world_my_notifications(60) n')).rows[0].n;
+  assert.equal(n.news.filter(x => x.fresh).length, 0,
+    'and reading clears it, future stamp and all: ' +
+    n.news.filter(x => x.fresh).map(x => x.kind).join(', '));
+  await pool.query(`DELETE FROM listings WHERE player = 'Herbert Futurestamp'`);
+  await pool.query('DELETE FROM notif_seen');
+});
+
 test('the money speaks for itself, and administration shouts', async () => {
   await pool.query(`UPDATE clubs SET bank=-40000, finance='{}'::jsonb WHERE country_id='eng' AND slot=1`);
   let a = ask(await notif(), 'money');
