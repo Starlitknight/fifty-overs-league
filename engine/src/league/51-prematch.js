@@ -153,6 +153,53 @@
     return out;
   }
 
+  // ---- A CLUB IN ONE LINE, shared by both front pages -----------------------
+  // The league preview built these inside its own render; the friendly's
+  // front page needs the same rows for clubs that may stand in two different
+  // nations, so the builders live at module level and take the nation along.
+  function foPmBeads(st) {
+    if (!st.form.length) return "<span class='fo-pm-none'>no cricket yet</span>";
+    return st.form.map(function (k) { return "<i class='" + k + "'>" + k.toUpperCase() + "</i>"; }).join("");
+  }
+  function foPmPosOrd(n) {
+    if (!n) return "&mdash;";
+    var s = n % 100 >= 11 && n % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" })[n % 10] || "th";
+    return n + "<u>" + s + "</u>";
+  }
+  function foPmPl(n, one, many) { return n + " " + (n === 1 ? one : many); }
+  function foPmHonours(natId, slot, isMine, mgrs) {
+    var h = null;
+    try {
+      var PLh = window.__foPlanet;
+      if (!PLh || !PLh.heritageOf) return "";
+      if (isMine) h = PLh.heritageOf(natId, slot, true);
+      else if (mgrs) h = PLh.heritageOf(natId, slot, !!mgrs[slot]);
+    } catch (eHr) { return ""; }
+    if (!h) return "";
+    if (h.human) return "<span class='fo-pm-her'>Founded this season &middot; first campaign</span>";
+    var won = [];
+    if (h.titles) won.push(foPmPl(h.titles, "league title", "league titles"));
+    if (h.cups) won.push(foPmPl(h.cups, "national cup", "national cups"));
+    if (h.crowns) won.push(foPmPl(h.crowns, "Champions Cup", "Champions Cups"));
+    return "<span class='fo-pm-her'>Est. " + h.founded + " &middot; " +
+      foPmPl(h.seasons, "season", "seasons") + " played" +
+      (won.length ? " &middot; " + won.join(", ") : " &middot; no honours") + "</span>";
+  }
+  function foPmSideRow(natId, slot, nm, boss, st, isMine, mgrs) {
+    return "<a class='fo-pm-sl" + (isMine ? " mine" : "") +
+      "' href='#/team?c=" + encodeURIComponent(natId) + "&s=" + slot + "'>" +
+      foPmShield(nm, boss, natId) +
+      "<b>" + foPmE(nm) + " <i>" + foPmPosOrd(st.pos) +
+      (st.p ? " &middot; " + st.pts + " pts" : "") + "</i></b>" +
+      foPmHonours(natId, slot, isMine, mgrs) +
+      "<span class='fo-pm-beads'>" + foPmBeads(st) + "</span>" +
+      "<span class='fo-pm-slst'>" +
+      "<u>P<b>" + st.p + "</b></u><u>W<b>" + st.w + "</b></u><u>L<b>" + st.l + "</b></u>" +
+      "<u>PTS<b>" + st.pts + "</b></u><u>NRR<b>" + (st.p ? (st.nrr >= 0 ? "+" : "") + st.nrr.toFixed(2) : "&mdash;") + "</b></u>" +
+      "</span>" +
+      "<s class='fo-pm-chev'>&#8250;</s></a>";
+  }
+
   // ---- HOW IT SHOULD GO ------------------------------------------------------
   // A win probability is the easiest number in a football game to invent, and
   // the house rule here is that every figure must be traceable to something
@@ -219,11 +266,14 @@
     if (ap) ap.textContent = pa + "%";
     host.classList.toggle("settled", !!done);
   }
-  function foPmWpRun(host, sig, key, natId, hSlot, aSlot, hN, aN, ground) {
+  // each side carries its own nation: a league fixture's two clubs share one,
+  // a friendly's may not, and the forty playings must field the right squads
+  function foPmWpRun(host, sig, key, hS, aS, ground) {
     var G = window.__foGame, WT = window.__foWT;
     if (!G || !G.simWorld || !G.hash || !WT || !WT.serverSquad) { host.style.display = "none"; return; }
-    var sqH = WT.serverSquad(natId, hSlot), sqA = WT.serverSquad(natId, aSlot);
+    var sqH = WT.serverSquad(hS.nat, hS.slot), sqA = WT.serverSquad(aS.nat, aS.slot);
     if (!sqH || !sqA) { host.style.display = "none"; return; }
+    var hN = hS.name, aN = aS.name;
     var H = { name: hN, ground: ground, players: sqH }, A = { name: aN, players: sqA };
     var v = { h: 0, a: 0, t: 0, n: FO_PM_WP_N }, i = 0;
     var step = function () {
@@ -261,7 +311,9 @@
   function foPmTick() {
     try {
       if (!FO_PM_ON) return;
-      if ((location.hash || "").split("?")[0] !== "#/preview") return;
+      // the count card is the guard, not the address: this same clock now
+      // serves the friendly's front page on #/feed, so the tick asks only
+      // whether a count is on screen
       var host = document.getElementById("fo-pm-count"); if (!host) return;
       var g = host.__g; if (!g) return;
       var c = foPmCountText(g, Date.now());
@@ -330,63 +382,16 @@
       } catch (eC) {}
       var mine = (mySlot === hSlot || mySlot === aSlot);
 
-      var beads = function (st) {
-        if (!st.form.length) return "<span class='fo-pm-none'>no cricket yet</span>";
-        return st.form.map(function (k) { return "<i class='" + k + "'>" + k.toUpperCase() + "</i>"; }).join("");
-      };
-      var posOrd = function (n) {
-        if (!n) return "&mdash;";
-        var s = n % 100 >= 11 && n % 100 <= 13 ? "th" : ({ 1: "st", 2: "nd", 3: "rd" })[n % 10] || "th";
-        return n + "<u>" + s + "</u>";
-      };
       // A CLUB IN ONE LINE. This was a card apiece - four labelled numbers, a
       // manager's name, a form strip and a caption - and then a second pair of
       // cards naming four cricketers with their roles and their hands. Before
       // a ball has been bowled every one of those numbers is a nought, and a
       // page of noughts is a page of nothing. Where they stand, what they have
       // won, and how they are going: that is the whole of a preview.
-      // WHAT THEY HAVE WON, before this season began. A bot club is an old
-      // county with a cupboard; a claimed one was founded the day somebody
-      // took it. Both facts belong on the billing, and one of them is the only
-      // thing on this page that is not a nought before the first ball.
-      // The manager map is the arbiter, and where it has not landed the line
-      // is left off entirely - a club somebody founded last week must never be
-      // handed somebody else's cupboard.
-      var herOf = function (slot) {
-        try {
-          var PLh = window.__foPlanet;
-          if (!PLh || !PLh.heritageOf) return null;
-          if (slot === mySlot) return PLh.heritageOf(natId, slot, true);
-          if (!g.mgrs) return null;
-          return PLh.heritageOf(natId, slot, !!g.mgrs[slot]);
-        } catch (eHr) { return null; }
-      };
-      var pl9 = function (n, one, many) { return n + " " + (n === 1 ? one : many); };
-      var honours = function (slot) {
-        var h = herOf(slot);
-        if (!h) return "";
-        if (h.human) return "<span class='fo-pm-her'>Founded this season &middot; first campaign</span>";
-        var won = [];
-        if (h.titles) won.push(pl9(h.titles, "league title", "league titles"));
-        if (h.cups) won.push(pl9(h.cups, "national cup", "national cups"));
-        if (h.crowns) won.push(pl9(h.crowns, "Champions Cup", "Champions Cups"));
-        return "<span class='fo-pm-her'>Est. " + h.founded + " &middot; " +
-          pl9(h.seasons, "season", "seasons") + " played" +
-          (won.length ? " &middot; " + won.join(", ") : " &middot; no honours") + "</span>";
-      };
+      // The builders live at module level now (foPmSideRow and friends), so
+      // the friendly's front page reads off the very same rows.
       var sideLine = function (slot, nm, boss, st) {
-        return "<a class='fo-pm-sl" + (slot === mySlot ? " mine" : "") +
-          "' href='#/team?c=" + encodeURIComponent(natId) + "&s=" + slot + "'>" +
-          foPmShield(nm, boss, natId) +
-          "<b>" + foPmE(nm) + " <i>" + posOrd(st.pos) +
-          (st.p ? " &middot; " + st.pts + " pts" : "") + "</i></b>" +
-          honours(slot) +
-          "<span class='fo-pm-beads'>" + beads(st) + "</span>" +
-          "<span class='fo-pm-slst'>" +
-          "<u>P<b>" + st.p + "</b></u><u>W<b>" + st.w + "</b></u><u>L<b>" + st.l + "</b></u>" +
-          "<u>PTS<b>" + st.pts + "</b></u><u>NRR<b>" + (st.p ? (st.nrr >= 0 ? "+" : "") + st.nrr.toFixed(2) : "&mdash;") + "</b></u>" +
-          "</span>" +
-          "<s class='fo-pm-chev'>&#8250;</s></a>";
+        return foPmSideRow(natId, slot, nm, boss, st, slot === mySlot, g.mgrs);
       };
 
       var h2hHTML = h2h.length
@@ -450,7 +455,8 @@
         sheet: "<svg viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='9' cy='8' r='3'/><path d='M3 20a6 6 0 0 1 12 0'/><path d='M17 11h4M19 9v4'/></svg>",
         bars: "<svg viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M5 20V11M12 20V4M19 20v-6'/></svg>",
         cal: "<svg viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='3.5' y='5' width='17' height='16' rx='2.5'/><path d='M3.5 10h17M8 3v4M16 3v4'/></svg>",
-        play: "<svg viewBox='0 0 24 24' width='16' height='16' fill='currentColor'><path d='M8 5v14l11-7z'/></svg>"
+        play: "<svg viewBox='0 0 24 24' width='16' height='16' fill='currentColor'><path d='M8 5v14l11-7z'/></svg>",
+        check: "<svg viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 12.5l5 5L20 6.5'/></svg>"
       };
       var actions = [];
       if (c0.k === "live") {
@@ -459,7 +465,16 @@
         try { if (window.foWtGoHref) lvHref = window.foWtGoHref(natId, hSlot, aSlot); } catch (eLh) {}
         actions.push("<a class='fo-pm-cta live' href='" + (lvHref || ("#/watch?n=" + encodeURIComponent(natId))) + "'>" + ACT.play + "Watch it live</a>");
       }
-      if (mine && c0.k === "soon") actions.push("<a class='fo-pm-cta' href='#/orders'>" + ACT.sheet + "Set your team sheet</a>");
+      // A DONE TASK LOOKS DONE. Saving the orders page files the sheet with
+      // the World Service for every open round (37-world-club), so once it is
+      // saved this button has nothing left to ask - it turns green and offers
+      // a review instead of an instruction.
+      if (mine && c0.k === "soon") {
+        var ordIn = false;
+        try { ordIn = !!(typeof App !== "undefined" && App && App.orders && App.orders.saved); } catch (eOi) {}
+        actions.push("<a class='fo-pm-cta" + (ordIn ? " done" : "") + "' href='#/orders'>" +
+          (ordIn ? ACT.check + "Lineup set &middot; review" : ACT.sheet + "Set your team sheet") + "</a>");
+      }
       if (c0.k === "done") actions.push("<a class='fo-pm-cta' href='#/league?t=results'>" + ACT.bars + "Read the report</a>");
       actions.push(stage
         ? "<a class='fo-pm-back' href='#/facup'>" + ACT.bars + "The whole draw</a>"
@@ -557,7 +572,8 @@
           var wpKey = natId + ":s" + g.seasonNo + ":" + (stage ? "fa" + stage : "r" + round) + ":h" + hSlot + "a" + aSlot;
           var cached = foPmWpLoad(wpKey);
           if (cached) foPmWpPaint(wpHost, cached, true);
-          else foPmWpRun(wpHost, location.hash, wpKey, natId, hSlot, aSlot, hN, aN, ground);
+          else foPmWpRun(wpHost, location.hash, wpKey,
+            { nat: natId, slot: hSlot, name: hN }, { nat: natId, slot: aSlot, name: aN }, ground);
         }
       } catch (eWp) {
         // an empty catch here hid a missing helper behind a bar that just said
@@ -602,6 +618,246 @@
   window.foCupPreviewHref = function (natId, stage, hSlot, aSlot) {
     return "#/preview?n=" + encodeURIComponent(natId) + "&fa=" + encodeURIComponent(stage || "r16") +
       "&h=" + (hSlot | 0) + "&a=" + (aSlot | 0);
+  };
+
+  // ---- A FRIENDLY GETS THE SAME FRONT PAGE ----------------------------------
+  // The friendly's build-up was a navy stage and a card of sentences while a
+  // league fixture two clicks away got the full billing - crests, the ground
+  // painted, the facts in a rank, the bar of forty played-out matches. One
+  // design for a match not yet played, whoever arranged it. The feed page
+  // (44) still owns the address and the fetch; it hands the detail here and
+  // keeps its own refetch clock, and the moment the umpire's book opens the
+  // broadcast takes the room back.
+  //
+  // Two things differ from a round, and both are the friendly's own truth:
+  // the clubs may stand in two different nations (each row reads its own
+  // league), and the conditions come off condOf with the FRIENDLY'S ID for a
+  // round - the exact call the umpire banks it with (tick.mjs runFriendlies),
+  // where the old build-up asked for round nought and promised a wrong sky.
+  window.foRenderFriendlyPreview = function (page, fr, frId, opts) {
+    try {
+      var PL = window.__foPlanet;
+      if (!page || !fr || !fr.home || !PL) return false;
+      foPmCss();
+      opts = opts || {};
+      var hNat = fr.home.country, aNat = fr.away.country;
+      var hSlot = fr.home.slot | 0, aSlot = fr.away.slot | 0;
+      var hN = fr.home.name || "A club", aN = fr.away.name || "A club";
+      var infoOf = function (nat, slot) {
+        try {
+          var all = PL.sidesOf(nat) || [];
+          for (var i = 0; i < all.length; i++) if ((all[i].slot | 0) === (slot | 0)) return all[i];
+        } catch (eI) {}
+        return null;
+      };
+      var hInfo = infoOf(hNat, hSlot);
+      var mgrsH = null, mgrsA = null;
+      try {
+        if (window.__foWorldNames) {
+          mgrsH = window.__foWorldNames.mgr(hNat); mgrsA = window.__foWorldNames.mgr(aNat);
+          if (window.__foWorldNames.want) {
+            if (!mgrsH && !page.__foPmFrAskNmH) { page.__foPmFrAskNmH = 1; window.__foWorldNames.want(hNat, function () { try { window.foRenderFeedPage(); } catch (e) {} }); }
+            if (!mgrsA && aNat !== hNat && !page.__foPmFrAskNmA) { page.__foPmFrAskNmA = 1; window.__foWorldNames.want(aNat, function () { try { window.foRenderFeedPage(); } catch (e) {} }); }
+          }
+        }
+      } catch (eNm) {}
+      var ground = (mgrsH && mgrsH["g" + hSlot]) || (((hInfo && hInfo.city) || hN) + " Ground");
+      var base = foPmArt(), city = (hInfo && hInfo.city) || "";
+      var altArt = base + "home/arches-summer-noon.webp";
+      var art = { src: city ? base + "cities/" + foPmSlug(city) + "-ground.webp" : altArt, alt: altArt };
+      var g = { start: +fr.playAtMs || 0, stop: (+fr.playAtMs || 0) + (PL.LIVE_LEN || 3) * 3600000 };
+      var c0 = foPmCountText(g, Date.now());
+
+      var mySlot = -1, myNat = "";
+      try {
+        var cl = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+        if (cl) { myNat = cl.country; mySlot = cl.slot; }
+      } catch (eC) {}
+      var mineH = myNat === hNat && mySlot === hSlot, mineA = myNat === aNat && mySlot === aSlot;
+      var mine = mineH || mineA;
+
+      // each club's standing, read out of ITS OWN league's snapshot; a book
+      // not on the device yet is asked for once and the page repaints
+      var stOf = function (nat, slot, nm, askFlag) {
+        var snap = null;
+        try { snap = window.__foWorldLg && window.__foWorldLg.get(nat); } catch (eS) {}
+        if (!snap && window.__foWorldLg && window.__foWorldLg.want && !page[askFlag]) {
+          page[askFlag] = 1;
+          window.__foWorldLg.want(nat, function () { try { window.foRenderFeedPage(); } catch (e) {} });
+        }
+        var names = {}; names[slot] = nm;
+        return foPmStanding({ snap: snap, names: names, bySlot: {} }, slot);
+      };
+      var hSt = stOf(hNat, hSlot, hN, "__foPmFrAskH"), aSt = stOf(aNat, aSlot, aN, "__foPmFrAskA");
+
+      var natNm = function (nat) {
+        try { return (window.__foCxAPI.regions() || []).filter(function (r) { return r.id === nat; })[0].nm || ""; } catch (eR) { return ""; }
+      };
+      var flagSrc = "";
+      try {
+        var ff = window.__foCxAPI && window.__foCxAPI.flagFile ? window.__foCxAPI.flagFile(hNat) : hNat;
+        if (ff) flagSrc = base + "flags/" + ff + ".svg";
+      } catch (eFl) {}
+
+      // the first ball, on the reader's own clock - a friendly is arranged
+      // between time zones, so the hour is pinned to the phone and to UTC
+      var whenT = g.start ? new Date(g.start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+      var tzA = ""; try { tzA = (typeof foTzAbbr === "function" && foTzAbbr()) || ""; } catch (eTz) {}
+      var utcT = g.start ? new Date(g.start).toISOString().slice(11, 16) : "";
+
+      var billSide = function (nm, nat, slot, away) {
+        return "<div class='fo-pm-billside" + (away ? " a" : "") + "'>" +
+          foPmShield(nm, slot === 0, nat, true) +
+          "<div><b>" + foPmE(nm) + "</b><i>" + (away ? "Away" : "Home") + "</i></div></div>";
+      };
+
+      var ic = function (d) {
+        return "<svg class='fo-pm-ic' viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='currentColor' " +
+          "stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'>" + d + "</svg>";
+      };
+      var ACT = {
+        sheet: "<svg viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><circle cx='9' cy='8' r='3'/><path d='M3 20a6 6 0 0 1 12 0'/><path d='M17 11h4M19 9v4'/></svg>",
+        check: "<svg viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='currentColor' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'><path d='M4 12.5l5 5L20 6.5'/></svg>",
+        home: "<svg viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><path d='M4 11l8-7 8 7'/><path d='M6 9.5V20h12V9.5'/></svg>",
+        cal: "<svg viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='currentColor' stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round'><rect x='3.5' y='5' width='17' height='16' rx='2.5'/><path d='M3.5 10h17M8 3v4M16 3v4'/></svg>"
+      };
+
+      // THE TRUE CONDITIONS: the same call the umpire banks this friendly
+      // with - the friendly's id stands in for the round (runFriendlies)
+      var PITCH_W = { balanced: "Balanced", flat: "Flat", green: "Green", dry: "Crumbling",
+        slow: "Slow", cracked: "Sticky", twoPaced: "Two-paced" };
+      var PITCH_N = {
+        balanced: "A fair contest; nobody gets favours.",
+        green: "Seam and swing; the new-ball spell is brutal.",
+        dry: "Turns square as it wears on; spinners own the middle.",
+        flat: "A batter's road: boundaries flow, totals balloon.",
+        slow: "Low and grippy; sixes are dear, rotation pays.",
+        cracked: "Unpredictable bounce, wickets for everyone.",
+        twoPaced: "Some balls hurry, some hold; timing is never safe."
+      };
+      var WEATHER_N = {
+        Sunny: "Nothing in it for anyone: true conditions, an honest fight.",
+        Overcast: "Cloud keeps the seamers interested all day; boundaries come harder.",
+        Humid: "Heavy air swings the new ball; survive the opening spell and it eases.",
+        Hot: "Bowlers wilt in the heat; wickets are dearer and runs flow freer.",
+        Scorching: "Brutal on bowlers: scoring surges and wickets are hard-won.",
+        Drizzle: "A damp ball is hard to time; boundaries dry up and scoring crawls.",
+        Windy: "Sixes die in the crosswind; the runs come in hard-run twos instead.",
+        Chilly: "Cold cramps the strokeplay; boundaries are scarce and dots pile up.",
+        Misty: "The new ball stays a menace in the murk; early wickets for the seamers.",
+        "Dew later": "Evening dew blunts the spinners; the chasing side bats the easier half."
+      };
+      var condHTML = "";
+      try {
+        var cond = PL.condOf ? PL.condOf(hNat, hSlot, 0, (+frId | 0)) : null;
+        if (cond) {
+          var pk = String(cond.pitch || "balanced"), wk = String(cond.weather || "Sunny");
+          condHTML = "<div class='fo-pm-duo'>" +
+            "<div class='fo-pm-box'><div class='fo-pm-cap'>The weather</div>" +
+            "<div class='fo-pm-big'>" + foPmE(wk) + "</div>" +
+            "<p class='fo-pm-prn'>" + foPmE(WEATHER_N[wk] || "Match-day conditions.") + "</p></div>" +
+            "<div class='fo-pm-box'><div class='fo-pm-cap'>Pitch report</div>" +
+            "<div class='fo-pm-big'>" + foPmE(PITCH_W[pk] || pk) + "</div>" +
+            "<p class='fo-pm-prn'>" + foPmE(PITCH_N[pk] || "") + "</p></div>" +
+            "</div>";
+        }
+      } catch (eCd) {}
+
+      var actions = [];
+      if (mine && c0.k === "soon") {
+        if (g.start - Date.now() > 3600000) {
+          var ordIn = !!opts.myOrders;
+          actions.push("<a class='fo-pm-cta" + (ordIn ? " done" : "") + "' id='fo-pm-frord' href='#/orders'>" +
+            (ordIn ? ACT.check + "Lineup set &middot; review" : ACT.sheet + "Set your team sheet") + "</a>");
+        }
+        // inside the final hour the sheets are sealed; a button that can only
+        // be refused is not offered
+      }
+      actions.push("<a class='fo-pm-back' href='#/home'>" + ACT.home + "Back to the club</a>");
+      actions.push("<a class='fo-pm-back' href='#/schedule'>" + ACT.cal + "The season&rsquo;s calendar</a>");
+
+      // this markup shares #page with the league preview; the sig cache there
+      // must never mistake this page for its own
+      page.__foPmSig = null;
+      page.innerHTML =
+        "<div class='fo-pm'><div class='fo-pm-in'><div class='fo-pm-card'>" +
+
+        "<div class='fo-pm-folio'>" +
+        (flagSrc ? "<img src='" + flagSrc + "' alt='' onerror=\"this.style.display='none'\">" : "") +
+        "<span>Friendly" + (natNm(hNat) ? " &middot; " + foPmE(natNm(hNat)) : "") + "</span></div>" +
+
+        "<div class='fo-pm-bill'>" +
+        billSide(hN, hNat, hSlot, false) +
+        "<div class='fo-pm-v'><span>vs</span></div>" +
+        billSide(aN, aNat, aSlot, true) +
+        "</div>" +
+
+        "<div class='fo-pm-main'>" +
+        "<figure class='fo-pm-plate'><img src='" + art.src + "' alt='' data-alt='" + art.alt + "' " +
+        "onerror=\"if(this.src.indexOf(this.dataset.alt)<0){this.src=this.dataset.alt}else{this.parentNode.style.display=&#39;none&#39;}\"></figure>" +
+
+        "<div class='fo-pm-facts'>" +
+        "<div class='fo-pm-fact' id='fo-pm-count' data-k='" + c0.k + "'>" +
+        ic("<circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 2'/>") +
+        "<div><b>" + foPmE(c0.big) + "</b><i>" + foPmE(c0.sub) + "</i></div></div>" +
+        "<div class='fo-pm-fact'>" +
+        ic("<path d='M12 21s7-5.3 7-11a7 7 0 1 0-14 0c0 5.7 7 11 7 11z'/><circle cx='12' cy='10' r='2.6'/>") +
+        "<div><b>" + foPmE(ground) + "</b><i>" + foPmE(natNm(hNat) || "") + "</i></div></div>" +
+        "<div class='fo-pm-fact'>" +
+        ic("<circle cx='12' cy='12' r='9'/><path d='M5.4 8.2c4 1.6 9.2 1.6 13.2 0M5.4 15.8c4-1.6 9.2-1.6 13.2 0'/>") +
+        "<div><b>" + foPmE(whenT + (tzA ? " " + tzA : "")) + "</b><i>First ball &middot; " + foPmE(utcT) + " UTC</i></div></div>" +
+        "</div>" +
+        "<p class='fo-pm-dim'>A friendly &mdash; nothing is banked. No points, no table, no place in the record; the sheet you file is the side that walks out.</p>" +
+        "</div>" +
+
+        "<div class='fo-pm-rail'>" +
+        "<div id='fo-pm-wp' class='fo-pm-wp'>" +
+        "<div class='fo-pm-cap'>Win probability &middot; projected</div>" +
+        "<div class='fo-pm-wptop'>" +
+        "<span class='fo-pm-wph'>" + foPmShield(hN, hSlot === 0, hNat) + "<u>" + foPmE(hN) + "</u><b>&mdash;</b></span>" +
+        "<span class='fo-pm-wpa'><b>&mdash;</b><u>" + foPmE(aN) + "</u>" + foPmShield(aN, aSlot === 0, aNat) + "</span>" +
+        "</div>" +
+        "<div class='fo-pm-wpbar'><span class='h'></span><span class='t'></span><span class='a'></span></div>" +
+        "</div>" +
+
+        "<div class='fo-pm-cap'>Team status</div>" +
+        "<div class='fo-pm-two'>" +
+        foPmSideRow(hNat, hSlot, hN, hSlot === 0, hSt, mineH, mgrsH) +
+        foPmSideRow(aNat, aSlot, aN, aSlot === 0, aSt, mineA, mgrsA) +
+        "</div>" +
+
+        condHTML +
+        "</div>" +
+
+        "<div class='fo-pm-foot'>" + actions.join("") + "</div>" +
+        "</div></div></div>";
+
+      document.body.classList.add("fo-pm-on");
+      FO_PM_ON = true;
+      var host = document.getElementById("fo-pm-count");
+      if (host) host.__g = g;
+      try { if (window.__foPmTimer) clearInterval(window.__foPmTimer); } catch (eT) {}
+      window.__foPmTimer = setInterval(foPmTick, 1000);
+
+      // the bar: the same forty playings, keyed to the friendly itself
+      try {
+        var wpHost = document.getElementById("fo-pm-wp");
+        if (wpHost) {
+          var wpKey = "fr" + frId + ":" + hNat + hSlot + "v" + aNat + aSlot;
+          var cached = foPmWpLoad(wpKey);
+          if (cached) foPmWpPaint(wpHost, cached, true);
+          else foPmWpRun(wpHost, location.hash, wpKey,
+            { nat: hNat, slot: hSlot, name: hN }, { nat: aNat, slot: aSlot, name: aN }, ground);
+        }
+      } catch (eWp) {
+        try { console.error("friendly preview: win probability failed", eWp); } catch (eL) {}
+        try { var wpDead = document.getElementById("fo-pm-wp"); if (wpDead) wpDead.style.display = "none"; } catch (eD) {}
+      }
+      return true;
+    } catch (e) {
+      try { console.error("foRenderFriendlyPreview", e); } catch (e2) {}
+      return false;
+    }
   };
 
   function foPmCss() {
@@ -723,6 +979,8 @@
       "html body #page .fo-pm-cta{background:linear-gradient(180deg,#D06035,#B84E28);color:#FFF6EE !important;box-shadow:0 2px 8px rgba(184,78,40,.28);text-decoration:none !important}",
       ".fo-pm-cta:hover{transform:translateY(-1px)}",
       "html body #page .fo-pm-cta.live{background:linear-gradient(180deg,#D06035,#B84E28);color:#FFF6EE !important}",
+      // the filed sheet: green means done, and the button asks nothing more
+      "html body #page .fo-pm-cta.done{background:linear-gradient(180deg,#2A9367,#1F6F4A);box-shadow:0 2px 8px rgba(31,111,74,.28);color:#EFFAF3 !important}",
       ".fo-pm-cta.live:before{content:'';width:8px;height:8px;border-radius:50%;background:#FFE9E0;flex:0 0 auto;animation:foPmLiveDot 1.2s ease-in-out infinite}",
       "@keyframes foPmLiveDot{0%,100%{opacity:1}50%{opacity:.3}}",
       "@media(prefers-reduced-motion:reduce){.fo-pm-cta.live:before{animation:none}}",

@@ -142,7 +142,9 @@
       "html body #page button.fo-si-row.on{background:linear-gradient(90deg,rgba(232,185,106,.18),rgba(232,185,106,0) 70%) !important;box-shadow:inset 3px 0 0 var(--gd) !important}",
       ".fo-si-thumb{width:36px;height:36px;border-radius:9px;display:block;object-fit:cover;object-position:50% 20%;background:#16283F;box-shadow:0 0 0 1px rgba(27,36,50,.16)}",
       ".fo-si-rid{min-width:0}",
-      ".fo-si-rid b{display:block;font:600 13.5px/1.2 Fraunces,Fraunces,Georgia,serif;color:var(--nv);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-si-rid b{display:block;font:600 13.5px/1.2 Fraunces,Fraunces,Georgia,serif;color:var(--nv);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;cursor:pointer}",
+      ".fo-si-rid b:hover{color:#B44A22;text-decoration:underline;text-decoration-thickness:1px;text-underline-offset:2px}",
+      ".fo-si-rid b:focus-visible{outline:2px solid #C9571F;outline-offset:1px;border-radius:3px}",
       ".fo-si-rid i{display:block;margin-top:3px;font:600 7.5px/1 Oswald,sans-serif;font-style:normal;letter-spacing:.15em;text-transform:uppercase;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-si-trend{font:600 7.5px/1 Oswald,sans-serif;letter-spacing:.1em;text-transform:uppercase;white-space:nowrap;color:#4E8A72}",
       ".fo-si-trend.up{color:#177A57}.fo-si-trend.down{color:#B4432C}",
@@ -286,7 +288,9 @@
       var tr = foSiTrend(p);
       return "<button type='button' class='fo-si-row" + (selected.name === p.name ? " on" : "") + "' data-si-player='" + foSiE(p.name) + "'>" +
         "<img class='fo-si-thumb' src='" + foSiE(foSiArt(p)) + "' alt='' loading='lazy' decoding='async'>" +
-        "<span class='fo-si-rid'><b>" + foSiE(p.name) + "</b><i>" +
+        // his NAME is a door too, not only the chevron: a reader taps the
+        // word he is looking at, and here that word did nothing but select
+        "<span class='fo-si-rid'><b data-si-open='" + foSiE(p.name) + "' role='link' tabindex='0'>" + foSiE(p.name) + "</b><i>" +
         foSiE(foSiRoleName(p).replace("Wicketkeeper", "WK").replace("All-rounder", "AR")) +
         " &middot; AGE " + Math.floor(foSiAge(p)) + " &middot; " + foSiNat(p) + "</i></span>" +
         "<span class='fo-si-trend " + tr.cls + "'>" + tr.mark + " " + tr.word + "</span>" +

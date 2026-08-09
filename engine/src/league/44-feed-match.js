@@ -324,6 +324,39 @@
       var winStart = +j.playAtMs || 0, BALL_MS = 18000;
       var cal = { round: 0, seasonNo: 0, __fr: true };
       if (!j.log) {
+        // THE SAME FRONT PAGE AS A ROUND. The preview room (51) paints the
+        // friendly's build-up in the league fixture's own dress - billing,
+        // ground plate, facts, the bar of forty playings - so the two
+        // pre-match pages are one design. This page keeps the address, the
+        // fetch and the refetch clock; the moment the umpire's book opens,
+        // the broadcast below takes the room back.
+        if (window.foRenderFriendlyPreview) {
+          // whether MY sheet is on this friendly's card, asked once per
+          // friendly so the teamsheet button can wear its green
+          var myO = FRS["myord:" + frId];
+          var tokMy = ""; try { tokMy = (window.__foJWT && window.__foJWT()) || ""; } catch (eT9) {}
+          if (myO === undefined && tokMy) {
+            FRS["myord:" + frId] = null;
+            fetch(SB + "/rest/v1/rpc/world_my_friendlies", {
+              method: "POST",
+              headers: { apikey: KEY, Authorization: "Bearer " + tokMy, "content-type": "application/json" },
+              body: "{}"
+            }).then(function (r) { return r.ok ? r.json() : null; })
+              .then(function (list) {
+                var hit = (list || []).filter(function (x) { return x && +x.id === +frId; })[0];
+                FRS["myord:" + frId] = !!(hit && hit.myOrders);
+                if (T.id === id && (location.hash || "").split("?")[0] === "#/feed") window.foRenderFeedPage();
+              }).catch(function () { delete FRS["myord:" + frId]; });
+          }
+          document.body.classList.remove("fo-fd-on");
+          if (foRenderFriendlyPreview(page, j, frId, { myOrders: FRS["myord:" + frId] === true })) {
+            clearTimeout(T.timer);
+            T.timer = setTimeout(function () { frFetch(frId, true).then(function () { window.foRenderFeedPage(); }); },
+              winStart - Date.now() > 150000 ? 60000 : 20000);
+            return;
+          }
+          document.body.classList.add("fo-fd-on");
+        }
         var mins = Math.max(1, Math.ceil((winStart - Date.now()) / 60000));
         // BOTH CLOCKS, NAMED. The topbar speaks UTC and the phone speaks its
         // own timezone; a kick-off printed bare read as whichever clock the
@@ -346,6 +379,9 @@
           winStart - Date.now() > 150000 ? 60000 : 20000);
         return;
       }
+      // the book is open: the broadcast takes the room back from the preview
+      document.body.classList.remove("fo-pm-on");
+      document.body.classList.add("fo-fd-on");
       T.args = [page, j.log.slice().reverse(), m, rid, cal, winStart, BALL_MS, id];
       paint.apply(null, T.args);
       clearTimeout(T.timer);
@@ -361,6 +397,7 @@
     if (!pl || !wt || !wt.serverFixtures) { setTimeout(window.foRenderFeedPage, 600); return; }
     css();
     document.body.classList.add("fo-fd-on");
+    document.body.classList.remove("fo-pm-on");   // in case the friendly preview held the room
     var q = qs(), rid = q.n || "eng";
     if (q.fr) { renderFriendly(page, q.fr); return; }
     var sv = wt.serverFixtures(rid, Date.now());
