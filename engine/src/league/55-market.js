@@ -932,26 +932,47 @@
   function bellBadge() {
     var el = document.getElementById("fo-wire-bdg"); if (!el) return;
     var n = wireLoad().items.filter(function (x) { return !x.r; }).length;
+    // ONE BELL carries both feeds: the market's own wire, and the served
+    // asks-and-news the notifications module exposes (it retired its bell)
+    try { var N9 = window.__foNews && __foNews.get(); if (N9) n += (+N9.unread || 0); } catch (e9) {}
     el.textContent = n > 9 ? "9+" : String(n);
     el.style.display = n ? "" : "none";
   }
+  try { window.__foMktBell = bellBadge; } catch (eMB) {}
   function bellPaint() {
     var pop = document.getElementById("fo-wire-pop"); if (!pop) return;
     var w = wireLoad();
     var ic = { out: ["&#9660;", "out"], in: ["&#10003;", "in"], won: ["&#9733;", "won"], gone: ["&#8212;", "gone"] };
+    // THE ONE BELL'S LIST: the served asks stand pinned at the top - they are
+    // things to DO, with a clock on some of them - then the served news and
+    // the market's own wire run together, newest first.
+    var N9 = null; try { N9 = window.__foNews && __foNews.get(); } catch (e9) {}
+    var askRows = ((N9 && N9.asks) || []).map(function (x) {
+      return "<div class='it ask" + (x.urgent ? " urgent" : "") + "' data-href='" + E(x.go || "#/news") + "'>" +
+        "<span class='ic ask'>&#9873;</span>" +
+        "<div class='tx'><b>" + E(x.title || "") + "</b>" + E(x.body || "") + "</div></div>";
+    }).join("");
+    var merged = ((N9 && N9.news) || []).map(function (x) {
+      return { at: +x.at || 0, unread: !!x.fresh, href: x.go || "#/news", ic: ic.gone,
+               html: "<b>" + E(x.title || "") + "</b>" + E(x.body || "") };
+    }).concat((w.items || []).map(function (it) {
+      return { at: +it.at || 0, unread: !it.r, lid: it.lid, href: it.href, ic: ic[it.k] || ic.gone, html: it.t };
+    })).sort(function (a, b) { return b.at - a.at; }).slice(0, 14);
     pop.innerHTML = "<div class='ph'><b>The wire</b><span id='fo-wire-clear'>Mark all read</span></div>" +
-      (w.items.length ? w.items.map(function (it) {
-        var g = ic[it.k] || ic.gone;
-        return "<div class='it" + (it.r ? "" : " unread") + "'" +
+      askRows +
+      (merged.length ? merged.map(function (it) {
+        return "<div class='it" + (it.unread ? " unread" : "") + "'" +
           (it.lid != null ? " data-lid='" + it.lid + "'" : "") +
           (it.href ? " data-href='" + E(it.href) + "'" : "") +
-          "><span class='ic " + g[1] + "'>" + g[0] + "</span>" +
-          "<div class='tx'>" + it.t + "<i>" + agoTxt(it.at) + "</i></div></div>";
-      }).join("") : "<div class='none'>Nothing on the wire yet. Bid on a man and word of the auction lands here.</div>");
+          "><span class='ic " + it.ic[1] + "'>" + it.ic[0] + "</span>" +
+          "<div class='tx'>" + it.html + "<i>" + agoTxt(it.at) + "</i></div></div>";
+      }).join("") : (askRows ? "" : "<div class='none'>Nothing on the wire yet. Play a round, or bid on a man.</div>")) +
+      "<a class='pf' href='#/news'>The whole news page &rsaquo;</a>";
     var mk = document.getElementById("fo-wire-clear");
     if (mk) mk.addEventListener("click", function (ev) {
       ev.stopPropagation();
       var w2 = wireLoad(); (w2.items || []).forEach(function (x) { x.r = true; }); wireSave(w2);
+      try { window.__foNews && __foNews.markSeen(); } catch (eS) {}
       bellBadge(); bellPaint();
     });
   }
@@ -987,8 +1008,10 @@
     pop.style.left = Math.max(8, Math.min(rc.right - w, (window.innerWidth || 360) - w - 8)) + "px";
     pop.style.top = (rc.bottom + 8) + "px";
     pop.classList.add("on");
-    // opening the wire reads it
+    // opening the wire reads it - the local ledger and the served news both;
+    // the asks keep their place, as they always have
     var w2 = wireLoad(); (w2.items || []).forEach(function (x) { x.r = true; }); wireSave(w2);
+    try { window.__foNews && __foNews.markSeen(); } catch (eS2) {}
     setTimeout(bellBadge, 600);
   }
   function bellMount() {
@@ -1399,6 +1422,12 @@
       "#fo-wire-pop .tx{min-width:0;font:400 12px/1.5 Inter,sans-serif;color:#2a3444;white-space:normal}",
       "#fo-wire-pop .tx i{display:block;font-style:normal;font:400 10px/1.5 Inter,sans-serif;color:#98a0ae;margin-top:2px}",
       "#fo-wire-pop .none{padding:24px 18px;font:400 12.5px/1.6 Fraunces,Georgia,serif;color:rgba(20,28,40,.5);text-align:center}",
+      // the pinned asks: things to do, with the urgent ones wearing the ember
+      "#fo-wire-pop .it.ask{background:#F8F6EF;border-left:3px solid rgba(180,74,34,.4)}",
+      "#fo-wire-pop .it.ask.urgent{border-left-color:#B4351F;background:#FBF3EC}",
+      "#fo-wire-pop .ic.ask{background:rgba(180,74,34,.12);color:#B4351F}",
+      "#fo-wire-pop .tx b{display:block;font:600 12.5px/1.4 Inter,sans-serif;color:#141C28}",
+      "html body #fo-wire-pop a.pf{display:block;padding:12px 16px;text-align:center;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#C9571F !important;text-decoration:none;border-top:1px solid rgba(27,36,50,.08)}",
       // narrower grounds: the rail becomes the card's foot, gauges close ranks
       "@media(max-width:640px){",
       "html body #page .fo-mk-row{grid-template-columns:1fr}",

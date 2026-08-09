@@ -106,11 +106,25 @@
       N.loading = false;
       if (!d || !d.ok) return;
       N.asks = d.asks || []; N.news = d.news || []; N.unread = +d.unread || 0; N.at = Date.now();
-      badge(); if (cb) cb();
+      badge(); try { window.__foMktBell && __foMktBell(); } catch (eB) {} if (cb) cb();
       if ((location.hash || "").split("?")[0] === "#/news") draw();
     }).catch(function () { N.loading = false; if (cb) cb(); });
   }
   window.__foNotifRefresh = refresh;
+  // the news desk, for the one bell (55-market) to read
+  window.__foNews = {
+    get: function () { return N; },
+    refresh: refresh,
+    markSeen: function () {
+      var fresh = (N.news || []).some(function (x) { return x.fresh; });
+      if (!fresh) return;
+      rpc("world_notifications_seen").then(function () {
+        (N.news || []).forEach(function (x) { x.fresh = false; });
+        N.unread = (N.asks || []).length;
+        try { window.__foMktBell && __foMktBell(); } catch (e) {}
+      }).catch(function () {});
+    }
+  };
 
   // ---- the bell in the topbar ----------------------------------------------
   function badge() {
@@ -122,22 +136,15 @@
     if (bell) bell.classList.toggle("has", N.unread > 0);
   }
   function wire() {
-    var tb = document.getElementById("topbar"); if (!tb) return;
-    if (!jwt() || !claimed()) { var old = document.getElementById("fo-nbell"); if (old) old.remove(); return; }
-    if (document.getElementById("fo-nbell")) { badge(); return; }
+    // ONE BELL. This module used to hang its own bell (#fo-nbell) beside the
+    // market's, and the masthead wore two identical glyphs for two halves of
+    // the same idea. The market's bell survives - it owns the popover - and
+    // THIS module becomes its news desk: the served asks and news are exposed
+    // below and the market bell folds them into its badge and its list. Any
+    // bell an older session left in the DOM is taken down.
+    var old = document.getElementById("fo-nbell"); if (old) old.remove();
+    if (!jwt() || !claimed()) return;
     css();
-    var a = document.createElement("a");
-    a.id = "fo-nbell"; a.href = "#/news"; a.setAttribute("aria-label", "News");
-    a.innerHTML = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'>" +
-      "<path d='M18 8a6 6 0 1 0-12 0c0 7-3 9-3 9h18s-3-2-3-9'/><path d='M13.7 21a2 2 0 0 1-3.4 0'/></svg>" +
-      "<i id='fo-nbell-n' style='display:none'></i>";
-    var status = tb.querySelector("#fo-top-status");
-    if (status && status.parentNode === tb) tb.insertBefore(a, status); else tb.appendChild(a);
-    // the masthead's right-edge group owns every control in that corner; ask
-    // it to adopt the bell NOW rather than on its next sweep, so the bell is
-    // never painted loose in the bar (the anti-flash guard hides it until
-    // this call lands it)
-    try { if (typeof window.foHdrRight === "function") foHdrRight(tb); } catch (eG) {}
     a.addEventListener("click", function () {
       // the hash router takes it from here; the read mark is set by the page
       setTimeout(function () { try { if (typeof window.route === "function") window.route(); } catch (e) {} }, 0);
