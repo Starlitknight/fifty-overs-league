@@ -687,17 +687,56 @@
         : (meta.tossWin === m.home.name ? m.away.name : m.home.name);
       batNm = innNow ? (batFirst === m.home.name ? m.away.name : m.home.name) : batFirst;
     }
-    var batBits = [];
-    if (batNm) batBits.push(E(batNm) + " batting");
-    batBits.push(innNow ? "2nd innings" : "1st innings");
-    if (innNow && inns[1].target) batBits.push("chasing " + inns[1].target);
-    var batLine = (!done && (tp || I.open))
-      ? "<div class='fd-batline'><s></s>" + batBits.join(" &middot; ") + "</div>" : "";
     var scoreHtml;
     if (tp) {
-      scoreHtml = "<div class='fd-scorerow'><em>" + tp.runs + "/" + tp.wkts + "</em><span>" + ovLabel + " <u>OVERS</u></span></div>";
+      scoreHtml = "<div class='fd-scorerow'><em>" + tp.runs + "/" + tp.wkts + "</em><span>" + ovLabel + " <u>OV</u></span></div>";
     } else {
-      scoreHtml = "<div class='fd-scorerow'><span class='op'>" + E(batNm || (innNow ? m.away.name : m.home.name)) + " &middot; the innings is under way</span></div>";
+      scoreHtml = "<div class='fd-scorerow'><span class='op'>The innings is under way&hellip;</span></div>";
+    }
+
+    // ---- THE SCORE BUG (the manager's pick of three) -----------------------
+    // Television's bug, full size: while the cricket is on, the BATTING side
+    // owns the header with a gold dot, the opponent drops to one small caps
+    // line, and the conditions and the toss stop being a sentence - a sky
+    // glyph, a pitch swatch and a three-letter toss chip say the same thing
+    // in a tenth of the ink. At stumps the two-team billing returns, because
+    // nobody is batting a finished match.
+    var abbr9 = function (nm) {
+      return String(nm || "").replace(/[^A-Za-z ]/g, "").trim().split(/\s+/)
+        .map(function (w) { return (w[0] || "").toUpperCase(); }).join("").slice(0, 3);
+    };
+    var WX_IC = {
+      sun: "<svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='#E8C97A' stroke-width='2' stroke-linecap='round'><circle cx='12' cy='12' r='4.2'/><path d='M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5 5l2.1 2.1M16.9 16.9L19 19M19 5l-2.1 2.1M7.1 16.9L5 19'/></svg>",
+      cloud: "<svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='#B9CCE8' stroke-width='2' stroke-linejoin='round'><path d='M6.5 19a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19 12.2 3.5 3.5 0 0 1 18 19z'/></svg>",
+      rain: "<svg width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='#B9CCE8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'><path d='M6.5 15a4.5 4.5 0 1 1 .9-8.9A6 6 0 0 1 19 8.2 3.5 3.5 0 0 1 18 15z'/><path d='M8 18.5v2M12 18.5v2M16 18.5v2'/></svg>"
+    };
+    var PITCH_DOT = { green: "#3E8A5A", flat: "#C8B98A", dry: "#B08D4F", crumbling: "#B08D4F",
+      balanced: "#7BA37B", slow: "#8A8A6F", cracked: "#A0693C", sticky: "#A0693C", "two-paced": "#9B8262" };
+    var bugHead = "";
+    if (!done && batNm) {
+      var oppNm = batNm === m.home.name ? m.away.name : m.home.name;
+      var oppSlot = batNm === m.home.name ? m.away.slot : m.home.slot;
+      var oppNat = batNm === m.home.name ? (m.away.__c || rid) : (m.home.__c || rid);
+      var batSlot = batNm === m.home.name ? m.home.slot : m.away.slot;
+      var batNat = batNm === m.home.name ? (m.home.__c || rid) : (m.away.__c || rid);
+      var chips9 = [];
+      if (meta && meta.wx) {
+        var wk9 = /sun|hot|scorch|dew/i.test(meta.wx) ? "sun" : /drizzle|rain/i.test(meta.wx) ? "rain" : "cloud";
+        chips9.push("<span class='ch'>" + WX_IC[wk9] + E(meta.wx) + "</span>");
+      }
+      if (meta && meta.pitch) {
+        var pk9 = String(meta.pitch).toLowerCase();
+        chips9.push("<span class='ch'><i style='background:" + (PITCH_DOT[pk9] || "#7BA37B") + "'></i>" + E(meta.pitch) + "</span>");
+      }
+      if (meta && meta.tossWin && meta.tossDo)
+        chips9.push("<span class='ch toss'>" + E(abbr9(meta.tossWin)) + " " + (/bat/i.test(meta.tossDo) ? "bat" : "bowl") + " first</span>");
+      var subBits = innNow
+        ? ((inns[1].target ? "Chasing " + inns[1].target + " &middot; " : "2nd innings &middot; ") + "v " + tlink(oppNm, oppSlot, oppNat))
+        : "1st innings &middot; v " + tlink(oppNm, oppSlot, oppNat);
+      bugHead =
+        (chips9.length ? "<div class='fd-bugchips'>" + chips9.join("") + "</div>" : "") +
+        "<div class='fd-bug'><b>" + tlink(batNm, batSlot, batNat) + "</b><s></s></div>" +
+        "<div class='fd-bugsub'>" + subBits + "</div>";
     }
     // the three reads under the score, all arithmetic on the umpire's prints
     var mets = "";
@@ -751,12 +790,11 @@
       "<div class='fd-stage" + (art ? " hasart" : "") + "'" +
       (art ? " style=\"background-image:linear-gradient(90deg,rgba(10,26,48,.97) 0%,rgba(10,26,48,.9) 48%,rgba(10,26,48,.68) 100%),url('" + art + "')\"" : "") + ">" +
       "<div class='fd-stagein'>" +
-      "<div class='fd-teams'><b" + (!done && batNm === m.home.name ? " class='bat'" : "") + ">" +
-      tlink(m.home.name, m.home.slot, m.home.__c || rid) + "</b><i>vs</i>" +
-      "<b" + (!done && batNm === m.away.name ? " class='bat'" : "") + ">" +
-      tlink(m.away.name, m.away.slot, m.away.__c || rid) + "</b></div>" +
-      (condBits.length ? "<div class='fd-cond'>" + condBits.join(" &middot; ") + "</div>" : "") +
-      batLine + scoreHtml + mets +
+      (bugHead ||
+        ("<div class='fd-teams'><b>" + tlink(m.home.name, m.home.slot, m.home.__c || rid) + "</b><i>vs</i><b>" +
+         tlink(m.away.name, m.away.slot, m.away.__c || rid) + "</b></div>" +
+         (condBits.length ? "<div class='fd-cond'>" + condBits.join(" &middot; ") + "</div>" : ""))) +
+      scoreHtml + mets +
       (done && cal.__fr ? (function () {
         // the post-match read the page was missing: FULL TIME and the
         // umpire's own result line, fetched once the server unseals it
@@ -1291,12 +1329,21 @@
       ".fo-fd .fd-teams b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(22px,2.4vw,30px);color:#FFFEFC;letter-spacing:.01em}",
       ".fo-fd .fd-teams i{font-style:normal;font-family:Fraunces,Georgia,serif;font-size:15px;color:var(--foor)}",
       ".fo-fd .fd-cond{font:500 13.5px/1.6 Inter,sans-serif;color:#8FA8CC;margin-top:4px}",
-      // whose runs these are: the batting side wears a gold mark on the
-      // billing, and the line above the score says the side, the innings and
-      // the chase - the score is never an orphan number again
-      ".fo-fd .fd-teams b.bat:after{content:'';display:inline-block;width:8px;height:8px;border-radius:50%;background:var(--fogold);margin-left:8px;vertical-align:middle}",
-      ".fo-fd .fd-batline{display:flex;align-items:center;gap:8px;margin-top:13px;font:700 10px/1.4 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--fogold)}",
-      ".fo-fd .fd-batline s{width:7px;height:7px;border-radius:2px;background:var(--fogold);text-decoration:none;flex:none}",
+      // THE SCORE BUG: while the cricket is on, the batting side owns the
+      // header with a gold dot; the opponent is one small caps line; the sky,
+      // the square and the toss are chips, not a sentence
+      ".fo-fd .fd-bugchips{display:flex;align-items:center;gap:7px;flex-wrap:wrap;margin:0 0 13px}",
+      ".fo-fd .fd-bugchips .ch{display:inline-flex;align-items:center;gap:6px;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:rgba(244,239,228,.75);background:rgba(255,253,247,.08);border:1px solid rgba(255,253,247,.14);border-radius:999px;padding:6px 10px;white-space:nowrap}",
+      ".fo-fd .fd-bugchips .ch svg{display:block;flex:none}",
+      ".fo-fd .fd-bugchips .ch i{width:9px;height:9px;border-radius:3px;flex:none;box-shadow:inset 0 0 0 1px rgba(0,0,0,.25)}",
+      ".fo-fd .fd-bugchips .ch.toss{margin-left:auto}",
+      ".fo-fd .fd-bug{display:flex;align-items:center;gap:10px}",
+      ".fo-fd .fd-bug b{font:700 clamp(24px,6.4vw,32px)/1 Oswald,sans-serif;text-transform:uppercase;letter-spacing:.02em;color:#FFFDF7;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".fo-fd .fd-bug b a{color:inherit !important;text-decoration:none !important}",
+      ".fo-fd .fd-bug s{width:9px;height:9px;border-radius:50%;background:var(--fogold);text-decoration:none;flex:none}",
+      ".fo-fd .fd-bugsub{margin-top:6px;font:600 10.5px/1.5 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(244,239,228,.55)}",
+      ".fo-fd .fd-bugsub a{color:rgba(244,239,228,.75) !important;text-decoration:none !important}",
+      ".fo-fd .fd-bugsub a:hover{color:#FFFDF7 !important}",
       ".fo-fd .fd-scorerow{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-top:8px}",
       ".fo-fd .fd-scorerow em{font-style:normal;font:700 clamp(48px,6vw,68px)/1 Inter,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums;letter-spacing:.01em}",
       ".fo-fd .fd-scorerow span{font:700 21px/1 Inter,sans-serif;color:var(--fogold);font-variant-numeric:tabular-nums}",
