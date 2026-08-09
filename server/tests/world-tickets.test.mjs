@@ -184,6 +184,21 @@ test('the crowd locks 24 hours out', () => {
   assert.deepEqual(b, a, 'a price set inside the last day touches no remaining sale');
 });
 
+test('a hot fixture queues early; a cold one is a late rush; both bank the same house', () => {
+  const mm = EPOCH + 300 * DAY + 14 * 3600000;
+  const tenOut = mm - 10 * DAY;
+  const hot = gateSale(12000, 15000, mm, null, tenOut, 1);
+  const cold = gateSale(12000, 15000, mm, null, tenOut, 0);
+  assert.ok(hot.sold > 3000, 'the derby is already selling ten days out: ' + hot.sold);
+  assert.equal(cold.sold, 0, 'the dead rubber has not even opened');
+  assert.ok(hot.opensAt < cold.opensAt, 'and its window opened first');
+  // at the lock, pace was all that differed - the same crowd walks in
+  const hotFinal = gateSale(12000, 15000, mm, null, null, 1);
+  const coldFinal = gateSale(12000, 15000, mm, null, null, 0);
+  assert.equal(hotFinal.sold, coldFinal.sold, 'flat-priced totals match whatever the pace');
+  assert.equal(hotFinal.take, coldFinal.take, 'and so does the money');
+});
+
 test('the board is the banked sale trimmed to the clock', () => {
   const matchMs = EPOCH + 200 * DAY + 14 * 3600000;
   const demand = 14000, seats = 15000;

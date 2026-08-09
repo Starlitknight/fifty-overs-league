@@ -117,10 +117,12 @@ export const TICKET = 26;                    // the league's price, and every bo
 // JUST fills the stands - and it moves with the mood, the visitor and the
 // weather.
 //
-// A GATE IS SOLD IN ADVANCE. Six daily tranches, accelerating toward the
-// match, the last of them 24 hours before the first ball - after which the
-// crowd is locked, because no sale day remains for a late price to touch.
-// Each tranche sells at the price in force on ITS day, so a mid-week price
+// A GATE IS SOLD IN ADVANCE. Daily tranches ending 24 hours before the
+// first ball - after which the crowd is locked, because no sale day remains
+// for a late price to touch. How MANY days, and how the queue leans across
+// them, is the match's own heat (salesWindow below): a cold fixture is a
+// six-day late rush, a derby opens a fortnight out and sells early. Each
+// tranche sells at the price in force on ITS day, so a mid-week price
 // change moves only the days still to come. Nothing about this is stored:
 // tickets sold so far is a pure function of the dated prices, the demand
 // and the clock, which is why the board a manager watches can never
@@ -147,7 +149,26 @@ export const TICKET_ELASTICITY = 1.4;
 export const TICKET_KNEE = 62, TICKET_KNEE_W = 9;
 const cliffAt = p => 1 / (1 + Math.exp((p - TICKET_KNEE) / TICKET_KNEE_W));
 export const TICKET_LOCK_MS = 24 * 3600000;
-export const SALES_FRACS = [0.10, 0.12, 0.15, 0.18, 0.22, 0.23];
+// THE PACE OF THE QUEUE IS THE MATCH'S OWN. A cold fixture sells the old
+// way: a short window, most of it in the last days before the lock. A HOT
+// one - the flagship visiting, an ecstatic following, a late-season decider
+// - opens its window up to a fortnight out and sells front-loaded, the way
+// a derby actually does. heat is 0..1; the weights always sum to one, so a
+// flat-priced gate banks the same total whatever its pace.
+export const TICKET_WINDOW_BASE = 6, TICKET_WINDOW_MAX = 14;
+export function salesWindow(heat) {
+  const h = Math.max(0, Math.min(1, heat || 0));
+  const days = TICKET_WINDOW_BASE + Math.round((TICKET_WINDOW_MAX - TICKET_WINDOW_BASE) * h);
+  const g = 0.8 - 1.3 * h;                     // +0.8 late rush .. -0.5 early rush
+  const w = []; let sum = 0;
+  for (let j = 0; j < days; j++) { const v = Math.pow((j + 1) / days, g); w.push(v); sum += v; }
+  return { days, fr: w.map(v => v / sum) };
+}
+// how much a fixture is worth queueing for: the visitor's standing, the
+// home crowd's mood, and whether the season is on the line
+export function gateHeat(bigVisitor, mood, round) {
+  return Math.min(1, 0.45 * (bigVisitor || 0) + 0.35 * ((mood || 0) / 8) + 0.2 * (round >= 13 ? 1 : 0));
+}
 export function priceMult(price) {
   const p = Math.max(1, price);
   return Math.pow(TICKET / p, TICKET_ELASTICITY) * (cliffAt(p) / cliffAt(TICKET));
@@ -164,16 +185,17 @@ export function priceAtMs(prices, ms) {
 // dated decisions. Pass nowMs to trim to sale days already past - the same
 // function then prints the advance board for a future match. The 600
 // die-hards who walk up whatever the price only join a banked gate.
-export function gateSale(demand, seats, matchMs, prices, nowMs) {
+export function gateSale(demand, seats, matchMs, prices, nowMs, heat) {
   const pAt = typeof prices === 'function' ? prices : (ms => priceAtMs(prices, ms));
   const lockAt = matchMs - TICKET_LOCK_MS;
+  const win = salesWindow(heat);
   let sold = 0, take = 0, flat = null, allFlat = true;
-  for (let k = 0; k < SALES_FRACS.length; k++) {
-    const at = lockAt - (SALES_FRACS.length - 1 - k) * 86400000;
+  for (let k = 0; k < win.days; k++) {
+    const at = lockAt - (win.days - 1 - k) * 86400000;
     if (nowMs != null && at > nowMs) break;
     const p = pAt(at);
     if (flat == null) flat = p; else if (p !== flat) allFlat = false;
-    let n = demand * SALES_FRACS[k] * priceMult(p);
+    let n = demand * win.fr[k] * priceMult(p);
     if (sold + n > seats) n = seats - sold;
     if (n <= 0) continue;
     sold += n; take += n * p;
@@ -184,7 +206,7 @@ export function gateSale(demand, seats, matchMs, prices, nowMs) {
   // a flat-priced sale takes exactly sold x price - the same arithmetic the
   // books used for a decade of $26 gates, to the pound
   take = allFlat && flat != null ? sold * flat : Math.round(take);
-  return { sold, take, lockAt, price: priceEnd };
+  return { sold, take, lockAt, price: priceEnd, opensAt: lockAt - (win.days - 1) * 86400000 };
 }
 export const HOME_CUT = 2 / 3;               // the old two-thirds, one-third split
 export const DEBT_ROUND = 0.03;              // what an overdraft costs a round
@@ -604,7 +626,9 @@ export async function computeFinance(pool, country, opts = {}) {
       const demand = H.sup * moodMult(H.mood) * drawMult(A, pos[A.slot]) * w.mult * dv;
       const matchMs = EPOCH + ((startOf[m.season_no] ?? 0) +
         (dayOfRound(m.round) ?? (m.round - 1))) * DAY + HOUR;
-      const sale = gateSale(demand, H.seats, matchMs, priceFnFor(H.slot, m.season_no, m.round), null);
+      const big9 = A.is_boss ? 1 : (pos[A.slot] <= 3 ? 0.6 : 0);
+      const sale = gateSale(demand, H.seats, matchMs, priceFnFor(H.slot, m.season_no, m.round), null,
+        gateHeat(big9, H.mood, m.round));
       const att = sale.sold, gate = sale.take;
       const home = Math.round(gate * HOME_CUT), away = gate - Math.round(gate * HOME_CUT);
       const bc = Math.round(att * BROADCAST_PER_HEAD);

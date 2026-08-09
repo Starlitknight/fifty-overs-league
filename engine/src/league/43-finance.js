@@ -268,6 +268,7 @@
       ".fo-gb-row .op u{display:block;height:7px;border-radius:999px;background:#EBE6DA;margin:6px 0 4px;text-decoration:none;overflow:hidden}",
       ".fo-gb-row .op u i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#136A4B,#177A57)}",
       ".fo-gb-row .op s{text-decoration:none;font:500 11px/1.2 Inter,sans-serif;color:#6A6354;font-variant-numeric:tabular-nums}",
+      ".fo-gb-row .op s b.hot{font:700 10px/1.2 Inter,sans-serif;letter-spacing:.08em;text-transform:uppercase;color:#B4441C}",
       ".fo-gb-row .op .pr{display:flex;align-items:center;gap:7px;margin-top:7px}",
       ".fo-gb-row .op .pr b{font:700 13px/1 Inter,sans-serif;color:#14243A;min-width:36px;text-align:center;font-variant-numeric:tabular-nums}",
       ".fo-gb-row .op .pr.lk{font:600 11px/1 Inter,sans-serif;color:#8a8272}",
@@ -328,7 +329,18 @@
   // (26/price)^1.15.
   // ==========================================================================
   var TK = { BASE: 26, MIN: 10, MAX: 100, EL: 1.4, KNEE: 62, KW: 9, BCAST: 7.5, LOCK: 24 * 3600000,
-             FR: [0.10, 0.12, 0.15, 0.18, 0.22, 0.23] };
+             WBASE: 6, WMAX: 14 };
+  function tkWindow(heat) {
+    var h = Math.max(0, Math.min(1, heat || 0));
+    var days = TK.WBASE + Math.round((TK.WMAX - TK.WBASE) * h);
+    var g = 0.8 - 1.3 * h, w = [], sum = 0, j;
+    for (j = 0; j < days; j++) { var v = Math.pow((j + 1) / days, g); w.push(v); sum += v; }
+    for (j = 0; j < days; j++) w[j] /= sum;
+    return { days: days, fr: w };
+  }
+  function tkHeat(big, mood, round) {
+    return Math.min(1, 0.45 * (big || 0) + 0.35 * ((mood || 0) / 8) + 0.2 * (round >= 13 ? 1 : 0));
+  }
   function tkCliff(p) { return 1 / (1 + Math.exp((p - TK.KNEE) / TK.KW)); }
   function tkMult(p) {
     p = Math.max(1, p);
@@ -353,19 +365,21 @@
       return tkPriceAt(club, ms);
     };
   }
-  function tkSale(demand, seats, matchMs, hist, nowMs) {
+  function tkSale(demand, seats, matchMs, hist, nowMs, heat) {
     var pAt = typeof hist === "function" ? hist : function (ms9) { return tkPriceAt(hist, ms9); };
     var lockAt = matchMs - TK.LOCK, sold = 0, take = 0;
-    for (var k = 0; k < TK.FR.length; k++) {
-      var at = lockAt - (TK.FR.length - 1 - k) * 86400000;
+    var win = tkWindow(heat);
+    for (var k = 0; k < win.days; k++) {
+      var at = lockAt - (win.days - 1 - k) * 86400000;
       if (nowMs != null && at > nowMs) break;
       var pr = pAt(at);
-      var n = demand * TK.FR[k] * tkMult(pr);
+      var n = demand * win.fr[k] * tkMult(pr);
       if (sold + n > seats) n = seats - sold;
       if (n <= 0) continue;
       sold += n; take += n * pr;
     }
-    return { sold: Math.round(sold), take: Math.round(take), lockAt: lockAt };
+    return { sold: Math.round(sold), take: Math.round(take), lockAt: lockAt,
+             opensAt: lockAt - (win.days - 1) * 86400000 };
   }
   // the club's dated prices, fetched once a minute; the room repaints on land
   var TKH = { rows: null, at: 0, busy: false };
@@ -387,15 +401,19 @@
   // who is visiting moves the crowd: the flagship pulls hardest, a top-three
   // side after that - the same multipliers the umpire's walk applies
   function tkDraw(cl, oppSlot) {
-    var m = (oppSlot | 0) === 0 ? 1.22 : 1;
+    var boss = (oppSlot | 0) === 0;
+    var out = { mult: boss ? 1.22 : 1, big: boss ? 1 : 0 };
     try {
       var lg = window.__foWorldLg && window.__foWorldLg.get(cl.country);
       var tbls = [(lg && lg.table) || [], (lg && lg.table2) || []];
       for (var d = 0; d < tbls.length; d++)
         for (var i = 0; i < tbls[d].length; i++)
-          if ((tbls[d][i].slot | 0) === (oppSlot | 0)) { if (i < 3) m *= 1.09; return m; }
+          if ((tbls[d][i].slot | 0) === (oppSlot | 0)) {
+            if (i < 3) { out.mult *= 1.09; if (!boss) out.big = 0.6; }
+            return out;
+          }
     } catch (e) {}
-    return m;
+    return out;
   }
   var TK_PEND = null;   // the dial's unset choice, kept across repaints
 
@@ -677,11 +695,13 @@
           if (lg9 && lg9.divisions && (lg9.divisions["2"] || []).indexOf(cl.slot | 0) >= 0) dv = 0.8;
         } catch (eDv) {}
         var rows9 = fxs.map(function (x) {
-          var demand = sup * mm * dv * tkDraw(cl, x.opp.slot);
+          var dr = tkDraw(cl, x.opp.slot);
+          var demand = sup * mm * dv * dr.mult;
+          var heat = tkHeat(dr.big, mood, x.round);
           var pf = tkFnFor(hist, x.season, x.round);
           var pNow = pf(now);
-          var cur = tkSale(demand, seats, x.t0, pf, now);
-          var fin = tkSale(demand, seats, x.t0, pf, null);
+          var cur = tkSale(demand, seats, x.t0, pf, now, heat);
+          var fin = tkSale(demand, seats, x.t0, pf, null, heat);
           var locked = now >= x.t0 - TK.LOCK;
           var pctS = seats ? Math.min(100, Math.round(100 * (locked ? fin.sold : cur.sold) / seats)) : 0;
           var dt9 = "";
@@ -692,9 +712,10 @@
             "<span class='rd'>R" + x.round + "<u>" + E(dt9) + "</u></span>" +
             "<span class='op'><b>v " + E(x.opp.name) + "</b>" +
             "<u><i style='width:" + pctS + "%'></i></u>" +
-            "<s>" + (!locked && now < cur.lockAt - 5 * 86400000
-              ? "sales open in " + Math.max(1, Math.round((cur.lockAt - 5 * 86400000 - now) / 86400000)) + "d"
-              : (locked ? fin.sold : cur.sold).toLocaleString() + " / " + seats.toLocaleString() + " sold" + (locked ? "" : " so far")) + "</s>" +
+            "<s>" + (!locked && now < cur.opensAt
+              ? "sales open in " + Math.max(1, Math.round((cur.opensAt - now) / 86400000)) + "d"
+              : (locked ? fin.sold : cur.sold).toLocaleString() + " / " + seats.toLocaleString() + " sold" + (locked ? "" : " so far")) +
+            (heat >= 0.6 && !locked ? " &middot; <b class='hot'>big draw</b>" : "") + "</s>" +
             (locked
               ? "<span class='pr lk num'>at $" + pNow + "</span>"
               : "<span class='pr num' data-sr='" + x.season + ":" + x.round + "' data-p='" + pNow + "'>" +
