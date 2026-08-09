@@ -931,12 +931,26 @@
   // the bell itself, kept alive in the masthead like the menu button is
   function bellBadge() {
     var el = document.getElementById("fo-wire-bdg"); if (!el) return;
+    // THE NUMBER IS MAIL AND THE DOT IS DUTY. The first cut counted the
+    // standing asks into the number, and asks survive being read by design -
+    // so a manager with an unfiled teamsheet read his news and watched the
+    // badge refuse to budge, which reads as a bug however principled it is.
+    // The number now counts only what reading clears: fresh news and unread
+    // wire lines. Standing asks light a quiet ember dot instead - "something
+    // needs you" - which goes out when the asks are actually done.
     var n = wireLoad().items.filter(function (x) { return !x.r; }).length;
-    // ONE BELL carries both feeds: the market's own wire, and the served
-    // asks-and-news the notifications module exposes (it retired its bell)
-    try { var N9 = window.__foNews && __foNews.get(); if (N9) n += (+N9.unread || 0); } catch (e9) {}
+    var asks = 0;
+    try {
+      var N9 = window.__foNews && __foNews.get();
+      if (N9) {
+        n += (N9.news || []).filter(function (x) { return x.fresh; }).length;
+        asks = (N9.asks || []).length;
+      }
+    } catch (e9) {}
     el.textContent = n > 9 ? "9+" : String(n);
     el.style.display = n ? "" : "none";
+    var dot = document.getElementById("fo-wire-ask");
+    if (dot) dot.style.display = (asks && !n) ? "" : "none";
   }
   try { window.__foMktBell = bellBadge; } catch (eMB) {}
   function bellPaint() {
@@ -1024,7 +1038,8 @@
       btn.setAttribute("aria-label", "Market notifications");
       btn.innerHTML = "<svg viewBox='0 0 24 24' fill='none' stroke='currentColor' stroke-width='1.8' " +
         "stroke-linecap='round' stroke-linejoin='round'><path d='M6 8.6a6 6 0 0 1 12 0c0 6 2.4 7.4 2.4 7.4H3.6S6 14.6 6 8.6'/><path d='M10.2 20a2 2 0 0 0 3.6 0'/></svg>" +
-        "<span id='fo-wire-bdg' style='display:none'></span>";
+        "<span id='fo-wire-bdg' style='display:none'></span>" +
+        "<u id='fo-wire-ask' style='display:none'></u>";
       btn.addEventListener("click", function (ev) { ev.preventDefault(); ev.stopPropagation(); bellToggle(btn); });
       // the masthead's right edge is a group, and the bell belongs in it, just
       // to the left of the date and time; the group asserts the order itself,
@@ -1405,6 +1420,7 @@
       "html body #topbar #fo-wire-btn:hover{background:rgba(255,255,255,.16) !important}",
       "html body #topbar #fo-wire-btn svg{width:17px;height:17px;display:block}",
       "html body #topbar #fo-wire-btn #fo-wire-bdg{position:absolute;top:-4px;right:-4px;min-width:16px;height:16px;border-radius:8px;background:#8E1F13;color:#fff;font:700 9.5px/16px Inter,sans-serif;text-align:center;padding:0 4px;box-shadow:0 0 0 2px #0E233F}",
+      "html body #topbar #fo-wire-btn #fo-wire-ask{position:absolute;top:-2px;right:-2px;width:9px;height:9px;border-radius:50%;background:#C9571F;box-shadow:0 0 0 2px #0E233F}",
       "#fo-wire-pop{position:fixed;z-index:460;display:none;background:#FFFEFC;border:1px solid rgba(27,36,50,.16);border-radius:14px;box-shadow:0 26px 60px rgba(10,22,42,.3);overflow:hidden;color:#141C28;max-height:70vh;overflow-y:auto}",
       "#fo-wire-pop.on{display:block;animation:fo-mk-drop2 .15s ease}",
       "@keyframes fo-mk-drop2{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}",
