@@ -446,7 +446,42 @@
       "html body #page .fo-stc-hero{padding:18px 17px 17px;border-radius:16px}",
       "html body #page .fo-stc-hero h1{font-size:30px}",
       "html body #page .fo-stc-grid{grid-template-columns:1fr}",
-      "html body #page table.fo-stc-tbl th,html body #page table.fo-stc-tbl td{padding:7px 6px}}"
+      "html body #page table.fo-stc-tbl th,html body #page table.fo-stc-tbl td{padding:7px 6px}}",
+      // ---- THE DATA WALL (the manager's pick of six) ------------------------
+      "html body #page .fo-stw{max-width:860px;margin:18px auto 0;background:linear-gradient(168deg,#182B44,#0C1B2E);border-radius:20px;padding:13px 12px 12px;box-shadow:0 20px 46px rgba(11,29,51,.34)}",
+      "html body #page .fo-stw-hd{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:5px 5px 12px}",
+      "html body #page .fo-stw-hd i{display:block;font:600 8.5px/1 Oswald,sans-serif;font-style:normal;letter-spacing:.24em;text-transform:uppercase;color:#EBC271;margin-bottom:6px}",
+      "html body #page .fo-stw-hd b{font:700 22px/1 Oswald,sans-serif;letter-spacing:.02em;text-transform:uppercase;color:#FFFDF7}",
+      "html body #page .fo-stw-hd>span{font:600 8.5px/1.5 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,239,228,.5)}",
+      "html body #page .fo-stw-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}",
+      "html body #page .fo-stw-kpi{border:1px solid rgba(232,185,106,.18);border-radius:11px;background:rgba(255,253,247,.05);padding:10px 11px;min-width:0}",
+      "html body #page .fo-stw-kpi span{display:block;font:700 7px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(241,238,230,.5)}",
+      "html body #page .fo-stw-kpi b{display:block;font:700 18px/1 Inter,sans-serif;color:#FFFDF7;margin-top:7px;font-variant-numeric:tabular-nums;white-space:nowrap}",
+      "html body #page .fo-stw-grid{display:grid;grid-template-columns:1fr;gap:10px;margin-top:10px}",
+      "@media(min-width:840px){html body #page .fo-stw-grid{grid-template-columns:1fr 1fr}}",
+      "html body #page .fo-stw-sec{border:1px solid rgba(232,185,106,.16);border-radius:14px;background:rgba(255,253,247,.04);padding:13px 14px;min-width:0}",
+      "html body #page .fo-stw-cap{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#EBC271}",
+      "html body #page .fo-stw-row{display:grid;grid-template-columns:16px minmax(0,1fr) auto;gap:4px 9px;align-items:center;margin-top:10px}",
+      "html body #page .fo-stw-row em{font:700 10px/1 Inter,sans-serif;font-style:normal;color:rgba(244,239,228,.45);font-variant-numeric:tabular-nums}",
+      "html body #page .fo-stw-row a.nm{font:600 12.5px/1.2 Inter,sans-serif;color:#F1EEE6 !important;text-decoration:none !important;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;min-width:0}",
+      "html body #page .fo-stw-row a.nm:hover{color:#EBC271 !important}",
+      "html body #page .fo-stw-row a.nm i{font:600 9px/1 Inter,sans-serif;font-style:normal;color:rgba(244,239,228,.45);margin-left:6px;letter-spacing:.04em}",
+      "html body #page .fo-stw-row .v{font:700 13.5px/1 Inter,sans-serif;color:#FFFDF7;font-variant-numeric:tabular-nums;text-align:right}",
+      "html body #page .fo-stw-row .rl{grid-column:2/4;display:block;position:relative;height:6px;border-radius:999px;background:rgba(255,253,247,.09);overflow:hidden}",
+      "html body #page .fo-stw-row .rl u{position:absolute;top:0;bottom:0;left:0;border-radius:999px;background:linear-gradient(90deg,#E8B96A,#C08A2E)}",
+      "html body #page .fo-stw-row .rl u.t{background:linear-gradient(90deg,#63B7B3,#3E8A86)}",
+      "html body #page a.fo-stw-all{display:inline-block;margin-top:12px;font:700 9px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#EBC271 !important;text-decoration:none !important}",
+      "html body #page a.fo-stw-all:hover{color:#FFFDF7 !important}",
+      "html body #page .fo-stw-duo{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}",
+      "html body #page a.fo-stw-mini{display:block;border:1px solid rgba(232,185,106,.16);border-radius:12px;background:rgba(255,253,247,.04);padding:11px 12px;text-decoration:none !important;min-width:0}",
+      "html body #page a.fo-stw-mini span{display:block;font:700 7.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,239,228,.5)}",
+      "html body #page a.fo-stw-mini b{display:block;font:700 22px/1 Inter,sans-serif;color:#FFFDF7;margin-top:7px;font-variant-numeric:tabular-nums}",
+      "html body #page a.fo-stw-mini i{display:block;font:500 10px/1.35 Inter,sans-serif;font-style:normal;color:rgba(244,239,228,.55);margin-top:5px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      "html body #page .fo-stw-chips{display:flex;flex-wrap:wrap;gap:7px;padding:12px 2px 2px}",
+      "html body #page a.fo-stw-chip{font:700 9px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#EBC271 !important;border:1px solid rgba(235,194,113,.4);border-radius:999px;padding:10px 14px;text-decoration:none !important}",
+      "html body #page a.fo-stw-chip:hover{border-color:#EBC271}",
+      "html body #page a.fo-stw-chip.hot{background:linear-gradient(180deg,#E8B96A,#C08A2E);color:#14243A !important;border-color:transparent}",
+      "html body #page .fo-stw-dim{margin:12px 4px 4px;font:400 12.5px/1.55 Fraunces,Georgia,serif;color:rgba(244,239,228,.6)}"
     ].join("\n");
     document.head.appendChild(s);
   }
@@ -458,79 +493,93 @@
     return "#/stats?v=" + v + "&sc=" + sc + (q ? "&q=1" : "") + (d && sc !== "club" ? "&d=" + d : "");
   }
 
-  // ---- the index -----------------------------------------------------------
+  // ---- the index: THE DATA WALL --------------------------------------------
+  // The manager was shown six directions and picked the dark console: the
+  // figures up top, the run chart and the wicket chart as labelled bars -
+  // gold for the bat, teal for the ball - the two one-day feats as tiles,
+  // and every book a chip. The old index was nine doors, six more doors and
+  // a five-point essay on how to read a table; the wall says the season at
+  // a glance and each chip is one tap into the full sortable book.
   function indexBody(natId, mine) {
     var g = gather("league", natId);
-    var rounds = g.rounds, season = g.seasonNo;
-    // the season's leaders in your own country, so the index is worth reading
-    // even before you pick a book
-    var lead = "";
+    var rounds = g.rounds;
+    var sN = g.seasonNo ? (window.foSeasonN ? window.foSeasonN(g.seasonNo) : g.seasonNo) : 0;
+    var shortNm = function (n) { try { return window.foShortName ? window.foShortName(n) : n; } catch (e) { return n; } };
+    var abbr = function (club) {
+      var w = String(club || "").replace(/[^A-Za-z ]/g, "").trim().split(/\s+/)[0] || "";
+      return w.slice(0, 3).toUpperCase();
+    };
+    var chart = function (title, rows, valFn, cellFn, teal, bookHref) {
+      if (!rows.length) return "";
+      var max = valFn(rows[0]) || 1;
+      var trs = rows.map(function (x, i) {
+        var v = valFn(x);
+        return "<div class='fo-stw-row'><em>" + (i + 1) + "</em>" +
+          "<a class='nm' href='#/player?c=" + encodeURIComponent(x.__c) + "&s=" + x.slot +
+          "&n=" + encodeURIComponent(x.name) + "'>" + E(shortNm(x.name)) + "<i>" + E(abbr(x.club)) + "</i></a>" +
+          "<b class='v'>" + cellFn(x) + "</b>" +
+          "<span class='rl'><u" + (teal ? " class='t'" : "") + " style='width:" +
+          Math.max(3, Math.round(100 * v / max)) + "%'></u></span></div>";
+      }).join("");
+      return "<div class='fo-stw-sec'><div class='fo-stw-cap'>" + title + "</div>" + trs +
+        "<a class='fo-stw-all' href='" + bookHref + "'>The whole book &rsaquo;</a></div>";
+    };
+
+    var charts = "", duo = "";
     if (g.rows.length) {
       var bats = g.rows.filter(BOOKS.bat.keep);
-      var byRuns = bats.slice().sort(BOOKS.bat.sort)[0];
-      var byWkts = g.rows.filter(BOOKS.bowl.keep).sort(BOOKS.bowl.sort)[0];
+      var topRuns = bats.slice().sort(BOOKS.bat.sort).slice(0, 5);
+      var topWkts = g.rows.filter(BOOKS.bowl.keep).sort(BOOKS.bowl.sort).slice(0, 5);
       var byHs = bats.slice().sort(function (a, b) { return b.hs - a.hs || b.sr - a.sr; })[0];
       var byBb = g.rows.filter(function (x) { return x.bb && x.bb.w; })
         .sort(function (a, b) { return valOf(b, "bb") - valOf(a, "bb"); })[0];
-      var card = function (t, man, big) {
-        return "<div><i>" + t + "</i><b>" + (man ? E(man.name) : "&mdash;") + "</b><em>" + (man ? big : "&mdash;") + "</em></div>";
+      charts = "<div class='fo-stw-grid'>" +
+        chart("Most runs &middot; " + E(natName(natId)), topRuns,
+          function (x) { return x.runs | 0; }, function (x) { return x.runs; }, false, href("bat", "league")) +
+        chart("Most wickets &middot; " + E(natName(natId)), topWkts,
+          function (x) { return x.wkts | 0; }, function (x) { return x.wkts; }, true, href("bowl", "league")) +
+        "</div>";
+      var mini = function (t, man, big) {
+        if (!man) return "";
+        return "<a class='fo-stw-mini' href='#/player?c=" + encodeURIComponent(man.__c) + "&s=" + man.slot +
+          "&n=" + encodeURIComponent(man.name) + "'><span>" + t + "</span><b>" + big + "</b>" +
+          "<i>" + E(shortNm(man.name)) + " &middot; " + E(man.club) + "</i></a>";
       };
-      lead = "<div class='fo-stc-sec'><div class='fo-stc-sech'>" + E(natName(natId)) + " this season</div>" +
-        "<div class='fo-stc-lead'>" +
-        card("Most runs", byRuns, byRuns && byRuns.runs) +
-        card("Most wickets", byWkts, byWkts && byWkts.wkts) +
-        card("Highest score", byHs, byHs && (byHs.hs + (byHs.hsNo ? "*" : ""))) +
-        card("Best bowling", byBb, byBb && byBb.bb ? byBb.bb.w + "-" + byBb.bb.r : "") +
-        "</div></div>";
+      duo = "<div class='fo-stw-duo'>" +
+        mini("Highest score", byHs, byHs ? byHs.hs + (byHs.hsNo ? "*" : "") : "") +
+        mini("Best bowling", byBb, byBb && byBb.bb ? byBb.bb.w + "&#8209;" + byBb.bb.r : "") +
+        "</div>";
     } else if (g.waiting) {
-      lead = "<div class='fo-stc-sec'><p class='fo-stc-dim'>Sending for the scorebooks&hellip;</p></div>";
+      charts = "<p class='fo-stw-dim'>Sending for the scorebooks&hellip;</p>";
+    } else {
+      charts = "<p class='fo-stw-dim'>No cricket has been played yet this season. The wall fills with the first round.</p>";
     }
 
-    var section = function (title, scope, note) {
-      var items = ["bat", "bowl", "field"].map(function (k) {
-        return "<a class='fo-stc-item' href='" + href(k, scope) + "'><b>" + BOOKS[k].short + "</b>" +
-          "<span>" + SAY[k][scope] + "</span><i>" + note + "</i></a>";
-      }).join("");
-      return "<div class='fo-stc-sec'><div class='fo-stc-sech'>" + title + "</div>" +
-        "<div class='fo-stc-grid'>" + items + "</div></div>";
+    var chip = function (label, to, hot) {
+      return "<a class='fo-stw-chip" + (hot ? " hot" : "") + "' href='" + to + "'>" + label + "</a>";
     };
+    var chips = "<div class='fo-stw-chips'>" +
+      chip("Batting", href("bat", "league"), true) +
+      chip("Bowling", href("bowl", "league"), true) +
+      chip("Fielding", href("field", "league"), true) +
+      (mine ? chip("My club", href("bat", "club")) : "") +
+      chip("The world", href("bat", "world")) +
+      chip("The record", "#/stats?v=hist&n=" + encodeURIComponent(natId)) +
+      chip("Careers", "#/stats?v=career&n=" + encodeURIComponent(natId)) +
+      chip("Rankings", "#/rankings") +
+      chip("Almanack", "#/almanack") +
+      "</div>";
 
-    var elsewhere =
-      "<div class='fo-stc-sec'><div class='fo-stc-sech'>Elsewhere in the record</div><div class='fo-stc-grid'>" +
-      "<a class='fo-stc-item' href='#/stats?v=hist&n=" + encodeURIComponent(natId) + "'><b>The record</b><span>Every season this league has ever played: the table that decided it, the champions and the cup winners, year by year.</span><i>" + (function () { try { var sp = PL9().histSpan(natId); return sp.seasons ? "Seasons " + PL9().sIdx(sp.from) + "&ndash;" + PL9().sIdx(sp.to) : "The record"; } catch (e) { return "The record"; } })() + "</i></a>" +
-      "<a class='fo-stc-item' href='#/stats?v=career&n=" + encodeURIComponent(natId) + "'><b>All-time careers</b><span>Every batsman and bowler in the record, ranked on a whole career rather than one season.</span><i>The record</i></a>" +
-      "<a class='fo-stc-item' href='#/league'><b>The league table</b><span>Where the clubs stand, the fixtures and the results, round by round.</span><i>" + E(natName(natId)) + "</i></a>" +
-      "<a class='fo-stc-item' href='#/rankings'><b>The world rankings</b><span>Nations and clubs ranked on what they have done, across every competition.</span><i>The world</i></a>" +
-      "<a class='fo-stc-item' href='#/almanack'><b>The world almanack</b><span>Champions, cup winners and the honours every season has handed out.</span><i>Every season</i></a>" +
-      "<a class='fo-stc-item' href='#/schedule'><b>The season schedule</b><span>All forty-two days: what is played, and when your own matches start.</span><i>This season</i></a>" +
-      "</div></div>";
-
-    var note =
-      "<div class='fo-stc-note'><h3>How to read this book</h3><ul>" +
-      "<li><b>Every figure was played.</b> Runs, wickets and catches here were scored in matches the umpire settled and banked. Nothing is estimated from a rating.</li>" +
-      "<li><b>This is the season's book, not a career.</b> The world publishes the current season; totals begin again at the turning of the year.</li>" +
-      "<li><b>Every column head sorts.</b> Click it once for the order that flatters, again to reverse it.</li>" +
-      "<li><b>Qualification scales with the season.</b> The averages that need a sample only count men who have played enough of it, and the page says how much.</li>" +
-      "<li><b>Your own men are lit</b> wherever they appear, including in a table of five thousand.</li>" +
-      "</ul></div>";
-
-    var chips =
-      (season ? "<span><b>" + season + "</b>Season</span>" : "") +
-      "<span><b>" + rounds + " / 14</b>Rounds played</span>" +
-      (mine ? "<span><b>" + E(mine.club || "") + "</b>Your club</span>" : "") +
-      (nations().length ? "<span><b>" + nations().length + "</b>Leagues on the planet</span>" : "");
-
-    return "<div class='fo-stc-hero'><div class='k'>Every run, every wicket, every catch</div>" +
-      "<h1>Stats Centre</h1>" +
-      "<p>The scorer&rsquo;s book for the whole world, kept ball by ball as the umpire settles each round. " +
-      "Pick a book and a scope: your own eleven, your country, or " +
-      (nations().length ? "all " + nations().length + " leagues" : "every league in the world") + " at once.</p>" +
-      "<div class='fo-stc-now'>" + chips + "</div></div>" +
-      lead +
-      (mine ? section("Your club", "club", E(mine.club || "Your club")) : "") +
-      section("Your league", "league", E(natName(natId))) +
-      section("The world", "world", "All leagues") +
-      elsewhere + note;
+    return "<div class='fo-stw'>" +
+      "<div class='fo-stw-hd'><div><i>Every run was played</i><b>Stats Centre</b></div>" +
+      "<span>" + E(natName(natId)) + (rounds ? " &middot; after round " + rounds : "") + "</span></div>" +
+      "<div class='fo-stw-kpis'>" +
+      (sN ? "<div class='fo-stw-kpi'><span>Season</span><b>" + sN + "</b></div>" : "") +
+      "<div class='fo-stw-kpi'><span>Rounds</span><b>" + rounds + " / 14</b></div>" +
+      (nations().length ? "<div class='fo-stw-kpi'><span>Leagues</span><b>" + nations().length + "</b></div>" : "") +
+      "</div>" +
+      charts + duo + chips +
+      "</div>";
   }
 
   // ---- a book ---------------------------------------------------------------
@@ -613,8 +662,11 @@
 
     var where = scope === "club" ? (mine && mine.club) || "Your club"
       : scope === "league" ? natName(natId) : "The world";
+    // the ONE season number (foSeasonN): the served counter starts at 1, the
+    // record starts 136 earlier, and this chip was printing the raw counter
+    // while the masthead said 137
     var chips =
-      (g.seasonNo ? "<span><b>" + g.seasonNo + "</b>Season</span>" : "") +
+      (g.seasonNo ? "<span><b>" + (window.foSeasonN ? window.foSeasonN(g.seasonNo) : g.seasonNo) + "</b>Season</span>" : "") +
       "<span><b>" + rounds + " / 14</b>Rounds played</span>" +
       "<span><b>" + E(where) + "</b>Scope</span>";
 
