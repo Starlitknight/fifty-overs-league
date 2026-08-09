@@ -1073,9 +1073,13 @@
             "<td class='r'>" + (sr != null ? sr : "&mdash;") + "</td></tr>";
         }).join("") + "</table></div>";
       if (I.bowls.length)
-        out += "<div class='fd-tbw'><table class='fd-tb'><tr><th>Bowling</th><th class='r'>O</th><th class='r'>R</th><th class='r'>W</th></tr>" +
+        out += "<div class='fd-tbw'><table class='fd-tb'><tr><th>Bowling</th><th class='r'>O</th><th class='r'>R</th><th class='r'>W</th><th class='r'>Econ</th></tr>" +
           I.bowls.map(function (w9) {
-            return "<tr><td>" + plink(w9.nm) + pstar(w9.nm, T.rid) + "<span class='ss'>" + sStars(w9.nm, "bowl") + "</span></td><td class='r'>" + w9.o + "</td><td class='r'>" + w9.r + "</td><td class='r'>" + w9.w + "</td></tr>";
+            // the umpire's figure line carries whole overs; runs over overs
+            // is the economy, printed to one decimal like every broadcast
+            var ec9 = w9.o > 0 ? (w9.r / w9.o).toFixed(1) : null;
+            return "<tr><td>" + plink(w9.nm) + pstar(w9.nm, T.rid) + "<span class='ss'>" + sStars(w9.nm, "bowl") + "</span></td><td class='r'>" + w9.o + "</td><td class='r'>" + w9.r + "</td><td class='r'>" + w9.w + "</td>" +
+              "<td class='r'>" + (ec9 != null ? ec9 : "&mdash;") + "</td></tr>";
           }).join("") + "</table></div>";
       if (I.fow.length || I.top) out += partHtml(I);
       if (ix === 0 && I.brk) out += "<div class='fd-note'>" + E(I.brk) + "</div>";
