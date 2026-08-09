@@ -177,10 +177,11 @@
 
   function shell(body) {
     // the room keeps its own table: the club that matters here is the one in
-    // the served world, not whatever the device calls home
+    // the served world, not whatever the device calls home.
+    // The navy hero that said "Your club / Youth Academy" said nothing the
+    // navigation had not already said - the Broadcast dress (the manager's
+    // pick of three mock-ups) opens straight on the scout's card.
     return "<div class='fo-ac' data-fo-owntable><div class='fo-ac-in'>" +
-      "<div class='fo-ac-hero'><div class='fo-ac-k'>Your club</div>" +
-      "<h1>Youth Academy</h1></div>" +
       body +
       "<div class='fo-ac-foot'><a href='#/squad'>&lsaquo; The squad</a><a href='#/training'>Training &rsaquo;</a></div>" +
       "</div></div>";
@@ -192,39 +193,11 @@
   }
   // THE POSTED SCOUT (068), the way From the Pavilion runs him: a man with a
   // suitcase, not a button. He works in ONE country until you move him; each
-  // rest day's boy comes from where he stands. The board says where he is,
-  // what a report from there costs, and when the next one lands - and moving
-  // him is one inline choice, not a dialog.
-  function scoutHTML(ac) {
-    var pend = ac.pending;
-    if (pend && pend.recruit) return recruitHTML(pend, ac);
-
-    var posted = ac.scoutNation || ac.country;
-    var nations = ac.nations || [];
-    var here = nations.filter(function (n) { return n.id === posted; })[0] || { id: posted, name: posted, fee: 0 };
-    var opts = nations.map(function (n) {
-      return "<option value='" + E(n.id) + "'" + (n.id === posted ? " selected" : "") + ">" +
-        E(n.name) + (Number(n.fee) ? " · " + money(n.fee) : " · home, free") + "</option>";
-    }).join("");
-    var fl = flagOf(posted);
-    var board =
-      "<div class='fo-ac-post'>" +
-      (fl ? "<img class='pf' src='" + fl + "' alt='' onerror=\"this.style.visibility='hidden'\">" : "") +
-      "<div class='pw'><i>Your scout is in</i><b>" + E(here.name || posted) + "</b>" +
-      "<u>" + (Number(here.fee) ? "a report from there costs " + money(here.fee) : "home ground &middot; his reports are free") + "</u></div>" +
-      "<label class='mv'><select id='fo-ac-nat' aria-label='Post the scout'>" + opts + "</select><s>Move him</s></label>" +
-      "</div>";
-
-    if (!ac.restDay) {
-      return board + "<div class='fo-ac-note'><b>Cricket on today.</b> His next report comes on the next rest day.</div>";
-    }
-    if (ac.scoutedToday) {
-      return board + "<div class='fo-ac-note'><b>Today&rsquo;s report is in.</b> The next on the next rest day, from wherever he stands.</div>";
-    }
-    return board +
-      "<div class='fo-ac-srow one'><button type='button' class='fo-ac-btn' id='fo-ac-go'>Bring me his report</button></div>" +
-      "<div class='fo-ac-note thin'>A country leans toward its own kind of cricketer. None of them is a better shop.</div>";
-  }
+  // rest day's boy comes from where he stands. The Broadcast dress says all
+  // of it without a sentence: the flag is the posting, the tiles are the
+  // fee, the next report and the academy - the old board's three notes
+  // ("Cricket on today...", "Today's report is in...", "A country leans
+  // toward...") are retired; the tiles say the same thing in two words.
 
   // THE BOY ON THE TABLE. Everything about him, and two buttons.
   function recruitHTML(pend, ac) {
@@ -233,25 +206,22 @@
     // the scout's report (050): ranges, not numbers - the signature is the reveal
     if (p && p.scouted) {
       var rb = p.ratingBand;
-      var lvl9 = Math.max(1, Math.min(ACAD_MAX, +p.level || +ac.level || 1));
-      return "<div class='fo-ac-offer'>" +
-        "<div class='fo-ac-oh'><div><b>" + E(p.name) + "</b>" +
-          "<i>" + E(roleOf(p)) + " &middot; " + E(p.age) + " years old &middot; found in " + E((nat && nat.name) || pend.nation) + "</i></div>" +
-          (rb ? "<u class='rng'>" + (+rb.lo) + "&ndash;" + (+rb.hi) + "</u>" : "") + "</div>" +
+      return "<div class='fo-ac2-rep'>" +
+        "<div class='fo-ac2-rh'><div><b>" + E(p.name) + "</b>" +
+          "<i>" + E(roleOf(p)) + " &middot; " + E(p.age) + " &middot; found in " + E((nat && nat.name) || pend.nation) + "</i></div>" +
+          (rb ? "<div class='bd'><b>" + (+rb.lo) + "&ndash;" + (+rb.hi) + "</b><i>Estimate</i></div>" : "") + "</div>" +
         // THE WHISPER - the scout's one sentence on how much growing is left.
         // It is an opinion sharpened by the academy's level, never a number.
-        (p.whisper ? "<div class='fo-ac-whisper'>&ldquo;" + E(p.whisper) + "&rdquo;<i>&mdash; your scout</i></div>" : "") +
+        (p.whisper ? "<div class='fo-ac2-q'>&ldquo;" + E(p.whisper) + "&rdquo;<i>&mdash; your scout</i></div>" : "") +
+        bandGrid(p) +
+        // the estimate label carries the uncertainty; the fifty-eight-word
+        // paragraph that explained a range is a range is gone
         "<div class='fo-ac-orow'>" +
           "<span><i>Wage if signed</i><b>" + wage(p.wage) + "</b><u>a round, every round</u></span>" +
-          "<span><i>He is yours for</i><b>" + yearsLeft(p.age) + "</b><u>" + (yearsLeft(p.age) === 1 ? "season" : "seasons") + "</u></span>" +
+          "<span><i>He is yours for</i><b>" + yearsLeft(p.age) + "</b><u>" + (yearsLeft(p.age) === 1 ? "season" : "seasons") + ", then a senior shirt</u></span>" +
         "</div>" +
-        bandGrid(p) +
-        // the ranges above ARE the point; the paragraph explaining that a range
-        // is a range said it in fifty-eight words
-        "<div class='fo-ac-note thin'>The scout's estimate, &plusmn;" + E(p.blur || "") + " at level " + lvl9 +
-          ". Signing him is the only way to know.</div>" +
         "<div class='fo-ac-obtns'>" +
-          "<button type='button' class='fo-ac-btn' data-fo-rec='sign'>Sign him and find out</button>" +
+          "<button type='button' class='fo-ac-btn' data-fo-rec='sign'>Sign him &middot; find out</button>" +
           "<button type='button' class='fo-ac-btn ghost' data-fo-rec='release'>Let him go</button>" +
         "</div></div>";
     }
@@ -276,54 +246,70 @@
     var lv = Math.max(1, Math.min(top, +ac.level || 2));
     var boys = ac.youth || [];
     var bank = Number(ac.bank || 0);
-    var floor = +ac.floor || 15;
+    var pend = ac.pending && ac.pending.recruit ? ac.pending : null;
+
+    // ---- THE BROADCAST DRESS: one card, the same grammar as the match
+    // preview - folio, billing, a rank of facts, what is on the table, and
+    // the academy as one strip. Where the old page explained, this one shows.
+    var posted = ac.scoutNation || ac.country;
+    var nations = ac.nations || [];
+    var here = nations.filter(function (n) { return n.id === posted; })[0] || { id: posted, name: posted, fee: 0 };
+    var opts = nations.map(function (n) {
+      return "<option value='" + E(n.id) + "'" + (n.id === posted ? " selected" : "") + ">" +
+        E(n.name) + (Number(n.fee) ? " · " + money(n.fee) : " · home, free") + "</option>";
+    }).join("");
+    var fl = flagOf(posted);
+
+    var stateTag = pend ? "Report in" : ac.restDay ? (ac.scoutedToday ? "Report filed" : "Rest day") : "Cricket on";
+    var nextRep = pend ? { b: "On the table", cls: " class='go'" }
+      : (ac.restDay && !ac.scoutedToday) ? { b: "Today", cls: " class='go'" }
+      : { b: "Next rest day", cls: "" };
+
+    var folio = "<div class='fo-ac2-folio'>" +
+      (fl ? "<img src='" + fl + "' alt='' onerror=\"this.style.display='none'\">" : "") +
+      "<span>Youth scout &middot; " + stateTag + "</span></div>";
+    var bill = "<div class='fo-ac2-bill'>" +
+      (fl ? "<img class='bf' src='" + fl + "' alt='' onerror=\"this.style.visibility='hidden'\">" : "") +
+      "<div class='bw'><b>" + E(here.name || posted) + "</b><i>Your scout is posted here</i></div>" +
+      "<label class='mv'><select id='fo-ac-nat' aria-label='Post the scout'>" + opts + "</select><em>Move him</em></label>" +
+      "</div>";
+    var facts = "<div class='fo-ac2-facts'>" +
+      "<div><b" + nextRep.cls + ">" + nextRep.b + "</b><i>Next report</i></div>" +
+      "<div><b>" + (Number(here.fee) ? money(here.fee) : "Free") + "</b><i>Report fee" + (Number(here.fee) ? "" : " &middot; home") + "</i></div>" +
+      "<div><b>Level " + lv + "</b><i>Academy &middot; " + money(bank) + " banked</i></div>" +
+      "</div>";
+
+    var mid = "";
+    if (pend) mid = "<div class='fo-ac2-cap'>On the table</div>" + recruitHTML(pend, ac);
+    else if (ac.restDay && !ac.scoutedToday)
+      mid = "<div class='fo-ac2-go'><button type='button' class='fo-ac-btn' id='fo-ac-go'>Bring me his report</button></div>";
+
+    // the academy as ONE strip: the ladder, what it costs to run, and the
+    // next rung where there is one - not a second card of repeated numbers
     var pips = "";
     for (var i = 1; i <= top; i++) pips += "<s class='fo-ac-pip" + (i <= lv ? " on" : "") + "'></s>";
+    var wages = boys.reduce(function (t, y) { return t + (+y.wage || 0); }, 0);
+    var upBtn = "";
+    if (lv < top) {
+      var cost = Number(ac.nextCost || BUILD[lv]), can = bank >= cost && bank >= 0;
+      upBtn = "<button type='button' class='fo-ac-btn sm" + (can ? "" : " off") + "' data-fo-acup='" + (lv + 1) + "'" + (can ? "" : " disabled") + ">" +
+        (can ? "Level " + (lv + 1) + " &middot; " + money(cost) : "Level " + (lv + 1) + " needs " + money(cost)) + "</button>";
+    }
+    var strip = "<div class='fo-ac2-strip'>" +
+      "<div class='tx'><span class='fo-ac-pips'>" + pips + "</span>" +
+      "<i>" + money(ac.upkeep || UPKEEP[lv]) + " a round to run &middot; boys&rsquo; wages " + wage(wages) + "</i></div>" +
+      upBtn + "</div>";
 
-    var up = lv >= top
-      ? "<div class='fo-ac-note'>Level " + top + " &mdash; the top. " + money(UPKEEP[top]) + " a round to run.</div>"
-      : (function () {
-          var cost = Number(ac.nextCost || BUILD[lv]), can = bank >= cost && bank >= 0;
-          return "<div class='fo-ac-uprow'>" +
-            "<div><b>Level " + (lv + 1) + "</b><i>Better boys, more often &middot; " +
-              money(ac.nextUpkeep || UPKEEP[lv + 1]) + " a round</i></div>" +
-            "<button type='button' class='fo-ac-btn" + (can ? "" : " off") + "' data-fo-acup='" + (lv + 1) + "'" + (can ? "" : " disabled") + ">" +
-              (can ? "Build it &middot; " + money(cost) : "Needs " + money(cost)) + "</button></div>";
-        })();
-
-    // The leavers notice and the Colts Cup shortfall bar are both gone. Each
-    // boy's row already carries his age, and the Colts Cup has a room of its
-    // own under Tournaments; the academy is about who is on the books and what
-    // they cost, not about a competition read somewhere else.
-    var shortBy = Math.max(0, floor - boys.length);
-
-    // THE BOYS DO NOT LIVE HERE ANY MORE. A signed colt is a squad member the
-    // way the big management games treat him: he stands in the squad room with
-    // the rest of the men, under the Youth toggle, where his shirt and his
-    // release are written. This room keeps the scout, the building, the money
-    // and the cup - and a door through to the boys.
+    // THE BOYS DO NOT LIVE HERE ANY MORE. A signed colt stands in the squad
+    // room under the Youth toggle; this room keeps a door through to them.
     var list = boys.length
       ? "<a class='fo-ac-sqlink' href='#/squad'><span><b>" + boys.length + (boys.length === 1 ? " boy" : " boys") +
         " on the books</b><i>They stand with the squad &mdash; Show: Youth</i></span><s>&rsaquo;</s></a>"
-      : "<div class='fo-ac-note'>Nobody on the books yet.</div>";
+      : "";
 
     page.innerHTML = shell(
-      "<div class='fo-ac-card'><h3>The scout<span>" + ((ac.restDays || []).length) + " rest days</span></h3>" +
-        scoutHTML(ac) + "</div>" +
-      "<div class='fo-ac-card'><h3>" + E(ac.club || "Your club") + "<span>Level " + lv + "</span></h3>" +
-        "<div class='fo-ac-lvl'><div class='fo-ac-pips'>" + pips + "</div>" +
-          // this printed the same count twice in one line - "3 on the books ·
-          // 3 boys on the books" - and the card's own heading says the level
-          "<div class='fo-ac-lvt'><b>Level " + lv + "</b><i>" +
-          (boys.length === 1 ? "one boy" : boys.length + " boys") + " on the books</i></div></div>" +
-        "<div class='fo-ac-money'>" +
-          "<div><i>Upkeep</i><b>" + money(ac.upkeep || UPKEEP[lv]) + "</b><u>a round</u></div>" +
-          "<div><i>Their wages</i><b>" + wage(boys.reduce(function (t, y) { return t + (+y.wage || 0); }, 0)) + "</b><u>a round</u></div>" +
-          "<div><i>Treasury</i><b>" + money(bank) + "</b><u>at the bank</u></div>" +
-        "</div>" + up +
-      "</div>" +
-      (boys.length ? list : "<div class='fo-ac-card'><h3>On the books<span>0 of " + floor + "</span></h3>" + list + "</div>") +
-      "");
+      "<div class='fo-ac2-card'>" + folio + bill + facts + mid +
+      "<div class='fo-ac2-hr'></div>" + strip + "</div>" + list);
 
     // moving the scout is its own deed: the select IS the control
     var natSel = document.getElementById("fo-ac-nat");
@@ -337,7 +323,7 @@
       go.disabled = true; go.textContent = "Travelling…";
       rpc("world_scout", { p_nation: null })
         .then(function () { window.foRenderAcademyPage(); })
-        .catch(function (e) { go.disabled = false; go.textContent = "Scout a recruit"; sayAt(go, String(e.message).slice(0, 200)); });
+        .catch(function (e) { go.disabled = false; go.textContent = "Bring me his report"; sayAt(go, String(e.message).slice(0, 200)); });
     });
     page.querySelectorAll("[data-fo-rec]").forEach(function (b) {
       b.addEventListener("click", function () {
@@ -646,7 +632,47 @@
       "html body #page .fo-ac-foot a:hover{background:rgba(176,74,44,.09)}",
       "html body #page .fo-ac-foot a:active{background:rgba(176,74,44,.16)}",
       "@media(max-width:480px){html body #page .fo-ac-hero h1{font-size:25px}html body #page .fo-ac-grid{grid-template-columns:1fr 1fr;gap:8px}html body #page .fo-ac-colt{padding:9px 10px}html body #page .fo-ac-ch b{font-size:12.5px}" +
-        "html body #page .fo-ac-tbl td.nrr,html body #page .fo-ac-tbl th.nrr{display:none}}"
+        "html body #page .fo-ac-tbl td.nrr,html body #page .fo-ac-tbl th.nrr{display:none}}",
+      // ---- THE BROADCAST DRESS (the manager's pick of three) --------------
+      "html body #page .fo-ac2-card{margin-top:16px;background:#FFFEFC;border:1px solid rgba(27,36,50,.09);border-radius:16px;padding:clamp(12px,2.4vw,17px);display:flex;flex-direction:column;gap:12px;box-shadow:0 1px 3px rgba(14,35,63,.05)}",
+      "html body #page .fo-ac2-folio{display:inline-flex;align-items:center;gap:9px;align-self:flex-start;background:rgba(20,36,58,.05);border:1px solid rgba(27,36,50,.09);border-radius:999px;padding:6px 14px 6px 7px}",
+      "html body #page .fo-ac2-folio img{width:20px;height:14px;object-fit:cover;border-radius:3px;flex:none}",
+      "html body #page .fo-ac2-folio span{font:700 9.5px/1 Oswald,sans-serif;text-transform:uppercase;letter-spacing:.18em;color:#14243A}",
+      "html body #page .fo-ac2-bill{display:flex;align-items:center;gap:12px}",
+      "html body #page .fo-ac2-bill .bf{width:52px;height:36px;object-fit:cover;border-radius:6px;box-shadow:0 0 0 1px rgba(27,36,50,.12);flex:none}",
+      "html body #page .fo-ac2-bill .bw{min-width:0;flex:1}",
+      "html body #page .fo-ac2-bill b{display:block;font:700 21px/1.05 Oswald,sans-serif;text-transform:uppercase;color:#14243A;overflow-wrap:anywhere}",
+      "html body #page .fo-ac2-bill i{display:block;margin-top:4px;font:600 8px/1.4 Oswald,sans-serif;font-style:normal;letter-spacing:.16em;text-transform:uppercase;color:#8a93a2}",
+      "html body #page .fo-ac2-bill .mv{position:relative;flex:none;text-align:right}",
+      "html body #page .fo-ac2-bill .mv select{appearance:none!important;-webkit-appearance:none!important;max-width:96px;border:0!important;border-bottom:1px solid rgba(201,87,31,.5)!important;border-radius:0!important;background:transparent!important;box-shadow:none!important;font:600 12.5px/1.4 Inter,sans-serif!important;color:#14243A!important;padding:2px 15px 3px 2px!important;cursor:pointer;text-overflow:ellipsis;white-space:nowrap;overflow:hidden}",
+      "html body #page .fo-ac2-bill .mv:after{content:'\\25BE';position:absolute;right:1px;top:5px;pointer-events:none;font-size:9px;color:#C9571F}",
+      "html body #page .fo-ac2-bill .mv em{display:block;font:700 8px/1 Oswald,sans-serif;font-style:normal;letter-spacing:.16em;text-transform:uppercase;color:#8a93a2;margin-top:4px}",
+      "html body #page .fo-ac2-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:linear-gradient(0deg,#FBF6EA,#FDFAF2);border:1px solid rgba(27,36,50,.09);border-radius:12px}",
+      "html body #page .fo-ac2-facts>div{padding:11px 10px;border-left:1px solid rgba(27,36,50,.09);min-width:0}",
+      "html body #page .fo-ac2-facts>div:first-child{border-left:0}",
+      "html body #page .fo-ac2-facts b{display:block;font:600 13.5px/1.2 Inter,sans-serif;color:#14243A;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-ac2-facts b.go{color:#1F6F4A;font-weight:700}",
+      "html body #page .fo-ac2-facts i{display:block;margin-top:3px;font:700 7.5px/1.35 Oswald,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.12em;color:#8a93a2}",
+      "html body #page .fo-ac2-cap{font:700 10px/1 Oswald,sans-serif;text-transform:uppercase;letter-spacing:.14em;color:#14243A;margin-top:2px}",
+      "html body #page .fo-ac2-cap:before{content:'';display:inline-block;width:7px;height:7px;background:#C9571F;border-radius:2px;margin-right:8px;vertical-align:1px}",
+      "html body #page .fo-ac2-rep{border:1px solid rgba(27,36,50,.09);border-radius:13px;padding:13px 14px;background:#FFFEFC}",
+      "html body #page .fo-ac2-rh{display:flex;align-items:flex-start;gap:12px}",
+      "html body #page .fo-ac2-rh>div:first-child{min-width:0;flex:1}",
+      "html body #page .fo-ac2-rh b{display:block;font:600 21px/1.1 Fraunces,Georgia,serif;color:#14243A}",
+      "html body #page .fo-ac2-rh i{display:block;font:500 11px/1.4 Inter,sans-serif;font-style:normal;color:#67748a;margin-top:3px}",
+      "html body #page .fo-ac2-rh .bd{flex:none;text-align:right}",
+      "html body #page .fo-ac2-rh .bd b{font:700 22px/1 Inter,sans-serif;color:#C9571F;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-ac2-rh .bd i{font:700 7.5px/1 Oswald,sans-serif;letter-spacing:.15em;text-transform:uppercase;color:#8a93a2;margin-top:4px}",
+      "html body #page .fo-ac2-q{background:#F8F6EF;border-left:3px solid rgba(180,74,34,.5);border-radius:0 9px 9px 0;padding:9px 12px;margin:11px 0 2px;font:italic 400 14px/1.5 Fraunces,Georgia,serif;color:#2A2519}",
+      "html body #page .fo-ac2-q i{display:block;font:400 10px/1.3 Inter,sans-serif;font-style:normal;color:#67748a;margin-top:4px}",
+      "html body #page .fo-ac2-go{display:flex}",
+      "html body #page .fo-ac2-go .fo-ac-btn{flex:1;text-align:center;padding:13px 17px !important}",
+      "html body #page .fo-ac2-hr{height:1px;background:rgba(27,36,50,.08)}",
+      "html body #page .fo-ac2-strip{display:flex;align-items:center;gap:12px;flex-wrap:wrap}",
+      "html body #page .fo-ac2-strip .tx{flex:1 1 200px;min-width:0}",
+      "html body #page .fo-ac2-strip i{display:block;font:500 10.5px/1.5 Inter,sans-serif;font-style:normal;color:#67748a;margin-top:6px}",
+      "html body #page .fo-ac-btn.sm{padding:9px 14px !important;font-size:9.5px}",
+      "@media(max-width:480px){html body #page .fo-ac2-bill b{font-size:17px}html body #page .fo-ac2-bill .bf{width:44px;height:31px}}"
     ].join("\n");
     document.head.appendChild(s);
   }
