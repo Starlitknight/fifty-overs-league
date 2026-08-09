@@ -14,8 +14,8 @@ import { initWorld } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { runColtsCup } from '../tick.mjs';
 import { computeFinance } from '../economy.mjs';
-import { coltsEligible, coltsSide, computeColts, COLTS_STAGES, COLTS_FLOOR, COLTS_CEILING, COLTS_PURSE }
-  from '../youth.mjs';
+import { coltsEligible, coltsSide, computeColts, COLTS_STAGES, COLTS_FLOOR, COLTS_CEILING, COLTS_PURSE,
+         dealYouthToAll } from '../youth.mjs';
 import { EPOCH, DAY, COLTS_DAYS, natHour } from '../clock.mjs';
 
 const DB = 'focolts_test';
@@ -32,6 +32,10 @@ before(async () => {
   await migrate(pool);
   const r = await initWorld(pool, { now: EPOCH + 1 * DAY, host });
   startDay = r.startDay;
+  // 075 founds the world with empty academies and the umpire no longer
+  // stages the cup - this file tests the RETAINED machinery, so it deals
+  // the boys itself, exactly as the umpire used to
+  await dealYouthToAll(pool, host, 'eng', {});
   await pool.query(`INSERT INTO claims(user_id, country_id, slot, display_name) VALUES ($1,'eng',3,'Tester')`, [UID]);
   await pool.query(`CREATE OR REPLACE FUNCTION _uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT '${UID}'::uuid $$`);
 });

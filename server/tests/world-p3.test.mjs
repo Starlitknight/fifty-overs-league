@@ -1162,20 +1162,15 @@ test('018: the academy is paid for, and it recomputes', async () => {
   const poor = makeRecruit(host, 'England', 'rock', 'poor', 'youth|eng|1|s1|r1');
   assert.ok(jewel.rating > poor.rating, 'a jewel out-rates a boy who will never make it');
 
-  // EVERY CLUB IN THE WORLD can field a Colts Cup side from the day it is founded
+  // EVERY CLUB opens with a level-two academy and - since 075 retired the
+  // youth system - an empty list of boys; the scout's find goes straight to
+  // the senior squad
   const clubs = (await pool.query(
     `SELECT slot, academy, youth FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows;
   assert.equal(clubs.length, 16);
   for (const c of clubs) {
     assert.equal(c.academy, 2, 'every club opens with a level-two academy');
-    // (this world has already rolled over more than once by now, so some of the
-    // fifteen it was founded with have turned twenty-one and walked - that a
-    // FRESH world founds every club with fifteen is world-academy's to prove)
-    assert.ok(c.youth.length > 0, 'club ' + c.slot + ' still has boys on the books');
-    for (const y of c.youth) {
-      assert.ok(y.age >= 16 && y.age <= 20, 'a boy on the books is under twenty-one');
-      assert.ok(!y.career, 'a boy has no first-class record yet');
-    }
+    assert.equal(c.youth.length, 0, 'club ' + c.slot + ' keeps no boys (075)');
   }
 
   // THE MONEY. An upgrade is a spent fact, so the treasury still recomputes.
@@ -1312,13 +1307,11 @@ test('019: youth cricket stays out of the seniors\' book, and the academy sets t
   assert.equal(onLeagueDays, 0,
     'the boys played no cricket: a full season of league rounds has gone by and Colts Week has not');
 
-  // A COLT HAS NO FIRST-CLASS RECORD. He may have a Colts record - that is his
-  // own - but the senior career is built from senior matches and nothing else.
+  // A COLT HAS NO FIRST-CLASS RECORD - and since 075 there are no colts at
+  // all: every academy list is empty, and the boundary holds vacuously.
   const academy = (await pool.query(`SELECT youth FROM clubs WHERE country_id='eng'`)).rows
     .flatMap(r => Array.isArray(r.youth) ? r.youth : []);
-  assert.ok(academy.length, 'there are boys on the books');
-  academy.forEach(y => assert.ok(!y.career,
-    y.name + ' is a colt and cannot carry a first-class record'));
+  assert.equal(academy.length, 0, 'the academy lists are empty (075)');
   const seniors = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng'`)).rows.flatMap(r => r.squad);
   seniors.forEach(p => assert.ok(!p.colts || p.joined,
     p.name + ' carries a Colts record without ever having been a colt'));

@@ -269,7 +269,7 @@
   function foSqEyebrow(sv) {
     var eb = "Fifty Overs";
     return eb + " &middot; " + (sv.view === "int" ? "the analyst&#39;s read"
-      : sv.who === "yth" ? "the academy" : sv.who === "all" ? "every man on the books" : "the playing staff");
+      : sv.who === "all" ? "every man on the books" : "the playing staff");
   }
   function foSqClass(p) {
     if (p.role === "wicketkeeper" || p.keeper) return "wk";
@@ -634,7 +634,7 @@
     // one short question, one list
     var who = sv.who || "sen";
     var controls = "<div class='fo-sqg-ctl'><label class='fo-sqg-pick'><span>Show</span><select data-show>" +
-      [["sen", "Seniors"], ["yth", "Youth"], ["all", "Everyone"]].map(function (o) {
+      [["sen", "Seniors"], ["all", "Everyone"]].map(function (o) {
         return "<option value='" + o[0] + "'" + (o[0] === who ? " selected" : "") + ">" + E(o[1]) + "</option>";
       }).join("") + "</select></label>" +
       "<label class='fo-sqg-pick'><span>Role</span><select data-role>" +
@@ -644,7 +644,7 @@
 
     var cap = rows.length ? ""
       : (role !== "all" ? "Nobody in that role here. Try another Role or Show setting."
-        : who === "yth" ? "No youth players at the club yet." : "Nobody to show.");
+        : "Nobody to show.");
 
     return "<div class='fo-sqg-outer'>" + controls +
       (cap ? "<p class='fo-sqg-cap'>" + cap + "</p>" : "") +
@@ -1362,7 +1362,7 @@
         try { vSaved = localStorage.getItem("fo_sq_view"); } catch (eV) {}
         sv.view = SQ_VIEWS.indexOf(vSaved) > 0 ? vSaved : "roster";
       }
-      sv.who = ["sen", "yth", "all"].indexOf(sv.who) >= 0 ? sv.who : "sen";
+      sv.who = ["sen", "all"].indexOf(sv.who) >= 0 ? sv.who : "sen";
       sv.sortK = sv.sortK || "ovr"; sv.sortDir = sv.sortDir === 1 ? 1 : -1;
       var seniors = (t.players || []).map(function (p) { return Object.assign({}, p); });
       var youths = (t.youth || []).map(function (p) { return Object.assign({ __y: true }, p); });
@@ -1702,7 +1702,7 @@
         "<div class='fo-s2-swrap'>" + viewSwitch + "</div>" + band +
         "<div class='fo-s2-main'><section>" + tools + listBody + "</section></div>";
 
-      var gridMen = sv.who === "yth" ? youths : sv.who === "all" ? everyone : seniors;
+      var gridMen = sv.who === "all" ? everyone : seniors;
       var gridBody = sv.view === "grid" ? foSqGrid(gridMen, sv, xiIx) : "";
 
       // THE ANALYST'S DESK: a gilt eyebrow, a plain masthead, and then the

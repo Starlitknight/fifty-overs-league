@@ -935,7 +935,6 @@
           "<span class='st'>" + (pos ? "<u>" + ordn(pos) + "</u>" : "<u class='off'>&ndash;</u>") +
           (tRow ? "<em>" + (tRow.pts | 0) + " pts</em>" : "") + "</span></div>" +
           "<a class='r lk' href='#/facup?c=" + encodeURIComponent(cid) + "'><span class='nm'>The National Cup</span><span class='st'><em>The bracket &rsaquo;</em></span></a>" +
-          "<a class='r lk' href='#/colts?c=" + encodeURIComponent(cid) + "'><span class='nm'>The Colts Cup</span><span class='st'><em>The bracket &rsaquo;</em></span></a>" +
           "</div>";
 
         // -- squad snapshot, structure not faces ---------------------------

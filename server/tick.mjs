@@ -20,8 +20,8 @@ import { EPOCH, dayIx, daySettled, seedOf, cupDraw, natHour, scheduleOf, seasonS
          WINDOW_DAYS, isWorldCupSeason, REST_DAYS, COLTS_DAYS } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
 import { calibrate, countryConfigs, BASE_XI, NAT_STR, HUMAN_STR } from './init-world.mjs';
-import { stockAcademies, layCandidates, ageYouth, playColtsStage, computeColts, coltRecords,
-         COLTS_STAGES, dealYouthToAll, redealYouth } from './youth.mjs';
+import { layCandidates, ageYouth, playColtsStage, computeColts, coltRecords,
+         COLTS_STAGES } from './youth.mjs';
 import { settleMoney } from './economy.mjs';
 import { runComps } from './comps.mjs';
 import { ensureCallups, absentBySlot, coverSheet, runWindows, rebuildNations, seasonSquad,
@@ -742,16 +742,10 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
     try { await ensureNatSquad(pool, country, season.season_no, round + 1); }
     catch (eN2) { console.error('selectors failed for ' + country + ' round ' + (round + 1) + ':', eN2.message); }
   }
-  // THE ACADEMIES. Two jobs, and they are deliberately different jobs: the
-  // umpire keeps an UNMANAGED club stocked to fifteen boys so the Colts Cup
-  // always has a field, and it lays out the candidates a MANAGED club's scout
-  // could be sent to see. It never signs anybody for a human.
-  // the founding deal first, so the sixteen are in place before the floor
-  // check ever runs; it is a no-op forever after its one firing
-  try { await dealYouthToAll(pool, host, country); }
-  catch (eDl) { console.error('founding youth deal failed for ' + country + ':', eDl.message); }
-  try { await stockAcademies(pool, host, country, { worldDay: day }); }
-  catch (eY) { console.error('academy stocking failed for ' + country + ' day ' + day + ':', eY.message); }
+  // THE ACADEMIES. The youth system is retired for now (075): no boys are
+  // dealt and no club is stocked to fifteen - the scout is what remains, and
+  // signing his find hands the man a senior shirt directly. The dealing and
+  // stocking code is kept for the day the boys come back.
   try {
     await layCandidates(pool, host, country, {
       worldDay: day, startDay: season.start_day, restDays: REST_DAYS
@@ -803,10 +797,7 @@ export async function runDue(pool, host, country, { now = Date.now(), failAfter 
   // waiting for the NEXT world-day instead of landing on the next tick.
   // Self-guarded by its own ticks row - one cheap read per tick forever
   // after it has fired - and it logs its firing so the run shows it.
-  try {
-    const dealt = await redealYouth(pool, host, country);
-    if (dealt) console.log('youth redeal: ' + dealt + ' boys dealt for ' + country);
-  } catch (eRd0) { console.error('youth redeal failed for ' + country + ':', eRd0.message); }
+  // (the 2026 youth redeal is retired with the youth system, 075)
   const out = [];
   for (let day = season.start_day; day <= dayIx(now); day++) {
     if (!daySettled(now, day, country)) break;
@@ -1485,11 +1476,8 @@ if (import.meta.url === `file://${process.argv[1]}`) {
       const fa = await runFaCup(pool, host);
       if (fa.length) lines.push('FA Cup ties played: ' + fa.length);
     } catch (eFA) { lines.push('fa cup: ' + eFA.message); }
-    // THE COLTS WEEK: the boys' knockout, four days in week four
-    try {
-      const cc = await runColtsCup(pool, host);
-      if (cc.length) lines.push('Colts Cup: ' + cc.map(x => x.country + ' ' + x.stage + ' (' + x.played + ')').join(', '));
-    } catch (eCC) { lines.push('colts cup: ' + eCC.message); }
+    // (the Colts Cup is retired for now, 075 - runColtsCup is kept for the
+    //  day the boys come back, but the umpire no longer stages it)
     const cups = await runCupWindow(pool, host);
     for (const [sk, c] of Object.entries(cups)) {
       if (c && (c.wcl || c.wc)) ['wcl', 'wc'].forEach(comp => {

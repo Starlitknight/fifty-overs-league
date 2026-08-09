@@ -74,7 +74,6 @@
       ["schedule", "cal", "The season schedule"]
     ] },
     { k: "Tournaments", rooms: [
-      ["colts", "star", "The Colts Cup"],
       ["facup", "shield", "The National Cup"],
       ["champions", "crown", "The Champions Cup"]
     ] },

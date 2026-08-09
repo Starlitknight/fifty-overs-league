@@ -927,7 +927,7 @@
         done("Signing the builders…");
         rpc("world_set_academy", { p_level: lv })
           .then(function (r) {
-            done("The academy is level " + lv + ", and it cost " + M((r && r.cost) || acost) + ". The colts will feel it in the nets.");
+            done("The academy is level " + lv + ", and it cost " + M((r && r.cost) || acost) + ". The scout will bring back better men for it.");
             reload(page);
           })
           .catch(function (e) { done(String(e.message).slice(0, 160), true); });

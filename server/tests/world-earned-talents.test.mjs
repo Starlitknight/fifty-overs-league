@@ -15,7 +15,7 @@ import { migrate } from '../migrate.mjs';
 import { initWorld } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { evolveCountry, livingPatch, applyLiving, talentsEarned } from '../living.mjs';
-import { coltRecords } from '../youth.mjs';
+import { coltRecords, dealYouthToAll } from '../youth.mjs';
 import { EPOCH, DAY } from '../clock.mjs';
 
 const DBNAME = 'foworld_talents_test';
@@ -30,6 +30,9 @@ before(async () => {
   await migrate(pool);
   host = makeHost();
   await initWorld(pool, { now: T0, host });
+  // 075 founds the world with empty academies; the colts tests below cover
+  // the RETAINED machinery, so this file deals the boys itself
+  await dealYouthToAll(pool, host, 'eng', {});
 });
 after(async () => { await pool.end(); });
 

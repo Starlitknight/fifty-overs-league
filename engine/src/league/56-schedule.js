@@ -4,10 +4,9 @@
    A manager who does not know the shape of the season cannot plan inside it.
    The calendar was knowable - it is in the clock, and the clock is on every
    device - but only ever shown a day at a time: the next fixture, the round
-   after this one. Nowhere said "the boys have week four to themselves" or
-   "the league stops for it", so nobody could see a Colts Cup coming or know
-   that the turning of the year lands on day 38 and takes a year off every
-   cricketer in the world.
+   after this one. Nowhere said "the league rests in week four", so nobody
+   could see the quiet week coming or know that the turning of the year lands
+   on day 38 and takes a year off every cricketer in the world.
 
    THIS PAGE IS A DERIVATION, NOT A TABLE. Every row is read out of
    __foPlanet.phaseOf - the same function the umpire settles by and the fixture
@@ -25,10 +24,10 @@
 
    Now a day with cricket on it gets a card in its competition's colour and a
    rest day gets a hairline. The colour says WHICH competition, so no card
-   spends its words repeating it - a Colts Cup semi-final reads "Semi-finals"
-   in orange, not "Colts Cup · semi-finals · The academies play and the league
-   stands down". And every rule that used to be printed forty-two times is
-   printed once, at the foot, in fine print.
+   spends its words repeating it - a National Cup semi-final reads
+   "Semi-finals" in green, not "National Cup · semi-finals". And every rule
+   that used to be printed forty-two times is printed once, at the foot, in
+   fine print.
    ========================================================================== */
 (function () {
   "use strict";
@@ -43,12 +42,12 @@
   // full name on the page, and it goes to the "next up" line.
   var STAGE = { r16: "Round of 16", qf: "Quarter-finals", sf: "Semi-finals", final: "Final",
                 g1: "Group 1", g2: "Group 2", g3: "Group 3" };
-  var COMP = { league: "League", facup: "National Cup", colts: "Colts Cup",
+  var COMP = { league: "League", facup: "National Cup",
                cup: "Champions Cup", playoff: "League play-offs", transition: "The turning of the year" };
-  var CLS = { league: "lg", facup: "fa", colts: "co", cup: "ch", playoff: "po", transition: "tr", rest: "re" };
+  var CLS = { league: "lg", facup: "fa", cup: "ch", playoff: "po", transition: "tr", rest: "re" };
   // the colours, one per competition, defined once so a competition can never
   // wear two different ones on the same page
-  var COL = { lg: "#14243A", fa: "#22635F", co: "#C9571F", po: "#C08A2E",
+  var COL = { lg: "#14243A", fa: "#22635F", po: "#C08A2E",
               ch: "#C08A2E", tr: "#6A6354", re: "rgba(20,28,40,.14)" };
 
   function label(p) {
@@ -73,7 +72,7 @@
   }
 
   // the weeks a reader thinks in, named for what they are
-  var WK = ["Opening", "Second", "Third", "Colts", "Finals", "Champions Cup"];
+  var WK = ["Opening", "Second", "Third", "Quiet week", "Finals", "Champions Cup"];
 
   function css() {
     if (document.getElementById("fo-sch-css")) return;
@@ -431,10 +430,8 @@
   // the calendar as the clock states it, used when a timestamp cannot be built
   function fallbackPhase(di) {
     var FA = { 6: "r16", 13: "qf", 20: "sf", 34: "final" };
-    var CO = { 21: "r16", 22: "qf", 24: "sf", 25: "final" };
     var CH = { 35: "g1", 36: "g2", 37: "g3", 39: "qf", 40: "sf", 41: "final" };
     if (FA[di]) return { kind: "facup", stage: FA[di], di: di };
-    if (CO[di]) return { kind: "colts", stage: CO[di], di: di };
     if (CH[di]) return { kind: "cup", stage: CH[di], di: di };
     if (di === 38) return { kind: "transition", di: di };
     if (di === 31) return { kind: "playoff", stage: "semi", di: di };

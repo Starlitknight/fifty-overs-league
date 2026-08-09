@@ -47,7 +47,6 @@
 51-prematch.js
 52-served-truth.js
 53-fa-cup.js
-54-colts-cup.js
 55-market.js
 56-schedule.js
 57-stats-centre.js

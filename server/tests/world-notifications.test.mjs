@@ -187,31 +187,13 @@ test('the money speaks for itself, and administration shouts', async () => {
   assert.ok(!ask(await notif(), 'money'), 'and a club in the black is not nagged');
 });
 
-test('the academy asks: a side it cannot field; the boys leave quietly (070)', async () => {
-  const club = (await pool.query(`SELECT youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
-  // a full academy of sixteen-year-olds: nobody short
-  const young = (club.youth || []).map(y => Object.assign({}, y, { age: 16 }));
-  await pool.query(`UPDATE clubs SET youth=$1::jsonb WHERE country_id='eng' AND slot=1`,
-    [JSON.stringify(young)]);
-  let n = await notif();
-  assert.ok(!ask(n, 'colts-short'), 'a full academy is not short');
-  assert.ok(!ask(n, 'boys-leaving'), 'and nobody is about to walk');
-
-  // one of them turns twenty: 070 retired the warning - the squad room says
-  // his age beside his promote button, and the bell says nothing
-  young[0].age = 20;
-  await pool.query(`UPDATE clubs SET youth=$1::jsonb WHERE country_id='eng' AND slot=1`,
-    [JSON.stringify(young)]);
-  assert.ok(!ask(await notif(), 'boys-leaving'), 'a twenty-year-old no longer rings the bell (070)');
-
-  // and an academy below the Colts Cup bar still says so
-  await pool.query(`UPDATE clubs SET youth=$1::jsonb WHERE country_id='eng' AND slot=1`,
-    [JSON.stringify(young.slice(0, 9))]);
-  const short = ask(await notif(), 'colts-short');
-  assert.ok(short, 'nine boys cannot field a Colts Cup side');
-  assert.ok(short.body.indexOf('9') >= 0, 'and it says how many are there: ' + short.body);
-  await pool.query(`UPDATE clubs SET youth=$1::jsonb WHERE country_id='eng' AND slot=1`,
-    [JSON.stringify(club.youth)]);
+test('the academy asks are retired: no colts-short (075), no boys-leaving (070)', async () => {
+  // 075 retired the youth list and the Colts Cup with it, so an empty
+  // academy is the ordinary state and the bell must say nothing about it
+  await pool.query(`UPDATE clubs SET youth='[]'::jsonb WHERE country_id='eng' AND slot=1`);
+  const n = await notif();
+  assert.ok(!ask(n, 'colts-short'), 'an empty academy no longer rings the bell (075)');
+  assert.ok(!ask(n, 'boys-leaving'), 'and nobody is about to walk (070)');
 });
 
 test('every notification carries a door, and no notification is empty', async () => {

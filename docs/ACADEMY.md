@@ -1,5 +1,12 @@
 # THE YOUTH ACADEMY — the third great shape
 
+> **RETIRED FOR NOW (migration 075).** The youth list, the colts, and the
+> Colts Cup are switched off to keep the game simple; week four is a quiet
+> week of rest days. What remains live is the SCOUT (§ the posted scout) —
+> and his find now signs **straight into the senior squad** at the flat
+> senior-contract fee. The machinery below is kept in `server/youth.mjs`
+> for the day the boys come back; this document remains its law.
+
 Every club runs one. It is the only place in the world where a cricketer can be
 had who was not bought, and it is expensive, slow, and mostly a waste of money.
 That is the point: an academy is a bet a manager makes with his own bank against

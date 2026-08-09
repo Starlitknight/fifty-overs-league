@@ -8,10 +8,6 @@
 import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
 import { EPOCH, CYCLE, ROUNDS, dayIx, scheduleOf, seasonSchedules, natHour } from './clock.mjs';
-// youth.mjs reads countryConfigs from here, so this is a cycle - safe, because
-// both sides export function DECLARATIONS and neither is called while the
-// modules are still evaluating.
-import { foundAcademy } from './youth.mjs';
 import { foundingSeats, foundingBank } from './economy.mjs';
 
 // EVERY LEAGUE IS ANCHORED BY A REAL CLUB. Slot 0 is the country's most
@@ -310,11 +306,11 @@ async function foundCountry(c, cfg, host, startDay, gen = 1) {
     // squad seeds are position-stable WITHIN A GENERATION: the same world, the
     // same eleven, until somebody deliberately redeals the world
     const players = squadFor(host, cfg, club, gen);
-    // AND FIFTEEN BOYS. The Colts Cup asks a club for fifteen men under
-    // twenty-one, so a world founded with empty academies would play its first
-    // youth competition as sixteen walkovers. Every club starts able to field a
-    // side; keeping it that way is the manager's problem from here.
-    const boys = foundAcademy(host, cfg.id, club.slot, 2, 'found|' + gen);
+    // AND NO BOYS. The youth system is retired for now (075): a club is
+    // founded with an empty academy list, and the scout's finds go straight
+    // to the senior squad. foundAcademy stays in youth.mjs for the day the
+    // Colts Cup comes back.
+    const boys = [];
     // default_name is the club's birth name - a human rename never loses it
     await c.query(
       'INSERT INTO clubs(country_id, slot, name, default_name, ground, is_boss, squad, youth, seats, bank)'

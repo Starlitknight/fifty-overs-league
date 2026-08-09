@@ -25,7 +25,7 @@ import { initWorld } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { academyRate, ACADEMY_MAX, evolveCountry } from '../living.mjs';
 import { academyUpkeep, academyBuild } from '../economy.mjs';
-import { tierOdds } from '../youth.mjs';
+import { tierOdds, dealYouthToAll } from '../youth.mjs';
 import { runDue } from '../tick.mjs';
 import { EPOCH, DAY, natHour } from '../clock.mjs';
 
@@ -46,6 +46,9 @@ before(async () => {
   pool = makePool(); host = makeHost();
   await migrate(pool);
   await initWorld(pool, { now: T0, host });
+  // 075 founds the world with empty academies; the youth-training tests
+  // below cover the RETAINED machinery, so this file deals the boys itself
+  await dealYouthToAll(pool, host, 'eng', {});
   await pool.query(`INSERT INTO claims(user_id, country_id, slot, display_name) VALUES ($1,'eng',1,'Tester')`, [UID]);
   await pool.query(`CREATE OR REPLACE FUNCTION _uid() RETURNS uuid LANGUAGE sql STABLE AS $$ SELECT '${UID}'::uuid $$`);
 });

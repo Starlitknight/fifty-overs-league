@@ -31,14 +31,9 @@ export const DAY = 86400000;
 //    17 18   Thu Fri   league rounds 11-12
 //    19      Sat       internationals
 //    20      Sun       FA CUP semi-finals
-//   --- THE COLTS WEEK: the league stands down and the academies play ---
-//    21      Mon       COLTS CUP round of 16   (all sixteen clubs, one hat)
-//    22      Tue       COLTS CUP quarter-finals
-//    23      Wed       rest
-//    24      Thu       COLTS CUP semi-finals
-//    25      Fri       THE COLTS CUP FINAL
-//    26      Sat       rest
-//    27      Sun       rest
+//   --- THE QUIET WEEK: the league stands down and the scouts go out ---
+//    21-27   Mon-Sun   rest all week (the Colts Cup played here once,
+//                      and will again some day - see docs/ACADEMY.md)
 //   --- and the league comes back for its last two rounds ---
 //    28 29   Mon Tue   league rounds 13-14 — the double round robin complete
 //    30      Wed       rest: the players breathe before finals
@@ -58,7 +53,7 @@ export const DAY = 86400000;
 export const CYCLE = 42;                      // days in a season = one year
 export const ROUNDS = 14;                     // eight clubs, double round robin
 export const WEEK_ROUNDS = 12;                // rounds 1-12 fall on the weekly pattern
-export const LATE_DAYS = [28, 29];            // rounds 13 and 14, after Colts Week
+export const LATE_DAYS = [28, 29];            // rounds 13 and 14, after the quiet week
 export const LEAGUE_DAYS = 30;                // last league round settles di 29
 export const LIVE_HOURS = 3;
 // the league week: Mon Tue . Thu Fri . . — rounds at di%7 in {0,1,3,4}
@@ -71,8 +66,8 @@ export function roundOfDay(di) {
   if (di === PLAYOFF_DAYS.final) return 16;
   if (di === LATE_DAYS[0]) return 13;
   if (di === LATE_DAYS[1]) return 14;
-  // Colts Week and everything after it carries no league cricket of its own;
-  // rounds 13-16 are named above, day by day.
+  // The quiet week and everything after it carries no league cricket of its
+  // own; rounds 13-16 are named above, day by day.
   if (di >= COLTS_DAYS.r16) return null;
   const w = Math.floor(di / 7), pos = WEEK_POS[di % 7];
   if (!pos) return null;
@@ -110,10 +105,10 @@ export function windowDayOfRound(round) { const i = WINDOWS.indexOf(round); retu
 // groups on the first three, quarters, semis, the final on the sixth.
 export const WC_EVERY = 4;
 export function isWorldCupSeason(seasonNo) { return seasonNo % WC_EVERY === 0; }
-// THE COLTS WEEK. Week four belongs to the academies: all sixteen clubs of a
-// nation in one hat, a straight knockout over four days, and no league cricket
-// anywhere in the world while it runs. A club that cannot name fifteen men
-// under twenty-one forfeits its tie - see docs/ACADEMY.md.
+// THE QUIET WEEK. Week four once belonged to the academies - the Colts Cup,
+// all sixteen clubs of a nation in one hat over four days. The cup is retired
+// for now (075) and the whole week rests; the day map stays because it is the
+// week-four boundary in roundOfDay, and because the boys will be back.
 export const COLTS_DAYS = { r16: 21, qf: 22, sf: 24, final: 25 };
 // finals week and the closing week
 export const PLAYOFF_DAYS = { semi: 31, final: 32 };
@@ -140,11 +135,9 @@ export function phaseOf(nowMs) {
   const p = { day: d, season, di, weekday: di % 7 };
   const r = roundOfDay(di);
   const fa = Object.keys(FA_DAYS).find(k => FA_DAYS[k] === di);
-  const colts = Object.keys(COLTS_DAYS).find(k => COLTS_DAYS[k] === di);
   if (r && r <= ROUNDS) { p.kind = 'league'; p.round = r; }
   else if (r === 15 || r === 16) { p.kind = 'playoff'; p.round = r; p.stage = r === 15 ? 'semi' : 'final'; }
   else if (fa) { p.kind = 'facup'; p.stage = fa; }
-  else if (colts) { p.kind = 'colts'; p.stage = colts; }
   else if (di === TRANSITION_DAY) p.kind = 'transition';
   else if (di >= CUP_DAYS.g1) {
     const st = Object.keys(CUP_DAYS).find(k => CUP_DAYS[k] === di);
@@ -154,10 +147,10 @@ export function phaseOf(nowMs) {
   return p;
 }
 // A REST DAY is a day on which the world stages no club cricket at all - the
-// tour days, the two Saturdays and Sundays either side of Colts Week, and the
-// Wednesday before the finals. These are the days an academy may scout, one
-// recruit apiece, so the list has to be a pure function of the calendar and
-// nothing else: a manager can count his chances a season in advance, offline.
+// tour days, the whole of the quiet week, and the Wednesday before the
+// finals. These are the days an academy may scout, one recruit apiece, so
+// the list has to be a pure function of the calendar and nothing else: a
+// manager can count his chances a season in advance, offline.
 export function isRestDay(di) {
   return phaseOf(EPOCH + di * DAY).kind === 'rest';
 }

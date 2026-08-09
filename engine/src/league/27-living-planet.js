@@ -45,13 +45,13 @@
   // ---- the calendar -----------------------------------------------------------
   // THE 42-DAY SEASON — SIX EXACT WEEKS. Day 0 is always a Monday (3 August
   // 2026), so di % 7 IS the weekday, forever: Sunday is cup day, Wednesday and
-  // Saturday are international days, WEEK FOUR BELONGS TO THE BOYS, and the
+  // Saturday are international days, week four is the quiet week, and the
   // last week is the Champions Cup.
   // docs/PYRAMID.md is the authority; server/clock.mjs must agree ball for ball.
   var EPOCH = Date.UTC(2026, 7, 3);            // MONDAY 3 August 2026, day 0 - season 1 day 1
   var DAY = 86400000, CYCLE = 42, ROUNDS = 14;  // eight clubs a division, double round robin
   var WEEK_ROUNDS = 12;                         // rounds 1-12 fall on the weekly pattern
-  var LATE_DAYS = [28, 29];                     // rounds 13 and 14, after Colts Week
+  var LATE_DAYS = [28, 29];                     // rounds 13 and 14, after the quiet week
   var LEAGUE_DAYS = 30;                         // last league round settles di 29
   var COLTS_DAYS = { r16: 21, qf: 22, sf: 24, final: 25 };
   var PLAYOFF_DAYS = { semi: 31, final: 32 };
@@ -67,8 +67,8 @@
     if (di === PLAYOFF_DAYS.final) return 16;
     if (di === LATE_DAYS[0]) return 13;
     if (di === LATE_DAYS[1]) return 14;
-    // Colts Week and everything after it carries no league cricket of its own;
-    // rounds 13-16 are named above, day by day.
+    // The quiet week and everything after it carries no league cricket of
+    // its own; rounds 13-16 are named above, day by day.
     if (di >= COLTS_DAYS.r16) return null;
     var w = Math.floor(di / 7), pos = WEEK_POS[di % 7];
     if (!pos) return null;
@@ -87,16 +87,15 @@
   function windowRoundOfDay(di) { var i = WINDOW_DAYS.indexOf(di); return i < 0 ? null : WINDOWS[i]; }
   var HONOURS_DAY = 32, CUP_DAYS = { g1: 35, g2: 36, g3: 37, qf: 39, sf: 40, final: 41 };
   // A REST DAY is a day on which the world stages no club cricket at all - the
-  // tour days, the Saturday and Sunday either side of Colts Week, and the
-  // Wednesday before the finals. These are the days an academy may scout, one
-  // recruit apiece, so the list is a pure function of the calendar and nothing
-  // else: a manager can count his chances a season in advance, offline.
+  // tour days, the whole of the quiet week, and the Wednesday before the
+  // finals. These are the days an academy may scout, one recruit apiece, so
+  // the list is a pure function of the calendar and nothing else: a manager
+  // can count his chances a season in advance, offline.
   function isRestDay(di) {
     if (!(di >= 0) || di >= CYCLE) return false;
     if (roundOfDay(di) != null) return false;
     if (di === TRANSITION_DAY) return false;
     for (var f in FA_DAYS) if (FA_DAYS[f] === di) return false;
-    for (var c in COLTS_DAYS) if (COLTS_DAYS[c] === di) return false;
     for (var g in CUP_DAYS) if (CUP_DAYS[g] === di) return false;
     return true;
   }
@@ -141,12 +140,9 @@
     var r = roundOfDay(di);
     var faStage = null;
     for (var fk in FA_DAYS) if (FA_DAYS[fk] === di) faStage = fk;
-    var coltsStage = null;
-    for (var yk in COLTS_DAYS) if (COLTS_DAYS[yk] === di) coltsStage = yk;
     if (r && r <= ROUNDS) { p.kind = "league"; p.round = r; }
     else if (r === 15 || r === 16) { p.kind = "playoff"; p.round = r; p.stage = r === 15 ? "semi" : "final"; }
     else if (faStage) { p.kind = "facup"; p.stage = faStage; }
-    else if (coltsStage) { p.kind = "colts"; p.stage = coltsStage; }
     else if (di === TRANSITION_DAY) p.kind = "transition";
     else if (di >= CUP_DAYS.g1) {
       var ccStage = null;
@@ -1577,14 +1573,10 @@
   }
   function stageName(st) { return { r16: "The Last Sixteen", qf: "Quarter-finals", sf: "Semi-finals", final: "THE WORLD CUP FINAL" }[st] || st; }
   // WHAT IS ON TODAY, IN WORDS. Every day that was not a league round used to
-  // fall through to "Rest day", which said rest on the evening of a final. A
-  // six-week season has MORE of those days, not fewer - a whole Colts Week of
-  // them - so each one is named and only a genuine rest day says rest.
+  // fall through to "Rest day", which said rest on the evening of a final -
+  // so each one is named and only a genuine rest day says rest.
   function roundName(st) { return { r16: "the last sixteen", qf: "quarter-finals", sf: "semi-finals", final: "THE FINAL" }[st] || st; }
   function dayWord(p) {
-    if (p.kind === "colts") return p.stage === "final"
-      ? "THE COLTS CUP FINAL - the academies' day"
-      : "Colts Cup " + roundName(p.stage) + " - the boys play, the league rests";
     if (p.kind === "playoff") return p.stage === "final"
       ? "THE LEAGUE FINALS - champions crowned tonight"
       : "League playoff semi-finals - 1v4 and 2v3, both divisions";

@@ -63,7 +63,6 @@ test('no day of the year carries two competitions', () => {
     const claims = [];
     const r = roundOfDay(di);
     if (r != null) claims.push(r <= ROUNDS ? 'league r' + r : 'playoff r' + r);
-    if (coltsStageOfDay(di)) claims.push('colts ' + coltsStageOfDay(di));
     if (Object.keys(FA_DAYS).some(k => FA_DAYS[k] === di)) claims.push('facup');
     if (Object.keys(CUP_DAYS).some(k => CUP_DAYS[k] === di)) claims.push('champions cup');
     if (di === TRANSITION_DAY) claims.push('the turning of the year');
@@ -71,17 +70,16 @@ test('no day of the year carries two competitions', () => {
   }
 });
 
-test('the Colts Week is four rounds of cricket with no league in it', () => {
-  assert.deepEqual(COLTS_STAGES, ['r16', 'qf', 'sf', 'final']);
+test('the quiet week rests: the old Colts Cup days carry nothing at all', () => {
+  // the Colts Cup is retired for now (075); its day map stays as the
+  // week-four boundary, and every one of its days is a plain rest day
   const cd = COLTS_STAGES.map(k => COLTS_DAYS[k]);
-  for (let i = 1; i < cd.length; i++) assert.ok(cd[i] > cd[i - 1], 'colts stages must run in order');
   for (const d of cd) {
-    assert.equal(roundOfDay(d), null, 'colts day ' + d + ' must carry no league cricket');
-    assert.equal(windowRoundOfDay(d), null, 'colts day ' + d + ' must carry no tour');
-    assert.equal(phaseOf(EPOCH + d * DAY).kind, 'colts');
+    assert.equal(roundOfDay(d), null, 'quiet-week day ' + d + ' must carry no league cricket');
+    assert.equal(windowRoundOfDay(d), null, 'quiet-week day ' + d + ' must carry no tour');
+    assert.equal(phaseOf(EPOCH + d * DAY).kind, 'rest');
+    assert.ok(isRestDay(d), 'quiet-week day ' + d + ' is a scouting day');
   }
-  // the boys own a week: their first and last day are inside seven days
-  assert.ok(cd[cd.length - 1] - cd[0] < 7, 'the Colts Cup must fit inside one week');
 });
 
 test('the tour days rob the rounds the call-up law says they rob', () => {
@@ -93,8 +91,8 @@ test('the tour days rob the rounds the call-up law says they rob', () => {
     assert.ok(dayOfRound(WINDOWS[i]) > d,
       'tour on day ' + d + ' robs round ' + WINDOWS[i] + ', which must fall after it');
   });
-  // nothing tours during the Colts Week or after it: those weeks are full strength
-  for (const d of WINDOW_DAYS) assert.ok(d < COLTS_DAYS.r16, 'tour day ' + d + ' must precede Colts Week');
+  // nothing tours during the quiet week or after it: those weeks are full strength
+  for (const d of WINDOW_DAYS) assert.ok(d < COLTS_DAYS.r16, 'tour day ' + d + ' must precede the quiet week');
 });
 
 test('the closing order of the year is finals, then cups, then the turning', () => {
@@ -137,7 +135,7 @@ test('phaseOf names every day of the year, and the season number advances', () =
     assert.equal(p.season, 1);
     assert.equal(p.di, di);
     assert.equal(p.weekday, di % 7);
-    assert.ok(['league', 'playoff', 'colts', 'facup', 'cup', 'transition', 'rest'].includes(p.kind),
+    assert.ok(['league', 'playoff', 'facup', 'cup', 'transition', 'rest'].includes(p.kind),
       'day ' + di + ' has kind ' + p.kind);
   }
   assert.equal(phaseOf(EPOCH + CYCLE * DAY).season, 2);
@@ -148,12 +146,10 @@ test('phaseOf names every day of the year, and the season number advances', () =
 test('the rest days are derived, and there are enough to run an academy on', () => {
   // scouting is one recruit per rest day, so this list IS the academy's
   // economy. It must be a pure function of the calendar - a manager counts
-  // his chances a season in advance, offline - and it must not be so short
-  // that an academy cannot be kept above the fifteen-boy Colts Cup bar.
+  // his chances a season in advance, offline.
   assert.deepEqual(REST_DAYS, days.filter(isRestDay), 'REST_DAYS is exactly what isRestDay says');
   for (const di of REST_DAYS) {
     assert.equal(roundOfDay(di), null, 'rest day ' + di + ' must carry no club cricket');
-    assert.equal(coltsStageOfDay(di), null, 'rest day ' + di + ' must carry no colts tie');
     assert.ok(!Object.keys(FA_DAYS).some(k => FA_DAYS[k] === di), 'rest day ' + di + ' must carry no cup tie');
   }
   assert.ok(REST_DAYS.length >= 10,

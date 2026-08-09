@@ -8,7 +8,7 @@ import { makePool } from '../db.mjs';
 import { migrate } from '../migrate.mjs';
 import { initWorld } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
-import { makeRecruit, foundAcademy, redealYouth } from '../youth.mjs';
+import { makeRecruit, foundAcademy, redealYouth, dealYouthToAll } from '../youth.mjs';
 import { EPOCH, DAY } from '../clock.mjs';
 
 const DB = 'foredeal_test';
@@ -76,6 +76,9 @@ test('the best boy can push out a fringe man, and cannot walk into the first XI'
 });
 
 test('the redeal replaces every list, clears the old paperwork, and fires once', async () => {
+  // 075 founds the world with empty academies; this file tests the RETAINED
+  // machinery, so it deals an old crop first, as the founding used to
+  await dealYouthToAll(pool, host, 'eng', {});
   const before9 = (await pool.query(
     `SELECT slot, youth FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows;
   assert.equal(before9.length, 16);

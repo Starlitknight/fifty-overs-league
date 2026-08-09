@@ -1,17 +1,15 @@
 /* ============================================================================
-   THE ACADEMY (#/academy) — the colts, and what a club pays to bring them on.
+   THE ACADEMY (#/academy) — the scout, and what a club pays for his finds.
 
-   Every club in the served world runs one, bot or human. The umpire works it:
-   a boy arrives whenever there is room, every colt ages a year at the season
-   rollover, and one who reaches twenty-one is handed a senior shirt whether
-   his manager was watching or not. A club nobody logs into still produces
-   cricketers - which is the whole point, because half this world is asleep
-   when the other half is playing.
+   The youth system is retired for now (075): no colts list, no Colts Cup.
+   What remains is the SCOUT - posted to a country, filing a report each rest
+   day - and his find signs STRAIGHT INTO THE SENIOR SQUAD, one decision at
+   one price. The academy's level still sets how good a boy he brings back.
 
    What a MANAGER decides is only ever two things: how good an academy to pay
-   for, and whether a boy is ready early. Both go through the world's own
-   RPCs, which re-validate everything; this page could lie all it liked and
-   the server would shrug.
+   for, and whether to sign the man on the table. Both go through the world's
+   own RPCs, which re-validate everything; this page could lie all it liked
+   and the server would shrug.
    ========================================================================== */
 (function () {
   "use strict";
@@ -63,8 +61,6 @@
                 90000, 112000, 136000, 162000, 190000];      // by level, a round
   var BUILD = [0, 400000, 900000, 1800000, 3200000,
                3600000, 4200000, 4900000, 5700000, 6600000]; // from level n to n+1
-  var LEAVE_AT = 21;
-
   // A WAGE IS PRINTED IN FULL. money() rounds to the nearest thousand, which is
   // right for a transfer fee and wrong here: a boy at 1,310 a round and a boy
   // at 1,490 are a different decision, and both read "$1k".
@@ -86,12 +82,6 @@
     if (/finish|middle|anchor|bat/.test(r)) return "Batter";
     return r ? r.charAt(0).toUpperCase() + r.slice(1) : "Cricketer";
   }
-  // HOW LONG YOU HAVE HIM. This is the read the whole academy turns on: a boy
-  // walks at twenty-one, so his age is not decoration - it is the number of
-  // seasons of nets you are buying, and it is why a sixteen-year-old rated
-  // lower than a twenty-year-old is very often the better signing.
-  function yearsLeft(age) { return Math.max(0, LEAVE_AT - (+age || 18)); }
-
   // the fifteen skills, grouped the way a coach would read them out
   var SKILLS = [
     ["Batting", ["vsPace", "vsSpin", "rotation", "power", "temperament"]],
@@ -205,6 +195,11 @@
     var p = pend.recruit;
     var nat = (ac.nations || []).filter(function (n) { return n.id === pend.nation; })[0];
     // the scout's report (050): ranges, not numbers - the signature is the reveal
+    // HIS CONTRACT IS A SENIOR CONTRACT (075): one signing fee, and he stands
+    // in the squad room from the next round - no colts list in between.
+    var feeCell = "<span><i>Senior contract</i><b>" +
+      (ac.promoteFee != null ? money(ac.promoteFee) : "&mdash;") +
+      "</b><u>paid once, and the shirt is his</u></span>";
     if (p && p.scouted) {
       var rb = p.ratingBand;
       return "<div class='fo-ac2-rep'>" +
@@ -219,7 +214,7 @@
         // paragraph that explained a range is a range is gone
         "<div class='fo-ac-orow'>" +
           "<span><i>Wage if signed</i><b>" + wage(p.wage) + "</b><u>a round, every round</u></span>" +
-          "<span><i>He is yours for</i><b>" + yearsLeft(p.age) + "</b><u>" + (yearsLeft(p.age) === 1 ? "season" : "seasons") + ", then a senior shirt</u></span>" +
+          feeCell +
         "</div>" +
         "<div class='fo-ac-obtns'>" +
           "<button type='button' class='fo-ac-btn' data-fo-rec='sign'>Sign him &middot; find out</button>" +
@@ -233,11 +228,11 @@
         (o == null ? "" : "<u>" + o + "</u>") + "</div>" +
       "<div class='fo-ac-orow'>" +
         "<span><i>Wage if signed</i><b>" + wage(p.wage) + "</b><u>a round, every round</u></span>" +
-        "<span><i>He is yours for</i><b>" + yearsLeft(p.age) + "</b><u>" + (yearsLeft(p.age) === 1 ? "season" : "seasons") + "</u></span>" +
+        feeCell +
       "</div>" +
       skillGrid(p) +
       "<div class='fo-ac-obtns'>" +
-        "<button type='button' class='fo-ac-btn' data-fo-rec='sign'>Sign him to the academy</button>" +
+        "<button type='button' class='fo-ac-btn' data-fo-rec='sign'>Sign him &middot; a senior shirt</button>" +
         "<button type='button' class='fo-ac-btn ghost' data-fo-rec='release'>Let him go</button>" +
       "</div></div>";
   }
@@ -245,7 +240,6 @@
   function render(page, ac) {
     var top = Math.max(5, Math.min(ACAD_MAX, +ac.maxLevel || ACAD_MAX));
     var lv = Math.max(1, Math.min(top, +ac.level || 2));
-    var boys = ac.youth || [];
     var bank = Number(ac.bank || 0);
     var pend = ac.pending && ac.pending.recruit ? ac.pending : null;
 
@@ -309,7 +303,6 @@
     // next rung where there is one - not a second card of repeated numbers
     var pips = "";
     for (var i = 1; i <= top; i++) pips += "<s class='fo-ac-pip" + (i <= lv ? " on" : "") + "'></s>";
-    var wages = boys.reduce(function (t, y) { return t + (+y.wage || 0); }, 0);
     var upBtn = "";
     if (lv < top) {
       var cost = Number(ac.nextCost || BUILD[lv]), can = bank >= cost && bank >= 0;
@@ -320,13 +313,9 @@
       "<div class='tx'><span class='fo-ac-pips'>" + pips + "</span></div>" +
       upBtn + "</div>";
 
-    // THE BOYS DO NOT LIVE HERE ANY MORE. A signed colt stands in the squad
-    // room under the Youth toggle; this room keeps a door through to them.
-    var list = "";
-
     page.innerHTML = shell(
       "<div class='fo-ac2-card'>" + folio + bill + facts + mid +
-      "<div class='fo-ac2-hr'></div>" + strip + "</div>" + list);
+      "<div class='fo-ac2-hr'></div>" + strip + "</div>");
 
     // moving the scout is its own deed: the select IS the control
     var natSel = document.getElementById("fo-ac-nat");
@@ -348,10 +337,21 @@
         var run = function () {
           b.disabled = true; b.textContent = act === "sign" ? "Signing…" : "Letting him go…";
           rpc("world_recruit", { p_action: act })
-            .then(function () { window.foRenderAcademyPage(); })
+            .then(function () {
+              // he stands in the squad room now, so the world's copy of the
+              // squad must be re-read before any page shows the old twenty
+              try { if (window.__foWorldRefreshPlan) window.__foWorldRefreshPlan(); } catch (e2) {}
+              window.foRenderAcademyPage();
+            })
             .catch(function (e) { b.disabled = false; window.foRenderAcademyPage(); sayAt(b, String(e.message).slice(0, 200)); });
         };
-        if (act !== "release") { run(); return; }
+        if (act !== "release") {
+          decide(b, { q: "Hand him a senior contract" +
+                         (ac.promoteFee != null ? " for " + money(ac.promoteFee) : "") + "?",
+                      note: "The fee comes out of the treasury, and he stands with the seniors from the next round.",
+                      ok: "Sign him", cancel: "Not yet", onYes: run });
+          return;
+        }
         decide(b, { q: "Let him go?", note: "He walks away and you will not see him again.",
                     ok: "Let him go", cancel: "Keep him", danger: true, onYes: run });
       });
@@ -436,45 +436,9 @@
     try { console.info("[fifty-overs] " + String(msg || "")); } catch (e) {}
   }
 
-  // THE COLTS CUP: the boys' own competition, played in its own week.
-  // ---- THE COLTS CUP -------------------------------------------------------
-  // Week four's knockout, as a bracket rather than a table: sixteen clubs in
-  // one hat, the draw made once, and a forfeit for anyone who cannot name
-  // fifteen. What a manager needs from this card is three things - am I in it,
-  // can I field a side, and who do I play - so those are the three things it
-  // leads with.
-  var STAGE_NM = { r16: "Last sixteen", qf: "Quarter-finals", sf: "Semi-finals", final: "The Final" };
-  var STAGE_ORDER = ["r16", "qf", "sf", "final"];
-
-  // MINE IS A SLOT, NOT A NAME. The bracket calls a side "Rustford Colts" and
-  // the club is "Rustford", so matching on the name never matched and a
-  // manager's own tie was never picked out. The slot is the club's identity
-  // everywhere else in the world; it is the club's identity here too.
-  function tieHTML(t, mySlot) {
-    var mine = t.homeSlot === mySlot || t.awaySlot === mySlot;
-    // a colts side is its senior club's boys: the name is a door to the club
-    var nat9 = "";
-    try {
-      var c9 = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
-      nat9 = (c9 && c9.country) || "";
-    } catch (e9) {}
-    var side = function (nm, slot, isWinner) {
-      var b9 = "<b class='" + (isWinner ? "won" : "out") + (slot === mySlot ? " me" : "") + "'>" + E(nm) + "</b>";
-      return nat9 && slot != null
-        ? "<a class='fo-ac-tl' href='#/team?c=" + encodeURIComponent(nat9) + "&s=" + (slot | 0) + "'>" + b9 + "</a>"
-        : b9;
-    };
-    var ff = t.forfeit
-      ? "<i class='fo-ac-ff' title='" + E(t.text || "") + "'>forfeit</i>" : "";
-    return "<div class='fo-ac-tie" + (mine ? " mine" : "") + "'>" +
-      side(t.home, t.homeSlot, t.winnerSlot === t.homeSlot) + "<em>v</em>" +
-      side(t.away, t.awaySlot, t.winnerSlot === t.awaySlot) + ff + "</div>";
-  }
-
-
-  // WHO YOU WOULD SEND OUT. The squad is fifteen to eighteen men under
-  // twenty-one, and the umpire names it for you if you do not - so this panel
-  // is never a task, only an edge. It says plainly which it currently is.
+  // (The Colts Cup bracket, its tie cards and its squad picker lived here
+  //  until 075 retired the competition. The CSS below keeps the shared
+  //  classes other rooms borrowed; the bracket's own JS went with the cup.)
 
   // The academy was the first of the world rooms, and its plate-and-cards
   // became the house style for the rest of them. Other rooms call this and

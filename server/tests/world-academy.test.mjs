@@ -31,15 +31,13 @@ before(async () => {
 });
 after(async () => { if (pool) await pool.end(); });
 
-test('every club in the world is founded able to field a Colts Cup side', async () => {
+test('every club in the world is founded with an empty academy list (075)', async () => {
+  // the youth system is retired for now: the scout is the academy's whole
+  // produce, and his finds go straight to the senior squad
   const rows = (await pool.query(
     `SELECT slot, jsonb_array_length(youth) n FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows;
   assert.equal(rows.length, 16);
-  for (const r of rows) assert.equal(r.n, ACADEMY_FLOOR, 'slot ' + r.slot + ' has fifteen boys');
-  const ages = (await pool.query(
-    `SELECT min((y->>'age')::int) lo, max((y->>'age')::int) hi
-       FROM clubs, jsonb_array_elements(youth) y WHERE country_id='eng'`)).rows[0];
-  assert.ok(ages.lo >= 16 && ages.hi <= 20, 'boys are 16 to 20, got ' + ages.lo + '-' + ages.hi);
+  for (const r of rows) assert.equal(r.n, 0, 'slot ' + r.slot + ' keeps no boys');
 });
 
 test('the scout travels on rest days only, once, and the fee follows the passport', async () => {
@@ -80,18 +78,34 @@ test('the scout travels on rest days only, once, and the fee follows the passpor
     'one trip a rest day');
 });
 
-test('a boy is signed onto the wage bill, or let go and gone', async () => {
-  const before = (await pool.query(`SELECT youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].youth;
+test('a signed recruit goes straight to the senior squad, at the contract fee (075)', async () => {
+  const club0 = (await pool.query(
+    `SELECT squad, youth, bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
   const r = (await pool.query(`SELECT world_recruit('sign') r`)).rows[0].r;
   assert.equal(r.ok, true);
-  const after = (await pool.query(`SELECT youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].youth;
-  assert.equal(after.length, before.length + 1, 'he is on the books');
-  assert.ok(after.some(y => y.name === r.name));
+  assert.equal(Number(r.fee), PROMOTE_FEE, 'the senior contract is quoted');
+  const club1 = (await pool.query(
+    `SELECT squad, youth, bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
+  assert.equal(club1.squad.length, club0.squad.length + 1, 'he has a senior shirt');
+  assert.equal(club1.youth.length, 0, 'and the academy list stays empty');
+  const man = club1.squad.find(p => p.name === r.name);
+  assert.ok(man, 'he is on the books under his own name');
+  assert.ok(!man.colt && !man.promise, 'a senior carries no colt paperwork');
+  assert.deepEqual(man.baseSkills, man.skills, 'what the scout found is what he starts as');
+  assert.equal(Number(club0.bank) - Number(club1.bank), PROMOTE_FEE, 'and the treasury paid it');
   await assert.rejects(() => pool.query(`SELECT world_recruit('sign')`), /nobody waiting/,
     'and there is nobody left to answer for');
 });
 
 test('a senior shirt costs the same flat fee for every boy', async () => {
+  // 075 empties the academy lists, but world_colt keeps its law for any
+  // stale client that still calls it - seed two boys to hold it to that
+  await pool.query(
+    `UPDATE clubs SET youth = $1::jsonb WHERE country_id='eng' AND slot=1`,
+    [JSON.stringify([
+      { name: 'Wilf Hartle', age: 18, role: 'opener', wage: 1200, colt: true, skills: { vsPace: 40 } },
+      { name: 'Ned Crowther', age: 17, role: 'seamer', wage: 1100, colt: true, skills: { wicket: 38 } }
+    ])]);
   const club = (await pool.query(`SELECT youth, squad, bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
   const boy = club.youth[0];
   const bank0 = Number(club.bank), n0 = club.squad.length;
@@ -247,11 +261,12 @@ test('the scout hands over a report, not the file - and the signature is the rev
   }
   assert.ok(narrower >= 8, 'and most bands genuinely sharpened: ' + narrower);
   await pool.query(`UPDATE clubs SET academy=$1 WHERE country_id='eng' AND slot=1`, [lvl0]);
-  // the signature is the reveal: the boy who joins is the boy who was laid out
+  // the signature is the reveal: the man who joins is the boy who was laid
+  // out, real skills and all - and he joins the SENIOR squad (075)
   const signed = (await pool.query(`SELECT world_recruit('sign') s`)).rows[0].s;
   assert.equal(signed.ok, true);
-  const youth = (await pool.query(`SELECT youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].youth;
-  const boy = youth.filter(y => y.name === truth.name)[0];
+  const squad = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  const boy = squad.filter(p => p.name === truth.name)[0];
   assert.ok(boy, 'he is on the books under his own name');
   assert.deepEqual(boy.skills, truth.skills, 'with his real skills, exactly as generated');
 });

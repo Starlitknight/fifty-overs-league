@@ -14,11 +14,13 @@ disagree, one of them is wrong on purpose and the tests say which.
 day 1. `CYCLE = 42`, so every season starts on a Monday and `di % 7` is the
 weekday (0=Mon .. 6=Sun), forever.
 
-The fourth week belongs to the academies. The league stands down for it and the
-Colts Cup is played over four days — see docs/ACADEMY.md. Weeks 1-3 are exactly
-as they were when a season was five weeks: the same twelve league rounds on the
-same days, the same six tour days, the same three FA Cup Sundays. Everything
-after Colts Week is the old closing fortnight, one week later.
+The fourth week is the QUIET WEEK. It once belonged to the academies — the
+Colts Cup over four days, see docs/ACADEMY.md — but the youth system is
+retired for now (migration 075) and the whole week rests: seven scouting
+days, no cricket. Weeks 1-3 are exactly as they were when a season was five
+weeks: the same twelve league rounds on the same days, the same six tour
+days, the same three FA Cup Sundays. Everything after the quiet week is the
+old closing fortnight, one week later.
 
 Day-in-season (di, 0-based) map:
 
@@ -39,13 +41,7 @@ Day-in-season (di, 0-based) map:
 | 17,18 | Thu,Fri | league rounds 11,12 |
 | 19 | Sat | internationals (tour day 6) |
 | 20 | Sun | **FA Cup semi-finals** |
-| 21 | Mon | **COLTS CUP round of 16** — all sixteen clubs in one hat |
-| 22 | Tue | **Colts Cup quarter-finals** |
-| 23 | Wed | rest |
-| 24 | Thu | **Colts Cup semi-finals** |
-| 25 | Fri | **THE COLTS CUP FINAL** |
-| 26 | Sat | rest |
-| 27 | Sun | rest |
+| 21-27 | Mon-Sun | **the quiet week** — rest all seven days (the Colts Cup played here before 075) |
 | 28,29 | Mon,Tue | league rounds 13,14 (double round robin complete) |
 | 30 | Wed | rest — the players breathe before finals |
 | 31 | Thu | **league playoff semi-finals** (both divisions: 1v4, 2v3) |
@@ -60,18 +56,19 @@ Day-in-season (di, 0-based) map:
 
 `ROUNDS = 14` (8 clubs, double round robin). Rounds 1-12 fall on
 di ∈ {0,1,3,4} + 7·week for weeks 0..2; rounds 13 and 14 are di 28 and 29,
-the far side of Colts Week. Playoffs are rounds 15 (semis) and 16 (final) in
-the matches table; they never count toward the table.
+the far side of the quiet week. Playoffs are rounds 15 (semis) and 16 (final)
+in the matches table; they never count toward the table.
 
 International tour days are di {2,5,9,12,16,19} — the Wed/Sat of weeks 1-3.
 Each robs the NEXT league round of its called-up men (rounds 3,5,7,9,11,13),
-exactly the existing call-up law. Colts Week and finals week carry no tours,
-so both the boys' competition and the finals are full-strength.
+exactly the existing call-up law. The quiet week and finals week carry no
+tours, so the finals are full-strength.
 
 **REST DAYS** are the days the world stages no club cricket at all —
-di {2,5,9,12,16,19,23,26,27,30,33}, eleven of them. They are what the academies
-scout on, one recruit apiece, so the list must stay a pure function of the
-calendar: `isRestDay(di)` derives it, and nothing hardcodes the list.
+di {2,5,9,12,16,19,21,22,23,24,25,26,27,30,33}, fifteen of them since 075.
+They are what the academies scout on, one recruit apiece, so the list must
+stay a pure function of the calendar: `isRestDay(di)` derives it, and nothing
+hardcodes the list.
 
 ## 2. Sixteen nations
 
