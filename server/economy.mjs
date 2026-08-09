@@ -17,7 +17,7 @@
 // THE LAW HOLDS: nothing here is incremented imperatively and nothing is
 // stored that a re-run could not rebuild. Settle it twice and it settles the
 // same figure, which is what lets an offline manager trust it.
-import { seedOf, dayOfRound, natHour, EPOCH, DAY, COLTS_DAYS } from './clock.mjs';
+import { seedOf, dayOfRound, natHour, EPOCH, DAY, COLTS_DAYS, TRANSITION_DAY, dayIx } from './clock.mjs';
 
 export const FOUNDING_BANK = 2500000;
 export const FOUNDING_SUPPORT = 12000;
@@ -680,10 +680,18 @@ export async function computeFinance(pool, country, opts = {}) {
   drainMarket(Infinity);        // deals closed since the last round still count
 
   // between seasons the coming summer has no results to feel anything about,
-  // so the sheet reads level until the first ball of the new season
+  // so the sheet reads level until the first ball of the new season. Two
+  // doors into that state: the next season's row already on the books, or -
+  // since the row is only founded when the season starts - the world's own
+  // calendar standing at or past the turning of the year. The first cut
+  // checked only the row, so a live pre-season read ecstatic all break.
   let maxSeason = 0;
   for (const t of starts) if (+t.season_no > maxSeason) maxSeason = +t.season_no;
-  const preSeason = maxSeason > (curSeason || 0);
+  let preSeason = maxSeason > (curSeason || 0);
+  if (!preSeason && curSeason != null && startOf[curSeason] != null) {
+    const today = dayIx(opts.now ?? Date.now());
+    if (today >= startOf[curSeason] + TRANSITION_DAY) preSeason = true;
+  }
   const out = clubs.map(c => {
     const s = S[c.slot];
     if (preSeason) s.mood = MOOD_NEUTRAL;

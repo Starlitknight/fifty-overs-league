@@ -135,6 +135,16 @@ test('the mood opens each season level, and moves only on its results', async ()
   await pool.query(`DELETE FROM seasons WHERE country_id='eng' AND season_no=2`);
 });
 
+test('the turning of the year alone reads neutral - no next-season row needed', async () => {
+  // mid-season: the moods are live (somebody, somewhere, is not neutral)
+  const mid = await computeFinance(pool, 'eng', { now: EPOCH + (START + 3) * DAY });
+  assert.ok(mid.some(r => r.finance.mood !== 4), 'mid-season moods move');
+  // past the turning, with NO season-2 row on the books: everybody level -
+  // this is the live pre-season a manager actually sees
+  const brk = await computeFinance(pool, 'eng', { now: EPOCH + (START + 38) * DAY + 3600000 });
+  for (const r of brk) assert.equal(r.finance.mood, 4, 'the break is neutral (slot ' + r.slot + ')');
+});
+
 test('a match prices itself, and beats the standing price for that match alone (074)', async () => {
   // the RPC rails: a match price names both halves or neither
   await assert.rejects(pool.query('SELECT world_set_ticket(30, 1, 0)'), /together/);
