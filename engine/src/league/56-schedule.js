@@ -367,6 +367,33 @@
   // the academy's recruit countdown asks the same question this page does,
   // so the answer is exported rather than copied
   window.foDayPhase = function (season, di) { return dayPhase(planet(), season, di); };
+  // THE NEXT KNOWN LEAGUE FIXTURE, for any room that wants to name the
+  // opponent - the finance and ground desks ask. Derived from the same draw
+  // this page prints, so no room can be "awaiting" a draw the schedule is
+  // already showing. Looks into the coming season when this one is done.
+  window.foMyNextLeagueFixture = function () {
+    try {
+      var pl = planet(); if (!pl || !pl.phaseOf) return null;
+      var here = pl.phaseOf(Date.now()); if (!here) return null;
+      var season = here.season || 1, today = here.di | 0;
+      var seat = mySeat(pl); if (!seat) return null;
+      var now = Date.now();
+      var hour = 14; try { hour = pl.natHour(seat.rid); } catch (eH) {}
+      for (var s2 = season; s2 <= season + 1; s2++) {
+        for (var di = (s2 === season ? Math.max(0, today) : 0); di < 42; di++) {
+          var p = dayPhase(pl, s2, di);
+          if (!p || p.kind !== "league" || !p.round) continue;
+          var t0 = ballAt(pl, s2, di, hour);
+          if (!(t0 > now)) continue;
+          var fx = myFixture(pl, seat, s2, p.round);
+          if (!fx || !fx.opp) continue;
+          return { season: s2, round: p.round, home: !!fx.home, t0: t0,
+                   opp: { name: fx.opp.name || "", slot: fx.opp.slot } };
+        }
+      }
+    } catch (e) {}
+    return null;
+  };
   function dayPhase(pl, season, di) {
     try {
       var start = pl.seasonStart(season);                 // world day this season began

@@ -446,7 +446,15 @@
       if (sv9 && sv9.on()) nf = (sv9.fixtures(1) || [])[0] || null;
     } catch (e) {}
     try { if (!nf && typeof nextFixture === "function") nf = nextFixture(); } catch (e) {}
-    var oppNm = String((nf && nf.opp && nf.opp.name) || "Awaiting the draw");
+    // the draw is never awaited: the schedule derives it from the planet
+    // itself, so when the snapshots are behind, ask the same source it does
+    try {
+      if ((!nf || !nf.opp || !nf.opp.name) && window.foMyNextLeagueFixture) {
+        var kf9 = window.foMyNextLeagueFixture();
+        if (kf9) nf = { opp: { name: kf9.opp.name }, isHome: kf9.home, round: kf9.round };
+      }
+    } catch (eKf) {}
+    var oppNm = String((nf && nf.opp && nf.opp.name) || "Season played out");
     var atHome = !nf || nf.isHome !== false;
     // the crowd the umpire's own arithmetic would expect: his mood curve, not
     // an invented one, and never more than there are seats
@@ -579,7 +587,7 @@
 
     // the desk: what is coming, the one lever this room owns, and the doors
     var gateLine = !nf
-      ? "<div class='fo-tre-line num'><u>Next gate &middot; <b>awaiting the draw</b></u><span class='pj'>&mdash;</span></div>"
+      ? "<div class='fo-tre-line num'><u>Next gate &middot; <b>the season is played out</b></u><span class='pj'>&mdash;</span></div>"
       : atHome
       ? "<div class='fo-tre-line num'><u>Next gate &middot; <b>v " + E(oppNm) + "</b></u><span class='pj'>~" + Mk(projectedGate) + "</span></div>"
       : "<div class='fo-tre-line num'><u>Next match &middot; <b>at " + E(oppNm) + "</b></u><span class='pj'>a third of theirs</span></div>";
