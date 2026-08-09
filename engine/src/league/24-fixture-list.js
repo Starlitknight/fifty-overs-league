@@ -541,11 +541,11 @@
     // and every row wraps its detail line because there is nowhere to put it.
     // The page runs wide and the rows read as a table: fixed columns, aligned
     // dates, the opponent in one place on every line.
-    "html body #page .fo-fl{max-width:1120px;margin:22px auto 44px;padding:0 18px;color:#141C28}",
+    "html body #page .fo-fl{max-width:1120px;margin:22px auto 44px;padding:0 18px;color:#1B2432}",
     // ---- the masthead: navy, gold eyebrow, the record worn like a scorebug --
     "html body #page .fo-fl-hero{position:relative;overflow:hidden;background:linear-gradient(132deg,#0B1D33,#122C4B 55%,#1B3A5F);border-radius:22px;padding:26px 28px 22px;box-shadow:0 22px 50px rgba(11,29,51,.38)}",
     "html body #page .fo-fl-hero:before{content:'';position:absolute;inset:0;background:radial-gradient(120% 90% at 85% -10%,rgba(235,194,113,.14),transparent 55%);pointer-events:none}",
-    "html body #page .fo-fl-hero .k{position:relative;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:#EBC271}",
+    "html body #page .fo-fl-hero .k{position:relative;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:#E8B96A}",
     "html body #page .fo-fl-hero h1{position:relative;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:40px;letter-spacing:-.015em;margin:7px 0 16px;color:#FFFEFC;line-height:1.02}",
     "html body #page .fo-fl-stats{position:relative;display:flex;gap:8px;flex-wrap:wrap;align-items:stretch}",
     "html body #page .fo-fl-stat{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.14);border-radius:12px;padding:8px 13px 7px;font:600 9.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(244,239,228,.62)}",
@@ -557,32 +557,32 @@
     "html body #page .fo-fl-form i.l{background:#C0392E}",
     "html body #page .fo-fl-form i.t{background:rgba(255,255,255,.24)}",
     // ---- the next engagement, up in lights ----------------------------------
-    "html body #page a.fo-fl-next{display:flex;align-items:center;gap:16px;background:#FFFEFC;border:1px solid rgba(201,85,50,.42);border-left:5px solid #C95532;border-radius:16px;padding:15px 18px;margin-top:14px;text-decoration:none;color:#141C28;box-shadow:0 14px 34px rgba(201,85,50,.13);transition:transform .12s ease}",
+    "html body #page a.fo-fl-next{display:flex;align-items:center;gap:16px;background:#FFFEFC;border:1px solid rgba(201,85,50,.42);border-left:5px solid #C9571F;border-radius:16px;padding:15px 18px;margin-top:14px;text-decoration:none;color:#1B2432;box-shadow:0 14px 34px rgba(201,85,50,.13);transition:transform .12s ease}",
     "html body #page a.fo-fl-next:hover{transform:translateY(-1px);text-decoration:none}",
     "html body #page .fo-fl-next .nb{min-width:0}",
     "html body #page .fo-fl-next .nk{display:flex;align-items:center;gap:6px;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;color:#B44A22}",
     "html body #page .fo-fl-next .nk .dot{width:7px;height:7px;border-radius:50%;background:#C22823;animation:foFlPulse 1.2s infinite}",
     "@keyframes foFlPulse{0%,100%{opacity:1}50%{opacity:.35}}",
-    "html body #page .fo-fl-next .nvs{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:24px;line-height:1.1;margin:5px 0 5px;color:#141C28;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    "html body #page .fo-fl-next .nvs{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:24px;line-height:1.1;margin:5px 0 5px;color:#1B2432;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     "html body #page .fo-fl-next .nvs u{text-decoration:none;display:inline-block;vertical-align:3px;font:700 9px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#14202F;background:rgba(20,28,40,.08);border:1px solid rgba(20,28,40,.16);border-radius:6px;padding:4px 7px;margin-left:6px}",
     "html body #page .fo-fl-next .nw{display:block;font:400 12px/1.4 Inter,sans-serif;color:rgba(20,28,40,.55)}",
-    "html body #page .fo-fl-next .ncta{margin-left:auto;background:#C95532;color:#FFFEFC;border-radius:999px;padding:10px 16px;font:700 12px/1 Inter,sans-serif;white-space:nowrap}",
-    "html body #page a.fo-fl-next:hover .ncta{background:#A64426}",
+    "html body #page .fo-fl-next .ncta{margin-left:auto;background:#C9571F;color:#FFFEFC;border-radius:999px;padding:10px 16px;font:700 12px/1 Inter,sans-serif;white-space:nowrap}",
+    "html body #page a.fo-fl-next:hover .ncta{background:#B44A22}",
     "html body #page a.fo-fl-next.live{border-color:rgba(194,40,35,.5);border-left-color:#C22823;box-shadow:0 14px 34px rgba(194,40,35,.14)}",
     "html body #page a.fo-fl-next.live .nk{color:#C22823}",
     "html body #page a.fo-fl-next.live .ncta{background:#C22823}",
     // ---- section kickers ----------------------------------------------------
-    "html body #page .fo-fl-k{display:flex;align-items:center;gap:12px;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#0E2246;margin:26px 2px 9px}",
+    "html body #page .fo-fl-k{display:flex;align-items:center;gap:12px;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#14243A;margin:26px 2px 9px}",
     "html body #page .fo-fl-k:after{content:'';flex:1;border-top:1px solid rgba(20,28,40,.14)}",
     // ---- the rows: date block, competition pill, verdict, the match ---------
     "html body #page .fo-fl-list{display:flex;flex-direction:column;gap:0;background:#FFFEFC;border:1px solid rgba(20,28,40,.11);border-radius:14px;overflow:hidden;box-shadow:0 6px 20px rgba(30,38,52,.055)}",
-    "html body #page .fo-fl-row{display:grid;grid-template-columns:74px 44px 26px minmax(0,1fr) minmax(0,auto) 14px;gap:14px;align-items:center;background:transparent;border:0;border-top:1px solid rgba(20,28,40,.08);border-radius:0;padding:11px 18px;text-decoration:none;color:#141C28;box-shadow:none;transition:background .13s ease}",
+    "html body #page .fo-fl-row{display:grid;grid-template-columns:74px 44px 26px minmax(0,1fr) minmax(0,auto) 14px;gap:14px;align-items:center;background:transparent;border:0;border-top:1px solid rgba(20,28,40,.08);border-radius:0;padding:11px 18px;text-decoration:none;color:#1B2432;box-shadow:none;transition:background .13s ease}",
     "html body #page .fo-fl-list>.fo-fl-row:first-child{border-top:0}",
     "html body #page .fo-fl-row.nodt{grid-template-columns:44px 26px minmax(0,1fr) minmax(0,auto) 14px}",
     // the accent lives in a rule down the left edge on hover, so a pointer
     // moving through eighteen rows does not make the whole page jump
     "html body #page a.fo-fl-row{position:relative}",
-    "html body #page a.fo-fl-row:before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#C95532;opacity:0;transition:opacity .13s ease}",
+    "html body #page a.fo-fl-row:before{content:'';position:absolute;left:0;top:0;bottom:0;width:3px;background:#C9571F;opacity:0;transition:opacity .13s ease}",
     "html body #page a.fo-fl-row:hover{background:rgba(201,85,50,.045);text-decoration:none}",
     "html body #page a.fo-fl-row:hover:before{opacity:1}",
     "html body #page .fo-fl-row.live{border-color:rgba(194,40,35,.45)}",
@@ -603,7 +603,7 @@
     "html body #page .fo-fl-row u.c{background:rgba(176,132,9,.14);color:#8A6A1F;border:1px solid rgba(176,132,9,.4)}",
     "html body #page .fo-fl-row u.f{background:rgba(201,85,50,.12);color:#B44A22;border:1px solid rgba(201,85,50,.35)}",
     "html body #page .fo-fl-who{min-width:0}",
-    "html body #page .fo-fl-who b{display:block;font:600 13.5px/1.25 Inter,sans-serif;color:#141C28;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+    "html body #page .fo-fl-who b{display:block;font:600 13.5px/1.25 Inter,sans-serif;color:#1B2432;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     "html body #page .fo-fl-who>span{display:block;font:400 11px/1.35 Inter,sans-serif;color:rgba(20,28,40,.5);margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
     "html body #page .fo-fl-row.live .fo-fl-who>span{color:#C22823;font-weight:600}",
     "html body #page .fo-fl-res{font:400 12px/1.35 Fraunces,Georgia,serif;color:rgba(20,28,40,.6);text-align:right;white-space:nowrap}",

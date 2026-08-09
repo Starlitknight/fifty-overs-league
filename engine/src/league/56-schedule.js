@@ -48,7 +48,7 @@
   var CLS = { league: "lg", facup: "fa", colts: "co", cup: "ch", playoff: "po", transition: "tr", rest: "re" };
   // the colours, one per competition, defined once so a competition can never
   // wear two different ones on the same page
-  var COL = { lg: "#0E2246", fa: "#17636B", co: "#C9571F", po: "#8C2B2B",
+  var COL = { lg: "#14243A", fa: "#17636B", co: "#C9571F", po: "#8C2B2B",
               ch: "#6B3E8F", tr: "#4A5567", re: "rgba(20,28,40,.14)" };
 
   function label(p) {
@@ -72,13 +72,13 @@
     if (document.getElementById("fo-sch-css")) return;
     var s = document.createElement("style"); s.id = "fo-sch-css";
     s.textContent = [
-      "html body #page .fo-sch{max-width:760px;margin:20px auto 46px;padding:0 18px;color:#141C28}",
+      "html body #page .fo-sch{max-width:760px;margin:20px auto 46px;padding:0 18px;color:#1B2432}",
       // ---- the head: the title, what is next, how far in --------------------
       "html body #page .fo-sch-hd{display:flex;align-items:flex-end;gap:18px;flex-wrap:wrap;padding:0 2px 15px;border-bottom:1px solid rgba(20,28,40,.1)}",
-      "html body #page .fo-sch-hd h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:33px;letter-spacing:-.02em;line-height:1;margin:0;flex:0 0 auto;color:#0E2246}",
+      "html body #page .fo-sch-hd h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:33px;letter-spacing:-.02em;line-height:1;margin:0;flex:0 0 auto;color:#14243A}",
       "html body #page .fo-sch-nx{flex:1 1 200px;min-width:0}",
       "html body #page .fo-sch-nx i{display:block;font-style:normal;font:600 8px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#B44A22}",
-      "html body #page .fo-sch-nx b{display:block;font:600 15px/1.2 Inter,sans-serif;margin-top:6px;color:#141C28}",
+      "html body #page .fo-sch-nx b{display:block;font:600 15px/1.2 Inter,sans-serif;margin-top:6px;color:#1B2432}",
       "html body #page .fo-sch-cd{flex:0 0 auto;white-space:nowrap;font:600 15px/1 Inter,sans-serif;font-variant-numeric:tabular-nums;color:rgba(20,28,40,.55)}",
       "html body #page .fo-sch-cd em{font-style:normal;font-size:11px;color:rgba(20,28,40,.34)}",
       "html body #page .fo-sch-tr{display:flex;align-items:center;gap:10px;padding:11px 2px 0}",
@@ -109,7 +109,7 @@
       "html body #page .fo-sch-wk .wc{font:500 10px/1 Inter,sans-serif;color:rgba(20,28,40,.28);font-variant-numeric:tabular-nums}",
       "html body #page .fo-sch-row{display:flex;align-items:center;gap:12px;background:#FFFEFC;border-left:3px solid var(--c);border-radius:0 9px 9px 0;padding:11px 13px;margin-bottom:4px;box-shadow:0 4px 14px rgba(30,38,52,.05)}",
       "html body #page .fo-sch-row .dn{flex:0 0 26px;font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.34);font-variant-numeric:tabular-nums}",
-      "html body #page .fo-sch-row .ev{flex:1;min-width:0;font:600 13.5px/1.25 Inter,sans-serif;color:#141C28}",
+      "html body #page .fo-sch-row .ev{flex:1;min-width:0;font:600 13.5px/1.25 Inter,sans-serif;color:#1B2432}",
       "html body #page .fo-sch-row .hr{font:500 11.5px/1 Inter,sans-serif;color:rgba(20,28,40,.34);font-variant-numeric:tabular-nums}",
       // a final is the one day of a competition worth colouring the words for
       "html body #page .fo-sch-row.fin .ev{color:var(--c)}",

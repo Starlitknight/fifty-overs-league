@@ -1274,7 +1274,7 @@
     var s = document.createElement("style"); s.id = "fo-fd-css";
     s.textContent = [
       // the page's tokens, drawn from the game's standing palette
-      ".fo-fd{--fon9:#0A1A30;--fon:#0E233F;--focream:#F1EEE6;--fopaper:#FFFEFC;--foor:#C9571F;--fogold:#E8B96A;--fowkt:#8E1F13;--foink:#14243A;--fomut:#8a8272;--fobrd:#e3dccb;--fosoftred:#FBEFEA}",
+      ".fo-fd{--fon9:#0A1A30;--fon:#14243A;--focream:#F1EEE6;--fopaper:#FFFEFC;--foor:#C9571F;--fogold:#E8B96A;--fowkt:#8E1F13;--foink:#14243A;--fomut:#8a8272;--fobrd:#e3dccb;--fosoftred:#FBEFEA}",
       // the theatre's clean cream room, given the full width of the house
       "html body.ftpskin.fo-fd-on,html body.fo-fd-on{background:#F1EEE6 !important}",
       "html body.fo-fd-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",

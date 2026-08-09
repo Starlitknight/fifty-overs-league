@@ -308,7 +308,7 @@
     if (document.getElementById("fo-cl-css")) return;
     var s = document.createElement("style"); s.id = "fo-cl-css";
     s.textContent = [
-      "html body #page .fo-cl{max-width:680px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
+      "html body #page .fo-cl{max-width:680px;margin:26px auto 44px;padding:0 14px;color:#1B2432}",
       "html body #page .fo-cl-hero{background:linear-gradient(150deg,#0B1D3A,#07162E 70%) !important;border-radius:22px;padding:26px 28px 24px;color:#FFFEFC;box-shadow:0 22px 50px rgba(7,22,46,.35);border-bottom:3px solid #E8B96A}",
       "html body #page .fo-cl-k{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:#E8B96A}",
       "html body #page .fo-cl-hero h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:36px;letter-spacing:-.015em;margin:8px 0;color:#FFFEFC;line-height:1.02}",
@@ -326,7 +326,7 @@
       "html body #page .fo-cl-tie{border:1px solid rgba(20,28,40,.09);border-radius:11px;padding:8px 11px;margin-bottom:8px}",
       "html body #page .fo-cl-tie.mine{border-color:rgba(200,154,46,.55);background:rgba(200,154,46,.05)}",
       "html body #page .fo-cl-tie .s{display:flex;justify-content:space-between;gap:10px;padding:3px 0;font-size:12.5px;color:rgba(20,28,40,.55)}",
-      "html body #page .fo-cl-tie .s.won{color:#141C28;font-weight:600}",
+      "html body #page .fo-cl-tie .s.won{color:#1B2432;font-weight:600}",
       "html body #page .fo-cl-tie .s em{font-style:normal;font-variant-numeric:tabular-nums}",
       "html body #page .fo-cl-tie .s.won em{color:#8A6A1F}",
       "html body #page .fo-cl-sec,html body #page .fo-cl-sched{margin-top:16px;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:16px;padding:14px 16px}",

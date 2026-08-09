@@ -34,7 +34,7 @@
     // ceremony keeps its floodlit stage but the title turns serif
     "html body #page .fo-cer-h1{font-family:" + D + " !important;font-weight:600;font-style:normal;text-transform:none !important;letter-spacing:-.01em !important;font-variation-settings:'opsz' 110}",
     // == the signature tick: terracotta under every kicker =====================
-    "html body #page .fo-mc-kick:after,html body #page .fo-sd-kick:after,html body #page .fo-hb-kick:after,html body #page .fo-tm-kick:after{content:'';display:block;width:34px;border-top:2px solid #C95532;margin-top:7px}",
+    "html body #page .fo-mc-kick:after,html body #page .fo-sd-kick:after,html body #page .fo-hb-kick:after,html body #page .fo-tm-kick:after{content:'';display:block;width:34px;border-top:2px solid #C9571F;margin-top:7px}",
     // == numerals with a face: the money and the tallies =======================
     "html body #page .fo-led-stat b{font-family:" + D + " !important;font-weight:600;font-variation-settings:'opsz' 60;letter-spacing:-.01em}",
     "html body #page .fo-hb-tally b{font-family:" + D + ";font-weight:650}",

@@ -37,10 +37,10 @@
   var MAST_CSS = [
     "html body #page .fo-nvmast{position:relative;overflow:hidden;background:linear-gradient(132deg,#0B1D33,#122C4B 55%,#1B3A5F);border-radius:20px;padding:24px 26px 22px;margin:0 0 18px;box-shadow:0 18px 44px rgba(11,29,51,.3)}",
     "html body #page .fo-nvmast:before{content:'';position:absolute;inset:0;background:radial-gradient(120% 90% at 85% -10%,rgba(235,194,113,.14),transparent 55%);pointer-events:none}",
-    "html body #page .fo-nvmast .k{position:relative;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:#EBC271}",
+    "html body #page .fo-nvmast .k{position:relative;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.26em;text-transform:uppercase;color:#E8B96A}",
     "html body #page .fo-nvmast h1{position:relative;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(28px,4.4vw,38px);letter-spacing:-.015em;margin:7px 0 0;color:#FFFEFC;line-height:1.04}",
     "html body #page .fo-nvmast p{position:relative;margin:9px 0 0;font:400 13px/1.55 Inter,sans-serif;color:rgba(244,239,228,.72);max-width:58ch}",
-    "html body #page .fo-nvmast p a{color:#EBC271}"
+    "html body #page .fo-nvmast p a{color:#E8B96A}"
   ].join("\n");
   function css() {
     if (document.getElementById("fo-roomart-css")) return;

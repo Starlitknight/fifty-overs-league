@@ -677,7 +677,7 @@ FOC.oval = (function () {
       ".ov-ctl:empty{display:none}" +
       ".ov-ctl button{font-family:Oswald,sans-serif;font-weight:600;font-size:13px;letter-spacing:1px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.26);color:rgba(255,255,255,.82);border-radius:9px;padding:6px 18px;cursor:pointer;transition:.12s}" +
       ".ov-ctl button:hover{border-color:#F3D37A;color:#F3D37A}" +
-      ".ov-ctl button.on{background:linear-gradient(180deg,#F0B94E,#C9A24B);border-color:#F0B94E;color:#101B2D}" +
+      ".ov-ctl button.on{background:linear-gradient(180deg,#F0B94E,#C9A24B);border-color:#F0B94E;color:#0C1B2E}" +
       ".ov-snd{background:none;border:1px solid #24334f;border-radius:7px;color:#8fa0bd;font-size:12px;line-height:1;padding:3px 7px;cursor:pointer;margin-right:auto}" +
       ".ov-need{font-family:Oswald,sans-serif;font-size:13px;letter-spacing:1.5px;color:#fff;background:#a3242b;border-radius:8px;padding:3px 10px;display:none}" +
       ".ov-need.on{display:inline-block;animation:ovNeed 1.1s ease infinite}" +

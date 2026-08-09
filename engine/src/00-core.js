@@ -1402,7 +1402,7 @@ function effBowl(bat,bowl,ctx){
   return Math.max(5,Math.min(97,Math.round(v)));
 }
 function meter(v,lbl){const col=v>=70?'#2c7a2c':v>=45?'#c8a13a':'#a33328';
-  return `<div style="margin:2px 0"><span class="sklbl">${lbl}</span><span class="bar" style="width:130px"><i style="width:${v}%;background:${col}"></i></span><span class="skword" style="color:${col}">${word(v)}</span></div>`}
+  return `<div style="margin:2px 0"><span class="sklbl">${lbl}</span><span class="skbar" style="width:130px"><i style="width:${v}%;background:${col}"></i></span><span class="skword" style="color:${col}">${word(v)}</span></div>`}
 const word=x=>WORDS[wIx(x)], abbr=x=>ABBR[wIx(x)];
 const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const $=s=>document.querySelector(s);
@@ -1746,7 +1746,7 @@ const aggTech=p=>Math.round((S(p).vsPace+S(p).vsSpin+S(p).temperament)/3);
 const aggEnd=p=>p.bowlType?S(p).stamina:Math.round(S(p).temperament*0.9);
 const aggField=p=>Math.round((S(p).fielding+S(p).catching)/2);
 const isPT=p=>p.bowlTypeFull&&p.bowlTypeFull.startsWith('partTime');
-const bar=(v,lbl)=>`<span class="sklbl" title="${TIPS[lbl]||lbl}">${lbl}</span><span class="bar"><i style="width:${Math.max(2,Math.min(100,v))}%"></i></span><span class="skword" title="${word(v)} - rank ${wIx(v)+1} of 16">${word(v)}</span>`;
+const bar=(v,lbl)=>`<span class="sklbl" title="${TIPS[lbl]||lbl}">${lbl}</span><span class="skbar"><i style="width:${Math.max(2,Math.min(100,v))}%"></i></span><span class="skword" title="${word(v)} - rank ${wIx(v)+1} of 16">${word(v)}</span>`;
 function crumb(...parts){return `<div class="crumb">${parts.map(esc).join('<span class="sep">&raquo;</span>')}</div>`}
 function playerTip(p){
   if(!p)return '';
@@ -2059,7 +2059,7 @@ function pgSquad(){
 const ROLEICON={opener:'OP',topOrderBat:'TOP',middleOrderBat:'MID',wicketkeeper:'WK',allRounder:'AR',seamFast:'FST',seamFastMedium:'FM',seamMedium:'MED',wristSpin:'WS',fingerSpin:'FS'};
 const FORMDOT=f=>{const c=['#7a1d1d','#a33328','#c07a3a','#999','#7a9a3a','#2c7a2c','#1c5537'][f??3];return `<span title="form: ${FORMW_UI[f??3]}" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c}"></span>`};
 const FORMW_UI=['abysmal','poor','shaky','steady','good','strong','excellent'];
-function miniBar(v,tip){return `<span title="${tip}: ${word(v)} (rank ${wIx(v)+1}/16)\n${SKILLTIP}"><span class="bar" style="width:56px;height:8px"><i style="width:${Math.max(2,Math.min(100,v))}%"></i></span> <b class="sknum">${Math.round(v)}</b></span>`}
+function miniBar(v,tip){return `<span title="${tip}: ${word(v)} (rank ${wIx(v)+1}/16)\n${SKILLTIP}"><span class="skbar" style="width:56px;height:8px"><i style="width:${Math.max(2,Math.min(100,v))}%"></i></span> <b class="sknum">${Math.round(v)}</b></span>`}
 function cardsView(ps){
   const rows=ps.map((p,ix)=>{
     const openK=p.name, isOpen=!!squadView.open[openK];
@@ -2965,7 +2965,7 @@ function renderMatch(){
   // headpiece v2: striker / bowler / non-striker - THE centerpiece
   let head='';
   {const ctxH={faced:s1?(inn.faced[s1.p.name]||0):0,over:Math.floor(inn.legal/6),pitch:M.pitch,weather:((M.meta.weather||'sunny')+'').toLowerCase(),chase:M.inns===1,rrDef:press,pship:inn.pshipR};
-   const fatbar=n=>{const f=Math.min(1,M.fat&&M.fat[n]||0);return `<span class="bar" style="width:84px;height:8px;vertical-align:middle"><i style="width:${Math.round(100*f)}%;background:${f>0.65?'#a33328':f>0.4?'#c8a13a':'#7a9a3a'}"></i></span><span class="small"> ${f>0.65?'tired':f>0.4?'working':'fresh'}</span>`};
+   const fatbar=n=>{const f=Math.min(1,M.fat&&M.fat[n]||0);return `<span class="skbar" style="width:84px;height:8px;vertical-align:middle"><i style="width:${Math.round(100*f)}%;background:${f>0.65?'#a33328':f>0.4?'#c8a13a':'#7a9a3a'}"></i></span><span class="small"> ${f>0.65?'tired':f>0.4?'working':'fresh'}</span>`};
    const hint=(p,sbv)=>{if(!sbv)return '';
      if(sbv.r>=90&&sbv.r<100)return `<span class="phasechip" style="background:#f4ecd2;border-color:#c8a13a">${100-sbv.r} to a HUNDRED</span>`;
      if(sbv.r>=40&&sbv.r<50)return `<span class="phasechip" style="background:#f4ecd2;border-color:#c8a13a">${50-sbv.r} to fifty</span>`;
@@ -3189,7 +3189,7 @@ function pshipBars(inn){
   const ps=(inn.pships||[]).concat(inn.pshipB>0?[{w:'-',runs:inn.pshipR,balls:inn.pshipB,pair:'unbroken'}]:[]);
   if(!ps.length)return '';
   const mx=Math.max(20,...ps.map(p=>p.runs));
-  return ps.map(p=>`<div style="display:flex;align-items:center;gap:6px;margin:1px 0"><span class="small" style="min-width:26px">${p.w}</span><span class="bar" style="width:180px"><i style="width:${Math.max(1,100*p.runs/mx)}%"></i></span><span class="small">${p.runs} (${p.balls}) ${esc(p.pair)}</span></div>`).join('');
+  return ps.map(p=>`<div style="display:flex;align-items:center;gap:6px;margin:1px 0"><span class="small" style="min-width:26px">${p.w}</span><span class="skbar" style="width:180px"><i style="width:${Math.max(1,100*p.runs/mx)}%"></i></span><span class="small">${p.runs} (${p.balls}) ${esc(p.pair)}</span></div>`).join('');
 }
 function pgReports(q){
   if(q.i!==undefined&&App.results[+q.i]){

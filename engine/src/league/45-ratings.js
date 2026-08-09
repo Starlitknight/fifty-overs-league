@@ -219,7 +219,7 @@
       ".fo-rat-p i{font-style:normal;font:700 10px/1 Oswald,sans-serif;color:rgba(12,27,51,.35);width:12px}",
       ".fo-rat-p b{font-weight:600}",
       ".fo-rat-p span{flex:1;min-width:0;font-size:10.5px;color:rgba(12,27,51,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      ".fo-rat-p u{text-decoration:none;font:700 13px/1 Inter,sans-serif;color:#0C1B33;font-variant-numeric:tabular-nums}"
+      ".fo-rat-p u{text-decoration:none;font:700 13px/1 Inter,sans-serif;color:#0C1B2E;font-variant-numeric:tabular-nums}"
     ].join("\n");
     document.head.appendChild(s);
   }

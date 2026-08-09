@@ -157,9 +157,9 @@
       "font:600 12.5px/1 Inter,system-ui,sans-serif !important;letter-spacing:-.005em;",
       "text-transform:none !important;text-decoration:none !important;cursor:pointer;",
       "color:rgba(20,28,40,.45) !important;transition:color .12s ease}",
-      "html body #page .fo-seg > *:hover{color:#141C28 !important}",
+      "html body #page .fo-seg > *:hover{color:#1B2432 !important}",
       "html body #page .fo-seg > *:focus-visible{outline:2px solid rgba(201,85,47,.5);outline-offset:2px}",
-      "html body #page .fo-seg > .on{color:#0E2246 !important;font-weight:700 !important}",
+      "html body #page .fo-seg > .on{color:#14243A !important;font-weight:700 !important}",
       "html body #page .fo-seg > .on:after{content:'';position:absolute;left:0;right:0;bottom:-1px;",
       "height:2px;border-radius:1px;background:#C9571F}",
       // on a dark plate the same line reads in paper and gold
@@ -184,20 +184,20 @@
     var s = document.createElement("style"); s.id = "fo-dec-css";
     s.textContent = [
       ".fo-dec{display:block;margin:8px 0;padding:12px 14px;border-radius:12px;background:#FFFEFC;",
-      "border:1px solid rgba(20,28,40,.16);border-left:3px solid #C9552F;",
-      "font:400 13px/1.5 Inter,system-ui,sans-serif;color:#141C28;text-align:left}",
+      "border:1px solid rgba(20,28,40,.16);border-left:3px solid #C9571F;",
+      "font:400 13px/1.5 Inter,system-ui,sans-serif;color:#1B2432;text-align:left}",
       ".fo-dec.dngr{border-left-color:#B3372B}",
-      ".fo-dec b{display:block;font:600 13.5px/1.4 Inter,system-ui,sans-serif;color:#141C28}",
+      ".fo-dec b{display:block;font:600 13.5px/1.4 Inter,system-ui,sans-serif;color:#1B2432}",
       ".fo-dec p{margin:4px 0 0;font:400 12px/1.5 Inter,system-ui,sans-serif;color:rgba(20,28,40,.62)}",
       ".fo-dec .fo-dec-in{display:block;width:100%;max-width:220px;margin-top:9px;min-height:40px;",
       "padding:0 12px;border-radius:9px;border:1px solid rgba(20,28,40,.24);background:#FFFEFC;",
-      "font:600 15px/1 Inter,system-ui,sans-serif;color:#141C28;font-variant-numeric:tabular-nums}",
-      ".fo-dec .fo-dec-in:focus{outline:none;border-color:#C9552F;box-shadow:0 0 0 3px rgba(201,85,47,.16)}",
+      "font:600 15px/1 Inter,system-ui,sans-serif;color:#1B2432;font-variant-numeric:tabular-nums}",
+      ".fo-dec .fo-dec-in:focus{outline:none;border-color:#C9571F;box-shadow:0 0 0 3px rgba(201,85,47,.16)}",
       ".fo-dec .fo-dec-act{display:flex;gap:8px;margin-top:10px}",
       ".fo-dec button{flex:0 0 auto;min-height:38px;padding:0 16px;border-radius:9px;cursor:pointer;",
       "font:700 11px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
       ".fo-dec .fo-dec-no{background:transparent;border:1px solid rgba(20,28,40,.24);color:rgba(20,28,40,.7)}",
-      ".fo-dec .fo-dec-yes{background:#C9552F;border:1px solid #C9552F;color:#FFFEFC}",
+      ".fo-dec .fo-dec-yes{background:#C9571F;border:1px solid #C9571F;color:#FFFEFC}",
       ".fo-dec.dngr .fo-dec-yes{background:#B3372B;border-color:#B3372B}",
       ".fo-dec .fo-dec-no:focus,.fo-dec .fo-dec-yes:focus{outline:2px solid rgba(201,85,47,.5);outline-offset:2px}"
     ].join("");
@@ -560,7 +560,7 @@
       "font:700 12px Oswald,sans-serif !important;letter-spacing:.18em;text-transform:uppercase;" +
       "background:#C9571F !important;color:#fff !important;border:none !important;border-radius:10px;" +
       "padding:12px 26px;cursor:pointer;min-height:0}" +
-      "html body button.fo-door-btn:hover{background:#A64426 !important}";
+      "html body button.fo-door-btn:hover{background:#B44A22 !important}";
     (document.head || document.documentElement).appendChild(ds);
   } catch (eDoor) {}
 

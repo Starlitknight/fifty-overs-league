@@ -268,8 +268,8 @@
   var CSS = [
     "html body #page #fo-wsvc{margin-top:14px;background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-left:3px solid #177A57;border-radius:16px;padding:14px 16px}",
     "html body #page #fo-wsvc>i{display:block;font:700 9px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#177A57;font-style:normal}",
-    "html body #page #fo-wsvc>b{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:15px;margin:6px 0 8px;color:#141C28}",
-    "html body #page #fo-wsvc .r{display:flex;gap:8px;align-items:baseline;font:500 12px/1.5 Inter,sans-serif;color:#141C28}",
+    "html body #page #fo-wsvc>b{display:block;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:15px;margin:6px 0 8px;color:#1B2432}",
+    "html body #page #fo-wsvc .r{display:flex;gap:8px;align-items:baseline;font:500 12px/1.5 Inter,sans-serif;color:#1B2432}",
     "html body #page #fo-wsvc .r i{font-style:normal;color:rgba(20,28,40,.45);width:12px}",
     "html body #page #fo-wsvc .r b{flex:1;font-weight:600}",
     "html body #page #fo-wsvc .r u{text-decoration:none;font:700 8px/1 Oswald,sans-serif;color:#B44A22;letter-spacing:.1em}",

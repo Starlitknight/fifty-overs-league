@@ -340,12 +340,12 @@
     "body.fo-hbx-on #page .fo-hb-mast{background:linear-gradient(132deg,#0B1D33,#122C4B 55%,#1B3A5F) !important;border:none !important;border-radius:20px;padding:24px 26px 22px;box-shadow:0 18px 44px rgba(11,29,51,.3) !important}",
     "body.fo-hbx-on #page .fo-hb-mast:after{display:none}",
     "body.fo-hbx-on #page .fo-hb-mast h1{color:#FFFEFC !important;text-shadow:none}",
-    "body.fo-hbx-on #page .fo-hb-kick{color:#EBC271 !important;text-shadow:none}",
+    "body.fo-hbx-on #page .fo-hb-kick{color:#E8B96A !important;text-shadow:none}",
     "body.fo-hbx-on #page .fo-hb-mast p{color:rgba(244,239,228,.72) !important;text-shadow:none}",
     "body.fo-hbx-on #page .fo-hb-tally{box-shadow:0 8px 20px rgba(0,0,0,.35)}",
     // section headings floating on the pavilion air
     "html body #page .fo-hb-shead{margin:18px 2px 8px;display:flex;align-items:baseline;gap:12px;flex-wrap:wrap}",
-    "html body #page .fo-hb-shead b{font-family:Fraunces,Georgia,serif;font-weight:600;font-style:normal;font-size:21px;color:#141C28}",
+    "html body #page .fo-hb-shead b{font-family:Fraunces,Georgia,serif;font-weight:600;font-style:normal;font-size:21px;color:#1B2432}",
     "html body #page .fo-hb-shead span{font:400 12px/1.4 Fraunces,Georgia,serif;color:rgba(20,28,40,.55)}",
     // the charter: parchment scrolls with wax seals
     "html body #page .fo-hb-chgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(235px,1fr));gap:10px}",
@@ -364,20 +364,20 @@
     "html body #page .fo-hb-oak{background:linear-gradient(168deg,#5A4326,#43301A 55%,#33240F);border:1px solid rgba(230,190,110,.35);outline:1px solid rgba(230,190,110,.28);outline-offset:-8px;border-radius:16px;padding:16px;box-shadow:0 26px 60px rgba(10,7,3,.55),inset 0 1px 0 rgba(255,235,190,.18);margin-top:12px}",
     "body.fo-hbx-on #page .fo-hb-plq{background:rgba(250,245,232,.94)}",
     "body.fo-hbx-on #page .fo-hb-foot a{background:rgba(253,252,249,.92);box-shadow:0 8px 20px rgba(10,7,3,.35)}",
-    "html body #page .fo-hb{max-width:960px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
+    "html body #page .fo-hb{max-width:960px;margin:26px auto 44px;padding:0 14px;color:#1B2432}",
     "html body #page .fo-hb-mast{background:linear-gradient(150deg,#FFFEFB,#F6F1E4 70%,#F0E9D6) !important;border:1px solid rgba(20,28,40,.1);border-radius:22px;padding:28px 30px 24px;box-shadow:0 22px 50px rgba(30,38,52,.12);position:relative;overflow:hidden}",
     "html body #page .fo-hb-mast:after{content:'';position:absolute;inset:8px;border:1px solid rgba(176,132,9,.25);border-radius:16px;pointer-events:none}",
     "html body #page .fo-hb-kick,html body #page .fo-hb-k{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:#B44A22}",
-    "html body #page .fo-hb-mast h1{font-family:Oswald,sans-serif;font-weight:600;font-size:38px;letter-spacing:.04em;text-transform:uppercase;margin:6px 0 8px;color:#141C28}",
+    "html body #page .fo-hb-mast h1{font-family:Oswald,sans-serif;font-weight:600;font-size:38px;letter-spacing:.04em;text-transform:uppercase;margin:6px 0 8px;color:#1B2432}",
     "html body #page .fo-hb-mast p{font:400 13.5px/1.55 Fraunces,Georgia,serif;color:rgba(20,28,40,.62);margin:0;max-width:64ch}",
-    "html body #page .fo-hb-tally{margin-top:12px;font:600 12px/1 Inter,sans-serif;color:#141C28;background:#FFFEFC;border:1px solid rgba(176,132,9,.4);border-radius:999px;display:inline-block;padding:8px 15px}",
+    "html body #page .fo-hb-tally{margin-top:12px;font:600 12px/1 Inter,sans-serif;color:#1B2432;background:#FFFEFC;border:1px solid rgba(176,132,9,.4);border-radius:999px;display:inline-block;padding:8px 15px}",
     "html body #page .fo-hb-tally b{color:#B08409}",
     // club switcher
     // plaques
     "html body #page .fo-hb-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(215px,1fr));gap:11px;margin-top:12px}",
     "html body #page .fo-hb-plq{position:relative;border-radius:14px;padding:14px 15px 13px;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);box-shadow:0 5px 16px rgba(30,38,52,.06)}",
     "html body #page .fo-hb-plq i{display:block;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.26em;text-transform:uppercase;font-style:normal;color:rgba(20,28,40,.4);margin-bottom:6px}",
-    "html body #page .fo-hb-plq b{display:block;font:600 15px/1.15 Oswald,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#141C28}",
+    "html body #page .fo-hb-plq b{display:block;font:600 15px/1.15 Oswald,sans-serif;letter-spacing:.04em;text-transform:uppercase;color:#1B2432}",
     "html body #page .fo-hb-plq span{display:block;font:400 11.5px/1.45 Fraunces,Georgia,serif;color:rgba(20,28,40,.58);margin-top:5px}",
     "html body #page .fo-hb-plq em{display:block;font:600 10px/1 Inter,sans-serif;color:#8A6A1F;font-style:normal;margin-top:9px;font-variant-numeric:tabular-nums}",
     "html body #page .fo-hb-plq em.pend{color:rgba(20,28,40,.5)}",
@@ -398,12 +398,12 @@
     "html body #page .fo-hb-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5);text-decoration:none}",
     "@media(max-width:640px){html body #page .fo-hb-mast h1{font-size:28px}html body #page .fo-hb-grid{grid-template-columns:1fr 1fr}}",
     // desk card bits
-    ".fo-hb-card{display:block;text-decoration:none;background:linear-gradient(172deg,#FDF9EE,#F6EFDA);border:1px solid rgba(140,104,20,.35);border-radius:6px;padding:14px 16px;box-shadow:0 10px 22px rgba(40,30,10,.18);color:#141C28 !important}"
+    ".fo-hb-card{display:block;text-decoration:none;background:linear-gradient(172deg,#FDF9EE,#F6EFDA);border:1px solid rgba(140,104,20,.35);border-radius:6px;padding:14px 16px;box-shadow:0 10px 22px rgba(40,30,10,.18);color:#1B2432 !important}"
     ,".fo-hb-card .fo-ls-kick{color:#8A6A1F}"
     ,".fo-hb-card .fo-ls-go{color:#B44A22}",
     ".fo-hb-line{font:600 13.5px/1.4 Inter,sans-serif}",
     ".fo-hb-sub{font:400 12px/1.45 Fraunces,Georgia,serif;opacity:.75;margin-top:3px}",
-    ".fo-hb-new{font:700 8.5px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;font-style:normal;background:#C95532;color:#FFFEFC;border-radius:999px;padding:3px 7px;margin-left:6px;vertical-align:1px}"
+    ".fo-hb-new{font:700 8.5px/1 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase;font-style:normal;background:#C9571F;color:#FFFEFC;border-radius:999px;padding:3px 7px;margin-left:6px;vertical-align:1px}"
   ].join("\n");
 
   function mount() {

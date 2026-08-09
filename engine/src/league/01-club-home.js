@@ -1418,7 +1418,7 @@
           var t9 = chalPickT(), el9 = m.querySelector("#fo-chal-prev");
           var loc = t9.toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }) + " " + pad(t9.getHours()) + ":" + pad(t9.getMinutes()) + " " + (foTzAbbr() || "your time");
           var et = t9.toLocaleString("en-US", { timeZone: "America/New_York", hour: "numeric", minute: "2-digit" }) + " ET";
-          el9.innerHTML = "Kicks off " + E(loc) + (loc.indexOf(" ET") < 0 ? " <span style='color:#8a93a3;font-weight:400'>(" + E(et) + " &middot; league clock)</span>" : "");
+          el9.innerHTML = "Kicks off " + E(loc) + (loc.indexOf(" ET") < 0 ? " <span style='color:#8A93A2;font-weight:400'>(" + E(et) + " &middot; league clock)</span>" : "");
         } catch (e9) {}
       };
       ["fo-chal-d", "fo-chal-h", "fo-chal-m"].forEach(function (id9) { m.querySelector("#" + id9).addEventListener("change", chalPrev); });
@@ -1780,13 +1780,13 @@
     st.textContent =
       "#fo-nets-cards{display:grid;grid-template-columns:1fr 34px 1fr;gap:12px;align-items:stretch;margin:6px 0 16px}" +
       ".fo-net-card{background:#FFFEFC;border:1px solid rgba(7,22,46,.11);border-radius:14px;padding:13px 15px;box-shadow:0 1px 3px rgba(7,22,46,.05)}" +
-      ".fo-net-bat{border-top:3px solid #2b6b68}.fo-net-bowl{border-top:3px solid #C95532}" +
+      ".fo-net-bat{border-top:3px solid #2b6b68}.fo-net-bowl{border-top:3px solid #C9571F}" +
       ".fo-net-role{font-size:10px;font-weight:800;letter-spacing:.12em;text-transform:uppercase;margin-bottom:9px;color:#667085}" +
       ".fo-net-bat .fo-net-role{color:#2b6b68}.fo-net-bowl .fo-net-role{color:#a4552e}" +
       ".fo-net-slot select{width:100%;max-width:100%;padding:9px 11px;border:1px solid rgba(7,22,46,.16);border-radius:10px;background:#fcfaf5;font-weight:700;font-size:13.5px;margin-bottom:10px}" +
       ".fo-net-head{display:flex;align-items:center;gap:8px;flex-wrap:wrap}" +
       ".fo-net-flag{font-size:16px;line-height:1}" +
-      ".fo-net-nm{font-weight:800;font-size:16.5px;color:#111827;text-decoration:none}" +
+      ".fo-net-nm{font-weight:800;font-size:16.5px;color:#1B2432;text-decoration:none}" +
       ".fo-net-nm:hover{color:#2b6b68;text-decoration:underline}" +
       ".fo-net-meta{font-size:11.5px;color:#7a7566;margin:4px 0 8px}" +
       ".fo-net-tals{display:flex;gap:5px;flex-wrap:wrap;margin:0 0 9px}" +
@@ -2267,12 +2267,12 @@
     foCh3Css.textContent =
       ".fo-clubstrip{display:flex;align-items:center;gap:8px 18px;flex-wrap:wrap;background:#FFFEFC;border:1px solid rgba(20,36,58,.1);border-radius:12px;padding:9px 16px;margin:0 0 12px;box-shadow:0 4px 14px rgba(20,36,58,.06)}" +
       ".fo-clubstrip .fo-cs-id{display:flex;align-items:baseline;gap:9px}" +
-      ".fo-clubstrip .fo-cs-id b{font-size:19px;color:#0E233F;font-weight:800;letter-spacing:-.2px}" +
+      ".fo-clubstrip .fo-cs-id b{font-size:19px;color:#14243A;font-weight:800;letter-spacing:-.2px}" +
       ".fo-cs-mgr{font-size:12px;color:#5a6472}" +
       ".fo-cs-meta{font-size:12px;color:#5a6472}.fo-cs-meta u{text-decoration:none;color:#c3bda9}" +
       ".fo-cs-right{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}" +
       ".fo-cs-chip{display:inline-flex;align-items:center;gap:6px;font-size:11px;color:#5a6472;background:rgba(20,36,58,.05);border-radius:999px;padding:3px 11px}" +
-      ".fo-cs-chip b{color:#0E233F;font-size:11px}.fo-cs-chip u{text-decoration:none;color:#8a93a3}" +
+      ".fo-cs-chip b{color:#14243A;font-size:11px}.fo-cs-chip u{text-decoration:none;color:#8A93A2}" +
       "@media(max-width:700px){.fo-cs-right{margin-left:0}}" +
       // the hero: the region's own map behind a navy veil, gold accents
       ".fo-cxhero{position:relative;border-radius:18px;overflow:hidden;cursor:pointer;margin:0 0 14px;border:2px solid rgba(201,162,75,.55);box-shadow:0 14px 34px rgba(7,22,46,.28)}" +
@@ -2292,15 +2292,15 @@
       ".fo-cxh-quip{font-style:normal;font-size:13px;color:#dfe5f0;margin-top:9px;max-width:520px}" +
       ".fo-cxh-story{font-size:12px;color:#b9c2d4;margin-top:7px;max-width:520px}.fo-cxh-story a{color:#E4C463}" +
       ".fo-cxh-act{display:flex;gap:10px;margin-top:15px;flex-wrap:wrap}" +
-      "html body #page .fo-cxh-cta,html body.ftpskin #page .fo-cxh-cta{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:12.5px;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#101B2D !important;border:none !important;border-radius:10px;padding:10px 22px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.35) !important}" +
+      "html body #page .fo-cxh-cta,html body.ftpskin #page .fo-cxh-cta{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:12.5px;background:linear-gradient(180deg,#F0B94E,#C9A24B) !important;color:#0C1B2E !important;border:none !important;border-radius:10px;padding:10px 22px;cursor:pointer;box-shadow:0 4px 0 rgba(16,27,45,.35) !important}" +
       "html body #page .fo-cxh-cta:hover{filter:brightness(1.06)}" +
       "html body #page .fo-cxh-pass,html body.ftpskin #page .fo-cxh-pass{font-family:Oswald,sans-serif !important;font-weight:600 !important;letter-spacing:1.8px;text-transform:uppercase;font-size:11px;background:transparent !important;color:#E4C463 !important;border:1.5px solid rgba(228,196,99,.6) !important;border-radius:10px;padding:10px 16px;cursor:pointer;box-shadow:none !important}" +
       "html body #page .fo-cxh-pass:hover{border-color:#E4C463 !important}" +
       ".fo-cxh-crown{position:absolute;right:26px;top:50%;transform:translateY(-50%);height:72%;max-height:210px;filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}" +
       "@media(max-width:640px){.fo-cxh-in{padding:16px 15px 15px}.fo-cxh-veil{background:linear-gradient(180deg,rgba(7,16,32,.9) 0%,rgba(7,16,32,.72) 100%)}.fo-cxh-crown{display:none}}" +
       // the league mode card: everything multiplayer in one place
-      ".fo-mp-badge{font-family:Oswald,sans-serif;font-size:8.5px;letter-spacing:1.8px;background:#0E233F;color:#FFFEFC;border-radius:6px;padding:2.5px 8px;vertical-align:2px;margin-left:7px;font-weight:600}" +
-      ".fo-mp-prog{font-size:12px;color:#5a6472;margin:2px 0 10px}.fo-mp-prog .fo-progress-bar{height:6px;background:rgba(20,36,58,.09);border-radius:99px;overflow:hidden;margin-top:5px}.fo-mp-prog .fo-progress-bar u{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#C95532,#F59E0B)}" +
+      ".fo-mp-badge{font-family:Oswald,sans-serif;font-size:8.5px;letter-spacing:1.8px;background:#14243A;color:#FFFEFC;border-radius:6px;padding:2.5px 8px;vertical-align:2px;margin-left:7px;font-weight:600}" +
+      ".fo-mp-prog{font-size:12px;color:#5a6472;margin:2px 0 10px}.fo-mp-prog .fo-progress-bar{height:6px;background:rgba(20,36,58,.09);border-radius:99px;overflow:hidden;margin-top:5px}.fo-mp-prog .fo-progress-bar u{display:block;height:100%;border-radius:99px;background:linear-gradient(90deg,#C9571F,#F59E0B)}" +
       ".fo-mp-card .fo-c2-next{display:block;background:transparent;border:none;box-shadow:none;padding:0;margin:0}" +
       ".fo-mp-card .fo-c2-nl{margin-bottom:8px}" +
       ".fo-mp-card .fo-c2-nopp{font-size:17px}" +
@@ -2318,7 +2318,7 @@
       ".ph-club .phc{background:linear-gradient(160deg,var(--tc),var(--tcD) 55%,var(--tc))}" +
       ".ph-star .phc{background:linear-gradient(135deg,#e8ecf2,#9aa7b8 28%,#f4f7fb 50%,#8e9cae 74%,#dfe5ee)}" +
       ".ph-legend .phc{background:linear-gradient(135deg,#f6e27a,#c9a227 26%,#fff8d8 50%,#b8860b 76%,#f2d868)}" +
-      ".phc-in{background:radial-gradient(140% 100% at 50% 0%,#1b2a4a 0%,#101B2D 58%,#0B1322 100%);border-radius:15px;padding:13px 15px 11px;color:#F5EFDC;position:relative;overflow:hidden}" +
+      ".phc-in{background:radial-gradient(140% 100% at 50% 0%,#1b2a4a 0%,#0C1B2E 58%,#0B1322 100%);border-radius:15px;padding:13px 15px 11px;color:#F5EFDC;position:relative;overflow:hidden}" +
       ".phc-hd{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;margin-bottom:9px}" +
       ".phc-role{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2.4px;text-transform:uppercase;color:#C9A24B;font-weight:600}" +
       ".phc-nm{font-family:Oswald,sans-serif;font-weight:800;font-size:25px;line-height:1.06;color:#FFFEFC;margin-top:2px}" +
@@ -2349,7 +2349,7 @@
       ".phc-meta{display:flex;gap:7px;justify-content:center;align-items:center;flex-wrap:wrap;font-style:normal;font-size:12px;color:#c7cede;margin-top:10px}" +
       ".phc-meta.phc-m2{margin-top:2px;font-size:11px;color:#a7b1c6}" +
       ".phc-meta s{text-decoration:none;color:#C9A24B}" +
-      ".phc-ft{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12);font-family:Oswald,sans-serif;font-size:9px;letter-spacing:1.6px;color:#8a93a3}" +
+      ".phc-ft{display:flex;justify-content:space-between;align-items:center;margin-top:9px;padding-top:8px;border-top:1px solid rgba(255,255,255,.12);font-family:Oswald,sans-serif;font-size:9px;letter-spacing:1.6px;color:#8A93A2}" +
       ".phc-ft .rr{color:#F0B94E;font-size:12px;letter-spacing:0}" +
       "@media(max-width:520px){.phc-nm{font-size:21px}.phc-art{height:min(46vh,300px)}}" +
       // the signing modal: the holo card on the dark backdrop, money + Sign under it
@@ -2402,12 +2402,12 @@
       "html body #page #fo-pstage .foabil,html body #page #fo-pstage .fo-tal-tag{background:rgba(201,162,75,.16) !important;border:1px solid rgba(201,162,75,.42) !important;color:#E4C463 !important}" +
       "html body #page #fo-pstage table{background:transparent !important;color:#dfe5f0}" +
       "html body #page #fo-pstage td,html body #page #fo-pstage th{border-color:rgba(255,255,255,.09) !important;color:#dfe5f0}" +
-      "html body #page #fo-pstage th{background:transparent !important;color:#8a93a3 !important;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;font-size:10px}" +
+      "html body #page #fo-pstage th{background:transparent !important;color:#8A93A2 !important;font-family:Oswald,sans-serif;font-weight:600;letter-spacing:1.2px;text-transform:uppercase;font-size:10px}" +
       "html body #page #fo-pstage td{background:transparent !important}" +
-      "html body #page #fo-pstage table.kv td:first-child{color:#8a93a3;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;padding-right:12px;white-space:nowrap}" +
+      "html body #page #fo-pstage table.kv td:first-child{color:#8A93A2;font-family:Oswald,sans-serif;font-size:11px;letter-spacing:1.4px;text-transform:uppercase;padding-right:12px;white-space:nowrap}" +
       "html body #page #fo-pstage table.kv b{color:#F0B94E}" +
       "html body #page #fo-pstage a{color:#E4C463}" +
-      "html body #page #fo-pstage .small{color:#8a93a3 !important}" +
+      "html body #page #fo-pstage .small{color:#8A93A2 !important}" +
       // skill bars: dark track, role-colour-to-gold fill, light words.
       // The engine's two-column skills split leaves ~15px for the bar once
       // label+word have their fixed widths - stack them and let bars run long
@@ -2422,12 +2422,12 @@
       "html body #page #fo-pstage .fo-cp-prov{background:rgba(255,255,255,.06) !important;border:1px solid rgba(255,255,255,.14) !important;color:#c7cede !important;font-style:normal}" +
       "#fo-pstage .fo-cp-tabs{display:flex;gap:8px;margin:9px 0 5px}" +
       "html body #page #fo-pstage .fo-cp-tab{background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.18);color:#dfe5f0 !important;border-radius:99px;padding:4px 15px;cursor:pointer;font-family:Oswald,sans-serif;letter-spacing:1.4px;text-transform:uppercase;font-size:10.5px;text-decoration:none}" +
-      "html body #page #fo-pstage .fo-cp-tab.on{background:#C9A24B;border-color:#C9A24B;color:#101B2D !important;font-weight:600}" +
+      "html body #page #fo-pstage .fo-cp-tab.on{background:#C9A24B;border-color:#C9A24B;color:#0C1B2E !important;font-weight:600}" +
       "#fo-pstage .fo-cp-ev i{color:#C9A24B;font-style:normal;font-family:Oswald,sans-serif;letter-spacing:1px;font-size:10.5px;text-transform:uppercase}" +
       "#fo-pstage .fo-cp-ev span{color:#dfe5f0}" +
       "html body #page #fo-pstage .fo-cp-tot td{color:#F0B94E !important;font-weight:700}" +
       "#fo-pstage .fo-cp-fld{color:#b9c2d4}" +
-      "#fo-pstage details.adv summary{color:#8a93a3;cursor:pointer}";
+      "#fo-pstage details.adv summary{color:#8A93A2;cursor:pointer}";
     document.head.appendChild(foPhCss);
   } catch (ePh) {}
   function foHashPath() { return (location.hash || "").split("?")[0]; }   // "#/match" not "#/matches"
@@ -2601,13 +2601,13 @@
         return "<polyline fill='none' stroke='" + col + "' stroke-width='2' points='" + w.map(function (pt) { return X(pt[0]).toFixed(1) + "," + Y(pt[1]).toFixed(1); }).join(" ") + "'/>" +
           w.filter(function (pt, i) { return i > 0 && (pt[2] || 0) > (w[i - 1][2] || 0); }).map(function (pt) { return "<circle cx='" + X(pt[0]).toFixed(1) + "' cy='" + Y(pt[1]).toFixed(1) + "' r='3' fill='#DC2626'/>"; }).join("");
       };
-      var tgt = (target && target > 1) ? "<line x1='42' y1='" + Y(target).toFixed(1) + "' x2='472' y2='" + Y(target).toFixed(1) + "' stroke='#C95532' stroke-dasharray='4 3'/>" : "";
+      var tgt = (target && target > 1) ? "<line x1='42' y1='" + Y(target).toFixed(1) + "' x2='472' y2='" + Y(target).toFixed(1) + "' stroke='#C9571F' stroke-dasharray='4 3'/>" : "";
       return "<svg viewBox='0 0 500 218' style='max-width:100%;width:520px'>" + grid +
         "<line x1='42' y1='188' x2='472' y2='188' stroke='#9a9484'/><line x1='42' y1='24' x2='42' y2='188' stroke='#9a9484'/>" + tgt +
         (worm[0] ? line(worm[0], "#2d6a8f") : "") + (worm[1] ? line(worm[1], "#F59E0B") : "") +
         "<text x='257' y='215' font-size='10.5' fill='#6b7280' text-anchor='middle'>Overs</text>" +
         "<text x='12' y='106' font-size='10.5' fill='#6b7280' transform='rotate(-90 12 106)' text-anchor='middle'>Runs</text></svg>" +
-        "<div class='small' style='margin-top:4px'><span style='color:#2d6a8f'>■</span> " + E(innings[0] ? innings[0].batTeam : "") + " &nbsp; <span style='color:#F59E0B'>■</span> " + E(innings[1] ? innings[1].batTeam : "") + " &nbsp; <span style='color:#DC2626'>●</span> wicket" + ((target && target > 1) ? " &nbsp; <span style='color:#C95532'>––– target</span>" : "") + "</div>";
+        "<div class='small' style='margin-top:4px'><span style='color:#2d6a8f'>■</span> " + E(innings[0] ? innings[0].batTeam : "") + " &nbsp; <span style='color:#F59E0B'>■</span> " + E(innings[1] ? innings[1].batTeam : "") + " &nbsp; <span style='color:#DC2626'>●</span> wicket" + ((target && target > 1) ? " &nbsp; <span style='color:#C9571F'>––– target</span>" : "") + "</div>";
     } catch (e) { return null; }
   }
   function foScorecardPolish() {
@@ -3149,7 +3149,7 @@
   // Shared "50" logo mark (stumps + paper "5" + seamed cricket-ball "0"), reused
   // by the login logo and the browser-tab favicon so they stay identical.
   var MARK =
-    '<g fill="#C95532">' +
+    '<g fill="#C9571F">' +
     '<rect x="94" y="20" width="16" height="5" rx="2.5"/><rect x="114" y="20" width="16" height="5" rx="2.5"/><rect x="134" y="20" width="16" height="5" rx="2.5"/>' +
     '<rect x="97.5" y="24" width="9" height="40" rx="4.5"/><rect x="117.5" y="24" width="9" height="40" rx="4.5"/><rect x="137.5" y="24" width="9" height="40" rx="4.5"/>' +
     '</g>' +
@@ -3351,7 +3351,7 @@
   // and megabytes big · vector keeps the single-file build small and crisp).
   var FOL_MARK =
     '<svg class="fol-mark" viewBox="0 0 224 170" fill="none" aria-hidden="true">' +
-    '<g fill="#C95532"><rect x="88" y="6" width="9" height="30" rx="2.5"/><rect x="86" y="2" width="13" height="6" rx="2"/>' +
+    '<g fill="#C9571F"><rect x="88" y="6" width="9" height="30" rx="2.5"/><rect x="86" y="2" width="13" height="6" rx="2"/>' +
     '<rect x="107" y="6" width="9" height="30" rx="2.5"/><rect x="105" y="2" width="13" height="6" rx="2"/>' +
     '<rect x="126" y="6" width="9" height="30" rx="2.5"/><rect x="124" y="2" width="13" height="6" rx="2"/></g>' +
     '<path d="M104 50 H62 v34 h21 a27 27 0 1 1 -22 45" stroke="#FFFEFC" stroke-width="11" stroke-linecap="round" stroke-linejoin="round"/>' +

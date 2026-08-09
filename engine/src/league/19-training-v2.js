@@ -757,7 +757,7 @@
     s.textContent = [
       "html body.fo-nets-on #page{background:#F1EEE6}",
       ".fo-t2-in{max-width:900px;margin:0 auto;padding:14px 12px 40px}",
-      ".fo-t2-hero{display:flex;align-items:center;justify-content:space-between;gap:14px;background:linear-gradient(135deg,#14243A,#0E2246);border-radius:16px;padding:20px 22px;margin-bottom:12px;border-left:4px solid #C9571F}",
+      ".fo-t2-hero{display:flex;align-items:center;justify-content:space-between;gap:14px;background:linear-gradient(135deg,#14243A,#14243A);border-radius:16px;padding:20px 22px;margin-bottom:12px;border-left:4px solid #C9571F}",
       ".fo-t2-hero i{font:700 10px Oswald,sans-serif;letter-spacing:.22em;color:#E8B96A;font-style:normal}",
       ".fo-t2-hero h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:34px;color:#FFFEFC;margin:4px 0 0}",
       ".fo-t2-hero .cr svg{width:56px;height:74px}",
@@ -813,7 +813,7 @@
       ".fo-t2-shirt b{position:absolute;inset:5px 0 0 0;text-align:center;font:800 11px Oswald,sans-serif;color:#F6F3EB}",
       ".fo-t2-who{min-width:0}",
       ".fo-t2-who a{display:block;font:650 13.5px/1.25 Inter,sans-serif;color:#14243A !important;text-decoration:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;letter-spacing:-.005em}",
-      "html body #page .fo-t2-row:hover .fo-t2-who a{color:#A64426 !important}",
+      "html body #page .fo-t2-row:hover .fo-t2-who a{color:#B44A22 !important}",
       ".fo-t2-who i{display:block;margin-top:2px;font-style:normal;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;",
       "  font:600 9px Oswald,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#a49b86}",
       // the age rides in front of the craft like a shirt detail, not a sentence
@@ -835,7 +835,7 @@
       "html body #page .fo-t2-row select:focus-visible{box-shadow:0 0 0 3px rgba(184,147,58,.18) !important}",
       // a focus actually set reads lit, so one glance down the column shows
       // which men are being aimed somewhere and which are just working
-      "html body #page .fo-t2-row.foc select[data-t2f]{color:#A64426 !important;border-color:rgba(201,87,31,.26) !important;background-color:#FDF5EF !important}",
+      "html body #page .fo-t2-row.foc select[data-t2f]{color:#B44A22 !important;border-color:rgba(201,87,31,.26) !important;background-color:#FDF5EF !important}",
       ".fo-t2-nofoc{text-align:left;padding-left:9px;font:600 12px Inter,sans-serif;color:#cdc5b2}",
       ".fo-t2-dim{margin:0 0 10px;font:400 12px Inter,sans-serif;color:#6d6455;line-height:1.5}",
       ".fo-t2-note{font:400 11.5px Fraunces,Georgia,serif;color:#6d6455}",

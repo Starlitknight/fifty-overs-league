@@ -70,13 +70,13 @@
     s.textContent = [
       "html body.fo-fin-on{background:#F3F0E7 !important}",
       "html body.fo-fin-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",
-      "html body #page .fo-fin{--ink:#141C28;--paper:#FFFEFC;--band:#F4EFE3;--brand:#C95532;--gold:#C89A2E;--navy:#0E2246;",
+      "html body #page .fo-fin{--ink:#1B2432;--paper:#FFFEFC;--band:#F4EFE3;--brand:#C9571F;--gold:#C89A2E;--navy:#14243A;",
       "  max-width:1500px;margin:0 auto;padding:24px 28px 44px;color:var(--ink);font-family:Inter,-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif}",
       "#page .fo-fin *{box-sizing:border-box}",
       // masthead
       ".fo-fin h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(30px,4vw,46px);letter-spacing:-.02em;line-height:1.02;margin:11px 0 6px}",
       // the bank
-      ".fo-fin-bank{background:linear-gradient(160deg,#0E2246,#0A1A34 72%);border-radius:18px;padding:22px 24px;color:#EAF0FB;box-shadow:0 18px 44px rgba(10,26,52,.28);border-bottom:3px solid var(--brand)}",
+      ".fo-fin-bank{background:linear-gradient(160deg,#14243A,#0A1A34 72%);border-radius:18px;padding:22px 24px;color:#EAF0FB;box-shadow:0 18px 44px rgba(10,26,52,.28);border-bottom:3px solid var(--brand)}",
       ".fo-fin-bank .lb{font-family:Oswald,sans-serif;font-size:9.5px;letter-spacing:.24em;text-transform:uppercase;color:#8FA8CC}",
       // the skin colours bare b and i, so the treasury card has to out-rank it
       // or the biggest number on the page is navy ink on a navy card
@@ -101,23 +101,23 @@
       // THE STATEMENT: a bank's own furniture - a day rule, a row per entry,
       // the amount and the balance in tabular figures so columns of money
       // line up on the decimal the way a treasurer expects
-      "html body #page .fo-fin-stlink{display:block;margin-top:18px;padding:14px 16px;background:var(--paper) !important;border:1px solid rgba(20,28,40,.14);border-left:3px solid var(--brand);border-radius:12px;font:600 13px/1.4 Inter,sans-serif;color:#0E2246 !important;text-decoration:none !important}",
+      "html body #page .fo-fin-stlink{display:block;margin-top:18px;padding:14px 16px;background:var(--paper) !important;border:1px solid rgba(20,28,40,.14);border-left:3px solid var(--brand);border-radius:12px;font:600 13px/1.4 Inter,sans-serif;color:#14243A !important;text-decoration:none !important}",
       // the statement's filter is a line of words, not a toolbar - see .fo-seg
       ".fo-st-head{display:grid;grid-template-columns:46px minmax(0,1fr) 96px 96px;gap:10px;padding:0 12px 7px;font:600 8.5px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(20,28,40,.42)}",
       ".fo-st-head span:nth-child(3),.fo-st-head span:nth-child(4){text-align:right}",
       ".fo-st-list{background:var(--paper);border:1px solid rgba(20,28,40,.12);border-radius:14px;overflow:hidden}",
-      ".fo-st-day{padding:9px 13px;background:rgba(14,34,70,.055);font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#0E2246;border-top:1px solid rgba(20,28,40,.09)}",
+      ".fo-st-day{padding:9px 13px;background:rgba(14,34,70,.055);font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#14243A;border-top:1px solid rgba(20,28,40,.09)}",
       ".fo-st-list .fo-st-day:first-child{border-top:0}",
       ".fo-st-row{display:grid;grid-template-columns:46px minmax(0,1fr) 96px 96px;gap:10px;align-items:center;padding:10px 13px;border-top:1px solid rgba(20,28,40,.07)}",
       ".fo-st-row .t{font:600 11px/1 Inter,sans-serif;color:rgba(20,28,40,.45);font-variant-numeric:tabular-nums}",
       ".fo-st-row .w{min-width:0}",
-      ".fo-st-row .w b{display:block;font:600 13px/1.3 Inter,sans-serif;color:#141C28}",
+      ".fo-st-row .w b{display:block;font:600 13px/1.3 Inter,sans-serif;color:#1B2432}",
       ".fo-st-row .w i{display:block;font-style:normal;font:400 11.5px/1.4 Inter,sans-serif;color:rgba(20,28,40,.55)}",
       ".fo-st-row .a,.fo-st-row .b{text-align:right;font:700 13px/1.2 Inter,sans-serif;font-variant-numeric:tabular-nums}",
       ".fo-st-row.in .a{color:#1E7A55}.fo-st-row.out .a{color:#B23B2C}",
       ".fo-st-row .b{color:rgba(20,28,40,.5);font-weight:400}",
       ".fo-st-none{padding:22px 14px;text-align:center;font:400 13px/1.6 Inter,sans-serif;color:rgba(20,28,40,.55)}",
-      "html body #page .fo-st-more{display:block;width:100%;margin-top:12px;font:700 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#0E2246 !important;background:var(--paper) !important;border:1px solid rgba(20,28,40,.18) !important;border-radius:12px !important;padding:0 !important;min-height:46px;cursor:pointer}",
+      "html body #page .fo-st-more{display:block;width:100%;margin-top:12px;font:700 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#14243A !important;background:var(--paper) !important;border:1px solid rgba(20,28,40,.18) !important;border-radius:12px !important;padding:0 !important;min-height:46px;cursor:pointer}",
       "html body #page .fo-st-more:disabled{opacity:.55;cursor:default}",
       "@media(max-width:560px){.fo-st-head{grid-template-columns:40px minmax(0,1fr) 84px;gap:8px}",
       ".fo-st-head span:nth-child(4){display:none}",

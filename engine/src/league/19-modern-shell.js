@@ -80,13 +80,13 @@
   // ---- the sheet -------------------------------------------------------------
   var CSS = [
     // == glass topbar ==========================================================
-    "#topbar#topbar{position:sticky;top:0;z-index:320;background:rgba(7,22,46,.94) !important;-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4);border-bottom:2px solid #C95532 !important;box-shadow:0 10px 30px rgba(7,22,46,.25);padding:5px 12px;gap:4px;align-items:center}",
+    "#topbar#topbar{position:sticky;top:0;z-index:320;background:rgba(7,22,46,.94) !important;-webkit-backdrop-filter:blur(20px) saturate(1.4);backdrop-filter:blur(20px) saturate(1.4);border-bottom:2px solid #C9571F !important;box-shadow:0 10px 30px rgba(7,22,46,.25);padding:5px 12px;gap:4px;align-items:center}",
     "@supports not (backdrop-filter:blur(1px)){#topbar#topbar{background:#07162E !important}}",
     "#topbar#topbar .brand{font:700 13.5px/1 Inter,sans-serif;letter-spacing:.2px;color:#FFFFFF !important;padding:7px 10px 7px 2px}",
     "#topbar#topbar .fo-brandicon{width:26px;height:26px;border-radius:8px;vertical-align:-8px;margin-right:8px;box-shadow:0 2px 8px rgba(30,38,52,.25)}",
     "#topbar#topbar a{border-radius:999px;padding:7px 13px;font:600 12px/1 Inter,sans-serif;color:rgba(233,238,246,.68) !important;transition:background .15s ease,color .15s ease}",
     "#topbar#topbar a:hover{background:rgba(255,255,255,.09) !important;color:#fff !important;text-decoration:none}",
-    "#topbar#topbar a.on{background:#C95532 !important;color:#FFFEFC !important;box-shadow:0 3px 12px rgba(201,85,50,.35) !important;font-weight:700}",
+    "#topbar#topbar a.on{background:#C9571F !important;color:#FFFEFC !important;box-shadow:0 3px 12px rgba(201,85,50,.35) !important;font-weight:700}",
     "#topbar#topbar a.fo-logout{color:rgba(233,238,246,.38) !important}",
     "#topbar#topbar #fo-clock{border-left:none;color:rgba(233,238,246,.5);font:500 11px/1 Inter,sans-serif;font-variant-numeric:tabular-nums}",
     "#topbar#topbar #fo-top-status{color:rgba(233,238,246,.6)}",
@@ -123,7 +123,7 @@
     "#fo-mdrawer#fo-mdrawer .fo-mdp{background:rgba(7,22,46,.96) !important;-webkit-backdrop-filter:blur(26px) saturate(1.4);backdrop-filter:blur(26px) saturate(1.4);border-right:1px solid rgba(255,255,255,.08);color:#FFFFFF !important}",
     "#fo-mdrawer#fo-mdrawer .fo-mdl{border-radius:12px;margin:2px 8px;font:600 13.5px/1 Inter,sans-serif;color:rgba(233,238,246,.78) !important;border:none !important}",
     "#fo-mdrawer#fo-mdrawer .fo-mdl:hover{background:rgba(255,255,255,.08) !important}",
-    "#fo-mdrawer#fo-mdrawer .fo-mdl.on{background:#C95532 !important;color:#FFFEFC !important}",
+    "#fo-mdrawer#fo-mdrawer .fo-mdl.on{background:#C9571F !important;color:#FFFEFC !important}",
     // == the full-bleed hero on a phone =========================================
     // Below 760px the hero is a flex COLUMN and the title block is in flow, so
     // a quick-link bar pinned to the viewport floor lands ON the club's name.
@@ -150,16 +150,16 @@
     "::-webkit-scrollbar-track{background:transparent}",
     // == the match centre ======================================================
     "html body #page .fo-mc{max-width:760px;margin:26px auto 40px;padding:0 14px}",
-    "html body #page .fo-mc-hero{background:linear-gradient(150deg,#FFFEFB,#F7F3E9 70%,#F2ECDD) !important;border:1px solid rgba(20,28,40,.09);border-radius:22px;padding:30px 30px 26px;color:#141C28;box-shadow:0 22px 50px rgba(30,38,52,.13)}",
+    "html body #page .fo-mc-hero{background:linear-gradient(150deg,#FFFEFB,#F7F3E9 70%,#F2ECDD) !important;border:1px solid rgba(20,28,40,.09);border-radius:22px;padding:30px 30px 26px;color:#1B2432;box-shadow:0 22px 50px rgba(30,38,52,.13)}",
     "html body #page .fo-mc-kick{font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.24em;text-transform:uppercase;color:#B44A22}",
-    "html body #page .fo-mc-hero h1{font-family:Oswald,sans-serif;font-weight:600;font-size:34px;letter-spacing:.04em;text-transform:uppercase;margin:6px 0 8px;color:#141C28}",
+    "html body #page .fo-mc-hero h1{font-family:Oswald,sans-serif;font-weight:600;font-size:34px;letter-spacing:.04em;text-transform:uppercase;margin:6px 0 8px;color:#1B2432}",
     "html body #page .fo-mc-hero p{font:400 14px/1.55 Fraunces,Georgia,serif;font-style:normal;color:rgba(20,28,40,.6);margin:0;max-width:46ch}",
     "html body #page .fo-mc-list{margin-top:14px;display:flex;flex-direction:column;gap:8px}",
-    "html body #page .fo-mc-row{display:grid;grid-template-columns:auto 1fr auto 14px;gap:12px;align-items:baseline;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:14px;padding:13px 16px;color:#141C28;text-decoration:none;box-shadow:0 4px 14px rgba(30,38,52,.06);transition:border-color .15s ease,transform .12s ease}",
+    "html body #page .fo-mc-row{display:grid;grid-template-columns:auto 1fr auto 14px;gap:12px;align-items:baseline;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:14px;padding:13px 16px;color:#1B2432;text-decoration:none;box-shadow:0 4px 14px rgba(30,38,52,.06);transition:border-color .15s ease,transform .12s ease}",
     "html body #page .fo-mc-row:hover{border-color:rgba(217,85,42,.5);transform:translateY(-1px);text-decoration:none}",
     "html body #page .fo-mc-row.mine{border-left:3px solid " + ACCENT + "}",
     "html body #page .fo-mc-row i{font:500 10.5px/1 Inter,sans-serif;color:rgba(20,28,40,.45);font-style:normal;font-variant-numeric:tabular-nums;white-space:nowrap}",
-    "html body #page .fo-mc-row b{font:600 13.5px/1.35 Inter,sans-serif;color:#141C28;min-width:0}",
+    "html body #page .fo-mc-row b{font:600 13.5px/1.35 Inter,sans-serif;color:#1B2432;min-width:0}",
     "html body #page .fo-mc-row b em{font-style:normal;color:rgba(20,28,40,.4);font-weight:400;padding:0 2px}",
     "html body #page .fo-mc-row span{font:400 12px/1.35 Fraunces,Georgia,serif;font-style:normal;color:rgba(20,28,40,.55);text-align:right}",
     "html body #page .fo-mc-row u{text-decoration:none;color:rgba(20,28,40,.35)}",

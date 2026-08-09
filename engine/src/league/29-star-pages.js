@@ -224,7 +224,7 @@
   }
 
   var CSS = [
-    "html body #page .fo-star,html body #page .fo-wm{max-width:680px;margin:26px auto 44px;padding:0 14px;color:#141C28}",
+    "html body #page .fo-star,html body #page .fo-wm{max-width:680px;margin:26px auto 44px;padding:0 14px;color:#1B2432}",
     "html body #page .fo-star-mast,html body #page .fo-wm-mast{background:linear-gradient(150deg,#FFFEFB,#F6F1E4 70%,#F0E9D6) !important;border:1px solid rgba(20,28,40,.1);border-radius:22px;padding:24px 26px 20px;box-shadow:0 22px 50px rgba(30,38,52,.12)}",
     "html body #page .fo-star-kick,html body #page .fo-wm-kick{display:flex;align-items:center;gap:7px;font-family:Oswald,sans-serif;font-size:10.5px;letter-spacing:.2em;text-transform:uppercase;color:#B44A22}",
     "html body #page .fo-star-kick img{width:22px;height:15px;object-fit:cover;border-radius:2px}",
@@ -243,7 +243,7 @@
     "html body #page .fo-star-foot a,html body #page .fo-wm-foot a{font:600 12px/1 Inter,sans-serif;color:rgba(20,28,40,.65);background:#FFFEFC;border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:9px 16px;text-decoration:none}",
     "html body #page .fo-star-foot a:hover,html body #page .fo-wm-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5);text-decoration:none}",
     "html body #page .fo-wm-inn{margin-top:16px;background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:18px;padding:16px 18px;box-shadow:0 8px 26px rgba(30,38,52,.07)}",
-    "html body #page .fo-wm-inn.win{border-left:3px solid #C95532}",
+    "html body #page .fo-wm-inn.win{border-left:3px solid #C9571F}",
     "html body #page .fo-wm-innh{display:flex;align-items:center;gap:9px}",
     "html body #page .fo-wm-innh img{width:26px;height:18px;object-fit:cover;border-radius:3px}",
     "html body #page .fo-wm-innh b{flex:1;font:600 15px/1.2 Inter,sans-serif}",

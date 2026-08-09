@@ -81,7 +81,7 @@
     "body.fo-scb-on .fo-sci-box span{color:#463a20;font-family:Fraunces,Georgia,serif;font-style:normal;font-size:12.5px}",
     // tabs become a contents line in the book's own hand
     "html body.fo-scb-on #page .fo-sctab,html body.ftpskin.fo-scb-on #page .fo-sctab{background:transparent !important;border:0 !important;border-radius:0 !important;padding:7px 2px !important;margin-right:16px;font-family:Oswald,sans-serif !important;font-size:10px !important;letter-spacing:.18em;text-transform:uppercase;color:#8a7b52 !important;border-bottom:2px solid transparent !important;cursor:pointer}",
-    "html body.fo-scb-on #page .fo-sctab.on{color:#8a4a21 !important;border-bottom-color:#C95532 !important}",
+    "html body.fo-scb-on #page .fo-sctab.on{color:#8a4a21 !important;border-bottom-color:#C9571F !important}",
     // generic panels on the page (charts, ratings) join the paper
     "html body.ftpskin.fo-scb-on #page .panel,html body.fo-scb-on #page .panel{background:transparent !important;border:0 !important;box-shadow:none !important}",
     "html body.ftpskin.fo-scb-on #page .panel h4,html body.fo-scb-on #page .panel h4{background:transparent !important;color:#241d0e !important;border-top:3px double #241d0e;border-bottom:1px solid rgba(36,29,14,.65);font-family:Fraunces,Georgia,serif;padding:9px 4px}",

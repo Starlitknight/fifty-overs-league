@@ -711,7 +711,7 @@
             : E(NAT_LINE[natId] || "Ten clubs, one pennant.")) + "</p></div>";
       }
 
-      page.innerHTML = "<div class='fo-lgx' style='--nac:" + E(reg.ac || "#C95532") + "'>" +
+      page.innerHTML = "<div class='fo-lgx' style='--nac:" + E(reg.ac || "#C9571F") + "'>" +
         plate + tabBar +
         "<div class='fo-lgx-body'><div class='fo-lgx-main'>" + main + "</div>" +
         "<div class='fo-lgx-rail'>" + rail + "</div></div>" +
@@ -732,7 +732,7 @@
   }
 
   var CSS = [
-    "html body #page .fo-lgx{position:relative;max-width:680px;margin:20px auto 44px;padding:0 12px;color:#141C28;--nac:#C95532;--ink:#0C1B33;--gold:#E8B96A}",
+    "html body #page .fo-lgx{position:relative;max-width:680px;margin:20px auto 44px;padding:0 12px;color:#1B2432;--nac:#C9571F;--ink:#0C1B2E;--gold:#E8B96A}",
     "html body #page .fo-lgx>*{position:relative;z-index:1}",
     // THE MARGINS ARE THE COUNTRY. Not wallpaper - furniture: the nation's
     // painted map hangs like a framed plate on one side and the country's own
@@ -750,7 +750,7 @@
     "@media(max-width:1300px){#fo-sideart .fo-sa-fig img{height:min(54vh,520px)}}}",
 
     // ---- the plate: the country behind the name of its league --------------
-    "html body #page .fo-lgx-plate{position:relative;overflow:hidden;border-radius:20px;background:linear-gradient(135deg,#0C1B33,#173257 62%,#0E2140);box-shadow:0 22px 50px rgba(12,27,51,.26)}",
+    "html body #page .fo-lgx-plate{position:relative;overflow:hidden;border-radius:20px;background:linear-gradient(135deg,#0C1B2E,#173257 62%,#0E2140);box-shadow:0 22px 50px rgba(12,27,51,.26)}",
     // THE PENNANT IS A CUP. Every nation's league plays for its own trophy -
     // the nineteen painted cups, standing in the plate where the map used to be
     "html body #page .fo-lgx-cup{position:absolute;right:20px;bottom:4px;height:calc(100% - 12px);width:auto;max-width:30%;object-fit:contain;object-position:bottom right;filter:drop-shadow(0 14px 26px rgba(0,0,0,.45))}",
@@ -767,23 +767,23 @@
     "html body #page .fo-lgx-rk{font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,254,252,.72)}",
     "html body #page .fo-lgx-pips{display:flex;gap:3px;flex:1 1 210px;flex-wrap:wrap}",
     "html body #page .fo-lgx-pips i{width:17px;height:17px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;font:700 8.5px/1 Inter,sans-serif;font-style:normal;background:rgba(255,254,252,.08);color:rgba(255,254,252,.4)}",
-    "html body #page .fo-lgx-pips i.done{background:rgba(232,185,106,.92);color:#0C1B33}",
+    "html body #page .fo-lgx-pips i.done{background:rgba(232,185,106,.92);color:#0C1B2E}",
     "html body #page .fo-lgx-pips i.now{background:transparent;box-shadow:inset 0 0 0 1px var(--gold);color:var(--gold)}",
     "html body #page .fo-lgx-hop{display:flex;align-items:center;gap:8px}",
     "html body #page .fo-lgx-hop span{font:700 9px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(255,254,252,.48)}",
     "html body #page .fo-lgx-hop select{background:rgba(255,254,252,.1) !important;color:#FFFEFC !important;border:1px solid rgba(255,254,252,.22);border-radius:999px;padding:6px 10px;font:600 11.5px/1 Inter,sans-serif;-webkit-appearance:menulist;appearance:menulist}",
-    "html body #page .fo-lgx-hop select option{color:#141C28;background:#FFFEFC}",
+    "html body #page .fo-lgx-hop select option{color:#1B2432;background:#FFFEFC}",
 
     // ---- the four rooms ----------------------------------------------------
     "html body #page .fo-lgx-tabs{display:flex;gap:2px;margin:15px 0 14px;border-bottom:1px solid rgba(20,28,40,.12);overflow-x:auto;-webkit-overflow-scrolling:touch}",
     "html body #page .fo-lgx-tabs a{flex:0 0 auto;padding:9px 14px 10px;font:700 10px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.46);text-decoration:none;border-bottom:2px solid transparent;margin-bottom:-1px}",
-    "html body #page .fo-lgx-tabs a.on{color:#141C28;border-bottom-color:var(--nac)}",
-    "html body #page .fo-lgx-tabs a:hover{color:#141C28;text-decoration:none}",
+    "html body #page .fo-lgx-tabs a.on{color:#1B2432;border-bottom-color:var(--nac)}",
+    "html body #page .fo-lgx-tabs a:hover{color:#1B2432;text-decoration:none}",
     "html body #page .fo-lgx-body{display:block}",
     "html body #page .fo-lgx-rail{margin-top:14px}",
     "html body #page .fo-lgx-panel{background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:16px;padding:14px 14px 16px;box-shadow:0 8px 24px rgba(30,38,52,.06)}",
     "html body #page .fo-lgx-ph{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;margin-bottom:10px}",
-    "html body #page .fo-lgx-ph h2{margin:0;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:19px;color:#141C28}",
+    "html body #page .fo-lgx-ph h2{margin:0;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:19px;color:#1B2432}",
     "html body #page .fo-lgx-sub{font:700 9px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.42)}",
     "html body #page .fo-lgx-sub2{margin:16px 0 4px;padding-top:12px;border-top:1px solid rgba(20,28,40,.08);font:700 9.5px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(20,28,40,.5)}",
     "html body #page .fo-lgx-rdnav{display:flex;align-items:center;gap:6px}",
@@ -807,7 +807,7 @@
     "html body #page .fo-lgx-cols,html body #page .fo-lgx-row{display:grid;grid-template-columns:22px 26px minmax(0,1fr) 86px 26px 26px 26px 46px 32px;gap:6px;align-items:center}",
     "html body #page .fo-lgx-cols{padding:4px 8px 7px;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(20,28,40,.4)}",
     "html body #page .fo-lgx-cols span:nth-child(n+5){text-align:right}",
-    "html body #page .fo-lgx-row{padding:8px;border-radius:10px;text-decoration:none;color:#141C28;border-bottom:1px solid rgba(20,28,40,.07)}",
+    "html body #page .fo-lgx-row{padding:8px;border-radius:10px;text-decoration:none;color:#1B2432;border-bottom:1px solid rgba(20,28,40,.07)}",
     "html body #page .fo-lgx-row:hover{background:rgba(20,28,40,.03);text-decoration:none}",
     "html body #page .fo-lgx-row.q .rk{color:#177A57}",
     "html body #page .fo-lgx-row.rel .rk{color:#B3372B}",
@@ -818,7 +818,7 @@
     "html body #page .fo-lgx-row .rk{font:700 12px/1 Inter,sans-serif;color:rgba(20,28,40,.45);font-variant-numeric:tabular-nums}",
     "html body #page .fo-lgx-row .cb{display:flex;align-items:center;justify-content:center}",
     "html body #page .fo-lgx-row .nm{min-width:0}",
-    "html body #page .fo-lgx-row .nm b{display:block;font:600 12.5px/1.25 Inter,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    "html body #page .fo-lgx-row .nm b{display:block;font:600 12.5px/1.25 Inter,sans-serif;color:#1B2432;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
     "html body #page .fo-lgx-row .nm em{display:inline-block;margin:3px 6px 0 0;vertical-align:top;font:700 8px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;font-style:normal;color:rgba(20,28,40,.4);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
     "html body #page .fo-lgx-row .nm em.you{color:var(--nac)}",
     "html body #page .fo-lgx-row .nm em.tt{color:#2F6B45}",
@@ -832,7 +832,7 @@
     "html body #page .fo-lgx-row .fm .none{font:600 10px/1 Inter,sans-serif;color:rgba(20,28,40,.3)}",
     "html body #page .fo-lgx-row .n{text-align:right;font:500 12px/1 Inter,sans-serif;color:rgba(20,28,40,.6);font-variant-numeric:tabular-nums}",
     "html body #page .fo-lgx-row .n.nrr{font-size:11px}",
-    "html body #page .fo-lgx-row .pt{text-align:right;font:700 15px/1 Inter,sans-serif;font-variant-numeric:tabular-nums;color:#141C28}",
+    "html body #page .fo-lgx-row .pt{text-align:right;font:700 15px/1 Inter,sans-serif;font-variant-numeric:tabular-nums;color:#1B2432}",
 
     // ---- fixtures and results ---------------------------------------------
     "html body #page .fo-lgx-fx,html body #page .fo-lgx-res{position:relative;display:grid;grid-template-columns:minmax(0,1fr) auto minmax(0,1fr);align-items:center;gap:7px;background:#FFFEFC;border:1px solid rgba(20,28,40,.09);border-radius:12px;padding:11px 12px;margin-bottom:6px;box-shadow:0 4px 14px rgba(30,38,52,.05)}",
@@ -853,8 +853,8 @@
     "html body #page .fo-lgx-yours{position:absolute;left:11px;top:0;transform:translateY(-50%);z-index:2;background:#FFF6F1;border:1px solid rgba(201,85,50,.42);border-radius:999px;padding:3px 8px;font:700 8px/1 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--nac)}",
     "html body #page .fo-lgx-side{display:flex;align-items:center;gap:7px;min-width:0}",
     "html body #page .fo-lgx-side.a{justify-content:flex-end}",
-    "html body #page .fo-lgx-side b{font:600 12.5px/1.25 Inter,sans-serif;color:#141C28;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
-    "html body #page .fo-lgx-side u{text-decoration:none;font:700 12.5px/1 Inter,sans-serif;font-variant-numeric:tabular-nums;color:#141C28;flex:0 0 auto}",
+    "html body #page .fo-lgx-side b{font:600 12.5px/1.25 Inter,sans-serif;color:#1B2432;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+    "html body #page .fo-lgx-side u{text-decoration:none;font:700 12.5px/1 Inter,sans-serif;font-variant-numeric:tabular-nums;color:#1B2432;flex:0 0 auto}",
     "html body #page .fo-lgx-vs{display:flex;flex-direction:column;align-items:center;gap:2px;min-width:54px}",
     "html body #page .fo-lgx-vs i{font:400 11px/1 Fraunces,Georgia,serif;color:rgba(20,28,40,.38)}",
     "html body #page .fo-lgx-lv{display:inline-flex;align-items:center;gap:4px;text-decoration:none;font:700 9px/1 Oswald,sans-serif;letter-spacing:.14em;color:#fff;background:#C0392E;border-radius:5px;padding:4px 7px}",
@@ -868,7 +868,7 @@
 
     // ---- the season's numbers ---------------------------------------------
     "html body #page .fo-lgx-leads{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px;margin-bottom:6px}",
-    "html body #page .fo-lgx-lead{background:linear-gradient(150deg,#0C1B33,#16304F);border-radius:12px;padding:13px 14px;color:#FFFEFC}",
+    "html body #page .fo-lgx-lead{background:linear-gradient(150deg,#0C1B2E,#16304F);border-radius:12px;padding:13px 14px;color:#FFFEFC}",
     "html body #page .fo-lgx-lead i{display:block;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--gold);font-style:normal}",
     "html body #page .fo-lgx-lead b{display:block;margin-top:7px;font:600 13.5px/1.25 Inter,sans-serif}",
     "html body #page .fo-lgx-lead u{display:block;margin-top:2px;text-decoration:none;font:500 10.5px/1.3 Inter,sans-serif;color:rgba(255,254,252,.55)}",
@@ -880,16 +880,16 @@
     // inside its own box, so the page body never moves sideways.
     "html body #page .fo-lgx-books{display:flex;gap:6px;flex-wrap:wrap;margin:2px 0 12px}",
     "html body #page .fo-lgx-books a{font:700 10px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.6) !important;background:rgba(20,28,40,.045);border:1px solid rgba(20,28,40,.14);border-radius:999px;padding:0 15px;min-height:38px;display:inline-flex;align-items:center;text-decoration:none !important}",
-    "html body #page .fo-lgx-books a.on{color:#FFFDF7 !important;background:#0E2246;border-color:#0E2246}",
+    "html body #page .fo-lgx-books a.on{color:#FFFDF7 !important;background:#14243A;border-color:#14243A}",
     ".fo-lgx-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}",
     "html body #page table.fo-lgx-stat{border-collapse:collapse;width:100%;min-width:640px;font-variant-numeric:tabular-nums}",
-    "html body #page table.fo-lgx-stat th{position:sticky;top:0;background:#0E2246;color:#FFFDF7;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;text-align:right;padding:9px 7px;white-space:nowrap}",
+    "html body #page table.fo-lgx-stat th{position:sticky;top:0;background:#14243A;color:#FFFDF7;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.12em;text-transform:uppercase;text-align:right;padding:9px 7px;white-space:nowrap}",
     "html body #page table.fo-lgx-stat th.rk,html body #page table.fo-lgx-stat th.nm,html body #page table.fo-lgx-stat th.cl{text-align:left}",
-    "html body #page table.fo-lgx-stat td{padding:8px 7px;text-align:right;white-space:nowrap;font:600 12px/1.2 Oswald,sans-serif;color:#141C28;border-bottom:1px solid rgba(20,28,40,.07)}",
+    "html body #page table.fo-lgx-stat td{padding:8px 7px;text-align:right;white-space:nowrap;font:600 12px/1.2 Oswald,sans-serif;color:#1B2432;border-bottom:1px solid rgba(20,28,40,.07)}",
     "html body #page table.fo-lgx-stat td.rk{text-align:left;font-weight:400;color:rgba(20,28,40,.4)}",
     "html body #page table.fo-lgx-stat td.nm,html body #page table.fo-lgx-stat td.cl{text-align:left;font-family:Inter,sans-serif;font-weight:500}",
     "html body #page table.fo-lgx-stat td.cl{font-size:11.5px}",
-    "html body #page table.fo-lgx-stat td.nm a{color:#141C28 !important;text-decoration:none !important}",
+    "html body #page table.fo-lgx-stat td.nm a{color:#1B2432 !important;text-decoration:none !important}",
     "html body #page table.fo-lgx-stat td.cl a{color:rgba(20,28,40,.55) !important;text-decoration:none !important}",
     "html body #page table.fo-lgx-stat tbody tr:nth-child(even){background:rgba(20,28,40,.022)}",
     // every column head is a handle: sortable both ways, the arrow says which
@@ -923,7 +923,7 @@
     "html body #page .fo-lgx-card h3 span{font:600 9px/1 Inter,sans-serif;letter-spacing:.06em;color:rgba(20,28,40,.4)}",
     "html body #page .fo-lgx-card p{margin:0;font:420 12.5px/1.55 Fraunces,Georgia,serif;color:rgba(20,28,40,.62)}",
     "html body #page .fo-lgx-card.note{border-left:3px solid var(--nac)}",
-    "html body #page .fo-lgx-card.dark{background:linear-gradient(150deg,#0C1B33,#16304F);border-color:rgba(12,27,51,.35);color:#FFFEFC;box-shadow:0 10px 26px rgba(12,27,51,.2)}",
+    "html body #page .fo-lgx-card.dark{background:linear-gradient(150deg,#0C1B2E,#16304F);border-color:rgba(12,27,51,.35);color:#FFFEFC;box-shadow:0 10px 26px rgba(12,27,51,.2)}",
     "html body #page .fo-lgx-card.dark h3{color:var(--gold)}",
     "html body #page .fo-lgx-card.dark h3 span{color:rgba(255,254,252,.5)}",
     "html body #page .fo-lgx-card.dark p{color:rgba(255,254,252,.72)}",
@@ -933,10 +933,10 @@
     "html body #page .fo-lgx-run i{width:22px;font:700 9px/1 Oswald,sans-serif;color:var(--gold);font-style:normal}",
     "html body #page .fo-lgx-run b{flex:1;min-width:0;font:600 12px/1.25 Inter,sans-serif;color:#FFFEFC;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
     "html body #page .fo-lgx-run u{flex:0 0 auto;width:18px;height:18px;border-radius:5px;display:inline-flex;align-items:center;justify-content:center;text-decoration:none;font:800 9px/1 Inter,sans-serif;background:rgba(255,254,252,.12);color:rgba(255,254,252,.8)}",
-    "html body #page .fo-lgx-run u.h{background:rgba(232,185,106,.9);color:#0C1B33}",
+    "html body #page .fo-lgx-run u.h{background:rgba(232,185,106,.9);color:#0C1B2E}",
     "html body #page .fo-lgx-glance{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;text-align:center}",
     "html body #page .fo-lgx-glance div{padding:5px 2px}",
-    "html body #page .fo-lgx-glance b{display:block;font:700 19px/1 Inter,sans-serif;font-variant-numeric:tabular-nums;color:#141C28}",
+    "html body #page .fo-lgx-glance b{display:block;font:700 19px/1 Inter,sans-serif;font-variant-numeric:tabular-nums;color:#1B2432}",
     "html body #page .fo-lgx-glance i{display:block;margin-top:5px;font:700 8.5px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.45);font-style:normal}",
     "html body #page .fo-lgx-mor{display:flex;align-items:center;justify-content:center;gap:10px;font:700 22px/1 Inter,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums}",
     "html body #page .fo-lgx-mor i{font:400 14px/1 Inter,sans-serif;color:rgba(255,254,252,.4);font-style:normal}",
