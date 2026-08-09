@@ -248,6 +248,31 @@
       ".fo-me-lever .top{display:flex;align-items:center;gap:9px}.fo-me-lever .ic{width:32px;height:32px;border:1px solid #D7C49B;border-radius:10px;display:grid;place-items:center;color:var(--orange);background:#FFF8F0;font:700 13px/1 Inter,sans-serif}.fo-me-lever span{color:#536074;font:700 11px/1.25 Inter,sans-serif;letter-spacing:.11em;text-transform:uppercase}",
       ".fo-me-lever b{display:block;margin-top:8px;color:var(--ink);font:750 15px/1.12 Inter,sans-serif;letter-spacing:-.015em}.fo-me-lever em{display:block;margin:8px 0;color:var(--mut);font:450 12px/1.42 Inter,sans-serif;font-style:normal}",
       "html body #page .fo-me-lever button{margin-top:auto;width:100%;border:0 !important;border-top:1px solid #E2D9C7 !important;border-radius:0 !important;background:transparent !important;color:var(--orange) !important;text-align:left;font:700 11px/1 Inter,sans-serif !important;letter-spacing:.1em;text-transform:uppercase;padding:10px 0 0 !important;box-shadow:none !important}.fo-me-lever button[disabled]{color:#9E978A !important}",
+      // the ticket dial
+      ".fo-me-lever.fo-tk b{display:flex;align-items:baseline;gap:8px}",
+      ".fo-me-lever.fo-tk b s{text-decoration:none;font:750 22px/1 Inter,sans-serif;font-variant-numeric:tabular-nums}",
+      ".fo-me-lever.fo-tk b s:before{content:'$';font-size:14px;font-weight:600;color:#778192;margin-right:1px}",
+      ".fo-me-lever.fo-tk b i{font:500 11px/1 Inter,sans-serif;font-style:normal;color:#9E978A}",
+      ".fo-tk-dial{display:flex;gap:7px;margin-top:9px}",
+      "html body #page .fo-tk-dial button{margin:0;width:38px;min-height:34px;flex:0 0 auto;border:1px solid #CFC6B6 !important;border-radius:9px !important;background:#FFFEFA !important;color:#1B2432 !important;font:700 16px/1 Inter,sans-serif !important;text-align:center;padding:0 !important;letter-spacing:0;text-transform:none}",
+      "html body #page .fo-tk-dial button:active{background:#F4EFE3 !important}",
+      // the gate board
+      ".fo-gb{margin-top:15px;padding:0 15px 6px}",
+      ".fo-gb .fo-me-panelhead em{font:450 11.5px/1.3 Inter,sans-serif;color:var(--mut);font-style:normal;letter-spacing:0;text-transform:none}",
+      ".fo-gb-row{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid #EFE9DC}",
+      ".fo-gb-row:last-child{border-bottom:0}",
+      ".fo-gb-row .rd{font:700 12px/1.2 Inter,sans-serif;color:#14243A}",
+      ".fo-gb-row .rd u{display:block;margin-top:3px;text-decoration:none;font:500 10.5px/1.2 Inter,sans-serif;color:#8a8272;white-space:nowrap}",
+      ".fo-gb-row .op{min-width:0}",
+      ".fo-gb-row .op b{display:block;font:650 13px/1.2 Inter,sans-serif;color:#1B2432;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".fo-gb-row .op u{display:block;height:7px;border-radius:999px;background:#EBE6DA;margin:6px 0 4px;text-decoration:none;overflow:hidden}",
+      ".fo-gb-row .op u i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#136A4B,#177A57)}",
+      ".fo-gb-row .op s{text-decoration:none;font:500 11px/1.2 Inter,sans-serif;color:#6A6354;font-variant-numeric:tabular-nums}",
+      ".fo-gb-row .tk{text-align:right;white-space:nowrap}",
+      ".fo-gb-row .tk b{display:block;font:700 13px/1.2 Inter,sans-serif;color:#14243A;font-variant-numeric:tabular-nums}",
+      ".fo-gb-row .tk u{display:block;margin-top:2px;text-decoration:none;font:600 9.5px/1.2 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#9E978A}",
+      ".fo-gb-row .tk em{display:block;margin-top:3px;font:600 10.5px/1.2 Inter,sans-serif;font-style:normal;color:#C08A2E}",
+      ".fo-gb-row .tk em.lk{color:#177A57}",
       ".fo-me-forecast{padding-bottom:13px}.fo-me-forecastbody{display:grid;grid-template-columns:138px minmax(0,1fr);gap:14px;padding:13px 16px 0;align-items:stretch}.fo-me-opp{display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #E5DFD4;text-align:center}.fo-me-shield{width:55px;height:61px;clip-path:polygon(8% 0,92% 0,88% 70%,50% 100%,12% 70%);display:grid;place-items:center;background:linear-gradient(150deg,#E0B53E,#C8951F);color:#102641;font:700 16px/1 Fraunces,serif}.fo-me-opp b{margin-top:8px;font:650 16px/1.1 Fraunces,Georgia,serif}.fo-me-opp span{margin-top:6px;color:var(--mut);font:700 11px/1 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
       ".fo-me-fgrid{display:grid;grid-template-columns:1fr 1fr}.fo-me-fstat{padding:11px;border-bottom:1px solid #E9E4DB}.fo-me-fstat:nth-child(odd){border-right:1px solid #E9E4DB}.fo-me-fstat span{display:block;color:#778294;font:700 11px/1.25 Inter,sans-serif;letter-spacing:.1em;text-transform:uppercase}.fo-me-fstat b{display:block;margin-top:6px;color:var(--ink);font:750 14px/1.1 Inter,sans-serif;font-variant-numeric:tabular-nums}.fo-me-fstat.green b{color:var(--green)}",
       ".fo-me-recon{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;padding:13px 16px;border:1px solid var(--edge);border-radius:13px;background:#FAF8F3;color:#667387;font:500 13px/1.5 Inter,sans-serif}",
@@ -289,6 +314,66 @@
   function shell(body) {
     return "<div class='fo-fin'>" + body + "</div>";
   }
+  // ==========================================================================
+  // THE TURNSTILE IS YOURS (073) - client half. The same sale the umpire
+  // banks, mirrored constant for constant, so the board a manager watches
+  // cannot disagree with the gate the walk settles. Six daily tranches, the
+  // last 24 hours before the first ball; each sells at the price in force
+  // on its day; a dearer ticket thins every remaining tranche by
+  // (26/price)^1.15.
+  // ==========================================================================
+  var TK = { BASE: 26, MIN: 10, MAX: 100, EL: 1.15, LOCK: 24 * 3600000,
+             FR: [0.10, 0.12, 0.15, 0.18, 0.22, 0.23] };
+  function tkPriceAt(hist, ms) {
+    var p = TK.BASE;
+    for (var i = 0; i < (hist || []).length; i++) { if (hist[i].at <= ms) p = hist[i].price; else break; }
+    return p;
+  }
+  function tkSale(demand, seats, matchMs, hist, nowMs) {
+    var lockAt = matchMs - TK.LOCK, sold = 0, take = 0;
+    for (var k = 0; k < TK.FR.length; k++) {
+      var at = lockAt - (TK.FR.length - 1 - k) * 86400000;
+      if (nowMs != null && at > nowMs) break;
+      var pr = tkPriceAt(hist, at);
+      var n = demand * TK.FR[k] * Math.pow(TK.BASE / Math.max(1, pr), TK.EL);
+      if (sold + n > seats) n = seats - sold;
+      if (n <= 0) continue;
+      sold += n; take += n * pr;
+    }
+    return { sold: Math.round(sold), take: Math.round(take), lockAt: lockAt };
+  }
+  // the club's dated prices, fetched once a minute; the room repaints on land
+  var TKH = { rows: null, at: 0, busy: false };
+  function tkHist() {
+    try {
+      var cl = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+      if (!cl || !cl.country) return TKH.rows || [];
+      if (TKH.busy || (TKH.rows && Date.now() - TKH.at < 60000)) return TKH.rows || [];
+      TKH.busy = true;
+      rpc("world_ticket_prices", { p_country: cl.country, p_slot: cl.slot | 0 })
+        .then(function (rows) {
+          TKH.rows = Array.isArray(rows) ? rows : []; TKH.at = Date.now(); TKH.busy = false;
+          try { if ((location.hash || "").split("?")[0] === "#/ground") window.foRenderGroundPage(); } catch (e9) {}
+        })
+        .catch(function () { TKH.busy = false; TKH.rows = TKH.rows || []; });
+      return TKH.rows || [];
+    } catch (e) { return TKH.rows || []; }
+  }
+  // who is visiting moves the crowd: the flagship pulls hardest, a top-three
+  // side after that - the same multipliers the umpire's walk applies
+  function tkDraw(cl, oppSlot) {
+    var m = (oppSlot | 0) === 0 ? 1.22 : 1;
+    try {
+      var lg = window.__foWorldLg && window.__foWorldLg.get(cl.country);
+      var tbls = [(lg && lg.table) || [], (lg && lg.table2) || []];
+      for (var d = 0; d < tbls.length; d++)
+        for (var i = 0; i < tbls[d].length; i++)
+          if ((tbls[d][i].slot | 0) === (oppSlot | 0)) { if (i < 3) m *= 1.09; return m; }
+    } catch (e) {}
+    return m;
+  }
+  var TK_PEND = null;   // the dial's unset choice, kept across repaints
+
   function foSheetGround(on) {
     document.body.classList.toggle("fo-sheet-on", !!on);
     try {
@@ -513,7 +598,11 @@
 
       html += "<div class='fo-me-bottom'><section class='fo-me-levers flat'><div class='fo-me-panelhead'>Ground decisions</div>" +
         "<div class='fo-me-levergrid'>" +
-        "<div class='fo-me-lever'><div class='top'><div class='ic'>" + foMeIcon("price") + "</div><span>Ticket price</span></div><b>" + M(ticket) + "</b><em>Set by the competition for every turnstile.</em><button type='button' disabled>League controlled</button></div>" +
+        "<div class='fo-me-lever fo-tk'><div class='top'><div class='ic'>" + foMeIcon("price") + "</div><span>Ticket price</span></div>" +
+        "<b class='num'><s id='fo-tk-val'>" + (TK_PEND != null ? TK_PEND : ticket) + "</s><i id='fo-tk-now'>" + (TK_PEND != null && TK_PEND !== ticket ? "now $" + ticket : "") + "</i></b>" +
+        "<div class='fo-tk-dial'><button type='button' id='fo-tk-dn'>&minus;</button><button type='button' id='fo-tk-up'>+</button></div>" +
+        "<em>Your gate, your price. Dearer thins the crowd; cheaper fills the ground early. Each match locks 24 hours before the first ball.</em>" +
+        "<button type='button' id='fo-tk-set'" + (TK_PEND == null || TK_PEND === ticket ? " disabled" : "") + ">Set the price</button></div>" +
         "<div class='fo-me-lever'><div class='top'><div class='ic'>" + foMeIcon("ground") + "</div><span>Stadium capacity</span></div><b>" + seats.toLocaleString() + " &middot; " + full + "% full</b><em>" +
         (atCap ? "The ground is at the " + (Number(f.maxSeats) || 45000).toLocaleString() + "-seat ceiling."
                : "+" + seatStep.toLocaleString() + " seats costs " + M(nextSeatsCost) + ".") +
@@ -532,6 +621,40 @@
             "<div class='fo-me-fstat'><span>Away share so far</span><b>" + M(inAway) + "</b></div>" +
             "<div class='fo-me-fstat'><span>Crowd last time out</span><b>" + (lastAtt || avgAtt || 0).toLocaleString() + "</b></div>") +
         "</div></div></section></div>";
+
+      // ---- THE GATE BOARD: every home Sunday still selling ------------------
+      (function () {
+        var cl = st.claim || null;
+        try { cl = cl || window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eC0) {}
+        var fxs = [];
+        try { fxs = (window.foMyLeagueFixtures ? window.foMyLeagueFixtures(20) : []).filter(function (x) { return x.home; }).slice(0, 5); } catch (eFx) {}
+        if (!cl || !fxs.length) return;
+        var hist = tkHist();
+        var now = Date.now();
+        var mm = 0.72 + Math.max(0, Math.min(6, mood)) * 0.08;
+        var rows9 = fxs.map(function (x) {
+          var demand = sup * mm * tkDraw(cl, x.opp.slot);
+          var cur = tkSale(demand, seats, x.t0, hist, now);
+          var fin = tkSale(demand, seats, x.t0, hist, null);
+          var locked = now >= x.t0 - TK.LOCK;
+          var pctS = seats ? Math.min(100, Math.round(100 * (locked ? fin.sold : cur.sold) / seats)) : 0;
+          var dt9 = "";
+          try { dt9 = new Date(x.t0).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); } catch (eD9) {}
+          var left = x.t0 - TK.LOCK - now;
+          var lockTxt = locked ? "Locked" : left < 86400000 ? "locks in " + Math.max(1, Math.round(left / 3600000)) + "h" : "locks in " + Math.round(left / 86400000) + "d";
+          return "<div class='fo-gb-row num'>" +
+            "<span class='rd'>R" + x.round + "<u>" + E(dt9) + "</u></span>" +
+            "<span class='op'><b>v " + E(x.opp.name) + "</b>" +
+            "<u><i style='width:" + pctS + "%'></i></u>" +
+            "<s>" + (!locked && now < cur.lockAt - 5 * 86400000
+              ? "sales open in " + Math.max(1, Math.round((cur.lockAt - 5 * 86400000 - now) / 86400000)) + "d"
+              : (locked ? fin.sold : cur.sold).toLocaleString() + " / " + seats.toLocaleString() + " sold" + (locked ? "" : " so far")) + "</s></span>" +
+            "<span class='tk'><b>~" + M(Math.round(fin.take * (Number(f.homeCut) || 2 / 3))) + "</b><u>your share</u>" +
+            "<em class='" + (locked ? "lk" : "") + "'>" + lockTxt + "</em></span></div>";
+        }).join("");
+        html += "<section class='fo-me-card fo-gb'><div class='fo-me-panelhead'><span>The gate board</span>" +
+          "<em>advance sales at today's mood &middot; the crowd locks 24h out</em></div>" + rows9 + "</section>";
+      })();
 
       html += "<div class='fo-fin-foot'><a href='#/finance'>&lsaquo; Finances</a><a href='#/home'>The club &rsaquo;</a></div></div>";
       page.innerHTML = shell(html);
@@ -647,6 +770,47 @@
           })
           .catch(function (e) { done(String(e.message).slice(0, 160), true); });
       });
+
+    // ---- the ticket dial: choose, then set - one dated decision ------------
+    (function () {
+      var vEl = page.querySelector("#fo-tk-val"), nowEl = page.querySelector("#fo-tk-now");
+      var setB = page.querySelector("#fo-tk-set");
+      var cur = Number(f.ticket) || 26;
+      var show = function () {
+        var v = TK_PEND != null ? TK_PEND : cur;
+        if (vEl) vEl.textContent = v;
+        if (nowEl) nowEl.textContent = TK_PEND != null && TK_PEND !== cur ? "now $" + cur : "";
+        if (setB) setB.disabled = TK_PEND == null || TK_PEND === cur;
+      };
+      var nudge = function (d) {
+        var v = (TK_PEND != null ? TK_PEND : cur) + d;
+        TK_PEND = Math.max(TK.MIN, Math.min(TK.MAX, v));
+        show();
+      };
+      var dn = page.querySelector("#fo-tk-dn"), up = page.querySelector("#fo-tk-up");
+      if (dn) dn.addEventListener("click", function () { nudge(-2); });
+      if (up) up.addEventListener("click", function () { nudge(2); });
+      if (setB) setB.addEventListener("click", function () {
+        var v = TK_PEND != null ? TK_PEND : cur;
+        if (v === cur) return;
+        var go9 = function () {
+          say("Reprinting the tickets…");
+          rpc("world_set_ticket", { p_price: v })
+            .then(function () {
+              TK_PEND = null; TKH.rows = null; TKH.at = 0;
+              say("Done. A seat sells at $" + v + " from the next sales day.");
+              reload(page);
+            })
+            .catch(function (e9) { say(String(e9.message).slice(0, 160), true); });
+        };
+        if (!window.foDecide) { go9(); return; }
+        window.foDecide(setB, {
+          q: "Sell tickets at $" + v + "?",
+          note: v > cur ? "Dearer thins every crowd still to buy. Matches inside 24 hours are already locked."
+                        : "Cheaper fills the ground earlier and gives up the top of the gate.",
+          ok: "Set $" + v, onYes: go9 });
+      });
+    })();
 
     var lv = (Number(f.academyLevel) || Number(st.academy) || 1) + 1;
     var acost = Number(f.nextAcademyCost) || [0, 400000, 900000, 1800000, 3200000][lv - 1] || 0;

@@ -108,7 +108,61 @@ export function econStature(slot, isBoss) {
   return Math.max(0.62, stature(slot, isBoss));
 }
 export const MAX_SEATS = 45000;
-export const TICKET = 26;                    // what a seat costs at the gate
+export const TICKET = 26;                    // the league's price, and every bot club's
+// ---------------------------------------------------------------------------
+// THE TURNSTILE IS YOURS (073). The home club prices its own gate, $10-$100,
+// and the crowd answers: demand scales by (26/price)^1.15, so once the
+// ground stops selling out, every extra dollar on the ticket loses a little
+// more crowd than it gains in price. The skill is the price that JUST fills
+// the stands - and it moves with the mood, the visitor and the weather.
+//
+// A GATE IS SOLD IN ADVANCE. Six daily tranches, accelerating toward the
+// match, the last of them 24 hours before the first ball - after which the
+// crowd is locked, because no sale day remains for a late price to touch.
+// Each tranche sells at the price in force on ITS day, so a mid-week price
+// change moves only the days still to come. Nothing about this is stored:
+// tickets sold so far is a pure function of the dated prices, the demand
+// and the clock, which is why the board a manager watches can never
+// disagree with the gate the umpire banks.
+// ---------------------------------------------------------------------------
+export const TICKET_MIN = 10, TICKET_MAX = 100;
+export const TICKET_ELASTICITY = 1.15;
+export const TICKET_LOCK_MS = 24 * 3600000;
+export const SALES_FRACS = [0.10, 0.12, 0.15, 0.18, 0.22, 0.23];
+export function priceMult(price) { return Math.pow(TICKET / Math.max(1, price), TICKET_ELASTICITY); }
+// the price a club's dated decisions put in force at a moment; $26 before
+// any decision, and for every club that never touches the dial
+export function priceAtMs(prices, ms) {
+  let p = TICKET;
+  if (prices) for (let i = 0; i < prices.length; i++) { if (prices[i].at <= ms) p = prices[i].price; else break; }
+  return p;
+}
+// the whole sale, one pure function. demand = the crowd that would come at
+// $26; seats cap it; matchMs places the sale days; prices are the club's
+// dated decisions. Pass nowMs to trim to sale days already past - the same
+// function then prints the advance board for a future match. The 600
+// die-hards who walk up whatever the price only join a banked gate.
+export function gateSale(demand, seats, matchMs, prices, nowMs) {
+  const lockAt = matchMs - TICKET_LOCK_MS;
+  let sold = 0, take = 0, flat = null, allFlat = true;
+  for (let k = 0; k < SALES_FRACS.length; k++) {
+    const at = lockAt - (SALES_FRACS.length - 1 - k) * 86400000;
+    if (nowMs != null && at > nowMs) break;
+    const p = priceAtMs(prices, at);
+    if (flat == null) flat = p; else if (p !== flat) allFlat = false;
+    let n = demand * SALES_FRACS[k] * priceMult(p);
+    if (sold + n > seats) n = seats - sold;
+    if (n <= 0) continue;
+    sold += n; take += n * p;
+  }
+  const priceEnd = priceAtMs(prices, lockAt);
+  if (nowMs == null && sold < 600) { take += (600 - sold) * priceEnd; sold = 600; flat = flat == null ? priceEnd : flat; }
+  sold = Math.round(sold);
+  // a flat-priced sale takes exactly sold x price - the same arithmetic the
+  // books used for a decade of $26 gates, to the pound
+  take = allFlat && flat != null ? sold * flat : Math.round(take);
+  return { sold, take, lockAt, price: priceEnd };
+}
 export const HOME_CUT = 2 / 3;               // the old two-thirds, one-third split
 export const DEBT_ROUND = 0.03;              // what an overdraft costs a round
 // THE HARD CAP. A club may not sink further than two and a half million into
@@ -287,6 +341,16 @@ export async function computeFinance(pool, country, opts = {}) {
       `SELECT season_no, round, slot, sum(fee)::int AS paid, count(*)::int AS men
          FROM callups WHERE country_id=$1 GROUP BY season_no, round, slot`, [country])).rows;
   } catch (eF) { fees = []; }                    // pre-023 database: no windows yet
+  // WHAT A SEAT COST, AND SINCE WHEN. Dated decisions; the walk prices every
+  // historical tranche at the price in force on its sale day.
+  let tpr = [];
+  try {
+    tpr = (await pool.query(
+      `SELECT slot, set_ms, price FROM ticket_prices WHERE country_id=$1 ORDER BY set_ms`,
+      [country])).rows;
+  } catch (eTp) { tpr = []; }                    // pre-073 database: the league's $26
+  const priceRows = {};
+  for (const t of tpr) (priceRows[t.slot] = priceRows[t.slot] || []).push({ at: +t.set_ms, price: +t.price });
   const feeAt = {};
   for (const f of fees) feeAt[f.season_no + ':' + f.round + ':' + f.slot] = f;
   // WHAT THE MARKET DID TO THE BANK. A transfer is two clubs' money: the fee
@@ -459,13 +523,16 @@ export async function computeFinance(pool, country, opts = {}) {
       const H = S[m.home_slot], A = S[m.away_slot];
       if (!H || !A) continue;
       const w = weatherOf(m.seed != null ? m.seed : m.id);
-      const att = clamp(Math.round(H.sup * moodMult(H.mood) * drawMult(A, pos[A.slot]) * w.mult), 600, H.seats);
-      const gate = att * TICKET;
+      const demand = H.sup * moodMult(H.mood) * drawMult(A, pos[A.slot]) * w.mult;
+      const matchMs = EPOCH + ((startOf[m.season_no] ?? 0) +
+        (dayOfRound(m.round) ?? (m.round - 1))) * DAY + HOUR;
+      const sale = gateSale(demand, H.seats, matchMs, priceRows[H.slot] || null, null);
+      const att = sale.sold, gate = sale.take;
       const home = Math.round(gate * HOME_CUT), away = gate - Math.round(gate * HOME_CUT);
       H.gate += home; H.atts.push(att); H.lastAtt = att; H.lastWeather = w.word;
       A.awayCut += away;
       takings[H.slot] += home; takings[A.slot] += away;
-      gates[H.slot].push({ kind: 'gate', label: 'Gate v ' + m.away_name + ' \u00b7 ' + att.toLocaleString('en-US') + ' through the turnstiles', amount: home });
+      gates[H.slot].push({ kind: 'gate', label: 'Gate v ' + m.away_name + ' \u00b7 ' + att.toLocaleString('en-US') + ' through the turnstiles' + (sale.price !== TICKET ? ' at $' + sale.price : ''), amount: home });
       gates[A.slot].push({ kind: 'gate-away', label: 'Away share at ' + m.home_name, amount: away });
     }
     // the world moment this round's books are settled: its nation's own hour
@@ -538,7 +605,8 @@ export async function computeFinance(pool, country, opts = {}) {
       finance: {
         supporters: s.sup, mood: s.mood, moodWord: MOOD_WORD[s.mood],
         seats: s.seats, lastAttendance: s.lastAtt || 0, lastWeather: s.lastWeather || null,
-        avgAttendance: avg, ticket: TICKET,
+        // the club's standing price: the latest dated decision, $26 before any
+        avgAttendance: avg, ticket: priceAtMs(priceRows[c.slot] || null, Infinity),
         gate: s.gate, awayCut: s.awayCut, sponsor: s.sponsor,
         compensation: s.compensation, capsAway: s.capsAway,
         feesIn: s.feesIn, feesOut: s.feesOut, scouting: s.scouting, academySpend: s.academySpend,

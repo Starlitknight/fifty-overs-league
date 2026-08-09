@@ -90,8 +90,11 @@ const PLAY_TABLES = [
 //   news a manager has read. A redeal gives him a new club to read about; it
 //   does not un-read what he read yesterday, and wiping it would spring every
 //   old notification back into his bell as unread.
+//   ticket_prices is a MANAGER'S standing decision about his own gate, like
+//   the seats he built - the redeal replaces the cricket, not the club's
+//   pricing policy, so it survives.
 const WORLD_TABLES = ['countries', 'clubs', 'claims', 'seasons', 'worlds', 'schema_migrations',
-  'notif_seen'];
+  'notif_seen', 'ticket_prices'];
 
 const pool = makePool();
 
