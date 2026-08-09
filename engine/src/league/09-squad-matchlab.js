@@ -268,12 +268,6 @@
   // twice before and the two copies said different things.
   function foSqEyebrow(sv) {
     var eb = "Fifty Overs";
-    try {
-      var ph = window.__foPlanet.phaseOf(Date.now());
-      // the record numbers the seasons, so the kicker speaks the record's
-      // number - the club is not in Season 1 of a world with 136 behind it
-      if (ph && ph.season) eb += " &middot; " + window.__foPlanet.seasonLabel(ph.season) + " &middot; Day " + ((ph.di | 0) + 1);
-    } catch (e) {}
     return eb + " &middot; " + (sv.view === "int" ? "the analyst&#39;s read"
       : sv.who === "yth" ? "the academy" : sv.who === "all" ? "every man on the books" : "the playing staff");
   }
@@ -383,7 +377,7 @@
   // views are paper, so the ramp is ink: brick for the poor end, burnt orange
   // through a neutral middle, into a deep green a good number earns. Same
   // thresholds, so a 57 still ranks where it always did.
-  var FO_SQ_RAMP = [[40, [176, 58, 42]], [52, [193, 104, 44]], [62, [138, 130, 114]], [72, [47, 111, 176]], [82, [30, 140, 99]], [92, [18, 106, 72]]];
+  var FO_SQ_RAMP = [[40, [178, 50, 48]], [52, [193, 104, 44]], [62, [138, 130, 114]], [72, [34, 99, 95]], [82, [23, 122, 87]], [92, [19, 106, 75]]];
   function foSqQCol(v) {
     v = +v || 0;
     if (v <= FO_SQ_RAMP[0][0]) return "rgb(" + FO_SQ_RAMP[0][1].join(",") + ")";
@@ -688,7 +682,7 @@
       ".fo-sqx-parkin{position:relative;z-index:1;padding:22px 20px 20px}",
       // masthead over the art
       ".fo-sqx-hd{margin-bottom:14px}",
-      ".fo-sqx-hd h1{font-family:Inter,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.02em;font-size:clamp(34px,5vw,64px);line-height:.88;margin:0;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.6)}",
+      ".fo-sqx-hd h1{font-family:Fraunces,Georgia,serif;font-weight:600;letter-spacing:-.015em;font-size:clamp(32px,4.6vw,56px);line-height:1.02;margin:0;color:#fff;text-shadow:0 4px 24px rgba(0,0,0,.6)}",
       ".fo-sqx-tag{font-family:Fraunces,Georgia,serif;font-style:normal;font-size:clamp(14px,1.5vw,19px);color:var(--gold);margin-top:6px;text-shadow:0 2px 12px rgba(0,0,0,.7)}",
       // the field itself
       // the team photograph: standing row behind, seated row in front,
@@ -717,7 +711,7 @@
       ".fo-sqx-dfrm{font-style:normal;margin-left:8px}",
       ".fo-sqx-man .nm{display:block;font-family:Inter,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.02em;font-size:clamp(9px,.85vw,11.5px);line-height:1.1;color:#f2f6ff;padding:6px 4px 0;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-sqx-man .rl{display:block;font-family:Inter,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.12em;font-size:10px;padding-top:2px}",
-      ".fo-sqx-man .rl.bat{color:#F0BF6A}.fo-sqx-man .rl.ar{color:#5BD0A6}.fo-sqx-man .rl.bowl{color:#6FB4F5}.fo-sqx-man .rl.wk{color:#C79BF0}",
+      ".fo-sqx-man .rl.bat{color:#E8B96A}.fo-sqx-man .rl.ar{color:#4CC38A}.fo-sqx-man .rl.bowl{color:#4DA6A2}.fo-sqx-man .rl.wk{color:#E06A32}",
       ".fo-sqx-man .en{position:absolute;left:5px;right:5px;bottom:22px;height:3px;border-radius:2px;background:rgba(4,9,18,.7);overflow:hidden}",
       ".fo-sqx-man .en i{display:block;height:100%;background:linear-gradient(90deg,#8F6A1C,var(--gold))}",
       ".fo-sqx-man .en.lo i{background:linear-gradient(90deg,#8c2f2f,#DC6A5A)}",
@@ -803,7 +797,7 @@
       // a number the man cannot own is struck through, not filled with a lie
       ".fo-sqg-nil{text-decoration:line-through;text-decoration-thickness:1px}",
       ".fo-sqg-role{font-family:Inter,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.1em;font-size:10px}",
-      ".fo-sqg-role.bat{color:#B08409}.fo-sqg-role.ar{color:#1E8C63}.fo-sqg-role.bowl{color:#2F6FB0}.fo-sqg-role.wk{color:#7A4BAF}",
+      ".fo-sqg-role.bat{color:#8F6A1C}.fo-sqg-role.ar{color:#177A57}.fo-sqg-role.bowl{color:#22635F}.fo-sqg-role.wk{color:#A63D14}",
       ".fo-sqg-bt{font-family:Inter,sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(20,28,40,.6)}",
       ".fo-sqg td.c-nat,html body #page th.fo-sqg-h.c-nat{min-width:32px;text-align:center}",
       ".fo-sqg-fl{display:inline-block;width:20px;height:14px;border-radius:2px;overflow:hidden;vertical-align:-2px;box-shadow:0 0 0 1px rgba(20,28,40,.12)}",
@@ -829,7 +823,7 @@
       ".fo-sqx.analyst .fo-sqx-park,.fo-sqx.analyst .fo-sqx-parkin{padding:0;margin:0}",
       ".fo-sqx.analyst .fo-sqa-mast{display:block;margin:0 0 14px}",
       ".fo-sqx.analyst .fo-sqa-ttl .eb{font:600 11px/1 Inter,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#C08A2E;margin-bottom:9px}",
-      ".fo-sqx.analyst .fo-sqa-ttl h1{font:700 40px/1 Inter,sans-serif;text-transform:uppercase;color:#14243A !important;margin:0 0 24px;letter-spacing:.015em;text-shadow:none}",
+      ".fo-sqx.analyst .fo-sqa-ttl h1{font:600 38px/1.05 Fraunces,Georgia,serif;color:#14243A !important;margin:0 0 24px;letter-spacing:-.015em;text-shadow:none}",
       // the switch reads as a segmented control on paper, not a dark chip
       ".fo-sqx.analyst .fo-sqx-vsw{display:inline-flex;background:#FFFEFC;border:1px solid rgba(27,36,50,.14);border-radius:10px;padding:3px}",
       "html body #page .fo-sqx.analyst button.fo-sqx-vb{background:transparent !important;color:#67748a !important;border-radius:8px !important;padding:9px 15px !important;letter-spacing:.13em}",
@@ -988,7 +982,7 @@
       ".fo-sqg-nm{font-size:12.5px;display:inline-block;max-width:112px;overflow:hidden;text-overflow:ellipsis;vertical-align:bottom}",
       ".fo-sqg td.n,html body #page th.fo-sqg-h.n{min-width:36px}",
       ".fo-sqg td.c-name,html body #page th.fo-sqg-h.c-name{min-width:124px;width:124px}",
-      ".fo-sqg-ctl{gap:8px 10px}",
+      ".fo-sqg-ctl{display:grid;grid-template-columns:1fr 1fr;gap:8px}.fo-sqg-pick{display:flex}.fo-sqg-pick select{flex:1;min-width:0}",
       "html body #page .fo-sqg-pick select{padding:6px 24px 6px 9px !important;font-size:10px !important}}",
       "@media(max-width:1180px){.fo-sqx-in{grid-template-columns:minmax(0,1fr);padding-top:58px}.fo-sqx-dos{position:static}",
       ".fo-sqx-rail{position:static;transform:none;flex-direction:row;flex-wrap:wrap;justify-content:center;margin:0 0 10px}",
@@ -1022,7 +1016,7 @@
       "#page .fo-s2-in{max-width:1560px;margin:0 auto;padding:74px 22px 40px;font-family:Inter,-apple-system,'Segoe UI',sans-serif;color:#14243A}",
       ".fo-s2-hd{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;flex-wrap:wrap;margin-bottom:16px}",
       ".fo-s2-ttl .eb{font:600 11px/1 Inter,sans-serif;letter-spacing:.24em;text-transform:uppercase;color:#C08A2E;margin-bottom:9px}",
-      ".fo-s2-hd h1{font:700 40px/1 Inter,sans-serif;text-transform:uppercase;color:#14243A !important;margin:0;letter-spacing:.015em;text-shadow:none}",
+      ".fo-s2-hd h1{font:600 38px/1.05 Fraunces,Georgia,serif;color:#14243A !important;margin:0;letter-spacing:-.015em;text-shadow:none}",
       // ---- the stat band (view switch attached at its left on desktop) ----
       ".fo-s2-bandwrap{display:flex;align-items:stretch;margin-bottom:14px}",
       ".fo-s2-band{display:flex;flex:1;align-items:stretch;background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);overflow:hidden;min-width:0}",
@@ -1181,7 +1175,7 @@
       "@media(max-width:820px){",
       ".fo-s2-in{padding:60px 8px 30px}",
       ".fo-s2-hd{align-items:flex-start;flex-direction:column;gap:3px;margin-bottom:8px}",
-      ".fo-s2-hd h1{font-size:30px}.fo-s2-ttl .eb{margin-bottom:6px}",
+      ".fo-s2-hd h1{font-size:29px}.fo-s2-ttl .eb{margin-bottom:6px}",
       ".fo-s2-bandwrap{flex-direction:column;gap:8px;margin-bottom:10px}",
       ".fo-s2-vsw{background:transparent;border:none;border-radius:0;padding:0}",
       ".fo-s2-band{border-left:1px solid #e3dccb;border-radius:14px}",
@@ -1189,14 +1183,14 @@
       ".fo-s2-cell span{font-size:10px;letter-spacing:.1em;margin-bottom:2px}",
       ".fo-s2-cell b{font-size:14px}.fo-s2-cell b i{display:none}",
       ".fo-s2-tools{display:none}",
-      ".fo-s2-row{grid-template-columns:30px minmax(74px,1.25fr) 34px minmax(42px,.7fr) auto 24px 10px;gap:4px;padding:8px 6px}",
+      ".fo-s2-row{grid-template-columns:30px minmax(0,1.2fr) auto auto 28px 12px;gap:4px 6px;padding:8px 6px}.fo-s2-pic{grid-column:1;grid-row:1 / span 2}.fo-s2-id{grid-column:2;grid-row:1}.fo-s2-age{grid-column:3;grid-row:1}.fo-s2-st10{grid-column:4;grid-row:1}.fo-s2-ovr{grid-column:5;grid-row:1}.fo-s2-car{grid-column:6;grid-row:1}",
       ".fo-s2-hand,.fo-s2-form,.fo-s2-fit{display:none}",
       ".fo-s2-pic{width:30px;height:30px}.fo-s2-pic img.face{width:30px;height:30px}",
       ".fo-s2-flag{width:13px;height:9px;left:-4px;bottom:-2px}",
       ".fo-s2-id b{font-size:11.5px}.fo-s2-id span{font-size:10px}",
       ".fo-s2-age{font-size:10px;padding-left:3px}.fo-s2-age i{font-size:10px}",
       // the short name below fits the column, so the chip never ellipses
-      ".fo-s2-trait{font-size:11px;letter-spacing:0;padding:3px 5px}",
+      ".fo-s2-trait{font-size:11px;letter-spacing:0;padding:3px 7px;grid-column:2/7;grid-row:2;justify-self:start;margin-top:1px}.fo-s2-trait.none{display:none}",
       ".fo-s2-trait .lg{display:none}.fo-s2-trait .sm{display:inline}",
       // the learning chip carries a name AND a number in the same column, so
       // it gets the tighter setting or the name ellipses away to nothing
