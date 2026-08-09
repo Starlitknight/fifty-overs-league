@@ -146,6 +146,11 @@
     var worth = wageOfMan(p) * FEE_ROUNDS * FEE_MULT * ageCurve(p && p.age);
     return Math.max(3000, Math.round(worth * 0.5 / 500) * 500);
   }
+  // THE OFFICE, LENT OUT. The player's own page (41) carries the same three
+  // deeds - board, quick sale, release - so the price law, the RPC plumbing
+  // and the inline decision strip are handed over rather than copied; one
+  // arithmetic, wherever the deed is done.
+  try { window.__foMktOffice = { qsPrice: qsPrice, rpc: rpc, decide: decide, toast: toastMsg }; } catch (eOf) {}
 
   // ---- the data on the desk -------------------------------------------------
   var MK = { listings: null, deals: null, mine: null, snap: null, at: 0, busy: 0, tab: "board", role: "all", sort: "close", nat: "all", shown: 40, open: {},

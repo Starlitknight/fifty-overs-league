@@ -667,6 +667,7 @@
           : bars(scoutRow(p))) +
         "</div>" +
         "<div class='fo-pp-card'><h3>Career record</h3><div class='fo-pp-mini' data-mini='1'>" + miniCareer(p) + "</div></div>" +
+        (mine ? officeHTML(p) : "") +
         "</div>" +
         "";
       // ROLE IN THE XI IS GONE. It printed the batting order twice - once as a
@@ -710,6 +711,144 @@
       });
     });
     harvest();
+    try { if (mine && wrap.querySelector(".fo-pp-office")) officeWire(wrap, p); } catch (eOw) {}
+  }
+
+  /* ---- THE OFFICE ----------------------------------------------------------
+     From the Pavilion puts the paperwork on the man's own page - sell, price,
+     release - and this game made you walk to the market's sell desk for the
+     same three deeds. The deeds, the price law and the confirmations are the
+     market's (window.__foMktOffice, one arithmetic everywhere); this card
+     only stands them next to the man they are about.
+
+     A SENIOR is the market's business: the board, the bank's half-price
+     quick sale, or a free release - and Withdraw when he is already up.
+     A COLT's papers are the academy's: a senior shirt or a release, through
+     the same __foColtAction the squad room uses. */
+  var OFF = { at: 0, sales: null, busy: 0 };
+  function isColt(name) {
+    try { return ((userTeam() || {}).youth || []).some(function (x) { return x && x.name === name; }); }
+    catch (e) { return false; }
+  }
+  function officeHTML(p) {
+    var api = window.__foMktOffice;
+    if (!api) return "";
+    if (isColt(p.name)) {
+      return "<div class='fo-pp-card'><h3>The office</h3><div class='fo-pp-office'>" +
+        "<p class='fo-pp-dim'>His papers are the academy&rsquo;s: he walks at twenty-one unless a senior shirt comes first.</p>" +
+        "<div class='fo-pp-obrow'>" +
+        "<button type='button' class='fo-pp-ob' data-pp-colt='promote'>Hand him a senior shirt</button>" +
+        "<button type='button' class='fo-pp-ob danger' data-pp-colt='release'>Let him go</button>" +
+        "</div></div></div>";
+    }
+    var open = null;
+    if (OFF.sales) for (var i = 0; i < OFF.sales.length; i++) {
+      var s9 = OFF.sales[i];
+      if (s9 && s9.player === p.name && s9.status === "open") { open = s9; break; }
+    }
+    var inner;
+    if (open) {
+      inner = "<div class='fo-pp-onbd'><b>He is on the board</b>" +
+        "<i>Reserve $" + (+open.reserve || 0).toLocaleString() + " &middot; " +
+        (open.bids | 0) + ((open.bids | 0) === 1 ? " bid" : " bids") +
+        " &middot; the hammer falls on day " + (open.closes | 0) + "</i></div>" +
+        "<div class='fo-pp-obrow'>" +
+        "<button type='button' class='fo-pp-ob ghost' data-pp-withdraw='" + (open.id | 0) + "'>Withdraw him</button>" +
+        "</div>";
+    } else {
+      inner = "<div class='fo-pp-obrow'>" +
+        "<button type='button' class='fo-pp-ob' data-pp-list='1'>Put him on the board</button>" +
+        "<button type='button' class='fo-pp-ob ghost' data-pp-qs='1'>Quick sale &middot; $" + api.qsPrice(p).toLocaleString() + "</button>" +
+        "<button type='button' class='fo-pp-ob danger' data-pp-rel='1'>Release him</button>" +
+        "</div>";
+    }
+    return "<div class='fo-pp-card'><h3>The office</h3><div class='fo-pp-office'>" + inner + "</div></div>";
+  }
+  function officeWire(wrap, p) {
+    var api = window.__foMktOffice;
+    if (!api) return;
+    var nm = p.name;
+    // whether he is already up: asked once a visit, never in a loop - the
+    // fetch marks itself started before build() can run again
+    if (!isColt(nm) && !OFF.busy && (!OFF.sales || Date.now() - OFF.at > 30000)) {
+      OFF.busy = 1; OFF.at = Date.now();
+      api.rpc("world_market_mine").then(function (d) {
+        OFF.busy = 0; OFF.sales = (d && d.sales) || [];
+        if (onPage()) build();
+      }).catch(function () { OFF.busy = 0; OFF.sales = OFF.sales || []; });
+    }
+    var gone = function (msg) {
+      api.toast(msg);
+      OFF.sales = null;
+      try { if (window.__foWorldRefreshPlan) window.__foWorldRefreshPlan(); } catch (e) {}
+      location.hash = "#/squad";
+    };
+    // one variable per button: a shared `var b` reassigned down the chain
+    // left every handler closing over the LAST lookup (null, usually), and
+    // foDecide(null) falls back to running onYes with nothing typed
+    var bL = wrap.querySelector("[data-pp-list]");
+    if (bL) bL.addEventListener("click", function () {
+      var b = bL;
+      api.decide(b, {
+        q: "Reserve for " + nm, note: "The least you will accept. Below it the hammer does not fall.",
+        input: { value: "20000", placeholder: "20000" }, ok: "Put him on the board", cancel: "Not yet",
+        onYes: function (v) {
+          var res = Math.round(+String(v == null ? "" : v).replace(/[^0-9]/g, ""));
+          if (!(res > 0)) { try { window.foSayAt && foSayAt(b, "A reserve has to be a figure above nothing.", "error"); } catch (e) {} return; }
+          api.rpc("world_market_list", { p_player: nm, p_reserve: res }).then(function () {
+            api.toast(nm + " is on the board · the hammer falls in three days");
+            OFF.sales = null; build();
+          }).catch(function (e) { try { window.foSayAt && foSayAt(b, String((e && e.message) || e).slice(0, 160), "error"); } catch (e2) {} });
+        }
+      });
+    });
+    var bQ = wrap.querySelector("[data-pp-qs]");
+    if (bQ) bQ.addEventListener("click", function () {
+      var b = bQ;
+      var fee = api.qsPrice(p);
+      api.decide(b, {
+        q: "Sell " + nm + " to the bank for $" + fee.toLocaleString() + "?",
+        note: "Immediate and final. No auction, no counter-offer, and he does not come back.",
+        ok: "Sell him", cancel: "Keep him", danger: true,
+        onYes: function () {
+          api.rpc("world_market_quicksell", { p_player: nm }).then(function (r) {
+            gone(nm + " sold to the bank for $" + (((r && r.fee) || fee)).toLocaleString() + ". The fee lands with the next settle.");
+          }).catch(function (e) { try { window.foSayAt && foSayAt(b, String((e && e.message) || e).slice(0, 160), "error"); } catch (e2) {} });
+        }
+      });
+    });
+    var bR = wrap.querySelector("[data-pp-rel]");
+    if (bR) bR.addEventListener("click", function () {
+      var b = bR;
+      api.decide(b, {
+        q: "Release " + nm + " for nothing?",
+        note: "He walks, the club gets no fee, and he does not come back.",
+        ok: "Release him", cancel: "Keep him", danger: true,
+        onYes: function () {
+          api.rpc("world_market_release", { p_player: nm }).then(function () {
+            gone(nm + " released.");
+          }).catch(function (e) { try { window.foSayAt && foSayAt(b, String((e && e.message) || e).slice(0, 160), "error"); } catch (e2) {} });
+        }
+      });
+    });
+    var bW = wrap.querySelector("[data-pp-withdraw]");
+    if (bW) bW.addEventListener("click", function () {
+      var b = bW;
+      api.rpc("world_market_withdraw", { p_id: +b.getAttribute("data-pp-withdraw") }).then(function () {
+        api.toast("Withdrawn. He stays yours.");
+        OFF.sales = null; build();
+      }).catch(function (e) { try { window.foSayAt && foSayAt(b, String((e && e.message) || e).slice(0, 160), "error"); } catch (e2) {} });
+    });
+    wrap.querySelectorAll("[data-pp-colt]").forEach(function (cb) {
+      cb.addEventListener("click", function () {
+        var act = cb.getAttribute("data-pp-colt");
+        try {
+          if (window.__foColtAction) __foColtAction(nm, act, function () {
+            if (act === "release") location.hash = "#/squad"; else build();
+          }, cb);
+        } catch (e) {}
+      });
+    });
   }
 
   // ---- THE SCOUT'S CARD: a rival's player page -------------------------------
@@ -1357,6 +1496,16 @@
     // ---- the desk: rooms read two columns ----------------------------------
     "@media(min-width:960px){html body #page .fo-pp-body{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:16px;align-items:start}",
     "html body #page .fo-pp-rail{margin-top:0}}",
+    // ---- the office: the paperwork, on the man's own page -------------------
+    "html body #page .fo-pp-office{display:flex;flex-direction:column;gap:10px}",
+    "html body #page .fo-pp-obrow{display:flex;gap:8px;flex-wrap:wrap}",
+    "html body #page button.fo-pp-ob{flex:1 1 150px;display:inline-flex;align-items:center;justify-content:center;min-height:44px;padding:10px 14px !important;border-radius:12px !important;border:0 !important;cursor:pointer;font:700 10px/1.2 Oswald,sans-serif !important;letter-spacing:.12em;text-transform:uppercase;text-align:center;background:linear-gradient(180deg,#D06035,#B84E28) !important;color:#FFF6EE !important;box-shadow:0 2px 8px rgba(184,78,40,.25)}",
+    "html body #page button.fo-pp-ob.ghost{background:#FFFEFC !important;border:1.5px solid rgba(20,36,58,.3) !important;color:#14243A !important;box-shadow:none}",
+    "html body #page button.fo-pp-ob.danger{background:transparent !important;border:1.5px solid rgba(178,50,48,.45) !important;color:#B23230 !important;box-shadow:none}",
+    "html body #page button.fo-pp-ob.danger:hover{background:rgba(178,50,48,.07) !important}",
+    "html body #page .fo-pp-onbd{background:#FBF6EA;border:1px solid rgba(201,87,31,.35);border-left:3px solid #C9571F;border-radius:11px;padding:11px 13px}",
+    "html body #page .fo-pp-onbd b{display:block;font:700 12.5px/1.2 Inter,sans-serif;color:#14243A}",
+    "html body #page .fo-pp-onbd i{display:block;margin-top:4px;font:500 11px/1.5 Inter,sans-serif;font-style:normal;color:rgba(20,28,40,.6);font-variant-numeric:tabular-nums}",
     // ---- the phone ----------------------------------------------------------
     "@media(max-width:700px){html body #page .fo-pp{padding:0 9px}",
     // the phone reads the card as a poster: the painted man across the top,
