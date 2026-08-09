@@ -1313,11 +1313,13 @@ test('019: youth cricket stays out of the seniors\' book, and the academy sets t
   assert.equal(onLeagueDays, 0,
     'the boys played no cricket: a full season of league rounds has gone by and Colts Week has not');
 
-  // A COLT HAS NO FIRST-CLASS RECORD - and since 075 there are no colts at
-  // all: every academy list is empty, and the boundary holds vacuously.
+  // A COLT HAS NO FIRST-CLASS RECORD. 075 empties the lists at founding, so
+  // the only boys left are the ones 018 seeded to exercise the retained
+  // machinery - the boundary law is held on them.
   const academy = (await pool.query(`SELECT youth FROM clubs WHERE country_id='eng'`)).rows
     .flatMap(r => Array.isArray(r.youth) ? r.youth : []);
-  assert.equal(academy.length, 0, 'the academy lists are empty (075)');
+  academy.forEach(y => assert.ok(!y.career,
+    y.name + ' is a colt and cannot carry a first-class record'));
   const seniors = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng'`)).rows.flatMap(r => r.squad);
   seniors.forEach(p => assert.ok(!p.colts || p.joined,
     p.name + ' carries a Colts record without ever having been a colt'));
