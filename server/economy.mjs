@@ -459,7 +459,7 @@ export async function computeFinance(pool, country, opts = {}) {
       // the founding, so nobody can hide a purchase in an overdraft
       bank: foundingBank(c.slot, c.is_boss) - (+c.academy_paid || 0) - (+c.seats_paid || 0),
       sup: foundingSupport(c.slot, c.is_boss),
-      mood: 3, pts: 0, played: 0, form: [],
+      mood: 3, pts: 0, played: 0, form: [], sPts: 0, sPlayed: 0,
       gate: 0, awayCut: 0, sponsor: 0, wagesPaid: 0, upkeep: 0, interest: 0,
       compensation: 0, capsAway: 0,
       feesIn: 0, feesOut: 0, scouting: 0, soldN: 0, boughtN: 0, academySpend: 0, coltsPurse: 0,
@@ -479,6 +479,14 @@ export async function computeFinance(pool, country, opts = {}) {
   const posMap = () => {
     const order = clubs.map(c => S[c.slot]).sort((a, b) =>
       b.pts - a.pts || b.played - a.played || a.slot - b.slot);
+    const m = {}; order.forEach((x, i) => { m[x.slot] = i + 1; });
+    return m;
+  };
+  // and the SEASON'S own table: mood is a supporter's reading of the summer
+  // in front of him, not of the club's whole history
+  const posMapSeason = () => {
+    const order = clubs.map(c => S[c.slot]).sort((a, b) =>
+      b.sPts - a.sPts || b.sPlayed - a.sPlayed || a.slot - b.slot);
     const m = {}; order.forEach((x, i) => { m[x.slot] = i + 1; });
     return m;
   };
@@ -521,7 +529,18 @@ export async function computeFinance(pool, country, opts = {}) {
     }
   };
 
+  let curSeason = null;
   for (const R of byRound) {
+    // THE MOOD RESETS WITH THE SEASON. A new summer opens on a level footing:
+    // the form book is blank, the supporters are settled, and everything the
+    // mood does from here it does because of THIS season's results. (Support
+    // itself still carries - a following built over years does not vanish on
+    // opening day; what resets is what those supporters currently think.)
+    const sNo9 = R.ms.length ? R.ms[0].season_no : null;
+    if (sNo9 !== null && sNo9 !== curSeason) {
+      curSeason = sNo9;
+      for (const c of clubs) { const t9 = S[c.slot]; t9.form = []; t9.mood = 3; t9.sPts = 0; t9.sPlayed = 0; }
+    }
     const pos = posMap();
     // every deal that closed on or before this round's day has already moved
     // the money by the time the gate is counted
@@ -593,14 +612,16 @@ export async function computeFinance(pool, country, opts = {}) {
       const hp = wn == null ? 1 : wn === m.home_name ? 2 : 0;
       const ap = wn == null ? 1 : wn === m.away_name ? 2 : 0;
       H.pts += hp; A.pts += ap; H.played++; A.played++;
+      H.sPts += hp; A.sPts += ap; H.sPlayed++; A.sPlayed++;
       H.form.push(hp); A.form.push(ap);
       if (H.form.length > 5) H.form.shift();
       if (A.form.length > 5) A.form.shift();
     }
     const pos2 = posMap();
+    const posS = posMapSeason();
     for (const slot of playing) {
       const c = S[slot];
-      c.mood = moodOf(c.form, pos2[slot], N);
+      c.mood = moodOf(c.form, posS[slot], N);
       const t = supportTarget(c.mood, pos2[slot], N, c.stature);
       c.sup = clamp(Math.round(c.sup + (t - c.sup) * 0.18), 4000, 60000);
     }
@@ -608,8 +629,14 @@ export async function computeFinance(pool, country, opts = {}) {
 
   drainMarket(Infinity);        // deals closed since the last round still count
 
+  // between seasons the coming summer has no results to feel anything about,
+  // so the sheet reads level until the first ball of the new season
+  let maxSeason = 0;
+  for (const t of starts) if (+t.season_no > maxSeason) maxSeason = +t.season_no;
+  const preSeason = maxSeason > (curSeason || 0);
   const out = clubs.map(c => {
     const s = S[c.slot];
+    if (preSeason) s.mood = 3;
     const avg = s.atts.length ? Math.round(s.atts.reduce((a, b) => a + b, 0) / s.atts.length) : 0;
     return {
       slot: c.slot, bank: Math.round(s.bank),

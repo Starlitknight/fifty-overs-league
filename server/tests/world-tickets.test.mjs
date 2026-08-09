@@ -110,6 +110,31 @@ test('division two plays to thinner stands', async () => {
   await pool.query(`UPDATE seasons SET divisions=$1::jsonb WHERE country_id='eng'`, [JSON.stringify(divs)]);
 });
 
+test('the mood opens each season level, and moves only on its results', async () => {
+  // a new season on the books with nothing played: everybody reads settled
+  await pool.query(
+    `INSERT INTO seasons(country_id, season_no, start_day, schedule)
+     SELECT 'eng', 2, $1, schedule FROM seasons WHERE country_id='eng' AND season_no=1
+     ON CONFLICT DO NOTHING`, [START + 42]);
+  const pre = await computeFinance(pool, 'eng');
+  for (const r of pre) assert.equal(r.finance.mood, 3, 'pre-season mood is neutral (slot ' + r.slot + ')');
+  // the season opens: slot 2 loses its first match. Whatever last season felt
+  // like, the supporters judge THIS season - one loss from one game is glum.
+  await pool.query(
+    `INSERT INTO matches(id, country_id, season_no, round, home_slot, away_slot, home_name, away_name, seed,
+                         engine_version, pitch, result, played_at)
+     SELECT 'eng:s2:r1:mM', 'eng', 2, 1, 2, 3, h.name, a.name, 7, 'v1', 'balanced',
+            jsonb_build_object('winner', a.name, 'text', a.name || ' won by 30 runs'), now()
+       FROM (SELECT name FROM clubs WHERE country_id='eng' AND slot=2) h,
+            (SELECT name FROM clubs WHERE country_id='eng' AND slot=3) a`);
+  const opened = await computeFinance(pool, 'eng');
+  const loser = opened.filter(r => r.slot === 2)[0], winner = opened.filter(r => r.slot === 3)[0];
+  assert.ok(loser.finance.mood <= 2, 'a season-opening loss reads glum: ' + loser.finance.mood);
+  assert.ok(winner.finance.mood >= 5, 'a season-opening win reads bright: ' + winner.finance.mood);
+  await pool.query(`DELETE FROM matches WHERE id='eng:s2:r1:mM'`);
+  await pool.query(`DELETE FROM seasons WHERE country_id='eng' AND season_no=2`);
+});
+
 test('the crowd locks 24 hours out', () => {
   const matchMs = EPOCH + 200 * DAY + 14 * 3600000;
   const early = [{ at: matchMs - 10 * DAY, price: 60 }];
