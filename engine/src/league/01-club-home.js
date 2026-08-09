@@ -2,7 +2,7 @@
   //  Premium Club home. A fully custom, branded dashboard that replaces the
   //  engine's default pgClub (same data + game hooks, modern presentation).
   // ===========================================================================
-  var FO_MOODS = ["Furious", "Angry", "Restless", "Steady", "Pleased", "Delighted", "Euphoric"];
+  var FO_MOODS = ["Furious", "Angry", "Restless", "Uneasy", "Steady", "Content", "Pleased", "Delighted", "Euphoric"];
   // =========================================================================
   // Finance: the ONE place per-round money math lives. Every page that shows
   // burn, net, runway or projections reads from here. The model mirrors what
@@ -395,7 +395,7 @@
       var pi = rowsL.findIndex(function (x) { return x.nm === t.name; }), me = rowsL[pi] || { p: 0, w: 0, l: 0, pts: 0, nrr: 0 };
       var pos = pi >= 0 ? pi + 1 : "-";
       var bank = (App.fin && App.fin.bank) || 0, wages = foWageBill(t);
-      var mood = FO_MOODS[Math.max(0, Math.min(6, t.mood == null ? 3 : t.mood))];
+      var mood = FO_MOODS[Math.max(0, Math.min(8, t.mood == null ? 4 : t.mood))];
       var cond = (t.mood >= 5) ? "Excellent" : (t.mood >= 3) ? "Good" : (t.mood >= 1) ? "Fair" : "Poor";
       var form = foFormMap()[t.name] || [];
       var pips = form.map(function (x) { return "<i class='fo-pip fo-" + x + "' title='" + x + "'></i>"; }).join("");
@@ -611,7 +611,7 @@
       var fchips = form.length
         ? form.map(function (x) { var u = String(x).toUpperCase(); return "<i class='fo-c2-f " + (u === "W" ? "w" : u === "L" ? "l" : "t") + "'>" + u + "</i>"; }).join("")
         : "<span class='fo-c2-dim'>no matches yet</span>";
-      var moodIx = Math.max(0, Math.min(6, t.mood == null ? 3 : t.mood));
+      var moodIx = Math.max(0, Math.min(8, t.mood == null ? 4 : t.mood));
       // mood trend vs the previous round, remembered locally per club
       var moodTr = 0;
       try {

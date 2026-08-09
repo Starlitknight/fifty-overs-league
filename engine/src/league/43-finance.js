@@ -268,6 +268,11 @@
       ".fo-gb-row .op u{display:block;height:7px;border-radius:999px;background:#EBE6DA;margin:6px 0 4px;text-decoration:none;overflow:hidden}",
       ".fo-gb-row .op u i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#136A4B,#177A57)}",
       ".fo-gb-row .op s{text-decoration:none;font:500 11px/1.2 Inter,sans-serif;color:#6A6354;font-variant-numeric:tabular-nums}",
+      ".fo-gb-row .op .pr{display:flex;align-items:center;gap:7px;margin-top:7px}",
+      ".fo-gb-row .op .pr b{font:700 13px/1 Inter,sans-serif;color:#14243A;min-width:36px;text-align:center;font-variant-numeric:tabular-nums}",
+      ".fo-gb-row .op .pr.lk{font:600 11px/1 Inter,sans-serif;color:#8a8272}",
+      "html body #page .fo-gb-row .pr button{width:28px;min-height:28px;padding:0 !important;margin:0;flex:0 0 auto;border:1px solid #CFC6B6 !important;border-radius:8px !important;background:#FFFEFA !important;color:#1B2432 !important;font:700 14px/1 Inter,sans-serif !important;text-align:center;letter-spacing:0;text-transform:none;box-shadow:none !important}",
+      "html body #page .fo-gb-row .pr button.ok{width:auto;padding:0 12px !important;border-color:var(--orange) !important;color:#fff !important;background:linear-gradient(180deg,#E85720,#D94313) !important;font-size:10px !important;letter-spacing:.08em;text-transform:uppercase}",
       ".fo-gb-row .tk{text-align:right;white-space:nowrap}",
       ".fo-gb-row .tk b{display:block;font:700 13px/1.2 Inter,sans-serif;color:#14243A;font-variant-numeric:tabular-nums}",
       ".fo-gb-row .tk u{display:block;margin-top:2px;text-decoration:none;font:600 9.5px/1.2 Inter,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#9E978A}",
@@ -334,12 +339,27 @@
     for (var i = 0; i < (hist || []).length; i++) { if (hist[i].at <= ms) p = hist[i].price; else break; }
     return p;
   }
+  // the standing series and this match's own, one resolver - the match's
+  // dated prices beat the club's from the moment each is set
+  function tkFnFor(rows, seasonNo, round) {
+    var club = [], mk = null;
+    for (var i = 0; i < (rows || []).length; i++) {
+      var r = rows[i];
+      if ((r.season | 0) === 0) club.push({ at: r.at, price: r.price });
+      else if ((r.season | 0) === (seasonNo | 0) && (r.round | 0) === (round | 0)) (mk = mk || []).push({ at: r.at, price: r.price });
+    }
+    return function (ms) {
+      if (mk) { var p9 = null; for (var j = 0; j < mk.length; j++) { if (mk[j].at <= ms) p9 = mk[j].price; else break; } if (p9 != null) return p9; }
+      return tkPriceAt(club, ms);
+    };
+  }
   function tkSale(demand, seats, matchMs, hist, nowMs) {
+    var pAt = typeof hist === "function" ? hist : function (ms9) { return tkPriceAt(hist, ms9); };
     var lockAt = matchMs - TK.LOCK, sold = 0, take = 0;
     for (var k = 0; k < TK.FR.length; k++) {
       var at = lockAt - (TK.FR.length - 1 - k) * 86400000;
       if (nowMs != null && at > nowMs) break;
-      var pr = tkPriceAt(hist, at);
+      var pr = pAt(at);
       var n = demand * TK.FR[k] * tkMult(pr);
       if (sold + n > seats) n = seats - sold;
       if (n <= 0) continue;
@@ -513,7 +533,7 @@
 
     var sup = Number(f.supporters) || 0, seats = Number(f.seats) || 0;
     var lastAtt = Number(f.lastAttendance) || 0, avgAtt = Number(f.avgAttendance) || 0;
-    var mood = Math.max(0, Math.min(6, Number(f.mood) || 0));
+    var mood = Math.max(0, Math.min(8, Number(f.mood) || 0));
     var moodWord = String(f.moodWord || "patient");
     var ticket = Number(f.ticket) || 26;
     var homeCut = Number(f.homeCut) || 2 / 3;
@@ -548,7 +568,7 @@
     var atHome = !nf || nf.isHome !== false;
     // the crowd the umpire's own arithmetic would expect: his mood curve, not
     // an invented one, and never more than there are seats
-    var moodCrowd = Math.round(sup * (0.55 + mood * 0.065));
+    var moodCrowd = Math.round(sup * (0.55 + mood * (0.39 / 8)));
     var basis = lastAtt ? "Last home crowd" : avgAtt ? "Season average" : "Support and mood";
     var projectedCrowd = Math.max(0, Math.min(seats || moodCrowd, lastAtt || avgAtt || moodCrowd));
     // and only the home club's share of it. The full gate was being quoted as
@@ -649,7 +669,7 @@
         if (!cl || !fxs.length) return;
         var hist = tkHist();
         var now = Date.now();
-        var mm = 0.55 + Math.max(0, Math.min(6, mood)) * 0.065;
+        var mm = 0.55 + Math.max(0, Math.min(8, mood)) * (0.39 / 8);
         // division two plays to thinner stands - the same rule the walk banks
         var dv = 1;
         try {
@@ -658,8 +678,10 @@
         } catch (eDv) {}
         var rows9 = fxs.map(function (x) {
           var demand = sup * mm * dv * tkDraw(cl, x.opp.slot);
-          var cur = tkSale(demand, seats, x.t0, hist, now);
-          var fin = tkSale(demand, seats, x.t0, hist, null);
+          var pf = tkFnFor(hist, x.season, x.round);
+          var pNow = pf(now);
+          var cur = tkSale(demand, seats, x.t0, pf, now);
+          var fin = tkSale(demand, seats, x.t0, pf, null);
           var locked = now >= x.t0 - TK.LOCK;
           var pctS = seats ? Math.min(100, Math.round(100 * (locked ? fin.sold : cur.sold) / seats)) : 0;
           var dt9 = "";
@@ -672,7 +694,13 @@
             "<u><i style='width:" + pctS + "%'></i></u>" +
             "<s>" + (!locked && now < cur.lockAt - 5 * 86400000
               ? "sales open in " + Math.max(1, Math.round((cur.lockAt - 5 * 86400000 - now) / 86400000)) + "d"
-              : (locked ? fin.sold : cur.sold).toLocaleString() + " / " + seats.toLocaleString() + " sold" + (locked ? "" : " so far")) + "</s></span>" +
+              : (locked ? fin.sold : cur.sold).toLocaleString() + " / " + seats.toLocaleString() + " sold" + (locked ? "" : " so far")) + "</s>" +
+            (locked
+              ? "<span class='pr lk num'>at $" + pNow + "</span>"
+              : "<span class='pr num' data-sr='" + x.season + ":" + x.round + "' data-p='" + pNow + "'>" +
+                "<button type='button' class='d'>&minus;</button><b>$" + pNow + "</b>" +
+                "<button type='button' class='u'>+</button><button type='button' class='ok'>Set</button></span>") +
+            "</span>" +
             "<span class='tk'><b>~" + M(Math.round(fin.take * (Number(f.homeCut) || 2 / 3) + fin.sold * TK.BCAST)) + "</b><u>your matchday</u>" +
             "<em class='" + (locked ? "lk" : "") + "'>" + lockTxt + "</em></span></div>";
         }).join("");
@@ -683,6 +711,7 @@
       html += "<div class='fo-fin-foot'><a href='#/finance'>&lsaquo; Finances</a><a href='#/home'>The club &rsaquo;</a></div></div>";
       page.innerHTML = shell(html);
       wire(page, f, bank, st);
+      wireGate(page);
       return;
     }
 
@@ -755,6 +784,34 @@
   }
 
 
+
+  // each home Sunday's own dial: nudge, then Set - one dated decision for
+  // that match alone, beating the standing price from the moment it lands
+  function wireGate(page) {
+    page.querySelectorAll(".fo-gb .pr[data-sr]").forEach(function (pr) {
+      var b9 = pr.querySelector("b"), ok = pr.querySelector(".ok");
+      var sr = String(pr.getAttribute("data-sr")).split(":");
+      var cur = parseInt(pr.getAttribute("data-p"), 10) || 26;
+      var pend = cur;
+      var show = function () {
+        b9.textContent = "$" + pend;
+        if (ok) ok.style.display = pend === cur ? "none" : "";
+      };
+      show();
+      var dn = pr.querySelector(".d"), up = pr.querySelector(".u");
+      if (dn) dn.addEventListener("click", function () { pend = Math.max(TK.MIN, pend - 2); show(); });
+      if (up) up.addEventListener("click", function () { pend = Math.min(TK.MAX, pend + 2); show(); });
+      if (ok) ok.addEventListener("click", function () {
+        ok.disabled = true;
+        rpc("world_set_ticket", { p_price: pend, p_season: +sr[0], p_round: +sr[1] })
+          .then(function () { TKH.rows = null; TKH.at = 0; reload(page); })
+          .catch(function (e9) {
+            ok.disabled = false;
+            try { window.foSayAt && foSayAt(ok, String(e9.message).slice(0, 120), "error"); } catch (e8) {}
+          });
+      });
+    });
+  }
 
   function wire(page, f, bank, st) {
     var msg = page.querySelector("#fo-fin-msg");

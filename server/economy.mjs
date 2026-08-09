@@ -165,19 +165,20 @@ export function priceAtMs(prices, ms) {
 // function then prints the advance board for a future match. The 600
 // die-hards who walk up whatever the price only join a banked gate.
 export function gateSale(demand, seats, matchMs, prices, nowMs) {
+  const pAt = typeof prices === 'function' ? prices : (ms => priceAtMs(prices, ms));
   const lockAt = matchMs - TICKET_LOCK_MS;
   let sold = 0, take = 0, flat = null, allFlat = true;
   for (let k = 0; k < SALES_FRACS.length; k++) {
     const at = lockAt - (SALES_FRACS.length - 1 - k) * 86400000;
     if (nowMs != null && at > nowMs) break;
-    const p = priceAtMs(prices, at);
+    const p = pAt(at);
     if (flat == null) flat = p; else if (p !== flat) allFlat = false;
     let n = demand * SALES_FRACS[k] * priceMult(p);
     if (sold + n > seats) n = seats - sold;
     if (n <= 0) continue;
     sold += n; take += n * p;
   }
-  const priceEnd = priceAtMs(prices, lockAt);
+  const priceEnd = pAt(lockAt);
   if (nowMs == null && sold < 600) { take += (600 - sold) * priceEnd; sold = 600; flat = flat == null ? priceEnd : flat; }
   sold = Math.round(sold);
   // a flat-priced sale takes exactly sold x price - the same arithmetic the
@@ -251,7 +252,8 @@ export function academyBuild(from, to) {
 export const SCOUT_FEE_ABROAD = 45000;
 // and a senior shirt is the same flat price for every boy in the world
 export const PROMOTE_FEE = 250000;
-export const MOOD_WORD = ['mutinous', 'restless', 'patient', 'settled', 'pleased', 'delighted', 'ecstatic'];
+export const MOOD_WORD = ['mutinous', 'sullen', 'restless', 'patient', 'settled', 'content', 'pleased', 'delighted', 'ecstatic'];
+export const MOOD_MAX = 8, MOOD_NEUTRAL = 4;
 
 const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
 
@@ -274,14 +276,14 @@ export function weatherOf(matchIdOrSeed) {
 export function moodOf(last5, pos, clubs) {
   const rate = last5.length ? last5.reduce((s, p) => s + p, 0) / (2 * last5.length) : 0.5;
   const posF = clubs > 1 ? (clubs - pos) / (clubs - 1) : 0.5;
-  return clamp(Math.round((rate * 0.65 + posF * 0.35) * 6), 0, 6);
+  return clamp(Math.round((rate * 0.65 + posF * 0.35) * MOOD_MAX), 0, MOOD_MAX);
 }
 // how full a ground gets. A FOLLOWING IS NOT AN ATTENDANCE: on an ordinary
 // settled Sunday about three-quarters of the interested crowd actually walks
 // up, a mutinous one stays half home, and even an ecstatic one only fills
 // the ground when a big visitor or a warm day joins it - so a sold-out
 // house is an occasion, not the default, and rarer still in division two.
-const moodMult = m => 0.55 + m * 0.065;
+const moodMult = m => 0.55 + m * (0.39 / MOOD_MAX);   // 0.55 mutinous .. 0.94 ecstatic
 // and who is visiting matters - the flagship and the leaders draw a crowd
 const drawMult = (opp, oppPos) => (opp.is_boss ? 1.22 : 1) * (oppPos <= 3 ? 1.09 : 1);
 
@@ -296,7 +298,7 @@ export function supportTarget(mood, pos, clubs, stat) {
   // single season. Form and position still do all the MOVING; what stature
   // sets is where a club is moving around. It is not optional - a caller who
   // omitted it would quietly draw flagship crowds for a bottom club.
-  return Math.round((1800 + 13500 * Math.pow(stat, 1.45)) + mood * 2600 + posF * 7000);
+  return Math.round((1800 + 13500 * Math.pow(stat, 1.45)) + mood * 1950 + posF * 7000);
 }
 
 // WHAT THE NEXT SEATS COST. Building gets dearer the bigger the ground is:
@@ -317,7 +319,7 @@ export function stadiumCost(fromSeats, toSeats) {
 // makes a title race worth money and not only pride
 export function sponsorOf(pos, mood, clubs) {
   const posF = clubs > 1 ? (clubs - pos) / (clubs - 1) : 0.5;
-  return Math.round(9000 + Math.pow(posF, 1.3) * 62000 + (mood - 3) * 4000);
+  return Math.round(9000 + Math.pow(posF, 1.3) * 62000 + (mood - MOOD_NEUTRAL) * 3000);
 }
 
 // ---------------------------------------------------------------------------
@@ -371,11 +373,36 @@ export async function computeFinance(pool, country, opts = {}) {
   let tpr = [];
   try {
     tpr = (await pool.query(
-      `SELECT slot, set_ms, price FROM ticket_prices WHERE country_id=$1 ORDER BY set_ms`,
+      `SELECT slot, set_ms, price, season_no AS sn, round AS rd
+         FROM ticket_prices WHERE country_id=$1 ORDER BY set_ms`,
       [country])).rows;
-  } catch (eTp) { tpr = []; }                    // pre-073 database: the league's $26
-  const priceRows = {};
-  for (const t of tpr) (priceRows[t.slot] = priceRows[t.slot] || []).push({ at: +t.set_ms, price: +t.price });
+  } catch (eTp) {
+    // pre-074 database: the standing prices only
+    try {
+      tpr = (await pool.query(
+        `SELECT slot, set_ms, price, 0 AS sn, 0 AS rd FROM ticket_prices WHERE country_id=$1 ORDER BY set_ms`,
+        [country])).rows;
+    } catch (eTp0) { tpr = []; }                 // pre-073 database: the league's $26
+  }
+  const priceRows = {};                          // slot -> { club: [], match: { 's:r': [] } }
+  for (const t of tpr) {
+    const e = priceRows[t.slot] = priceRows[t.slot] || { club: [], match: {} };
+    const row = { at: +t.set_ms, price: +t.price };
+    if ((t.sn | 0) === 0) e.club.push(row);
+    else (e.match[t.sn + ':' + t.rd] = e.match[t.sn + ':' + t.rd] || []).push(row);
+  }
+  // A MATCH'S OWN PRICE BEATS THE STANDING ONE, from the moment it is set;
+  // sale days before that moment sold at whatever ruled then.
+  const priceFnFor = (slot, seasonNo, round) => {
+    const e = priceRows[slot];
+    if (!e) return null;
+    const mk = e.match[seasonNo + ':' + round];
+    if (!mk && !e.club.length) return null;
+    return ms => {
+      if (mk) { let p = null; for (const r of mk) { if (r.at <= ms) p = r.price; else break; } if (p != null) return p; }
+      return priceAtMs(e.club, ms);
+    };
+  };
   const feeAt = {};
   for (const f of fees) feeAt[f.season_no + ':' + f.round + ':' + f.slot] = f;
   // WHAT THE MARKET DID TO THE BANK. A transfer is two clubs' money: the fee
@@ -480,7 +507,7 @@ export async function computeFinance(pool, country, opts = {}) {
       // the founding, so nobody can hide a purchase in an overdraft
       bank: foundingBank(c.slot, c.is_boss) - (+c.academy_paid || 0) - (+c.seats_paid || 0),
       sup: foundingSupport(c.slot, c.is_boss),
-      mood: 3, pts: 0, played: 0, form: [], sPts: 0, sPlayed: 0,
+      mood: MOOD_NEUTRAL, pts: 0, played: 0, form: [], sPts: 0, sPlayed: 0,
       gate: 0, awayCut: 0, bcast: 0, sponsor: 0, wagesPaid: 0, upkeep: 0, interest: 0,
       compensation: 0, capsAway: 0,
       feesIn: 0, feesOut: 0, scouting: 0, soldN: 0, boughtN: 0, academySpend: 0, coltsPurse: 0,
@@ -560,7 +587,7 @@ export async function computeFinance(pool, country, opts = {}) {
     const sNo9 = R.ms.length ? R.ms[0].season_no : null;
     if (sNo9 !== null && sNo9 !== curSeason) {
       curSeason = sNo9;
-      for (const c of clubs) { const t9 = S[c.slot]; t9.form = []; t9.mood = 3; t9.sPts = 0; t9.sPlayed = 0; }
+      for (const c of clubs) { const t9 = S[c.slot]; t9.form = []; t9.mood = MOOD_NEUTRAL; t9.sPts = 0; t9.sPlayed = 0; }
     }
     const pos = posMap();
     // every deal that closed on or before this round's day has already moved
@@ -577,7 +604,7 @@ export async function computeFinance(pool, country, opts = {}) {
       const demand = H.sup * moodMult(H.mood) * drawMult(A, pos[A.slot]) * w.mult * dv;
       const matchMs = EPOCH + ((startOf[m.season_no] ?? 0) +
         (dayOfRound(m.round) ?? (m.round - 1))) * DAY + HOUR;
-      const sale = gateSale(demand, H.seats, matchMs, priceRows[H.slot] || null, null);
+      const sale = gateSale(demand, H.seats, matchMs, priceFnFor(H.slot, m.season_no, m.round), null);
       const att = sale.sold, gate = sale.take;
       const home = Math.round(gate * HOME_CUT), away = gate - Math.round(gate * HOME_CUT);
       const bc = Math.round(att * BROADCAST_PER_HEAD);
@@ -659,7 +686,7 @@ export async function computeFinance(pool, country, opts = {}) {
   const preSeason = maxSeason > (curSeason || 0);
   const out = clubs.map(c => {
     const s = S[c.slot];
-    if (preSeason) s.mood = 3;
+    if (preSeason) s.mood = MOOD_NEUTRAL;
     const avg = s.atts.length ? Math.round(s.atts.reduce((a, b) => a + b, 0) / s.atts.length) : 0;
     return {
       slot: c.slot, bank: Math.round(s.bank),
@@ -667,7 +694,7 @@ export async function computeFinance(pool, country, opts = {}) {
         supporters: s.sup, mood: s.mood, moodWord: MOOD_WORD[s.mood],
         seats: s.seats, lastAttendance: s.lastAtt || 0, lastWeather: s.lastWeather || null,
         // the club's standing price: the latest dated decision, $26 before any
-        avgAttendance: avg, ticket: priceAtMs(priceRows[c.slot] || null, Infinity),
+        avgAttendance: avg, ticket: priceAtMs((priceRows[c.slot] || {}).club || null, Infinity),
         gate: s.gate, awayCut: s.awayCut, broadcast: s.bcast, sponsor: s.sponsor,
         compensation: s.compensation, capsAway: s.capsAway,
         feesIn: s.feesIn, feesOut: s.feesOut, scouting: s.scouting, academySpend: s.academySpend,

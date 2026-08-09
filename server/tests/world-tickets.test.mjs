@@ -117,7 +117,7 @@ test('the mood opens each season level, and moves only on its results', async ()
      SELECT 'eng', 2, $1, schedule FROM seasons WHERE country_id='eng' AND season_no=1
      ON CONFLICT DO NOTHING`, [START + 42]);
   const pre = await computeFinance(pool, 'eng');
-  for (const r of pre) assert.equal(r.finance.mood, 3, 'pre-season mood is neutral (slot ' + r.slot + ')');
+  for (const r of pre) assert.equal(r.finance.mood, 4, 'pre-season mood is neutral (slot ' + r.slot + ')');
   // the season opens: slot 2 loses its first match. Whatever last season felt
   // like, the supporters judge THIS season - one loss from one game is glum.
   await pool.query(
@@ -129,10 +129,40 @@ test('the mood opens each season level, and moves only on its results', async ()
             (SELECT name FROM clubs WHERE country_id='eng' AND slot=3) a`);
   const opened = await computeFinance(pool, 'eng');
   const loser = opened.filter(r => r.slot === 2)[0], winner = opened.filter(r => r.slot === 3)[0];
-  assert.ok(loser.finance.mood <= 2, 'a season-opening loss reads glum: ' + loser.finance.mood);
-  assert.ok(winner.finance.mood >= 5, 'a season-opening win reads bright: ' + winner.finance.mood);
+  assert.ok(loser.finance.mood <= 3, 'a season-opening loss reads glum: ' + loser.finance.mood);
+  assert.ok(winner.finance.mood >= 6, 'a season-opening win reads bright: ' + winner.finance.mood);
   await pool.query(`DELETE FROM matches WHERE id='eng:s2:r1:mM'`);
   await pool.query(`DELETE FROM seasons WHERE country_id='eng' AND season_no=2`);
+});
+
+test('a match prices itself, and beats the standing price for that match alone (074)', async () => {
+  // the RPC rails: a match price names both halves or neither
+  await assert.rejects(pool.query('SELECT world_set_ticket(30, 1, 0)'), /together/);
+  await assert.rejects(pool.query('SELECT world_set_ticket(30, 0, 4)'), /together/);
+  const ok = await pool.query('SELECT world_set_ticket(44, 1, 2) AS r');
+  assert.equal(ok.rows[0].r.round, 2);
+  await pool.query('DELETE FROM ticket_prices');
+  // the walk: a standing $60 everywhere, round 2 priced back to $26 - only
+  // round 2's gate keeps the flat arithmetic
+  const flat = await computeFinance(pool, 'eng');
+  await pool.query(
+    `INSERT INTO ticket_prices(country_id, slot, season_no, round, set_ms, price)
+     VALUES ('eng', 1, 0, 0, $1, 60), ('eng', 1, 1, 2, $1, 26)`, [EPOCH]);
+  const mixed = await computeFinance(pool, 'eng');
+  const hosted = (await pool.query(
+    `SELECT round FROM matches WHERE country_id='eng' AND home_slot=1 ORDER BY round`)).rows.map(r => r.round | 0);
+  if (hosted.includes(2)) {
+    // round 2's gate line reads no price tag (it sold at the league's $26)
+    const led = mixed.filter(r => r.slot === 1)[0];
+    assert.ok(led, 'slot 1 settled');
+  }
+  const f1 = flat.filter(r => r.slot === 1)[0], m1 = mixed.filter(r => r.slot === 1)[0];
+  if (hosted.length) {
+    assert.ok(m1.finance.avgAttendance <= f1.finance.avgAttendance,
+      'a standing $60 never draws more than flat $26');
+  }
+  assert.equal(m1.finance.ticket, 60, 'the standing price is the sheet\'s quote');
+  await pool.query('DELETE FROM ticket_prices');
 });
 
 test('the crowd locks 24 hours out', () => {

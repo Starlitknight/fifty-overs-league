@@ -1366,9 +1366,9 @@ test('020: the books are a ledger, and they recompute from the record', async ()
   assert.ok(words.size > 1, 'the weather is not always the same day');
 
   // WHAT THE SUPPORTERS THINK is a reading, not a counter
-  assert.equal(moodOf([2, 2, 2, 2, 2], 1, 10), 6, 'winning everything from the top is ecstatic');
+  assert.equal(moodOf([2, 2, 2, 2, 2], 1, 10), 8, 'winning everything from the top is ecstatic');
   assert.equal(moodOf([0, 0, 0, 0, 0], 10, 10), 0, 'losing everything from the bottom is mutinous');
-  assert.ok(moodOf([2, 0, 2, 0, 1], 5, 10) > 0 && moodOf([2, 0, 2, 0, 1], 5, 10) < 6);
+  assert.ok(moodOf([2, 0, 2, 0, 1], 5, 10) > 0 && moodOf([2, 0, 2, 0, 1], 5, 10) < 8);
 
   // THE LEDGER ITSELF
   await settleMoney(pool, 'eng');
@@ -1379,7 +1379,7 @@ test('020: the books are a ledger, and they recompute from the record', async ()
     const f = r.finance;
     assert.ok(f && f.rounds > 0, 'club ' + r.slot + ' has played and been paid');
     assert.ok(f.supporters >= 4000 && f.supporters <= 60000, 'a believable following');
-    assert.ok(f.mood >= 0 && f.mood <= 6 && MOOD_WORD[f.mood] === f.moodWord);
+    assert.ok(f.mood >= 0 && f.mood <= 8 && MOOD_WORD[f.mood] === f.moodWord);
     assert.ok(f.lastAttendance > 0 && f.lastAttendance <= r.seats, 'nobody sold more seats than they built');
     assert.ok(f.gate > 0 && f.awayCut > 0, 'money came through the gate at home and away');
     assert.ok(f.sponsor > 0 && f.wages > 0 && f.upkeep > 0);
