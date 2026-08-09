@@ -33,7 +33,21 @@ const T0 = EPOCH + 100 * DAY + 12 * 3600000;
 const START = 101;
 
 const ask = (n, kind) => n.asks.filter(a => a.kind === kind)[0];
-const notif = async () => (await pool.query('SELECT world_my_notifications(60) n')).rows[0].n;
+// THE BELL KEEPS THE BROADCAST'S CLOCK (069): a played round is silent until
+// its window closes, so every read here happens on the WORLD clock, that
+// evening - not on the wall clock, which sits months before the test world.
+const NOWMS = EPOCH + START * DAY + 20 * 3600000;
+async function atWorld(sql) {
+  const c = await pool.connect();
+  try {
+    await c.query(`SELECT set_config('world.now_ms', $1, false)`, [String(NOWMS)]);
+    return await c.query(sql);
+  } finally {
+    await c.query(`SELECT set_config('world.now_ms', '', false)`).catch(() => {});
+    c.release();
+  }
+}
+const notif = async () => (await atWorld('SELECT world_my_notifications(60) n')).rows[0].n;
 
 before(async () => {
   try { execSync(`dropdb --if-exists ${DB}`, { stdio: 'ignore' }); } catch (e) {}
@@ -81,7 +95,7 @@ test('an unanswered scout is an ASK, and reading it does not answer him', async 
 
   // READING IS NOT ANSWERING. This is the whole difference between an ask and
   // a piece of news, and the thing the old localStorage bell got wrong.
-  await pool.query('SELECT world_notifications_seen()');
+  await atWorld('SELECT world_notifications_seen()');
   n = await notif();
   assert.ok(ask(n, 'scout-waiting'), 'he is still waiting after the bell was opened');
   assert.ok(n.unread >= 1, 'and he still counts toward the badge');
@@ -98,7 +112,7 @@ test('news goes stale when it is read; the watermark is the whole mechanism', as
   let n = await notif();
   const freshBefore = n.news.filter(x => x.fresh).length;
   assert.ok(freshBefore >= 1, 'unread news to begin with (' + freshBefore + ')');
-  await pool.query('SELECT world_notifications_seen()');
+  await atWorld('SELECT world_notifications_seen()');
   n = await notif();
   const stale = n.news.filter(x => x.fresh);
   assert.equal(stale.length, 0,
@@ -123,9 +137,9 @@ test('the money speaks for itself, and administration shouts', async () => {
   assert.ok(!ask(await notif(), 'money'), 'and a club in the black is not nagged');
 });
 
-test('the academy asks: a side it cannot field, and boys about to walk', async () => {
+test('the academy asks: a side it cannot field; the boys leave quietly (070)', async () => {
   const club = (await pool.query(`SELECT youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
-  // a full academy of sixteen-year-olds: nobody leaving, nobody short
+  // a full academy of sixteen-year-olds: nobody short
   const young = (club.youth || []).map(y => Object.assign({}, y, { age: 16 }));
   await pool.query(`UPDATE clubs SET youth=$1::jsonb WHERE country_id='eng' AND slot=1`,
     [JSON.stringify(young)]);
@@ -133,21 +147,14 @@ test('the academy asks: a side it cannot field, and boys about to walk', async (
   assert.ok(!ask(n, 'colts-short'), 'a full academy is not short');
   assert.ok(!ask(n, 'boys-leaving'), 'and nobody is about to walk');
 
-  // one of them turns twenty
+  // one of them turns twenty: 070 retired the warning - the squad room says
+  // his age beside his promote button, and the bell says nothing
   young[0].age = 20;
   await pool.query(`UPDATE clubs SET youth=$1::jsonb WHERE country_id='eng' AND slot=1`,
     [JSON.stringify(young)]);
-  const leaving = ask(await notif(), 'boys-leaving');
-  assert.ok(leaving, 'a twenty-year-old is a warning');
-  assert.ok(/^A boy leaves/.test(leaving.title), 'and one boy is "a boy": ' + leaving.title);
+  assert.ok(!ask(await notif(), 'boys-leaving'), 'a twenty-year-old no longer rings the bell (070)');
 
-  // three of them
-  young[1].age = 20; young[2].age = 20;
-  await pool.query(`UPDATE clubs SET youth=$1::jsonb WHERE country_id='eng' AND slot=1`,
-    [JSON.stringify(young)]);
-  assert.ok(/^3 boys leave/.test(ask(await notif(), 'boys-leaving').title), 'and three are "3 boys"');
-
-  // and an academy below the Colts Cup bar says so
+  // and an academy below the Colts Cup bar still says so
   await pool.query(`UPDATE clubs SET youth=$1::jsonb WHERE country_id='eng' AND slot=1`,
     [JSON.stringify(young.slice(0, 9))]);
   const short = ask(await notif(), 'colts-short');
