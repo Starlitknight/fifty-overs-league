@@ -1515,6 +1515,10 @@ test('020: the books are a ledger, and they recompute from the record', async ()
     'the ledger carries the stand from the founding, so it cannot be hidden');
   assert.equal(settled.finance.nextSeats, G1 + 1000);
   assert.equal(Number(settled.finance.nextSeatsCost), seatBlockPrice(G1));
+  // the settle above re-derived a red bank (the stand was bought with
+  // topped-up money the ledger never saw) - get level again so the refusal
+  // under test is the PRICE of forty-five thousand, not the overdraft
+  await pool.query(`UPDATE clubs SET bank=2000000 WHERE country_id='eng' AND slot=1`);
   await assert.rejects(as(U1, `SELECT public.world_set_stadium(45000)`), /that costs/,
     'no borrowing to build');
 
