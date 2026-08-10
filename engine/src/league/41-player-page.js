@@ -577,13 +577,12 @@
           : p.age <= 22 ? "Young enough that a good winter changes what he is." : "In his prime: what he learns now, he keeps.") + "</p></div>" +
         "<div class='fo-pp-slot' data-slot='dev'></div>" +
         "</div>" +
+        // CONDITION IS READ ONCE. The Overview's rail carries his form, fitness
+        // and freshness beside the fixture they bear on; a second copy in here
+        // was the same three meters asking to be kept in step with the first.
         "<div class='fo-pp-rail'>" +
-        "<div class='fo-pp-card'><h3>Condition</h3>" +
-        meter("Fitness", cond.fitPct + "%", cond.fitPct) +
-        meter("Fatigue", cap(cond.fatWord), cond.fatPct) +
-        meter("Form", cap(cond.formWord), cond.formPct) +
-        "<p class='fo-pp-dim'>" + (cond.fatPct > 40 ? "He needs a quiet week more than a hard one." : "Fresh enough for a full week's work.") + "</p></div>" +
         "<div class='fo-pp-card dark'><h3>The training ground</h3>" +
+        "<p class='fo-pp-dim'>" + (cond.fatPct > 40 ? "He needs a quiet week more than a hard one." : "Fresh enough for a full week's work.") + "</p>" +
         "<a class='fo-pp-more' href='#/training'>Set this week's work &rsaquo;</a></div>" +
         "</div>";
     } else if (TAB === "story") {
@@ -1333,7 +1332,9 @@
     }
     var sig = location.hash;
     Promise.all(got.ms.map(function (m) { return ppCard(got.rid, m.id); })).then(function (cards) {
-      if (location.hash !== sig || !onPage() || TAB !== "matches") return;
+      // the room this log belongs to moved; the cards resolve long after the
+      // page is drawn, and this is what decides whether they are still wanted
+      if (location.hash !== sig || !onPage() || TAB !== "overview") return;
       var slot = document.querySelector("#page .fo-pp-slot[data-slot='recent']"); if (!slot) return;
       var rows = got.ms.map(function (m, i) {
         var mineHome = !!got.names[m.home];
