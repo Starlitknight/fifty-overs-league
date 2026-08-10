@@ -641,6 +641,23 @@
   }
 
   var MR_ASKED = {};
+  // ONE WAITING ROOM, ONE SET OF CLOTHES. Six of these little cards - the two
+  // "sending for the book" waits, the four "it is not here" notes - each
+  // opened with the Journal masthead the report itself retired. On a served
+  // match the wait paints first and the finished page replaces it, so the
+  // reader watched a deleted design flash past on the way to the live one.
+  // They share this now, in the grammar the rest of the room speaks.
+  function foMrWaitCard(head, dek, backHref, backLabel) {
+    return "<div class='fo-mr'><div class='fo-mr-in fo-mr-in--body'>" +
+      "<div class='fo-ms-hero'><div class='fo-ms-mid'>" +
+      "<div class='mc'>" + E(head) + "</div>" +
+      (dek ? "<div class='vd'>" + E(dek) + "</div>" : "") +
+      "</div></div>" +
+      (backHref ? "<div class='fo-mr-foot'><a class='fo-mr-back' href='" + backHref + "'>&#8592; " +
+        E(backLabel || "Back") + "</a></div>" : "") +
+      "</div></div>";
+  }
+
   function foMrRenderServed(nat, id, page) {
     var hit = foMrServedRow(nat, id);
     if (!hit) {
@@ -652,9 +669,8 @@
       var LG = window.__foWorldLg;
       if (LG && LG.want && !MR_ASKED[nat]) {
         MR_ASKED[nat] = 1;
-        page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
-          "<h1 class='fo-mr-head'>Sending for the book&hellip;</h1>" +
-          "<p class='fo-mr-dek'>Reaching the World Service for this round's record.</p></div></div>";
+        page.innerHTML = foMrWaitCard("Sending for the book",
+          "Reaching the World Service for this round's record.");
         var again = function () {
           if ((location.hash || "").split("?")[0] !== "#/report") return;
           page.__foMrSig = null;
@@ -664,10 +680,9 @@
         setTimeout(again, 5000);        // want() stays silent inside its courtesy window
         return;
       }
-      page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
-        "<h1 class='fo-mr-head'>That match is not in the record yet</h1>" +
-        "<p class='fo-mr-dek'>The World Service has not published this round. Try again once it has settled.</p>" +
-        "<div class='fo-mr-foot'><a class='fo-mr-back' href='#/league?t=results'>&#8592; Results</a></div></div></div>";
+      page.innerHTML = foMrWaitCard("That match is not in the record yet",
+        "The World Service has not published this round. Try again once it has settled.",
+        "#/league?t=results", "Results");
       return;
     }
     MR_ASKED[nat] = 0;                  // the book arrived; a later gap may ask again
@@ -718,33 +733,46 @@
     var say = function (n) { return n; };
     if (nm) { /* the snapshot already speaks current names; keep as published */ }
     var hN = say(r.home), aN = say(r.away);
-    var art = ART + "home/hgm-dressing-room.webp";
+    // THE WAITING ROOM WEARS THE SAME CLOTHES AS THE ROOM. This scoreline goes
+    // up the instant the reader arrives and the finished report replaces it
+    // when the World Service answers, so every reload of a served match paints
+    // twice - and the first paint was still the RETIRED Journal shell:
+    // masthead, dressing-room painting, its own scoreline, its own footer. A
+    // design the game deleted flashed past on the way to the one that replaced
+    // it. The waiting state is the finished page's own skeleton now - crumb,
+    // navy hero, tab bar - built from the scoreline the snapshot already
+    // carries, so the upgrade fills in the body and nothing above it moves.
+    var side = function (nmS, sc, right) {
+      var crest = "<span class='cr'>" + foMrSumCrest(nmS) + "</span>";
+      return "<div class='fo-ms-side" + (right ? " right" : "") + "'>" +
+        (right ? "" : crest) +
+        "<div><div class='tn'>" + E(nmS) + "</div>" +
+        "<div class='sc'>" + (sc ? (sc.r | 0) + (sc.w >= 10 ? "" : "/" + (sc.w | 0)) : "&mdash;") + "</div>" +
+        "<div class='ov'>" + (sc && sc.w >= 10 ? "ALL OUT &middot; " : "") +
+        (sc && sc.ov ? E(sc.ov) + " OVERS" : "") + "</div></div>" +
+        (right ? crest : "") + "</div>";
+    };
+    var TABS0 = [["sum", "Summary"], ["card", "Scorecard"], ["comm", "Ball by Ball"],
+                 ["chart", "Charts"], ["fantasy", "Match Ratings"]];
+    var tabNow = (/[?&]t=(\w+)/.exec(location.hash || "") || [])[1] || "sum";
+    var baseW = "#/report?n=" + encodeURIComponent(nat) + "&w=" + encodeURIComponent(id);
     page.innerHTML =
-      "<div class='fo-mr'>" +
-      "<header class='fo-mr-hero'>" +
-      "<figure class='fo-mr-plate'><img src='" + art + "' alt='' onerror=\"this.parentNode.style.display='none'\"></figure>" +
-      "<div class='fo-mr-in fo-mr-in--hero'>" +
-      "<div class='fo-mr-mast'>The Fifty Overs Journal <em>&middot; Match Report</em></div>" +
-      "<div class='fo-mr-folio'>Season " + (window.foSeasonN ? foSeasonN(hit.season | 0) : (hit.season | 0)) + " &middot; Round " + (r.round | 0) + " &middot; League</div>" +
-      "<h1 class='fo-mr-head'>" + E(String(r.text || (hN + " v " + aN))) + "</h1>" +
-      "<p class='fo-mr-dek'>" + E(hN) + " against " + E(aN) + " &middot; round " + (r.round | 0) + " of the season.</p>" +
-      "<div class='fo-mr-score'>" +
-      foMrServedSide(hN, r.hs, r.winner === r.home) +
-      "<span class='fo-mr-v'>v</span>" +
-      foMrServedSide(aN, r.as, r.winner === r.away) +
-      "</div>" +
-      "</div></header>" +
-      "<div class='fo-mr-in fo-mr-in--body'>" +
-      "<div class='fo-mr-body'><article class='fo-mr-report'>" +
-      "<p class='lead'>" + E(hN) + " " + (r.hs ? (r.hs.r | 0) + (r.hs.w >= 10 ? " all out" : "/" + (r.hs.w | 0)) + (r.hs.ov ? " from " + E(r.hs.ov) + " overs" : "") : "did not bat") + ". " +
-      E(aN) + " " + (r.as ? (r.as.r | 0) + (r.as.w >= 10 ? " all out" : "/" + (r.as.w | 0)) + (r.as.ov ? " from " + E(r.as.ov) + " overs" : "") : "did not bat") + ".</p>" +
-      "<div class='fo-mr-by'>Scoreline from the World Service &middot; round " + (r.round | 0) + "</div>" +
-      "</article></div>" +
-      "<div class='fo-mr-foot'>" +
-      "<a class='fo-mr-back' href='#/league?t=results'>&#8592; Results</a>" +
-      "<a class='fo-mr-back' href='#/league'>The league</a>" +
-      "<a class='fo-mr-back' href='#/club'>Club</a>" +
-      "</div></div></div>";
+      "<div class='fo-mr'><div class='fo-mr-in fo-mr-in--body'>" +
+      "<div class='fo-ms-crumb'>&#8249;&#8249; &nbsp;" +
+      (r.round ? "Round " + (r.round | 0) + " &nbsp;&middot;&nbsp; " : "") +
+      "Season " + (window.foSeasonN ? foSeasonN(hit.season | 0) : (hit.season | 0)) + "</div>" +
+      "<div class='fo-ms-hero'><div class='fo-ms-hg'>" +
+      side(hN, r.hs, false) +
+      "<div class='fo-ms-mid'><div class='mc'>Match Complete</div>" +
+      "<div class='vd'>" + E(String(r.text || (hN + " v " + aN))) + "</div></div>" +
+      side(aN, r.as, true) +
+      "</div></div>" +
+      "<nav class='fo-mr-tabs' aria-label='Match views'>" + TABS0.map(function (t) {
+        return "<a class='fo-mr-tab" + (t[0] === tabNow ? " on" : "") + "' href='" + baseW + "&t=" + t[0] + "'>" +
+          t[1] + "</a>";
+      }).join("") + "</nav>" +
+      "<div class='fo-ms-tabbody'><div class='fo-ms-dim'>Sending for the book&hellip;</div></div>" +
+      "</div></div>";
     try {
       var tb = document.getElementById("topbar"), mr = page.querySelector(".fo-mr");
       if (tb && mr) mr.style.paddingTop = (tb.offsetHeight || 0) + "px";
@@ -1467,16 +1495,13 @@
         page.__foMrSig = sigF;
         document.body.classList.add("fo-mr-on");
         var ownF = location.hash;
-        page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
-          "<h1 class='fo-mr-head'>Sending for the book&hellip;</h1>" +
-          "<p class='fo-mr-dek'>Reaching the umpire for this friendly's record.</p></div></div>";
+        page.innerHTML = foMrWaitCard("Sending for the book",
+          "Reaching the umpire for this friendly's record.");
         foMrFriendlyFetch(mfr[1]).then(function (rec) {
           if (location.hash !== ownF) return;          // the reader moved on
           if (!rec) {
-            page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
-              "<h1 class='fo-mr-head'>That friendly is not in the book</h1>" +
-              "<p class='fo-mr-dek'>It may not have been played yet.</p>" +
-              "<div class='fo-mr-foot'><a class='fo-mr-back' href='#/home'>&#8592; The club</a></div></div></div>";
+            page.innerHTML = foMrWaitCard("That friendly is not in the book",
+              "It may not have been played yet.", "#/home", "The club");
             return;
           }
           var baseF = "#/report?fr=" + encodeURIComponent(mfr[1]);
@@ -1490,10 +1515,9 @@
           // book" with nothing anywhere to say why
           try { console.warn("friendly report failed", eF); } catch (e2) {}
           if (location.hash !== ownF) return;
-          page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
-            "<h1 class='fo-mr-head'>The book would not open</h1>" +
-            "<p class='fo-mr-dek'>" + E(String((eF && eF.message) || eF).slice(0, 140)) + "</p>" +
-            "<div class='fo-mr-foot'><a class='fo-mr-back' href='#/feed?fr=" + encodeURIComponent(mfr[1]) + "'>&#8592; The match</a></div></div></div>";
+          page.innerHTML = foMrWaitCard("The book would not open",
+            String((eF && eF.message) || eF).slice(0, 140),
+            "#/feed?fr=" + encodeURIComponent(mfr[1]), "The match");
         });
         return;
       }
@@ -1526,10 +1550,8 @@
       document.body.classList.add("fo-mr-on");
 
       if (!rec) {
-        page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><div class='fo-mr-mast'>The Fifty Overs Journal</div>" +
-          "<h1 class='fo-mr-head'>Nothing to report</h1>" +
-          "<p class='fo-mr-dek'>No match has been played yet.</p>" +
-          "<div class='fo-mr-foot'><a class='fo-mr-back' href='#/club'>&#8592; Club</a></div></div></div>";
+        page.innerHTML = foMrWaitCard("Nothing to report",
+          "No match has been played yet.", "#/club", "Club");
         return;
       }
       foMrPaint(rec, page, {
@@ -1564,21 +1586,14 @@
       // another. So the art is now a plate: its own whole 16:9 frame, at full
       // brightness, nothing over it and nothing cropped off it. Every word of
       // the page sits below it, on the page's own colour, where words belong.
-      ".fo-mr-hero{position:relative;background:#0C1B2E}",
-      ".fo-mr-plate{margin:0;line-height:0;background:#0b1424}",
       // A BAND, NOT A WALL. Sixteen by nine meant 720px of painting on a
       // desk - a whole screen of it before a word of the match. The picture
       // is a header; it keeps its full width and its own crop, and gives the
       // page back the room. Phones stay closer to square, where a letterbox
       // this wide would be a stripe.
-      ".fo-mr-plate img{display:block;width:100%;aspect-ratio:32/9;max-height:300px;object-fit:cover;object-position:center 42%}",
-      "@media(max-width:760px){.fo-mr-plate img{aspect-ratio:2/1;max-height:210px}}",
       ".fo-mr-in{position:relative;z-index:1;max-width:1180px;margin:0 auto;padding:78px clamp(16px,4vw,44px) 60px}",
       ".fo-mr-in--hero{width:100%;padding-top:20px;padding-bottom:18px}",
       ".fo-mr-in--body{padding-top:0}",
-      ".fo-mr-mast{font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.4em;font-size:clamp(9px,1vw,11.5px);font-weight:600;color:var(--gold)}",
-      ".fo-mr-mast em{font-style:normal;color:#9FB0C6;letter-spacing:.28em}",
-      ".fo-mr-folio{font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.22em;font-size:10px;color:#7d8fad;margin-top:7px;padding-bottom:9px;border-bottom:1px solid rgba(230,177,94,.28)}",
       ".fo-mr-head{font-family:Manrope,sans-serif;font-weight:700;text-transform:uppercase;line-height:.86;letter-spacing:-.005em;font-size:clamp(30px,4.6vw,62px);margin:14px 0 0;color:var(--paper);text-wrap:balance}",
       ".fo-mr-dek{font-family:Fraunces,Georgia,'Times New Roman',serif;font-style:normal;font-size:clamp(14px,1.3vw,17px);line-height:1.4;color:#e6dcc6;margin:10px 0 0;max-width:52ch}",
       // scoreline
