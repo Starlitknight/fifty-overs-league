@@ -105,3 +105,21 @@ test('a played match sends the reader to the report, not the teamsheet', async (
     'the wire names the report by nation and match id, as the fixtures list does');
   assert.ok(!/^#\/match\b/.test(items[0].go), 'and never the live matchday route');
 });
+
+// 077 · AND A PLAYED FRIENDLY OPENS ITS OWN BOOK. It pointed at '#/matches',
+// the list of everything, for a reader who already knows which match he means.
+test('a played friendly sends the reader to its own report', async () => {
+  const at = T0 + 5 * DAY;
+  const ins = await pool.query(
+    `INSERT INTO friendlies(challenger, c_country, c_slot, c_name, o_country, o_slot, o_name,
+                            status, play_at_ms, result)
+     VALUES ($1, 'eng', 3, 'Test CC', 'eng', 7, 'Barbados', 'played', $2,
+             '{"text":"Barbados win by 179 runs"}'::jsonb) RETURNING id`, [U1, at]);
+  const fid = String(ins.rows[0].id);
+  // the wire waits for the broadcast window to close, as it does for a league
+  // match (069); four hours past first ball is well clear of it
+  const r = await as(U1, `SELECT public.world_my_notifications(40) AS r`, [], at + 4 * 3600000);
+  const items = (r.rows[0].r.news || []).filter(x => x.kind === 'friendly-played' && (x.go || '').endsWith('fr=' + fid));
+  assert.equal(items.length, 1, 'the played friendly is on the wire');
+  assert.equal(items[0].go, '#/report?fr=' + fid, 'and it names its own book');
+});
