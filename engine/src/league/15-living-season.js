@@ -80,73 +80,14 @@
   // rebuilds itself after render, so a one-shot append gets relocated or
   // dropped — the page observer re-ensures the panel instead.
   // ---------------------------------------------------------------------------
-  function careerHTML(nm) {
-    // THE UMPIRE'S BOOK OUTRANKS THE LOCAL RECORD. A claimed club's rounds
-    // are played on the server and never land in App.results - but the
-    // adopted squad carries each man's served career, refreshed after every
-    // round. When the world has written a book for this man, read his.
-    try {
-      var sp = null, t9 = userTeam();
-      ((t9 && t9.players) || []).concat((t9 && t9.youth) || []).forEach(function (p9) {
-        if (p9 && p9.name === nm && p9.career && p9.career.m) sp = p9;
-      });
-      if (sp) {
-        var sc = sp.career;
-        var kvS = function (k, v) { return "<div class='fo-ls-ck'><span>" + k + "</span><b>" + v + "</b></div>"; };
-        var srS = sc.balls ? (100 * (sc.runs || 0) / sc.balls).toFixed(1) : "&ndash;";
-        var ecS = sc.ovb ? ((sc.conc || 0) / Math.max(1, sc.ovb / 6)).toFixed(2) : null;
-        return "<div class='panel fo-ls-career'><h4>Career record</h4><div class='pad'>" +
-          "<div class='fo-ls-crow'>" +
-          kvS("Matches", sc.m) + kvS("Runs", sc.runs || 0) +
-          kvS("Strike rate", srS) + kvS("Best", sc.hs || 0) +
-          (sc.ovb ? kvS("Wickets", sc.wkts || 0) +
-            kvS("Best bowling", sc.bb ? sc.bb.w + "/" + sc.bb.r : "&ndash;") +
-            kvS("Economy", ecS) + kvS("Overs", Math.floor(sc.ovb / 6)) : "") +
-          "</div>" +
-          (sp.intl && sp.intl.m ? "<div class='fo-ls-mile'><span class='fo-ls-mh'>For his country</span>" +
-            "<div class='fo-ls-line'><b>" + sp.intl.m + " cap" + (sp.intl.m === 1 ? "" : "s") + "</b> &mdash; " +
-            (sp.intl.runs || 0) + " runs, best " + (sp.intl.hs || 0) +
-            ((sp.intl.wkts | 0) ? ", " + sp.intl.wkts + " wickets" : "") + "</div></div>" : "") +
-          "</div></div>";
-      }
-    } catch (eSv) {}
-    var bk = book(), c = bk.car[nm];
-    if (!c || !c.m) return "";
-    var evs = bk.events.filter(function (x) { return x.n === nm; }).slice(-8).reverse();
-    var kv = function (k, v) { return "<div class='fo-ls-ck'><span>" + k + "</span><b>" + v + "</b></div>"; };
-    return "<div class='panel fo-ls-career'><h4>Career record</h4><div class='pad'>" +
-      "<div class='fo-ls-crow'>" +
-      kv("Matches", c.m) + kv("Runs", c.runs) +
-      kv("Average", c.outs ? (c.runs / c.outs).toFixed(1) : "&ndash;") +
-      kv("Strike rate", c.bf ? (100 * c.runs / c.bf).toFixed(1) : "&ndash;") +
-      kv("Best", c.hs + (c.hsb ? " (" + c.hsb + ")" : "")) +
-      kv("100s / 50s", c.hundred + " / " + c.fifty) +
-      (c.cb ? kv("Wickets", c.wk) + kv("Best bowling", c.bw + "/" + (c.br === 1e9 ? 0 : c.br)) + kv("Economy", (c.cr / Math.max(1, c.cb / 6)).toFixed(2)) : "") +
-      "</div>" +
-      (evs.length ? "<div class='fo-ls-mile'><span class='fo-ls-mh'>Milestones</span>" + evs.map(function (x) {
-        return "<div class='fo-ls-line'><b>S" + x.s + (x.rd != null ? " R" + (x.rd + 1) : "") + "</b> &mdash; " + E(x.txt) + "</div>";
-      }).join("") + "</div>" : "") +
-      "</div></div>";
-  }
-  function ensureCareer() {
-    if ((location.hash || "").split("?")[0] !== "#/player") return;
-    var page = document.getElementById("page"); if (!page) return;
-    if (page.querySelector(".fo-ls-career")) return;
-    var mH = /[?&]n=([^&]+)/.exec(location.hash || ""); if (!mH) return;
-    var nm; try { nm = decodeURIComponent(mH[1]); } catch (e) { return; }
-    if (!ready()) return;
-    var html = careerHTML(nm); if (!html) return;
-    foLsCss();
-    var host = document.createElement("div"); host.innerHTML = html;
-    var col = page.querySelector("#fo-pstage .fo-ps-r") || page;
-    col.appendChild(host.firstChild);
-  }
-  try {
-    new MutationObserver(function () { try { ensureCareer(); } catch (e) {} })
-      .observe(document.getElementById("page") || document.body, { childList: true, subtree: true });
-  } catch (eOb) {}
-  window.addEventListener("hashchange", function () { setTimeout(function () { try { ensureCareer(); } catch (e) {} }, 250); });
-
+  // THE SECOND CAREER RECORD RETIRES. This module used to append its own
+  // "Career record" panel to the player page, re-ensuring it through a page
+  // observer because the page rebuilds itself after every render. The player
+  // page has carried a Career record card of its own for a long while, so the
+  // reader met the same figures twice - once in the room's own hand, and again
+  // in a navy panel pinned under every sub-tab. The room's own card is the one
+  // that belongs to it; this one goes, and the observer that kept putting it
+  // back goes with it.
   // ---------------------------------------------------------------------------
   // Skin
   // ---------------------------------------------------------------------------
@@ -261,14 +202,6 @@
       "html body .fo-ls-btn.ghost:hover{background:rgba(235,194,113,.1) !important}",
       ".fo-ls-pressbtns{display:flex;gap:8px;flex-wrap:wrap}",
       // career panel on player pages (the dossier below the hero is dark)
-      ".fo-ls-career.fo-ls-career{background:rgba(14,26,48,.62);border:1px solid rgba(126,158,208,.2);border-radius:14px;margin:14px 0;overflow:hidden}",
-      ".fo-ls-career h4{margin:0;padding:12px 16px 0;font-family:Manrope,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.18em;color:#E8B96A;background:transparent;border:0}",
-      ".fo-ls-career .pad{padding:10px 16px 14px;color:#cfdaec}",
-      ".fo-ls-crow{display:grid;grid-template-columns:repeat(auto-fill,minmax(108px,1fr));gap:10px;margin-bottom:4px}",
-      ".fo-ls-ck span{display:block;font-family:Manrope,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.13em;color:#7d8fad}",
-      ".fo-ls-ck b{font-size:15px;color:#f2f6ff;font-variant-numeric:tabular-nums}",
-      ".fo-ls-mile{margin-top:10px;border-top:1px solid rgba(126,158,208,.18);padding-top:9px}",
-      ".fo-ls-mh{display:block;font-family:Manrope,sans-serif;font-size:10px;text-transform:uppercase;letter-spacing:.14em;color:#7d8fad;margin-bottom:6px}",
       // awards night: floodlights over the arches, gold type, no chrome
       "html body.fo-cer-on{background:#070d18 !important}",
       "html body.fo-cer-on .wrap{max-width:none !important;width:100% !important;padding:0 !important;margin:0 !important;background:transparent !important;box-shadow:none !important}",

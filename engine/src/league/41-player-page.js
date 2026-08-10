@@ -173,7 +173,13 @@
       var anc = Math.abs(Math.cos(a)) < 0.3 ? "middle" : (Math.cos(a) > 0 ? "start" : "end");
       return "<text x='" + q[0] + "' y='" + (+q[1] + 3).toFixed(1) + "' text-anchor='" + anc + "' class='fo-pp-rlab'>" + E(v[0].toUpperCase()) + "</text>";
     }).join("");
-    return "<svg class='fo-pp-radar' viewBox='-34 -10 224 172' role='img' aria-label='Skill shape'>" + web + spokes +
+    // THE BOX HOLDS ITS OWN LABELS. The viewBox spanned x -34..190 while the
+    // words reach -52..224 - measured, not guessed - so TECHNIQUE ran 34 units
+    // past the right edge and, with overflow visible, printed straight over the
+    // bar list in the next column. The box is cut to the words now, with a
+    // little air, and the column widens by the same ratio so the pentagon keeps
+    // the size it had.
+    return "<svg class='fo-pp-radar' viewBox='-56 -12 284 176' role='img' aria-label='Skill shape'>" + web + spokes +
       "<polygon points='" + shape + "' fill='rgba(201,162,75,.28)' stroke='#8F6A1C' stroke-width='1.6'></polygon>" +
       dots + labs + "</svg>";
   }
@@ -1490,8 +1496,8 @@
     "html body #page .fo-pp-filt a{font:700 11px/1 Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.5);border:1px solid rgba(20,28,40,.14);border-radius:999px;padding:6px 11px;cursor:pointer;text-decoration:none}",
     "html body #page .fo-pp-filt a.on{background:#0C1B2E;border-color:#0C1B2E;color:#FFFEFC}",
     // shape + bars
-    "html body #page .fo-pp-shape{display:grid;grid-template-columns:198px minmax(0,1fr);gap:16px;align-items:center}",
-    "html body #page .fo-pp-radar{width:100%;height:auto;overflow:visible}",
+    "html body #page .fo-pp-shape{display:grid;grid-template-columns:250px minmax(0,1fr);gap:18px;align-items:center}",
+    "html body #page .fo-pp-radar{width:100%;height:auto;overflow:hidden}",
     "html body #page .fo-pp-radar .fo-pp-rlab{font:700 11px Manrope,sans-serif;letter-spacing:.1em;fill:rgba(20,28,40,.45)}",
     "html body #page .fo-pp-bars{display:flex;flex-direction:column;gap:7px}",
     "html body #page .fo-pp-bar{display:grid;grid-template-columns:74px minmax(0,1fr) 26px;align-items:center;gap:9px}",
@@ -1617,7 +1623,7 @@
     "html body #page .fo-pp-strip>div:nth-child(2n){border-right:0}",
     "html body #page .fo-pp-strip>div:nth-child(-n+2){border-bottom:1px solid rgba(20,28,40,.08)}",
     "html body #page .fo-pp-shape{grid-template-columns:minmax(0,1fr)}",
-    "html body #page .fo-pp-radar{max-width:210px;margin:0 auto}",
+    "html body #page .fo-pp-radar{max-width:266px;margin:0 auto}",
     "html body #page .fo-pp-mini,html body #page .fo-pp-mini.wide{grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 6px}",
     "html body #page .fo-pp-strip.three{grid-template-columns:repeat(3,minmax(0,1fr))}",
     "html body #page .fo-pp-strip.three>div{border-bottom:0}",
