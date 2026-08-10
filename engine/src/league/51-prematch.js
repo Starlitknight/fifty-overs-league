@@ -410,13 +410,13 @@
       var PITCH_W = { balanced: "Balanced", flat: "Flat", green: "Green", dry: "Crumbling",
         slow: "Slow", cracked: "Sticky", twoPaced: "Two-paced" };
       var PITCH_N = {
-        balanced: "A fair contest; nobody gets favours.",
-        green: "Seam and swing; the new-ball spell is brutal.",
-        dry: "Turns square as it wears on; spinners own the middle.",
-        flat: "A batter's road: boundaries flow, totals balloon.",
-        slow: "Low and grippy; sixes are dear, rotation pays.",
-        cracked: "Unpredictable bounce, wickets for everyone.",
-        twoPaced: "Some balls hurry, some hold; timing is never safe."
+        balanced: "No advantage or disadvantage to batters or bowlers.",
+        green: "Favours seam bowlers, particularly with the new ball. Spinners at a disadvantage.",
+        dry: "Favours spin bowlers, more as the match wears on. Seamers at a disadvantage.",
+        flat: "Favours batters.",
+        slow: "Slightly favours spin bowlers. Batters find it harder than normal to score quickly.",
+        cracked: "Heavily favours all bowlers.",
+        twoPaced: "Favours all bowlers. Batters find timing difficult."
       };
       // What each sky actually does in the engine (00-core ballDist weather
       // block): stated as effects, not scenery.
@@ -727,13 +727,13 @@
       var PITCH_W = { balanced: "Balanced", flat: "Flat", green: "Green", dry: "Crumbling",
         slow: "Slow", cracked: "Sticky", twoPaced: "Two-paced" };
       var PITCH_N = {
-        balanced: "A fair contest; nobody gets favours.",
-        green: "Seam and swing; the new-ball spell is brutal.",
-        dry: "Turns square as it wears on; spinners own the middle.",
-        flat: "A batter's road: boundaries flow, totals balloon.",
-        slow: "Low and grippy; sixes are dear, rotation pays.",
-        cracked: "Unpredictable bounce, wickets for everyone.",
-        twoPaced: "Some balls hurry, some hold; timing is never safe."
+        balanced: "No advantage or disadvantage to batters or bowlers.",
+        green: "Favours seam bowlers, particularly with the new ball. Spinners at a disadvantage.",
+        dry: "Favours spin bowlers, more as the match wears on. Seamers at a disadvantage.",
+        flat: "Favours batters.",
+        slow: "Slightly favours spin bowlers. Batters find it harder than normal to score quickly.",
+        cracked: "Heavily favours all bowlers.",
+        twoPaced: "Favours all bowlers. Batters find timing difficult."
       };
       var WEATHER_N = {
         Sunny: "Nothing in it for anyone: true conditions, an honest fight.",

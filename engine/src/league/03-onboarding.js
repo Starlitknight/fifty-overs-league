@@ -883,13 +883,13 @@
 
   // Engine pitch types and what they actually do in the match engine.
   var FO_PITCH_CARDS = [
-    { id: "balanced", nm: "Balanced", d: "Fair contest. No one gets favours." },
-    { id: "green", nm: "Green", d: "Seamers move it, especially with the new ball. Draft pace." },
-    { id: "dry", nm: "Crumbling", d: "Turns square as it wears. Spinners thrive; draft slow bowlers." },
-    { id: "flat", nm: "Flat", d: "A batter's paradise: boundaries flow, wickets are rare." },
-    { id: "slow", nm: "Slow", d: "Low and grippy. Hard to hit boundaries; suits patient sides." },
-    { id: "cracked", nm: "Sticky", d: "Unpredictable bounce. Wickets for everyone." },
-    { id: "twoPaced", nm: "Two-paced", d: "Some balls hurry, some hold. Timing is never safe." }
+    { id: "balanced", nm: "Balanced", d: "No advantage or disadvantage to batters or bowlers." },
+    { id: "green", nm: "Green", d: "Favours seam bowlers, particularly with the new ball. Spinners at a disadvantage." },
+    { id: "dry", nm: "Crumbling", d: "Favours spin bowlers, more as the match wears on. Seamers at a disadvantage." },
+    { id: "flat", nm: "Flat", d: "Favours batters." },
+    { id: "slow", nm: "Slow", d: "Slightly favours spin bowlers. Batters find it harder than normal to score quickly." },
+    { id: "cracked", nm: "Sticky", d: "Heavily favours all bowlers." },
+    { id: "twoPaced", nm: "Two-paced", d: "Favours all bowlers. Batters find timing difficult." }
   ];
   // ---- Screen 1 · Create your club -----------------------------------------
   function foOnbCreate() {
@@ -1830,13 +1830,13 @@
         "On flat days he saves runs; on crumbling ones he wins matches.")
     ].join("");
     var pitches = [
-      ["stone", G.scales, "Balanced", "A fair contest. Nobody gets favours.", "Pick your best XI on merit."],
-      ["grass", G.grass, "Green", "Seam and swing; the new-ball spell is brutal.", "Stack pace, open the batting with technique."],
-      ["clay", G.crack, "Crumbling", "Turns square as it wears on.", "Spinners own the middle overs; chasing is hardest."],
-      ["cream", G.road, "Flat", "A batter&rsquo;s road: boundaries flow, totals balloon.", "Wickets must be bought with attacking bowling."],
-      ["olive", G.wave, "Slow", "Low and grippy; the ball dies in the surface.", "Sixes are dear. Rotate strike and be patient."],
-      ["rust", G.bounce, "Sticky", "Unpredictable bounce, wickets for everyone.", "Batting depth is your insurance."],
-      ["iris", G.twoArrows, "Two-paced", "Some balls hurry, some hold.", "Timing is never safe; big intent costs more here."]
+      ["stone", G.scales, "Balanced", "No advantage or disadvantage to batters or bowlers.", "Pick your best XI."],
+      ["grass", G.grass, "Green", "Favours seam bowlers, particularly with the new ball. Spinners at a disadvantage.", "Pick extra seam bowlers."],
+      ["clay", G.crack, "Crumbling", "Favours spin bowlers, more as the match wears on. Seamers at a disadvantage.", "Pick extra spin bowlers."],
+      ["cream", G.road, "Flat", "Favours batters.", "Pick your strongest batting."],
+      ["olive", G.wave, "Slow", "Slightly favours spin bowlers. Batters find it harder than normal to score quickly.", "Pick spinners and patient batters."],
+      ["rust", G.bounce, "Sticky", "Heavily favours all bowlers.", "Pick batting depth."],
+      ["iris", G.twoArrows, "Two-paced", "Favours all bowlers. Batters find timing difficult.", "Pick batting depth."]
     ].map(function (x) { return card(x[0], x[1], x[2], "", x[3], x[4]); }).join("");
     var weathers = [
       card("sun", G.sun, "Sunny", "", "True skies, fair fight.", "Nothing to adjust: cricket as designed."),

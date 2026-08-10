@@ -2319,8 +2319,9 @@
     // the conditions the umpire actually plays with
     var wx = M.meta.weather || "Sunny", pt = M.pitch || "balanced";
     var wxT = ""; var ptT = "";
-    try { wxT = (typeof wxTip === "function" ? wxTip(wx) : "").split(" - ").pop().split(";")[0]; } catch (e1) {}
-    try { ptT = (typeof pitchTip === "function" ? pitchTip(pt) : "").split(" - ").pop().split(";")[0]; } catch (e2) {}
+    // the cell has room for one plain sentence, so the first one is the cell's
+    try { wxT = (typeof wxTip === "function" ? wxTip(wx) : "").split(" - ").pop().split(";")[0].split(". ")[0]; } catch (e1) {}
+    try { ptT = (typeof pitchTip === "function" ? pitchTip(pt) : "").split(" - ").pop().split(";")[0].split(". ")[0]; } catch (e2) {}
     var cond = function (lab, val) { return "<div class='db-c'><div class='k'>" + lab + "</div><div class='v'>" + val + "</div></div>"; };
     var chase = M.target
       ? "<div class='hd'><span class='k nv'>Fall of wickets</span><span class='k or'>" + need + " needed from " + ballsLeft + "</span></div>"

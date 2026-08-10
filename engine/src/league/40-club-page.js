@@ -284,13 +284,13 @@
     slow: "Slow", cracked: "Sticky", twoPaced: "Two-paced" };
   // the game's own field guide, in the words the conditions primer uses
   var PITCH_NOTE = {
-    balanced: ["A fair contest. Nobody gets favours.", "Pick your best XI on merit."],
-    green: ["Seam and swing; the new-ball spell is brutal.", "Stack pace, open the batting with technique."],
-    dry: ["Turns square as it wears on.", "Spinners own the middle overs; chasing is hardest."],
-    flat: ["A batter's road: boundaries flow, totals balloon.", "Wickets must be bought with attacking bowling."],
-    slow: ["Low and grippy; the ball dies in the surface.", "Sixes are dear. Rotate strike and be patient."],
-    cracked: ["Unpredictable bounce, wickets for everyone.", "Batting depth is your insurance."],
-    twoPaced: ["Some balls hurry, some hold.", "Timing is never safe; big intent costs more here."]
+    balanced: ["No advantage or disadvantage to batters or bowlers.", "Pick your best XI."],
+    green: ["Favours seam bowlers, particularly with the new ball. Spinners at a disadvantage.", "Pick extra seam bowlers."],
+    dry: ["Favours spin bowlers, more as the match wears on. Seamers at a disadvantage.", "Pick extra spin bowlers."],
+    flat: ["Favours batters.", "Pick your strongest batting."],
+    slow: ["Slightly favours spin bowlers. Batters find it harder than normal to score quickly.", "Pick spinners and patient batters."],
+    cracked: ["Heavily favours all bowlers.", "Pick batting depth."],
+    twoPaced: ["Favours all bowlers. Batters find timing difficult.", "Pick batting depth."]
   };
   var PITCH_ORDER = ["balanced", "green", "flat", "dry", "slow", "cracked", "twoPaced"];
   function pitchNm(k) { return PITCH_NM[k] || String(k || ""); }
