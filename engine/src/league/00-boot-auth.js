@@ -1019,13 +1019,14 @@
       // each other. While something is on air the pill takes that corner: the
       // clock is ambient, this is a summons.
       try { var tb9 = document.getElementById("topbar"); if (tb9) tb9.classList.toggle("fo-live-on", !!go); } catch (eTb9) {}
-      // on a wide screen the clock keeps its corner, so the pill has to stop
-      // short of it - measured, because the clock's width is its content
-      try {
-        var wc9 = document.getElementById("fo-wclock");
-        var wide9 = window.innerWidth > 640;
-        ml.style.marginRight = (go && wide9 && wc9 && wc9.offsetWidth) ? (wc9.offsetWidth + 20) + "px" : "";
-      } catch (eMr) {}
+      // THE PILL STOPPED NEEDING A RULER. It once sat in the masthead's normal
+      // flow while the clock was pinned out of it, so it had to be pushed left
+      // by the clock's measured width or the two printed on top of each other.
+      // It lives in #fo-hdr-right now, where a flex gap does that job - and the
+      // stale margin was shoving it a clock's width further left still, into
+      // the middle of the masthead where the merged menu bar rides. That is how
+      // an "on air" summons came to be printed across Log out.
+      try { ml.style.marginRight = ""; } catch (eMr) {}
     } catch (e) {}
   }
   try { setInterval(foMliveTick, 20000); } catch (e) {}
