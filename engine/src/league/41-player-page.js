@@ -287,7 +287,11 @@
   // Talents sits second, not last: it is about the cricketer himself rather
   // than his record, and a sixth tab appended to this bar falls off the right
   // of a phone into a scroll nobody goes looking for.
-  var TABS = [["overview", "Overview"], ["story", "Story"], ["talents", "Talents"], ["career", "Career"], ["country", "Country"], ["matches", "Matches"], ["dev", "Development"]];
+  // THREE ROOMS RETIRE INTO THE FIRST ONE. Career was the record, which the
+  // Overview now prints in full; Matches was the log, which now sits under
+  // his shape where a reader looks for it; Country was a page for one line
+  // about selection, and his international figures are a row of the record.
+  var TABS = [["overview", "Overview"], ["story", "Story"], ["talents", "Talents"], ["dev", "Development"]];
   var TAB = "overview";
   var MINE_LAST = "";
   function qp(k) { var m = new RegExp("[?&]" + k + "=([^&]*)").exec(location.hash || ""); return m ? decodeURIComponent(m[1]) : ""; }
@@ -394,6 +398,8 @@
     // the dark dossier stage is retired; make sure its backdrop goes with it
     try { document.body.classList.remove("fo-pl-on"); var bg = document.getElementById("fo-pl-bg"); if (bg) bg.remove(); } catch (eB) {}
     if (!mine && TAB === "dev") TAB = "overview";
+    // a bookmark from before the rooms merged still opens the page
+    if (TAB === "career" || TAB === "country" || TAB === "matches") TAB = "overview";
 
     var ovr = ovrOf(p), art = artOf(p);
     var no = ("00" + (h32("cardno|" + p.name) % 199 + 1)).slice(-3);
@@ -470,55 +476,7 @@
 
     // ---- the rooms ----------------------------------------------------------
     var room = "";
-    if (TAB === "career") {
-      var idChips = [];
-      idChips.push(["One-club player", "&#127963;"]);
-      if (!p._prov || p._prov.how === "draft") idChips.push(["Draft-day original", "&#128395;"]);
-      else if (p._prov.how === "youth") idChips.push(["Academy graduate", "&#127793;"]);
-      else if (p._prov.how === "market") idChips.push(["Bought in", "&#128176;"]);
-      try { if (App.orders && App.orders.captain === p.name) idChips.push(["Captain", "&#128081;"]); } catch (eCp) {}
-      room =
-        "<div class='fo-pp-col'>" +
-        "<div class='fo-pp-slot' data-slot='record'></div>" +
-        "<div class='fo-pp-slot' data-slot='career'></div>" +
-        "</div>" +
-        // Club history said one club and one season - the club is in the
-        // masthead - and career identity was a row of chips repeating the
-        // provenance line under his name. Honours is the record here.
-        "<div class='fo-pp-rail'>" +
-        "<div class='fo-pp-card'><h3>Honours</h3>" + honoursHtml(p, team) + "</div>" +
-        "</div>";
-    } else if (TAB === "country") {
-      var myCid = "";
-      try {
-        var cl9 = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
-        myCid = (hit.world && hit.world.rid) || (cl9 && cl9.country) || "";
-      } catch (eCi) {}
-      room = countryRoom(myCid, p, function () { if (onPage()) build(); });
-    } else if (TAB === "matches") {
-      var fx = nextFixtureFor(team.name || "");
-      var spot = xiSpot(p, team);
-      setTimeout(function () { try { ppFillLog(p, hit, team); } catch (eL) {} }, 30);
-      room =
-        "<div class='fo-pp-col'>" +
-        "<div class='fo-pp-card pad0'><div class='fo-pp-ph'><h3>Match log</h3>" +
-        "<span class='fo-pp-filt'><a data-f='all' class='on'>All</a><a data-f='lg'>League</a><a data-f='fr'>Friendly</a></span></div>" +
-        "<div class='fo-pp-slot' data-slot='recent'></div></div>" +
-        "</div>" +
-        "<div class='fo-pp-rail'>" +
-        (fx ? "<div class='fo-pp-card dark'><h3>Next assignment</h3>" +
-          "<div class='fo-pp-nx'><b>" + E(team.name || "") + "</b><i>v</i><b>" + E(fx.opp) + "</b></div>" +
-          "<div class='fo-pp-nxm'>Round " + fx.round + (fx.hour ? " &middot; " + E(fx.hour) : "") + " &middot; " + (fx.home ? "home" : "away") + "</div>" +
-          (fx.ground ? "<div class='fo-pp-nxm'>" + E(fx.ground) + "</div>" : "") +
-          (spot ? "<div class='fo-pp-nxbat'>Batting at " + spot.n + "<span>" + E(spot.src) + "</span></div>" : "") +
-          "</div>" : "") +
-        "<div class='fo-pp-card'><h3>Match readiness</h3>" +
-        meter("Form", cap(cond.formWord), cond.formPct) +
-        meter("Fitness", cond.fitPct + "%", cond.fitPct) +
-        meter("Freshness", cap(cond.fatWord), 100 - cond.fatPct) +
-        "</div>" +
-        "</div>";
-    } else if (TAB === "talents") {
+    if (TAB === "talents") {
       // WHAT HE HAS, AND WHAT HE IS ON HIS WAY TO.
       //
       // A talent is rare - about one man in nine is dealt one - and it is also
@@ -680,16 +638,42 @@
             return "<span><i>" + k + "</i><b>" + num(sk[k]) + "</b></span>";
           }).join("") + "</div></details>";
       }
+      // THE WHOLE MAN ON ONE PAGE, in the order a reader asks for him: what he
+      // is, what he has just done, what he has done in all. The decisions and
+      // the fixture ride the rail beside it, so nothing needs another tab.
+      var fxO = nextFixtureFor(team.name || "");
+      var spotO = xiSpot(p, team);
+      if (mine) setTimeout(function () { try { ppFillLog(p, hit, team); } catch (eL) {} }, 30);
       room =
         "<div class='fo-pp-col'>" +
         "<div class='fo-pp-card'><h3>The player</h3>" +
         (mine ? "<div class='fo-pp-shape'>" + radar(facets(p)) + bars(facets(p)) + "</div>" + adv
           : bars(scoutRow(p))) +
         "</div>" +
+        (mine ? "<div class='fo-pp-card pad0'><div class='fo-pp-ph'><h3>Recent matches</h3>" +
+          "<span class='fo-pp-filt'><a data-f='all' class='on'>All</a><a data-f='lg'>League</a>" +
+          "<a data-f='fr'>Friendly</a></span></div>" +
+          "<div class='fo-pp-slot' data-slot='recent'></div></div>" : "") +
         "<div class='fo-pp-card fo-pp-reccard'><h3>Career record</h3>" + ppFullRecord(p) + "</div>" +
-        (mine ? officeHTML(p) : "") +
         "</div>" +
-        "";
+        "<div class='fo-pp-rail'>" +
+        (mine ? ppJumpCard(p, team) : "") +
+        (fxO ? "<div class='fo-pp-card dark'><h3>Next assignment</h3>" +
+          "<div class='fo-pp-nx'><b>" + E(team.name || "") + "</b><i>v</i><b>" + E(fxO.opp) + "</b></div>" +
+          "<div class='fo-pp-nxm'>Round " + fxO.round + (fxO.hour ? " &middot; " + E(fxO.hour) : "") +
+          " &middot; " + (fxO.home ? "home" : "away") + "</div>" +
+          (fxO.ground ? "<div class='fo-pp-nxm'>" + E(fxO.ground) + "</div>" : "") +
+          (spotO ? "<div class='fo-pp-nxbat'>Batting at " + spotO.n + "<span>" + E(spotO.src) + "</span></div>" : "") +
+          "</div>" : "") +
+        "<div class='fo-pp-card'><h3>Match readiness</h3>" +
+        meter("Form", cap(cond.formWord), cond.formPct) +
+        meter("Fitness", cond.fitPct + "%", cond.fitPct) +
+        meter("Freshness", cap(cond.fatWord), 100 - cond.fatPct) +
+        "</div>" +
+        (mine ? ppTrainCard(p) : "") +
+        (mine ? officeHTML(p) : "") +
+        "<div class='fo-pp-card'><h3>Honours</h3>" + honoursHtml(p, team) + "</div>" +
+        "</div>";
       // ROLE IN THE XI IS GONE. It printed the batting order twice - once as a
       // row of eleven numbers, once as a label - for a decision made on the
       // orders page and true only until the next teamsheet. His role is already
@@ -1178,6 +1162,49 @@
         return "<th" + (i === 0 ? " class='cls'" : "") + ">" + h + "</th>";
       }).join("") + "</tr></thead><tbody>" + rows + "</tbody></table></div></div>";
   }
+  // ---- THE RAIL: move between men, and read what the nets are doing --------
+  // A squad is a list a manager walks, and walking it should not mean going
+  // back to the roster every time. The picker names the whole squad, marks
+  // where he is, and jumps straight to the next man's page.
+  function ppJumpCard(p, team) {
+    var men = ((team && team.players) || []).slice()
+      .filter(function (x) { return x && x.name; })
+      .sort(function (a, b) { return (a.name < b.name ? -1 : a.name > b.name ? 1 : 0); });
+    if (men.length < 2) return "";
+    var opts = men.map(function (x) {
+      return "<option value='#/player?n=" + encodeURIComponent(x.name) + "'" +
+        (x.name === p.name ? " selected" : "") + ">" + E(x.name) + "</option>";
+    }).join("");
+    return "<div class='fo-pp-card'><h3>The squad</h3>" +
+      "<select class='fo-pp-jump' aria-label='Go to another player' " +
+      "onchange=\"if(this.value){location.hash=this.value}\">" + opts + "</select>" +
+      "<a class='fo-pp-more' href='#/squad'>The whole squad &rsaquo;</a></div>";
+  }
+  // What the nets are doing with him, read off the standing plan. The Nets
+  // page owns that plan - one room writes it, everywhere else reports it -
+  // so this states his programme and links to the room that can change it.
+  function ppTrainCard(p) {
+    var prog = null, focus = null;
+    try {
+      var plan = (window.__foWorldPlan || {})[p.name];
+      if (plan) { prog = plan.p || plan.program || null; focus = plan.f || plan.focus || null; }
+      if (!prog && p.training) { prog = p.training.program || null; focus = focus || p.training.focus || null; }
+    } catch (eT) {}
+    var progs = {};
+    try { progs = window.FO_TRAIN_PROGS || {}; } catch (eP) {}
+    var nameOf = function (k) {
+      if (!k) return null;
+      var pr = progs[k];
+      return (pr && (pr.__name || pr.name)) || String(k).replace(/([a-z])([A-Z])/g, "$1 $2");
+    };
+    var pn = nameOf(prog);
+    return "<div class='fo-pp-card'><h3>In the nets</h3>" +
+      (pn ? "<div class='fo-pp-trn'><b>" + E(cap(pn)) + "</b>" +
+        (focus ? "<i>focus &middot; " + E(cap(String(focus).replace(/([a-z])([A-Z])/g, "$1 $2"))) + "</i>"
+               : "<i>no focus set</i>") + "</div>"
+          : "<p class='fo-pp-dim'>No programme standing for him.</p>") +
+      "<a class='fo-pp-more' href='#/training'>Set the nets &rsaquo;</a></div>";
+  }
   function ppFullRecord(p) {
     var t = ppBatTable(p) + ppBowlTable(p);
     if (t) return t;
@@ -1288,6 +1315,9 @@
     } catch (e) {}
     return out;
   }
+  // FIVE IS A GLANCE, not an archive: the log rides under his shape on the
+  // Overview now, so it shows the last five and says where the rest live.
+  var PP_LOG_N = 5;
   function ppFillLog(p, hit, team) {
     var got = ppServedLog(p, hit, team);
     if (!got) {
@@ -1296,7 +1326,7 @@
         var rid0 = ppWorldRid(hit), LGx = window.__foWorldLg;
         if (rid0 && LGx && LGx.want && !ppFillLog.__asked) {
           ppFillLog.__asked = 1;
-          LGx.want(rid0, function () { try { if (onPage() && TAB === "matches") ppFillLog(p, hit, team); } catch (eW) {} });
+          LGx.want(rid0, function () { try { if (onPage() && TAB === "overview") ppFillLog(p, hit, team); } catch (eW) {} });
         }
       } catch (e) {}
       return false;
@@ -1356,9 +1386,17 @@
             "<td class='sm'>Friendly</td></tr>";
         }).join("");
       } catch (eFr) {}
-      slot.innerHTML = "<div class='panel' data-fo-servedlog><h4>Recent matches</h4><div class='pad'>" +
-        "<table class='fo-pp-log'><tr><th>Rd</th><th>Fixture</th><th>Result</th><th>His match</th><th></th></tr>" + rows + frRows + "</table>" +
-        "<p class='fo-pp-dim'>From the umpire's book &middot; every line as banked on the day.</p></div></div>";
+      // the league rounds come newest-first and the exhibitions carry their own
+      // dates; five lines is what a reader wants under a man's shape
+      var allRows = (rows + frRows).split("</tr>").filter(function (x) { return x.trim(); })
+        .slice(0, PP_LOG_N).map(function (x) { return x + "</tr>"; }).join("");
+      // the marker stays: harvest() reads it to know the umpire's log is already
+      // standing here and the engine's empty local panel must not join it
+      slot.innerHTML = "<div data-fo-servedlog>" +
+        "<table class='fo-pp-log'><tr><th>Rd</th><th>Fixture</th><th>Result</th><th>His match</th><th></th></tr>" +
+        allRows + "</table>" +
+        "<p class='fo-pp-dim'>From the umpire's book &middot; the last " + PP_LOG_N +
+        ", every line as banked on the day.</p></div>";
       try { filterLog(activeFilter()); } catch (eF2) {}
     });
     return true;
@@ -1457,17 +1495,18 @@
     // glance - it should feel like the back page, not a dashboard.
     "html body #page .fo-pp-rec{margin:14px 0 0}",
     "html body #page .fo-pp-rec:first-child{margin-top:2px}",
-    "html body #page .fo-pp-rec h4{margin:0 0 7px;font:700 10.5px Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#8F6A1C}",
+    "html body #page .fo-pp-rec h4{display:flex;align-items:center;gap:9px;margin:0 0 8px;font:700 10.5px Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#8F6A1C}",
+    "html body #page .fo-pp-rec h4:after{content:'';flex:1;height:1px;background:linear-gradient(90deg,rgba(201,162,75,.5),rgba(201,162,75,0))}",
     // the grid can outgrow a phone; it scrolls in its own lane, never the page
     "html body #page .fo-pp-recscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #e9e2d2;border-radius:11px;background:#FFFEFC}",
     "html body #page table.fo-pp-rect{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}",
     "html body #page table.fo-pp-rect th,html body #page table.fo-pp-rect td{white-space:nowrap;text-align:right;padding:8px 10px}",
-    "html body #page table.fo-pp-rect thead th{font:700 9.5px Manrope,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#8a8272;background:#F7F3E9;border-bottom:1px solid #e4dcc9}",
+    "html body #page table.fo-pp-rect thead th{font:700 9.5px Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#E8B96A;background:linear-gradient(180deg,#14243A,#0C1B2E);border-bottom:2px solid #C9A24B;padding-top:10px;padding-bottom:10px}",
     "html body #page table.fo-pp-rect thead th.cls,html body #page table.fo-pp-rect tbody th{text-align:left}",
     // the stub stays put while the figures scroll under a thumb - a row of
     // numbers with no name on it is a row of numbers about nobody
     "html body #page table.fo-pp-rect thead th.cls,html body #page table.fo-pp-rect tbody th{position:sticky;left:0;z-index:1}",
-    "html body #page table.fo-pp-rect thead th.cls{background:#F7F3E9}",
+    "html body #page table.fo-pp-rect thead th.cls{background:#14243A;color:#FFFEFC}",
     "html body #page table.fo-pp-rect tbody th{background:#FFFEFC;box-shadow:1px 0 0 #f2ece0}",
     "html body #page table.fo-pp-rect tbody tr:hover th{background:#FBF8F0}",
     "html body #page table.fo-pp-rect tbody th{font:700 12px Manrope,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.02em;color:#0C1B2E;padding:9px 10px}",
@@ -1586,6 +1625,11 @@
     "html body #page .fo-pp-talk.won{background:#14243A;color:#E8B96A}",
     "html body #page .fo-pp-body{display:block}",
     "html body #page .fo-pp-rail{margin-top:12px}",
+    "html body #page select.fo-pp-jump{width:100%;min-height:40px;padding:0 12px;border-radius:10px;font:600 13px Manrope,sans-serif;color:#1B2432;background:#FFFEFC;border:1px solid #e0d9c7;cursor:pointer}",
+    "html body #page select.fo-pp-jump:focus-visible{outline:2px solid #C9571F;outline-offset:2px}",
+    "html body #page .fo-pp-trn{display:flex;flex-direction:column;gap:2px;margin:0 0 4px}",
+    "html body #page .fo-pp-trn b{font:700 14px Manrope,sans-serif;color:#0C1B2E}",
+    "html body #page .fo-pp-trn i{font-style:normal;font:600 11.5px Manrope,sans-serif;letter-spacing:.06em;color:#8a8272}",
     "html body #page .fo-pp-card{background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:14px;padding:15px 16px;margin-bottom:12px;box-shadow:0 6px 18px rgba(30,38,52,.05)}",
     "html body #page .fo-pp-card.pad0{padding:0}",
     "html body #page .fo-pp-card h3{display:flex;align-items:baseline;justify-content:space-between;gap:8px;margin:0 0 11px;font-family:Fraunces,Georgia,serif;font-weight:600;font-size:17px;color:#1B2432}",
