@@ -684,6 +684,12 @@
   window.__foWT = { flagOf: flagOf, forgetSquads: forgetSquads,
     get guessedSquad() { return GUESSED; }, serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror, divMembers: divMembers,
     serverSquad: serverSquad, applyLiving: applyLiving,
+    // A CLUB WITH NO MANAGER STILL FIELDS ELEVEN MEN. The watch page has
+    // named them since it was built - the engine's pick is a pure function of
+    // the squad - and the broadcast's Lineups tab was the one room that
+    // shrugged and said the XI would be settled at the toss. One function,
+    // one answer, wherever it is asked.
+    actualXI: actualXI,
     // THE MATCH ON RECORD IS NOT THE MATCH FROM A CLEAN SEED. The umpire plays
     // each round with the men as they were that day - the experience, the
     // form, the tiredness - and with whatever sheets managers filed. The

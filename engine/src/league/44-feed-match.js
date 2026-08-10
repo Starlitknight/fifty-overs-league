@@ -1244,20 +1244,49 @@
   }
 
   // ---- THE LINEUPS: the sheets the managers filed --------------------------
+  // A BOT CLUB FIELDS ELEVEN MEN LIKE ANYBODY ELSE. Only a claimed club files
+  // a sheet, so this panel had nothing to print for the other nine and said
+  // the engine would name the XI at the toss - which is true, and useless to
+  // a reader looking at the side his club is playing. The engine's pick is a
+  // pure function of the squad (keeper, the five best bowlers, the best bats,
+  // in mpos order), the same function the watch page has always shown, so the
+  // eleven can be named here too. Captain and gloves come out the same way
+  // the engine takes them: the coolest head in the XI, the best-batting
+  // keeper in it.
+  function fdEngineXI(slot, nat) {
+    try {
+      var wt = window.__foWT;
+      if (!wt || !wt.actualXI || !wt.serverSquad || slot == null) return null;
+      var men = wt.serverSquad(nat, slot);
+      if (!men || men.length < 11) return null;
+      var xi = wt.actualXI(men, null);
+      if (!xi || xi.length !== 11) return null;
+      var kp = null, capt = null, cv = -1;
+      xi.forEach(function (p) {
+        if (p.keeper && (!kp || (p.bat || 0) > (kp.bat || 0))) kp = p;
+        var c = p.capt || 50; if (c > cv) { cv = c; capt = p.name; }
+      });
+      return { names: xi.map(function (p) { return p.name; }), captain: capt, keeper: kp ? kp.name : null };
+    } catch (e) { return null; }
+  }
   function teamsPanel(m, rid) {
     var ord = T.ord[T.id];
     if (!ord) return "<div class='fd-panel'><div class='fd-ch'>The teamsheets</div><p class='fd-dim'>Fetching the named elevens&hellip;</p></div>";
     var col = function (nm, slot, nat) {
       var o = ord[nm];
       var list = o && (o.batOrder || o.xi);
-      if (!list || !list.length) return "<div class='c'><b>" + tlink(nm, slot, nat || rid) + "</b><u>no sheet filed &middot; the engine names the XI at the toss</u></div>";
-      return "<div class='c'><b>" + tlink(nm, slot, nat || rid) + "</b><u>manager&rsquo;s named order</u>" +
-        list.slice(0, 11).map(function (p9, k) {
-          var n9 = typeof p9 === "string" ? p9 : (p9 && p9.name) || "";
+      var named = !!(list && list.length), eng = named ? null : fdEngineXI(slot, nat || rid);
+      if (!named && !eng) return "<div class='c'><b>" + tlink(nm, slot, nat || rid) + "</b><u>no sheet filed &middot; the engine names the XI at the toss</u></div>";
+      var men = named ? list.slice(0, 11).map(function (p9) { return typeof p9 === "string" ? p9 : (p9 && p9.name) || ""; })
+                      : eng.names;
+      var capt = named ? o.captain : eng.captain, keep = named ? o.keeper : eng.keeper;
+      return "<div class='c'><b>" + tlink(nm, slot, nat || rid) + "</b>" +
+        "<u>" + (named ? "manager&rsquo;s named order" : "no sheet filed &middot; the engine&rsquo;s XI") + "</u>" +
+        men.map(function (n9, k) {
           return "<span><i>" + (k + 1) + "</i>" + plink(n9) + pstar(n9, rid) + "<u class='ssin'>" + sStars(n9, "bat") + "</u>" +
-            (o.captain === n9 ? " <em>C</em>" : "") + (o.keeper === n9 ? " &dagger;" : "") + "</span>";
+            (capt === n9 ? " <em>C</em>" : "") + (keep === n9 ? " &dagger;" : "") + "</span>";
         }).join("") +
-        (o.tossCall ? "<u class='t2'>toss call " + (o.tossCall === "H" ? "heads" : "tails") + (o.tossDecision ? " &middot; would " + E(o.tossDecision) + " first" : "") + "</u>" : "") +
+        (named && o.tossCall ? "<u class='t2'>toss call " + (o.tossCall === "H" ? "heads" : "tails") + (o.tossDecision ? " &middot; would " + E(o.tossDecision) + " first" : "") + "</u>" : "") +
         "</div>";
     };
     return "<div class='fd-panel'><div class='fd-ch'>The teamsheets &middot; public from an hour before the first ball</div>" +
@@ -1518,7 +1547,14 @@
       ".fo-fd .fd-xic .c u.t2{margin-top:8px;color:var(--fomut)}",
       ".fo-fd .fd-xic .c span{display:flex;align-items:baseline;gap:6px;font:400 13px/1.6 Manrope,sans-serif;color:var(--foink)}",
       ".fo-fd .fd-xic .c span i{font-style:normal;font:700 11px/1 Manrope,sans-serif;color:#b3ab99;width:13px;text-align:right}",
-      ".fo-fd .fd-xic .c span em{font-style:normal;font:700 11px Manrope,sans-serif;color:var(--foor)}",
+      // THE CAPTAIN'S MARK, AND ONLY THE CAPTAIN'S. A ten-star rating is ten
+      // <em>s - the earned ones gold, the rest a faint stone - and this rule
+      // was written for the single <em>C</em> beside a name. Being three
+      // classes deep it outranked the strip's own colour, so every unearned
+      // star came out in the house terracotta and a four-star batsman read as
+      // six red ones. The direct-child mark reaches the C and nothing inside
+      // the strip.
+      ".fo-fd .fd-xic .c span > em{font-style:normal;font:700 11px Manrope,sans-serif;color:var(--foor)}",
       // strength stars: the roster's ladder, gold for the bat, teal for the ball
       ".fo-fd .fd-strn{display:inline-flex;line-height:1}",
       ".fo-fd .fd-strn .st{display:inline-flex;text-decoration:none}",
