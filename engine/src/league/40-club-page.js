@@ -287,12 +287,12 @@
   // supports, how big the shift is (weak/moderate/strong), who it costs
   var PITCH_NOTE = {
     balanced: ["No advantage or disadvantage to batters or bowlers.", "Pick your best XI."],
-    green: ["Strong help for seam bowlers, biggest with the new ball. Moderate disadvantage to spin bowlers.", "Pick extra seam bowlers."],
-    dry: ["Strong help for spin bowlers, growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.", "Pick extra spin bowlers."],
+    green: ["Strong help for seam bowlers, biggest with the new ball - fast-medium gains most, then fast; medium least. Moderate disadvantage to spin bowlers.", "Pick extra seam bowlers."],
+    dry: ["Strong help for spin bowlers - finger spin most, wrist spin a little less - growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.", "Pick extra spin bowlers."],
     flat: ["Strong advantage to batters: boundaries flow and wickets are dear. Strong disadvantage to all bowlers.", "Pick your strongest batting."],
-    slow: ["Moderate help for spin bowlers in the middle overs. Strong cut to six-hitting. Weak disadvantage to seam bowlers.", "Pick spinners and patient batters."],
-    cracked: ["Strong help for all bowlers, and more again in the second innings. Strong disadvantage to batters.", "Pick batting depth."],
-    twoPaced: ["Weak wicket help for all bowlers, moderate for spin in the middle overs. Boundaries moderately harder.", "Pick batting depth."]
+    slow: ["Moderate help for spin bowlers and medium-pace cutters in the middle overs. Strong cut to six-hitting. Weak disadvantage to fast and fast-medium bowlers.", "Pick spinners and patient batters."],
+    cracked: ["Strong help for all bowlers - wrist spin a touch more from the bounce - and more again in the second innings. Strong disadvantage to batters.", "Pick batting depth."],
+    twoPaced: ["Weak wicket help for all bowlers, moderate for spin and medium-pace cutters in the middle overs. Boundaries moderately harder.", "Pick batting depth."]
   };
   var PITCH_ORDER = ["balanced", "green", "flat", "dry", "slow", "cracked", "twoPaced"];
   function pitchNm(k) { return PITCH_NM[k] || String(k || ""); }

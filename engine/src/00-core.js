@@ -295,10 +295,24 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   else if(wx==='hot'){W-=0.03;L['4']+=0.03}
   else if(wx==='drizzle'){L['4']-=0.08;L.dot+=0.05}
   else if(wx==='windy'){L['6']-=0.15;L['2']+=0.05}
-  else if(wx==='dew later'&&ctx.chase){if(tc0==='spin'){W-=0.13;L.dot-=0.07;L['4']+=0.035}else{L.dot-=0.02}}
+  else if(wx==='dew later'&&ctx.chase){if(tc0==='spin'){W-=((bowl.bowlType==='fingerSpin'||bowl.bowlType==='offSpin')?0.16:0.10);L.dot-=0.07;L['4']+=0.035}else{L.dot-=0.02}}
   else if(wx==='scorching'){W-=0.05;L['4']+=0.05;L['6']+=0.04}
   else if(wx==='misty'){if(tc0==='pace')W+=0.23*nb;L['4']-=0.055;L.dot+=0.025*nb}
   else if(wx==='chilly'){L['4']-=0.04;L['6']-=0.05;L.dot+=0.03}
+  // SUB-TYPE TILTS. The same surface reads differently by trade: a green top
+  // rewards the seam of fast-medium over raw pace, a crumbler grips hardest
+  // for finger spin, slow and two-paced decks bring cutters into it, cracks
+  // reward wrist-spin bounce, and swing weather belongs to the swing bowlers.
+  // Every description of conditions quotes these terms; keep the two in step.
+  if(typeof __foSubOff==='undefined'||!__foSubOff){const bt=bowl.bowlType||'fastMedium';
+  const fingr=(bt==='fingerSpin'||bt==='offSpin');   // off-spin IS finger spin
+  if(pitch==='green'&&tc==='pace'){if(bt==='fastMedium')W+=0.05;else if(bt==='fast')W+=0.03}
+  else if(pitch==='dry'&&tc==='spin'){W+=(fingr?0.06:0.02)}
+  else if(pitch==='slow'){if(bt==='medium')W+=0.05;else if(bt==='fastMedium')W+=0.02}
+  else if(pitch==='twoPaced'&&(bt==='medium'||bt==='fastMedium'))W+=0.03;
+  else if(pitch==='cracked'&&bt==='wristSpin')W+=0.04;
+  if(wx==='overcast'&&tc0==='pace'){W+=(bt==='fastMedium'?0.05:bt==='medium'?0.03:0.01)}
+  else if((wx==='humid'||wx==='misty')&&tc0==='pace'){W+=(bt==='fastMedium'?0.06:bt==='medium'?0.03:0.01)*nb}}
   if(TB('anchor')&&rrDef<=0){W-=0.085;L.dot+=0.012;L['1']+=0.014}
   if(TB('finisher')&&ph==='death'){L['4']+=0.145;L['6']+=0.185;L.dot-=0.026;W-=0.025}
   if(TB('sixMachine')){L['6']+=0.090+(intent>=1?0.145:0)+(ph==='death'?0.045:0);L.dot-=0.010}
@@ -1501,8 +1515,8 @@ function foMatchHref(o){const i=foMatchIx(o);return i>=0?('#/report?i='+i):''}
 // support named, the size graded weak/moderate/strong from the actual shift,
 // and the disadvantage stated. Nothing here describes an effect the engine
 // does not apply.
-const PITCHTIP={balanced:'No advantage or disadvantage to batters or bowlers.',flat:'Strong advantage to batters: boundaries flow and wickets are dear. Strong disadvantage to all bowlers.',green:'Strong help for seam bowlers, biggest with the new ball. Moderate disadvantage to spin bowlers. Boundaries moderately harder.',dry:'Strong help for spin bowlers, growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.',slow:'Moderate help for spin bowlers in the middle overs. Strong cut to six-hitting; scoring is slower. Weak disadvantage to seam bowlers.',cracked:'Strong help for all bowlers, seam and spin alike, and more again in the second innings. Strong disadvantage to batters.',twoPaced:'Weak wicket help for all bowlers, moderate for spin in the middle overs. Boundaries moderately harder; batters find timing difficult.'};
-const WXTIP={Sunny:'No effect on batters or bowlers.',Overcast:'Moderate help for seam bowlers all innings, a little more with the new ball. Moderate cut to boundaries. No effect on spin bowlers.',Humid:'Strong help for seam bowlers while the ball is new, fading to nothing as it ages. No effect on spin bowlers. Weak extra fatigue, heaviest on quicks.',Hot:'Weak advantage to batters: slightly fewer wickets, slightly more boundaries. Moderate extra fatigue for bowlers, heaviest on quicks.',Scorching:'Moderate advantage to batters: fewer wickets, more boundaries. Strong extra fatigue for bowlers, heaviest on quicks.',Drizzle:'Moderate cut to boundaries; scoring is slower. No effect on wickets, for seam or spin.',Windy:'Strong cut to six-hitting; more runs come from hard-run twos. No effect on wickets.',Chilly:'Weak cut to boundaries; scoring is slower. No effect on wickets, for seam or spin.',Misty:'Strong help for seam bowlers while the ball is new, fading as it ages. Moderate cut to boundaries. No effect on spin bowlers.','Dew later':'In the chase only: moderate disadvantage to spin bowlers and easier scoring. Helps the side batting second.'};
+const PITCHTIP={balanced:'No advantage or disadvantage to batters or bowlers.',flat:'Strong advantage to batters: boundaries flow and wickets are dear. Strong disadvantage to all bowlers.',green:'Strong help for seam bowlers, biggest with the new ball - fast-medium gains most, then fast; medium least. Moderate disadvantage to spin bowlers. Boundaries moderately harder.',dry:'Strong help for spin bowlers - finger spin most, wrist spin a little less - growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.',slow:'Moderate help for spin bowlers and medium-pace cutters in the middle overs. Strong cut to six-hitting; scoring is slower. Weak disadvantage to fast and fast-medium bowlers.',cracked:'Strong help for all bowlers - wrist spin a touch more from the bounce - and more again in the second innings. Strong disadvantage to batters.',twoPaced:'Weak wicket help for all bowlers, moderate for spin and medium-pace cutters in the middle overs. Boundaries moderately harder; batters find timing difficult.'};
+const WXTIP={Sunny:'No effect on batters or bowlers.',Overcast:'Moderate help for seam bowlers all innings - fast-medium swing gains most, express pace least. Moderate cut to boundaries. No effect on spin bowlers.',Humid:'Strong help for seam bowlers while the ball is new - fast-medium swing most - fading to nothing as it ages. No effect on spin bowlers. Weak extra fatigue, heaviest on quicks.',Hot:'Weak advantage to batters: slightly fewer wickets, slightly more boundaries. Moderate extra fatigue for bowlers, heaviest on quicks.',Scorching:'Moderate advantage to batters: fewer wickets, more boundaries. Strong extra fatigue for bowlers, heaviest on quicks.',Drizzle:'Moderate cut to boundaries; scoring is slower. No effect on wickets, for seam or spin.',Windy:'Strong cut to six-hitting; more runs come from hard-run twos. No effect on wickets.',Chilly:'Weak cut to boundaries; scoring is slower. No effect on wickets, for seam or spin.',Misty:'Strong help for seam bowlers while the ball is new - fast-medium swing most - fading as it ages. Moderate cut to boundaries. No effect on spin bowlers.','Dew later':'In the chase only: moderate disadvantage to spin bowlers - finger spin hardest, wrist spin less - and easier scoring. Helps the side batting second.'};
 const wxTip=w=>WXTIP[w]||'Match-day conditions.';const pitchTip=p=>PITCHTIP[p]||'A fair surface.';
 const GPITCH={'Headingley':'green','The Oval':'balanced','Wankhede Stadium':'flat','M. Chinnaswamy Stadium':'twoPaced','Sydney Cricket Ground':'dry','Eden Park':'balanced','SuperSport Park':'green','National Stadium':'slow',"Queen's Park Oval":'dry','Basin Reserve':'cracked'};
 function groundPitch(g){const t=GD.teams.find(x=>x.ground===g);return (t&&t.homePitch)||GPITCH[g]||'balanced'}

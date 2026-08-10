@@ -884,12 +884,12 @@
   // Engine pitch types and what they actually do in the match engine.
   var FO_PITCH_CARDS = [
     { id: "balanced", nm: "Balanced", d: "No advantage or disadvantage to batters or bowlers." },
-    { id: "green", nm: "Green", d: "Strong help for seam bowlers, biggest with the new ball. Moderate disadvantage to spin bowlers." },
-    { id: "dry", nm: "Crumbling", d: "Strong help for spin bowlers, growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs." },
+    { id: "green", nm: "Green", d: "Strong help for seam bowlers, biggest with the new ball - fast-medium gains most, then fast; medium least. Moderate disadvantage to spin bowlers." },
+    { id: "dry", nm: "Crumbling", d: "Strong help for spin bowlers - finger spin most, wrist spin a little less - growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs." },
     { id: "flat", nm: "Flat", d: "Strong advantage to batters: boundaries flow and wickets are dear. Strong disadvantage to all bowlers." },
-    { id: "slow", nm: "Slow", d: "Moderate help for spin bowlers in the middle overs. Strong cut to six-hitting. Weak disadvantage to seam bowlers." },
-    { id: "cracked", nm: "Sticky", d: "Strong help for all bowlers, and more again in the second innings. Strong disadvantage to batters." },
-    { id: "twoPaced", nm: "Two-paced", d: "Weak wicket help for all bowlers, moderate for spin in the middle overs. Boundaries moderately harder." }
+    { id: "slow", nm: "Slow", d: "Moderate help for spin bowlers and medium-pace cutters in the middle overs. Strong cut to six-hitting. Weak disadvantage to fast and fast-medium bowlers." },
+    { id: "cracked", nm: "Sticky", d: "Strong help for all bowlers - wrist spin a touch more from the bounce - and more again in the second innings. Strong disadvantage to batters." },
+    { id: "twoPaced", nm: "Two-paced", d: "Weak wicket help for all bowlers, moderate for spin and medium-pace cutters in the middle overs. Boundaries moderately harder." }
   ];
   // ---- Screen 1 · Create your club -----------------------------------------
   function foOnbCreate() {
@@ -1831,24 +1831,24 @@
     ].join("");
     var pitches = [
       ["stone", G.scales, "Balanced", "No advantage or disadvantage to batters or bowlers.", "Pick your best XI."],
-      ["grass", G.grass, "Green", "Strong help for seam bowlers, biggest with the new ball. Moderate disadvantage to spin bowlers.", "Pick extra seam bowlers."],
-      ["clay", G.crack, "Crumbling", "Strong help for spin bowlers, growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.", "Pick extra spin bowlers."],
+      ["grass", G.grass, "Green", "Strong help for seam bowlers, biggest with the new ball - fast-medium gains most, then fast; medium least. Moderate disadvantage to spin bowlers.", "Pick extra seam bowlers."],
+      ["clay", G.crack, "Crumbling", "Strong help for spin bowlers - finger spin most, wrist spin a little less - growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.", "Pick extra spin bowlers."],
       ["cream", G.road, "Flat", "Strong advantage to batters: boundaries flow and wickets are dear. Strong disadvantage to all bowlers.", "Pick your strongest batting."],
-      ["olive", G.wave, "Slow", "Moderate help for spin bowlers in the middle overs. Strong cut to six-hitting. Weak disadvantage to seam bowlers.", "Pick spinners and patient batters."],
-      ["rust", G.bounce, "Sticky", "Strong help for all bowlers, and more again in the second innings. Strong disadvantage to batters.", "Pick batting depth."],
-      ["iris", G.twoArrows, "Two-paced", "Weak wicket help for all bowlers, moderate for spin in the middle overs. Boundaries moderately harder.", "Pick batting depth."]
+      ["olive", G.wave, "Slow", "Moderate help for spin bowlers and medium-pace cutters in the middle overs. Strong cut to six-hitting. Weak disadvantage to fast and fast-medium bowlers.", "Pick spinners and patient batters."],
+      ["rust", G.bounce, "Sticky", "Strong help for all bowlers - wrist spin a touch more from the bounce - and more again in the second innings. Strong disadvantage to batters.", "Pick batting depth."],
+      ["iris", G.twoArrows, "Two-paced", "Weak wicket help for all bowlers, moderate for spin and medium-pace cutters in the middle overs. Boundaries moderately harder.", "Pick batting depth."]
     ].map(function (x) { return card(x[0], x[1], x[2], "", x[3], x[4]); }).join("");
     var weathers = [
       card("sun", G.sun, "Sunny", "", "No effect on batters or bowlers.", "Nothing to adjust: cricket as designed."),
-      card("greyc", G.cloud, "Overcast", "", "Moderate help for seam bowlers all innings, a little more with the new ball. Moderate cut to boundaries. No effect on spin.", "Pick extra seam bowlers; expect a lower-scoring day."),
-      card("mist", G.mist, "Misty", "", "Strong help for seam bowlers while the ball is new, fading as it ages. Moderate cut to boundaries. No effect on spin.", "Pick seamers who use the new ball."),
-      card("humid", G.drop, "Humid", drain("Drains &middot; bowlers ~20% faster"), "Strong help for seam bowlers while the ball is new, fading to nothing as it ages. No effect on spin. Weak extra fatigue for everyone, heaviest on quick bowlers.", "See off the opening spell; watch bowler workloads."),
+      card("greyc", G.cloud, "Overcast", "", "Moderate help for seam bowlers all innings - fast-medium swing gains most, express pace least. Moderate cut to boundaries. No effect on spin.", "Pick extra seam bowlers; expect a lower-scoring day."),
+      card("mist", G.mist, "Misty", "", "Strong help for seam bowlers while the ball is new - fast-medium swing most - fading as it ages. Moderate cut to boundaries. No effect on spin.", "Pick seamers who use the new ball."),
+      card("humid", G.drop, "Humid", drain("Drains &middot; bowlers ~20% faster"), "Strong help for seam bowlers while the ball is new - fast-medium swing most - fading to nothing as it ages. No effect on spin. Weak extra fatigue for everyone, heaviest on quick bowlers.", "See off the opening spell; watch bowler workloads."),
       card("hotc", G.thermo, "Hot", drain("Drains &middot; bowlers ~35% faster"), "Weak advantage to batters: slightly fewer wickets, slightly more boundaries. Moderate extra fatigue, heaviest on quick bowlers.", "Rotate spells; tired legs carry into the next fixture."),
       card("scorch", G.flame, "Scorching", drain("Drains &middot; bowlers ~60% faster"), "Moderate advantage to batters: fewer wickets, more boundaries. Strong extra fatigue, heaviest on quick bowlers.", "Short spells, deep batting: a sixth bowling option earns his keep."),
       card("rain", G.drizzle, "Drizzle", "", "Moderate cut to boundaries; scoring is slower. No effect on wickets, for seam or spin.", "Boundaries are earned, not given."),
       card("windc", G.wind, "Windy", "", "Strong cut to six-hitting; more runs come from hard-run twos. No effect on wickets.", "Run hard twos instead of swinging harder."),
       card("ice", G.flake, "Chilly", "", "Weak cut to boundaries; scoring is slower. No effect on wickets, for seam or spin.", "A day for percentages, not fireworks."),
-      card("dusk", G.dew, "Dew later", "", "In the chase only: moderate disadvantage to spin bowlers and easier scoring. Helps the side batting second.", "If dew is forecast, bowling first is the percentage call.")
+      card("dusk", G.dew, "Dew later", "", "In the chase only: moderate disadvantage to spin bowlers - finger spin hardest, wrist spin less - and easier scoring. Helps the side batting second.", "If dew is forecast, bowling first is the percentage call.")
     ].join("");
     return { sec: sec, bowlers: bowlers, pitches: pitches, weathers: weathers,
       // Every effect above is read off the engine's own terms - the ballDist

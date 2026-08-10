@@ -411,26 +411,26 @@
         slow: "Slow", cracked: "Sticky", twoPaced: "Two-paced" };
       var PITCH_N = {
         balanced: "No advantage or disadvantage to batters or bowlers.",
-        green: "Strong help for seam bowlers, biggest with the new ball. Moderate disadvantage to spin bowlers. Boundaries moderately harder.",
-        dry: "Strong help for spin bowlers, growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.",
+        green: "Strong help for seam bowlers, biggest with the new ball - fast-medium gains most, then fast; medium least. Moderate disadvantage to spin bowlers. Boundaries moderately harder.",
+        dry: "Strong help for spin bowlers - finger spin most, wrist spin a little less - growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.",
         flat: "Strong advantage to batters: boundaries flow and wickets are dear. Strong disadvantage to all bowlers.",
-        slow: "Moderate help for spin bowlers in the middle overs. Strong cut to six-hitting; scoring is slower. Weak disadvantage to seam bowlers.",
-        cracked: "Strong help for all bowlers, seam and spin alike, and more again in the second innings. Strong disadvantage to batters.",
-        twoPaced: "Weak wicket help for all bowlers, moderate for spin in the middle overs. Boundaries moderately harder; batters find timing difficult."
+        slow: "Moderate help for spin bowlers and medium-pace cutters in the middle overs. Strong cut to six-hitting; scoring is slower. Weak disadvantage to fast and fast-medium bowlers.",
+        cracked: "Strong help for all bowlers - wrist spin a touch more from the bounce - and more again in the second innings. Strong disadvantage to batters.",
+        twoPaced: "Weak wicket help for all bowlers, moderate for spin and medium-pace cutters in the middle overs. Boundaries moderately harder; batters find timing difficult."
       };
       // What each sky actually does in the engine (00-core ballDist weather
       // block): stated as effects, not scenery.
       var WEATHER_N = {
         Sunny: "No effect on batters or bowlers.",
-        Overcast: "Moderate help for seam bowlers all innings, a little more with the new ball. Moderate cut to boundaries. No effect on spin bowlers.",
-        Humid: "Strong help for seam bowlers while the ball is new, fading to nothing as it ages. No effect on spin bowlers. Weak extra fatigue, heaviest on quicks.",
+        Overcast: "Moderate help for seam bowlers all innings - fast-medium swing gains most, express pace least. Moderate cut to boundaries. No effect on spin bowlers.",
+        Humid: "Strong help for seam bowlers while the ball is new - fast-medium swing most - fading to nothing as it ages. No effect on spin bowlers. Weak extra fatigue, heaviest on quicks.",
         Hot: "Weak advantage to batters: slightly fewer wickets, slightly more boundaries. Moderate extra fatigue for bowlers, heaviest on quicks.",
         Scorching: "Moderate advantage to batters: fewer wickets, more boundaries. Strong extra fatigue for bowlers, heaviest on quicks.",
         Drizzle: "Moderate cut to boundaries; scoring is slower. No effect on wickets, for seam or spin.",
         Windy: "Strong cut to six-hitting; more runs come from hard-run twos. No effect on wickets.",
         Chilly: "Weak cut to boundaries; scoring is slower. No effect on wickets, for seam or spin.",
-        Misty: "Strong help for seam bowlers while the ball is new, fading as it ages. Moderate cut to boundaries. No effect on spin bowlers.",
-        "Dew later": "In the chase only: moderate disadvantage to spin bowlers and easier scoring. Helps the side batting second."
+        Misty: "Strong help for seam bowlers while the ball is new - fast-medium swing most - fading as it ages. Moderate cut to boundaries. No effect on spin bowlers.",
+        "Dew later": "In the chase only: moderate disadvantage to spin bowlers - finger spin hardest, wrist spin less - and easier scoring. Helps the side batting second."
       };
       var condHTML = "";
       try {
@@ -728,24 +728,24 @@
         slow: "Slow", cracked: "Sticky", twoPaced: "Two-paced" };
       var PITCH_N = {
         balanced: "No advantage or disadvantage to batters or bowlers.",
-        green: "Strong help for seam bowlers, biggest with the new ball. Moderate disadvantage to spin bowlers. Boundaries moderately harder.",
-        dry: "Strong help for spin bowlers, growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.",
+        green: "Strong help for seam bowlers, biggest with the new ball - fast-medium gains most, then fast; medium least. Moderate disadvantage to spin bowlers. Boundaries moderately harder.",
+        dry: "Strong help for spin bowlers - finger spin most, wrist spin a little less - growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.",
         flat: "Strong advantage to batters: boundaries flow and wickets are dear. Strong disadvantage to all bowlers.",
-        slow: "Moderate help for spin bowlers in the middle overs. Strong cut to six-hitting; scoring is slower. Weak disadvantage to seam bowlers.",
-        cracked: "Strong help for all bowlers, seam and spin alike, and more again in the second innings. Strong disadvantage to batters.",
-        twoPaced: "Weak wicket help for all bowlers, moderate for spin in the middle overs. Boundaries moderately harder; batters find timing difficult."
+        slow: "Moderate help for spin bowlers and medium-pace cutters in the middle overs. Strong cut to six-hitting; scoring is slower. Weak disadvantage to fast and fast-medium bowlers.",
+        cracked: "Strong help for all bowlers - wrist spin a touch more from the bounce - and more again in the second innings. Strong disadvantage to batters.",
+        twoPaced: "Weak wicket help for all bowlers, moderate for spin and medium-pace cutters in the middle overs. Boundaries moderately harder; batters find timing difficult."
       };
       var WEATHER_N = {
         Sunny: "No effect on batters or bowlers.",
-        Overcast: "Moderate help for seam bowlers all innings, a little more with the new ball. Moderate cut to boundaries. No effect on spin bowlers.",
-        Humid: "Strong help for seam bowlers while the ball is new, fading to nothing as it ages. No effect on spin bowlers. Weak extra fatigue, heaviest on quicks.",
+        Overcast: "Moderate help for seam bowlers all innings - fast-medium swing gains most, express pace least. Moderate cut to boundaries. No effect on spin bowlers.",
+        Humid: "Strong help for seam bowlers while the ball is new - fast-medium swing most - fading to nothing as it ages. No effect on spin bowlers. Weak extra fatigue, heaviest on quicks.",
         Hot: "Weak advantage to batters: slightly fewer wickets, slightly more boundaries. Moderate extra fatigue for bowlers, heaviest on quicks.",
         Scorching: "Moderate advantage to batters: fewer wickets, more boundaries. Strong extra fatigue for bowlers, heaviest on quicks.",
         Drizzle: "Moderate cut to boundaries; scoring is slower. No effect on wickets, for seam or spin.",
         Windy: "Strong cut to six-hitting; more runs come from hard-run twos. No effect on wickets.",
         Chilly: "Weak cut to boundaries; scoring is slower. No effect on wickets, for seam or spin.",
-        Misty: "Strong help for seam bowlers while the ball is new, fading as it ages. Moderate cut to boundaries. No effect on spin bowlers.",
-        "Dew later": "In the chase only: moderate disadvantage to spin bowlers and easier scoring. Helps the side batting second."
+        Misty: "Strong help for seam bowlers while the ball is new - fast-medium swing most - fading as it ages. Moderate cut to boundaries. No effect on spin bowlers.",
+        "Dew later": "In the chase only: moderate disadvantage to spin bowlers - finger spin hardest, wrist spin less - and easier scoring. Helps the side batting second."
       };
       var condHTML = "";
       try {
