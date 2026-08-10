@@ -1439,13 +1439,13 @@
       ".fo-ord-lane .lt.lnum{position:relative;display:block;height:10px}" +
       ".fo-ord-lane .lt.lnum em{position:absolute;top:0;transform:translateX(-50%);font-style:normal;font-size:10px;font-weight:700;color:#9FB0C6;letter-spacing:0;text-transform:none}" +
       "html body #page .fo-ord-hero,html body.ftpskin #page .fo-ord-hero{display:flex;align-items:baseline;justify-content:center;gap:14px;flex-wrap:wrap;margin:8px 0 2px;text-align:center;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +
-      "html body #page .fo-ord-hero .h-t{font-family:Inter,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.6px;font-size:27px;color:#14243A !important;line-height:1.08}" +
+      "html body #page .fo-ord-hero .h-t{font-family:Oswald,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.6px;font-size:27px;color:#14243A !important;line-height:1.08}" +
       "html body #page .fo-ord-hero a.h-t{text-decoration:none !important;border-bottom:2px solid rgba(201,85,50,.4)}" +
       "html body #page .fo-ord-hero a.h-t:hover{border-bottom-color:#C9571F;color:#B44A22 !important;text-decoration:none !important}" +
-      "html body #page .fo-ord-hero .h-v{font-family:Inter,sans-serif;font-size:13px;color:#B44A22 !important;font-weight:600;text-transform:uppercase;letter-spacing:2px}" +
-      "html body #page .fo-ord-herosub,html body.ftpskin #page .fo-ord-herosub{text-align:center;font-family:Inter,sans-serif;letter-spacing:2px;text-transform:uppercase;font-size:13px;font-weight:600;color:#33415e !important;margin:0 0 10px;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +
+      "html body #page .fo-ord-hero .h-v{font-family:Oswald,sans-serif;font-size:13px;color:#B44A22 !important;font-weight:600;text-transform:uppercase;letter-spacing:2px}" +
+      "html body #page .fo-ord-herosub,html body.ftpskin #page .fo-ord-herosub{text-align:center;font-family:Oswald,sans-serif;letter-spacing:2px;text-transform:uppercase;font-size:13px;font-weight:600;color:#33415e !important;margin:0 0 10px;background:transparent !important;border:none !important;box-shadow:none !important;padding:0 !important}" +
       "@media(max-width:600px){.fo-ord-hero .h-t{font-size:21px}.fo-ord-hero{gap:9px}}" +
-      "html body #page .fo-ord-lock{margin:10px 0 2px;background:#FBF3E4;border:1px solid #E8B96A;border-left:4px solid #C9571F;border-radius:10px;padding:10px 13px;font:400 12.5px/1.55 Inter,sans-serif;color:#5b5344}" +
+      "html body #page .fo-ord-lock{margin:10px 0 2px;background:#FBF3E4;border:1px solid #E8B96A;border-left:4px solid #C9571F;border-radius:10px;padding:10px 13px;font:400 12.5px/1.55 Oswald,sans-serif;color:#5b5344}" +
       "html body #page .fo-ord-lock b{color:#8E1F13;font-weight:700}" +
       "@media(max-width:480px){.fo-ord-lane .ln{flex-basis:96px;font-size:10px}.fo-ord-lane.lax em{font-size:10px}.fo-ord-lane .lt.lnum em{font-size:10px}}" +
       ".fo-ord-tp{display:inline;background:none;border:none;padding:0;color:#b3bac4;font-size:10px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;white-space:nowrap}" +
@@ -1486,7 +1486,7 @@
       "html body #page button.fo-ob-chip.mb-a{background:#FDF1E4 !important;color:#B0631A !important;border-color:rgba(176,99,26,.4) !important}" +
       "html body #page button.fo-ob-chip.mb-l{background:#FBE9E6 !important;color:#B23230 !important;border-color:rgba(178,50,48,.45) !important}" +
       // how each bowler is set when he has the ball
-      ".fo-og-fh{font-family:Inter,sans-serif;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(28,36,51,.45);margin:12px 0 6px}" +
+      ".fo-og-fh{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.16em;text-transform:uppercase;color:rgba(28,36,51,.45);margin:12px 0 6px}" +
       ".fo-og-fields{display:flex;flex-direction:column;gap:5px}" +
       ".fo-og-frow{display:flex;align-items:center;gap:9px;flex-wrap:wrap}" +
       ".fo-og-frow>b{flex:1 1 90px;min-width:0;font-size:12.5px;color:#14243A;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}" +

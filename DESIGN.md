@@ -52,10 +52,11 @@ Every literal at ≥20 occurrences plus the named offenders; **map** = replace w
 
 ## 2 · Typography — the serif/sans rule
 
-Two faces (Fraunces, Inter — both self-hosted, italic Fraunces real since the last pass). The ambiguity ends with one sentence:
+Three faces (Fraunces, Oswald, Inter — all self-hosted, italic Fraunces real since the last pass). The Phase 4 attempt to fold the display voice into Inter was reverted by owner request — the condensed sports voice is part of the game's identity. The rule:
 
 > **Fraunces** for: page headlines, club and player names *when they are the display element* (heroes, scout folios, Gazette bylines), narrative/flavor prose, pull quotes, the treasurer's asides.
-> **Inter** for: **every data value including money**, labels, buttons, navigation, tabs, table content, chips, and any name *inside a table row*.
+> **Oswald** for: display type and labels — heroes, letter-spaced eyebrows, buttons, navigation, tabs, chips, big scoreboard figures.
+> **Inter** for: body/UI text (inherited from the shell stylesheet — engine code rarely needs to name it).
 
 Named strays to converge in Phase 2 (all currently serif data):
 - market card fact figures (`.fo-mk-row .facts b` — asking/reserve/wages in Fraunces)

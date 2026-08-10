@@ -156,7 +156,7 @@
       // the nets noticeboard
       ".fo-pop-board{background:rgba(240,250,240,.93);border:1px solid rgba(31,158,114,.35);border-radius:16px;padding:14px 17px;margin:0 0 16px;-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);box-shadow:0 14px 34px rgba(20,60,35,.16)}",
       ".fo-pop-hd{display:flex;justify-content:space-between;align-items:baseline;margin:0 0 10px}",
-      ".fo-pop-hd b{font-family:Inter,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#157A57}",
+      ".fo-pop-hd b{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:.22em;text-transform:uppercase;color:#157A57}",
       ".fo-pop-hd span{font-size:10px;color:#4B8A6E;letter-spacing:.1em;text-transform:uppercase}",
       ".fo-pop-row{display:flex;flex-wrap:wrap;gap:7px;align-items:center}",
       ".fo-pop-chip{display:inline-flex;align-items:center;gap:5px;background:#fff;border:1px solid rgba(31,158,114,.45);border-radius:999px;padding:5px 11px 5px 8px;font-size:12px;color:#1F5C43;box-shadow:0 3px 10px rgba(20,60,35,.12);animation:foPopIn .38s cubic-bezier(.34,1.56,.64,1) both}",

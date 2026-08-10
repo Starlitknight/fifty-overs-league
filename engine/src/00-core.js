@@ -4917,7 +4917,7 @@ window.foClubCrest = (function () {
       "<path d='M12 130 L30 124 L30 142 L12 148 L18 139 Z' fill='" + GOLD2 + "'/>" +
       "<path d='M108 130 L90 124 L90 142 L108 148 L102 139 Z' fill='" + GOLD2 + "'/>" +
       "<path d='M28 124 C44 130 76 130 92 124 L92 140 C76 146 44 146 28 140 Z' fill='url(#" + id + "g)' stroke='" + GOLD3 + "' stroke-width='.9'/>" +
-      "<text x='60' y='137.5' text-anchor='middle' font-family='Inter,sans-serif' font-weight='600' font-size='7.4' fill='#5C4514' letter-spacing='1.6'>CRICKET CLUB</text></g>";
+      "<text x='60' y='137.5' text-anchor='middle' font-family='Oswald,sans-serif' font-weight='600' font-size='7.4' fill='#5C4514' letter-spacing='1.6'>CRICKET CLUB</text></g>";
     return "<svg class='fo-arms' width='" + px + "' height='" + Math.round(px * 1.32) + "' viewBox='0 0 120 158'" +
       " role='img' aria-label='" + esc(name || "club") + " crest'>" + defs + coronet + laurel + shieldD + mono + ribbon + "</svg>";
   };

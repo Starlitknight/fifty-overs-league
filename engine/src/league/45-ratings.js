@@ -202,26 +202,26 @@
       ".fo-rat-side{min-width:0}",
       // the mark that goes to the world, sat above the unit marks it is built from
       "html body #page .fo-rat-tm{border:1px solid rgba(12,27,51,.14);border-radius:10px;padding:7px 10px;margin-bottom:8px;background:rgba(12,27,51,.03)}",
-      "html body #page .fo-rat-tm span{display:block;font:600 11px/1 Inter,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(12,27,51,.5)}",
-      "html body #page .fo-rat-tm b{font:700 22px/1.1 Inter,sans-serif;font-variant-numeric:tabular-nums;display:block;margin-top:3px}",
+      "html body #page .fo-rat-tm span{display:block;font:600 11px/1 Oswald,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(12,27,51,.5)}",
+      "html body #page .fo-rat-tm b{font:700 22px/1.1 Oswald,sans-serif;font-variant-numeric:tabular-nums;display:block;margin-top:3px}",
       ".fo-rat-h{display:flex;align-items:baseline;gap:8px;padding-bottom:7px;border-bottom:1px solid rgba(12,27,51,.12);margin-bottom:7px}",
-      ".fo-rat-h b{flex:1;min-width:0;font:600 13.5px/1.2 Inter,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      ".fo-rat-h em{font-style:normal;font:700 19px/1 Inter,sans-serif;font-variant-numeric:tabular-nums}",
-      ".fo-rat-r{display:flex;align-items:center;gap:8px;padding:4px 0;font:500 13px/1.3 Inter,sans-serif}",
+      ".fo-rat-h b{flex:1;min-width:0;font:600 13.5px/1.2 Oswald,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-rat-h em{font-style:normal;font:700 19px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums}",
+      ".fo-rat-r{display:flex;align-items:center;gap:8px;padding:4px 0;font:500 13px/1.3 Oswald,sans-serif}",
       ".fo-rat-r span{flex:0 0 84px;color:rgba(12,27,51,.6)}",
       ".fo-rat-bar{flex:1;min-width:40px;height:6px;border-radius:999px;background:rgba(12,27,51,.1);overflow:hidden;text-decoration:none}",
       ".fo-rat-bar u{display:block;height:100%;text-decoration:none;background:#2E8B5E}",
-      ".fo-rat-r b{flex:0 0 30px;text-align:right;font:700 12.5px/1 Inter,sans-serif;font-variant-numeric:tabular-nums}",
+      ".fo-rat-r b{flex:0 0 30px;text-align:right;font:700 12.5px/1 Oswald,sans-serif;font-variant-numeric:tabular-nums}",
       ".fo-rat .hot{color:#0E6B4C}.fo-rat .good{color:#177A57}.fo-rat .ok{color:#8a6d3b}.fo-rat .poor{color:#B23230}",
       ".fo-rat-bar u.hot{background:#0E6B4C}.fo-rat-bar u.good{background:#2E8B5E}",
       ".fo-rat-bar u.ok{background:#8F6A1C}.fo-rat-bar u.poor{background:#B23230}",
       ".fo-rat-w{margin-top:5px;font:400 13px/1.4 Fraunces,Georgia,serif;color:rgba(12,27,51,.5)}",
-      ".fo-rat-sub{margin:15px 0 5px;font:700 11px/1 Inter,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(12,27,51,.4)}",
-      ".fo-rat-p{display:flex;align-items:baseline;gap:8px;padding:5px 0;border-top:1px solid rgba(12,27,51,.07);font:500 13px/1.3 Inter,sans-serif}",
-      ".fo-rat-p i{font-style:normal;font:700 11px/1 Inter,sans-serif;color:rgba(12,27,51,.35);width:12px}",
+      ".fo-rat-sub{margin:15px 0 5px;font:700 11px/1 Oswald,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(12,27,51,.4)}",
+      ".fo-rat-p{display:flex;align-items:baseline;gap:8px;padding:5px 0;border-top:1px solid rgba(12,27,51,.07);font:500 13px/1.3 Oswald,sans-serif}",
+      ".fo-rat-p i{font-style:normal;font:700 11px/1 Oswald,sans-serif;color:rgba(12,27,51,.35);width:12px}",
       ".fo-rat-p b{font-weight:600}",
       ".fo-rat-p span{flex:1;min-width:0;font-size:10.5px;color:rgba(12,27,51,.45);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      ".fo-rat-p u{text-decoration:none;font:700 13px/1 Inter,sans-serif;color:#0C1B2E;font-variant-numeric:tabular-nums}"
+      ".fo-rat-p u{text-decoration:none;font:700 13px/1 Oswald,sans-serif;color:#0C1B2E;font-variant-numeric:tabular-nums}"
     ].join("\n");
     document.head.appendChild(s);
   }
