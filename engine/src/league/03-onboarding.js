@@ -884,12 +884,12 @@
   // Engine pitch types and what they actually do in the match engine.
   var FO_PITCH_CARDS = [
     { id: "balanced", nm: "Balanced", d: "No advantage or disadvantage to batters or bowlers." },
-    { id: "green", nm: "Green", d: "Favours seam bowlers, particularly with the new ball. Spinners at a disadvantage." },
-    { id: "dry", nm: "Crumbling", d: "Favours spin bowlers, more as the match wears on. Seamers at a disadvantage." },
-    { id: "flat", nm: "Flat", d: "Favours batters." },
-    { id: "slow", nm: "Slow", d: "Slightly favours spin bowlers. Batters find it harder than normal to score quickly." },
-    { id: "cracked", nm: "Sticky", d: "Heavily favours all bowlers." },
-    { id: "twoPaced", nm: "Two-paced", d: "Favours all bowlers. Batters find timing difficult." }
+    { id: "green", nm: "Green", d: "Strong help for seam bowlers, biggest with the new ball. Moderate disadvantage to spin bowlers." },
+    { id: "dry", nm: "Crumbling", d: "Strong help for spin bowlers, growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs." },
+    { id: "flat", nm: "Flat", d: "Moderate advantage to batters: more boundaries, fewer wickets. Moderate disadvantage to all bowlers." },
+    { id: "slow", nm: "Slow", d: "Moderate help for spin bowlers in the middle overs. Strong cut to six-hitting. Weak disadvantage to seam bowlers." },
+    { id: "cracked", nm: "Sticky", d: "Strong help for all bowlers, and more again in the second innings. Strong disadvantage to batters." },
+    { id: "twoPaced", nm: "Two-paced", d: "Weak wicket help for all bowlers, moderate for spin in the middle overs. Boundaries moderately harder." }
   ];
   // ---- Screen 1 · Create your club -----------------------------------------
   function foOnbCreate() {
@@ -1831,26 +1831,30 @@
     ].join("");
     var pitches = [
       ["stone", G.scales, "Balanced", "No advantage or disadvantage to batters or bowlers.", "Pick your best XI."],
-      ["grass", G.grass, "Green", "Favours seam bowlers, particularly with the new ball. Spinners at a disadvantage.", "Pick extra seam bowlers."],
-      ["clay", G.crack, "Crumbling", "Favours spin bowlers, more as the match wears on. Seamers at a disadvantage.", "Pick extra spin bowlers."],
-      ["cream", G.road, "Flat", "Favours batters.", "Pick your strongest batting."],
-      ["olive", G.wave, "Slow", "Slightly favours spin bowlers. Batters find it harder than normal to score quickly.", "Pick spinners and patient batters."],
-      ["rust", G.bounce, "Sticky", "Heavily favours all bowlers.", "Pick batting depth."],
-      ["iris", G.twoArrows, "Two-paced", "Favours all bowlers. Batters find timing difficult.", "Pick batting depth."]
+      ["grass", G.grass, "Green", "Strong help for seam bowlers, biggest with the new ball. Moderate disadvantage to spin bowlers.", "Pick extra seam bowlers."],
+      ["clay", G.crack, "Crumbling", "Strong help for spin bowlers, growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.", "Pick extra spin bowlers."],
+      ["cream", G.road, "Flat", "Moderate advantage to batters: more boundaries, fewer wickets. Moderate disadvantage to all bowlers.", "Pick your strongest batting."],
+      ["olive", G.wave, "Slow", "Moderate help for spin bowlers in the middle overs. Strong cut to six-hitting. Weak disadvantage to seam bowlers.", "Pick spinners and patient batters."],
+      ["rust", G.bounce, "Sticky", "Strong help for all bowlers, and more again in the second innings. Strong disadvantage to batters.", "Pick batting depth."],
+      ["iris", G.twoArrows, "Two-paced", "Weak wicket help for all bowlers, moderate for spin in the middle overs. Boundaries moderately harder.", "Pick batting depth."]
     ].map(function (x) { return card(x[0], x[1], x[2], "", x[3], x[4]); }).join("");
     var weathers = [
-      card("sun", G.sun, "Sunny", "", "True skies, fair fight.", "Nothing to adjust: cricket as designed."),
-      card("greyc", G.cloud, "Overcast", "", "The ball hoops for the seamers, especially while it is new.", "Pace up, and expect a lower-scoring day."),
-      card("mist", G.mist, "Misty", "", "Seam movement plus slippery hands: more catches go down.", "Seamers threaten; pick your safest catchers."),
-      card("humid", G.drop, "Humid", drain("Drains &middot; bowlers ~20% faster"), "Heavy air: big new-ball help for the seamers, and it saps the legs all day.", "Survive the burst with the bat; watch bowler workloads."),
-      card("hotc", G.thermo, "Hot", drain("Drains &middot; bowlers ~35% faster"), "The ball comes on true: a batting day. But the heat wears everyone down.", "Long spells fade, and tired legs carry into the next fixture."),
-      card("scorch", G.flame, "Scorching", drain("Drains &middot; bowlers ~60% faster"), "Boundaries flow and bowlers wilt fast.", "Short spells, deep batting: the sixth bowling option earns his keep today."),
-      card("rain", G.drizzle, "Drizzle", "", "Scrappy, slow cricket; the bat loses its edge.", "Boundaries are earned, not given."),
-      card("windc", G.wind, "Windy", "", "Sixes die at the rope.", "Run hard twos instead of swinging harder."),
-      card("ice", G.flake, "Chilly", "", "Cold hands: boundaries down, dropped catches up.", "A day for percentages, not fireworks."),
-      card("dusk", G.dew, "Dew later", "", "A wet ball in the second innings: spinners lose their grip in the chase.", "If dew is forecast, bowling first is the percentage call.")
+      card("sun", G.sun, "Sunny", "", "No effect on batters or bowlers.", "Nothing to adjust: cricket as designed."),
+      card("greyc", G.cloud, "Overcast", "", "Moderate help for seam bowlers all innings, a little more with the new ball. Moderate cut to boundaries. No effect on spin.", "Pick extra seam bowlers; expect a lower-scoring day."),
+      card("mist", G.mist, "Misty", "", "Strong help for seam bowlers while the ball is new, fading as it ages. Moderate cut to boundaries. No effect on spin.", "Pick seamers who use the new ball."),
+      card("humid", G.drop, "Humid", drain("Drains &middot; bowlers ~20% faster"), "Strong help for seam bowlers while the ball is new, fading to nothing as it ages. No effect on spin. Weak extra fatigue for everyone, heaviest on quick bowlers.", "See off the opening spell; watch bowler workloads."),
+      card("hotc", G.thermo, "Hot", drain("Drains &middot; bowlers ~35% faster"), "Weak advantage to batters: slightly fewer wickets, slightly more boundaries. Moderate extra fatigue, heaviest on quick bowlers.", "Rotate spells; tired legs carry into the next fixture."),
+      card("scorch", G.flame, "Scorching", drain("Drains &middot; bowlers ~60% faster"), "Moderate advantage to batters: fewer wickets, more boundaries. Strong extra fatigue, heaviest on quick bowlers.", "Short spells, deep batting: a sixth bowling option earns his keep."),
+      card("rain", G.drizzle, "Drizzle", "", "Moderate cut to boundaries; scoring is slower. No effect on wickets, for seam or spin.", "Boundaries are earned, not given."),
+      card("windc", G.wind, "Windy", "", "Strong cut to six-hitting; more runs come from hard-run twos. No effect on wickets.", "Run hard twos instead of swinging harder."),
+      card("ice", G.flake, "Chilly", "", "Weak cut to boundaries; scoring is slower. No effect on wickets, for seam or spin.", "A day for percentages, not fireworks."),
+      card("dusk", G.dew, "Dew later", "", "In the chase only: moderate disadvantage to spin bowlers and easier scoring. Helps the side batting second.", "If dew is forecast, bowling first is the percentage call.")
     ].join("");
     return { sec: sec, bowlers: bowlers, pitches: pitches, weathers: weathers,
+      // Every effect above is read off the engine's own terms - the ballDist
+      // weather block for wickets and scoring, and the FO_WX_DRAIN overlay
+      // (11-chronicle.js: humid 1.2x, hot 1.35x, scorching 1.6x, job-weighted
+      // fast > fast-medium > other bowlers > keepers > batters) for the heat.
       heat: "<div class='fo-exp-talbox'><b>Heat is a squad question.</b> In Humid, Hot and Scorching weather every player&rsquo;s fatigue clock runs faster: bowlers lose threat and control late in spells, set batters lose their edge sooner, and heavy workloads leave players tired for the next matchday at lower ball counts. On the hottest days a sixth bowling option, even a modest one, keeps every spell short and every bowler dangerous. Fitness decides who copes: stamina matters most for genuine quicks, then fast-medium, then the rest of the attack, then keepers, and least for pure batters. The captain carries a little extra for running the side. Quoted drain rates are for a frontline bowler of average fitness; the order screen shows the true range for your own squad on the day.</div>" };
   }
   // Re-render only what a signing changes: the player's own card, the sticky

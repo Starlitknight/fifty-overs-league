@@ -283,14 +283,16 @@
   var PITCH_NM = { balanced: "Balanced", flat: "Flat", green: "Green", dry: "Crumbling",
     slow: "Slow", cracked: "Sticky", twoPaced: "Two-paced" };
   // the game's own field guide, in the words the conditions primer uses
+  // each line is read off the engine's own ballDist/wear terms: who it
+  // supports, how big the shift is (weak/moderate/strong), who it costs
   var PITCH_NOTE = {
     balanced: ["No advantage or disadvantage to batters or bowlers.", "Pick your best XI."],
-    green: ["Favours seam bowlers, particularly with the new ball. Spinners at a disadvantage.", "Pick extra seam bowlers."],
-    dry: ["Favours spin bowlers, more as the match wears on. Seamers at a disadvantage.", "Pick extra spin bowlers."],
-    flat: ["Favours batters.", "Pick your strongest batting."],
-    slow: ["Slightly favours spin bowlers. Batters find it harder than normal to score quickly.", "Pick spinners and patient batters."],
-    cracked: ["Heavily favours all bowlers.", "Pick batting depth."],
-    twoPaced: ["Favours all bowlers. Batters find timing difficult.", "Pick batting depth."]
+    green: ["Strong help for seam bowlers, biggest with the new ball. Moderate disadvantage to spin bowlers.", "Pick extra seam bowlers."],
+    dry: ["Strong help for spin bowlers, growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.", "Pick extra spin bowlers."],
+    flat: ["Moderate advantage to batters: more boundaries, fewer wickets. Moderate disadvantage to all bowlers.", "Pick your strongest batting."],
+    slow: ["Moderate help for spin bowlers in the middle overs. Strong cut to six-hitting. Weak disadvantage to seam bowlers.", "Pick spinners and patient batters."],
+    cracked: ["Strong help for all bowlers, and more again in the second innings. Strong disadvantage to batters.", "Pick batting depth."],
+    twoPaced: ["Weak wicket help for all bowlers, moderate for spin in the middle overs. Boundaries moderately harder.", "Pick batting depth."]
   };
   var PITCH_ORDER = ["balanced", "green", "flat", "dry", "slow", "cracked", "twoPaced"];
   function pitchNm(k) { return PITCH_NM[k] || String(k || ""); }

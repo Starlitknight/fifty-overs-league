@@ -288,10 +288,10 @@
         hot: "hot - bowlers tire quicker, rotate your spells",
         scorching: "scorching - fatigue bites hard, a sixth bowling option earns his keep",
         "dew later": "dew later - gripping the ball gets harder, chasing gets easier",
-        windy: "windy - big hits are riskier",
-        chilly: "chilly - lively for the seamers early",
-        misty: "misty - the new ball does a bit extra",
-        sunny: "good batting weather"
+        windy: "windy - sixes are strongly cut, run hard twos instead",
+        chilly: "chilly - boundaries are a little harder, no help for the bowlers",
+        misty: "misty - strong new-ball help for the seamers while it lasts",
+        sunny: "clear - no effect on anyone"
       };
       var wantSpin = pitch === "dry" || pitch === "slow";
       var wantSeam = pitch === "green" || pitch === "cracked" || wx === "overcast" || wx === "humid" || wx === "misty" || wx === "chilly";
@@ -1763,16 +1763,16 @@
     twoPaced: "Two-paced: some balls skid, some stop. Set batters cash in; fresh ones get strangled."
   };
   var FO_WX_READ = {
-    sunny: "Fine batting weather - the ball goes soft and the outfield is quick",
+    sunny: "Clear skies - no effect on batters or bowlers",
     overcast: "cloud cover keeps the ball swinging all day - a gift for the seamers",
     humid: "heavy, humid air: swing early on, and every player's fatigue clock runs faster",
     hot: "energy-sapping heat - deep batting and short, sharp spells pay off",
     scorching: "brutal heat: fatigue is the hidden opponent, and a sixth bowling option is gold",
-    drizzle: "drizzle about - just enough nibble to keep the seamers interested",
-    windy: "gusty: hard work for flighted spin, and high catches become adventures",
-    chilly: "cold hands and zip for the quicks early - watch the first spell",
+    drizzle: "drizzle about - boundaries are harder to find and scoring is slower",
+    windy: "gusty: six-hitting is strongly cut, so the runs come in hard-run twos",
+    chilly: "cold day - boundaries are a little harder, with no extra help for the bowlers",
     misty: "murky and slow to clear - the new ball will talk",
-    "dew later": "dew arrives later: the ball gets slippery and chasing gets easier under it"
+    "dew later": "dew arrives later: spin is blunted in the chase and chasing gets easier"
   };
   // stats-page tables list bare player names: stamp each with his club
   function foStatsClubTags() {
