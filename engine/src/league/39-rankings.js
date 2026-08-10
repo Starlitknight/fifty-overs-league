@@ -100,17 +100,23 @@
         try { if (window.foRateTxt) return window.foRateTxt(v); } catch (e) {}
         return fmt(v);
       };
+      // day-marks print through foRateDay - one reading scale for the whole
+      // game - while the colour bands stay keyed on the internal mark
+      var fmtDay = function (v) {
+        try { if (window.foRateDayTxt) return window.foRateDayTxt(v); } catch (e) {}
+        return fmt(v);
+      };
       var formOf = function (c) {
         var f = c.form || [];
         if (!f.length) return "<span class='frm none'>no cricket yet</span>";
         return "<span class='frm'>" + f.map(function (v) {
           var n = Number(v);
-          return "<em class='" + (n >= 3900 ? "g" : n >= 3200 ? "m" : "b") + "'>" + fmt(n) + "</em>";
+          return "<em class='" + (n >= 3900 ? "g" : n >= 3200 ? "m" : "b") + "'>" + fmtDay(n) + "</em>";
         }).join("") + "</span>";
       };
       var mineChip = mine
         ? "<div class='fo-rk-mine'>&#127942; <b>" + E(mine.name) + "</b> stand <u>#" + mine.rank + "</u> of " + RK.clubs.length + " in the world &middot; strength " + rkStr(mine) +
-          ((mine.form && mine.form.length) ? " &middot; recent form " + mine.form.map(fmt).join(", ") : " &mdash; no cricket played yet") + "</div>"
+          ((mine.form && mine.form.length) ? " &middot; recent form " + mine.form.map(function (v) { return fmtDay(v); }).join(", ") : " &mdash; no cricket played yet") + "</div>"
         : "";
       // WHEN THE LADDER IS ONE LEAGUE, THE NUMBER IS THAT LEAGUE'S.
       // Narrowing to England used to keep the WORLD rank on every row, so the
@@ -200,8 +206,8 @@
           "<i>" + (natsPlayed ? n.rank : "&ndash;") + "</i>" +
           "<img src='" + flagOf(n.id) + "' alt='' onerror=\"this.style.display='none'\">" +
           "<b>" + E(n.name) + "</b>" +
-          "<u>XI " + fmt(n.natRating) + (n.natP ? "" : " &middot; unproven") + "</u>" +
-          "<span class='pts'>" + fmt(n.clubRating) + "</span></a>";
+          "<u>XI " + fmtDay(n.natRating) + (n.natP ? "" : " &middot; unproven") + "</u>" +
+          "<span class='pts'>" + fmtDay(n.clubRating) + "</span></a>";
       }).join("");
       // the "nobody has played yet" notice is gone: a reader who can see 3,500
       // beside every name and "unproven" beside every rating has already been

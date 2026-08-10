@@ -175,9 +175,11 @@
       var tm = team[nm];
       // the ladder figure, on the club rating scale, with the count of units it
       // was averaged over - because "four of six" is why a figure looks odd
+      // printed through foRateDay so the whole game reads one scale; the
+      // colour bands stay keyed on the internal mark
       var mark = tm ? "<div class='fo-rat-tm'><span>Match rating</span><b class='" +
         (tm.rating >= 4200 ? "hot" : tm.rating >= 3700 ? "good" : tm.rating >= 3100 ? "ok" : "poor") + "'>" +
-        Math.round(tm.rating).toLocaleString() + "</b></div>" : "";
+        (window.foRateDayTxt ? window.foRateDayTxt(tm.rating) : Math.round(tm.rating).toLocaleString()) + "</b></div>" : "";
       return "<div class='fo-rat-side'><div class='fo-rat-h'><b>" + E(nm) + "</b>" +
         (x.overall != null ? "<em class='" + band(x.overall) + "'>" + x.overall.toFixed(1) + "</em>" : "") + "</div>" +
         mark + rows + (x.overall != null ? "<div class='fo-rat-w'>" + word(x.overall) + " all round</div>" : "") + "</div>";

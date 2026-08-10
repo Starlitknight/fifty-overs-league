@@ -4518,7 +4518,14 @@ function money(n){return '$'+Math.round(n||0).toLocaleString()}
 // Display only - nothing downstream reads it, and it is NOT a player figure.
 function foRate(r){return Math.max(1000,Math.min(100000,Math.round(4.69*(+r||0)-122700)))}
 function foRateTxt(r){return foRate(r).toLocaleString()}
-try{window.foRate=foRate;window.foRateTxt=foRateTxt}catch(e){}
+// THE DAY'S MARK, on the same reading scale. The engine marks a day's play
+// around 3,500 (=real-ODI par); this puts it on the 1k-100k scale foRate
+// prints club strength on, anchored so an ordinary day reads like an
+// ordinary club (~46k) and a hot day (4,200+) reads flagship-class (60k+).
+// Display only - the rankings ladder and the banked marks stay internal.
+function foRateDay(r){return Math.max(1000,Math.min(100000,Math.round(20*(+r||0)-23860)))}
+function foRateDayTxt(r){return foRateDay(r).toLocaleString()}
+try{window.foRate=foRate;window.foRateTxt=foRateTxt;window.foRateDay=foRateDay;window.foRateDayTxt=foRateDayTxt}catch(e){}
 function pct(n){return Math.round(Math.max(0,Math.min(100,n||0)))+'%'}
 function safeName(s){return String(s||'').replace(/'/g,'&#39;').replace(/"/g,'&quot;')}
 function playerKind(p){return p.keeper?'Keeper':p.role==='allRounder'?'All-rounder':p.bowlTypeFull&&p.bowlTypeFull!=='none'?'Bowler':'Batter'}
