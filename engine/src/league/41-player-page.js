@@ -686,7 +686,7 @@
         (mine ? "<div class='fo-pp-shape'>" + radar(facets(p)) + bars(facets(p)) + "</div>" + adv
           : bars(scoutRow(p))) +
         "</div>" +
-        "<div class='fo-pp-card'><h3>Career record</h3><div class='fo-pp-mini' data-mini='1'>" + miniCareer(p) + "</div></div>" +
+        "<div class='fo-pp-card fo-pp-reccard'><h3>Career record</h3>" + ppFullRecord(p) + "</div>" +
         (mine ? officeHTML(p) : "") +
         "</div>" +
         "";
@@ -1107,6 +1107,86 @@
         " &middot; " + bits.join(" &middot; ") + "</p>";
     } catch (e) { return ""; }
   }
+  // ===========================================================================
+  // THE FULL RECORD: two tables, three classes, the way a cricketer's page
+  // has always read. League is every competitive round and cup tie, Friendly
+  // is the exhibitions, International is what he did in his country's shirt -
+  // three books the umpire already keeps apart, never summed into one.
+  //
+  // Every figure is folded on the server from the banked cards (living.mjs),
+  // which replays the WHOLE record on every settle - so the columns added to
+  // that fold arrive filled for matches played long before they existed. The
+  // one exception is maidens, which no card banked before this could carry
+  // because nothing was counting them; those read from the day the engine
+  // started keeping them.
+  // ===========================================================================
+  function ppNum(v) { return (v | 0).toLocaleString(); }
+  function ppAve(runs, outs) { return outs > 0 ? (runs / outs).toFixed(2) : "&ndash;"; }
+  function ppOversOf(balls) { return Math.floor((balls | 0) / 6) + "." + ((balls | 0) % 6); }
+  // a book is worth a row once the man has actually appeared in that class
+  function ppBooks(p) {
+    var out = [];
+    var add = function (cls, b) { if (b && (b.m | 0) > 0) out.push({ cls: cls, b: b }); };
+    add("League", p && p.career);
+    add("Friendly", p && p.friendly);
+    add("International", p && p.intl);
+    return out;
+  }
+  function ppBatTable(p) {
+    var books = ppBooks(p);
+    if (!books.length) return "";
+    var head = ["Class", "Mat", "Inns", "NO", "Runs", "HS", "Ave", "BF", "SR", "100", "50", "4s", "6s"];
+    var rows = books.map(function (x) {
+      var b = x.b;
+      // outs is the only figure the three books spell differently: the career
+      // fold counts not-outs, the friendlies book counts dismissals
+      var inns = (b.inns | 0), no = (b.no != null) ? (b.no | 0) : Math.max(0, inns - (b.outs | 0));
+      var outs = Math.max(0, inns - no);
+      var sr = (b.balls | 0) > 0 ? (100 * (b.runs | 0) / b.balls).toFixed(2) : "&ndash;";
+      return "<tr><th scope='row'>" + x.cls + "</th>" +
+        [ppNum(b.m), ppNum(inns), ppNum(no), ppNum(b.runs), ppNum(b.hs),
+         ppAve(b.runs | 0, outs), ppNum(b.balls), sr,
+         ppNum(b.h100), ppNum(b.h50), ppNum(b.f4), ppNum(b.f6)]
+          .map(function (v) { return "<td>" + v + "</td>"; }).join("") + "</tr>";
+    }).join("");
+    return "<div class='fo-pp-rec'><h4>Batting</h4><div class='fo-pp-recscroll'><table class='fo-pp-rect'>" +
+      "<thead><tr>" + head.map(function (h, i) {
+        return "<th" + (i === 0 ? " class='cls'" : "") + ">" + h + "</th>";
+      }).join("") + "</tr></thead><tbody>" + rows + "</tbody></table></div></div>";
+  }
+  function ppBowlTable(p) {
+    var books = ppBooks(p);
+    if (!books.length) return "";
+    var head = ["Class", "Mat", "Balls", "Mdns", "Runs", "Wkts", "Best", "Ave", "ER", "SR",
+                "3WI", "5WI", "C/F", "C/WK", "St", "RO"];
+    var rows = books.map(function (x) {
+      var b = x.b, w = b.wkts | 0, ovb = b.ovb | 0, conc = b.conc | 0;
+      var best = b.bb ? (b.bb.w + "-" + b.bb.r) : "&ndash;";
+      var er = ovb > 0 ? (conc / (ovb / 6)).toFixed(2) : "&ndash;";
+      // a catch the fold could not place lands in the field, which is where
+      // all but a keeper's are taken
+      var ctf = (b.ctf != null) ? (b.ctf | 0) : (b.ct | 0), ctwk = (b.ctwk | 0);
+      return "<tr><th scope='row'>" + x.cls + "</th>" +
+        [ppNum(b.m), ppNum(ovb), ppNum(b.mdn), ppNum(conc), ppNum(w), best,
+         w > 0 ? (conc / w).toFixed(2) : "&ndash;", er,
+         w > 0 ? (ovb / w).toFixed(1) : "&ndash;",
+         ppNum(b.w3), ppNum(b.w5), ppNum(ctf), ppNum(ctwk), ppNum(b.st), ppNum(b.ro)]
+          .map(function (v) { return "<td>" + v + "</td>"; }).join("") + "</tr>";
+    }).join("");
+    return "<div class='fo-pp-rec'><h4>Bowling &amp; fielding</h4><div class='fo-pp-recscroll'><table class='fo-pp-rect'>" +
+      "<thead><tr>" + head.map(function (h, i) {
+        return "<th" + (i === 0 ? " class='cls'" : "") + ">" + h + "</th>";
+      }).join("") + "</tr></thead><tbody>" + rows + "</tbody></table></div></div>";
+  }
+  function ppFullRecord(p) {
+    var t = ppBatTable(p) + ppBowlTable(p);
+    if (t) return t;
+    // SOLO PLAY KEEPS ITS OWN SHELF. The three books are folded by the umpire,
+    // so a man in a league played entirely on this device has none of them -
+    // and the old four-figure card, which reads his record out of the local
+    // history, is still the only thing that can speak for him.
+    return "<div class='fo-pp-mini' data-mini='1'>" + miniCareer(p) + "</div>";
+  }
   function miniCareer(p) {
     // THE UMPIRE'S BOOK FIRST. A claimed club's matches are played on the
     // server, so nothing lands in the local record - but the adopted squad
@@ -1370,6 +1450,35 @@
     // ---- the umpire's match log --------------------------------------------
     "html body #page .fo-pp-slot[data-slot='recent'] .pad{overflow-x:auto}",
     "html body #page .fo-pp-log{width:100%;border-collapse:collapse;font:500 12.5px Manrope,sans-serif}",
+    // ---- THE FULL RECORD ----------------------------------------------------
+    // A scorecard reads as a grid of figures, so this is a real table: the
+    // class in the stub, tabular numerals down every column, a rule under the
+    // head and a lighter one between rows. Dense, quiet, and legible at a
+    // glance - it should feel like the back page, not a dashboard.
+    "html body #page .fo-pp-rec{margin:14px 0 0}",
+    "html body #page .fo-pp-rec:first-child{margin-top:2px}",
+    "html body #page .fo-pp-rec h4{margin:0 0 7px;font:700 10.5px Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#8F6A1C}",
+    // the grid can outgrow a phone; it scrolls in its own lane, never the page
+    "html body #page .fo-pp-recscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #e9e2d2;border-radius:11px;background:#FFFEFC}",
+    "html body #page table.fo-pp-rect{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}",
+    "html body #page table.fo-pp-rect th,html body #page table.fo-pp-rect td{white-space:nowrap;text-align:right;padding:8px 10px}",
+    "html body #page table.fo-pp-rect thead th{font:700 9.5px Manrope,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#8a8272;background:#F7F3E9;border-bottom:1px solid #e4dcc9}",
+    "html body #page table.fo-pp-rect thead th.cls,html body #page table.fo-pp-rect tbody th{text-align:left}",
+    // the stub stays put while the figures scroll under a thumb - a row of
+    // numbers with no name on it is a row of numbers about nobody
+    "html body #page table.fo-pp-rect thead th.cls,html body #page table.fo-pp-rect tbody th{position:sticky;left:0;z-index:1}",
+    "html body #page table.fo-pp-rect thead th.cls{background:#F7F3E9}",
+    "html body #page table.fo-pp-rect tbody th{background:#FFFEFC;box-shadow:1px 0 0 #f2ece0}",
+    "html body #page table.fo-pp-rect tbody tr:hover th{background:#FBF8F0}",
+    "html body #page table.fo-pp-rect tbody th{font:700 12px Manrope,sans-serif;font-variant-numeric:tabular-nums;letter-spacing:.02em;color:#0C1B2E;padding:9px 10px}",
+    "html body #page table.fo-pp-rect tbody td{font:600 12.5px Manrope,sans-serif;font-variant-numeric:tabular-nums;color:#1B2432;border-top:1px solid #f2ece0}",
+    "html body #page table.fo-pp-rect tbody th{border-top:1px solid #f2ece0}",
+    "html body #page table.fo-pp-rect tbody tr:first-child th,html body #page table.fo-pp-rect tbody tr:first-child td{border-top:0}",
+    // the two figures a reader looks for first
+    "html body #page table.fo-pp-rect td:nth-child(5),html body #page table.fo-pp-rect td:nth-child(6){color:#0C1B2E;font-weight:800}",
+    "html body #page table.fo-pp-rect tbody tr:hover td,html body #page table.fo-pp-rect tbody tr:hover th{background:#FBF8F0}",
+    "@media(max-width:560px){html body #page table.fo-pp-rect th,html body #page table.fo-pp-rect td{padding:7px 8px}",
+    "html body #page table.fo-pp-rect tbody td{font-size:12px}}",
     "html body #page .fo-pp-log th{font:700 11px Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#8a8272;text-align:left;padding:6px 8px;border-bottom:1px solid #eee7d9;white-space:nowrap}",
     "html body #page .fo-pp-log td{padding:9px 8px;border-bottom:1px solid #f3eee1;color:#1B2432}",
     "html body #page .fo-pp-log tr:last-child td{border-bottom:none}",

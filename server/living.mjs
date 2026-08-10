@@ -355,13 +355,15 @@ export function coachRate(level) {
 // him a blank page at his new ground - four hundred first-class runs erased
 // by a cheque. The market freezes what he had onto him as a carry when he
 // moves; this adds it back on top of whatever he does from here.
+const CAR_SUM = ['m', 'inns', 'no', 'runs', 'balls', 'f4', 'f6', 'h50', 'h100',
+  'wkts', 'conc', 'ovb', 'mdn', 'w3', 'w5', 'ctf', 'ctwk', 'st', 'ro'];
 export function withCarry(book, carry) {
   const b = book || { m: 0, runs: 0, balls: 0, hs: 0, wkts: 0, conc: 0, ovb: 0, bb: null };
   if (!carry || !carry.m) return b;
-  const o = { m: (b.m || 0) + (carry.m || 0), runs: (b.runs || 0) + (carry.runs || 0),
-    balls: (b.balls || 0) + (carry.balls || 0), wkts: (b.wkts || 0) + (carry.wkts || 0),
-    conc: (b.conc || 0) + (carry.conc || 0), ovb: (b.ovb || 0) + (carry.ovb || 0),
-    hs: Math.max(b.hs || 0, carry.hs || 0), bb: b.bb || null };
+  // a carried record from before the fold knew these columns simply has none
+  // of them, which adds nothing - the truth about a man nobody was counting
+  const o = { hs: Math.max(b.hs || 0, carry.hs || 0), bb: b.bb || null };
+  for (const k of CAR_SUM) o[k] = (b[k] || 0) + (carry[k] || 0);
   const cb = carry.bb;
   if (cb && (!o.bb || cb.w > o.bb.w || (cb.w === o.bb.w && cb.r < o.bb.r))) o.bb = cb;
   return o;
@@ -446,14 +448,19 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     `SELECT m.season_no, m.round, ${teamSlot('batTeam')} AS slot, b->'p'->>'name' AS name,
             coalesce((b->>'r')::int, 0) AS runs, coalesce((b->>'b')::int, 0) AS balls,
             coalesce((b->>'f4')::int, 0) AS f4, coalesce((b->>'f6')::int, 0) AS f6,
-            b->>'out' AS out
+            b->>'out' AS out,
+            -- the gloves, so a catch can be credited behind the stumps or in
+            -- the field. The card banks the whole player object, so this has
+            -- been readable on every match ever played.
+            coalesce((b->'p'->>'keeper')::boolean, b->'p'->>'role' = 'wicketkeeper', false) AS wk
        ${from}, LATERAL jsonb_array_elements(inn->'bat') b
       WHERE m.country_id = $1 AND m.result IS NOT NULL AND b->'p'->>'name' IS NOT NULL`, args)).rows;
   const bowls = (await pool.query(
     `SELECT m.season_no, m.round, ${teamSlot('bowlTeam')} AS slot, bw.key AS name,
             coalesce((bw.value->>'w')::int, 0) AS wkts,
             coalesce((bw.value->>'r')::int, 0) AS conc,
-            coalesce((bw.value->>'b')::int, 0) AS ovb
+            coalesce((bw.value->>'b')::int, 0) AS ovb,
+            coalesce((bw.value->>'mdn')::int, 0) AS mdn
        ${from}, LATERAL jsonb_each(inn->'bowlers') bw
       WHERE m.country_id = $1 AND m.result IS NOT NULL`, args)).rows;
   const fields = (await pool.query(
@@ -506,9 +513,18 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
   const rec = (slot, name) => {
     if (!book.has(slot)) book.set(slot, new Map());
     const m = book.get(slot);
+    // THE WHOLE OF A CAREER, not the headline of one. A record that could only
+    // say matches, runs, best and wickets could never draw the two tables a
+    // reader of cricket expects, and every figure below is already in the
+    // banked cards - so the fold, which replays the entire record on every
+    // settle, brings the past along with it.
     if (!m.has(name)) m.set(name, { caps: 0, apps: [],
-      car: { m: 0, runs: 0, balls: 0, hs: 0, wkts: 0, conc: 0, ovb: 0, bb: null },
-      intl: { m: 0, runs: 0, balls: 0, hs: 0, wkts: 0, conc: 0, ovb: 0, bb: null } });
+      car: { m: 0, inns: 0, no: 0, runs: 0, balls: 0, hs: 0, f4: 0, f6: 0, h50: 0, h100: 0,
+        wkts: 0, conc: 0, ovb: 0, mdn: 0, w3: 0, w5: 0, bb: null,
+        ctf: 0, ctwk: 0, st: 0, ro: 0 },
+      intl: { m: 0, inns: 0, no: 0, runs: 0, balls: 0, hs: 0, f4: 0, f6: 0, h50: 0, h100: 0,
+        wkts: 0, conc: 0, ovb: 0, mdn: 0, w3: 0, w5: 0, bb: null,
+        ctf: 0, ctwk: 0, st: 0, ro: 0 } });
     return m.get(name);
   };
 
@@ -518,14 +534,18 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     if (r.slot == null || !r.name) return null;
     const k = r.season_no + '|' + r.round + '|' + r.slot + '|' + r.name;
     if (!lines.has(k)) lines.set(k, { season: r.season_no, round: r.round, slot: r.slot, name: r.name,
-      runs: 0, balls: 0, hs: 0, wkts: 0, conc: 0, ovb: 0,
-      f4: 0, f6: 0, out: null, ct: 0, st: 0, ro: 0 });
+      runs: 0, balls: 0, hs: 0, wkts: 0, conc: 0, ovb: 0, mdn: 0,
+      f4: 0, f6: 0, out: null, ct: 0, st: 0, ro: 0, wk: false, batted: false });
     return Object.assign(lines.get(k), extra);
   };
   for (const r of bats) {
     const L = at(r); if (!L) continue;
     L.runs += r.runs; L.balls += r.balls;
     L.f4 += r.f4 || 0; L.f6 += r.f6 || 0;
+    if (r.wk) L.wk = true;
+    // an innings is a man going out to bat, which the card shows as a ball
+    // faced or a dismissal - the rest of the eleven are down as did not bat
+    if ((r.balls | 0) > 0 || r.out) L.batted = true;
     if (r.out) L.out = r.out;
     if (r.runs > L.hs) L.hs = r.runs;
   }
@@ -535,7 +555,7 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
   }
   for (const r of bowls) {
     const L = at(r); if (!L) continue;
-    L.wkts += r.wkts; L.conc += r.conc; L.ovb += r.ovb;
+    L.wkts += r.wkts; L.conc += r.conc; L.ovb += r.ovb; L.mdn += r.mdn || 0;
   }
   // TRIGGERS, summed over everything he has played for this club. This is the
   // whole of "he is learning it": no state is carried forward, the record is
@@ -652,6 +672,13 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     e.caps++;
     const c = L.intl ? e.intl : e.car;
     c.m++; c.runs += L.runs; c.balls += L.balls; c.wkts += L.wkts; c.conc += L.conc; c.ovb += L.ovb;
+    c.mdn += L.mdn | 0; c.f4 += L.f4 | 0; c.f6 += L.f6 | 0;
+    if (L.batted) { c.inns++; if (!L.out) c.no++; }
+    if (L.runs >= 100) c.h100++; else if (L.runs >= 50) c.h50++;
+    if (L.wkts >= 5) c.w5++; else if (L.wkts >= 3) c.w3++;
+    // a catch behind the stumps is the keeper's, and one in the field is not
+    if (L.wk) c.ctwk += L.ct | 0; else c.ctf += L.ct | 0;
+    c.st += L.st | 0; c.ro += L.ro | 0;
     if (L.hs > c.hs) c.hs = L.hs;
     if (L.ovb > 0 && (!c.bb || L.wkts > c.bb.w || (L.wkts === c.bb.w && L.conc < c.bb.r))) c.bb = { w: L.wkts, r: L.conc };
     // the workload rides raw: the fold below prices it against the MAN -
@@ -676,7 +703,9 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     const frAt = (slot, nm) => {
       if (!frBook.has(slot)) frBook.set(slot, new Map());
       const m = frBook.get(slot);
-      if (!m.has(nm)) m.set(nm, { m: 0, runs: 0, balls: 0, hs: 0, outs: 0, wkts: 0, conc: 0, ovb: 0, ct: 0, st: 0, ro: 0, bb: null, log: [] });
+      if (!m.has(nm)) m.set(nm, { m: 0, inns: 0, no: 0, runs: 0, balls: 0, hs: 0, outs: 0,
+        f4: 0, f6: 0, h50: 0, h100: 0, wkts: 0, conc: 0, ovb: 0, mdn: 0, w3: 0, w5: 0,
+        ctf: 0, ctwk: 0, ct: 0, st: 0, ro: 0, bb: null, log: [] });
       return m.get(nm);
     };
     for (const f of frRows) {
@@ -686,7 +715,8 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
       for (const side of sides) {
         const played = new Map();                  // name -> this match's figures
         const tally = nm => {
-          if (!played.has(nm)) played.set(nm, { r: 0, b: 0, out: null, wkts: 0, conc: 0, ovb: 0 });
+          if (!played.has(nm)) played.set(nm, { r: 0, b: 0, out: null, wkts: 0, conc: 0, ovb: 0,
+            batted: false, wk: false, ct: 0, st: 0, ro: 0 });
           return played.get(nm);
         };
         for (const inn of ((f.result && f.result.innings) || [])) {
@@ -695,28 +725,35 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
             const nm = (b.p && b.p.name) || b.p; if (!nm || !((b.b || 0) > 0 || b.out)) continue;
             const e = frAt(side.slot, nm), t = tally(nm);
             e.runs += b.r || 0; e.balls += b.b || 0;
+            e.f4 += b.f4 || 0; e.f6 += b.f6 || 0;
             if (b.out) { e.outs++; t.out = b.out; }
             if ((b.r || 0) > e.hs) e.hs = b.r || 0;
-            t.r += b.r || 0; t.b += b.b || 0;
+            t.r += b.r || 0; t.b += b.b || 0; t.batted = true;
+            if (b.p && (b.p.keeper || b.p.role === 'wicketkeeper')) t.wk = true;
           }
           if (inn.bowlTeam === side.nm) {
             for (const nm of Object.keys(inn.bowlers || {})) {
               const bw = inn.bowlers[nm]; if (!((bw.b || 0) > 0)) continue;
               const e = frAt(side.slot, nm), t = tally(nm);
-              e.wkts += bw.w || 0; e.conc += bw.r || 0; e.ovb += bw.b || 0;
+              e.wkts += bw.w || 0; e.conc += bw.r || 0; e.ovb += bw.b || 0; e.mdn += bw.mdn || 0;
               t.wkts += bw.w || 0; t.conc += bw.r || 0; t.ovb += bw.b || 0;
             }
             for (const nm of Object.keys(inn.fielding || {})) {
               const fd = inn.fielding[nm] || {};
               if (!((fd.ct || 0) || (fd.st || 0) || (fd.ro || 0))) continue;
-              const e = frAt(side.slot, nm); tally(nm);
+              const e = frAt(side.slot, nm), t = tally(nm);
               e.ct += fd.ct || 0; e.st += fd.st || 0; e.ro += fd.ro || 0;
+              t.ct += fd.ct || 0; t.st += fd.st || 0; t.ro += fd.ro || 0;
             }
           }
         }
         for (const [nm, t] of played) {
           const e = frAt(side.slot, nm);
           e.m++;
+          if (t.batted) { e.inns++; if (!t.out) e.no++; }
+          if (t.r >= 100) e.h100++; else if (t.r >= 50) e.h50++;
+          if (t.wkts >= 5) e.w5++; else if (t.wkts >= 3) e.w3++;
+          if (t.wk) e.ctwk += t.ct | 0; else e.ctf += t.ct | 0;
           if (t.ovb > 0 && (!e.bb || t.wkts > e.bb.w || (t.wkts === e.bb.w && t.conc < e.bb.r))) e.bb = { w: t.wkts, r: t.conc };
           // the last dozen exhibitions, newest first, for the page's match log
           e.log.unshift({ id: f.id, at: f.play_at_ms || null, opp: side.opp || '',

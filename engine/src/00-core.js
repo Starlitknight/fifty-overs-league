@@ -1071,6 +1071,15 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
     const ovRuns=inn.runs-(inn._ovStartR||0),ovWk=inn.wkts-(inn._ovStartW||0);
     M.log.unshift({no:'',out:'●',txt:'End of over '+ovNo+' ('+ovRuns+' run'+(ovRuns===1?'':'s')+(ovWk?', '+ovWk+' wkt':'')+') - '+inn.batTeam+' '+inn.runs+'/'+inn.wkts+'. '+bowler.name+' '+Math.floor(brec.b/6)+'-'+brec.r+'-'+brec.w+'.',d:null,inn:M.inns,mile:true});
     inn._ovStartR=inn.runs;inn._ovStartW=inn.wkts;
+    // A MAIDEN IS A REAL FIGURE NOW. bowlerRecord has carried an mdn field
+    // since it was written and nothing ever added to it, so every card ever
+    // banked says nought - which is why the record has never been able to show
+    // the column. An over off which this bowler conceded nothing is a maiden;
+    // his own running total is the only thing that has to be remembered, and
+    // it cannot move between his overs. Bookkeeping only: no random number is
+    // drawn here, so the ball stream and the golden masters are untouched.
+    if((brec.r-(brec._ovR||0))===0)brec.mdn=(brec.mdn|0)+1;
+    brec._ovR=brec.r;
     const t=inn.striker;inn.striker=inn.nonstriker;inn.nonstriker=t;
     brec.lastSpellOver=over;
     inn.lastBowler=bowler.name;
