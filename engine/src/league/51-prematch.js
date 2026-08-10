@@ -412,10 +412,10 @@
       var PITCH_N = {
         balanced: "No advantage or disadvantage to batters or bowlers.",
         green: "Strong help for seam bowlers, biggest with the new ball - fast-medium gains most, then fast; medium least. Moderate disadvantage to spin bowlers. Boundaries moderately harder.",
-        dry: "Strong help for spin bowlers - finger spin most, wrist spin a little less - growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.",
+        dry: "Strong help for spin bowlers - finger spin far more than wrist - growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.",
         flat: "Strong advantage to batters: boundaries flow and wickets are dear. Strong disadvantage to all bowlers.",
         slow: "Moderate help for spin bowlers and medium-pace cutters in the middle overs. Strong cut to six-hitting; scoring is slower. Weak disadvantage to fast and fast-medium bowlers.",
-        cracked: "Strong help for all bowlers - wrist spin a touch more from the bounce - and more again in the second innings. Strong disadvantage to batters.",
+        cracked: "Strong help for all bowlers - wrist spin notably more from the bounce - and more again in the second innings. Strong disadvantage to batters.",
         twoPaced: "Weak wicket help for all bowlers, moderate for spin and medium-pace cutters in the middle overs. Boundaries moderately harder; batters find timing difficult."
       };
       // What each sky actually does in the engine (00-core ballDist weather
@@ -729,10 +729,10 @@
       var PITCH_N = {
         balanced: "No advantage or disadvantage to batters or bowlers.",
         green: "Strong help for seam bowlers, biggest with the new ball - fast-medium gains most, then fast; medium least. Moderate disadvantage to spin bowlers. Boundaries moderately harder.",
-        dry: "Strong help for spin bowlers - finger spin most, wrist spin a little less - growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.",
+        dry: "Strong help for spin bowlers - finger spin far more than wrist - growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.",
         flat: "Strong advantage to batters: boundaries flow and wickets are dear. Strong disadvantage to all bowlers.",
         slow: "Moderate help for spin bowlers and medium-pace cutters in the middle overs. Strong cut to six-hitting; scoring is slower. Weak disadvantage to fast and fast-medium bowlers.",
-        cracked: "Strong help for all bowlers - wrist spin a touch more from the bounce - and more again in the second innings. Strong disadvantage to batters.",
+        cracked: "Strong help for all bowlers - wrist spin notably more from the bounce - and more again in the second innings. Strong disadvantage to batters.",
         twoPaced: "Weak wicket help for all bowlers, moderate for spin and medium-pace cutters in the middle overs. Boundaries moderately harder; batters find timing difficult."
       };
       var WEATHER_N = {

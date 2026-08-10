@@ -885,10 +885,10 @@
   var FO_PITCH_CARDS = [
     { id: "balanced", nm: "Balanced", d: "No advantage or disadvantage to batters or bowlers." },
     { id: "green", nm: "Green", d: "Strong help for seam bowlers, biggest with the new ball - fast-medium gains most, then fast; medium least. Moderate disadvantage to spin bowlers." },
-    { id: "dry", nm: "Crumbling", d: "Strong help for spin bowlers - finger spin most, wrist spin a little less - growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs." },
+    { id: "dry", nm: "Crumbling", d: "Strong help for spin bowlers - finger spin far more than wrist - growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs." },
     { id: "flat", nm: "Flat", d: "Strong advantage to batters: boundaries flow and wickets are dear. Strong disadvantage to all bowlers." },
     { id: "slow", nm: "Slow", d: "Moderate help for spin bowlers and medium-pace cutters in the middle overs. Strong cut to six-hitting. Weak disadvantage to fast and fast-medium bowlers." },
-    { id: "cracked", nm: "Sticky", d: "Strong help for all bowlers - wrist spin a touch more from the bounce - and more again in the second innings. Strong disadvantage to batters." },
+    { id: "cracked", nm: "Sticky", d: "Strong help for all bowlers - wrist spin notably more from the bounce - and more again in the second innings. Strong disadvantage to batters." },
     { id: "twoPaced", nm: "Two-paced", d: "Weak wicket help for all bowlers, moderate for spin and medium-pace cutters in the middle overs. Boundaries moderately harder." }
   ];
   // ---- Screen 1 · Create your club -----------------------------------------
@@ -1832,10 +1832,10 @@
     var pitches = [
       ["stone", G.scales, "Balanced", "No advantage or disadvantage to batters or bowlers.", "Pick your best XI."],
       ["grass", G.grass, "Green", "Strong help for seam bowlers, biggest with the new ball - fast-medium gains most, then fast; medium least. Moderate disadvantage to spin bowlers.", "Pick extra seam bowlers."],
-      ["clay", G.crack, "Crumbling", "Strong help for spin bowlers - finger spin most, wrist spin a little less - growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.", "Pick extra spin bowlers."],
+      ["clay", G.crack, "Crumbling", "Strong help for spin bowlers - finger spin far more than wrist - growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.", "Pick extra spin bowlers."],
       ["cream", G.road, "Flat", "Strong advantage to batters: boundaries flow and wickets are dear. Strong disadvantage to all bowlers.", "Pick your strongest batting."],
       ["olive", G.wave, "Slow", "Moderate help for spin bowlers and medium-pace cutters in the middle overs. Strong cut to six-hitting. Weak disadvantage to fast and fast-medium bowlers.", "Pick spinners and patient batters."],
-      ["rust", G.bounce, "Sticky", "Strong help for all bowlers - wrist spin a touch more from the bounce - and more again in the second innings. Strong disadvantage to batters.", "Pick batting depth."],
+      ["rust", G.bounce, "Sticky", "Strong help for all bowlers - wrist spin notably more from the bounce - and more again in the second innings. Strong disadvantage to batters.", "Pick batting depth."],
       ["iris", G.twoArrows, "Two-paced", "Weak wicket help for all bowlers, moderate for spin and medium-pace cutters in the middle overs. Boundaries moderately harder.", "Pick batting depth."]
     ].map(function (x) { return card(x[0], x[1], x[2], "", x[3], x[4]); }).join("");
     var weathers = [
