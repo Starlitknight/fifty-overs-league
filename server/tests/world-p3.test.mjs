@@ -1216,6 +1216,9 @@ test('018: the academy is paid for, and it recomputes', async () => {
   // THE MANAGER'S TWO CALLS: hand a boy a senior shirt, or let him go.
   // 075 empties the academy lists, but world_colt keeps its law for any
   // stale client that still calls it - seed two boys to hold it to that.
+  // The LAW is under test, not this season's profitability: the engine's
+  // balance moves the simulated gate money, so the till is topped up first.
+  await pool.query(`UPDATE clubs SET bank=2000000 WHERE country_id='eng' AND slot=1`);
   await pool.query(`UPDATE clubs SET youth=$1::jsonb WHERE country_id='eng' AND slot=1`,
     [JSON.stringify([
       { name: 'Wilf Hartle', age: 18, role: 'opener', wage: 400, colt: true, skills: { vsPace: 40, temperament: 44 } },
@@ -1492,6 +1495,10 @@ test('020: the books are a ledger, and they recompute from the record', async ()
   await assert.rejects(as(U1, `SELECT public.world_set_stadium(${G0 + 500})`), /a thousand at a time/);
   await assert.rejects(as(U1, `SELECT public.world_set_stadium(${G0})`), /never taken down/);
   await assert.rejects(as(U1, `SELECT public.world_set_stadium(50000)`), /forty-five thousand/);
+  // the BUILD LAW is under test, not the season's profitability - the
+  // engine's balance moves the wallet, so the till is topped up first
+  // (the settle below re-derives the bank from the ledger regardless)
+  await pool.query(`UPDATE clubs SET bank=4000000 WHERE country_id='eng' AND slot=1`);
   const bank9 = Number((await pool.query(`SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank);
   const build = await as(U1, `SELECT public.world_set_stadium(${G1}) AS r`);
   assert.equal(build.rows[0].r.seats, G1);
