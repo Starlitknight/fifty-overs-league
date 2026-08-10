@@ -500,9 +500,12 @@
       "html body #page .panel{border:1px solid #e7e2d5 !important;border-radius:14px !important;overflow:hidden;box-shadow:0 3px 14px rgba(18,32,58,.05) !important;background:#FFFEFC}" +
       "html body #page .panel h4{background:#07162E !important;color:#FFFEFC !important;font-size:12.5px !important;letter-spacing:.06em;text-transform:none;padding:11px 15px !important;border:0 !important;margin:0 !important}" +
       // tables: editorial headers, quiet rules, hover rows
-      "html body #page table th{font-size:10.5px !important;letter-spacing:.07em;text-transform:uppercase;color:#6A6354 !important;background:#FFFEFC !important;border-bottom:1px solid #eae5d8 !important;padding:8px 10px !important}" +
-      "html body #page table td{border-bottom:1px solid #f2eee3 !important;padding:8px 10px !important}" +
-      "html body #page table tr:hover td{background:#fbf9f4}" +
+      // ...except a table that carries its own design, which says so with
+      // fo-own. These declarations shout to be heard over the FTP sheet; a
+      // component cannot out-shout them by specificity alone, so it opts out.
+      "html body #page table:not(.fo-own) th{font-size:10.5px !important;letter-spacing:.07em;text-transform:uppercase;color:#6A6354 !important;background:#FFFEFC !important;border-bottom:1px solid #eae5d8 !important;padding:8px 10px !important}" +
+      "html body #page table:not(.fo-own) td{border-bottom:1px solid #f2eee3 !important;padding:8px 10px !important}" +
+      "html body #page table:not(.fo-own) tr:hover td{background:#fbf9f4}" +
       // controls: soft rounded, calm focus ring
       "html body #page select,html body #page input[type=text],html body #page input[type=number],html body #page input:not([type]){border:1px solid #ddd7c8 !important;border-radius:10px !important;background:#FFFEFC !important;padding:8px 11px !important;color:#14243A}" +
       "html body #page select:focus,html body #page input:focus,html body #page button:focus-visible{outline:none !important;border-color:#C9571F !important;box-shadow:0 0 0 3px rgba(201,85,50,.18) !important}" +

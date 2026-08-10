@@ -1132,7 +1132,7 @@
          ppNum(b.h100), ppNum(b.h50), ppNum(b.f4), ppNum(b.f6)]
           .map(function (v) { return "<td>" + v + "</td>"; }).join("") + "</tr>";
     }).join("");
-    return "<div class='fo-pp-rec'><h4>Batting</h4><div class='fo-pp-recscroll'><table class='fo-pp-rect'>" +
+    return "<div class='fo-pp-rec'><h4>Batting</h4><div class='fo-pp-recscroll'><table class='fo-pp-rect fo-own'>" +
       "<thead><tr>" + head.map(function (h, i) {
         return "<th" + (i === 0 ? " class='cls'" : "") + ">" + h + "</th>";
       }).join("") + "</tr></thead><tbody>" + rows + "</tbody></table></div></div>";
@@ -1156,7 +1156,7 @@
          ppNum(b.w3), ppNum(b.w5), ppNum(ctf), ppNum(ctwk), ppNum(b.st), ppNum(b.ro)]
           .map(function (v) { return "<td>" + v + "</td>"; }).join("") + "</tr>";
     }).join("");
-    return "<div class='fo-pp-rec'><h4>Bowling &amp; fielding</h4><div class='fo-pp-recscroll'><table class='fo-pp-rect'>" +
+    return "<div class='fo-pp-rec'><h4>Bowling &amp; fielding</h4><div class='fo-pp-recscroll'><table class='fo-pp-rect fo-own'>" +
       "<thead><tr>" + head.map(function (h, i) {
         return "<th" + (i === 0 ? " class='cls'" : "") + ">" + h + "</th>";
       }).join("") + "</tr></thead><tbody>" + rows + "</tbody></table></div></div>";
@@ -1394,7 +1394,7 @@
       // the marker stays: harvest() reads it to know the umpire's log is already
       // standing here and the engine's empty local panel must not join it
       slot.innerHTML = "<div data-fo-servedlog>" +
-        "<table class='fo-pp-log'><tr><th>Rd</th><th>Fixture</th><th>Result</th><th>His match</th><th></th></tr>" +
+        "<table class='fo-pp-log fo-own'><tr><th>Rd</th><th>Fixture</th><th>Result</th><th>His match</th><th></th></tr>" +
         allRows + "</table>" +
         "<p class='fo-pp-dim'>From the umpire's book &middot; the last " + PP_LOG_N +
         ", every line as banked on the day.</p></div>";
@@ -1501,7 +1501,9 @@
     // the grid can outgrow a phone; it scrolls in its own lane, never the page
     "html body #page .fo-pp-recscroll{overflow-x:auto;-webkit-overflow-scrolling:touch;border:1px solid #e9e2d2;border-radius:11px;background:#FFFEFC}",
     "html body #page table.fo-pp-rect{width:100%;border-collapse:collapse;font-variant-numeric:tabular-nums}",
-    "html body #page table.fo-pp-rect th,html body #page table.fo-pp-rect td{white-space:nowrap;text-align:right;padding:8px 10px}",
+    // the rules between rows are drawn on the top edge, so the base sheet's
+    // bottom edge is switched off rather than left to double up with it
+    "html body #page table.fo-pp-rect th,html body #page table.fo-pp-rect td{white-space:nowrap;text-align:right;padding:8px 10px;border-bottom:0}",
     "html body #page table.fo-pp-rect thead th{font:700 9.5px Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#E8B96A;background:linear-gradient(180deg,#14243A,#0C1B2E);border-bottom:2px solid #C9A24B;padding-top:10px;padding-bottom:10px}",
     "html body #page table.fo-pp-rect thead th.cls,html body #page table.fo-pp-rect tbody th{text-align:left}",
     // the stub stays put while the figures scroll under a thumb - a row of
@@ -1519,7 +1521,7 @@
     "html body #page table.fo-pp-rect tbody tr:hover td,html body #page table.fo-pp-rect tbody tr:hover th{background:#FBF8F0}",
     "@media(max-width:560px){html body #page table.fo-pp-rect th,html body #page table.fo-pp-rect td{padding:7px 8px}",
     "html body #page table.fo-pp-rect tbody td{font-size:12px}}",
-    "html body #page .fo-pp-log th{font:700 11px Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#8a8272;text-align:left;padding:6px 8px;border-bottom:1px solid #eee7d9;white-space:nowrap}",
+    "html body #page .fo-pp-log th{background:transparent;font:700 11px Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#8a8272;text-align:left;padding:6px 8px;border-bottom:1px solid #eee7d9;white-space:nowrap}",
     "html body #page .fo-pp-log td{padding:9px 8px;border-bottom:1px solid #f3eee1;color:#1B2432}",
     "html body #page .fo-pp-log tr:last-child td{border-bottom:none}",
     "html body #page .fo-pp-log td.w{color:#177A57;font-weight:700}",
