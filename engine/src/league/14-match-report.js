@@ -1705,14 +1705,25 @@
       ".fo-mr-comm .fo-mr-rule{margin:0 0 10px}",
       ".fo-mr-comm .fo-mr-rule span{color:#8F6A1C}",
       ".fo-mr-comm .fo-mr-rule:before,.fo-mr-comm .fo-mr-rule:after{background:rgba(20,28,40,.14)}",
-      ".fo-mr-commlist{display:flex;flex-direction:column;gap:2px}",
-      ".fo-mr-ball{display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;align-items:baseline;padding:8px 9px;border-radius:7px;background:#F6F2E6}",
+      // THE SAME FEED, READ LATER. The live pane is a white column with a
+      // hairline between deliveries and all of its colour in the little result
+      // marker - the ball itself never changes ground. This list had every
+      // delivery sitting on a tinted pill, fours blue and sixes gold, so the
+      // same over read as two different rooms depending on whether you were
+      // watching it or looking it up. The ordinary ball is paper here too, and
+      // the emphasis moves where the live feed keeps it: into the marker.
+      // Only what the live pane also tints stays tinted - the wicket, the
+      // milestone, the flag - because those are the rows a reader scans for.
+      ".fo-mr-commlist{display:flex;flex-direction:column;gap:0}",
+      ".fo-mr-ball{display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;align-items:baseline;padding:9px 8px;border-radius:0;background:transparent;border-bottom:1px solid #efe9dc}",
+      ".fo-mr-ball:last-child{border-bottom:0}",
       ".fo-mr-ball b{font-family:Manrope,sans-serif;font-size:11px;letter-spacing:.06em;color:#7a7566;font-variant-numeric:tabular-nums}",
       ".fo-mr-ball span{font-family:Fraunces,Georgia,serif;font-size:13.5px;line-height:1.6;color:#2a2b2e}",
-      ".fo-mr-ball.four{background:#E8F0F8}.fo-mr-ball.four b{color:#22635F}",
-      ".fo-mr-ball.six{background:#FBF0D6}.fo-mr-ball.six b{color:#9a6b12}",
-      ".fo-mr-ball.wkt{background:#F8E4E0}.fo-mr-ball.wkt b{color:#A6392B}",
-      ".fo-mr-ball.mile{box-shadow:inset 3px 0 0 #8F6A1C}",
+      ".fo-mr-ball.four b{color:#22635F;font-weight:700}",
+      ".fo-mr-ball.six b{color:#9a6b12;font-weight:700}",
+      ".fo-mr-ball.wkt{background:#FBF0EE}.fo-mr-ball.wkt b{color:#A6392B;font-weight:700}",
+      ".fo-mr-ball.wkt span{color:#8f231b}",
+      ".fo-mr-ball.mile{background:#FDF7E8;box-shadow:inset 3px 0 0 #8F6A1C}",
       ".fo-mr-comm .fo-mr-by{color:#7a7566;border-top:1px solid rgba(20,28,40,.12);margin-top:12px;padding-top:10px}",
       ".fo-mr-cf{display:flex;align-items:center;gap:6px;margin:0 0 12px;flex-wrap:wrap}",
       "html body #page .fo-mr-cf a{min-height:36px;display:inline-flex;align-items:center;padding:0 13px;border-radius:999px;font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.13em;font-size:10px;font-weight:600;color:#5c5647 !important;text-decoration:none !important;background:#EFEADA !important;border:1px solid rgba(20,28,40,.10) !important}",
