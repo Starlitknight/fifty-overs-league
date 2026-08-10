@@ -52,10 +52,12 @@ Every literal at ≥20 occurrences plus the named offenders; **map** = replace w
 
 ## 2 · Typography — the serif/sans rule
 
-Three faces (Fraunces, Oswald, Inter — all self-hosted, italic Fraunces real since the last pass). The Phase 4 attempt to fold the display voice into Inter was reverted by owner request — the condensed sports voice is part of the game's identity. The rule:
+Three faces (Fraunces, Manrope, Inter — all self-hosted, italic Fraunces real since the last pass). The display voice has moved twice: Phase 4 folded it into Inter, that was reverted to Oswald by owner request, and Oswald then gave way to **Manrope** — the condensed industrial face read hard where the game wants soft, and Manrope's semi-rounded terminals hold up at the 10–11px label sizes this game leans on. The rule:
 
 > **Fraunces** for: page headlines, club and player names *when they are the display element* (heroes, scout folios, Gazette bylines), narrative/flavor prose, pull quotes, the treasurer's asides.
-> **Oswald** for: display type and labels — heroes, letter-spaced eyebrows, buttons, navigation, tabs, chips, big scoreboard figures.
+> **Manrope** for: display type and labels — heroes, letter-spaced eyebrows, buttons, navigation, tabs, chips, big scoreboard figures.
+
+Manrope is **wider than Oswald was**, so any row that packs a label against a value on a phone has less slack than it used to. New layouts get a width audit at 393px before they ship; three rows failed that audit on the swap (the fixtures kick-off time, the Stats Centre contents list, four footer nav rows) and were given room rather than a smaller type size.
 > **Inter** for: body/UI text (inherited from the shell stylesheet — engine code rarely needs to name it).
 
 Named strays to converge in Phase 2 (all currently serif data):

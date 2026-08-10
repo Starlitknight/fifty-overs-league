@@ -66,7 +66,7 @@
     "html body.fo-scb-on #page .fo-sci-head .fo-sci-tgl{color:#a1926a !important}",
     // the table: ink rules, no zebra, scorer's numerals
     "html body.ftpskin.fo-scb-on .fo-sct tr td,html body.fo-scb-on .fo-sct tr td{background:transparent !important;border-bottom:1px dotted rgba(36,29,14,.35) !important;color:#2b2416;font-variant-numeric:tabular-nums}",
-    "html body.ftpskin.fo-scb-on .fo-sct th,html body.fo-scb-on .fo-sct th{background:transparent !important;color:#8a7b52 !important;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;border-bottom:1px solid rgba(36,29,14,.55) !important}",
+    "html body.ftpskin.fo-scb-on .fo-sct th,html body.fo-scb-on .fo-sct th{background:transparent !important;color:#8a7b52 !important;font-family:Manrope,sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase;border-bottom:1px solid rgba(36,29,14,.55) !important}",
     "html body.fo-scb-on #page .fo-sct a,html body.ftpskin.fo-scb-on #page .fo-sct a{color:#2b2416 !important;text-decoration:none;border-bottom:1px dotted rgba(138,74,33,.5)}",
     // dismissals: the scorer's ink italic
     "body.fo-scb-on .fo-sci-dis,body.fo-scb-on .fo-sci-disc{font-family:Fraunces,Georgia,serif;font-style:normal;color:#6d5c36 !important;font-size:12.5px}",
@@ -77,16 +77,16 @@
     "body.fo-scb-on .fo-sci-rr{color:#8a7b52 !important}",
     // margin boxes: did-not-bat and the fall, ruled off to the side
     "body.fo-scb-on .fo-sci-box{background:transparent !important;border:1px dotted rgba(36,29,14,.45) !important;border-radius:0}",
-    "body.fo-scb-on .fo-sci-box b{color:#8a7b52;font-family:Oswald,sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase}",
+    "body.fo-scb-on .fo-sci-box b{color:#8a7b52;font-family:Manrope,sans-serif;font-size:10px;letter-spacing:.2em;text-transform:uppercase}",
     "body.fo-scb-on .fo-sci-box span{color:#463a20;font-family:Fraunces,Georgia,serif;font-style:normal;font-size:12.5px}",
     // tabs become a contents line in the book's own hand
-    "html body.fo-scb-on #page .fo-sctab,html body.ftpskin.fo-scb-on #page .fo-sctab{background:transparent !important;border:0 !important;border-radius:0 !important;padding:7px 2px !important;margin-right:16px;font-family:Oswald,sans-serif !important;font-size:10px !important;letter-spacing:.18em;text-transform:uppercase;color:#8a7b52 !important;border-bottom:2px solid transparent !important;cursor:pointer}",
+    "html body.fo-scb-on #page .fo-sctab,html body.ftpskin.fo-scb-on #page .fo-sctab{background:transparent !important;border:0 !important;border-radius:0 !important;padding:7px 2px !important;margin-right:16px;font-family:Manrope,sans-serif !important;font-size:10px !important;letter-spacing:.18em;text-transform:uppercase;color:#8a7b52 !important;border-bottom:2px solid transparent !important;cursor:pointer}",
     "html body.fo-scb-on #page .fo-sctab.on{color:#8a4a21 !important;border-bottom-color:#C9571F !important}",
     // generic panels on the page (charts, ratings) join the paper
     "html body.ftpskin.fo-scb-on #page .panel,html body.fo-scb-on #page .panel{background:transparent !important;border:0 !important;box-shadow:none !important}",
     "html body.ftpskin.fo-scb-on #page .panel h4,html body.fo-scb-on #page .panel h4{background:transparent !important;color:#241d0e !important;border-top:3px double #241d0e;border-bottom:1px solid rgba(36,29,14,.65);font-family:Fraunces,Georgia,serif;padding:9px 4px}",
     // the stamp, pressed slightly askew at the top of the first innings page
-    ".fo-scb-stamp{position:absolute;top:52px;right:16px;z-index:2;transform:rotate(-7deg);font-family:Oswald,sans-serif;font-weight:700;font-size:15px;letter-spacing:.26em;color:#c23b25;border:3px solid #c23b25;border-radius:5px;padding:5px 12px 4px;opacity:.72;pointer-events:none;mix-blend-mode:multiply}",
+    ".fo-scb-stamp{position:absolute;top:52px;right:16px;z-index:2;transform:rotate(-7deg);font-family:Manrope,sans-serif;font-weight:700;font-size:15px;letter-spacing:.26em;color:#c23b25;border:3px solid #c23b25;border-radius:5px;padding:5px 12px 4px;opacity:.72;pointer-events:none;mix-blend-mode:multiply}",
     "@media(max-width:760px){.fo-scb-stamp{font-size:12px;top:46px;right:6px}}"
   ].join("\n");
   // the skin's stylesheet is inlined after the scripts, so equal-specificity

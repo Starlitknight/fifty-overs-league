@@ -154,7 +154,7 @@
       "position:relative;appearance:none;-webkit-appearance:none;",
       "background:transparent !important;border:0 !important;border-radius:0 !important;",
       "box-shadow:none !important;padding:9px 0 10px !important;margin:0 !important;min-height:0;",
-      "font:600 12.5px/1 Oswald,system-ui,sans-serif !important;letter-spacing:-.005em;",
+      "font:600 12.5px/1 Manrope,system-ui,sans-serif !important;letter-spacing:-.005em;",
       "text-transform:none !important;text-decoration:none !important;cursor:pointer;",
       "color:rgba(20,28,40,.45) !important;transition:color .12s ease}",
       "html body #page .fo-seg > *:hover{color:#1B2432 !important}",
@@ -190,17 +190,17 @@
       // strip autofocuses Cancel for safety, which must not LOOK pressed.
       ".fo-dec{display:block;margin:10px 0;padding:14px 15px;border-radius:12px;background:#FFFEFC;",
       "border:1px solid #E3DCCB;box-shadow:0 6px 18px rgba(20,36,58,.08);",
-      "font:400 13px/1.5 Oswald,system-ui,sans-serif;color:#1B2432;text-align:left}",
-      ".fo-dec b{display:block;font:600 14px/1.4 Oswald,system-ui,sans-serif;color:#14243A}",
-      ".fo-dec p{margin:5px 0 0;font:400 12.5px/1.5 Oswald,system-ui,sans-serif;color:#6A6354}",
+      "font:400 13px/1.5 Manrope,system-ui,sans-serif;color:#1B2432;text-align:left}",
+      ".fo-dec b{display:block;font:600 14px/1.4 Manrope,system-ui,sans-serif;color:#14243A}",
+      ".fo-dec p{margin:5px 0 0;font:400 12.5px/1.5 Manrope,system-ui,sans-serif;color:#6A6354}",
       ".fo-dec .fo-dec-in{display:block;width:100%;max-width:220px;margin-top:10px;min-height:42px;",
       "padding:0 12px;border-radius:10px;border:1px solid #CFC6B6;background:#FFFEFC;",
-      "font:600 15px/1 Oswald,system-ui,sans-serif;color:#1B2432;font-variant-numeric:tabular-nums}",
+      "font:600 15px/1 Manrope,system-ui,sans-serif;color:#1B2432;font-variant-numeric:tabular-nums}",
       ".fo-dec .fo-dec-in:focus{outline:none;border-color:#C9571F;box-shadow:0 0 0 3px rgba(201,85,47,.16)}",
       ".fo-dec .fo-dec-act{display:flex;gap:9px;margin-top:12px;flex-wrap:wrap}",
       ".fo-dec .fo-dec-act button,html body #page .fo-dec .fo-dec-act button{flex:0 0 auto;min-height:42px;",
       "padding:0 17px !important;border-radius:10px !important;cursor:pointer;box-shadow:none !important;",
-      "font:700 11px/1 Oswald,sans-serif !important;letter-spacing:.12em;text-transform:uppercase;min-width:0}",
+      "font:700 11px/1 Manrope,sans-serif !important;letter-spacing:.12em;text-transform:uppercase;min-width:0}",
       ".fo-dec .fo-dec-no,html body #page .fo-dec button.fo-dec-no{background:#FFFEFA !important;",
       "border:1px solid #CFC6B6 !important;color:#4A4438 !important}",
       ".fo-dec .fo-dec-yes,html body #page .fo-dec button.fo-dec-yes{border:1px solid transparent !important;",
@@ -566,7 +566,7 @@
     var ds = document.createElement("style"); ds.id = "fo-door-css";
     ds.textContent =
       "html body button.fo-door-btn,html body.ftpskin #page button.fo-door-btn{display:inline-block;margin-top:13px;" +
-      "font:700 12px Oswald,sans-serif !important;letter-spacing:.18em;text-transform:uppercase;" +
+      "font:700 12px Manrope,sans-serif !important;letter-spacing:.18em;text-transform:uppercase;" +
       "background:#C9571F !important;color:#fff !important;border:none !important;border-radius:10px;" +
       "padding:12px 26px;cursor:pointer;min-height:0}" +
       "html body button.fo-door-btn:hover{background:#B44A22 !important}";
@@ -776,19 +776,22 @@
   //  placed at the end of <body> so it stays the last stylesheet)
   // The game injects its own theme stylesheets into <body> at render time, after
   // ours. Keep our brand sheet the LAST stylesheet so it always wins.
-  // The game's two voices, self-hosted so they arrive on every device and
-  // every network: Oswald (variable, 200-700) carries the display type and
-  // labels; Inter (variable, 100-900) carries the UI. The old Google Fonts
-  // link died silently offline and on blocked networks, leaving letter-spaced
-  // condensed layouts rendered in a default sans - the whole page went weird.
+  // The game's voices, self-hosted so they arrive on every device and every
+  // network: Manrope (variable, 200-800) carries the display type and labels;
+  // Inter (variable, 100-900) carries the UI; Fraunces carries the prose. The
+  // old Google Fonts link died silently offline and on blocked networks,
+  // leaving letter-spaced layouts rendered in a default sans - the whole page
+  // went weird. Manrope replaced Manrope by the owner's choice: the condensed
+  // industrial face read hard where he wanted soft, and Manrope's semi-rounded
+  // terminals hold up at the 10-11px label sizes this game leans on.
   try {
     if (!document.getElementById("fo-font")) {
       var fbase = (location.pathname.indexOf("/client/") !== -1) ? "fonts/" : "client/fonts/";
       var ff = document.createElement("style");
       ff.id = "fo-font";
       ff.textContent =
-        "@font-face{font-family:'Oswald';font-style:normal;font-weight:200 700;font-display:swap;src:url(" + fbase + "oswald-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}" +
-        "@font-face{font-family:'Oswald';font-style:normal;font-weight:200 700;font-display:swap;src:url(" + fbase + "oswald-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}" +
+        "@font-face{font-family:'Manrope';font-style:normal;font-weight:200 800;font-display:swap;src:url(" + fbase + "manrope-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+0304,U+0308,U+0329,U+2000-206F,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}" +
+        "@font-face{font-family:'Manrope';font-style:normal;font-weight:200 800;font-display:swap;src:url(" + fbase + "manrope-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}" +
         "@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url(" + fbase + "inter-latin.woff2) format('woff2');unicode-range:U+0000-00FF,U+0131,U+0152-0153,U+02BB-02BC,U+02C6,U+02DA,U+02DC,U+2000-206F,U+2074,U+20AC,U+2122,U+2191,U+2193,U+2212,U+2215,U+FEFF,U+FFFD}" +
         "@font-face{font-family:'Inter';font-style:normal;font-weight:100 900;font-display:swap;src:url(" + fbase + "inter-latin-ext.woff2) format('woff2');unicode-range:U+0100-02BA,U+02BD-02C5,U+02C7-02CC,U+02CE-02D7,U+02DD-02FF,U+0304,U+0308,U+0329,U+1D00-1DBF,U+1E00-1E9F,U+1EF2-1EFF,U+2020,U+20A0-20AB,U+20AD-20C0,U+2113,U+2C60-2C7F,U+A720-A7FF}" +
         // Fraunces: the almanack voice - variable optical-size serif for display

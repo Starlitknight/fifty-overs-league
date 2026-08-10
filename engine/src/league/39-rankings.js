@@ -242,16 +242,16 @@
       ".fo-rk{min-height:70vh}",
       ".fo-rk-in{max-width:680px;margin:0 auto;padding:18px 14px 80px}",
       ".fo-rk-hero{background:#0E1A2F;border-radius:18px;padding:20px 18px;margin-bottom:14px;border-bottom:2px solid #C9571F}",
-      ".fo-rk-k{font:700 11px/1 Oswald,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#E8894A}",
+      ".fo-rk-k{font:700 11px/1 Manrope,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:#E8894A}",
       ".fo-rk-hero h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:clamp(30px,7vw,40px);color:#FFFEFC;margin:6px 0 6px}",
       ".fo-rk-hero p{font:400 13.5px/1.55 Fraunces,Georgia,serif;color:rgba(255,254,252,.72);max-width:34em;margin:0}",
-      ".fo-rk-mine{background:#FFFEFC;border:1px solid rgba(217,85,42,.4);border-left:3px solid #C9571F;border-radius:14px;padding:13px 15px;margin-bottom:12px;font:500 13.5px/1.5 Oswald,sans-serif;color:#1B2432}",
-      ".fo-rk-mine u{text-decoration:none;font-family:Oswald,sans-serif;font-weight:700;color:#B44A22}",
+      ".fo-rk-mine{background:#FFFEFC;border:1px solid rgba(217,85,42,.4);border-left:3px solid #C9571F;border-radius:14px;padding:13px 15px;margin-bottom:12px;font:500 13.5px/1.5 Manrope,sans-serif;color:#1B2432}",
+      ".fo-rk-mine u{text-decoration:none;font-family:Manrope,sans-serif;font-weight:700;color:#B44A22}",
       ".fo-rk-card{background:#FFFEFC;border:1px solid rgba(20,28,40,.1);border-radius:16px;padding:14px 14px 10px;margin-bottom:14px;box-shadow:0 6px 18px rgba(30,38,52,.06)}",
       ".fo-rk-card h3{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:16px;color:#1B2432;margin:0 0 10px;display:flex;align-items:center;flex-wrap:wrap;gap:8px}",
-      ".fo-rk-natf{margin-left:auto;font:600 13px Oswald,sans-serif;color:#6d6455;display:flex;align-items:center;gap:6px}",
-      ".fo-rk-natf select{font:600 13px Oswald,sans-serif;color:#14243A;border:1px solid #d9d0bc;border-radius:8px;background:#FFFEFC;padding:6px 8px;max-width:170px}",
-      ".fo-rk-card h3 span{display:block;font:600 11px/1.6 Oswald,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.45)}",
+      ".fo-rk-natf{margin-left:auto;font:600 13px Manrope,sans-serif;color:#6d6455;display:flex;align-items:center;gap:6px}",
+      ".fo-rk-natf select{font:600 13px Manrope,sans-serif;color:#14243A;border:1px solid #d9d0bc;border-radius:8px;background:#FFFEFC;padding:6px 8px;max-width:170px}",
+      ".fo-rk-card h3 span{display:block;font:600 11px/1.6 Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,28,40,.45)}",
       ".fo-rk-note{font:400 13px/1.6 Fraunces,Georgia,serif;color:rgba(20,28,40,.6);margin:2px 0 6px}",
       "html body #page .fo-rk-row{display:flex;align-items:center;gap:9px;padding:8px 6px;border-top:1px solid rgba(20,28,40,.07);text-decoration:none !important;color:#1B2432 !important}",
       ".fo-rk-row:first-of-type{border-top:none}",
@@ -262,17 +262,17 @@
       // had nothing to run down. The rank box now fits three figures, the NAME
       // takes the slack so everything after it is pinned to the right edge, and
       // both columns are tabular so a 1 occupies exactly what a 9 does.
-      ".fo-rk-row i{font:700 13px/1 Oswald,sans-serif;font-style:normal;color:rgba(20,28,40,.4);width:30px;text-align:right;flex:none;font-variant-numeric:tabular-nums}",
+      ".fo-rk-row i{font:700 13px/1 Manrope,sans-serif;font-style:normal;color:rgba(20,28,40,.4);width:30px;text-align:right;flex:none;font-variant-numeric:tabular-nums}",
       ".fo-rk-row img{width:22px;height:15px;object-fit:cover;border-radius:2px;flex:none}",
-      ".fo-rk-row b{font:600 13px/1.25 Oswald,sans-serif;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
-      ".fo-rk-row b em{font-style:normal;font:700 11px/1 Oswald,sans-serif;letter-spacing:.12em;color:#C9571F;border:1px solid rgba(200,84,47,.45);border-radius:999px;padding:2px 6px;vertical-align:1px}",
+      ".fo-rk-row b{font:600 13px/1.25 Manrope,sans-serif;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".fo-rk-row b em{font-style:normal;font:700 11px/1 Manrope,sans-serif;letter-spacing:.12em;color:#C9571F;border:1px solid rgba(200,84,47,.45);border-radius:999px;padding:2px 6px;vertical-align:1px}",
       ".fo-rk-row b em.bs{color:#8a6d3b;border-color:rgba(138,109,59,.4)}",
       ".fo-rk-row b em.tt{color:#2F6B45;border-color:rgba(47,107,69,.35);letter-spacing:.06em}",
-      ".fo-rk-row u{text-decoration:none;font:400 12px/1 Oswald,sans-serif;color:rgba(20,28,40,.45);flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}",
-      ".fo-rk-row .rec{font:500 12px/1 Oswald,sans-serif;color:rgba(20,28,40,.45);flex:none;font-variant-numeric:tabular-nums}",
+      ".fo-rk-row u{text-decoration:none;font:400 12px/1 Manrope,sans-serif;color:rgba(20,28,40,.45);flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}",
+      ".fo-rk-row .rec{font:500 12px/1 Manrope,sans-serif;color:rgba(20,28,40,.45);flex:none;font-variant-numeric:tabular-nums}",
       // the three marks behind the figure - oldest on the left, as a scorebook reads
       "html body #page .fo-rk-row .frm{display:flex;gap:3px;flex:none}",
-      "html body #page .fo-rk-row .frm em{font:600 10px/1 Oswald,sans-serif;font-style:normal;font-variant-numeric:tabular-nums;border-radius:4px;padding:3px 4px;min-width:26px;text-align:center;background:rgba(20,28,40,.06);color:rgba(20,28,40,.55)}",
+      "html body #page .fo-rk-row .frm em{font:600 10px/1 Manrope,sans-serif;font-style:normal;font-variant-numeric:tabular-nums;border-radius:4px;padding:3px 4px;min-width:26px;text-align:center;background:rgba(20,28,40,.06);color:rgba(20,28,40,.55)}",
       "html body #page .fo-rk-row .frm em.g{background:rgba(22,140,99,.14);color:#12684A}",
       "html body #page .fo-rk-row .frm em.b{background:rgba(176,58,42,.12);color:#9C3324}",
       "html body #page .fo-rk-row .frm.none{font:400 12px/1 Fraunces,Georgia,serif;color:rgba(20,28,40,.35);display:block;flex:none}",
@@ -287,12 +287,12 @@
         "html body #page .fo-rk-row .frm em{min-width:0;padding:3px 4px;font-size:10px}" +
         "html body #page .fo-rk-row .pts{width:52px;font-size:13px}" +
       "}",
-      ".fo-rk-row .pts{font:700 14px/1 Oswald,sans-serif;color:#1B2432;width:58px;text-align:right;flex:none;font-variant-numeric:tabular-nums}",
+      ".fo-rk-row .pts{font:700 14px/1 Manrope,sans-serif;color:#1B2432;width:58px;text-align:right;flex:none;font-variant-numeric:tabular-nums}",
       ".fo-rk-row.mine{background:rgba(217,85,42,.07);border-radius:10px}",
       ".fo-rk-row.mine .pts{color:#B44A22}",
-      ".fo-rk-gap{text-align:center;color:rgba(20,28,40,.35);font:700 12px/1 Oswald,sans-serif;padding:4px 0}",
-      ".fo-rk-foot{display:flex;justify-content:space-between;padding:4px 6px}",
-      "html body #page .fo-rk-foot a{display:inline-flex;align-items:center;min-height:44px;padding:0 13px;margin:0 -13px;border-radius:12px;font:600 11px/1 Oswald,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22 !important;text-decoration:none !important}"
+      ".fo-rk-gap{text-align:center;color:rgba(20,28,40,.35);font:700 12px/1 Manrope,sans-serif;padding:4px 0}",
+      ".fo-rk-foot{display:flex;justify-content:space-between;flex-wrap:wrap;gap:6px 14px;padding:4px 6px}",
+      "html body #page .fo-rk-foot a{display:inline-flex;align-items:center;min-height:44px;padding:0 13px;margin:0 -13px;border-radius:12px;font:600 11px/1 Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#B44A22 !important;text-decoration:none !important}"
     ].join("\n");
     document.head.appendChild(s);
   }

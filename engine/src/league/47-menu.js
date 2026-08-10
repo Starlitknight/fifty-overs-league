@@ -230,7 +230,7 @@
       "#fo-menubar.off{display:none}",
       "#fo-menubar .fo-mb-in{display:flex;align-items:stretch;gap:2px;max-width:1120px;margin:0 auto;padding:0 8px;overflow-x:auto;overflow-y:hidden;scrollbar-width:none;-webkit-overflow-scrolling:touch}",
       "#fo-menubar .fo-mb-in::-webkit-scrollbar{display:none}",
-      "html body #fo-menubar button.fo-mb-t{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;background:transparent !important;border:0 !important;border-bottom:2px solid transparent !important;color:rgba(255,254,252,.78) !important;font:600 13px/1 Oswald,sans-serif !important;letter-spacing:.01em;padding:13px 13px 11px !important;margin:0;cursor:pointer;white-space:nowrap;box-shadow:none !important;border-radius:0 !important;transition:color .14s,border-color .14s,background .14s}",
+      "html body #fo-menubar button.fo-mb-t{flex:0 0 auto;display:inline-flex;align-items:center;gap:6px;background:transparent !important;border:0 !important;border-bottom:2px solid transparent !important;color:rgba(255,254,252,.78) !important;font:600 13px/1 Manrope,sans-serif !important;letter-spacing:.01em;padding:13px 13px 11px !important;margin:0;cursor:pointer;white-space:nowrap;box-shadow:none !important;border-radius:0 !important;transition:color .14s,border-color .14s,background .14s}",
       "html body #fo-menubar button.fo-mb-t:hover{color:#FFFEFC !important;background:rgba(255,255,255,.06) !important}",
       "html body #fo-menubar button.fo-mb-t.here{color:#E8B96A !important;border-bottom-color:#C9571F !important}",
       "html body #fo-menubar button.fo-mb-t.open{color:#FFFEFC !important;background:rgba(201,85,50,.24) !important;border-bottom-color:#E8B96A !important}",
@@ -250,12 +250,12 @@
       "}",
       "@media(max-width:720px){",
       "#fo-menubar .fo-mb-in{padding:0 6px;gap:0;overflow-x:hidden}",
-      "html body #fo-menubar button.fo-mb-t{flex:1 1 0;justify-content:center;gap:4px;min-width:0;padding:13px 2px 11px !important;font:600 12.5px/1 Oswald,sans-serif !important;letter-spacing:0}",
+      "html body #fo-menubar button.fo-mb-t{flex:1 1 0;justify-content:center;gap:4px;min-width:0;padding:13px 2px 11px !important;font:600 12.5px/1 Manrope,sans-serif !important;letter-spacing:0}",
       "#fo-menubar button.fo-mb-t span{overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
       "#fo-menubar .fo-mb-cv{width:9px;height:9px;flex:none}",
       "html body #fo-menubar button.fo-mb-out{display:none !important}",
       "}",
-      "@media(max-width:370px){html body #fo-menubar button.fo-mb-t{font:600 12px/1 Oswald,sans-serif !important;letter-spacing:0}}",
+      "@media(max-width:370px){html body #fo-menubar button.fo-mb-t{font:600 12px/1 Manrope,sans-serif !important;letter-spacing:0}}",
       // ONE HEADER, NOT TWO. On a desk wide enough that the masthead's empty
       // middle can hold the menus, the bar stops being its own row and rides
       // INSIDE the masthead - fixed, centred, the full height of the band -
@@ -278,7 +278,7 @@
       "#fo-mb-pop{position:fixed;z-index:430;display:none;min-width:230px;max-width:min(340px,calc(100vw - 16px));background:linear-gradient(168deg,#0B1D3A,#07162E 70%);border:1px solid rgba(255,255,255,.13);border-radius:14px;box-shadow:0 26px 60px rgba(4,12,26,.55);padding:7px;animation:fo-mb-drop .15s ease}",
       "#fo-mb-pop.on{display:block}",
       "@keyframes fo-mb-drop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:none}}",
-      "html body #fo-mb-pop a{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:10px;color:#FFFEFC !important;text-decoration:none !important;font:600 13px/1.25 Oswald,sans-serif}",
+      "html body #fo-mb-pop a{display:flex;align-items:center;gap:11px;padding:9px 11px;border-radius:10px;color:#FFFEFC !important;text-decoration:none !important;font:600 13px/1.25 Manrope,sans-serif}",
       "html body #fo-mb-pop a:hover,html body #fo-mb-pop a:focus{background:rgba(255,255,255,.1) !important;outline:none}",
       "html body #fo-mb-pop a.on{background:rgba(201,85,50,.26) !important}",
       "#fo-mb-pop a em{flex:none;width:28px;height:28px;display:flex;align-items:center;justify-content:center;border-radius:9px;background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.09);color:#E8B96A;font-style:normal}",

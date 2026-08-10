@@ -3,7 +3,7 @@
 // visual soul is the almanack: a literary serif speaking the headlines, small
 // capitals working the labels, paper and ink underneath. Fraunces (variable,
 // optical-size, self-hosted) becomes the display voice everywhere a page
-// speaks its title; Oswald retreats to what it is actually good at - the
+// speaks its title; Manrope retreats to what it is actually good at - the
 // scoreboard's letterspaced data labels; Inter keeps the interface; Georgia
 // keeps the prose. One terracotta tick under every kicker signs the system.
 (function () {
@@ -13,7 +13,7 @@
     // == the wordmark: an italic serif signature in the navy masthead ==========
     "#topbar#topbar .brand{font:600 16px/1 " + D + " !important;letter-spacing:.01em}",
     // == page titles: serif, title case, ink ===================================
-    // (each was Oswald all-caps; the serif speaks in sentence case)
+    // (each was Manrope all-caps; the serif speaks in sentence case)
     "html body #page .fo-mc-hero h1,html body #page .fo-sd-hero h1,html body #page .fo-hb-mast h1,html body #page .fo-tm-mast h1{font-family:" + D + " !important;font-weight:600;font-style:normal;text-transform:none !important;letter-spacing:-.015em !important;line-height:1.02;font-variation-settings:'opsz' 84}",
     "html body #page .fo-mc-hero h1{font-size:38px}",
     "html body #page .fo-sd-hero h1{font-size:40px}",

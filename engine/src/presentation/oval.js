@@ -605,7 +605,7 @@ FOC.oval = (function () {
       // tab links: one tight pill row in the UI face, not the roomy sidebar list
       "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links{grid-area:mlinks;display:flex;flex-direction:row;flex-wrap:wrap;align-items:center;gap:4px;padding:5px;margin:0 0 14px;position:static}" +
       "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links h4{display:none}" +
-      "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links a{white-space:nowrap;font-family:Oswald,-apple-system,'Segoe UI',sans-serif !important;font-size:12.5px !important;font-weight:600;line-height:1.2;letter-spacing:0;padding:8px 14px !important;border:none !important;border-radius:8px}" +
+      "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-links a{white-space:nowrap;font-family:Manrope,-apple-system,'Segoe UI',sans-serif !important;font-size:12.5px !important;font-weight:600;line-height:1.2;letter-spacing:0;padding:8px 14px !important;border:none !important;border-radius:8px}" +
       "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-body{grid-area:mbody;min-width:0;margin:0}" +
       "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-body>.panel:first-child,html body #page.fo-ovalgrid.fo-matchpage .ftp-match-body>:first-child{margin-top:0 !important}" +
       "html body #page.fo-ovalgrid.fo-matchpage .ftp-match-body .commfeed,html body #page.fo-ovalgrid.fo-matchpage .ftp-match-body #ftpcomm{max-height:calc(100vh - 280px) !important;min-height:46vh !important}" +
@@ -636,20 +636,20 @@ FOC.oval = (function () {
       ".fo-teamtalk .tt-b.on{background:#C9571F;border-color:#C9571F;color:#fff}" +
       ".fo-rowin{animation:foRowIn .38s ease;overflow:hidden}" +
       "@keyframes foRowIn{0%{opacity:0;max-height:0}100%{opacity:1;max-height:200px}}" +
-      ".ov-fld{font-family:Oswald,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;border-radius:99px;padding:3px 10px;background:#1f2d4a;color:#cfd6e4}" +
+      ".ov-fld{font-family:Manrope,sans-serif;font-size:10px;letter-spacing:1.4px;text-transform:uppercase;border-radius:99px;padding:3px 10px;background:#1f2d4a;color:#cfd6e4}" +
       ".ov-fld.f-att{background:#C9571F;color:#fff}.ov-fld.f-def{background:#2E5A7A;color:#fff}.ov-fld.f-bal{background:#4E7A4E;color:#fff}" +
       ".ov-board{display:flex;flex-wrap:wrap;gap:4px 14px;align-items:baseline;padding:9px 14px;background:#14213D;color:#F1EADA}" +
       ".ov-score{display:flex;gap:8px;align-items:baseline}" +
       ".ov-score span{font-size:11px;letter-spacing:1.4px;text-transform:uppercase;color:#b9c2d4}" +
-      ".ov-score b{font-family:Oswald,sans-serif;font-size:22px;letter-spacing:1px;color:#fff;font-variant-numeric:tabular-nums}" +
+      ".ov-score b{font-family:Manrope,sans-serif;font-size:22px;letter-spacing:1px;color:#fff;font-variant-numeric:tabular-nums}" +
       ".ov-bats,.ov-bowl{font-size:12px;color:#d5dcea;font-variant-numeric:tabular-nums}" +
       ".ov-strip{margin-left:auto;display:flex;gap:4px}" +
       ".ov-strip i{font-style:normal;width:20px;height:20px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;background:#1f2d4a;color:#cfd6e4}" +
       ".ov-strip .b4{background:#8F6A1C;color:#14213D}.ov-strip .b6{background:#C9571F;color:#fff}" +
       ".ov-strip .bw{background:#a3242b;color:#fff}.ov-strip .bd{opacity:.75}" +
       ".ov-svg{display:block;width:100%;height:auto;background:#0F1A2E}" +
-      ".ov-flbl{font:600 5px Oswald,-apple-system,sans-serif;fill:rgba(241,234,218,.55);letter-spacing:.04em;text-anchor:middle;text-transform:uppercase}" +
-      ".ov-fplr{font:700 8px Oswald,-apple-system,sans-serif;fill:rgba(245,239,221,.95);text-anchor:middle}" +
+      ".ov-flbl{font:600 5px Manrope,-apple-system,sans-serif;fill:rgba(241,234,218,.55);letter-spacing:.04em;text-anchor:middle;text-transform:uppercase}" +
+      ".ov-fplr{font:700 8px Manrope,-apple-system,sans-serif;fill:rgba(245,239,221,.95);text-anchor:middle}" +
       ".ov-f.f-hi circle{fill:#8F6A1C}.ov-f.f-hi .ov-fplr{fill:#E8B96A}" +
       ".ov-f.f-ok circle{fill:#1F6E74}.ov-f.f-ok .ov-fplr{fill:#7fd7de}" +
       ".ov-f.f-lo circle{fill:#7B3B2E}.ov-f.f-lo .ov-fplr{fill:#e0937f}" +
@@ -657,7 +657,7 @@ FOC.oval = (function () {
       ".ov-f.ov-hotw circle{animation:ovHotW .9s ease}" +
       "@keyframes ovHot{0%{stroke:#8F6A1C;stroke-width:1.2}35%{stroke:#8F6A1C;stroke-width:5.5}100%{stroke:#fff;stroke-width:1.2}}" +
       "@keyframes ovHotW{0%{stroke:#e04b3a;stroke-width:1.2}35%{stroke:#e04b3a;stroke-width:6}100%{stroke:#fff;stroke-width:1.2}}" +
-      ".ov-pop{font-family:Oswald,sans-serif;font-size:30px;letter-spacing:4px;font-weight:600;opacity:0;paint-order:stroke;stroke:#0F1A2E;stroke-width:4px}" +
+      ".ov-pop{font-family:Manrope,sans-serif;font-size:30px;letter-spacing:4px;font-weight:600;opacity:0;paint-order:stroke;stroke:#0F1A2E;stroke-width:4px}" +
       ".ov-pop.on{animation:ovPop 1.05s ease}" +
       "@keyframes ovPop{0%{opacity:0;transform:scale(.6)}18%{opacity:1;transform:scale(1.12)}70%{opacity:1;transform:scale(1)}100%{opacity:0}}" +
       // delivery grammar: pitch pulse, boundary ripple, dismissal detail, lbw ray
@@ -666,7 +666,7 @@ FOC.oval = (function () {
       ".ov-rip{fill:none;stroke-width:2;transform-box:fill-box;transform-origin:center;animation:ovRip .85s ease-out forwards}" +
       ".ov-rip.big{stroke-width:2.6;animation-duration:1s}" +
       "@keyframes ovRip{0%{opacity:.95;transform:scale(.7)}100%{opacity:0;transform:scale(4.4)}}" +
-      ".ov-pop2{font-family:Oswald,sans-serif;font-size:11px;letter-spacing:2.6px;font-weight:600;fill:#F1EADA;text-transform:uppercase;opacity:0;paint-order:stroke;stroke:#0F1A2E;stroke-width:3px}" +
+      ".ov-pop2{font-family:Manrope,sans-serif;font-size:11px;letter-spacing:2.6px;font-weight:600;fill:#F1EADA;text-transform:uppercase;opacity:0;paint-order:stroke;stroke:#0F1A2E;stroke-width:3px}" +
       ".ov-pop2.on{animation:ovPop 1.45s ease}" +
       ".ov-lbw{stroke:#e04b3a;stroke-width:1.6;stroke-dasharray:3 3;animation:ovLbw .7s ease forwards}" +
       "@keyframes ovLbw{0%{opacity:0}30%{opacity:1}100%{opacity:0}}" +
@@ -675,11 +675,11 @@ FOC.oval = (function () {
       // the broadcast tempo control lives INSIDE the pane, under the field map
       ".ov-ctl{display:flex;justify-content:center;gap:8px;padding:9px 12px 3px}" +
       ".ov-ctl:empty{display:none}" +
-      ".ov-ctl button{font-family:Oswald,sans-serif;font-weight:600;font-size:13px;letter-spacing:1px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.26);color:rgba(255,255,255,.82);border-radius:9px;padding:6px 18px;cursor:pointer;transition:.12s}" +
+      ".ov-ctl button{font-family:Manrope,sans-serif;font-weight:600;font-size:13px;letter-spacing:1px;background:rgba(255,255,255,.07);border:1.5px solid rgba(255,255,255,.26);color:rgba(255,255,255,.82);border-radius:9px;padding:6px 18px;cursor:pointer;transition:.12s}" +
       ".ov-ctl button:hover{border-color:#E8B96A;color:#E8B96A}" +
       ".ov-ctl button.on{background:linear-gradient(180deg,#E8B96A,#8F6A1C);border-color:#E8B96A;color:#0C1B2E}" +
       ".ov-snd{background:none;border:1px solid #24334f;border-radius:7px;color:#8fa0bd;font-size:12px;line-height:1;padding:3px 7px;cursor:pointer;margin-right:auto}" +
-      ".ov-need{font-family:Oswald,sans-serif;font-size:13px;letter-spacing:1.5px;color:#fff;background:#a3242b;border-radius:8px;padding:3px 10px;display:none}" +
+      ".ov-need{font-family:Manrope,sans-serif;font-size:13px;letter-spacing:1.5px;color:#fff;background:#a3242b;border-radius:8px;padding:3px 10px;display:none}" +
       ".ov-need.on{display:inline-block;animation:ovNeed 1.1s ease infinite}" +
       "@keyframes ovNeed{0%,100%{transform:scale(1);opacity:1}50%{transform:scale(1.06);opacity:.85}}" +
       "@media(prefers-reduced-motion:reduce){.ov-pop.on{animation:none;opacity:1}}";
