@@ -3862,7 +3862,14 @@
   }
   window.addEventListener("resize", function () {
     foFullBleedFit(document.querySelector(".fo-tour") || document.querySelector(".fo-city-full"));
-    try { var wm = document.querySelector("#fo-world-map"); if (wm && wm.__fit) { wm.__z = 1; wm.__dx = 0; wm.__dy = 0; wm.__fit(); wm.style.transform = "translate(-50%,-50%) scale(1)"; wm.style.setProperty("--wz", 1); } } catch (eWR) {}
+    try {
+      var wm = document.querySelector("#fo-world-map");
+      if (wm && wm.__fit) {
+        wm.__z = 1; wm.__dx = 0; wm.__dy = 0; wm.__fit();
+        wm.style.transform = "translate(-50%,-50%) scale(1)"; wm.style.setProperty("--wz", 1);
+        if (wm.__anchor) wm.__anchor();
+      }
+    } catch (eWR) {}
   });
   function foRenderTour() {
     try {
@@ -4084,8 +4091,13 @@
         } catch (eCh) {}
       };
       // the shell's second row mounts on its own clock, so measure now and
-      // again once the masthead has finished growing
-      wchrome(); setTimeout(wchrome, 350); setTimeout(wchrome, 1200);
+      // again once the masthead has finished growing - and the map band
+      // re-anchors under wherever the heading lands
+      var wchromeAnchor = function () {
+        wchrome();
+        try { if (mapEl.__anchor) mapEl.__anchor(); } catch (eWA) {}
+      };
+      wchromeAnchor(); setTimeout(wchromeAnchor, 350); setTimeout(wchromeAnchor, 1200);
       window.addEventListener("resize", wchrome);
       var openCard = function (i) {
         var r = FO_CX_REGIONS[i]; if (!r) return;
@@ -4175,9 +4187,27 @@
       mapEl.__z = 1;
       panW(0, 0);
       mapEl.__fit = fitMap;
-      // on a tall viewport the fit-to-width map is short; open a little zoomed in
-      // so it fills the screen and the clustered European pins have room to breathe
-      if (host.clientWidth < host.clientHeight) { try { zoomW(1.7); } catch (eZ0) {} }
+      // PORTRAIT: the fitted band used to open zoomed 1.7x and centred, which
+      // pushed the painting's top edge up behind the masthead words. Anchor
+      // the band in the free navy between the heading and the hint instead,
+      // and open only as zoomed as that space affords - the title and the
+      // painting never share pixels.
+      var anchorMap = function () {
+        try {
+          if (host.clientWidth >= host.clientHeight) { mapEl.style.top = "50%"; return; }
+          var hostR = host.getBoundingClientRect();
+          var hd9 = page.querySelector(".fo-world-hd");
+          var hint9 = page.querySelector("#fo-world-hint");
+          var topE = hd9 ? hd9.getBoundingClientRect().bottom - hostR.top + 14 : 14;
+          var botE = hint9 ? hint9.getBoundingClientRect().top - hostR.top - 14 : host.clientHeight - 14;
+          var free = Math.max(180, botE - topE);
+          mapEl.style.top = Math.round(topE + free / 2) + "px";
+          mapEl.__z = Math.max(1, Math.min(1.7, free / Math.max(1, mapEl.offsetHeight)));
+          panW(0, 0);
+        } catch (eA) {}
+      };
+      mapEl.__anchor = anchorMap;
+      anchorMap();
       host.addEventListener("wheel", function (ev) {
         ev.preventDefault();
         var r0 = host.getBoundingClientRect();
