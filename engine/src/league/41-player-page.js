@@ -1229,7 +1229,15 @@
         if (line && line.bowl) bits.push(line.bowl);
         if (line && line.ct) bits.push(line.ct + " ct");
         var his = bits.length ? bits.join(" &middot; ") : (cards[i] ? "no recorded involvement" : "card on its way");
-        return "<tr><td>R" + (m.round | 0) + "</td><td>" + (mineHome ? "v " : "at ") + E(opp) + "</td>" +
+        // EVERY LINE IS A DOOR. A man's match log named the fixture and then
+        // left the reader to go and find it; the report is one address away
+        // and the log has always known it - nation plus the World Service's
+        // match id, the same address the fixtures list uses.
+        var to = (got.rid && m.id)
+          ? "#/report?n=" + encodeURIComponent(got.rid) + "&w=" + encodeURIComponent(m.id) : "";
+        var fix = (mineHome ? "v " : "at ") + E(opp);
+        return "<tr><td>R" + (m.round | 0) + "</td><td>" +
+          (to ? "<a class='fo-pp-mlink' href='" + to + "'>" + fix + "<i>&rsaquo;</i></a>" : fix) + "</td>" +
           "<td class='" + (res === "Won" ? "w" : res === "Lost" ? "l" : "") + "'>" + res + "</td>" +
           "<td>" + his + "</td><td class='sm'>League</td></tr>";
       }).join("");
@@ -1242,10 +1250,21 @@
           var bits = [];
           if ((l.b | 0) > 0 || (l.r | 0) > 0) bits.push(l.r + (l.out ? "" : "*") + " (" + l.b + ")");
           if ((l.ovb | 0) > 0) bits.push(l.w + "-" + l.conc + " (" + ppOvers(l.ovb) + ")");
+          // play_at_ms is a bigint, and a bigint crosses the wire as a STRING -
+          // new Date("1786881600000") is not a timestamp to JS, it is a date
+          // string it cannot parse, and every friendly in the log read
+          // "Invalid Date". Number it first, and refuse anything that is not
+          // a real instant rather than printing the words.
           var dt = "&mdash;";
-          try { if (l.at) dt = new Date(l.at).toLocaleDateString([], { day: "numeric", month: "short" }); } catch (eD) {}
+          try {
+            var ms = +l.at, dd = ms ? new Date(ms) : null;
+            if (dd && isFinite(dd.getTime())) dt = dd.toLocaleDateString([], { day: "numeric", month: "short" });
+          } catch (eD) {}
           var res9 = l.win === true ? "Won" : l.win === false ? "Lost" : "&mdash;";
-          return "<tr><td>" + dt + "</td><td>v " + E(l.opp || "") + "</td>" +
+          var toF = l.id ? "#/report?fr=" + encodeURIComponent(l.id) : "";
+          var fixF = "v " + E(l.opp || "");
+          return "<tr><td>" + dt + "</td><td>" +
+            (toF ? "<a class='fo-pp-mlink' href='" + toF + "'>" + fixF + "<i>&rsaquo;</i></a>" : fixF) + "</td>" +
             "<td class='" + (l.win === true ? "w" : l.win === false ? "l" : "") + "'>" + res9 + "</td>" +
             "<td>" + (bits.length ? bits.join(" &middot; ") : "no recorded involvement") + "</td>" +
             "<td class='sm'>Friendly</td></tr>";
@@ -1350,6 +1369,11 @@
     "html body #page .fo-pp-log tr:last-child td{border-bottom:none}",
     "html body #page .fo-pp-log td.w{color:#177A57;font-weight:700}",
     "html body #page .fo-pp-log td.l{color:#8E1F13;font-weight:700}",
+    // the fixture is the door: a link that reads as one, with the chevron
+    // that every other door in the game wears
+    "html body #page .fo-pp-log a.fo-pp-mlink{color:#B44A22 !important;text-decoration:none !important;display:inline-flex;align-items:center;gap:5px;min-height:24px}",
+    "html body #page .fo-pp-log a.fo-pp-mlink:hover{text-decoration:underline !important;text-underline-offset:3px}",
+    "html body #page .fo-pp-log a.fo-pp-mlink i{font-style:normal;color:#C9A24B}",
     "html body #page .fo-pp-log td.sm{font-size:10.5px;color:#8a8272;white-space:nowrap}",
     "html body #page a.fo-pp-back{display:inline-flex;align-items:center;min-height:44px;padding:0 12px;margin:0 -12px 6px;border-radius:12px;font:700 11px/1 Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--nac);text-decoration:none}",
     // ---- the hero -----------------------------------------------------------

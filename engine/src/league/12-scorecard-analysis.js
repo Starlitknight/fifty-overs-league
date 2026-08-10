@@ -4695,7 +4695,14 @@
       "html body #page a.fo-lx-rung:hover{transform:translateY(-4px);outline-color:color-mix(in srgb,var(--lac) 75%,transparent)}",
       ".fo-lx-rung img{display:block;width:100%;height:106px;object-fit:cover;object-position:center 6%}",
       ".fo-lx-rung b{position:absolute;top:6px;left:7px;font-family:Manrope,sans-serif;font-size:10px;font-weight:700;color:#0d1526;background:var(--gold);border-radius:4px;padding:1px 5px}",
-      ".fo-lx-rung i{display:block;font-style:normal;font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.14em;font-size:10px;color:var(--lac);filter:brightness(1.6);padding:8px 8px 0}",
+      // A NATION'S OWN COLOUR, LIFTED SO IT CAN BE READ. These sit on near-black,
+      // and the darker crests - the United States navy, the Afghan purple - came
+      // out at 1.7:1 against it. brightness() was doing the lifting, which paints
+      // but cannot be measured and still left the darkest ones thin; mixing toward
+      // paper guarantees a floor whatever the crest, and the colour still reads as
+      // that nation's. The plain value stays first as the fallback.
+      ".fo-lx-rung i{display:block;font-style:normal;font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.14em;font-size:10px;color:var(--lac);padding:8px 8px 0}",
+      ".fo-lx-rung i{color:color-mix(in srgb,var(--lac) 42%,#FFFEFC)}",
       ".fo-lx-rung span{display:block;font-family:Manrope,sans-serif;text-transform:uppercase;font-size:11px;line-height:1.15;padding:2px 8px 0;color:var(--paper)}",
       // ---------- the cast: a wall of posters ----------
       ".fo-lx-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(232px,1fr));gap:14px;padding-bottom:10px}",
