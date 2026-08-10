@@ -247,6 +247,7 @@
       // nothing is ever guillotined at the edge.
       "@media(max-width:899px){#fo-menubar{transition:transform .18s ease,opacity .18s ease}",
       "body.fo-chrome-slim #fo-menubar{transform:translateY(-110%);opacity:0;pointer-events:none}",
+      "}",
       "@media(max-width:720px){",
       "#fo-menubar .fo-mb-in{padding:0 6px;gap:0;overflow-x:hidden}",
       "html body #fo-menubar button.fo-mb-t{flex:1 1 0;justify-content:center;gap:4px;min-width:0;padding:13px 2px 11px !important;font:600 12.5px/1 Inter,sans-serif !important;letter-spacing:0}",

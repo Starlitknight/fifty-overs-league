@@ -134,7 +134,7 @@
       ".fo-fin-foot{display:flex;gap:10px;justify-content:space-between;margin-top:20px;flex-wrap:wrap}",
       ".fo-fin-foot a{display:inline-flex;align-items:center;min-height:44px;font:600 13px Inter,sans-serif;color:rgba(20,28,40,.65);background:var(--paper);border:1px solid rgba(20,28,40,.12);border-radius:999px;padding:0 17px;text-decoration:none}",
       ".fo-fin-foot a:hover{color:#B44A22;border-color:rgba(217,85,42,.5)}",
-      ".fo-fin{padding:18px 12px 40px}.fo-fin-bank{padding:18px}}",
+      "@media(max-width:560px){.fo-fin{padding:18px 12px 40px}.fo-fin-bank{padding:18px}}",
       // ---- THE SHEET: the finance room as one daylight page of type --------
       // No cards. A giant scoreboard numeral, the bank's own line drawn from
       // the statement, then flat ledger rows on hairlines. One accent (the
