@@ -440,7 +440,11 @@
           ? stat("terra", FO_I("trophy", 19), "League position", "&ndash;", "updates at stumps", "League", "at stumps")
           : stat("terra", FO_I("trophy", 19), "League position", posV, "of " + (rowsL.length || 10) + (mv ? " &middot; " + mv + " since last round" : ""), "League", "of " + (rowsL.length || 10))) +
         stat("terra", FO_I("wallet", 19), "Bank", foMoney(bank), bankSub, "Bank", bankSubM) +
-        stat("teal", FO_I("bat", 19), "Squad strength", (mySq / 1000).toFixed(1), foOrdinal(sqRank) + " strongest in the league", "Squad", "Ranked " + foOrdinal(sqRank)) +
+        // on the stretched card scale (foRate) the rankings and dossiers use,
+        // so the same club never wears two different strengths
+        stat("teal", FO_I("bat", 19), "Squad strength",
+          ((window.foRate ? foRate(mySq) : mySq) / 1000).toFixed(1) + "k",
+          foOrdinal(sqRank) + " strongest in the league", "Squad", "Ranked " + foOrdinal(sqRank)) +
         stat("terra", FO_I("users", 19), "Supporters", "<span class='fo-stat-word'>" + mood + "</span>", "Mood", "Supporters", (t.supporters ? (+t.supporters).toLocaleString() : "Mood")) + "</div>";
 
       // Upcoming fixtures (+ friendlies), with a Set-lineup action
@@ -1023,7 +1027,6 @@
         var myAvg = avg((mine.players || []).map(function (p) { return p.rating || 0; }));
         if (myAvg > 0) out.rel = Math.round(100 * (theirAvg / myAvg - 1));
       }
-      out.strength = Math.round(theirAvg);
       // batting depth from the game's own aggregate, best XI by batting
       var bats = players.map(function (p) { return foAgg(p, "bat"); }).sort(function (a, b) { return b - a; });
       var capable = bats.filter(function (v) { return v >= 48; }).length;
@@ -1334,7 +1337,7 @@
       : (meet ? "<div class='fo-kpi'><span>Next meeting</span><b>R" + meet.r + "</b><i>" + E(meet.d) + "</i></div>"
         : "<div class='fo-kpi'><span>Next meeting</span><b>–</b><i>not this season</i></div>");
     var kpi = "<div class='fo-scout-kpis'>" +
-      "<div class='fo-kpi'><span>Squad strength</span><b>" + (avg / 1000).toFixed(1) + "</b>" + relTxt + "</div>" +
+      "<div class='fo-kpi'><span>Squad strength</span><b>" + ((window.foRate ? foRate(avg) : avg) / 1000).toFixed(1) + "k</b>" + relTxt + "</div>" +
       "<div class='fo-kpi'><span>Batting depth</span><b>" + brief.depth + "</b><i>" + brief.depthSub + "</i></div>" +
       "<div class='fo-kpi'><span>Attack mix</span><b>" + brief.attack + "</b><i>" + brief.attackSub + "</i></div>" + kpi4 + "</div>";
     var ordinal = pos ? (pos + (["th", "st", "nd", "rd"][((pos % 100) - 20) % 10] || ["th", "st", "nd", "rd"][pos % 100] || "th")) : null;
