@@ -333,17 +333,19 @@
                 };
                 var h0 = chron(App._scCommF || "all"); if (h0 != null) feedC.innerHTML = h0;
                 var fb2 = document.createElement("div"); fb2.className = "fo-cfilters";
+                var lb2 = document.createElement("label"); lb2.textContent = "Display"; fb2.appendChild(lb2);
+                var sel2 = document.createElement("select"); sel2.className = "fo-cf";
                 [["highlights", "Key moments"], ["all", "Every ball"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["talents", "Talents"], ["fielding", "Fielding"]].forEach(function (ff) {
-                  var b3 = document.createElement("button");
-                  b3.className = "fo-sctab fo-cf" + ((App._scCommF || "all") === ff[0] ? " on" : "");
-                  b3.textContent = ff[1];
-                  b3.addEventListener("click", function () {
-                    App._scCommF = ff[0];
-                    var hF = chron(ff[0]); if (hF != null) feedC.innerHTML = hF;
-                    document.querySelectorAll("#page .fo-cf").forEach(function (x) { x.classList.toggle("on", x === b3); });
-                  });
-                  fb2.appendChild(b3);
+                  var o3 = document.createElement("option");
+                  o3.value = ff[0]; o3.textContent = ff[1];
+                  if ((App._scCommF || "all") === ff[0]) o3.selected = true;
+                  sel2.appendChild(o3);
                 });
+                sel2.addEventListener("change", function () {
+                  App._scCommF = sel2.value;
+                  var hF = chron(sel2.value); if (hF != null) feedC.innerHTML = hF;
+                });
+                fb2.appendChild(sel2);
                 feedC.parentNode.insertBefore(fb2, feedC);
 
               }
@@ -1196,9 +1198,9 @@
             } else if (tabL === "ratings") {
               bodyL = "<div class='panel'><div class='pad small'>Match ratings are compiled at stumps &middot; they land with the final scorecard.</div></div>";
             } else {
-              var cfBarL = "<div class='fo-cfilters'>" + [["highlights", "Key moments"], ["all", "Every ball"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["talents", "Talents"], ["fielding", "Fielding"]].map(function (ff) {
-                return "<button class='fo-sctab fo-lglcf" + (cfL === ff[0] ? " on" : "") + "' data-f='" + ff[0] + "'>" + ff[1] + "</button>";
-              }).join("") + "</div>";
+              var cfBarL = "<div class='fo-cfilters'><label>Display</label><select class='fo-lglcf'>" + [["highlights", "Key moments"], ["all", "Every ball"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["talents", "Talents"], ["fielding", "Fielding"]].map(function (ff) {
+        return "<option value='" + ff[0] + "'" + (cfL === ff[0] ? " selected" : "") + ">" + ff[1] + "</option>";
+      }).join("") + "</select></div>";
               bodyL = "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'>" + cfBarL + "<div id='ftpcomm' class='ftpskin'>" +
                 (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, cfL, 5000) : "") + "</div></div></div>";
             }
@@ -1218,13 +1220,21 @@
       window.pgScorecard.__foBcast = 1;
     }
     // league live tabs + commentary filters redraw the broadcast in place
+    var foLgLRedraw = function () {
+      if (/^#\/scorecard/.test(location.hash || "") && typeof window.route === "function") window.route();
+    };
     document.addEventListener("click", function (ev) {
-      var b = ev.target && ev.target.closest ? ev.target.closest(".fo-lgltab,.fo-lglcf") : null;
+      var b = ev.target && ev.target.closest ? ev.target.closest(".fo-lgltab") : null;
       if (!b) return;
       ev.preventDefault();
-      if (b.classList.contains("fo-lglcf")) window.__foLgLCF = b.getAttribute("data-f");
-      else window.__foLgLTab = b.getAttribute("data-t");
-      if (/^#\/scorecard/.test(location.hash || "") && typeof window.route === "function") window.route();
+      window.__foLgLTab = b.getAttribute("data-t");
+      foLgLRedraw();
+    });
+    document.addEventListener("change", function (ev) {
+      var sel = ev.target;
+      if (!sel || !sel.classList || !sel.classList.contains("fo-lglcf")) return;
+      window.__foLgLCF = sel.value;
+      foLgLRedraw();
     });
     // the matchday page leads with the live scoreboard during the hour
     window.foLiveBoardHTML = function () {
@@ -1350,7 +1360,9 @@
     var bcs = document.createElement("style");
     bcs.textContent =
       ".fo-live-mask{color:#B23230;font-weight:800}" +
-      ".fo-cfilters{display:flex;gap:6px;overflow-x:auto;margin:0 0 10px;padding-bottom:4px;scrollbar-width:none}.fo-cfilters::-webkit-scrollbar{display:none}" +
+      ".fo-cfilters{display:flex;align-items:center;gap:9px;margin:0 0 10px}" +
+      ".fo-cfilters label{font:600 10px Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#8a8272}" +
+      ".fo-cfilters select{min-height:34px;padding:0 12px;border-radius:9px;font:600 12.5px Manrope,sans-serif;color:#1B2432;background:#FFFEFC;border:1px solid #d8d2c4;cursor:pointer}" +
       ".fo-live-sleep{padding:14px 4px;font-size:13px;color:#6A6354}" +
       ".fo-live-hero{background:linear-gradient(135deg,#14243A,#07162E 62%);border-radius:16px;padding:20px 22px;margin:8px 0 14px;color:#c7cfda}" +
       ".fo-live-tag{font-size:11px;font-weight:800;letter-spacing:.1em;text-transform:uppercase;color:#ff8a7a;display:flex;align-items:center;gap:7px}" +

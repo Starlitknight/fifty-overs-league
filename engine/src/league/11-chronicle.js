@@ -1033,6 +1033,11 @@
     if (typeof window.ftpCommHTML === "function" && !window.ftpCommHTML.__foRich) {
       var foCommTag = function (L) {
         var t = L.txt || "";
+        // THE BALL SAYS WHAT IT DID. The engine stamps every fielding
+        // intervention and every talent that fired, so the tag is read off the
+        // event rather than guessed from the sentence describing it. The
+        // regexes below stay for logs banked before the stamp existed.
+        if (typeof foBallTag === "function") { var st = foBallTag(L); if (st) return st; }
         if (L.out === "wRO") return "direct hit";
         if (/DROPPED/i.test(t)) return "dropped catch";
         if (/Stumping chance missed/i.test(t)) return "chance missed";

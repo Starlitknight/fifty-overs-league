@@ -852,6 +852,7 @@ function groundFieldingAdjust(inn,out,bowler){
     if(near&&pick&&near.ang<=14&&fs>=58&&M.rand()<0.30*prox(near)*Math.min(1,(fs-55)/60)){
       M._fielder=pick;M._fieldPos=near.spot.label;
       M._fieldingEvent='Brilliant stop by '+pick.name+' at '+near.spot.label+' saves two.';
+      M._fldEv={k:'save',by:pick.name,at:near.spot.label,d:2};
       return '2';
     }
     return out;
@@ -863,6 +864,7 @@ function groundFieldingAdjust(inn,out,bowler){
     if(near&&pick&&near.ang<=11&&fs>=64&&M.rand()<0.26*prox(near)*Math.min(1,(fs-60)/50)){
       M._fielder=pick;M._fieldPos=near.spot.label;
       M._fieldingEvent=(isRocket?'Rocket Arm! ':'')+pick.name+' attacks the ball at '+near.spot.label+' and keeps it to one.';
+      M._fldEv={k:'save',by:pick.name,at:near.spot.label,d:1,arm:!!isRocket};
       return '1';
     }
     return out;
@@ -873,6 +875,7 @@ function groundFieldingAdjust(inn,out,bowler){
     if(near&&pick&&near.ang<=9&&fs<44&&M.rand()<0.30*prox(near)*Math.min(1,(46-fs)/24)){
       M._fielder=pick;M._fieldPos=near.spot.label;
       M._fieldingEvent='Misfield by '+pick.name+' at '+near.spot.label+' turns one into two.';
+      M._fldEv={k:'misfield',by:pick.name,at:near.spot.label,d:-1};
       return '2';
     }
     return out;
@@ -883,6 +886,7 @@ function groundFieldingAdjust(inn,out,bowler){
     if(near&&pick&&near.ang<=8&&fs<40&&M.rand()<0.22*prox(near)*Math.min(1,(42-fs)/24)){
       M._fielder=pick;M._fieldPos=near.spot.label;
       M._fieldingEvent='Fumble from '+pick.name+' at '+near.spot.label+' releases a single.';
+      M._fldEv={k:'fumble',by:pick.name,at:near.spot.label,d:-1};
       return '1';
     }
     return out;
@@ -932,7 +936,7 @@ function stepBall(){
   const d=ballDist(batP,bowler,phaseOf(over),faced,intent,rrDef,M.pitch,field,over,{freeHit:!!inn.freeHit,weather:((M.meta&&M.meta.weather)||'sunny').toLowerCase(),pship:inn.pshipR,chase:M.inns===1,bballs:brec?brec.b:0,ballsThisSpell:brec?brec.spellB||0:0,wkts:inn.wkts,ballsLeft:remBalls,reqRate,fieldAvg,keeperQuality,rocketArms:inn.bxi.filter(p=>(p.talents||[]).includes('rocketArm')).length,lightningKeeper:keeperTalent.includes('lightningHands'),mixed:!!(inn.bat[inn.nonstriker]&&!inn.bat[inn.nonstriker].out&&batP.hand!==inn.bat[inn.nonstriker].p.hand),batFat:M.fat[batP.name]||0,bowlFat:M.fat[bowler.name]||0,captBowl:inn.captBowl,captBat:inn.captBat,key:_talKey});
   const r=M.rand();let c=0,out='dot';
   for(const k in d){c+=d[k];if(r<=c){out=k;break}}
-  M._fielder=null;M._dropped=false;M._fieldingEvent=null;M._fieldPos=null;
+  M._fielder=null;M._dropped=false;M._fieldingEvent=null;M._fieldPos=null;M._fldEv=null;M._talEv=null;
   // true fielding: the ball now has a real line off the bat
   const _hand=(batP&&batP.hand)||'R';
   const _FS=foFieldState(inn,_hand);
@@ -960,17 +964,18 @@ function stepBall(){
     const TF=foTalHas(f,{key:_talKey});
     foTalCount(M._tal,inn.bowlTeam,f,{},['safeHands']);   // the keeper's gloves are counted every ball, above
     let pDrop=Math.min(0.36,Math.max(0.009,0.215-0.0048*(cat-55)-(TF('safeHands')?0.052:0)-(TF('lightningHands')&&f.keeper?0.050:0)+(wxd==='chilly'?0.045:0)+(wxd==='misty'?0.030:0)));
-    if(M.rand()<pDrop){M._dropped={by:f.name};M._fieldPos=null;out=(M.rand()<0.65?'dot':'1');}
-    else M._fielder=f;
+    if(M.rand()<pDrop){M._dropped={by:f.name};M._fieldPos=null;M._fldEv={k:'drop',by:f.name,d:0};out=(M.rand()<0.65?'dot':'1');}
+    else {M._fielder=f;M._fldEv={k:'catch',by:f.name,at:M._fieldPos||null,d:0};}
   }else if(out==='wST'){M._fielder=inn.bxi.find(p=>p.keeper)||inn.bxi[0];
     const kq=foKeeperQuality(M._fielder), miss=foClamp(0.20-0.0038*(kq-55),0.014,0.30);
-    if(M.rand()<miss){M._dropped={by:M._fielder.name};out='dot';M._fieldingEvent='Stumping chance missed by '+M._fielder.name+'.';}
-    else if(M._fielder&&foTalHas(M._fielder,{key:_talKey})('lightningHands'))M._fieldingEvent='Lightning Hands from '+M._fielder.name+' - the bails are gone in a blur.';}
+    if(M.rand()<miss){M._dropped={by:M._fielder.name};out='dot';M._fldEv={k:'stumpMiss',by:M._fielder.name,d:0};M._fieldingEvent='Stumping chance missed by '+M._fielder.name+'.';}
+    else {M._fldEv={k:'stumping',by:M._fielder.name,d:0};
+      if(M._fielder&&foTalHas(M._fielder,{key:_talKey})('lightningHands')){M._fieldingEvent='Lightning Hands from '+M._fielder.name+' - the bails are gone in a blur.';M._talEv='Lightning Hands';}}}
   else if(out==='wRO'){
     const cands=inn.bxi.map(p=>({p,w:(p.field||50)*(foTalHas(p,{key:_talKey})('rocketArm')?1.5:1)}));
     let tot=cands.reduce((a,x)=>a+x.w,0),pick=M.rand()*tot,f=cands[0].p;
     for(const x of cands){pick-=x.w;if(pick<=0){f=x.p;break}}
-    M._fielder=f;
+    M._fielder=f;M._fldEv={k:'runout',by:f.name,d:0};
   }
   out=groundFieldingAdjust(inn,out,bowler);
   apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat);
@@ -1014,24 +1019,33 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
     const cskill=(M._fielder.skills&&M._fielder.skills.catching)||55;
     txt+=cskill>=72?' What a catch from '+M._fielder.name+' - full stretch!':' Taken safely by '+M._fielder.name+'.';
   }
+  // A TALENT THAT FIRES IS RECORDED, NOT JUST NARRATED. Every line below is a
+  // talent the man OWNS, on a ball whose own conditions met the talent's - and
+  // an owned talent is already in ballDist, so the line is reporting an edge
+  // that was really applied, not decorating one that was not.
   if(isWkt(out)){
-    if(TW2.includes('partnershipBreaker')&&inn.pshipR>=50)txt+=' The PARTNERSHIP BREAKER strikes - the stand of '+inn.pshipR+' is broken!';
-    else if(TW2.includes('newBallSpecialist')&&overNow<10)txt+=' The New Ball Specialist makes the cherry talk!';
-    else if(TW2.includes('goldenArm')&&brec.b<=12)txt+=' Golden Arm! First spell overs and he strikes again.';
-    else if(TW2.includes('mysteryBall')&&(inn.faced[sb.p.name]||0)<10)txt+=' The Mystery Ball completely deceives the newcomer!';
-    else if(TW2.includes('bouncer')&&(sb.p.vsPace??50)<48)txt+=' Softened up by the short stuff - the Bouncer talent tells.';
-  }else if(out==='6'&&TB2.includes('sixMachine')&&intent>=1){txt+=' The SIX MACHINE delivers!';}
-  else if((out==='4'||out==='6')&&TB2.includes('finisher')&&overNow>=40){txt+=' Finisher’s instinct at the death.';}
-  else if((out==='dot'||out==='1')&&M.rand()<0.045){
-    const A2=foFieldAssign(inn);
-    const f=(ev&&ev.pos&&A2&&A2.byLbl[ev.pos])||null;
-    if(f){
-      const fs=(f.field||((f.skills&&f.skills.fielding)||50));
-      if(fs>=68&&out==='dot')txt+=' Brilliant diving stop by '+f.name+' - certain runs saved!';
-      else if(fs<42&&out==='1')txt+=' Misfield! '+f.name+' fumbles and they steal the single.';
-    }
-  }
-  M.log.unshift({no:ballNo,out,txt,d,inn:M.inns,mile:false,ev});
+    if(TW2.includes('partnershipBreaker')&&inn.pshipR>=50){txt+=' The PARTNERSHIP BREAKER strikes - the stand of '+inn.pshipR+' is broken!';M._talEv='Partnership Breaker';}
+    else if(TW2.includes('newBallSpecialist')&&overNow<10){txt+=' The New Ball Specialist makes the cherry talk!';M._talEv='New Ball Specialist';}
+    else if(TW2.includes('goldenArm')&&brec.b<=12){txt+=' Golden Arm! First spell overs and he strikes again.';M._talEv='Golden Arm';}
+    else if(TW2.includes('mysteryBall')&&(inn.faced[sb.p.name]||0)<10){txt+=' The Mystery Ball completely deceives the newcomer!';M._talEv='Mystery Ball';}
+    else if(TW2.includes('bouncer')&&(sb.p.vsPace??50)<48){txt+=' Softened up by the short stuff - the Bouncer talent tells.';M._talEv='Bouncer';}
+  }else if(out==='6'&&TB2.includes('sixMachine')&&intent>=1){txt+=' The SIX MACHINE delivers!';M._talEv='Six Machine';}
+  else if((out==='4'||out==='6')&&TB2.includes('finisher')&&overNow>=40){txt+=' Finisher’s instinct at the death.';M._talEv='Finisher';}
+  // THE FLAVOUR THAT SAVED NOTHING IS GONE. A one-in-twenty-two roll used to
+  // append "certain runs saved" to a dot and "they steal the single" to a one
+  // - AFTER the outcome was settled, so not a run changed hands either way. A
+  // reader filtering for fielding was being shown a fielder's imaginary work
+  // beside his real work. The real work is in groundFieldingAdjust, which
+  // turns a four into two and a dot into one and stamps what it did.
+  //
+  // The DRAW stays. It decides nothing, but it is part of the stream every
+  // match ever played was dealt from, and removing it renumbers every ball
+  // after it: the golden masters diverge and the calibration bands - measured
+  // against this exact stream - move with them (par fell to the floor of the
+  // balanced band on 60 seeds a cell). The sentence was the lie; the number
+  // was never the problem.
+  else if(out==='dot'||out==='1'){M.rand();}
+  M.log.unshift({no:ballNo,out,txt,d,inn:M.inns,mile:false,ev,fld:M._fldEv||null,tal:M._talEv||null});
   for(const m of milestones)M.log.unshift({no:'',out:'★',txt:m,d:null,inn:M.inns,mile:true});
   if(wk){
     inn.wkts++;brec.w++;
@@ -4655,15 +4669,37 @@ window.addEventListener('hashchange',()=>setTimeout(foUpdateLiveTopbar,0));
 setInterval(foUpdateLiveTopbar,1200);
 
 function foIsTalentText(txt){return /SIX MACHINE|Finisher|PARTNERSHIP BREAKER|New Ball Specialist|Golden Arm|Mystery Ball|Bouncer|Lightning Hands|Rocket Arm|Safe Hands|Miser|Spin Killer|Pace Hunter|Fast Starter|Anchor|death specialist/i.test(txt||'')}
+// WHAT THE ENGINE ACTUALLY DID ON THIS BALL, IN TWO WORDS. Every kind below is
+// stamped by the code that MOVED something: groundFieldingAdjust when it turns
+// a four into two or a dot into one, the catch resolver when a chance is held
+// or put down, the stumping and run-out branches. Nothing here is written by
+// the commentary generator, so a reader filtering for fielding is shown work
+// that happened rather than work that was described.
+const FO_FLD_TAG={save:'great fielding',misfield:'misfield',fumble:'fumble',
+  drop:'dropped',catch:'catch',stumping:'stumped',stumpMiss:'missed stumping',runout:'run out'};
+function foBallTag(L){
+  if(!L)return null;
+  if(L.tal)return L.tal;                                  // a talent that really fired
+  if(L.fld&&FO_FLD_TAG[L.fld.k])return FO_FLD_TAG[L.fld.k];
+  return null;
+}
+// a talent tag reads differently from a fielding one - it is the man's own
+function foBallTagKind(L){ return (L&&L.tal)?'tal':((L&&L.fld)?'fld':null); }
 function foCommPass(L,filter){
   filter=filter||'all'; if(filter==='all')return true;
   const txt=L.txt||'';
   if(filter==='wickets')return isWkt(L.out)||/WICKET|out for|Partnership ends/i.test(txt);
   if(filter==='boundaries')return L.out==='4'||L.out==='6'||/FOUR|SIX/i.test(txt);
   if(filter==='overs')return L.mile||/End of over|DRINKS|Innings break|CHASE BEGINS|PLAY BEGINS/i.test(txt);
+  // A STAMPED LOG ANSWERS FROM EVIDENCE ONLY. Every ball the engine writes now
+  // carries an fld key (null when nothing happened), so its presence marks a log
+  // that can be asked properly; the text tests below are for logs banked before
+  // the stamp existed, where a sentence is all there is to go on.
+  if(filter==='fielding'&&('fld' in L))return !!L.fld;
+  if(filter==='talents'&&('tal' in L))return !!L.tal;
   if(filter==='fielding')return L.out==='wC'||L.out==='wRO'||L.out==='wST'||/DROPPED|Misfield|fumbles|Brilliant stop|diving stop|phenomenal stop|attacks the ball|Stumping chance missed|Rocket Arm|Lightning Hands|run out|caught (behind|at|by)|takes (a|the|it|his).{0,24}catch|saves two|cuts it off/i.test(txt);
   if(filter==='talents')return foIsTalentText(txt);
-  if(filter==='highlights')return L.mile||isWkt(L.out)||L.out==='4'||L.out==='6'||foIsTalentText(txt)||/DROPPED|FIFTY|HUNDRED/i.test(txt);
+  if(filter==='highlights')return L.mile||isWkt(L.out)||L.out==='4'||L.out==='6'||!!L.tal||foIsTalentText(txt)||/DROPPED|FIFTY|HUNDRED/i.test(txt);
   return true;
 }
 function foRenderCommentText(txt){

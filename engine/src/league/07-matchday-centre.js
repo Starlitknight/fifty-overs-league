@@ -933,9 +933,9 @@
     } else if (tab === "ratings") {
       body = "<div class='panel'><div class='pad small'>Match ratings are compiled at stumps &middot; they land with the final scorecard.</div></div>";
     } else {
-      var cfBar = "<div class='fo-cfilters'>" + [["highlights", "Key moments"], ["all", "Every ball"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["talents", "Talents"], ["fielding", "Fielding"]].map(function (ff) {
-        return "<button class='fo-sctab fo-frlcf" + (cf === ff[0] ? " on" : "") + "' data-f='" + ff[0] + "'>" + ff[1] + "</button>";
-      }).join("") + "</div>";
+      var cfBar = "<div class='fo-cfilters'><label>Display</label><select class='fo-frlcf'>" + [["highlights", "Key moments"], ["all", "Every ball"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["talents", "Talents"], ["fielding", "Fielding"]].map(function (ff) {
+        return "<option value='" + ff[0] + "'" + (cf === ff[0] ? " selected" : "") + ">" + ff[1] + "</option>";
+      }).join("") + "</select></div>";
       var over0 = upto >= log.length ? "<div class='fo-c-mile'><div class='text'>That is the last ball - the umpires check the paperwork. The official result lands at stumps.</div><div class='clear'></div></div>" : "";
       body = "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'>" + cfBar + "<div id='ftpcomm' class='ftpskin'>" +
         over0 + (typeof ftpCommHTML === "function" ? ftpCommHTML(vis, cf, 5000) : "") + "</div></div></div>";
@@ -953,14 +953,23 @@
   }
   window.__foFrLiveTest = function (c, id) { foFrLiveDraw(c, id); };   // debug/test hook (harmless)
   // live tab + filter clicks redraw instantly from the last fetched row
-  document.addEventListener("click", function (ev) {
-    var b = ev.target && ev.target.closest ? ev.target.closest(".fo-frltab,.fo-frlcf") : null;
-    if (!b) return;
-    ev.preventDefault();
-    if (b.classList.contains("fo-frlcf")) window.__foFrLCF = b.getAttribute("data-f");
-    else window.__foFrLTab = b.getAttribute("data-t");
+  var foFrLRedraw = function () {
     var lr = window.__foFrLiveRow;
     if (lr && (location.hash || "").indexOf(lr.id) >= 0) foFrLiveDraw(lr.c, lr.id);
+  };
+  document.addEventListener("click", function (ev) {
+    var b = ev.target && ev.target.closest ? ev.target.closest(".fo-frltab") : null;
+    if (!b) return;
+    ev.preventDefault();
+    window.__foFrLTab = b.getAttribute("data-t");
+    foFrLRedraw();
+  });
+  // the filter is a list of choices now, and a list answers to change
+  document.addEventListener("change", function (ev) {
+    var sel = ev.target;
+    if (!sel || !sel.classList || !sel.classList.contains("fo-frlcf")) return;
+    window.__foFrLCF = sel.value;
+    foFrLRedraw();
   });
   function foFrDoneRender(c, id) {
     var page = document.getElementById("page"); if (!page) return;
@@ -1008,9 +1017,9 @@
       }).join("");
       body = osec || notRec("Orders");
     } else if (tab === "comm") {
-      var cfBar = "<div class='fo-cfilters'>" + [["highlights", "Key moments"], ["all", "Every ball"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["talents", "Talents"], ["fielding", "Fielding"]].map(function (ff) {
-        return "<button class='fo-sctab fo-frcf" + (cf === ff[0] ? " on" : "") + "' data-f='" + ff[0] + "'>" + ff[1] + "</button>";
-      }).join("") + "</div>";
+      var cfBar = "<div class='fo-cfilters'><label>Display</label><select class='fo-frcf'>" + [["highlights", "Key moments"], ["all", "Every ball"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["talents", "Talents"], ["fielding", "Fielding"]].map(function (ff) {
+        return "<option value='" + ff[0] + "'" + (cf === ff[0] ? " selected" : "") + ">" + ff[1] + "</option>";
+      }).join("") + "</select></div>";
       body = log.length ? "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'>" + cfBar + "<div id='ftpcomm' class='ftpskin'>" +
         (typeof ftpCommHTML === "function" ? ftpCommHTML(log, cf, 5000) : "") +
         (cf === "all" ? "<div class='fo-c-mile'><div class='text'>FULL TIME - " + E(r.result_text || "match complete") + ".</div><div class='clear'></div></div>" : "") + "</div></div></div>" : "<div class='panel'><div class='pad small'>No commentary was recorded for this match.</div></div>";
@@ -1024,14 +1033,22 @@
     window.__foFrCache = { id: id, row: c, html: page.innerHTML, done: true };
   }
   // tab + filter clicks are delegated, so they keep working after a cache restore
-  document.addEventListener("click", function (ev) {
-    var b = ev.target && ev.target.closest ? ev.target.closest(".fo-frtab,.fo-frcf") : null;
-    if (!b) return;
-    ev.preventDefault();
-    if (b.classList.contains("fo-frcf")) window.__foFrCF = b.getAttribute("data-f");
-    else window.__foFrTab = b.getAttribute("data-t");
+  var foFrRedraw = function () {
     var cc = window.__foFrCache;
     if (cc && cc.row) foFrDoneRender(cc.row, cc.id);
+  };
+  document.addEventListener("click", function (ev) {
+    var b = ev.target && ev.target.closest ? ev.target.closest(".fo-frtab") : null;
+    if (!b) return;
+    ev.preventDefault();
+    window.__foFrTab = b.getAttribute("data-t");
+    foFrRedraw();
+  });
+  document.addEventListener("change", function (ev) {
+    var sel = ev.target;
+    if (!sel || !sel.classList || !sel.classList.contains("fo-frcf")) return;
+    window.__foFrCF = sel.value;
+    foFrRedraw();
   });
   function foRenderFriendlyLive() {
     try {

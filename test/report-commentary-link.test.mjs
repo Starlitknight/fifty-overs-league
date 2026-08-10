@@ -74,7 +74,13 @@ const LOG = [
   { no: '1.3', out: '4', txt: 'Ogden to Harding : It races away for FOUR.' },
   { no: '1.1', out: '', txt: 'Ogden to Harding : Rocket Arm from the deep saves two.' }
 ];
-const linksOf = html => [...html.matchAll(/href='([^']+)'/g)].map(m => m[1]);
+// the filter row is a <select>: every option is an address, and exactly one
+// of them is the one being read
+const linksOf = html => [...html.matchAll(/<option value='([^']+)'/g)].map(m => m[1]);
+const selectedOf = html => {
+  const m = /<option value='([^']+)' selected>/.exec(html);
+  return m ? m[1] : null;
+};
 
 test('a served match keeps its own address on every filter', () => {
   // ix:-1 is exactly what foMrRecFromCard stamps on a served card
@@ -102,15 +108,13 @@ test('solo play still names a match by its position on this device', () => {
   for (const link of links) assert.ok(link.startsWith('#/report?i=7&t=comm'), 'stray address ' + link);
 });
 
-test('every filter is offered, and exactly one of them is lit', () => {
+test('every filter is offered, and exactly one of them is selected', () => {
   for (const mode of MODES) {
     const html = commentary({ ix: -1, log: LOG }, {}, mode, t => '#/report?fr=9&t=' + t);
-    const lit = (html.match(/<a class='on'/g) || []).length;
-    assert.equal(lit, 1, mode + ': ' + lit + ' chips lit');
-    // the chosen filter is the one whose address carries it (key is the bare address)
-    const want = mode === 'key' ? "#/report?fr=9&t=comm'" : "&c=" + mode + "'";
-    assert.ok(html.includes("<a class='on' href='" + (mode === 'key' ? '#/report?fr=9&t=comm' : '#/report?fr=9&t=comm&c=' + mode) + "'"),
-      mode + ': the lit chip should be the one selected (' + want + ')');
+    const lit = (html.match(/ selected>/g) || []).length;
+    assert.equal(lit, 1, mode + ': ' + lit + ' options marked selected');
+    const want = mode === 'key' ? '#/report?fr=9&t=comm' : '#/report?fr=9&t=comm&c=' + mode;
+    assert.equal(selectedOf(html), want, mode + ': the selected option should name this filter');
   }
 });
 

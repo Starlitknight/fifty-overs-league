@@ -415,10 +415,17 @@
     var hrefOf = (typeof hrefFn === "function")
       ? hrefFn
       : function (t) { return "#/report?i=" + ((rec && rec.ix != null) ? rec.ix : "") + "&t=" + t; };
-    var toggle = "<div class='fo-mr-cf'>" + FO_MR_FILTERS.map(function (ff) {
-      return "<a class='" + (ff[0] === mode ? "on" : "") + "' href='" + hrefOf("comm") +
-        (ff[0] === "key" ? "" : "&c=" + ff[0]) + "'>" + ff[1] + "</a>";
-    }).join("") + "<b>" + shown.length + " of " + log.length + "</b></div>";
+    // A ROW OF BUTTONS IS A REMOTE CONTROL; a list of choices is a question
+    // with an answer. Six filters as six lit pills also spent a whole line of a
+    // phone on chrome. The select carries the same six, and because every option
+    // is an address the reader can still share or bookmark a filtered read.
+    var toggle = "<div class='fo-mr-cf'><label for='fo-mr-cfsel'>Display</label>" +
+      "<select id='fo-mr-cfsel' onchange=\"location.hash=this.value\">" +
+      FO_MR_FILTERS.map(function (ff) {
+        return "<option value='" + hrefOf("comm") + (ff[0] === "key" ? "" : "&c=" + ff[0]) + "'" +
+          (ff[0] === mode ? " selected" : "") + ">" + ff[1] + "</option>";
+      }).join("") + "</select>" +
+      "<b>" + shown.length + " of " + log.length + "</b></div>";
     if (empty) return "<div class='fo-mr-comm'>" + toggle +
       "<div class='fo-ms-dim'>No ball in this match answers to that.</div></div>";
 
@@ -445,8 +452,13 @@
       var o = String(L.out || "");
       var cls = o === "4" ? "four" : o === "6" ? "six" : (foMrIsKey(L) && !FO_MR_MARK[o] && o !== "4" && o !== "6") ? "wkt" : "";
       if (FO_MR_MARK[o]) cls = "mark";
-      return rows += "<div class='fo-mr-ball" + (cls ? " " + cls : "") + "'>" +
-        "<b>" + E(L.no || o || "") + "</b><span>" + E(foMrMend(L.txt || "")) + "</span></div>";
+      // the tag the engine stamped: [great fielding], [dropped], [Six Machine].
+      // Read off the event, never off the sentence - see foBallTag in the core.
+      var tg = (typeof foBallTag === "function") ? foBallTag(L) : null;
+      var tk = (typeof foBallTagKind === "function") ? foBallTagKind(L) : null;
+      var tgH = tg ? "<i class='fo-mr-tag" + (tk === "tal" ? " tal" : "") + "'>[" + E(tg) + "]</i> " : "";
+      return rows += "<div class='fo-mr-ball" + (cls ? " " + cls : "") + (tg ? " tagged" : "") + "'>" +
+        "<b>" + E(L.no || o || "") + "</b><span>" + tgH + E(foMrMend(L.txt || "")) + "</span></div>";
     });
     return "<div class='fo-mr-comm'>" +
       "<div class='fo-mr-rule'><span>Ball by ball</span></div>" + toggle +
@@ -1749,10 +1761,15 @@
       ".fo-mr-ball.wkt{background:#FBF0EE}.fo-mr-ball.wkt b{color:#A6392B;font-weight:700}",
       ".fo-mr-ball.wkt span{color:#8f231b}",
       ".fo-mr-ball.mile{background:#FDF7E8;box-shadow:inset 3px 0 0 #8F6A1C}",
+      // the tag names the thing the engine did; the talent wears the gold
+      ".fo-mr-tag{font-style:normal;font-family:Manrope,sans-serif;font-size:11px;font-weight:700;letter-spacing:.04em;color:#22635F;white-space:nowrap}",
+      ".fo-mr-tag.tal{color:#8F6A1C}",
+      ".fo-mr-ball.tagged.wkt .fo-mr-tag{color:#A6392B}",
       ".fo-mr-comm .fo-mr-by{color:#7a7566;border-top:1px solid rgba(20,28,40,.12);margin-top:12px;padding-top:10px}",
       ".fo-mr-cf{display:flex;align-items:center;gap:6px;margin:0 0 12px;flex-wrap:wrap}",
-      "html body #page .fo-mr-cf a{min-height:36px;display:inline-flex;align-items:center;padding:0 13px;border-radius:999px;font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.13em;font-size:10px;font-weight:600;color:#5c5647 !important;text-decoration:none !important;background:#EFEADA !important;border:1px solid rgba(20,28,40,.10) !important}",
-      "html body #page .fo-mr-cf a.on{color:#0C1B2E !important;background:#E8B96A !important;border-color:#DDA83F !important}",
+      "html body #page .fo-mr-cf label{font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:600;color:#8F6A1C}",
+      "html body #page .fo-mr-cf select{min-height:36px;padding:0 30px 0 12px;border-radius:9px;font-family:Manrope,sans-serif;font-size:12.5px;font-weight:600;color:#2a2b2e;background:#FFFEFC;border:1px solid #e0d9c7;cursor:pointer}",
+      "html body #page .fo-mr-cf select:focus-visible{outline:2px solid #C9571F;outline-offset:2px}",
       ".fo-mr-cf b{margin-left:auto;font-family:Manrope,sans-serif;font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:#8F6A1C;font-weight:600}",
       ".fo-mr-innmark{margin:14px 0 6px;font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:10px;font-weight:600;color:#8F6A1C;border-bottom:1px solid rgba(20,28,40,.12);padding-bottom:5px}",
       ".fo-mr-innmark:first-child{margin-top:0}",
