@@ -91,3 +91,17 @@ test('a match with no play window speaks at its bank time', async () => {
   // obeys the window like any round; assert only that the query is not broken
   assert.ok(Array.isArray(r.rows[0].r.news), 'the feed serves');
 });
+
+// 076 · THE RESULT OPENS THE REPORT. The wire used to send a played match to
+// '#/match?id=<id>' - but #/match is the live matchday centre and nothing in
+// the client reads an ?id= off it, so the address decayed to a bare #/match
+// and the reader landed on his own teamsheet for a match already in the books.
+test('a played match sends the reader to the report, not the teamsheet', async () => {
+  const play = EPOCH + START * DAY + natHour('eng') * 3600000;
+  const r = await as(U1, `SELECT public.world_my_notifications(40) AS r`, [], play + 10800000 + 1000);
+  const items = newsOf(r).filter(x => /mX/.test(x.go || ''));
+  assert.equal(items.length, 1, 'the played match is on the wire');
+  assert.equal(items[0].go, '#/report?n=eng&w=eng:s1:r1:mX',
+    'the wire names the report by nation and match id, as the fixtures list does');
+  assert.ok(!/^#\/match\b/.test(items[0].go), 'and never the live matchday route');
+});
