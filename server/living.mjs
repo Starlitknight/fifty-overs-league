@@ -661,6 +661,73 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
       intl: !!L.intl, captNm: L.intl ? null : (capOf.get(L.season + '|' + L.round + '|' + L.slot) || null) });
   }
 
+  // THE FRIENDLIES BOOK. An exhibition leaves no mark on the career, the
+  // form or the legs - that law stands - but a match a manager staged and
+  // watched should still be findable on the man's page. So it gets a book
+  // of its OWN, folded from the banked friendlies the way the career is
+  // folded from the banked rounds, and served beside the career without
+  // ever touching it: nothing here feeds exp, form, fatigue or talents.
+  const frBook = new Map();                        // slot -> name -> book
+  try {
+    const frRows = (await pool.query(
+      `SELECT id, play_at_ms, c_country, c_slot, c_name, o_country, o_slot, o_name, result
+         FROM friendlies WHERE status='played' AND result IS NOT NULL
+          AND (c_country=$1 OR o_country=$1) ORDER BY id`, args)).rows;
+    const frAt = (slot, nm) => {
+      if (!frBook.has(slot)) frBook.set(slot, new Map());
+      const m = frBook.get(slot);
+      if (!m.has(nm)) m.set(nm, { m: 0, runs: 0, balls: 0, hs: 0, outs: 0, wkts: 0, conc: 0, ovb: 0, ct: 0, st: 0, ro: 0, bb: null, log: [] });
+      return m.get(nm);
+    };
+    for (const f of frRows) {
+      const sides = [];
+      if (f.c_country === country && f.c_slot != null) sides.push({ slot: f.c_slot, nm: f.c_name, opp: f.o_name });
+      if (f.o_country === country && f.o_slot != null) sides.push({ slot: f.o_slot, nm: f.o_name, opp: f.c_name });
+      for (const side of sides) {
+        const played = new Map();                  // name -> this match's figures
+        const tally = nm => {
+          if (!played.has(nm)) played.set(nm, { r: 0, b: 0, out: null, wkts: 0, conc: 0, ovb: 0 });
+          return played.get(nm);
+        };
+        for (const inn of ((f.result && f.result.innings) || [])) {
+          if (!inn) continue;
+          if (inn.batTeam === side.nm) for (const b of (inn.bat || [])) {
+            const nm = (b.p && b.p.name) || b.p; if (!nm || !((b.b || 0) > 0 || b.out)) continue;
+            const e = frAt(side.slot, nm), t = tally(nm);
+            e.runs += b.r || 0; e.balls += b.b || 0;
+            if (b.out) { e.outs++; t.out = b.out; }
+            if ((b.r || 0) > e.hs) e.hs = b.r || 0;
+            t.r += b.r || 0; t.b += b.b || 0;
+          }
+          if (inn.bowlTeam === side.nm) {
+            for (const nm of Object.keys(inn.bowlers || {})) {
+              const bw = inn.bowlers[nm]; if (!((bw.b || 0) > 0)) continue;
+              const e = frAt(side.slot, nm), t = tally(nm);
+              e.wkts += bw.w || 0; e.conc += bw.r || 0; e.ovb += bw.b || 0;
+              t.wkts += bw.w || 0; t.conc += bw.r || 0; t.ovb += bw.b || 0;
+            }
+            for (const nm of Object.keys(inn.fielding || {})) {
+              const fd = inn.fielding[nm] || {};
+              if (!((fd.ct || 0) || (fd.st || 0) || (fd.ro || 0))) continue;
+              const e = frAt(side.slot, nm); tally(nm);
+              e.ct += fd.ct || 0; e.st += fd.st || 0; e.ro += fd.ro || 0;
+            }
+          }
+        }
+        for (const [nm, t] of played) {
+          const e = frAt(side.slot, nm);
+          e.m++;
+          if (t.ovb > 0 && (!e.bb || t.wkts > e.bb.w || (t.wkts === e.bb.w && t.conc < e.bb.r))) e.bb = { w: t.wkts, r: t.conc };
+          // the last dozen exhibitions, newest first, for the page's match log
+          e.log.unshift({ id: f.id, at: f.play_at_ms || null, opp: side.opp || '',
+            win: f.result && f.result.winner != null ? f.result.winner === side.nm : null,
+            r: t.r, b: t.b, out: !!t.out, w: t.wkts, conc: t.conc, ovb: t.ovb });
+          if (e.log.length > 12) e.log.length = 12;
+        }
+      }
+    }
+  } catch (eFr) { /* pre-friendlies database: no exhibitions to read */ }
+
   let touched = 0;
   for (const club of clubs) {
     const men = book.get(club.slot) || new Map();
@@ -679,6 +746,9 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
       const q = { ...p };
       const base = q.baseExp == null ? (q.exp ?? 55) : q.baseExp;
       q.baseExp = base;
+      // the friendlies book rides beside the career on every man who has one
+      const fb = (frBook.get(club.slot) || new Map()).get(q.name);
+      if (fb && fb.m) q.friendly = fb; else delete q.friendly;
       const e = men.get(q.name);
       if (!e) {
         q.exp = Math.round(base); q.expWord = expWordOf(q.exp);

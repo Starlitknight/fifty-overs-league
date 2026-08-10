@@ -94,3 +94,67 @@ test('the result line keeps the broadcast clock', async () => {
   const done = await rpc('world_friendly_detail', [fid], doneMs + 1000);
   assert.ok(done.text && done.text.length > 5, 'the result serves the moment the reveal completes: ' + done.text);
 });
+
+test('a played friendly lands in the man\'s own book, and only there', async () => {
+  // The living replay folds banked friendlies into a book of their OWN on
+  // each man: totals and a per-match log for the player page. The career,
+  // the form and the legs are untouched - an exhibition leaves no mark on
+  // anything the ladder or the market reads.
+  const { evolveCountry } = await import('../living.mjs');
+  const f = (await pool.query(
+    `SELECT c_name, o_name, result FROM friendlies WHERE id=$1`, [fid])).rows[0];
+  assert.ok(f.result && Array.isArray(f.result.innings), 'the friendly is banked with innings');
+  await evolveCountry(pool, 'eng', PLAY + 6 * 3600000, host);
+  const sq = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+
+  // the men the card credits with a line, exactly as the fold reads it
+  const names = new Set();
+  for (const inn of f.result.innings) {
+    if (!inn) continue;
+    if (inn.batTeam === f.c_name) (inn.bat || []).forEach(b => {
+      if (b && b.p && ((b.b || 0) > 0 || b.out)) names.add(b.p.name);
+    });
+    if (inn.bowlTeam === f.c_name) {
+      Object.keys(inn.bowlers || {}).forEach(n => { if ((inn.bowlers[n].b || 0) > 0) names.add(n); });
+      Object.keys(inn.fielding || {}).forEach(n => {
+        const fd = inn.fielding[n] || {};
+        if ((fd.ct || 0) || (fd.st || 0) || (fd.ro || 0)) names.add(n);
+      });
+    }
+  }
+  assert.ok(names.size >= 5, 'the card names a side: ' + names.size);
+
+  let checked = 0;
+  for (const p of sq) {
+    if (!names.has(p.name)) {
+      assert.ok(!p.friendly, p.name + ' played no friendly and carries no book');
+      continue;
+    }
+    assert.ok(p.friendly && p.friendly.m === 1, p.name + ' carries his one friendly');
+    assert.ok(Array.isArray(p.friendly.log) && p.friendly.log.length === 1, 'with its match line');
+    assert.equal(p.friendly.log[0].opp, f.o_name, 'against the right opponent');
+    assert.ok(!p.career, 'the exhibition never touches the career');
+    assert.equal(p.formIx, 3, 'or the form');
+    assert.equal(p.fatN, 0, 'or the legs');
+    checked++;
+  }
+  assert.ok(checked >= 5, 'held the book on ' + checked + ' men');
+
+  // and the totals are the banked card's own numbers
+  const bat1 = f.result.innings.find(i => i && i.batTeam === f.c_name);
+  const b1 = bat1 && (bat1.bat || []).find(b => b && b.p && (b.b || 0) > 0);
+  if (b1) {
+    const man = sq.find(p => p.name === b1.p.name);
+    assert.equal(man.friendly.runs, b1.r || 0, 'his runs are the card\'s runs');
+    assert.equal(man.friendly.hs, b1.r || 0, 'and his best is that innings');
+  }
+
+  // a second settle lands on the same book - a derivation, not a counter
+  await evolveCountry(pool, 'eng', PLAY + 7 * 3600000, host);
+  const again = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  for (const p of again) {
+    if (names.has(p.name)) assert.equal(p.friendly.m, 1, p.name + ' still has exactly one');
+  }
+});

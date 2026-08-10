@@ -1087,6 +1087,20 @@
   }
 
   // ---- what the engine keeps: the career in four numbers ---------------------
+  // THE FRIENDLIES LINE. Exhibitions keep a book of their OWN (living.mjs):
+  // they never touch the career, the form or the legs, but a match a manager
+  // staged should still be findable on the man's page.
+  function frLine(p) {
+    try {
+      var fb = p && p.friendly;
+      if (!fb || !fb.m) return "";
+      var bits = [fb.runs + " run" + (fb.runs === 1 ? "" : "s") + (fb.hs ? " (HS " + fb.hs + ")" : "")];
+      if (fb.wkts) bits.push(fb.wkts + " wkt" + (fb.wkts === 1 ? "" : "s") + (fb.bb ? " (best " + fb.bb.w + "/" + fb.bb.r + ")" : ""));
+      if (fb.ct || fb.st) bits.push(((fb.ct || 0) + (fb.st || 0)) + " ct");
+      return "<p class='fo-pp-frline'><b>Friendlies</b> &middot; " + fb.m + " match" + (fb.m === 1 ? "" : "es") +
+        " &middot; " + bits.join(" &middot; ") + "</p>";
+    } catch (e) { return ""; }
+  }
   function miniCareer(p) {
     // THE UMPIRE'S BOOK FIRST. A claimed club's matches are played on the
     // server, so nothing lands in the local record - but the adopted squad
@@ -1096,7 +1110,11 @@
       if (sc && sc.m) {
         return [["Matches", sc.m], ["Runs", sc.runs || 0], ["Best", sc.hs || 0], ["Wickets", sc.wkts || 0]].map(function (x) {
           return "<div><b>" + x[1] + "</b><i>" + x[0] + "</i></div>";
-        }).join("");
+        }).join("") + frLine(p);
+      }
+      // no league record yet, but exhibitions already played read out here
+      if (p && p.friendly && p.friendly.m) {
+        return frLine(p) + "<p class='fo-pp-dim'>His league record starts the day he is picked.</p>";
       }
     } catch (eSv) {}
     var h = [];
@@ -1215,8 +1233,26 @@
           "<td class='" + (res === "Won" ? "w" : res === "Lost" ? "l" : "") + "'>" + res + "</td>" +
           "<td>" + his + "</td><td class='sm'>League</td></tr>";
       }).join("");
+      // THE EXHIBITIONS TOO. The umpire folds every banked friendly into a
+      // book of its own (living.mjs) - the man's lines ride the squad, so
+      // the log can list them long after the ball-by-ball is purged.
+      var frRows = "";
+      try {
+        frRows = ((p.friendly && p.friendly.log) || []).map(function (l) {
+          var bits = [];
+          if ((l.b | 0) > 0 || (l.r | 0) > 0) bits.push(l.r + (l.out ? "" : "*") + " (" + l.b + ")");
+          if ((l.ovb | 0) > 0) bits.push(l.w + "-" + l.conc + " (" + ppOvers(l.ovb) + ")");
+          var dt = "&mdash;";
+          try { if (l.at) dt = new Date(l.at).toLocaleDateString([], { day: "numeric", month: "short" }); } catch (eD) {}
+          var res9 = l.win === true ? "Won" : l.win === false ? "Lost" : "&mdash;";
+          return "<tr><td>" + dt + "</td><td>v " + E(l.opp || "") + "</td>" +
+            "<td class='" + (l.win === true ? "w" : l.win === false ? "l" : "") + "'>" + res9 + "</td>" +
+            "<td>" + (bits.length ? bits.join(" &middot; ") : "no recorded involvement") + "</td>" +
+            "<td class='sm'>Friendly</td></tr>";
+        }).join("");
+      } catch (eFr) {}
       slot.innerHTML = "<div class='panel' data-fo-servedlog><h4>Recent matches</h4><div class='pad'>" +
-        "<table class='fo-pp-log'><tr><th>Rd</th><th>Fixture</th><th>Result</th><th>His match</th><th></th></tr>" + rows + "</table>" +
+        "<table class='fo-pp-log'><tr><th>Rd</th><th>Fixture</th><th>Result</th><th>His match</th><th></th></tr>" + rows + frRows + "</table>" +
         "<p class='fo-pp-dim'>From the umpire's book &middot; every line as banked on the day.</p></div></div>";
       try { filterLog(activeFilter()); } catch (eF2) {}
     });
@@ -1421,6 +1457,8 @@
     "html body #page .fo-pp-card.dark p{color:rgba(255,254,252,.72)}",
     "html body #page .fo-pp-card.dark a{color:#E8C06A}",
     "html body #page .fo-pp-dim{margin:9px 0 0;font:420 13px/1.55 Fraunces,Georgia,serif;color:rgba(20,28,40,.55)}",
+    "html body #page .fo-pp-frline{grid-column:1/-1;margin:8px 0 0;padding-top:8px;border-top:1px solid rgba(20,28,40,.08);font:500 12.5px/1.5 Inter,sans-serif;color:rgba(20,28,40,.62)}",
+    "html body #page .fo-pp-frline b{font-weight:700;letter-spacing:.06em;text-transform:uppercase;font-size:10.5px;color:#8A6A1F}",
     "html body #page a.fo-pp-more{display:inline-block;margin-top:10px;font:600 13px/1 Inter,sans-serif;color:var(--nac);text-decoration:none}",
     "html body #page .fo-pp-ph{display:flex;align-items:baseline;justify-content:space-between;gap:10px;flex-wrap:wrap;padding:14px 16px 8px}",
     "html body #page .fo-pp-ph h3{margin:0}",
