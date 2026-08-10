@@ -357,7 +357,9 @@
     try { if (typeof isWkt === "function" && o && isWkt(o)) return true; } catch (e) {}
     return /^w/.test(o) && o !== "wide";
   }
-  function foMrCommentary(rec, f, all) {
+  // hrefFn is the report's OWN address builder - the same one the tab bar
+  // uses. See the toggle below for why this room may not invent its own.
+  function foMrCommentary(rec, f, all, hrefFn) {
     var log = (rec && rec.log) || null;
     if (!log || !log.length) {
       // a served match with no log is a different story from a trimmed save:
@@ -377,10 +379,22 @@
     var chrono = log.slice().reverse();
     var shown = all ? chrono : chrono.filter(foMrIsKey);
     if (!shown.length) shown = chrono;
-    var ix = (rec && rec.ix != null) ? rec.ix : "";
+    // EVERY BALL MUST BE THIS MATCH'S EVERY BALL. This toggle used to build
+    // its own address - "#/report?i=" + rec.ix - which is the LOCAL results
+    // index and the only one of the report's three addresses that names a
+    // match by its position on this device. A served league match and a
+    // friendly are named by nation + match id and by friendly id; neither
+    // carries an ix, so the link read "#/report?i=&t=comm&c=all" and the
+    // router, finding no served name in it, fell through to the local branch
+    // and drew whatever match that index resolved to - the same wrong match
+    // every time, from any starting point. The report already knows its own
+    // address: the tab bar has been using it all along, and this uses it now.
+    var hrefOf = (typeof hrefFn === "function")
+      ? hrefFn
+      : function (t) { return "#/report?i=" + ((rec && rec.ix != null) ? rec.ix : "") + "&t=" + t; };
     var toggle = "<div class='fo-mr-cf'>" +
-      "<a class='" + (all ? "" : "on") + "' href='#/report?i=" + ix + "&t=comm'>Key moments</a>" +
-      "<a class='" + (all ? "on" : "") + "' href='#/report?i=" + ix + "&t=comm&c=all'>Every ball</a>" +
+      "<a class='" + (all ? "" : "on") + "' href='" + hrefOf("comm") + "'>Key moments</a>" +
+      "<a class='" + (all ? "on" : "") + "' href='" + hrefOf("comm") + "&c=all'>Every ball</a>" +
       "<b>" + shown.length + " of " + log.length + "</b></div>";
 
     // WHOSE INNINGS THIS IS, BY ORDER RATHER THAN BY NUMBER. The log's own
@@ -1211,7 +1225,7 @@
         } else if (tab === "card") {
           inner = "<div class='fo-mr-panel'>" + foMrScorecard(rec) + "</div>";
         } else if (tab === "comm") {
-          inner = "<div class='fo-mr-panel'>" + foMrCommentary(rec, f, commAll) + "</div>";
+          inner = "<div class='fo-mr-panel'>" + foMrCommentary(rec, f, commAll, O.href) + "</div>";
         } else {
           inner = "<div class='fo-mr-panel'>" + foMrFantasy(rec) + "</div>";
         }
