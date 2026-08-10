@@ -357,9 +357,26 @@
     try { if (typeof isWkt === "function" && o && isWkt(o)) return true; } catch (e) {}
     return /^w/.test(o) && o !== "wide";
   }
+  // THE SAME FIVE QUESTIONS, WHEREVER THE COMMENTARY IS READ. The live pane
+  // has carried filters for a while - wickets, boundaries, fielding, talents -
+  // and the finished report offered only "key moments or the lot", so the same
+  // over answered different questions depending on when you asked it. The
+  // report reads the same filters now, off the engine's own classifier
+  // (foCommPass in the core), so a wicket is a wicket by one definition and
+  // not two.
+  var FO_MR_FILTERS = [["key", "Key moments"], ["all", "Every ball"],
+                       ["wickets", "Wickets"], ["boundaries", "Boundaries"],
+                       ["talents", "Talents"], ["fielding", "Fielding"]];
+  function foMrFilterOf(hash) {
+    var m = /[?&]c=([a-z]+)/.exec(hash || "");
+    var v = m ? m[1] : "key";
+    for (var i = 0; i < FO_MR_FILTERS.length; i++) if (FO_MR_FILTERS[i][0] === v) return v;
+    return "key";
+  }
+
   // hrefFn is the report's OWN address builder - the same one the tab bar
   // uses. See the toggle below for why this room may not invent its own.
-  function foMrCommentary(rec, f, all, hrefFn) {
+  function foMrCommentary(rec, f, mode, hrefFn) {
     var log = (rec && rec.log) || null;
     if (!log || !log.length) {
       // a served match with no log is a different story from a trimmed save:
@@ -377,8 +394,14 @@
     // first ball forward. Reversing keeps every marker row beside the ball it
     // belongs to, which re-sorting by over number would not.
     var chrono = log.slice().reverse();
-    var shown = all ? chrono : chrono.filter(foMrIsKey);
-    if (!shown.length) shown = chrono;
+    // "key" is this room's own curation - every wicket, boundary and marker.
+    // The rest defer to the core so the report and the live feed answer the
+    // same question the same way.
+    var shown;
+    if (mode === "all") shown = chrono;
+    else if (mode === "key" || typeof foCommPass !== "function") shown = chrono.filter(foMrIsKey);
+    else shown = chrono.filter(function (L) { return foCommPass(L, mode); });
+    var empty = !shown.length;
     // EVERY BALL MUST BE THIS MATCH'S EVERY BALL. This toggle used to build
     // its own address - "#/report?i=" + rec.ix - which is the LOCAL results
     // index and the only one of the report's three addresses that names a
@@ -392,10 +415,12 @@
     var hrefOf = (typeof hrefFn === "function")
       ? hrefFn
       : function (t) { return "#/report?i=" + ((rec && rec.ix != null) ? rec.ix : "") + "&t=" + t; };
-    var toggle = "<div class='fo-mr-cf'>" +
-      "<a class='" + (all ? "" : "on") + "' href='" + hrefOf("comm") + "'>Key moments</a>" +
-      "<a class='" + (all ? "on" : "") + "' href='" + hrefOf("comm") + "&c=all'>Every ball</a>" +
-      "<b>" + shown.length + " of " + log.length + "</b></div>";
+    var toggle = "<div class='fo-mr-cf'>" + FO_MR_FILTERS.map(function (ff) {
+      return "<a class='" + (ff[0] === mode ? "on" : "") + "' href='" + hrefOf("comm") +
+        (ff[0] === "key" ? "" : "&c=" + ff[0]) + "'>" + ff[1] + "</a>";
+    }).join("") + "<b>" + shown.length + " of " + log.length + "</b></div>";
+    if (empty) return "<div class='fo-mr-comm'>" + toggle +
+      "<div class='fo-ms-dim'>No ball in this match answers to that.</div></div>";
 
     // WHOSE INNINGS THIS IS, BY ORDER RATHER THAN BY NUMBER. The log's own
     // innings field is the engine's internal index and this module has no
@@ -721,7 +746,7 @@
         var base2 = "#/report?n=" + encodeURIComponent(nat) + "&w=" + encodeURIComponent(id);
         foMrPaint(rep, page, {
           tab: tab2,
-          commAll: /[?&]c=all\b/.test(location.hash || ""),
+          commF: foMrFilterOf(location.hash),
           href: function (t) { return base2 + "&t=" + t; },
           others: [],
           back: "#/fixtures",
@@ -1173,7 +1198,7 @@
   // same page - the report, the scorecard, the commentary, the run chart
   // and the fantasy points - and only the links differ.
   function foMrPaint(rec, page, O) {
-    var tab = O.tab, commAll = O.commAll;
+    var tab = O.tab, commF = O.commF || "key";
       var f = foMrFacts(rec);
       if (!f) { page.innerHTML = "<div class='fo-mr'><div class='fo-mr-in'><h1 class='fo-mr-head'>Report unavailable</h1>" +
         "<p class='fo-mr-dek'>That match did not finish an innings.</p></div></div>"; return; }
@@ -1253,7 +1278,7 @@
         } else if (tab === "card") {
           inner = "<div class='fo-mr-panel'>" + foMrScorecard(rec) + "</div>";
         } else if (tab === "comm") {
-          inner = "<div class='fo-mr-panel'>" + foMrCommentary(rec, f, commAll, O.href) + "</div>";
+          inner = "<div class='fo-mr-panel'>" + foMrCommentary(rec, f, commF, O.href) + "</div>";
         } else {
           inner = "<div class='fo-mr-panel'>" + foMrFantasy(rec) + "</div>";
         }
@@ -1490,7 +1515,7 @@
         var mtF = /[?&]t=(\w+)/.exec(location.hash || "");
         var tabF = mtF ? mtF[1] : "sum";
         if (["sum", "card", "comm", "chart", "fantasy"].indexOf(tabF) < 0) tabF = "sum";
-        var sigF = "mrf|" + mfr[1] + "|" + tabF + "|" + (/[?&]c=all\b/.test(location.hash || "") ? "all" : "key");
+        var sigF = "mrf|" + mfr[1] + "|" + tabF + "|" + foMrFilterOf(location.hash);
         if (page.__foMrSig === sigF && page.querySelector(".fo-mr")) return;
         page.__foMrSig = sigF;
         document.body.classList.add("fo-mr-on");
@@ -1506,7 +1531,7 @@
           }
           var baseF = "#/report?fr=" + encodeURIComponent(mfr[1]);
           foMrPaint(rec, page, {
-            tab: tabF, commAll: /[?&]c=all\b/.test(location.hash || ""),
+            tab: tabF, commF: foMrFilterOf(location.hash),
             href: function (t) { return baseF + "&t=" + t; },
             others: [], back: "#/feed?fr=" + encodeURIComponent(mfr[1])
           });
@@ -1530,7 +1555,7 @@
         // page simply did not repaint
         var mtW = /[?&]t=(\w+)/.exec(location.hash || "");
         var sigW = "mrw|" + mn[1] + "|" + mw[1] + "|" + (mtW ? mtW[1] : "sum") +
-          "|" + (/[?&]c=all\b/.test(location.hash || "") ? "all" : "key");
+          "|" + foMrFilterOf(location.hash);
         if (page.__foMrSig === sigW && page.querySelector(".fo-mr")) return;
         page.__foMrSig = sigW;
         document.body.classList.add("fo-mr-on");
@@ -1543,8 +1568,8 @@
       var mt = /[?&]t=(\w+)/.exec(location.hash || "");
       var tab = mt ? mt[1] : "sum";
       if (["sum", "card", "comm", "chart", "fantasy"].indexOf(tab) < 0) tab = "sum";
-      var commAll = /[?&]c=all\b/.test(location.hash || "");
-      var sig = "mr|" + ix + "|" + tab + "|" + (commAll ? "all" : "key") + "|" + (rec ? rec.date : "-");
+      var commF = foMrFilterOf(location.hash);
+      var sig = "mr|" + ix + "|" + tab + "|" + commF + "|" + (rec ? rec.date : "-");
       if (page.__foMrSig === sig && page.querySelector(".fo-mr")) return;
       page.__foMrSig = sig;
       document.body.classList.add("fo-mr-on");
@@ -1555,7 +1580,7 @@
         return;
       }
       foMrPaint(rec, page, {
-        tab: tab, commAll: commAll,
+        tab: tab, commF: commF,
         href: function (t) { return "#/report?i=" + ix + "&t=" + t; },
         others: (App.results || []).slice(-7).filter(function (x) { return x.ix !== ix; }).reverse()
       });

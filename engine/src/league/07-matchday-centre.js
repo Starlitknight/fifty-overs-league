@@ -933,7 +933,7 @@
     } else if (tab === "ratings") {
       body = "<div class='panel'><div class='pad small'>Match ratings are compiled at stumps &middot; they land with the final scorecard.</div></div>";
     } else {
-      var cfBar = "<div class='fo-cfilters'>" + [["all", "All"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["fielding", "Fielding"], ["talents", "Talents"], ["highlights", "Highlights"]].map(function (ff) {
+      var cfBar = "<div class='fo-cfilters'>" + [["highlights", "Key moments"], ["all", "Every ball"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["talents", "Talents"], ["fielding", "Fielding"]].map(function (ff) {
         return "<button class='fo-sctab fo-frlcf" + (cf === ff[0] ? " on" : "") + "' data-f='" + ff[0] + "'>" + ff[1] + "</button>";
       }).join("") + "</div>";
       var over0 = upto >= log.length ? "<div class='fo-c-mile'><div class='text'>That is the last ball - the umpires check the paperwork. The official result lands at stumps.</div><div class='clear'></div></div>" : "";
@@ -1008,7 +1008,7 @@
       }).join("");
       body = osec || notRec("Orders");
     } else if (tab === "comm") {
-      var cfBar = "<div class='fo-cfilters'>" + [["all", "All"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["fielding", "Fielding"], ["talents", "Talents"], ["highlights", "Highlights"]].map(function (ff) {
+      var cfBar = "<div class='fo-cfilters'>" + [["highlights", "Key moments"], ["all", "Every ball"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["talents", "Talents"], ["fielding", "Fielding"]].map(function (ff) {
         return "<button class='fo-sctab fo-frcf" + (cf === ff[0] ? " on" : "") + "' data-f='" + ff[0] + "'>" + ff[1] + "</button>";
       }).join("") + "</div>";
       body = log.length ? "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'>" + cfBar + "<div id='ftpcomm' class='ftpskin'>" +

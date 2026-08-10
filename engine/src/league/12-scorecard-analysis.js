@@ -333,7 +333,7 @@
                 };
                 var h0 = chron(App._scCommF || "all"); if (h0 != null) feedC.innerHTML = h0;
                 var fb2 = document.createElement("div"); fb2.className = "fo-cfilters";
-                [["all", "All"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["fielding", "Fielding"], ["talents", "Talents"], ["highlights", "Highlights"]].forEach(function (ff) {
+                [["highlights", "Key moments"], ["all", "Every ball"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["talents", "Talents"], ["fielding", "Fielding"]].forEach(function (ff) {
                   var b3 = document.createElement("button");
                   b3.className = "fo-sctab fo-cf" + ((App._scCommF || "all") === ff[0] ? " on" : "");
                   b3.textContent = ff[1];
@@ -1196,7 +1196,7 @@
             } else if (tabL === "ratings") {
               bodyL = "<div class='panel'><div class='pad small'>Match ratings are compiled at stumps &middot; they land with the final scorecard.</div></div>";
             } else {
-              var cfBarL = "<div class='fo-cfilters'>" + [["all", "All"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["fielding", "Fielding"], ["talents", "Talents"], ["highlights", "Highlights"]].map(function (ff) {
+              var cfBarL = "<div class='fo-cfilters'>" + [["highlights", "Key moments"], ["all", "Every ball"], ["wickets", "Wickets"], ["boundaries", "Boundaries"], ["talents", "Talents"], ["fielding", "Fielding"]].map(function (ff) {
                 return "<button class='fo-sctab fo-lglcf" + (cfL === ff[0] ? " on" : "") + "' data-f='" + ff[0] + "'>" + ff[1] + "</button>";
               }).join("") + "</div>";
               bodyL = "<div class='panel'><h4>Ball-by-ball</h4><div class='pad'>" + cfBarL + "<div id='ftpcomm' class='ftpskin'>" +
