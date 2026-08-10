@@ -886,7 +886,7 @@
     { id: "balanced", nm: "Balanced", d: "No advantage or disadvantage to batters or bowlers." },
     { id: "green", nm: "Green", d: "Strong help for seam bowlers, biggest with the new ball. Moderate disadvantage to spin bowlers." },
     { id: "dry", nm: "Crumbling", d: "Strong help for spin bowlers, growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs." },
-    { id: "flat", nm: "Flat", d: "Moderate advantage to batters: more boundaries, fewer wickets. Moderate disadvantage to all bowlers." },
+    { id: "flat", nm: "Flat", d: "Strong advantage to batters: boundaries flow and wickets are dear. Strong disadvantage to all bowlers." },
     { id: "slow", nm: "Slow", d: "Moderate help for spin bowlers in the middle overs. Strong cut to six-hitting. Weak disadvantage to seam bowlers." },
     { id: "cracked", nm: "Sticky", d: "Strong help for all bowlers, and more again in the second innings. Strong disadvantage to batters." },
     { id: "twoPaced", nm: "Two-paced", d: "Weak wicket help for all bowlers, moderate for spin in the middle overs. Boundaries moderately harder." }
@@ -1833,7 +1833,7 @@
       ["stone", G.scales, "Balanced", "No advantage or disadvantage to batters or bowlers.", "Pick your best XI."],
       ["grass", G.grass, "Green", "Strong help for seam bowlers, biggest with the new ball. Moderate disadvantage to spin bowlers.", "Pick extra seam bowlers."],
       ["clay", G.crack, "Crumbling", "Strong help for spin bowlers, growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.", "Pick extra spin bowlers."],
-      ["cream", G.road, "Flat", "Moderate advantage to batters: more boundaries, fewer wickets. Moderate disadvantage to all bowlers.", "Pick your strongest batting."],
+      ["cream", G.road, "Flat", "Strong advantage to batters: boundaries flow and wickets are dear. Strong disadvantage to all bowlers.", "Pick your strongest batting."],
       ["olive", G.wave, "Slow", "Moderate help for spin bowlers in the middle overs. Strong cut to six-hitting. Weak disadvantage to seam bowlers.", "Pick spinners and patient batters."],
       ["rust", G.bounce, "Sticky", "Strong help for all bowlers, and more again in the second innings. Strong disadvantage to batters.", "Pick batting depth."],
       ["iris", G.twoArrows, "Two-paced", "Weak wicket help for all bowlers, moderate for spin in the middle overs. Boundaries moderately harder.", "Pick batting depth."]

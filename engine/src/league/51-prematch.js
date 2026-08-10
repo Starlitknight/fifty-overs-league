@@ -413,7 +413,7 @@
         balanced: "No advantage or disadvantage to batters or bowlers.",
         green: "Strong help for seam bowlers, biggest with the new ball. Moderate disadvantage to spin bowlers. Boundaries moderately harder.",
         dry: "Strong help for spin bowlers, growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.",
-        flat: "Moderate advantage to batters: more boundaries, fewer wickets. Moderate disadvantage to all bowlers.",
+        flat: "Strong advantage to batters: boundaries flow and wickets are dear. Strong disadvantage to all bowlers.",
         slow: "Moderate help for spin bowlers in the middle overs. Strong cut to six-hitting; scoring is slower. Weak disadvantage to seam bowlers.",
         cracked: "Strong help for all bowlers, seam and spin alike, and more again in the second innings. Strong disadvantage to batters.",
         twoPaced: "Weak wicket help for all bowlers, moderate for spin in the middle overs. Boundaries moderately harder; batters find timing difficult."
@@ -730,7 +730,7 @@
         balanced: "No advantage or disadvantage to batters or bowlers.",
         green: "Strong help for seam bowlers, biggest with the new ball. Moderate disadvantage to spin bowlers. Boundaries moderately harder.",
         dry: "Strong help for spin bowlers, growing as the pitch wears. Weak disadvantage to seam bowlers in the middle overs.",
-        flat: "Moderate advantage to batters: more boundaries, fewer wickets. Moderate disadvantage to all bowlers.",
+        flat: "Strong advantage to batters: boundaries flow and wickets are dear. Strong disadvantage to all bowlers.",
         slow: "Moderate help for spin bowlers in the middle overs. Strong cut to six-hitting; scoring is slower. Weak disadvantage to seam bowlers.",
         cracked: "Strong help for all bowlers, seam and spin alike, and more again in the second innings. Strong disadvantage to batters.",
         twoPaced: "Weak wicket help for all bowlers, moderate for spin in the middle overs. Boundaries moderately harder; batters find timing difficult."
