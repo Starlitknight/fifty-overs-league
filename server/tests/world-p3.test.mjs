@@ -558,6 +558,33 @@ test('011: friendlies - challenge, accept, and the umpire plays the real match',
   assert.ok(list.length >= 3);
   assert.ok(list.some(x => x.status === 'played' && x.text), 'played friendlies carry their result');
   assert.ok(list.some(x => x.status === 'declined'), 'the declined one is on record');
+  // A RESULT COLUMN NEEDS A WINNER, NOT A SENTENCE (078). A man's match log
+  // lists his club's exhibitions from this list, and "Won" or "Lost" cannot be
+  // read out of a result line without guessing at names. The winner rides the
+  // post, under the same broadcast gate the line already sits behind.
+  const done = list.filter(x => x.status === 'played' && x.text);
+  assert.ok(done.length >= 2, 'both friendlies have finished their broadcast by now');
+  done.forEach(x => {
+    assert.ok('winner' in x, 'a released result names the winner');
+    assert.ok([x.home, x.away, null].includes(x.winner),
+      'the winner is one of the two clubs, or nobody: ' + x.winner);
+  });
+  // and while the broadcast is still showing, neither the line nor the winner
+  const onAir = await (async () => {
+    const c = await pool.connect();
+    try {
+      await c.query('BEGIN');
+      await c.query(`SELECT set_config('request.jwt.claims', $1, true)`, [JSON.stringify({ sub: U1 })]);
+      await c.query(`SELECT set_config('world.now_ms', $1, true)`, [String(PLAY + 60000)]);
+      const r = await c.query(`SELECT public.world_my_friendlies() AS f`);
+      await c.query('COMMIT');
+      return r.rows[0].f;
+    } catch (e) { await c.query('ROLLBACK').catch(() => {}); throw e; } finally { c.release(); }
+  })();
+  onAir.filter(x => x.status === 'played').forEach(x => {
+    assert.equal(x.text, null, 'the result line waits for the last ball');
+    assert.equal(x.winner, null, 'and so does the winner');
+  });
   // the post carries both clubs' coordinates and can be asked for one pair -
   // a club's own dossier reads only the friendlies it is itself involved in
   assert.ok(list.every(x => x.cCountry && x.oCountry && x.cSlot != null && x.oSlot != null),

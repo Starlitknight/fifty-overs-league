@@ -653,7 +653,8 @@
           "<span class='fo-pp-filt'><a data-f='all' class='on'>All</a><a data-f='lg'>League</a>" +
           "<a data-f='fr'>Friendly</a></span></div>" +
           "<div class='fo-pp-slot' data-slot='recent'></div></div>" : "") +
-        "<div class='fo-pp-card fo-pp-reccard'><h3>Career record</h3>" + ppFullRecord(p) + "</div>" +
+        "<div class='fo-pp-card fo-pp-reccard'><h3>Career record</h3>" +
+          ppFullRecord(p, !!ppWorldRid(hit)) + "</div>" +
         "</div>" +
         "<div class='fo-pp-rail'>" +
         (mine ? ppJumpCard(p, team) : "") +
@@ -1106,17 +1107,29 @@
   function ppNum(v) { return (v | 0).toLocaleString(); }
   function ppAve(runs, outs) { return outs > 0 ? (runs / outs).toFixed(2) : "&ndash;"; }
   function ppOversOf(balls) { return Math.floor((balls | 0) / 6) + "." + ((balls | 0) % 6); }
-  // a book is worth a row once the man has actually appeared in that class
-  function ppBooks(p) {
+  // A CLASS HE HAS NOT PLAYED IN IS STILL A ROW. The record used to appear
+  // only where there were figures, and a man with none got the old four-figure
+  // card instead - so a fringe player, or anyone at all on the first morning
+  // of a season, saw a different Career record from his team-mates. A record
+  // book that changes shape depending on what is in it is not a record book.
+  // In the served world all three lines are always ruled; the numbers arrive
+  // as he plays.
+  var PP_NIL = { m: 0, inns: 0, no: 0, runs: 0, balls: 0, hs: 0, f4: 0, f6: 0, h50: 0, h100: 0,
+                 wkts: 0, conc: 0, ovb: 0, mdn: 0, w3: 0, w5: 0, bb: null,
+                 ctf: 0, ctwk: 0, ct: 0, st: 0, ro: 0 };
+  function ppBooks(p, all) {
     var out = [];
-    var add = function (cls, b) { if (b && (b.m | 0) > 0) out.push({ cls: cls, b: b }); };
+    var add = function (cls, b) {
+      if (b && (b.m | 0) > 0) out.push({ cls: cls, b: b });
+      else if (all) out.push({ cls: cls, b: PP_NIL });
+    };
     add("League", p && p.career);
     add("Friendly", p && p.friendly);
     add("International", p && p.intl);
     return out;
   }
-  function ppBatTable(p) {
-    var books = ppBooks(p);
+  function ppBatTable(p, all) {
+    var books = ppBooks(p, all);
     if (!books.length) return "";
     var head = ["Class", "Mat", "Inns", "NO", "Runs", "HS", "Ave", "BF", "SR", "100", "50", "4s", "6s"];
     var rows = books.map(function (x) {
@@ -1137,8 +1150,8 @@
         return "<th" + (i === 0 ? " class='cls'" : "") + ">" + h + "</th>";
       }).join("") + "</tr></thead><tbody>" + rows + "</tbody></table></div></div>";
   }
-  function ppBowlTable(p) {
-    var books = ppBooks(p);
+  function ppBowlTable(p, all) {
+    var books = ppBooks(p, all);
     if (!books.length) return "";
     var head = ["Class", "Mat", "Balls", "Mdns", "Runs", "Wkts", "Best", "Ave", "ER", "SR",
                 "3WI", "5WI", "C/F", "C/WK", "St", "RO"];
@@ -1204,9 +1217,12 @@
           : "<p class='fo-pp-dim'>No programme standing for him.</p>") +
       "<a class='fo-pp-more' href='#/training'>Set the nets &rsaquo;</a></div>";
   }
-  function ppFullRecord(p) {
-    var t = ppBatTable(p) + ppBowlTable(p);
-    if (t) return t;
+  function ppFullRecord(p, served) {
+    var t = ppBatTable(p, served) + ppBowlTable(p, served);
+    // in the served world the tables are the record, empty or not; the line
+    // under them says so rather than leaving three rows of noughts unexplained
+    if (t) return t + (served && !ppBooks(p).length
+      ? "<p class='fo-pp-dim'>Every figure starts at nought; the book fills from the day he is picked.</p>" : "");
     // SOLO PLAY KEEPS ITS OWN SHELF. The three books are folded by the umpire,
     // so a man in a league played entirely on this device has none of them -
     // and the old four-figure card, which reads his record out of the local
@@ -1314,29 +1330,86 @@
     } catch (e) {}
     return out;
   }
+  // THE CLUB'S EXHIBITIONS, NOT THE MAN'S. The umpire's friendlies book is
+  // folded per player, and it only opens for someone who batted, bowled or
+  // fielded - so a squad man could watch his club play six friendlies and see
+  // none of them in his log, while the league round he sat out was listed in
+  // full. The league half was never per-player: it reads the club's fixtures
+  // and says "no recorded involvement" where he has no line. This is the same
+  // list for the exhibitions - every tie this club actually played - and his
+  // figures are laid over it from the book where he has any.
+  var PP_FR = {};
+  function ppJwt() { try { return (window.__foJWT && window.__foJWT()) || ""; } catch (e) { return ""; } }
+  function ppFriendlies(rid, slot) {
+    var k = rid + "|" + slot;
+    if (PP_FR[k]) return PP_FR[k];
+    var pr = fetch(PP_SB + "/rest/v1/rpc/world_my_friendlies", {
+      method: "POST",
+      headers: { apikey: PP_KEY, Authorization: "Bearer " + (ppJwt() || PP_KEY), "content-type": "application/json" },
+      body: JSON.stringify({ p_country: rid, p_slot: (slot | 0) })
+    }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { return Array.isArray(j) ? j : []; })
+      .catch(function () { return []; });
+    PP_FR[k] = pr;
+    return pr;
+  }
+  function ppWorldSlot(hit) {
+    try { if (hit.world && hit.world.slot != null) return hit.world.slot | 0; } catch (e) {}
+    try {
+      if (isMine(hit.p.name)) {
+        var cl = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+        if (cl && cl.slot != null) return cl.slot | 0;
+      }
+    } catch (e2) {}
+    return null;
+  }
+  // THE HOUR A ROUND WAS PLAYED. An exhibition carries its own instant and a
+  // league round carries a number, so with nothing to compare them by the two
+  // halves of the log could only be stacked - league first, exhibitions after,
+  // and with five lines showing, a club that had played five rounds never saw
+  // a friendly again. The calendar dates a round exactly: it is a pure
+  // function of the season and the nation's kick-off hour.
+  function ppRoundMs(season, round, rid) {
+    try {
+      var PL = window.__foPlanet;
+      var d = PL.dayOfSeasonRound(season | 0, round | 0);
+      if (d == null) return 0;
+      return PL.EPOCH + d * PL.DAY + (PL.natHour(rid) | 0) * 3600000;
+    } catch (e) { return 0; }
+  }
   // FIVE IS A GLANCE, not an archive: the log rides under his shape on the
   // Overview now, so it shows the last five and says where the rest live.
   var PP_LOG_N = 5;
   function ppFillLog(p, hit, team) {
+    var rid = ppWorldRid(hit); if (!rid) return false;
+    var mySlot = ppWorldSlot(hit);
     var got = ppServedLog(p, hit, team);
     if (!got) {
       // the book may simply not be on this device yet - send for it, once
       try {
-        var rid0 = ppWorldRid(hit), LGx = window.__foWorldLg;
-        if (rid0 && LGx && LGx.want && !ppFillLog.__asked) {
+        var LGx = window.__foWorldLg;
+        if (LGx && LGx.want && !ppFillLog.__asked) {
           ppFillLog.__asked = 1;
-          LGx.want(rid0, function () { try { if (onPage() && TAB === "overview") ppFillLog(p, hit, team); } catch (eW) {} });
+          LGx.want(rid, function () { try { if (onPage() && TAB === "overview") ppFillLog(p, hit, team); } catch (eW) {} });
         }
       } catch (e) {}
-      return false;
+      // the league book is not the only shelf: a club with no rounds played
+      // yet may still have exhibitions behind it, and they belong here
+      if (mySlot == null) return false;
     }
     var sig = location.hash;
-    Promise.all(got.ms.map(function (m) { return ppCard(got.rid, m.id); })).then(function (cards) {
+    var cardsP = got ? Promise.all(got.ms.map(function (m) { return ppCard(got.rid, m.id); })) : Promise.resolve([]);
+    var frP = mySlot == null ? Promise.resolve([]) : ppFriendlies(rid, mySlot);
+    Promise.all([cardsP, frP]).then(function (both) {
       // the room this log belongs to moved; the cards resolve long after the
       // page is drawn, and this is what decides whether they are still wanted
       if (location.hash !== sig || !onPage() || TAB !== "overview") return;
       var slot = document.querySelector("#page .fo-pp-slot[data-slot='recent']"); if (!slot) return;
-      var rows = got.ms.map(function (m, i) {
+      var cards = both[0] || [], fr = both[1] || [];
+      var season = 0;
+      try { season = (window.__foWorldLg.get(rid) || {}).seasonNo | 0; } catch (eS) {}
+      var lines = [];
+      (got ? got.ms : []).forEach(function (m, i) {
         var mineHome = !!got.names[m.home];
         var opp = mineHome ? m.away : m.home;
         var res = !m.winner ? "&mdash;" : got.names[m.winner] ? "Won" : "Lost";
@@ -1353,49 +1426,59 @@
         var to = (got.rid && m.id)
           ? "#/report?n=" + encodeURIComponent(got.rid) + "&w=" + encodeURIComponent(m.id) : "";
         var fix = (mineHome ? "v " : "at ") + E(opp);
-        return "<tr><td>R" + (m.round | 0) + "</td><td>" +
+        // a round with no date still sorts newest-first among its own kind
+        var at = ppRoundMs(season, m.round, rid) || (9e15 - ((99 - (m.round | 0)) * 86400000));
+        lines.push({ at: at, html: "<tr data-k='lg'><td>R" + (m.round | 0) + "</td><td>" +
           (to ? "<a class='fo-pp-mlink' href='" + to + "'>" + fix + "<i>&rsaquo;</i></a>" : fix) + "</td>" +
           "<td class='" + (res === "Won" ? "w" : res === "Lost" ? "l" : "") + "'>" + res + "</td>" +
-          "<td>" + his + "</td><td class='sm'>League</td></tr>";
-      }).join("");
-      // THE EXHIBITIONS TOO. The umpire folds every banked friendly into a
-      // book of its own (living.mjs) - the man's lines ride the squad, so
-      // the log can list them long after the ball-by-ball is purged.
-      var frRows = "";
+          "<td>" + his + "</td><td class='sm'>League</td></tr>" });
+      });
+      // THE EXHIBITIONS TOO. The club's ties come from the umpire; the man's
+      // own figures ride the squad in his friendlies book, so the log can
+      // print them long after the ball-by-ball is purged.
       try {
-        frRows = ((p.friendly && p.friendly.log) || []).map(function (l) {
-          var bits = [];
-          if ((l.b | 0) > 0 || (l.r | 0) > 0) bits.push(l.r + (l.out ? "" : "*") + " (" + l.b + ")");
-          if ((l.ovb | 0) > 0) bits.push(l.w + "-" + l.conc + " (" + ppOvers(l.ovb) + ")");
+        var byId = {};
+        ((p.friendly && p.friendly.log) || []).forEach(function (l) { if (l && l.id != null) byId[String(l.id)] = l; });
+        fr.forEach(function (f) {
+          // a friendly whose broadcast is still showing has no result yet: it
+          // is in play, and the log is a record of matches that have finished
+          if (!f || f.status !== "played" || !f.text) return;
+          var mineC = f.cCountry === rid && (f.cSlot | 0) === (mySlot | 0);
+          var myName = mineC ? f.home : f.away, opp2 = mineC ? f.away : f.home;
+          var l = byId[String(f.id)] || null;
+          var bits2 = [];
+          if (l && ((l.b | 0) > 0 || (l.r | 0) > 0)) bits2.push(l.r + (l.out ? "" : "*") + " (" + l.b + ")");
+          if (l && (l.ovb | 0) > 0) bits2.push(l.w + "-" + l.conc + " (" + ppOvers(l.ovb) + ")");
           // play_at_ms is a bigint, and a bigint crosses the wire as a STRING -
           // new Date("1786881600000") is not a timestamp to JS, it is a date
           // string it cannot parse, and every friendly in the log read
           // "Invalid Date". Number it first, and refuse anything that is not
           // a real instant rather than printing the words.
-          var dt = "&mdash;";
+          var ms2 = +f.playAtMs || 0, dt = "&mdash;";
           try {
-            var ms = +l.at, dd = ms ? new Date(ms) : null;
+            var dd = ms2 ? new Date(ms2) : null;
             if (dd && isFinite(dd.getTime())) dt = dd.toLocaleDateString([], { day: "numeric", month: "short" });
           } catch (eD) {}
-          var res9 = l.win === true ? "Won" : l.win === false ? "Lost" : "&mdash;";
-          var toF = l.id ? "#/report?fr=" + encodeURIComponent(l.id) : "";
-          var fixF = "v " + E(l.opp || "");
-          return "<tr><td>" + dt + "</td><td>" +
+          var won = f.winner == null ? null : f.winner === myName;
+          var res9 = won === true ? "Won" : won === false ? "Lost" : "&mdash;";
+          var toF = f.id != null ? "#/report?fr=" + encodeURIComponent(f.id) : "";
+          var fixF = (mineC ? "v " : "at ") + E(opp2 || "");
+          lines.push({ at: ms2, html: "<tr data-k='fr'><td>" + dt + "</td><td>" +
             (toF ? "<a class='fo-pp-mlink' href='" + toF + "'>" + fixF + "<i>&rsaquo;</i></a>" : fixF) + "</td>" +
-            "<td class='" + (l.win === true ? "w" : l.win === false ? "l" : "") + "'>" + res9 + "</td>" +
-            "<td>" + (bits.length ? bits.join(" &middot; ") : "no recorded involvement") + "</td>" +
-            "<td class='sm'>Friendly</td></tr>";
-        }).join("");
+            "<td class='" + (won === true ? "w" : won === false ? "l" : "") + "'>" + res9 + "</td>" +
+            "<td>" + (bits2.length ? bits2.join(" &middot; ") : "no recorded involvement") + "</td>" +
+            "<td class='sm'>Friendly</td></tr>" });
+        });
       } catch (eFr) {}
-      // the league rounds come newest-first and the exhibitions carry their own
-      // dates; five lines is what a reader wants under a man's shape
-      var allRows = (rows + frRows).split("</tr>").filter(function (x) { return x.trim(); })
-        .slice(0, PP_LOG_N).map(function (x) { return x + "</tr>"; }).join("");
+      // one shelf, in the order they were played; five lines is what a reader
+      // wants under a man's shape
+      lines.sort(function (a, b) { return (b.at || 0) - (a.at || 0); });
+      var allRows = lines.slice(0, PP_LOG_N).map(function (x) { return x.html; }).join("");
       // the marker stays: harvest() reads it to know the umpire's log is already
       // standing here and the engine's empty local panel must not join it
       slot.innerHTML = "<div data-fo-servedlog>" +
         "<table class='fo-pp-log fo-own'><tr><th>Rd</th><th>Fixture</th><th>Result</th><th>His match</th><th></th></tr>" +
-        allRows + "</table>" +
+        (allRows || "<tr data-k='na'><td colspan='5' class='sm'>No matches played yet.</td></tr>") + "</table>" +
         "<p class='fo-pp-dim'>From the umpire's book &middot; the last " + PP_LOG_N +
         ", every line as banked on the day.</p></div>";
       try { filterLog(activeFilter()); } catch (eF2) {}
@@ -1449,9 +1532,16 @@
     try {
       var slot = document.querySelector("#page .fo-pp-slot[data-slot='recent']"); if (!slot) return;
       slot.querySelectorAll("table tr").forEach(function (tr, ix) {
-        if (!ix || tr.querySelector("th")) return;
-        var fr = /friendly/i.test(tr.textContent || "");
-        tr.style.display = (f === "lg" && fr) || (f === "fr" && !fr) ? "none" : "";
+        // the umpire's rows say which book they came from - reading the class
+        // off the text would hide a fixture against a club with "Friendly" in
+        // its name. The engine's own local panel (solo play) has no mark, and
+        // there the label in the row is still the only thing to go on.
+        var k = tr.getAttribute("data-k");
+        if (!k) {
+          if (!ix || tr.querySelector("th")) return;
+          k = /friendly/i.test(tr.textContent || "") ? "fr" : "lg";
+        }
+        tr.style.display = (f === "lg" && k === "fr") || (f === "fr" && k === "lg") ? "none" : "";
       });
     } catch (e) {}
   }
