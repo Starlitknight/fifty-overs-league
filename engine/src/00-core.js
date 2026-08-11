@@ -30,6 +30,10 @@ function foFatiguePenalty(p){
   const ix=foFatigueIndex(p), st=(p&&p.skills&&p.skills.stamina)||p.stamina||50;
   return foClamp(ix*1.05*foAgeTireFactor(p) - Math.max(0,st-60)*0.045, 0, 13.5);
 }
+// THE WORLD'S MEDIAN KEEPER, measured over all 512 glovemen in the sixteen
+// leagues. Every term that asks "is this keeper better or worse than average"
+// counts from here.
+const FO_KQ_PAR=74;
 function foKeeperQuality(p){
   if(!p)return 50;const s=p.skills||{};
   return foClamp((s.keeping||p.keeping||50)*0.50+(s.stumping||p.stumping||50)*0.26+(s.catching||p.catching||50)*0.24,15,95);
@@ -381,7 +385,14 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   // COMMONER way to concede a run than a bye off the keeper, not a rarer one.
   // The calibration lands at wd 10.4, nb 1.4, b 1.9, lb 6.0 an innings.
   lo.wide=CAL.wide-wc*0.01;lo.noball=CAL.noball;lo.bye=CAL.bye;lo.legbye=CAL.bye+1.16;
-  if(ctx.keeperQuality){const kq=(ctx.keeperQuality-55);lo.bye-=0.020*kq;lo.legbye-=0.008*kq;lo.wide-=0.004*kq;lo.wC+=0.0055*kq;lo.wST+=0.017*kq;}
+  // AN AVERAGE KEEPER IS NEUTRAL, and the world says who that is. This read
+  // from 55, a number nothing in the game could reach: keepers averaged 41,
+  // so every gloveman on earth was treated as fourteen points below par and
+  // the byes he conceded were inflated by a third. With the fielding family
+  // dealt on its own bell the world's median keeper is FO_KQ_PAR, and the
+  // terms hang off that - so a good keeper saves byes and a poor one leaks
+  // them, which is the whole point of the number.
+  if(ctx.keeperQuality){const kq=(ctx.keeperQuality-FO_KQ_PAR);lo.bye-=0.020*kq;lo.legbye-=0.008*kq;lo.wide-=0.004*kq;lo.wC+=0.0055*kq;lo.wST+=0.017*kq;}
   for(const k in DIS)lo[k]=W+Math.log(DIS[k]);
   // FREE HIT (real ODI rule): after a no-ball the next legal delivery can
   // only fall to a run out - and batters swing at it
@@ -648,7 +659,13 @@ function pickXI(team){
   const rest=P.filter(p=>!chosen.has(p.name)).sort((a,b)=>b.bat-a.bat);
   for(const r of rest){if(chosen.size>=11)break;chosen.add(r.name)}
   const xi=P.filter(p=>chosen.has(p.name));
-  xi.sort((a,b)=>(a.mpos-b.mpos)||(b.bat-a.bat));
+  // A TOTAL ORDER, or the replay is not the match. Two men on the same mpos
+  // with the same batting fell back on the order the squad happened to be
+  // stored in - and the broadcast re-derives its XI from a squad the world may
+  // since have rewritten, so the same fixture could bat them in the other
+  // order and the replay would disagree with the book over two names. The name
+  // breaks the tie: arbitrary, but the SAME arbitrary everywhere and forever.
+  xi.sort((a,b)=>(a.mpos-b.mpos)||(b.bat-a.bat)||(a.name<b.name?-1:a.name>b.name?1:0));
   return xi;
 }
 // ---------- match ----------
@@ -791,13 +808,23 @@ const FO_SECTORS={   // canonical shot lines for a RIGHT-hander
   thirdMan:247,slipCorr:262,fineLeg:293,squareLeg:336,point:197,cover:160,
   midOff:116,straight:90,midOn:64,midwicket:18
 };
+// WHERE THE BALL ACTUALLY GOES, by shot. A wagon wheel is not a circle: a
+// right-hander defends into the off side, works his singles square on the leg,
+// runs his twos into the deep gaps at cover and midwicket, and hits his sixes
+// straight and over the leg side. The shares below are read off that, per
+// outcome, and they are what makes the field's traffic realistic - which
+// matters far more now that every posted man fields what comes to him.
+//
+// The cordon is in the table too: an edge that does not carry is a real way to
+// score, and with slips finally in the fielding sample it is also a real way
+// to be stopped.
 const FO_SHOT_W={    // weights per outcome class over the sectors above
-  dot:{point:3,cover:3,midOff:2,midOn:2,midwicket:2,straight:1,slipCorr:1,squareLeg:1},
-  '1':{squareLeg:3,midwicket:3,point:2,cover:2,fineLeg:2,midOn:2,thirdMan:1,straight:1},
-  '2':{midwicket:3,cover:3,squareLeg:2,point:2,midOn:2,midOff:2,fineLeg:1,thirdMan:1},
-  '3':{cover:3,midwicket:3,fineLeg:2,thirdMan:2,midOff:1,midOn:1},
-  '4':{cover:3,point:2,midwicket:3,squareLeg:2,midOff:2,midOn:2,straight:2,fineLeg:2,thirdMan:2},
-  '6':{straight:3,midwicket:3,cover:2,midOn:2,squareLeg:2,midOff:1},
+  dot:{point:4,cover:4,midOff:3,midOn:2,midwicket:2,straight:1,slipCorr:2,squareLeg:1,fineLeg:1},
+  '1':{squareLeg:4,midwicket:4,point:3,cover:3,fineLeg:3,midOn:3,midOff:2,thirdMan:2,straight:1},
+  '2':{midwicket:4,cover:4,squareLeg:3,point:2,midOn:2,midOff:2,fineLeg:2,thirdMan:2,straight:1},
+  '3':{cover:3,midwicket:3,fineLeg:3,thirdMan:3,midOff:1,midOn:1,squareLeg:1,straight:1},
+  '4':{cover:4,point:3,midwicket:4,squareLeg:3,midOff:2,midOn:2,straight:2,fineLeg:3,thirdMan:3,slipCorr:1},
+  '6':{straight:4,midwicket:4,midOn:3,squareLeg:2,cover:2,midOff:1,point:1},
   wC:{thirdMan:2,slipCorr:3,point:2,cover:2,midwicket:2,straight:2,midOn:1,squareLeg:1},
   wRO:{point:3,cover:3,midwicket:3,midOn:2,midOff:2,squareLeg:2}
 };
@@ -825,10 +852,13 @@ function foShotDir(out,hand){
 }
 function foAngDiff(a,b){let d=Math.abs(a-b)%360;return d>180?360-d:d}
 function foSpotAngle(sp){return ((Math.atan2(sp.y-130,sp.x-200)*180/Math.PI)%360+360)%360}
+// EVERY POSTED MAN IS A FIELDER. The cordon used to be skipped outright, so a
+// slip never cut off a square drive and a gully never stopped anything - nine
+// men fielded and two stood as ornaments. They are in the sample now; the
+// angle gate is what keeps a slip from fielding a ball hit to the covers.
 function foNearestFielder(FS,dir,deepOnly,ringOnly){
   let best=null,bd=1e9;
   for(const sp of FS.spots){
-    if(FO_CLOSE_POS[sp.label]&&sp.label!=='short leg')continue;
     if(deepOnly&&!sp.deep)continue;
     if(ringOnly&&sp.deep)continue;
     const d=foAngDiff(foSpotAngle(sp),dir);
@@ -836,73 +866,74 @@ function foNearestFielder(FS,dir,deepOnly,ringOnly){
   }
   return best?{spot:best,ang:bd}:null;
 }
+// ---- THE CONTEST ----------------------------------------------------------
+// A chance is a number and a man. The ball is dealt a DIFFICULTY on 0-100 -
+// most of what reaches a fielder is routine, so the draw is skewed hard toward
+// the easy end - lifted by what the ball was worth, because a drive middled for
+// four is travelling faster than a push for one, and lifted again by how far he
+// had to go. Beat the difficulty with his fielding and he wins the chance.
+//
+// What winning MEANS depends only on what the ball was already worth, which is
+// why one rule produces both halves of fielding. Win on a four and he has cut
+// it off; lose on one and it was always going to be four. Lose on a single or a
+// dot and he has fumbled it; win on one and it was always going to be a single.
+// Nothing is gated on a threshold nobody can reach.
+var FO_FLD={
+  gate:15,        // beyond this the ball never came near him
+  skew:2.6,       // 100*u^skew - the median chance is routine
+  ang:24,         // a ball at the edge of his range is this much harder
+  drop:16,        // lose a catch by less than this and it is a DROP, not a beat
+  cgate:34,       // a ball in the air gives men time to converge
+  // THE BAND OFFSETS ARE SOLVED, NOT GUESSED. Each is the number that lands
+  // its outcome on a real-cricket rate given the world's actual fielding
+  // spread and the angles balls arrive at: a routine ball fumbled about three
+  // times in a hundred, a two cut off to one about a fifth of the time, a
+  // certain four stopped about one in eight.
+  band:{dot:-60,'1':-59,'2':37,'3':31,'4':44,catch:16}
+};
+function foChanceDiff(band,ang,gate){
+  var d=100*Math.pow(M.rand(),FO_FLD.skew)+(FO_FLD.band[band]||0)
+       +FO_FLD.ang*Math.min(1,ang/(gate||FO_FLD.gate));
+  return Math.max(0,Math.min(100,d));
+}
+function foFieldSkill(p){return p?(p.field||((p.skills&&p.skills.fielding)||50)):50}
 function groundFieldingAdjust(inn,out,bowler){
   if(['wide','noball','bye','legbye'].includes(out)||isWkt(out))return out;
   const dir=M._ballDir,FS=M._ballFS;
   if(dir==null||!FS)return out;
-  // real fielding layout: the intercepting human IS the man the captain
-  // posted at the spot the ball went to - his skills decide the outcome
   const A=foFieldAssign(inn);
-  const manAt=near=>(A&&near&&A.byLbl[near.spot.label])||null;
+  const near=foNearestFielder(FS,dir,false,false);
+  const pick=(A&&near&&A.byLbl[near.spot.label])||null;
   M._fieldingEvent=null;
-  const prox=n=>n?Math.max(0,1-n.ang/16):0;   // 1 on the line, 0 at 16 deg
   // THE BALL CAME TO HIM. An arm is earned by balls fielded, not by run-outs
   // completed - the run-out is the rare OUTCOME, and counting only those would
-  // put a rocket arm four or five triggers from a career. Whoever the ball
-  // actually went to is credited, whatever he then does with it.
-  (function(){
-    const near=foNearestFielder(FS,dir,false,false),pick=manAt(near);
-    if(near&&pick&&near.ang<=16)foTalCount(M._tal,inn.bowlTeam,pick,{},['rocketArm']);
-  })();
-  if(out==='4'){
-    const near=foNearestFielder(FS,dir,true,false),pick=manAt(near);
-    const fs=pick?(pick.field||((pick.skills&&pick.skills.fielding)||50)):0;
-    if(near&&pick&&near.ang<=14&&fs>=58&&M.rand()<0.30*prox(near)*Math.min(1,(fs-55)/60)){
-      M._fielder=pick;M._fieldPos=near.spot.label;
-      M._fieldingEvent='Brilliant stop by '+pick.name+' at '+near.spot.label+' saves two.';
-      M._fldEv={k:'save',by:pick.name,at:near.spot.label,d:2};
-      return '2';
-    }
-    return out;
+  // put a rocket arm four or five triggers from a career.
+  if(near&&pick&&near.ang<=16)foTalCount(M._tal,inn.bowlTeam,pick,{},['rocketArm']);
+  if(out==='6')return out;                       // it cleared them all
+  if(!near||!pick||near.ang>FO_FLD.gate)return out;
+  const fs=foFieldSkill(pick), diff=foChanceDiff(out,near.ang), won=fs>=diff;
+  const deep=!!near.spot.deep, at=near.spot.label;
+  const isRocket=foTalHas(pick,{key:M._talKey})('rocketArm');
+  const say=(txt,k,d,arm)=>{M._fielder=pick;M._fieldPos=at;M._fieldingEvent=txt;
+    M._fldEv={k:k,by:pick.name,at:at,d:d,arm:!!arm};};
+  if(out==='4'&&won){
+    // IN THE RING HE CUTS IT DEAD; ON THE ROPE HE SAVES TWO. A man at cover who
+    // stops a drive concedes nothing or a single; a boundary rider sliding at
+    // the rope has already let three of them past him.
+    if(deep){say('Brilliant stop by '+pick.name+' at '+at+' saves two.','save',2,isRocket);
+      if(isRocket)M._talEv='Rocket Arm';return '2';}
+    const kept=M.rand()<0.55?'dot':'1';
+    say('Brilliant stop by '+pick.name+' at '+at+' cuts off the boundary.','save',kept==='dot'?4:3,isRocket);
+    if(isRocket)M._talEv='Rocket Arm';return kept;
   }
-  if(out==='2'){
-    const near=foNearestFielder(FS,dir,false,false),pick=manAt(near);
-    const fs=pick?(pick.field||((pick.skills&&pick.skills.fielding)||50)):0;
-    const isRocket=pick?foTalHas(pick,{key:M._talKey})('rocketArm'):false;
-    if(near&&pick&&near.ang<=11&&fs>=64&&M.rand()<0.26*prox(near)*Math.min(1,(fs-60)/50)){
-      M._fielder=pick;M._fieldPos=near.spot.label;
-      M._fieldingEvent=(isRocket?'Rocket Arm! ':'')+pick.name+' attacks the ball at '+near.spot.label+' and keeps it to one.';
-      // a talent that fired is a talent that fired, whether it saved the run
-      // or took the wicket - this one announced itself in the sentence for a
-      // long time and was never stamped, so the filter could not see it
-      if(isRocket)M._talEv='Rocket Arm';
-      M._fldEv={k:'save',by:pick.name,at:near.spot.label,d:1,arm:!!isRocket};
-      return '1';
-    }
-    return out;
+  if(out==='3'&&won){say('Brilliant stop by '+pick.name+' at '+at+' saves one.','save',1,isRocket);
+    if(isRocket)M._talEv='Rocket Arm';return '2';}
+  if(out==='2'&&won){
+    say((isRocket?'Rocket Arm! ':'')+'Great fielding by '+pick.name+' at '+at+' keeps it to one.','save',1,isRocket);
+    if(isRocket)M._talEv='Rocket Arm';return '1';
   }
-  if(out==='1'){
-    const near=foNearestFielder(FS,dir,false,true),pick=manAt(near);
-    const fs=pick?(pick.field||((pick.skills&&pick.skills.fielding)||50)):99;
-    if(near&&pick&&near.ang<=9&&fs<44&&M.rand()<0.30*prox(near)*Math.min(1,(46-fs)/24)){
-      M._fielder=pick;M._fieldPos=near.spot.label;
-      M._fieldingEvent='Misfield by '+pick.name+' at '+near.spot.label+' turns one into two.';
-      M._fldEv={k:'misfield',by:pick.name,at:near.spot.label,d:-1};
-      return '2';
-    }
-    return out;
-  }
-  if(out==='dot'){
-    const near=foNearestFielder(FS,dir,false,true),pick=manAt(near);
-    const fs=pick?(pick.field||((pick.skills&&pick.skills.fielding)||50)):99;
-    if(near&&pick&&near.ang<=8&&fs<40&&M.rand()<0.22*prox(near)*Math.min(1,(42-fs)/24)){
-      M._fielder=pick;M._fieldPos=near.spot.label;
-      M._fieldingEvent='Fumble from '+pick.name+' at '+near.spot.label+' releases a single.';
-      M._fldEv={k:'fumble',by:pick.name,at:near.spot.label,d:-1};
-      return '1';
-    }
-    return out;
-  }
+  if(out==='1'&&!won){say('Misfield by '+pick.name+' at '+at+' turns one into two.','misfield',-1);return '2';}
+  if(out==='dot'&&!won){say('Fumble from '+pick.name+' at '+at+' releases a single.','fumble',-1);return '1';}
   return out;
 }
 function stepBall(){
@@ -969,17 +1000,35 @@ function stepBall(){
     if(near&&near.ang<=30&&A&&A.byLbl[near.spot.label]){f=A.byLbl[near.spot.label];M._fieldPos=near.spot.label;}
     else if(_dir!=null&&foRegionOf(_dir,_FS?_FS.lhb:false)==='the sight screen')f=bowler;
     if(!f){f=inn.bxi.find(p=>p.keeper)||inn.bxi[0];M._ballDir=null;}
-    const cat=f.keeper?foKeeperQuality(f):(f.skills?f.skills.catching:55);
-    const wxd=((M.meta&&M.meta.weather)||'').toLowerCase();
+    const cat=(f.keeper?foKeeperQuality(f):((f.skills&&f.skills.catching)||50))
+      +(((M.meta&&M.meta.weather)||'').toLowerCase()==='chilly'?-9:0)
+      +(((M.meta&&M.meta.weather)||'').toLowerCase()==='misty'?-6:0);
     // the chance came to him: that is what a fielding talent applies to, so it
     // is both what counts toward earning one and what a part-learnt one fires on
     const TF=foTalHas(f,{key:_talKey});
     foTalCount(M._tal,inn.bowlTeam,f,{},['safeHands']);   // the keeper's gloves are counted every ball, above
-    let pDrop=Math.min(0.36,Math.max(0.009,0.215-0.0048*(cat-55)-(TF('safeHands')?0.052:0)-(TF('lightningHands')&&f.keeper?0.050:0)+(wxd==='chilly'?0.045:0)+(wxd==='misty'?0.030:0)));
-    if(M.rand()<pDrop){M._dropped={by:f.name};M._fieldPos=null;M._fldEv={k:'drop',by:f.name,d:0};out=(M.rand()<0.65?'dot':'1');}
-    else {M._fielder=f;M._fldEv={k:'catch',by:f.name,at:M._fieldPos||null,d:0};}
+    // A CATCH IS THE SAME CONTEST AS A STOP. The chance is dealt a difficulty
+    // and his hands are put against it. Safe Hands and a keeper's Lightning
+    // Hands are worth points on the contest rather than a flat cut in a drop
+    // rate, so a talent is worth more on a hard chance, which is when it is
+    // actually worth having.
+    const cSkill=cat+(TF('safeHands')?11:0)+((TF('lightningHands')&&f.keeper)?10:0);
+    const cDiff=foChanceDiff('catch',(M._fieldPos!=null&&near)?near.ang:0,FO_FLD.cgate);
+    if(cSkill>=cDiff){M._fielder=f;M._fldEv={k:'catch',by:f.name,at:M._fieldPos||null,d:0};}
+    else if(cDiff-cSkill<=FO_FLD.drop){
+      // he got hands to it and put it down: a drop, and it goes against him
+      M._dropped={by:f.name};M._fieldPos=null;M._fldEv={k:'drop',by:f.name,d:0};
+      out=(M.rand()<0.65?'dot':'1');
+    }else{
+      // it beat him. A chance nobody could have taken is not a drop, and the
+      // card should not read as though a man let his side down for a shot that
+      // was always going past him.
+      M._fieldPos=null;M._fldEv=null;
+      M._fieldingEvent=f.name+' can only watch it past him at '+(near&&near.spot?near.spot.label:'the ropes')+'.';
+      out=(M.rand()<0.45?'4':(M.rand()<0.55?'2':'1'));
+    }
   }else if(out==='wST'){M._fielder=inn.bxi.find(p=>p.keeper)||inn.bxi[0];
-    const kq=foKeeperQuality(M._fielder), miss=foClamp(0.20-0.0038*(kq-55),0.014,0.30);
+    const kq=foKeeperQuality(M._fielder), miss=foClamp(0.20-0.0038*(kq-FO_KQ_PAR),0.014,0.30);
     if(M.rand()<miss){M._dropped={by:M._fielder.name};out='dot';M._fldEv={k:'stumpMiss',by:M._fielder.name,d:0};M._fieldingEvent='Stumping chance missed by '+M._fielder.name+'.';}
     else {M._fldEv={k:'stumping',by:M._fielder.name,d:0};
       if(M._fielder&&foTalHas(M._fielder,{key:_talKey})('lightningHands')){M._fieldingEvent='Lightning Hands from '+M._fielder.name+' - the bails are gone in a blur.';M._talEv='Lightning Hands';}}}
@@ -3312,6 +3361,19 @@ function foSkillLevel(q,age){                 // returns a (possibly fractional)
   const frac=Math.max(0,Math.min(1,(age-18)/9));            // reaches peak at 27, plateaus to 30
   return young+(peak-young)*frac;
 }
+// FIELDING IS ITS OWN DIMENSION, NOT A SHADOW OF THE BAT. Every role but the
+// bowler used to take its fielding and catching off the man's BATTING level -
+// fielding:gg(tgt-8,7) for a batsman - so a weak club's number eleven was a
+// bad fielder because he was a bad batsman, and the whole world's fielding
+// squashed into a band from 20 to 56 with a median of 35. That band was the
+// reason no cricketer in the game had ever saved a boundary: the ground
+// fielding thresholds ask for 58 and 64, and nobody could reach them.
+//
+// It is a bell on the world's own scale now - centred fifty, wide enough that
+// the tails are real people - and it is drawn independently of what a man
+// does with the bat, because a brilliant fielder who cannot bat is one of the
+// most familiar cricketers there is. Calibration still scales it with the
+// rest, which is correct: a stronger league genuinely fields better.
 function foGenSkills(role,q,age,rnd){
   const gg=(m,s)=>Math.max(4,Math.min(99,Math.round(m+s*(rnd()+rnd()+rnd()-1.5))));
   const l2s=L=>Math.max(4,Math.min(99,Math.round(L*6.25+3.1+(rnd()-0.5)*3)));
@@ -3322,23 +3384,23 @@ function foGenSkills(role,q,age,rnd){
     return {wicket:gg(tgt,4),economy:gg(tgt-2,4),discipline:gg(tgt-4,6),moveTurn:gg(tgt-3,6),
       variation:gg(tgt-5,6),stamina:gg(tgt-2,6),
       vsPace:gg(20,7),vsSpin:gg(18,7),rotation:gg(20,7),temperament:gg(30,8),power:gg(16,6),
-      fielding:gg(50,8),catching:gg(50,8),keeping:gg(8,3),stumping:gg(7,3)};
+      fielding:gg(50,26),catching:gg(50,26),keeping:gg(8,3),stumping:gg(7,3)};
   }else if(isWK){    // headline = keeping; batting within ~1-2 levels below (keepers bat)
     const bt=l2s(Math.max(4,lvl-1.3));
-    return {keeping:gg(tgt,3),stumping:gg(tgt-3,5),catching:gg(tgt-2,5),
+    return {keeping:gg(50+(tgt-40)*0.9,9),stumping:gg(46+(tgt-40)*0.9,11),catching:gg(60,22),
       vsPace:gg(bt,5),vsSpin:gg(bt,5),rotation:gg(bt,6),temperament:gg(bt,6),power:gg(bt-8,7),
       wicket:gg(8,3),economy:gg(9,3),discipline:gg(12,4),moveTurn:gg(7,3),variation:gg(7,3),
-      stamina:gg(bt-10,7),fielding:gg(tgt-4,6)};
+      stamina:gg(bt-10,7),fielding:gg(50,26)};
   }else if(isAR){    // genuine two-way: bat & bowl both near lvl-1 (bat/bowl/tech all within 1-2 levels)
     const two=l2s(Math.max(4,lvl-1));
     return {vsPace:gg(two,5),vsSpin:gg(two,5),rotation:gg(two-2,6),temperament:gg(two,6),power:gg(two-4,7),
       wicket:gg(two,5),economy:gg(two-2,5),discipline:gg(two-4,6),moveTurn:gg(two-3,6),variation:gg(two-4,6),
-      stamina:gg(two,6),fielding:gg(two-6,7),catching:gg(two-4,7),keeping:gg(10,3),stumping:gg(8,3)};
+      stamina:gg(two,6),fielding:gg(50,26),catching:gg(50,26),keeping:gg(10,3),stumping:gg(8,3)};
   }else{             // batsman: tight batting cluster so aggBat & technique land within ~1 level
     return {vsPace:gg(tgt,4),vsSpin:gg(tgt,4),rotation:gg(tgt-2,5),temperament:gg(tgt,5),
       power:gg(role==='opener'?tgt-12:tgt-4,7),
       wicket:gg(10,4),economy:gg(11,4),discipline:gg(12,4),moveTurn:gg(9,4),variation:gg(8,4),
-      stamina:gg(tgt-14,7),fielding:gg(tgt-8,7),catching:gg(tgt-6,7),keeping:gg(8,3),stumping:gg(6,3)};
+      stamina:gg(tgt-14,7),fielding:gg(50,26),catching:gg(50,26),keeping:gg(8,3),stumping:gg(6,3)};
   }
 }
 function foGenExp(age,q,rnd){                  // experience correlates with age (0-100 scale)
@@ -4743,7 +4805,7 @@ function foCommPass(L,filter){
   // the stamp first, the engine's own sentence second - the same two readings
   // foBallTag makes, so a ball this filter shows always has a name to wear
   if(filter==='talents')return !!L.tal||!!foTalSaid(txt);
-  if(filter==='fielding')return L.out==='wC'||L.out==='wRO'||L.out==='wST'||/DROPPED|Misfield|fumbles|Brilliant stop|diving stop|phenomenal stop|attacks the ball|Stumping chance missed|Rocket Arm|Lightning Hands|run out|caught (behind|at|by)|takes (a|the|it|his).{0,24}catch|saves two|cuts it off/i.test(txt);
+  if(filter==='fielding')return L.out==='wC'||L.out==='wRO'||L.out==='wST'||/DROPPED|Misfield|fumbles|Brilliant stop|diving stop|phenomenal stop|Great fielding|Stumping chance missed|Rocket Arm|Lightning Hands|run out|caught (behind|at|by)|takes (a|the|it|his).{0,24}catch|saves two|cuts it off/i.test(txt);
   if(filter==='highlights')return L.mile||isWkt(L.out)||L.out==='4'||L.out==='6'||!!L.tal||foIsTalentText(txt)||/DROPPED|FIFTY|HUNDRED/i.test(txt);
   return true;
 }

@@ -242,6 +242,10 @@
   // shared budget - the balance the archetypes were tuned against. The World
   // Service passes each bot club's standing from the planet's own table, which is
   // how a flagship comes out the strongest side in its league.
+  // fielding, catching and the gloves are dealt, not bought: no budget pass
+  // and no calibration may scale them (server/init-world.mjs holds the same
+  // line for the world's own squads)
+  var FO_QS_UNBOUGHT = { fielding: 1, catching: 1, keeping: 1, stumping: 1 };
   function foGenArchetypeSquad(seed, country, archId, comp, strength) {
     var A = foArchById(archId);
     var STR = (typeof strength === "number" && isFinite(strength) && strength > 0)
@@ -637,7 +641,18 @@
       if (Math.abs(f - 1) < 0.008) break;
       f = Math.max(0.8, Math.min(1.25, f));
       players.forEach(function (p) {
-        for (var k2 in p.skills) p.skills[k2] = Math.max(4, Math.min(96, Math.round(p.skills[k2] * f)));
+        // THE HANDS ARE NOT PART OF THE BUDGET. This multiplied every skill a
+        // man has to land the squad on its rung, including the four that have
+        // nothing to do with how hard he is to bowl at. The generator deals
+        // fielding as a bell centred fifty; six passes of this pressed it to a
+        // median of thirty-five with a ceiling of fifty-six, which is why no
+        // cricketer in the game could reach the fifty-eight a diving stop asks
+        // for. The bell is the same for every club, so holding it out costs
+        // the budget nothing - it was never buying it.
+        for (var k2 in p.skills) {
+          if (FO_QS_UNBOUGHT[k2]) continue;
+          p.skills[k2] = Math.max(4, Math.min(96, Math.round(p.skills[k2] * f)));
+        }
         if (foPureBowler(p)) foApplyBowlerBat(p); else jsDerive(p);
       });
     }

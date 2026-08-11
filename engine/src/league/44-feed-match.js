@@ -57,7 +57,7 @@
     if (/Stumping chance missed/i.test(t)) return { k: "ms", lbl: "MISSED STUMPING", good: 0 };
     if (/DROPPED!/i.test(t)) return { k: "ms", lbl: "DROPPED CATCH", good: 0 };
     if (/Misfield by|Fumble from/i.test(t)) return { k: "ms", lbl: "MISFIELD", good: 0 };
-    if (/Brilliant stop|Rocket Arm|attacks the ball/i.test(t)) return { k: "gr", lbl: "GREAT FIELDING", good: 1 };
+    if (/Brilliant stop|Rocket Arm|Great fielding/i.test(t)) return { k: "gr", lbl: "GREAT FIELDING", good: 1 };
     return null;
   }
   // "End of over 12 (5 runs) - Yorkshire 61/2. ..." -> the umpire's own score
@@ -130,7 +130,7 @@
   function isWicket(r) { return !!(r && r.out && r.out[0] === "w" && r.out !== "wide"); }
 
   function bookState(seen) {
-    var mk = function () { return { bats: [], byKey: {}, bowls: [], bowlByKey: {}, exBy: {}, overs: [], fow: [], top: null, who: null, team: null, brk: null, target: null, striker: null, bowler: null, sinceTop: [], open: false, lastNo: null, pshipBalls: 0 }; };
+    var mk = function () { return { bats: [], byKey: {}, bowls: [], bowlByKey: {}, exBy: {}, mdnBy: {}, overs: [], fow: [], top: null, who: null, team: null, brk: null, target: null, striker: null, bowler: null, sinceTop: [], open: false, lastNo: null, pshipBalls: 0 }; };
     var inns = [mk(), mk()], pendingWk = null;
     for (var i = 0; i < seen.length; i++) {
       var r = seen[i]; if (!r) continue;
@@ -143,6 +143,15 @@
         if (cw || ct) inns.meta = { wx: cw && cw[1], pitch: cw && cw[2], tossWin: ct && ct[1].trim(), tossDo: ct && ct[2] };
       }
       if (r._top) {
+        // A MAIDEN IS AN OVER THAT COST NOTHING, and the umpire's figure line
+        // carries overs, runs and wickets and never says which of them were
+        // maidens. The deliveries do, so the over just closed is totted up as
+        // it closes and credited to whoever bowled it.
+        if (I.sinceTop.length) {
+          var ovR = 0, ovB = null;
+          I.sinceTop.forEach(function (d8) { ovR += ballRuns(d8); if (d8.bowlerNm) ovB = d8.bowlerNm; });
+          if (!ovR && ovB) { var km = bKey(ovB); I.mdnBy[km] = (I.mdnBy[km] || 0) + 1; }
+        }
         I.top = r; I.sinceTop = [];
         var tp = parseTop(r.txt);
         if (tp) { I.team = tp.team; I.overs.push(tp); }
@@ -844,6 +853,9 @@
         : "<div class='fd-foot'><a href='#/league?t=fixtures'>&#8592; The round</a><a href='#/home'>The club &rsaquo;</a></div>"));
   }
 
+  // every talent the commentary announces by name, for a book banked before
+  // the umpire stamped the delivery itself
+  var FO_TAL_SAID = /SIX MACHINE|PARTNERSHIP BREAKER|New Ball Specialist|Golden Arm|Mystery Ball|Bouncer talent|Finisher\u2019s instinct|Lightning Hands|Rocket Arm|Safe Hands|Spin Killer|Pace Hunter|Fast Starter|Anchor|Busy Runner/;
   // ---- BALL-BY-BALL, a timeline of the umpire's book -----------------------
   function livePanel(seen, done, I, tp) {
     var f = T.filter;
@@ -855,6 +867,11 @@
       if (f === "fldg") { var tg = fldTag(r); return !!(tg && tg.k === "gr"); }
       if (f === "flde") { var te = fldTag(r); return !!(te && te.k === "ms"); }
       if (f === "fldw") { var tw = fldTag(r); return !!(tw && (tw.k === "ct" || tw.k === "ro")); }
+      // THE BALLS A TALENT DECIDED. The umpire stamps the delivery a talent
+      // fired on (M._talEv rides out in the log as `tal`), and the sentence
+      // names it too - so a book banked before the stamp existed is still
+      // filtered correctly by the words the commentary used.
+      if (f === "tal") return !!r.tal || FO_TAL_SAID.test(String(r.txt || ""));
       if (f === "note") return r.no === "" && !r._top;
       return true;
     };
@@ -917,7 +934,7 @@
       if (lw) lastLn = "<span class='lo'>last over " + lw[1] + " run" + (lw[1] === "1" ? "" : "s") + (lw[2] ? " &middot; " + lw[2] + " wkt" : "") + "</span>";
     }
     var ovRings = I && I.sinceTop.length ? "<span class='seq'>" + I.sinceTop.map(function (r3) { return ring(r3.out); }).join("") + "</span>" : "";
-    var sel = ["all|The lot", "b46|4s &amp; 6s", "wk|Wickets", "fld|In the field &middot; all", "fldg|&nbsp;&nbsp;Great fielding", "flde|&nbsp;&nbsp;Misfields &amp; drops", "fldw|&nbsp;&nbsp;Catches &amp; run outs", "ov|Overs", "note|The notes"].map(function (c9) {
+    var sel = ["all|The lot", "b46|4s &amp; 6s", "wk|Wickets", "fld|In the field &middot; all", "fldg|&nbsp;&nbsp;Great fielding", "flde|&nbsp;&nbsp;Misfields &amp; drops", "fldw|&nbsp;&nbsp;Catches &amp; run outs", "tal|Talents", "ov|Overs", "note|The notes"].map(function (c9) {
       var p9 = c9.split("|");
       return "<option value='" + p9[0] + "'" + (T.filter === p9[0] ? " selected" : "") + ">" + p9[1] + "</option>";
     }).join("");
@@ -1169,7 +1186,8 @@
                 (f9.no ? ", " + E(f9.no) : "") + ")</s>";
             }).join(" &nbsp; ") + "</div></div>";
         })() +
-        (I.bowls.length ? "<div class='fd-sc-c bwl'><span>Bowling</span><span>O</span><span>R</span>" +
+        (I.bowls.length ? "<div class='fd-sc-c bwl'><span>Bowling</span><span>O</span>" +
+          "<span title='maiden overs'>M</span><span>R</span>" +
           "<span>W</span><span title='wides and no-balls charged to him'>Ex</span><span>Econ</span></div>" +
           I.bowls.map(function (w9) {
             // the umpire's figure line carries whole overs; runs over overs
@@ -1179,7 +1197,10 @@
             var ex9 = (I.exBy && I.exBy[bKey(w9.nm)]) || 0;
             return "<div class='fd-sc-b" + (onB ? " on" : "") + "'>" +
               "<b>" + plink(w9.nm) + pstar(w9.nm, T.rid) + "<span class='ss'>" + sStars(w9.nm, "bowl") + "</span></b>" +
-              "<span>" + w9.o + "</span><span>" + w9.r + "</span><span class='wk'>" + w9.w + "</span>" +
+              "<span>" + w9.o + "</span>" +
+              function () { var md = (I.mdnBy && I.mdnBy[bKey(w9.nm)]) || 0;
+                return "<span class='mdn" + (md ? " sm" : "") + "'>" + md + "</span>"; }() +
+              "<span>" + w9.r + "</span><span class='wk'>" + w9.w + "</span>" +
               "<span class='ex" + (ex9 ? " sm" : "") + "'>" + ex9 + "</span>" +
               "<span>" + (ec9 != null ? ec9 : "&mdash;") + "</span></div>";
           }).join("") : "") +
@@ -1668,7 +1689,8 @@
       ".fo-fd .fd-sc-fow u{text-decoration:none;font-weight:750}",
       ".fo-fd .fd-sc-fow s{text-decoration:none;color:var(--fdmut);font-size:11.5px}",
       "@media(max-width:560px){.fo-fd .fd-sc-yet{grid-template-columns:minmax(0,1fr);gap:4px;padding-left:13px;padding-right:13px}}",
-      ".fo-fd .fd-sc-b,.fo-fd .fd-sc-c.bwl{display:grid;grid-template-columns:minmax(0,1fr) 30px 32px 22px 26px 40px;gap:8px;align-items:center}",
+      ".fo-fd .fd-sc-b,.fo-fd .fd-sc-c.bwl{display:grid;grid-template-columns:minmax(0,1fr) 28px 24px 32px 22px 26px 40px;gap:7px;align-items:center}",
+      ".fo-fd .fd-sc-b span.mdn{color:#B0B6C2}.fo-fd .fd-sc-b span.mdn.sm{color:var(--fdink);font-weight:700}",
       ".fo-fd .fd-sc-b{padding:9px 16px;border-top:1px solid var(--fdline)}",
       // a column of figures with no heading is a column of guesses
       ".fo-fd .fd-sc-c.bwl{padding:0 16px;border-top:1px solid var(--fdline)}",

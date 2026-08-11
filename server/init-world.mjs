@@ -235,6 +235,21 @@ const xiOf = sq => {
 // re-derived by the engine's own mapping, so nothing is hand-set. Exported:
 // the reseed deals with it, and the umpire levels a fresh claim with it -
 // same men, same names, same careers, raised (or trimmed) to the rung.
+// THE GLOVES AND THE HANDS ARE NOT SCALED. Calibration exists to seat a club
+// at a league's strength, and it did that by multiplying EVERY skill a man
+// has - including the four that have nothing to do with how hard he is to bowl
+// at. That is why the world's fielding lived in a band from 20 to 56: the
+// generator dealt a bell and calibration pressed it flat, four times a club,
+// again at every levelling.
+//
+// Worse, it was a loop. Fielding feeds a man's rating, so widening the bell
+// raised the rating, so calibration scaled harder, so the bell came out
+// narrower than it went in. Holding these four out breaks the loop, and it
+// costs nothing that matters: the bell is the same for every club on earth, so
+// its contribution to a club's rating is the same for every club, and what
+// calibration is actually for - telling a county from an associate - is
+// untouched.
+const NOT_SCALED = { fielding: 1, catching: 1, keeping: 1, stumping: 1 };
 export function calibrate(host, squad, target) {
   let men = squad;
   for (let i = 0; i < 4; i++) {
@@ -242,8 +257,10 @@ export function calibrate(host, squad, target) {
     const f = target / Math.max(1, have);
     if (Math.abs(f - 1) < 0.004) break;
     men.forEach(p => {
-      for (const k in (p.skills || {}))
+      for (const k in (p.skills || {})) {
+        if (NOT_SCALED[k]) continue;
         p.skills[k] = Math.max(2, Math.min(99, Math.round(p.skills[k] * f)));
+      }
     });
     men = host.derive(men);
   }

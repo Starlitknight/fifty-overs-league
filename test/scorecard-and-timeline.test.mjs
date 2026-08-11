@@ -113,11 +113,11 @@ test('the star strip takes what it needs, not the whole row', () => {
 });
 
 test('the bowling figures are headed, in the same grid they are printed in', () => {
-  assert.match(html, /<div class='fd-sc-c bwl'><span>Bowling<\/span><span>O<\/span><span>R<\/span><span>W<\/span><span title='wides and no-balls charged to him'>Ex<\/span><span>Econ<\/span><\/div>/,
-    'four figures and an extras column, each one named');
+  assert.match(html, /<div class='fd-sc-c bwl'><span>Bowling<\/span><span>O<\/span><span title='maiden overs'>M<\/span><span>R<\/span><span>W<\/span><span title='wides and no-balls charged to him'>Ex<\/span><span>Econ<\/span><\/div>/,
+    'the figures a real card carries - overs, maidens, runs, wickets, extras, economy - each one named');
   // the head and the rows are one grid declaration, so a column added to one
   // can never sit over a different column in the other
-  assert.match(feed, /"\.fo-fd \.fd-sc-b,\.fo-fd \.fd-sc-c\.bwl\{display:grid;grid-template-columns:minmax\(0,1fr\) 30px 32px 22px 26px 40px;/);
+  assert.match(feed, /"\.fo-fd \.fd-sc-b,\.fo-fd \.fd-sc-c\.bwl\{display:grid;grid-template-columns:minmax\(0,1fr\) 28px 24px 32px 22px 26px 40px;/);
   assert.ok(!/fd-sc-bh/.test(feed), 'the unlabelled caption it replaced is gone, CSS and all');
 });
 

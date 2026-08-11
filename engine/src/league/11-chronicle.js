@@ -1041,7 +1041,7 @@
         if (L.out === "wRO") return "direct hit";
         if (/DROPPED/i.test(t)) return "dropped catch";
         if (/Stumping chance missed/i.test(t)) return "chance missed";
-        if (/Brilliant stop|diving stop|phenomenal stop|attacks the ball and keeps|saves two/i.test(t)) return "great fielding";
+        if (/Brilliant stop|diving stop|phenomenal stop|Great fielding|saves two/i.test(t)) return "great fielding";
         if (/Misfield|Fumble|fumbles/i.test(t)) return "misfield";
         if (/Rocket Arm/i.test(t)) return "rocket arm";
         if (/Lightning Hands/i.test(t)) return "lightning hands";
@@ -1087,7 +1087,7 @@
           // catches, stumpings and run-outs are the wicket-side of fielding;
           // drops, misfields and great stops are the non-wicket side
           if (L.out === "wRO" || L.out === "wC" || L.out === "wST") return true;
-          return /DROPPED|Misfield|fumbles|Brilliant stop|diving stop|phenomenal stop|attacks the ball|Stumping chance missed|Rocket Arm|Lightning Hands|run out|caught (behind|at|by)|takes (a|the|it|his).{0,24}catch|saves two|cuts it off/i.test(L.txt || "");
+          return /DROPPED|Misfield|fumbles|Brilliant stop|diving stop|phenomenal stop|Great fielding|Stumping chance missed|Rocket Arm|Lightning Hands|run out|caught (behind|at|by)|takes (a|the|it|his).{0,24}catch|saves two|cuts it off/i.test(L.txt || "");
         };
         // the chase equation rides every second-innings over summary:
         // "Need 41 from 12 overs" / "Need 3 from 8 balls"
