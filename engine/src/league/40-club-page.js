@@ -233,8 +233,20 @@
   function evClub(cid, e) {
     var c2 = e.oppCountry || cid, s2 = e.oppSlot;
     var nm = e.oppName || "a club";
-    if (s2 == null) return E(nm);
+    // THERE IS NOT ALWAYS A CLUB. Three of the four kinds of deal have nobody
+    // at the other end - a free agent walks on from the open market, a man is
+    // released, a man is cashed in at the bank - and the board keeps all three
+    // at slot -1. Linking those minted a club page that cannot exist.
+    if (s2 == null || s2 < 0) return E(nm);
     return "<a href='#/team?c=" + encodeURIComponent(c2) + "&s=" + s2 + "'>" + E(nm) + "</a>";
+  }
+  // WHO WAS AT THE OTHER END, in the words the deal deserves. 079 stamps every
+  // settled row with which of the four kinds it is; a diary written before it
+  // has no 'how', and a deal with a club at the other end reads the same
+  // either way.
+  var DEAL_WHO = { free: "the open market", released: "released", bank: "the bank" };
+  function evDealWho(cid, e) {
+    return e.how && DEAL_WHO[e.how] ? DEAL_WHO[e.how] : evClub(cid, e);
   }
   function evPlayer(cid, slot, nm) {
     if (!nm) return "";
@@ -251,10 +263,16 @@
         return (e.won ? "Beat " : "Played ") + evClub(cid, e) +
           (e.home ? " at home" : " away") + (e.note ? " &mdash; " + E(e.note) : "");
       case "buy":
-        return "Bought " + evPlayer(cid, slot, e.player) + " from " + evClub(cid, e) +
-          (e.amount ? " for " + mny(e.amount) : "");
+        // a man signed off the open market was bought from nobody
+        return (e.how === "free" ? "Signed " : "Bought ") + evPlayer(cid, slot, e.player) +
+          " from " + evDealWho(cid, e) + (e.amount ? " for " + mny(e.amount) : "");
       case "sell":
-        return "Sold " + E(e.player || "a player") + " to " + evClub(cid, e) +
+        // and a man let go was sold to nobody: say what actually happened to
+        // him rather than inventing a club to have taken him
+        if (e.how === "released") return "Released " + E(e.player || "a player");
+        if (e.how === "bank") return "Sold " + E(e.player || "a player") +
+          (e.amount ? " for " + mny(e.amount) : "") + " &mdash; a quick sale";
+        return "Sold " + E(e.player || "a player") + " to " + evDealWho(cid, e) +
           (e.amount ? " for " + mny(e.amount) : "");
       case "friendly":
         return (e.home ? "Challenged " : "Were challenged by ") + evClub(cid, e) +
@@ -1179,12 +1197,15 @@
               "<th class='nm'>To / from</th><th>Age</th><th>Fee</th></tr></thead><tbody>" +
               deals.map(function (d) {
                 var inb = d.way === "in";
+                var wy = d.how === "released" ? "Released"
+                       : d.how === "free" ? "Signed"
+                       : inb ? "Bought" : "Sold";
                 return "<tr class='" + (inb ? "in" : "out") + "'>" +
                   "<td>" + (d.season || "") + "</td>" +
                   "<td class='dt'>" + trDate(d.at) + "</td>" +
-                  "<td class='wy'>" + (inb ? "Bought" : "Sold") + "</td>" +
+                  "<td class='wy'>" + wy + "</td>" +
                   "<td class='nm'>" + evPlayer(cid, slot, d.player) + "</td>" +
-                  "<td class='nm'>" + evClub(cid, d) + "</td>" +
+                  "<td class='nm'>" + evDealWho(cid, d) + "</td>" +
                   "<td>" + (d.age == null ? "&mdash;" : Math.floor(+d.age)) + "</td>" +
                   "<td class='fe'>" + trMoney(d.fee) + "</td></tr>";
               }).join("") + "</tbody></table></div>"

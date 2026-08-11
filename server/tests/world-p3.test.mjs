@@ -1131,6 +1131,58 @@ test('016d: the transfer register sums the deals it lists', async () => {
   assert.equal(Number(t.spent), fin.feesOut, 'paid out matches the books');
   assert.equal(Number(t.received), fin.feesIn, 'taken in matches the books');
   await assert.rejects(pool.query(`SELECT public.world_club_transfers('eng', 99)`), /no such club/);
+
+  // A DEAL NAMES BOTH ENDS OF ITSELF (079). Three of the four kinds have no
+  // club at the other end - a free agent walks on from the open market at slot
+  // -1, a released man is written to 'released', a quick sale to 'bank' - and
+  // the feed used to hand all three to the page as a club to be named and
+  // linked. Every club's diary then read "Bought X from a club", pointing at a
+  // club page that cannot exist. The kind is written in the row; say it.
+  const man = { name: 'Ledger Testman', age: 26, rating: 24000 };
+  const put = (seller, sslot, buyer, bslot, fee, who) => pool.query(
+    `INSERT INTO listings(country_id, slot, player, player_json, asking, reserve,
+                          opened_day, closes_day, status, buyer_country, buyer_slot,
+                          fee, settled_day, by_user)
+     VALUES ($1,$2,$3,$4::jsonb,0,0,1,1,'sold',$5,$6,$7,1,NULL)`,
+    [seller, sslot, who, JSON.stringify({ ...man, name: who }), buyer, bslot, fee]);
+  await put('eng', -1, 'eng', 1, 90000, 'Free Agent Man');          // signed off the shelf
+  await put('eng', 1, 'released', -1, 0, 'Let Go Man');             // released
+  await put('eng', 1, 'bank', -1, 40000, 'Quick Sale Man');         // cashed in
+  await put('eng', 2, 'eng', 1, 70000, 'Bought Man');               // a real club deal
+
+  const kinds = {};
+  for (const d of (await pool.query(`SELECT public.world_club_transfers('eng', 1, 400) AS t`))
+        .rows[0].t.deals) kinds[d.player] = d;
+  assert.equal(kinds['Free Agent Man'].how, 'free', 'the shelf is the open market, not a club');
+  assert.equal(kinds['Let Go Man'].how, 'released', 'a man let go was released');
+  assert.equal(kinds['Quick Sale Man'].how, 'bank', 'a man cashed in went to the bank');
+  assert.equal(kinds['Bought Man'].how, 'club', 'and a club deal is a club deal');
+  assert.equal(kinds['Bought Man'].oppSlot, 2, 'which names the club at the other end');
+  ['Free Agent Man', 'Let Go Man', 'Quick Sale Man'].forEach(nm => {
+    assert.equal(kinds[nm].oppSlot, null, nm + ' has no club to walk to');
+    assert.equal(kinds[nm].oppName, null, 'and no club to name');
+  });
+
+  // the diary carries the same four, read by anybody on any club
+  const ev = {};
+  for (const e of (await pool.query(`SELECT public.world_club_events('eng', 1, 200) AS e`))
+        .rows[0].e.events.filter(x => x.kind === 'buy' || x.kind === 'sell')) ev[e.player] = e;
+  assert.equal(ev['Free Agent Man'].kind, 'buy');
+  assert.equal(ev['Free Agent Man'].how, 'free');
+  assert.equal(ev['Let Go Man'].kind, 'sell');
+  assert.equal(ev['Let Go Man'].how, 'released');
+  assert.equal(ev['Quick Sale Man'].how, 'bank');
+  assert.equal(ev['Bought Man'].how, 'club');
+  assert.equal(ev['Bought Man'].oppSlot, 2);
+  // and the selling club sees the same deal from its own end
+  const other = (await pool.query(`SELECT public.world_club_events('eng', 2, 200) AS e`)).rows[0].e;
+  const sold = other.events.find(x => x.player === 'Bought Man');
+  assert.equal(sold.kind, 'sell', 'the club that let him go has him as a sale');
+  assert.equal(sold.oppSlot, 1, 'naming the buyer');
+  // the four fixtures leave the board exactly as they found it: the tests that
+  // follow read finance off these same rows
+  await pool.query(`DELETE FROM listings WHERE player = ANY($1)`,
+    [['Free Agent Man', 'Let Go Man', 'Quick Sale Man', 'Bought Man']]);
 });
 
 // 017: WHAT A RIVAL MAY READ. The club pages show a scout's summary - one
