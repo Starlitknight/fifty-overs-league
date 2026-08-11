@@ -57,7 +57,7 @@
     if (/Stumping chance missed/i.test(t)) return { k: "ms", lbl: "MISSED STUMPING", good: 0 };
     if (/DROPPED!/i.test(t)) return { k: "ms", lbl: "DROPPED CATCH", good: 0 };
     if (/Misfield by|Fumble from/i.test(t)) return { k: "ms", lbl: "MISFIELD", good: 0 };
-    if (/Brilliant stop|Rocket Arm|Great fielding/i.test(t)) return { k: "gr", lbl: "GREAT FIELDING", good: 1 };
+    if (/Brilliant stop|Rocket Arm|Great fielding|attacks the ball/i.test(t)) return { k: "gr", lbl: "GREAT FIELDING", good: 1 };
     return null;
   }
   // "End of over 12 (5 runs) - Yorkshire 61/2. ..." -> the umpire's own score
