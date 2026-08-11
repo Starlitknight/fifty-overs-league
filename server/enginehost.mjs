@@ -241,6 +241,12 @@ globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson, wea
       pships: (inn.pships || []).map(function (q) {
         return { w: q.w | 0, runs: q.runs | 0, balls: q.balls | 0, pair: q.pair };
       }),
+      // and WHEN each of them ended. Third and last of the same omission: the
+      // live card computes its own fall of wickets as the innings happens, so
+      // nobody noticed that a card read back off the record has never had one.
+      fow: (inn.fow || []).map(function (q) {
+        return { sc: q.sc | 0, w: q.w | 0, who: q.who, ov: q.ov };
+      }),
       bowlers: inn.bowlers, fielding: inn.fielding || {} };
   };
   // canonical result: fixed key order, no floats beyond engine output.

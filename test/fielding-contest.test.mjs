@@ -58,8 +58,16 @@ test('the hands are dealt, not bought - by either pass that scales a squad', () 
     'the generator holds them out of its budget pass');
   assert.match(ONB, /if \(FO_QS_UNBOUGHT\[k2\]\) continue;/);
   assert.match(INIT, /const NOT_SCALED = \{ fielding: 1, catching: 1, keeping: 1, stumping: 1 \};/,
-    'and the world holds them out of calibration');
-  assert.match(INIT, /if \(NOT_SCALED\[k\]\) continue;/);
+    'and the world knows which skills they are');
+  // HALF, NOT NONE. Holding them out of calibration altogether was the first
+  // answer and it went too far: a flagship's cordon became no better than a
+  // bottom club's, and p3 caught it as flagships going down in three nations
+  // of sixteen. A stronger league does field better - it just must not be the
+  // whole of the club's edge, or the absolute scale goes flat again.
+  assert.match(INIT, /const HAND_SCALE = 0\.5;/);
+  assert.match(INIT, /const fh = 1 \+ \(f - 1\) \* HAND_SCALE;/);
+  assert.match(INIT, /const g = NOT_SCALED\[k\] \? fh : f;/);
+  assert.ok(!/if \(NOT_SCALED\[k\]\) continue;/.test(INIT), 'they are no longer skipped outright');
   // fielding is drawn on its own, not off what a man does with the bat
   assert.ok(!/fielding:gg\(tgt/.test(CODE), 'no role takes its fielding off its batting level');
   assert.ok(!/fielding:gg\(two/.test(CODE));

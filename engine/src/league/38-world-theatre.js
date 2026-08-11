@@ -252,6 +252,20 @@
     var away = {}, gone = 0;
     players.forEach(function (p) { if (p && patch[p.name] && patch[p.name].a) { away[p.name] = 1; gone++; } });
     if (gone) players = players.filter(function (p) { return !(p && away[p.name]); });
+    // AND WHAT HE HAD LEARNED BY THAT AFTERNOON, WHICH IS THE HALF THAT LEAKS.
+    // The umpire's copy of this has stripped talent state and restored it from
+    // the patch for a long time; the broadcast's copy never did, so a man who
+    // has earned a talent since bowled the replay with a gift he had not yet
+    // been given and the screen quietly disagreed with the card it was meant to
+    // be showing. Stripped first, for EVERY man - a cricketer who joined after
+    // the match has no patch entry to correct him with - then restored from the
+    // only record of what that day actually was.
+    players.forEach(function (p) {
+      if (!p) return;
+      if (p.talEarned && Object.prototype.toString.call(p.talents) === "[object Array]")
+        p.talents = p.talents.filter(function (t) { return t !== p.talEarned; });
+      delete p.talEarned; delete p.talProg;
+    });
     players.forEach(function (p) {
       var L = p && patch[p.name]; if (!L) return;
       if (L.e != null) { p.exp = L.e; p.expWord = EXPLAD[Math.max(0, Math.min(11, Math.floor(L.e / 9)))]; }
@@ -262,6 +276,12 @@
       if (L.s && p.skills) {
         for (var k in L.s) p.skills[k] = L.s[k];
         try { if (typeof jsDerive === "function") jsDerive(p); } catch (e) {}
+      }
+      if (L.tp) p.talProg = L.tp;
+      if (L.te) {
+        p.talEarned = L.te;
+        if (Object.prototype.toString.call(p.talents) !== "[object Array]") p.talents = [];
+        if (p.talents.indexOf(L.te) < 0) p.talents = p.talents.concat([L.te]);
       }
     });
     return players;

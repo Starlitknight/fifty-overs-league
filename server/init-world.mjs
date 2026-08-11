@@ -249,17 +249,34 @@ const xiOf = sq => {
 // its contribution to a club's rating is the same for every club, and what
 // calibration is actually for - telling a county from an associate - is
 // untouched.
+// the hands: dealt on the world's own bell, and scaled at HAND_SCALE of a
+// club's factor rather than the full one (see calibrate below)
 const NOT_SCALED = { fielding: 1, catching: 1, keeping: 1, stumping: 1 };
+const HAND_SCALE = 0.5;
 export function calibrate(host, squad, target) {
   let men = squad;
   for (let i = 0; i < 4; i++) {
     const have = xiOf(men);
     const f = target / Math.max(1, have);
     if (Math.abs(f - 1) < 0.004) break;
+    // THE HANDS MOVE WITH THE CLUB, BUT ONLY HALF AS FAR. Holding them out of
+    // this pass entirely was too blunt an answer to a real problem. The problem
+    // was that fielding was dealt off a man's BATTING level and then multiplied
+    // here as well, which squashed the whole world into a band of 20 to 56 and
+    // put every good-fielding branch out of reach. The generator deals it on
+    // its own bell now, so that cause is gone - and excluding it outright cost
+    // something else: a flagship's cordon became no better than a bottom club's,
+    // which p3 caught the moment catches started converting properly (flagships
+    // relegated in three nations of sixteen, against a ladder that is supposed
+    // to mean something). A stronger league genuinely does field better. It
+    // just must not be the whole of the club's edge, or the absolute scale goes
+    // flat again - so the hands take half the club's factor and keep their own
+    // spread.
+    const fh = 1 + (f - 1) * HAND_SCALE;
     men.forEach(p => {
       for (const k in (p.skills || {})) {
-        if (NOT_SCALED[k]) continue;
-        p.skills[k] = Math.max(2, Math.min(99, Math.round(p.skills[k] * f)));
+        const g = NOT_SCALED[k] ? fh : f;
+        p.skills[k] = Math.max(2, Math.min(99, Math.round(p.skills[k] * g)));
       }
     });
     men = host.derive(men);
