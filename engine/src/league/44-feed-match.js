@@ -1155,6 +1155,20 @@
           return "<div class='fd-sc-yet'><span>" + (live9 ? "Yet to bat" : "Did not bat") + "</span>" +
             "<div>" + yet.map(function (n9) { return plink(n9) + pstar(n9, T.rid); }).join(", ") + "</div></div>";
         })() +
+        // HOW THE INNINGS FELL APART, in the game's own shorthand: the wicket,
+        // the score it fell at, who was out and when. The card already knows
+        // it - the umpire writes a partnership line at every wicket and the
+        // book keeps them - and without it a reader can see that six are down
+        // and not that five of them went in eleven overs, which is the whole
+        // story of a collapse.
+        (function () {
+          if (!I.fow || !I.fow.length) return "";
+          return "<div class='fd-sc-yet fd-sc-fow'><span>Fall of wickets</span><div>" +
+            I.fow.map(function (f9) {
+              return "<u>" + f9.w + "-" + f9.score + "</u> <s>(" + E(surname(f9.nm)) +
+                (f9.no ? ", " + E(f9.no) : "") + ")</s>";
+            }).join(" &nbsp; ") + "</div></div>";
+        })() +
         (I.bowls.length ? "<div class='fd-sc-c bwl'><span>Bowling</span><span>O</span><span>R</span>" +
           "<span>W</span><span title='wides and no-balls charged to him'>Ex</span><span>Econ</span></div>" +
           I.bowls.map(function (w9) {
@@ -1648,6 +1662,11 @@
       ".fo-fd .fd-sc-yet{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:baseline;padding:11px 16px;border-top:1px solid var(--fdline)}",
       ".fo-fd .fd-sc-yet>span{font:800 9px Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fdmut)}",
       ".fo-fd .fd-sc-yet>div{font:500 12.5px/1.5 Manrope,sans-serif;color:var(--fdink)}",
+      // the wicket and the score it fell at read as one figure; the man and
+      // the ball are the small print beside it
+      ".fo-fd .fd-sc-fow>div{font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-sc-fow u{text-decoration:none;font-weight:750}",
+      ".fo-fd .fd-sc-fow s{text-decoration:none;color:var(--fdmut);font-size:11.5px}",
       "@media(max-width:560px){.fo-fd .fd-sc-yet{grid-template-columns:minmax(0,1fr);gap:4px;padding-left:13px;padding-right:13px}}",
       ".fo-fd .fd-sc-b,.fo-fd .fd-sc-c.bwl{display:grid;grid-template-columns:minmax(0,1fr) 30px 32px 22px 26px 40px;gap:8px;align-items:center}",
       ".fo-fd .fd-sc-b{padding:9px 16px;border-top:1px solid var(--fdline)}",

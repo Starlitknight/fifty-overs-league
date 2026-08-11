@@ -176,6 +176,28 @@ test('the card names the men still to come, from the order the teamsheets print'
   assert.ok(!/fd-sc-yet/.test(cardPanel([SIX_DOWN, EMPTY], M, false)), 'never a guess at an eleven');
 });
 
+// HOW IT FELL APART. Six down tells a reader the state; it does not tell him
+// that five of them went in eleven overs, which is the whole story of a
+// collapse. The umpire writes a partnership line at every wicket and the book
+// has always kept them - the card simply never printed them.
+test('the card prints the fall of wickets, in the game own shorthand', () => {
+  const fow = [{ w: 1, score: 24, nm: 'Tom Cole', no: '6.3' },
+               { w: 2, score: 58, nm: 'Henry Barker', no: '12.1' },
+               { w: 3, score: 59, nm: 'Reuben Whitehead', no: '12.4' }];
+  const html = cardPanel([{ ...SIX_DOWN, fow }, EMPTY], M, false);
+  const at = html.indexOf("fd-sc-fow");
+  assert.ok(at > 0, 'the line is drawn');
+  const line = html.slice(at, html.indexOf('</div></div>', at));
+  assert.match(line, /<span>Fall of wickets<\/span>/);
+  assert.match(line, /<u>1-24<\/u> <s>\(Cole, 6\.3\)<\/s>/, 'the wicket, the score, the man, the ball');
+  assert.match(line, /<u>3-59<\/u> <s>\(Whitehead, 12\.4\)<\/s>/, 'and in the order they fell');
+  // it sits under the total, where a card has always carried it, and above
+  // the bowling that took them
+  assert.ok(html.indexOf("fd-sc-t") < at && at < html.indexOf("fd-sc-c bwl"));
+  // an innings with nothing down says nothing rather than heading an empty list
+  assert.ok(!/fd-sc-fow/.test(cardPanel([SIX_DOWN, EMPTY], M, false)), 'no wickets, no line');
+});
+
 test('the umpire banks the four counters with the card from now on', () => {
   assert.match(HOST, /var ex = inn\.extras \|\| null;/);
   assert.match(HOST, /extras: ex \? \{ wd: ex\.wd \| 0, nb: ex\.nb \| 0, b: ex\.b \| 0, lb: ex\.lb \| 0 \} : null,/,
