@@ -48,6 +48,13 @@
       return d;
     }); });
   }
+  // the open board is a plain read, not an RPC - the same view the market page
+  // uses, so the two rooms cannot disagree about what is out to bid
+  function sel(path) {
+    return fetch(SB_URL + "/rest/v1/" + path, {
+      headers: { apikey: SB_ANON, Authorization: "Bearer " + (jwt() || SB_ANON) }
+    }).then(function (r) { return r.ok ? r.json() : null; });
+  }
   // money, three ways: the full figure, the short one, and a signed delta
   // MFull: the one sanctioned exception - the page's largest numeral may
   // print in full (the Sheet's bank figure). Everything else follows the rule.
@@ -141,62 +148,74 @@
       // brand orange) does the structural work - eyebrows, section labels,
       // the sparkline, the chevrons; green and red are reserved for money.
       "html body.fo-sheet-on,html body.ftpskin.fo-sheet-on{background:#FFFEFC !important}",
-      ".fo-tre{--ink:#1B2432;--mut:#8a8578;--edge:#EEE9DC;--brand:#C9571F;--grn:#177A57;--red:#B23230;",
-      "  max-width:1240px;margin:0 auto;color:var(--ink)}",
-      ".fo-tre .num{font-variant-numeric:tabular-nums}",
-      ".fo-tre-lbl{font:700 11px/1.2 Manrope,sans-serif;letter-spacing:.18em;text-transform:uppercase}",
-      ".fo-tre-top{display:flex;justify-content:space-between;align-items:baseline;gap:14px;margin-bottom:22px}",
-      ".fo-tre-top .ey{color:var(--brand);font:700 11px/1.2 Manrope,sans-serif;letter-spacing:.22em;text-transform:uppercase}",
-      ".fo-tre-top .rt{color:var(--mut);font:700 11px/1.2 Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;text-align:right}",
-      ".fo-tre-head{display:grid;grid-template-columns:minmax(0,1fr) minmax(300px,420px);gap:24px 60px;align-items:end}",
-      ".fo-tre-bank{font:800 clamp(46px,7.8vw,108px)/0.95 Manrope,sans-serif;letter-spacing:-.015em;color:var(--ink);white-space:nowrap}",
-      ".fo-tre-bank em{font-style:normal;font-weight:700;font-size:.48em;vertical-align:.34em;color:#9a958a}",
-      ".fo-tre-under{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 14px;margin-top:10px}",
-      ".fo-tre-under .fo-tre-lbl{color:var(--mut)}",
-      ".fo-tre-delta{font:700 15px/1.2 Manrope,sans-serif;color:var(--grn)}.fo-tre-delta.dn{color:var(--red)}",
-      ".fo-tre-spark .g{position:relative}",
-      ".fo-tre-spark svg{display:block;width:100%;height:64px}",
-      ".fo-tre-spark .dot{position:absolute;right:-1px;width:9px;height:9px;border-radius:50%;background:var(--brand);transform:translateY(-4px)}",
-      ".fo-tre-cap{display:flex;justify-content:space-between;gap:10px;margin-top:7px}",
-      ".fo-tre-cap span{font:700 11px/1.3 Manrope,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#a09a8d}",
-      ".fo-tre-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:20px 0;border-top:1px solid var(--edge);border-bottom:1px solid var(--edge);margin:26px 0 28px}",
-      ".fo-tre-strip b{display:block;font:700 21px/1.15 Manrope,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}",
-      ".fo-tre-strip b.up{color:var(--grn)}.fo-tre-strip b.dn{color:var(--red)}",
-      ".fo-tre-strip .fo-tre-lbl{color:var(--mut);margin-top:6px;display:block}",
-      ".fo-tre-cols{display:grid;grid-template-columns:1fr 1fr;gap:8px 60px;align-items:start;margin-top:30px}",
-      ".fo-tre-sec{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding-bottom:4px}",
-      ".fo-tre-sec .fo-tre-lbl{color:var(--brand)}",
-      "html body #page .fo-tre-sec b{font:700 15px/1.2 Manrope,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}",
-      ".fo-tre-row{display:flex;align-items:baseline;gap:12px;padding:11px 0;border-bottom:1px solid var(--edge)}",
-      ".fo-tre-row u{text-decoration:none;flex:1;min-width:0;font:600 14px/1.35 Manrope,sans-serif;color:#4A4438}",
-      "html body #page .fo-tre-row b{font:700 15px/1.2 Manrope,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}",
-      ".fo-tre-row s{text-decoration:none;font:600 11px/1 Manrope,sans-serif;color:#a09a8d;min-width:38px;text-align:right;font-variant-numeric:tabular-nums}",
-      ".fo-tre-tot{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:12px 0 2px;margin-top:4px;border-top:2px solid var(--ink)}",
-      ".fo-tre-tot u{text-decoration:none;font:700 13px/1.2 Manrope,sans-serif;color:var(--ink)}",
-      "html body #page .fo-tre-tot b{font:700 16px/1.2 Manrope,sans-serif;color:var(--ink);font-variant-numeric:tabular-nums}",
-      ".fo-tre-drift{margin-top:10px;font:600 12px/1.5 Manrope,sans-serif;color:var(--red)}",
-      ".fo-tre-desk{display:grid;grid-template-columns:1fr 1fr;gap:8px 60px;align-items:start;margin-top:26px}",
-      ".fo-tre-line{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--edge)}",
-      ".fo-tre-line u{text-decoration:none;flex:1;min-width:0;font:600 13px/1.45 Manrope,sans-serif;color:#4A4438}",
-      ".fo-tre-line u b{color:var(--ink)}",
-      "html body #page .fo-tre-line .pj{font:800 20px/1 Manrope,Manrope,sans-serif;color:var(--grn);font-variant-numeric:tabular-nums;white-space:nowrap}",
-      "html body #page a.fo-tre-door{display:flex;justify-content:space-between;align-items:center;gap:12px;min-height:50px;padding:8px 0;border-bottom:1px solid var(--edge);text-decoration:none !important;cursor:pointer}",
-      "a.fo-tre-door .fo-tre-lbl{color:var(--ink);text-transform:none;font:700 13px/1.2 Manrope,sans-serif;letter-spacing:.01em}",
-      "a.fo-tre-door i{font-style:normal;font:400 12.5px/1.3 Manrope,sans-serif;color:var(--mut);text-align:right}",
-      "a.fo-tre-door .ch{font:400 19px/1 Georgia,serif;color:var(--brand)}",
-      "html body #page button.fo-tre-act{font:700 11px/1 Manrope,sans-serif !important;letter-spacing:.13em;color:var(--brand) !important;background:transparent !important;border:0 !important;border-radius:0 !important;box-shadow:none !important;padding:0 0 0 14px !important;min-height:44px;cursor:pointer}",
-      "html body #page button.fo-tre-act[disabled]{color:#a09a8d !important;cursor:not-allowed}",
-      ".fo-tre-word{font:italic 500 14px/1.6 Fraunces,Georgia,serif;color:#5a5344;margin:20px 0 0}",
-      ".fo-tre-word b{font-style:normal;color:var(--ink)}",
+      // ---- THE WEEK'S BOOKS ------------------------------------------------
+      // A navy plate for the balance, then two ledgers under their own
+      // headers - money in wearing the club's orange, money out the same, so
+      // the eye finds the two totals before it reads a single line. Everything
+      // is one column: this is a page a manager reads down, on a phone, before
+      // he decides whether he can afford somebody.
+      ".fo-wk{--ink:#14243A;--mut:#7B8698;--edge:#E8E2D4;--brand:#C9571F;--navy:#0C1B2E;",
+      "  --grn:#177A57;--red:#C0432C;max-width:820px;margin:0 auto;color:var(--ink)}",
+      ".fo-wk .num{font-variant-numeric:tabular-nums}",
+      ".fo-wk-ey{font:700 12px/1 Manrope,sans-serif;letter-spacing:.19em;text-transform:uppercase;color:var(--brand);margin:0 2px 16px}",
+      ".fo-wk-ey span{color:rgba(20,36,58,.42)}",
+      ".fo-wk-tabs{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:0 0 16px;border-radius:10px;overflow:hidden;border:1px solid var(--navy)}",
+      "html body #page .fo-wk-tabs button{appearance:none;border:0 !important;border-radius:0 !important;padding:15px 8px !important;background:#FFFDF7 !important;color:var(--navy) !important;font:700 12px/1 Manrope,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;min-height:48px}",
+      "html body #page .fo-wk-tabs button.on{background:var(--navy) !important;color:#F6F3EB !important}",
+      // the plate
+      ".fo-wk-hero{background:var(--navy);border-radius:14px;padding:26px 22px 22px;position:relative;overflow:hidden;border-bottom:3px solid var(--brand)}",
+      ".fo-wk-heroin{position:relative;z-index:2;text-align:center}",
+      ".fo-wk-hero .lbl{display:block;font:700 11px/1 Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(246,243,235,.62)}",
+      ".fo-wk-hero .lbl.warm{color:#E8A05A}",
+      ".fo-wk-hero .big{display:block;margin-top:12px;font:700 clamp(38px,10vw,58px)/1 Manrope,sans-serif;letter-spacing:-.035em;color:#FFFEFC}",
+      ".fo-wk-rule{display:flex;align-items:center;gap:12px;margin:20px 0 18px}",
+      ".fo-wk-rule i{flex:1;height:1px;background:rgba(246,243,235,.22)}",
+      ".fo-wk-rule s{text-decoration:none;color:rgba(246,243,235,.5);font-size:11px}",
+      // two cells and a hairline between them, drawn as a border rather than a
+      // grid column - a 1px track ate the second cell when the markup carried
+      // no spacer to put in it
+      ".fo-wk-pair{display:grid;grid-template-columns:1fr 1fr;align-items:start}",
+      ".fo-wk-pair>div+div{border-left:1px solid rgba(246,243,235,.18);padding-left:16px}",
+      ".fo-wk-pair>div{padding:0 4px}",
+      ".fo-wk-pair b{display:block;margin-top:9px;font:700 clamp(20px,5.6vw,28px)/1.05 Manrope,sans-serif;letter-spacing:-.02em;color:#FFFEFC}",
+      ".fo-wk-pair b.dn{color:#F0704A}.fo-wk-pair b.up{color:#5FCB9B}",
+      ".fo-wk-pair em{display:block;margin-top:6px;font:400 11.5px/1.35 Manrope,sans-serif;font-style:normal;color:rgba(246,243,235,.5)}",
+      // the two totals, side by side
+      ".fo-wk-band{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 16px}",
+      ".fo-wk-band>div{background:#FFFDF7;border:1px solid var(--edge);border-radius:12px;padding:14px 16px;text-align:center}",
+      ".fo-wk-band span{display:block;font:700 11px/1 Manrope,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}",
+      ".fo-wk-band b{display:block;margin-top:8px;font:700 22px/1 Manrope,sans-serif;letter-spacing:-.02em;color:var(--navy)}",
+      ".fo-wk-band .out b{color:var(--brand)}",
+      // the ledgers
+      ".fo-wk-led{background:#FFFDF7;border:1px solid var(--edge);border-radius:12px;overflow:hidden;margin-bottom:14px}",
+      ".fo-wk-lh{display:flex;align-items:center;gap:11px;background:var(--navy);color:#F6F3EB;padding:13px 16px;font:700 12px/1 Manrope,sans-serif;letter-spacing:.17em;text-transform:uppercase}",
+      ".fo-wk-lh i{width:19px;height:19px;border-radius:50%;background:var(--brand);flex:none}",
+      ".fo-wk-led.out .fo-wk-lh{background:var(--brand)}",
+      ".fo-wk-led.out .fo-wk-lh i{background:#FFFDF7}",
+      ".fo-wk-lh b{margin-left:auto;letter-spacing:-.01em;font-size:14px}",
+      ".fo-wk-row{display:flex;align-items:baseline;gap:12px;padding:12px 16px;border-top:1px solid rgba(20,36,58,.07)}",
+      ".fo-wk-row:first-of-type{border-top:0}",
+      ".fo-wk-row u{text-decoration:none;font:450 13.5px/1.35 Manrope,sans-serif;color:var(--ink);min-width:0}",
+      ".fo-wk-row b{margin-left:auto;font:600 14px/1 Manrope,sans-serif;font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}",
+      // a projection is money that has not moved, and reads like it
+      ".fo-wk-row.pj u,.fo-wk-row.pj b{color:var(--mut)}",
+      ".fo-wk-row.pj u:after{content:'projected';display:inline-block;margin-left:8px;font:700 9px/1 Manrope,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:var(--brand);border:1px solid rgba(201,87,31,.4);border-radius:4px;padding:3px 5px;vertical-align:1px}",
+      // the note, the warnings, the one lever and the doors
+      ".fo-wk-note{display:flex;gap:12px;background:rgba(20,36,58,.035);border-radius:12px;padding:14px 16px;margin-bottom:14px}",
+      ".fo-wk-note i{flex:none;width:20px;height:20px;border-radius:50%;border:1.5px solid var(--mut);color:var(--mut);display:grid;place-items:center;font:700 12px/1 Manrope,sans-serif;font-style:normal;margin-top:1px}",
+      ".fo-wk-note p{margin:0;font:400 12.5px/1.55 Manrope,sans-serif;color:#4B5768}",
+      ".fo-wk-note em{font-style:normal;font-weight:700;color:var(--brand)}",
+      ".fo-wk-warn{background:rgba(192,67,44,.07);border:1px solid rgba(192,67,44,.3);border-radius:12px;padding:13px 16px;margin-bottom:14px;font:600 12.5px/1.5 Manrope,sans-serif;color:var(--red)}",
+      ".fo-wk-warn p{margin:6px 0 0;font-weight:400;color:#5A4038}",
+      ".fo-wk-lever{display:flex;align-items:center;gap:14px;background:#FFFDF7;border:1px solid var(--edge);border-radius:12px;padding:14px 16px;margin-bottom:14px}",
+      ".fo-wk-lever span{display:block;font:700 11px/1 Manrope,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:var(--mut)}",
+      ".fo-wk-lever b{display:block;margin-top:7px;font:600 13.5px/1.3 Manrope,sans-serif;color:var(--ink)}",
+      "html body #page .fo-wk-lever button{margin-left:auto;appearance:none;border:1px solid var(--brand) !important;border-radius:9px !important;background:var(--brand) !important;color:#FFFEFC !important;font:700 11px/1 Manrope,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;padding:0 16px !important;min-height:44px;cursor:pointer;white-space:nowrap}",
+      "html body #page .fo-wk-lever button[disabled]{background:#D7D2C7 !important;border-color:#D7D2C7 !important;color:#8D877C !important;cursor:not-allowed}",
+      ".fo-wk-doors{display:flex;flex-wrap:wrap;gap:9px}",
+      "html body #page .fo-wk-doors a{flex:1 1 200px;background:#FFFDF7;border:1px solid var(--edge);border-radius:11px;padding:15px 16px;font:700 11px/1 Manrope,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;color:var(--brand) !important;text-decoration:none !important;min-height:48px;display:flex;align-items:center}",
+      "@media (max-width:560px){.fo-wk-pair{grid-template-columns:1fr;gap:18px}.fo-wk-pair>div+div{border-left:0;border-top:1px solid rgba(246,243,235,.18);padding:16px 4px 0}.fo-wk-band{gap:8px}}",
       "@media(max-width:900px){",
-      ".fo-tre-head{grid-template-columns:minmax(0,1fr)}",
-      ".fo-tre-cap span:nth-child(2){display:none}",
-      ".fo-tre-cap span{white-space:nowrap}",
-      ".fo-tre-strip{grid-template-columns:1fr 1fr;gap:16px 10px}",
-      ".fo-tre-cols,.fo-tre-desk{grid-template-columns:minmax(0,1fr)}",
-      ".fo-tre-cols>div+div{margin-top:22px}",
-      ".fo-tre-row{padding:8px 0}",
-      ".fo-tre-bank{font-size:clamp(40px,11.5vw,64px)}",
       "}",
       // ---- MATCHDAY ECONOMY: premium club-commercial dashboard ----
       ".fo-me{--navy:#0E2745;--navy2:#173B61;--ink:#13253C;--orange:#DB4A16;--gold:#D2A53A;--green:#0F845E;--paper:#FFFEFA;--edge:#D8D1C3;--mut:#667387;display:flex;flex-direction:column;gap:15px;color:var(--ink);font-synthesis:none;-webkit-font-smoothing:antialiased;text-rendering:optimizeLegibility}",
@@ -450,10 +469,51 @@
   // second time, and repainted - a visible flash and a wasted round trip every
   // time, and again every sixty seconds for as long as the page was open.
   var FST = { at: 0, st: null };
+  // which week the page is showing. A repaint must not throw the reader
+  // back to this week - the ledger arrives after the first paint, and the
+  // market after that, so this page redraws two or three times on an open.
+  var FIN_WK = "this";
+  // A WEEK OF THE BOOKS. The Sheet showed the season from the founding, which
+  // answers "how has it gone" and never "can I afford him on Friday". A
+  // manager runs his club a week at a time: the wages fall, the gate comes in,
+  // the deals settle, and what is left is what he has to bid with. The ledger
+  // already carries every movement with the instant it happened, so a week is
+  // a filter over it rather than a second set of books.
+  //
+  // Day 0 of the world is a Monday and the season is forty-two days, so the
+  // world's own weekday is the day index modulo seven - no calendar needed.
+  var FMK = { at: 0, mine: null, board: null, busy: false };
+  function foFinWeek(nowMs) {
+    try {
+      var PL = window.__foPlanet;
+      var d = PL.dayIx(nowMs == null ? Date.now() : nowMs);
+      var mon = d - ((d % 7) + 7) % 7;                       // back to Monday
+      return { from: PL.EPOCH + mon * PL.DAY, to: PL.EPOCH + (mon + 7) * PL.DAY, day: mon };
+    } catch (e) { return null; }
+  }
+  // WHAT IS ALREADY PROMISED. A listing with a bid on it is money in flight:
+  // a sale that will land if nobody outbids, a purchase that will land if
+  // nobody outbids you. The reference calls the two halves apart, and so does
+  // this - what has SETTLED is the ledger's, what is still on the board is a
+  // projection and is never added to a banked figure.
+  function wantMarket() {
+    if (FMK.busy || (FMK.mine && Date.now() - FMK.at < 120000)) return;
+    if (!jwt()) return;
+    FMK.busy = true;
+    Promise.all([
+      rpc("world_market_mine", {}).catch(function () { return null; }),
+      sel("world_listings?select=id,player,high,high_club,slot,country_id,status").catch(function () { return null; })
+    ]).then(function (both) {
+      FMK.busy = false; FMK.at = Date.now();
+      FMK.mine = both[0]; FMK.board = both[1] || [];
+      var page = document.getElementById("page");
+      if (page && FST.st && (location.hash || "").indexOf("#/finance") === 0) render(page, FST.st);
+    }).catch(function () { FMK.busy = false; FMK.at = Date.now(); FMK.mine = null; FMK.board = []; });
+  }
   function wantTx() {
     if (FTX.busy || (FTX.lines && Date.now() - FTX.at < 300000)) return;
     FTX.busy = true;
-    rpc("world_my_statement", { p_limit: 40 })
+    rpc("world_my_statement", { p_limit: 200 })
       .then(function (r) {
         FTX.busy = false; FTX.at = Date.now();
         FTX.lines = (r && r.lines) || [];
@@ -487,34 +547,6 @@
       ((location.pathname.indexOf("/client/") !== -1) ? "art/" : "client/art/");
     return "<img class='fo-me-ground' src='" + base + "home/matchday-economy-ground.webp' " +
       "width='1440' height='810' alt='" + E(name) + " cricket ground at golden hour' decoding='async'>";
-  }
-
-  // THE BANK'S OWN LINE. The statement already carries the balance the club
-  // was left holding after every entry, so the sparkline is not a model - it
-  // is the last forty entries of the real ledger, oldest to newest, drawn as
-  // one stroke. The endpoint dot is HTML, not SVG: the chart is stretched to
-  // fit its box, and a stretched circle is an ellipse.
-  function foShSpark(bank) {
-    var lines = (FTX.lines || []).slice().reverse();
-    var vals = lines.map(function (l) { return Number(l.balance) || 0; });
-    if (vals.length < 2) return "";
-    var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
-    var span = (max - min) || 1;
-    var pts = vals.map(function (v, i) {
-      var x = (i / (vals.length - 1)) * 360;
-      var y = 58 - ((v - min) / span) * 50;
-      return (i ? "L" : "M") + x.toFixed(1) + "," + y.toFixed(1);
-    }).join(" ");
-    var lastY = 58 - ((vals[vals.length - 1] - min) / span) * 50;
-    var from = "";
-    try { from = stDate(lines[0].at).day.replace(/^\w+\s+/, "").replace(/\s+\d{4}$/, ""); } catch (e) {}
-    return "<div class='fo-tre-spark'><div class='g'>" +
-      "<svg viewBox='0 0 360 64' preserveAspectRatio='none' aria-hidden='true'>" +
-      "<path d='" + pts + "' fill='none' stroke='#C9571F' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round' vector-effect='non-scaling-stroke'/></svg>" +
-      "<span class='dot' style='top:" + Math.round(100 * lastY / 64) + "%'></span></div>" +
-      "<div class='fo-tre-cap'><span class='num'>" + (from ? E(from) + " &middot; " : "") + Mk(vals[0]) + "</span>" +
-      "<span>The bank, entry by entry</span>" +
-      "<span class='num'>Today &middot; " + Mk(bank) + "</span></div></div>";
   }
 
   function render(page, st, room) {
@@ -743,72 +775,175 @@
       return;
     }
 
-    // ---- FINANCES: THE SHEET - one daylight page of type -------------------
-    // The totals the umpire keeps run from the founding, and the page says so:
-    // bank = founding capital + net, to the pound, and the drift line below
-    // shouts if that ever stops being true.
-    var seasonN = Number(window.foSeasonN) || 0;
-    var row = function (name, val, total, showZero) {
-      if (!val && !showZero) return "";
-      return "<div class='fo-tre-row num'><u>" + E(name) + "</u>" +
-        "<s>" + (total > 0 && val ? pct(Math.abs(val), total) + "%" : "&mdash;") + "</s>" +
-        "<b>" + M(val) + "</b></div>";
+    // ---- FINANCES: THE WEEK'S BOOKS ----------------------------------------
+    //
+    // The Sheet totalled the season from the founding. That answers "how has
+    // it gone" and never "can I afford him on Friday" - and the second is the
+    // question a manager actually opens this page with. So the books are a
+    // WEEK: what has come in, what has gone out, what is still promised, and
+    // the balance those three leave him standing on.
+    //
+    // Every figure below is the ledger's own. The umpire writes an entry for
+    // each movement as it settles it, dated to the instant; a week is a filter
+    // over that, not a second set of books, so this page and the statement can
+    // never disagree. The two PROJECTED lines are the only forward-looking
+    // ones and they are kept apart by name - a bid is not a banked pound.
+    if (jwt()) wantMarket();
+    var WK = foFinWeek();
+    var lastWk = WK ? { from: WK.from - 7 * 86400000, to: WK.from } : null;
+    var shownWk = (FIN_WK === "last" && lastWk) ? lastWk : WK;
+
+    // the ledger, banded into the week on show
+    var wkLines = (FTX.lines || []).filter(function (l) {
+      if (!shownWk) return false;
+      var t = Number(l.at) || 0;
+      return t >= shownWk.from && t < shownWk.to;
+    });
+    var sumKind = function (kinds, sign) {
+      var t = 0;
+      wkLines.forEach(function (l) {
+        if (kinds.indexOf(l.kind) < 0) return;
+        var a = Number(l.amount) || 0;
+        if (sign > 0 && a > 0) t += a;
+        if (sign < 0 && a < 0) t += -a;
+      });
+      return t;
     };
-    var html2 = "<div class='fo-tre'>" +
-      "<div class='fo-tre-top'><span class='ey'>" + E(clubNm) + " &middot; Finances</span>" +
-      "<span class='rt'>" + (rounds ? "Round " + rounds : "Pre-season") + (seasonN ? " &middot; Season " + seasonN : "") + "</span></div>";
 
-    html2 += "<div class='fo-tre-head'><div>" +
-      "<div class='fo-tre-bank num'>" + MFull(bank) + "</div>" +
+    // WHAT IS STILL ON THE BOARD. My listings with a bid standing are money
+    // coming; listings where I hold the high bid are money going. Both are
+    // read off the open board, and both are marked as projections.
+    var pjSell = 0, pjBuy = 0;
+    try {
+      var board = FMK.board || [], mine = FMK.mine || null;
+      var cl9 = (st.claim || {});
+      var byId = {};
+      board.forEach(function (b) { byId[String(b.id)] = b; });
+      if (mine) {
+        (mine.sales || []).forEach(function (l) {
+          if (l.status !== "open") return;
+          var b = byId[String(l.id)];
+          if (b && Number(b.high) > 0) pjSell += Number(b.high) || 0;
+        });
+        (mine.bids || []).forEach(function (bd) {
+          var b = byId[String(bd.id)];
+          if (!b || !(Number(b.high) > 0)) return;
+          // the leader is the one the hammer would fall to
+          if (String(b.high_club || "") === String(cl9.club || "")) pjBuy += Number(b.high) || 0;
+        });
+      }
+    } catch (ePj) {}
+    var projecting = (FIN_WK !== "last");
+    if (!projecting) { pjSell = 0; pjBuy = 0; }
 
-      "</div>" + foShSpark(bank) + "</div>";
+    var IN_ROWS, OUT_ROWS;
+    IN_ROWS = [
+      ["Gate takings", sumKind(["gate"], 1), false],
+      ["Away share", sumKind(["gate-away"], 1), false],
+      ["Broadcast fees", sumKind(["broadcast"], 1), false],
+      ["Sponsorship", sumKind(["sponsor"], 1), false],
+      ["International compensation", sumKind(["compensation"], 1), false],
+      ["Player sales &middot; out to bid", pjSell, true],
+      ["Player sales &middot; settled", sumKind(["player-sale"], 1), false]
+    ];
+    OUT_ROWS = [
+      ["Senior wages", sumKind(["wages"], -1), false],
+      ["Academy upkeep", sumKind(["upkeep"], -1), false],
+      ["Academy building", sumKind(["academy", "contract"], -1), false],
+      ["Ground building", sumKind(["stadium"], -1), false],
+      ["Scouting reports", sumKind(["scouting"], -1), false],
+      ["Overdraft interest", sumKind(["interest"], -1), false],
+      ["Player purchases &middot; leading bid", pjBuy, true],
+      ["Player purchases &middot; settled", sumKind(["player-buy"], -1), false]
+    ];
+    // a week that is over has nothing in flight: a projection belongs to the
+    // week still being played, and printing an empty one against a settled
+    // week invites the reader to look for money that was never coming
+    var keep = function (r) { return projecting || !r[2]; };
+    IN_ROWS = IN_ROWS.filter(keep); OUT_ROWS = OUT_ROWS.filter(keep);
+    var wkIn = IN_ROWS.reduce(function (t, r) { return t + r[1]; }, 0);
+    var wkOut = OUT_ROWS.reduce(function (t, r) { return t + r[1]; }, 0);
+    var wkNet = wkIn - wkOut;
+    // AVAILABLE FUNDS is what he could spend right now: the bank, less the
+    // bids he is already leading. It deliberately ignores what he might be
+    // paid for a man still on the board - a sale that has not fallen is not
+    // money, and a manager who spends it twice is the reason this line exists.
+    var avail = bank - pjBuy;
+    var projBal = bank + (projecting ? (pjSell - pjBuy) : 0);
 
-    html2 += "";
+    var wkTitle = function (w) {
+      if (!w) return "";
+      try {
+        var PL = window.__foPlanet, a = new Date(w.from), b = new Date(w.to - 86400000);
+        var MM = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+        return a.getUTCDate() + " " + MM[a.getUTCMonth()] + " &ndash; " + b.getUTCDate() + " " + MM[b.getUTCMonth()];
+      } catch (e) { return ""; }
+    };
+    var ledRow = function (r) {
+      return "<div class='fo-wk-row" + (r[2] ? " pj" : "") + "'><u>" + r[0] + "</u><b>" + M(r[1]) + "</b></div>";
+    };
 
-    html2 += "<div class='fo-tre-cols'><div>" +
-      "<div class='fo-tre-sec'><span class='fo-tre-lbl'>In</span></div>" +
-      row("Gate receipts", inGate, totIn, true) + row("Away gate share", inAway, totIn, true) +
-      row("Broadcast fees", inBcast, totIn) +
-      row("Sponsorship", inSpon, totIn, true) + row("International fees", inComp, totIn) +
-      row("Transfer fees in", inFees, totIn) + row("Colts Cup purse", inPurse, totIn) +
-      row("Written off at the floor", inWriteOff, totIn) +
-      "<div class='fo-tre-tot num'><u>Total</u><b>" + M(totIn) + "</b></div>" +
-      "</div><div>" +
-      "<div class='fo-tre-sec'><span class='fo-tre-lbl'>Out</span></div>" +
-      row("Player wages", outWage, totOut, true) + row("Ground & academy upkeep", outUp, totOut, true) +
-      row("Transfer fees out", outFees, totOut) + row("Scouting", outScout, totOut) +
-      row("Academy trips & contracts", outAcadSpend, totOut) +
-      row("Building", outAcad + outSeats, totOut) + row("Overdraft interest", outInt, totOut) +
-      "<div class='fo-tre-tot num'><u>Total</u><b>" + M(totOut) + "</b></div>" +
-      "</div></div>";
+    var html2 = "<div class='fo-wk'>" +
+      "<div class='fo-wk-ey'>" + E(clubNm) + " &middot; <span>Finances</span></div>" +
+      "<div class='fo-wk-tabs' role='tablist'>" +
+      "<button type='button' role='tab' data-fin-wk='this'" + (FIN_WK === "this" ? " class='on' aria-selected='true'" : " aria-selected='false'") + ">This week</button>" +
+      "<button type='button' role='tab' data-fin-wk='last'" + (FIN_WK === "last" ? " class='on' aria-selected='true'" : " aria-selected='false'") + ">Last week</button>" +
+      "</div>";
 
-    if (Math.abs(drift) >= 1) html2 += "<div class='fo-tre-drift'>The bank and the ledger disagree by " + M(drift) + " &mdash; a line has gone missing from the books.</div>";
+    html2 += "<section class='fo-wk-hero'>" +
+      "<div class='fo-wk-heroin'>" +
+      "<span class='lbl'>" + (projecting ? "Projected overall balance" : "Balance at the week's end") + "</span>" +
+      "<b class='big num'>" + MFull(projBal) + "</b>" +
+      "<div class='fo-wk-rule'><i></i><s>&#9679;</s><i></i></div>" +
+      "<div class='fo-wk-pair'>" +
+      "<div><span class='lbl warm'>" + (projecting ? "Projected weekly balance" : "The week's balance") + "</span>" +
+      "<b class='num " + (wkNet < 0 ? "dn" : "up") + "'>" + M(wkNet) + "</b></div>" +
+      "<div><span class='lbl'>Available funds</span><b class='num'>" + MFull(avail) + "</b>" +
+      "<em>" + (pjBuy ? "After the bids you lead" : "Nothing out to bid") + "</em></div>" +
+      "</div></div></section>";
 
-    if (f.administration) html2 += "<div class='fo-fin-admin'><b>The club is in administration</b><p>The bank has reached the floor of " +
+    html2 += "<div class='fo-wk-band'>" +
+      "<div><span>Income</span><b class='num'>" + M(wkIn) + "</b></div>" +
+      "<div class='out'><span>Expenses</span><b class='num'>" + M(wkOut) + "</b></div>" +
+      "</div>";
+
+    html2 += "<section class='fo-wk-led'><div class='fo-wk-lh'><i></i>Income<b class='num'>" + M(wkIn) + "</b></div>" +
+      IN_ROWS.map(ledRow).join("") + "</section>";
+    html2 += "<section class='fo-wk-led out'><div class='fo-wk-lh'><i></i>Expenses<b class='num'>" + M(wkOut) + "</b></div>" +
+      OUT_ROWS.map(ledRow).join("") + "</section>";
+
+    html2 += "<div class='fo-wk-note'><i>i</i><p>" +
+      (shownWk ? "The week of " + wkTitle(shownWk) + ", on the world's calendar. " : "") +
+      "Every settled figure is the umpire's own ledger entry, so this page and your statement can never disagree. " +
+      "The two lines marked <em>out to bid</em> and <em>leading bid</em> are money still on the transfer board: " +
+      "they have not been paid or received, and available funds counts only the bids you would have to honour." +
+      "</p></div>";
+
+    if (Math.abs(drift) >= 1) html2 += "<div class='fo-wk-warn'>The bank and the ledger disagree by " +
+      M(drift) + " &mdash; a line has gone missing from the books.</div>";
+
+    if (f.administration) html2 += "<div class='fo-wk-warn admin'><b>The club is in administration</b><p>The bank has reached the floor of " +
       M(-(Number(f.debtLimit) || 2500000)) + ", so " + M(inWriteOff) + " of losses below the line has been written off. " +
       "The sponsor pays half while the club is under and nothing gets built" +
       (f.adminRounds ? "; that has been the case for " + f.adminRounds + " round" + (f.adminRounds === 1 ? "" : "s") : "") +
       ". Gate income and a smaller wage bill are the route out.</p></div>";
 
-    // the desk: what is coming, the one lever this room owns, and the doors
-    var gateLine = !nf
-      ? "<div class='fo-tre-line num'><u>Next gate &middot; <b>the season is played out</b></u><span class='pj'>&mdash;</span></div>"
-      : atHome
-      ? "<div class='fo-tre-line num'><u>Next gate &middot; <b>v " + E(oppNm) + "</b></u><span class='pj'>~" + Mk(projectedGate) + "</span></div>"
-      : "<div class='fo-tre-line num'><u>Next match &middot; <b>at " + E(oppNm) + "</b></u><span class='pj'>a third of theirs</span></div>";
-    html2 += "<div class='fo-tre-desk'><div>" + gateLine +
-      "<div class='fo-tre-line num'><u>The academy &middot; <b>level " + acad + " of 5</b>" +
-      (acad >= 5 ? " &middot; fully built" : " &middot; level " + (acad + 1) + " costs " + M(nextAcadCost)) + "</u>" +
-      (acad < 5 ? "<button type='button' class='fo-tre-act' id='fo-fin-acad'" + (canAcad ? "" : " disabled") + ">Invest &rsaquo;</button>" : "") + "</div>" +
-      "<div class='fo-fin-msg' id='fo-fin-msg'></div>" +
-      "</div><div>" +
-      "<a class='fo-tre-door' href='#/statement'><span class='fo-tre-lbl'>The statement</span><i>every entry, dated</i><span class='ch'>&rsaquo;</span></a>" +
-      "<a class='fo-tre-door' href='#/ground'><span class='fo-tre-lbl'>The ground</span><i class='num'>" + seats.toLocaleString() + " seats &middot; " + full + "% full &middot; " + M(ticket) + "</i><span class='ch'>&rsaquo;</span></a>" +
-      "<a class='fo-tre-door' href='#/squad'><span class='fo-tre-lbl'>The squad</span><i class='num'>" + squad.length + " seniors on " + M(billNow) + " a round</i><span class='ch'>&rsaquo;</span></a>" +
-      "</div></div></div>";
+    // THE ONE DECISION THIS ROOM STILL OWNS. The ground and the ticket moved
+    // to their own page; the academy is bought out of the books and stays.
+    html2 += "<div class='fo-wk-lever'><div><span>The academy</span><b>Level " + acad + " of 5" +
+      (acad >= 5 ? " &middot; fully built" : " &middot; level " + (acad + 1) + " costs " + M(nextAcadCost)) + "</b></div>" +
+      (acad < 5 ? "<button type='button' id='fo-fin-acad'" + (canAcad ? "" : " disabled") + ">Invest</button>" : "") +
+      "</div><div class='fo-fin-msg' id='fo-fin-msg'></div>";
+
+    html2 += "<div class='fo-wk-doors'>" +
+      "<a href='#/statement'>Every entry, dated &rsaquo;</a>" +
+      "<a href='#/ground'>The ground &rsaquo;</a>" +
+      "<a href='#/market'>The transfer board &rsaquo;</a></div>";
+    html2 += "</div>";
 
     page.innerHTML = shell(html2);
     wire(page, f, bank, st);
+    wireWeek(page);
   }
 
 
@@ -841,6 +976,16 @@
     });
   }
 
+  function wireWeek(page) {
+    page.querySelectorAll("[data-fin-wk]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var w = b.getAttribute("data-fin-wk");
+        if (w === FIN_WK) return;
+        FIN_WK = w;
+        if (FST.st) render(page, FST.st, "finance");
+      });
+    });
+  }
   function wire(page, f, bank, st) {
     var msg = page.querySelector("#fo-fin-msg");
     var say = function (t, bad) { if (!msg) return; msg.textContent = t; msg.className = "fo-fin-msg" + (bad ? " bad" : ""); };
