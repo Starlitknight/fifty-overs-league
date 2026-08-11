@@ -1971,7 +1971,7 @@ function route(){
     // the rooms anybody may read: the world is public, only a club is not
     var OPEN={home:1,league:1,nation:1,world:1,planet:1,rankings:1,nations:1,natteams:1,
               stats:1,schedule:1,almanack:1,atlas:1,champions:1,facup:1,colts:1,watch:1,
-              feed:1,paper:1,lore:1,star:1,team:1,player:1,manual:1,help:1};
+              feed:1,live:1,paper:1,lore:1,star:1,team:1,player:1,manual:1,help:1};
     if(!seated && !OPEN[App.page]){ location.hash='#/home'; return; }
   }catch(e){}
   // Squad Intelligence stopped being a page of its own: it is the third way to

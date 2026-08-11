@@ -78,6 +78,9 @@
       ["champions", "crown", "The Champions Cup"]
     ] },
     { k: "The world", rooms: [
+      // first in the group because it is the only room that is time-critical:
+      // everything else here is true all day, and this is only true now
+      ["live", "table", "Live scores"],
       ["league", "table", "My league"],
       ["nations", "plane", "The international game"],
       ["rankings", "chart", "The world rankings"],
