@@ -162,24 +162,15 @@
       ".fo-wk-tabs{display:grid;grid-template-columns:1fr 1fr;gap:0;margin:0 0 16px;border-radius:10px;overflow:hidden;border:1px solid var(--navy)}",
       "html body #page .fo-wk-tabs button{appearance:none;border:0 !important;border-radius:0 !important;padding:15px 8px !important;background:#FFFDF7 !important;color:var(--navy) !important;font:700 12px/1 Manrope,sans-serif !important;letter-spacing:.16em;text-transform:uppercase;cursor:pointer;min-height:48px}",
       "html body #page .fo-wk-tabs button.on{background:var(--navy) !important;color:#F6F3EB !important}",
-      // the plate
-      ".fo-wk-hero{background:var(--navy);border-radius:14px;padding:26px 22px 22px;position:relative;overflow:hidden;border-bottom:3px solid var(--brand)}",
+      // the plate: ONE figure. The page used to lead with a projected overall
+      // balance and a projected weekly balance beside it, and three numbers in
+      // a row is three numbers a reader has to rank before he can act. The one
+      // he opens this page to find is what he can spend, so that is the plate.
+      ".fo-wk-hero{background:var(--navy);border-radius:14px;padding:34px 22px 30px;position:relative;overflow:hidden;border-bottom:3px solid var(--brand)}",
       ".fo-wk-heroin{position:relative;z-index:2;text-align:center}",
       ".fo-wk-hero .lbl{display:block;font:700 11px/1 Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(246,243,235,.62)}",
-      ".fo-wk-hero .lbl.warm{color:#E8A05A}",
-      ".fo-wk-hero .big{display:block;margin-top:12px;font:700 clamp(38px,10vw,58px)/1 Manrope,sans-serif;letter-spacing:-.035em;color:#FFFEFC}",
-      ".fo-wk-rule{display:flex;align-items:center;gap:12px;margin:20px 0 18px}",
-      ".fo-wk-rule i{flex:1;height:1px;background:rgba(246,243,235,.22)}",
-      ".fo-wk-rule s{text-decoration:none;color:rgba(246,243,235,.5);font-size:11px}",
-      // two cells and a hairline between them, drawn as a border rather than a
-      // grid column - a 1px track ate the second cell when the markup carried
-      // no spacer to put in it
-      ".fo-wk-pair{display:grid;grid-template-columns:1fr 1fr;align-items:start}",
-      ".fo-wk-pair>div+div{border-left:1px solid rgba(246,243,235,.18);padding-left:16px}",
-      ".fo-wk-pair>div{padding:0 4px}",
-      ".fo-wk-pair b{display:block;margin-top:9px;font:700 clamp(20px,5.6vw,28px)/1.05 Manrope,sans-serif;letter-spacing:-.02em;color:#FFFEFC}",
-      ".fo-wk-pair b.dn{color:#F0704A}.fo-wk-pair b.up{color:#5FCB9B}",
-      ".fo-wk-pair em{display:block;margin-top:6px;font:400 11.5px/1.35 Manrope,sans-serif;font-style:normal;color:rgba(246,243,235,.5)}",
+      ".fo-wk-hero .big{display:block;margin-top:14px;font:700 clamp(42px,12vw,68px)/1 Manrope,sans-serif;letter-spacing:-.035em;color:#FFFEFC}",
+      ".fo-wk-hero em{display:block;margin-top:13px;font:400 12px/1.4 Manrope,sans-serif;font-style:normal;color:rgba(246,243,235,.52)}",
       // the two totals, side by side
       ".fo-wk-band{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin:12px 0 16px}",
       ".fo-wk-band>div{background:#FFFDF7;border:1px solid var(--edge);border-radius:12px;padding:14px 16px;text-align:center}",
@@ -214,7 +205,7 @@
       "html body #page .fo-wk-lever button[disabled]{background:#D7D2C7 !important;border-color:#D7D2C7 !important;color:#8D877C !important;cursor:not-allowed}",
       ".fo-wk-doors{display:flex;flex-wrap:wrap;gap:9px}",
       "html body #page .fo-wk-doors a{flex:1 1 200px;background:#FFFDF7;border:1px solid var(--edge);border-radius:11px;padding:15px 16px;font:700 11px/1 Manrope,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;color:var(--brand) !important;text-decoration:none !important;min-height:48px;display:flex;align-items:center}",
-      "@media (max-width:560px){.fo-wk-pair{grid-template-columns:1fr;gap:18px}.fo-wk-pair>div+div{border-left:0;border-top:1px solid rgba(246,243,235,.18);padding:16px 4px 0}.fo-wk-band{gap:8px}}",
+      "@media (max-width:560px){.fo-wk-band{gap:8px}}",
       "@media(max-width:900px){",
       "}",
       // ---- MATCHDAY ECONOMY: premium club-commercial dashboard ----
@@ -834,6 +825,12 @@
       }
     } catch (ePj) {}
     var projecting = (FIN_WK !== "last");
+    // THE BIDS YOU LEAD ARE OWED TODAY, WHICHEVER WEEK IS ON SCREEN. They are
+    // struck from a settled week's LEDGER, because that week is over and
+    // nothing is in flight in it - but the plate above the ledger is not a
+    // week, it is money you can spend this minute, and it must read the same
+    // on both tabs. So what is owed is taken before the week zeroes them.
+    var owed = pjBuy;
     if (!projecting) { pjSell = 0; pjBuy = 0; }
 
     var IN_ROWS, OUT_ROWS;
@@ -863,13 +860,13 @@
     IN_ROWS = IN_ROWS.filter(keep); OUT_ROWS = OUT_ROWS.filter(keep);
     var wkIn = IN_ROWS.reduce(function (t, r) { return t + r[1]; }, 0);
     var wkOut = OUT_ROWS.reduce(function (t, r) { return t + r[1]; }, 0);
-    var wkNet = wkIn - wkOut;
     // AVAILABLE FUNDS is what he could spend right now: the bank, less the
     // bids he is already leading. It deliberately ignores what he might be
     // paid for a man still on the board - a sale that has not fallen is not
     // money, and a manager who spends it twice is the reason this line exists.
-    var avail = bank - pjBuy;
-    var projBal = bank + (projecting ? (pjSell - pjBuy) : 0);
+    // It is the ONLY figure on the plate. The week itself is told underneath,
+    // in and out, and the ledgers say where every pound of it went.
+    var avail = bank - owed;
 
     var wkTitle = function (w) {
       if (!w) return "";
@@ -892,15 +889,10 @@
 
     html2 += "<section class='fo-wk-hero'>" +
       "<div class='fo-wk-heroin'>" +
-      "<span class='lbl'>" + (projecting ? "Projected overall balance" : "Balance at the week's end") + "</span>" +
-      "<b class='big num'>" + MFull(projBal) + "</b>" +
-      "<div class='fo-wk-rule'><i></i><s>&#9679;</s><i></i></div>" +
-      "<div class='fo-wk-pair'>" +
-      "<div><span class='lbl warm'>" + (projecting ? "Projected weekly balance" : "The week's balance") + "</span>" +
-      "<b class='num " + (wkNet < 0 ? "dn" : "up") + "'>" + M(wkNet) + "</b></div>" +
-      "<div><span class='lbl'>Available funds</span><b class='num'>" + MFull(avail) + "</b>" +
-      "<em>" + (pjBuy ? "After the bids you lead" : "Nothing out to bid") + "</em></div>" +
-      "</div></div></section>";
+      "<span class='lbl'>Available balance</span>" +
+      "<b class='big num'>" + MFull(avail) + "</b>" +
+      "<em>" + (owed ? "After the " + M(owed) + " you are leading in bids" : "Nothing of yours out to bid") + "</em>" +
+      "</div></section>";
 
     html2 += "<div class='fo-wk-band'>" +
       "<div><span>Income</span><b class='num'>" + M(wkIn) + "</b></div>" +
@@ -916,7 +908,7 @@
       (shownWk ? "The week of " + wkTitle(shownWk) + ", on the world's calendar. " : "") +
       "Every settled figure is the umpire's own ledger entry, so this page and your statement can never disagree. " +
       "The two lines marked <em>out to bid</em> and <em>leading bid</em> are money still on the transfer board: " +
-      "they have not been paid or received, and available funds counts only the bids you would have to honour." +
+      "they have not been paid or received, and your available balance counts only the bids you would have to honour." +
       "</p></div>";
 
     if (Math.abs(drift) >= 1) html2 += "<div class='fo-wk-warn'>The bank and the ledger disagree by " +
