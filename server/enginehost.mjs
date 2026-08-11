@@ -247,6 +247,16 @@ globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson, wea
       fow: (inn.fow || []).map(function (q) {
         return { sc: q.sc | 0, w: q.w | 0, who: q.who, ov: q.ov };
       }),
+      // WHO ACTUALLY PLAYED. A card names the men who did something - batted,
+      // bowled, held a catch - and the record was built from exactly those, so
+      // a cricketer picked in the eleven who was not needed with the bat, did
+      // not get an over and had nothing come to him had no evidence he had ever
+      // been on the field. His career read nought matches and his story read
+      // "nothing on his sheet yet" while his club played on around him. The
+      // engine has always known both elevens; this is where they were thrown
+      // away. Names only - the card carries the men's figures already.
+      xi: (inn.xi || []).map(function (q) { return (q && q.name) || q; }),
+      bxi: (inn.bxi || []).map(function (q) { return (q && q.name) || q; }),
       bowlers: inn.bowlers, fielding: inn.fielding || {} };
   };
   // canonical result: fixed key order, no floats beyond engine output.

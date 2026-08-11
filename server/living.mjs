@@ -682,6 +682,16 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     }
     for (const inn of ((m.result && m.result.innings) || [])) {
       if (!inn) continue;
+      // SELECTION IS THE APPEARANCE, not what came of it. Every line below adds
+      // a man because he DID something, so a cricketer picked in the eleven who
+      // was not needed with the bat, got no over and had nothing come to him was
+      // never recorded as having played at all - nought matches, and a story
+      // page telling him his first cap was still to come. The eleven is opened
+      // first and every name in it gets its line; the figures then land on men
+      // who already exist. Cards banked before the elevens were kept have none,
+      // and those matches stay as they were recorded.
+      const xiOf = inn.batTeam === mine ? inn.xi : inn.bowlTeam === mine ? inn.bxi : null;
+      if (xiOf) for (const q of xiOf) { const nq = (q && q.name) || q; if (nq) iat(nq); }
       if (inn.batTeam === mine) for (const b of (inn.bat || [])) {
         const nm = (b.p && b.p.name) || b.p; const L = nm && iat(nm); if (!L) continue;
         L.runs += b.r || 0; L.balls += b.b || 0; L.f4 += b.f4 || 0; L.f6 += b.f6 || 0;
