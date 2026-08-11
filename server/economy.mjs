@@ -649,9 +649,20 @@ export async function computeFinance(pool, country, opts = {}) {
       H.gate += home; H.bcast += bc; H.atts.push(att); H.lastAtt = att; H.lastWeather = w.word;
       A.awayCut += away;
       takings[H.slot] += home + bc; takings[A.slot] += away;
-      gates[H.slot].push({ kind: 'gate', label: 'Gate v ' + m.away_name + ' \u00b7 ' + att.toLocaleString('en-US') + ' through the turnstiles' + (sale.price !== TICKET ? ' at $' + sale.price : ''), amount: home });
+      // A GATE LINE MUST BE ABLE TO BE CHECKED. This one named the crowd and
+      // the CLOSING price and then banked a figure that was neither: the club
+      // keeps two thirds, and a manager who moved his price mid-window sold
+      // the early days at the old one, so nobody could get from "11,973 at $30"
+      // to $211,903 by any arithmetic - it looked like a hundred and fifty
+      // thousand pounds going missing. Every step is on the line now: what was
+      // actually taken per head, what the house took, and the share of it that
+      // is this club's. The visitor's line already said whose share it was.
+      const perHead = att ? Math.round((gate / att) * 100) / 100 : 0;
+      gates[H.slot].push({ kind: 'gate', label: 'Gate v ' + m.away_name + ' \u00b7 ' +
+        att.toLocaleString('en-US') + ' through the turnstiles \u00b7 $' + perHead.toFixed(2) +
+        ' a head \u00b7 two thirds of $' + gate.toLocaleString('en-US'), amount: home });
       gates[H.slot].push({ kind: 'broadcast', label: 'Broadcast fee v ' + m.away_name + ' \u00b7 $7.50 a head', amount: bc });
-      gates[A.slot].push({ kind: 'gate-away', label: 'Away share at ' + m.home_name, amount: away });
+      gates[A.slot].push({ kind: 'gate-away', label: 'Away share at ' + m.home_name + ' \u00b7 one third of $' + gate.toLocaleString('en-US'), amount: away });
     }
     // the world moment this round's books are settled: its nation's own hour
     const roundAt = EPOCH + ((startOf[R.ms[0].season_no] ?? 0) +

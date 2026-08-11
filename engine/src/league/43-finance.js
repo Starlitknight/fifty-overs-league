@@ -1331,7 +1331,14 @@
       out += "<div class='fo-st-row" + (income ? " in" : " out") + "'>" +
         "<span class='t'>" + d.time + "</span>" +
         "<span class='w'><b>" + E(type) + "</b>" + (det ? "<i>" + E(det) + "</i>" : "") + "</span>" +
-        "<span class='a'>" + (income ? "+" : "&minus;") + M(Math.abs(l.amount)) + "</span>" +
+        // A STATEMENT IS CHECKED WITH A PENCIL, so every figure on it is exact.
+        // The balance column has always printed in full and the amount beside
+        // it was rounding to the house style - so founding capital of
+        // $3,473,000 read "+$3.5m" against a balance of "$3,473,000", and the
+        // only way to reconcile the two was to assume the club had started
+        // twenty-seven thousand in the red. It had not. Headline figures still
+        // abbreviate; a line of the ledger does not.
+        "<span class='a'>" + (income ? "+" : "&minus;") + MFull(Math.abs(l.amount)) + "</span>" +
         "<span class='b'>" + MFull(l.balance) + "</span>" +
         "</div>";
     });

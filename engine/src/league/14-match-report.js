@@ -1714,18 +1714,27 @@
       ".fo-mr-rule:before{content:'';height:1px;flex:0 0 40px;background:linear-gradient(90deg,transparent,rgba(230,177,94,.45))}",
       ".fo-mr-rule:after{content:'';height:1px;flex:1;background:linear-gradient(90deg,rgba(230,177,94,.45),transparent)}",
       ".fo-mr-rule span{font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.32em;font-size:10.5px;font-weight:600;color:var(--gold);white-space:nowrap}",
-      ".fo-mr-worm{padding:14px 12px;border-radius:13px;background:linear-gradient(140deg,#0C1B2E,#132E4E);border:1px solid rgba(235,194,113,.18)}",
-      ".fo-mr-worm svg{width:100%;height:auto;display:block;overflow:visible}",
-      ".fo-mr-worm .g{stroke:rgba(150,180,225,.14);stroke-width:1}",
-      ".fo-mr-worm .gl{fill:#6E7F96;font-family:Manrope,sans-serif;font-size:10px;letter-spacing:.08em}",
-      ".fo-mr-worm .w1{fill:none;stroke:#E8B96A;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}",
-      ".fo-mr-worm .w2{fill:none;stroke:#E06A32;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}",
-      ".fo-mr-worm .d1{fill:#E8B96A;stroke:#0C1B2E;stroke-width:1.4}.fo-mr-worm .d2{fill:#E06A32;stroke:#0C1B2E;stroke-width:1.4}",
-      ".fo-mr-key{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px;font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.14em;font-size:10px;color:#9FB0C6}",
+      // THE WORM COMES INTO THE LIGHT, AND STOPS EATING THE PAGE. It was the one
+      // dark panel left in a light room - a navy slab the width of the report
+      // with nothing above it to justify the weight - and because the svg was
+      // width:100% with a free height, a wide desktop made it taller as it made
+      // it wider, until a chart of two lines stood five hundred pixels high. It
+      // is on the same paper as every other card now, drawn in the report's own
+      // ink and brand, and capped: it grows sideways and not downwards.
+      ".fo-mr-worm{padding:14px 14px 10px;border-radius:13px;background:#FFFEFC;border:1px solid #e3dccb;box-shadow:0 2px 10px rgba(20,36,58,.05)}",
+      ".fo-mr-worm svg{width:100%;height:auto;max-height:340px;display:block;overflow:visible}",
+      "@media(min-width:900px){.fo-mr-worm svg{max-height:300px}}",
+      ".fo-mr-worm .g{stroke:rgba(27,36,50,.09);stroke-width:1}",
+      ".fo-mr-worm .gl{fill:#8a8272;font-family:Manrope,sans-serif;font-size:10px;letter-spacing:.08em}",
+      ".fo-mr-worm .w1{fill:none;stroke:#14243A;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}",
+      ".fo-mr-worm .w2{fill:none;stroke:#C9571F;stroke-width:2.2;stroke-linejoin:round;stroke-linecap:round}",
+      ".fo-mr-worm .d1{fill:#14243A;stroke:#FFFEFC;stroke-width:1.4}.fo-mr-worm .d2{fill:#C9571F;stroke:#FFFEFC;stroke-width:1.4}",
+      ".fo-mr-key{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:9px;font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.14em;font-size:10px;color:#6a6354}",
       ".fo-mr-key span{width:16px;height:3px;border-radius:2px;margin-left:8px}",
       ".fo-mr-key span:first-child{margin-left:0}",
-      ".fo-mr-key .k1{background:#E8B96A}.fo-mr-key .k2{background:#E06A32}",
-      ".fo-mr-key em{font-style:normal;color:#6E7F96;margin-left:auto}",
+      // the key swatches ARE the two lines, so they move with them
+      ".fo-mr-key .k1{background:#14243A}.fo-mr-key .k2{background:#C9571F}",
+      ".fo-mr-key em{font-style:normal;color:#8a8272;margin-left:auto}",
       // earlier reports
       ".fo-mr-morelist{display:grid;gap:2px}",
       "html body #page a.fo-mr-mrow{display:grid;grid-template-columns:auto minmax(0,1fr) auto;align-items:baseline;gap:14px;padding:11px 6px;border-bottom:1px solid rgba(150,180,225,.12);text-decoration:none !important;color:#9FB0C6 !important;transition:background .18s,padding .18s}",
@@ -1872,7 +1881,14 @@
       "html body #page a.fo-ms-tml:hover{color:#E8B96A !important;text-decoration:underline}",
       ".fo-mr--sum .fo-ms-tabbody .fo-mr-panel{background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05);padding:16px 18px}",
       ".fo-mr--sum .fo-ms-tabbody .fo-mr-row2{margin-bottom:14px}",
-      ".fo-mr--sum .fo-ms-tabbody .fo-mr-turn,.fo-mr--sum .fo-ms-tabbody .fo-mr-mom{background:#14243A;border:none;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.12)}",
+      // THE SPELL AND THE MAN OF THE MATCH WERE INVISIBLE. This rule repainted
+      // both cards navy and left the type where the base rule put it - a #0F1522
+      // heading and a #4A5260 body, both of them near-black, on a near-black
+      // card. They are the two things on the page a reader most wants and they
+      // could not be read at all. The page is the premium light theme like every
+      // other room, so the cards keep the paper the rest of the report is on and
+      // the ink that was always meant to sit on it.
+      ".fo-mr--sum .fo-ms-tabbody .fo-mr-turn,.fo-mr--sum .fo-ms-tabbody .fo-mr-mom{background:#FFFEFC;border:1px solid #e3dccb;border-radius:14px;box-shadow:0 2px 10px rgba(20,36,58,.05)}",
       ".fo-mr--sum .fo-ms-tabbody .fo-mr-wormsec{margin-top:14px}",
       "@media(max-width:820px){.fo-mr--sum .fo-ms-tabbody .fo-mr-panel{padding:12px 10px}}",
       "html body #page .fo-mr--sum a.fo-mr-tab{color:#8a8272 !important}",

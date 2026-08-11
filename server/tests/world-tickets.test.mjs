@@ -19,7 +19,7 @@ import { migrate } from '../migrate.mjs';
 import { initWorld } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { runDue } from '../tick.mjs';
-import { computeFinance, gateSale, TICKET } from '../economy.mjs';
+import { computeFinance, gateSale, TICKET, HOME_CUT } from '../economy.mjs';
 import { EPOCH, DAY, natHour, dayOfRound } from '../clock.mjs';
 
 const DB = 'fotickets_test';
@@ -244,4 +244,57 @@ test('the board is the banked sale trimmed to the clock', () => {
   const dear = gateSale(demand, seats, matchMs, [{ at: 0, price: 100 }], null);
   assert.ok(dear.sold < banked * 0.3, 'a $100 seat empties most of the ground');
   assert.ok(dear.sold >= 600, 'the die-hards still walk up');
+});
+
+// A GATE LINE IS CHECKED WITH A PENCIL, AND IT HAS TO SURVIVE THAT.
+//
+// The line used to read "11,973 through the turnstiles at $30" and bank
+// $211,903, and there is no arithmetic that gets you from the one to the
+// other. Two steps were missing and both of them matter. The club keeps two
+// THIRDS of a gate - the visitor's line said so about its own third, the
+// home line said nothing - and a manager who moves his price mid-window sells
+// the early days at the old one, so the closing price on the label is not
+// what the house paid. Together they looked like a hundred and forty-seven
+// thousand pounds going missing, which is how this was reported.
+//
+// The line now states what was taken per head and what the house took, so the
+// reader can do all of it: heads x per-head is the gross, two thirds of the
+// gross is the money. That is what this checks - against the banked figure
+// rather than against a sentence.
+test('every gate line can be re-derived from the words printed on it', async () => {
+  await pool.query('DELETE FROM ticket_prices');
+  // a standing price, then a rise close in: the second half of the window
+  // sells dearer than the first, so the closing price is NOT the average
+  await pool.query(
+    `INSERT INTO ticket_prices(country_id, slot, season_no, round, set_ms, price)
+     VALUES ('eng', 1, 0, 0, $1, 26), ('eng', 1, 0, 0, $2, 40)`,
+    [EPOCH, EPOCH + 200 * DAY]);
+  const rows = await computeFinance(pool, 'eng', { ledgerSlots: [1] });
+  const led = rows.filter(r => r.slot === 1)[0].ledger || [];
+  const gate = led.filter(l => l.kind === 'gate');
+  assert.ok(gate.length, 'the club hosted somebody');
+  for (const l of gate) {
+    const m = /([\d,]+) through the turnstiles \u00b7 \$([\d.]+) a head \u00b7 two thirds of \$([\d,]+)/
+      .exec(l.label) || /([\d,]+) through the turnstiles · \$([\d.]+) a head · two thirds of \$([\d,]+)/.exec(l.label);
+    assert.ok(m, 'the line names heads, the head rate and the house: ' + l.label);
+    const heads = +m[1].replace(/,/g, ''), perHead = +m[2], gross = +m[3].replace(/,/g, '');
+    assert.ok(heads > 0 && gross > 0, l.label);
+    // the money banked is exactly two thirds of the gross it names
+    assert.equal(l.amount, Math.round(gross * HOME_CUT),
+      'two thirds of ' + gross + ' is ' + Math.round(gross * HOME_CUT) + ', banked ' + l.amount);
+    // and the head rate it names multiplies back up to that gross
+    assert.ok(Math.abs(heads * perHead - gross) <= heads * 0.005 + 1,
+      heads + ' x $' + perHead + ' = ' + (heads * perHead).toFixed(0) + ', printed ' + gross);
+  }
+  // the visitor's third is named as such, and the two thirds add to the whole
+  const awayRows = await computeFinance(pool, 'eng', { ledgerSlots: [0, 2, 3, 4, 5, 6, 7] });
+  const anyAway = awayRows.flatMap(r => r.ledger || []).filter(l => l.kind === 'gate-away');
+  assert.ok(anyAway.length, 'somebody travelled');
+  for (const l of anyAway) {
+    const m = /one third of \$([\d,]+)/.exec(l.label);
+    assert.ok(m, 'the visitor is told what he is taking a third OF: ' + l.label);
+    const gross = +m[1].replace(/,/g, '');
+    assert.equal(l.amount, gross - Math.round(gross * HOME_CUT), 'and the two shares are the whole gate');
+  }
+  await pool.query('DELETE FROM ticket_prices');
 });

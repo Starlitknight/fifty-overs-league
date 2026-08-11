@@ -231,6 +231,16 @@ globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson, wea
       bat: (inn.bat || []).map(function (b) {
         return { p: b.p, r: b.r, b: b.b, f4: b.f4 || 0, f6: b.f6 || 0, out: b.out };
       }),
+      // AND WHO BUILT IT WITH WHOM. The report has drawn a partnership ladder
+      // for as long as it has had a Charts tab, and it has never once had
+      // anything to draw: the engine keeps inn.pships and this is where the
+      // card is trimmed for banking, and pships was not on the list. So the
+      // section quietly rendered nothing on every league match ever played.
+      // Eleven small rows a side - the cheapest thing on the card, and the one
+      // that says how an innings was actually built.
+      pships: (inn.pships || []).map(function (q) {
+        return { w: q.w | 0, runs: q.runs | 0, balls: q.balls | 0, pair: q.pair };
+      }),
       bowlers: inn.bowlers, fielding: inn.fielding || {} };
   };
   // canonical result: fixed key order, no floats beyond engine output.

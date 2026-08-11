@@ -82,7 +82,14 @@ const PLAY_TABLES = [
   // the academy. The candidates are laid out fresh every tick and the trips
   // and the spending belong to the season that was played, so all three go
   // with it - a redealt world has never scouted anybody.
-  'academy_candidates', 'academy_scouts', 'academy_spend'
+  'academy_candidates', 'academy_scouts', 'academy_spend',
+  // the pitch a manager called for a HOME FIXTURE (083). This is where it
+  // parts company with ticket_prices below: a price is a standing policy that
+  // outlives any one match, while a call names a season, a round and a slot,
+  // and the redeal replaces the cricket those name. A surviving call would be
+  // laid over whatever new fixture happened to land in the same seat - with
+  // its once-per-match budget already spent on a game that never happened.
+  'pitch_calls'
 ];
 // the world itself: its countries, its clubs, who has claimed them, the
 // calendar, and the migration ledger. These are not play and are left alone.
