@@ -203,7 +203,8 @@
       ".fo-wk-lever b{display:block;margin-top:7px;font:600 13.5px/1.3 Manrope,sans-serif;color:var(--ink)}",
       "html body #page .fo-wk-lever button{margin-left:auto;appearance:none;border:1px solid var(--brand) !important;border-radius:9px !important;background:var(--brand) !important;color:#FFFEFC !important;font:700 11px/1 Manrope,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;padding:0 16px !important;min-height:44px;cursor:pointer;white-space:nowrap}",
       "html body #page .fo-wk-lever button[disabled]{background:#D7D2C7 !important;border-color:#D7D2C7 !important;color:#8D877C !important;cursor:not-allowed}",
-      ".fo-wk-doors{display:flex;flex-wrap:wrap;gap:9px}",
+      ".fo-wk-doors{display:flex;flex-wrap:wrap;gap:9px;margin-bottom:14px}",
+      ".fo-wk-doors:last-child{margin-bottom:0}",
       "html body #page .fo-wk-doors a{flex:1 1 200px;background:#FFFDF7;border:1px solid var(--edge);border-radius:11px;padding:15px 16px;font:700 11px/1 Manrope,sans-serif !important;letter-spacing:.13em;text-transform:uppercase;color:var(--brand) !important;text-decoration:none !important;min-height:48px;display:flex;align-items:center}",
       "@media (max-width:560px){.fo-wk-band{gap:8px}}",
       "@media(max-width:900px){",
@@ -1043,12 +1044,14 @@
     html2 += "<section class='fo-wk-led out'><div class='fo-wk-lh'><i></i>Expenses<b class='num'>" + M(wkOut) + "</b></div>" +
       OUT_ROWS.map(ledRow).join("") + "</section>";
 
-    html2 += "<div class='fo-wk-note'><i>i</i><p>" +
-      (shownWk ? "The week of " + wkTitle(shownWk) + ", on the world's calendar. " : "") +
-      "Every settled figure is the umpire's own ledger entry, so this page and your statement can never disagree. " +
-      "The two lines marked <em>out to bid</em> and <em>leading bid</em> are money still on the transfer board: " +
-      "they have not been paid or received, and your available balance counts only the bids you would have to honour." +
-      "</p></div>";
+    // WHICH WEEK THIS IS, and nothing else. The note used to explain that the
+    // settled figures are the umpire's own entries and that a projection is not
+    // a banked pound - both true, and both already said by the page itself: the
+    // rows wear a PROJECTED tag and the plate names what is available. A
+    // paragraph restating what the design already shows is a paragraph nobody
+    // reads twice.
+    if (shownWk) html2 += "<div class='fo-wk-note'><i>i</i><p>The week of " +
+      wkTitle(shownWk) + ", on the world's calendar.</p></div>";
 
     if (Math.abs(drift) >= 1) html2 += "<div class='fo-wk-warn'>The bank and the ledger disagree by " +
       M(drift) + " &mdash; a line has gone missing from the books.</div>";
@@ -1059,15 +1062,20 @@
       (f.adminRounds ? "; that has been the case for " + f.adminRounds + " round" + (f.adminRounds === 1 ? "" : "s") : "") +
       ". Gate income and a smaller wage bill are the route out.</p></div>";
 
+    // THE STATEMENT IS WHERE THE LEDGERS GO ON. It is the door this page's own
+    // rows lead to, so it stands directly under them rather than in a row of
+    // doors to other rooms below a decision that has nothing to do with it.
+    html2 += "<div class='fo-wk-doors'><a href='#/statement'>Full statement &rsaquo;</a></div>";
+
     // THE ONE DECISION THIS ROOM STILL OWNS. The ground and the ticket moved
     // to their own page; the academy is bought out of the books and stays.
-    html2 += "<div class='fo-wk-lever'><div><span>The academy</span><b>Level " + acad + " of 5" +
-      (acad >= 5 ? " &middot; fully built" : " &middot; level " + (acad + 1) + " costs " + M(nextAcadCost)) + "</b></div>" +
-      (acad < 5 ? "<button type='button' id='fo-fin-acad'" + (canAcad ? "" : " disabled") + ">Invest</button>" : "") +
+    // The level is all the tile says: the question that spends the money
+    // already names the level being bought and what it costs.
+    html2 += "<div class='fo-wk-lever'><div><span>The academy</span><b>Level " + acad + "</b></div>" +
+      (acad < 5 ? "<button type='button' id='fo-fin-acad'" + (canAcad ? "" : " disabled") + ">Upgrade</button>" : "") +
       "</div><div class='fo-fin-msg' id='fo-fin-msg'></div>";
 
     html2 += "<div class='fo-wk-doors'>" +
-      "<a href='#/statement'>Every entry, dated &rsaquo;</a>" +
       "<a href='#/ground'>The ground &rsaquo;</a>" +
       "<a href='#/market'>The transfer board &rsaquo;</a></div>";
     html2 += "</div>";
