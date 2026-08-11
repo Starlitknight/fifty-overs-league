@@ -39,7 +39,7 @@
   // cards. A nation with no paintings yet gets the generic summer-noon
   // ground and no named ground fact.
   // Keyed by the WORLD's region ids (sub, rsa, nzl, slk, win, bgd - the ids
-  // FO_CX_REGIONS actually serves), so every one of the nineteen nations
+  // FO_CX_REGIONS actually serves), so every one of the sixteen nations
   // resolves to its own painted grounds and nobody falls back to the generic.
   var NAT_ART = {
     eng: ["marylebone", "leeds", "london", "canterbury", "manchester", "nottingham"],
@@ -54,8 +54,8 @@
     ned: ["amsterdam", "rotterdam", "utrecht"],
     zim: ["harare", "bulawayo", "victoria-falls"],
     afg: ["kabul"], bgd: ["sylhet"], nep: ["kathmandu"],
-    sco: ["edinburgh"], wal: ["cardiff"], ken: ["nairobi"],
-    usa: ["grand-prairie"], can: ["king-city"]
+    sco: ["edinburgh"],
+    usa: ["grand-prairie"]
   };
   function artBase() { return (typeof FO_ART !== "undefined") ? FO_ART : "client/art/"; }
   function natArt(rid, i) {

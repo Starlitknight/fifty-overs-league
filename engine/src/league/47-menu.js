@@ -170,7 +170,7 @@
     report: "lore", journal: "lore", scorecard: "lore" };
 
   // THE MASTHEAD OWNS THE ONLY MENU. There were two ways into the same
-  // nineteen rooms: this bar, and a hamburger at the far left of the
+  // the rooms: this bar, and a hamburger at the far left of the
   // masthead that opened the whole index as a panel over the page. Two
   // doors onto one building is one door too many - the bar is always on
   // screen, it says which section you are standing in, and it reaches every

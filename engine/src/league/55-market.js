@@ -110,7 +110,7 @@
     eng: "#2F6B45", ire: "#2E8B67", ned: "#D06A19", win: "#B78926", rsa: "#B7352B",
     zim: "#D15B22", aus: "#D59600", nzl: "#079B99", slk: "#216DB5", sub: "#7A44C5",
     pak: "#1E7F5C", afg: "#5B4A91", bgd: "#177A57", nep: "#B5304C", sco: "#2B5AA6",
-    wal: "#A62A2E", ken: "#237A46", usa: "#33366E", can: "#C2483B"
+    usa: "#33366E"
   };
   function spineOf(rid) { return NAT_SPINE[rid] || "#6A6354"; }
 

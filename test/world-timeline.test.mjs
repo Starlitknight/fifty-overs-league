@@ -16,9 +16,15 @@ test("world build is deterministic (same seed => identical)", () => {
   assert.notEqual(JSON.stringify(buildWorld(12345)), JSON.stringify(buildWorld(999)));
 });
 
-test("19 leagues, each fixed at 8 with exactly one permanent boss", () => {
+// THE ROSTER IS THE ROSTER'S BUSINESS. These used to assert 19 leagues, a
+// field of 20 and four groups of five - the shape of a world that had Wales,
+// Kenya and Canada in it. When those three left the top table every one of
+// them failed on a number rather than on a fault. They are written against
+// REGIONS now: the world says how many nations it has, and the tests hold the
+// STRUCTURE that has to be true of any of them.
+test("one league a nation, each fixed at 8 with exactly one permanent boss", () => {
   const w = buildWorld(7);
-  assert.equal(w.leagues.length, 19);
+  assert.equal(w.leagues.length, REGIONS.length);
   for (const lg of w.leagues) {
     assert.equal(lg.teams.length, LEAGUE_SIZE);
     assert.equal(lg.teams.filter(t => t.kind === "boss").length, 1);
@@ -65,23 +71,27 @@ test("a group is a single round-robin of five (10 matches, 5 rounds)", () => {
   assert.equal(games, 10);                        // C(5,2)
 });
 
-test("cup field is last season's 19 winners + Thorne; season 0 = the bosses", () => {
+test("cup field is last season's league winners + Thorne; season 0 = the bosses", () => {
+  const N = REGIONS.length + 1;                                // every nation, and Thorne
   const f0 = cupField(7, 0, byStrength);
-  assert.equal(f0.length, 20);
+  assert.equal(f0.length, N);
   assert.equal(f0[0].id, THORNE_ID);
   assert.ok(f0.slice(1).every(t => t.id.endsWith("-boss")));   // season 0 = bosses
   const f1 = cupField(7, 1, byStrength);
-  assert.equal(f1.length, 20);
-  assert.equal(new Set(f1.map(t => t.id)).size, 20);           // 20 distinct entrants
+  assert.equal(f1.length, N);
+  assert.equal(new Set(f1.map(t => t.id)).size, N);            // every entrant distinct
 });
 
-test("the cup draws four groups of five, deterministically", () => {
+test("the cup draws four groups, evenly and deterministically", () => {
   const field = cupField(3, 0, byStrength);
   const g1 = drawGroups(field, 3, 0), g2 = drawGroups(field, 3, 0);
   assert.equal(g1.length, 4);
-  assert.ok(g1.every(g => g.length === 5));
-  assert.equal(g1.flat().length, 20);
-  assert.equal(new Set(g1.flat().map(t => t.id)).size, 20);    // no team in two groups
+  // the field is dealt round the four groups, so no group is ever more than
+  // one side bigger than another however many nations there are
+  const sizes = g1.map(g => g.length);
+  assert.ok(Math.max(...sizes) - Math.min(...sizes) <= 1, "groups are even: " + sizes);
+  assert.equal(g1.flat().length, field.length);
+  assert.equal(new Set(g1.flat().map(t => t.id)).size, field.length);   // nobody twice
   assert.equal(JSON.stringify(g1), JSON.stringify(g2));        // deterministic draw
 });
 
@@ -89,9 +99,9 @@ test("Thorne beats every AI team and wins every Cup", () => {
   for (const seed of [1, 2, 3, 99, 12345]) {
     const cup = seasonCup(seed, 0, byStrength);
     assert.equal(cup.champion, THORNE_ID, "Thorne must win at seed " + seed);
-    // and 20 distinct teams reached the groups, top 2 each advanced to 8
+    // every entrant reached a group, and the top two of each advanced to eight
     assert.equal(cup.groups.length, 4);
-    assert.ok(cup.groups.every(g => g.length === 5));
+    assert.equal(cup.groups.reduce((n, g) => n + g.length, 0), REGIONS.length + 1);
   }
 });
 

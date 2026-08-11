@@ -171,11 +171,14 @@
 
   // ---- the sides of a nation --------------------------------------------------
   // SIXTEEN NATIONS: the twelve ICC Full Members and the four strongest
-  // Associates. Wales, Kenya and Canada leave the top table (their art stays
-  // on disk for a future tier); Glamorgan plays in England's Division Two,
-  // which is where Welsh county cricket has always really lived.
-  var FO_CUT = { wal: 1, ken: 1, can: 1 };
-  function regionList() { var c = cx(); if (!c) return []; return (c.regions() || []).filter(function (r) { return !r.final && !FO_CUT[r.id]; }); }
+  // Associates. Wales, Kenya and Canada were struck off the world's own region
+  // table rather than filtered out of it here - a list that is filtered in one
+  // place is a list that leaks everywhere else, which is exactly what happened:
+  // they were gone from the leagues and still standing in the rankings, on the
+  // world map, in the almanack and in every dropdown that read the table
+  // straight. Glamorgan plays in England's Division Two, which is where Welsh
+  // county cricket has always really lived.
+  function regionList() { var c = cx(); if (!c) return []; return (c.regions() || []).filter(function (r) { return !r.final; }); }
   function regionById(rid) { var L = regionList(); for (var i = 0; i < L.length; i++) if (L[i].id === rid) return L[i]; return null; }
   // two more real cricket cities per nation, so Division One seats eight clubs
   var EXTRA_CITY = { eng: ["Taunton", "Hove"], ire: ["Sligo", "Wexford"], ned: ["Nijmegen", "Leiden"], win: ["Kingstown", "Providence"], rsa: ["East London", "Potchefstroom"], zim: ["Chinhoyi", "Marondera"], aus: ["Darwin", "Newcastle"], nzl: ["Queenstown", "Whangarei"], slk: ["Negombo", "Jaffna"], sub: ["Pune", "Lucknow"], pak: ["Quetta", "Gujranwala"], afg: ["Bamyan", "Farah"], bgd: ["Mymensingh", "Bogra"], nep: ["Butwal", "Nepalgunj"], sco: ["Paisley", "Falkirk"], usa: ["Seattle", "Atlanta"] };
@@ -328,10 +331,7 @@
     bgd: { Sylhet: "wizard" },
     nep: { Kathmandu: "wizard" },
     sco: { Edinburgh: "engine" },
-    wal: { Cardiff: "express" },
-    ken: { Nairobi: "finisher" },
     usa: { "Grand Prairie": "finisher" },
-    can: { "King City": "gloveman" }
   };
 
   // A nation's own cricket, for the clubs nobody wrote a line about. First entry
@@ -352,10 +352,7 @@
     bgd: ["wizard", "miser", "engine", "rock", "gloveman"],
     nep: ["prodigy", "wizard", "blade", "engine", "finisher"],
     sco: ["rock", "engine", "miser", "express", "greybeard"],
-    wal: ["engine", "express", "rock", "blade", "miser"],
-    ken: ["finisher", "engine", "blade", "gloveman", "express"],
     usa: ["blade", "finisher", "express", "gloveman", "engine"],
-    can: ["gloveman", "engine", "miser", "rock", "blade"]
   };
   function archOf(rid, slot, city) {
     // England first and by SLOT: three of its counties play in London, so a
@@ -412,8 +409,6 @@
     // the wet green north: seam, cloud, and the ever-present forecast
     eng: { p: { green: 32, balanced: 38, dry: 4, slow: 6, cracked: 6, twoPaced: 14 },
       w: { Sunny: 24, Overcast: 38, Drizzle: 12, Chilly: 12, Windy: 8, Misty: 6 } },
-    wal: { p: { green: 34, balanced: 36, dry: 4, slow: 6, cracked: 6, twoPaced: 14 },
-      w: { Sunny: 22, Overcast: 38, Drizzle: 13, Chilly: 13, Windy: 8, Misty: 6 } },
     ire: { p: { green: 40, balanced: 32, dry: 2, slow: 8, cracked: 4, twoPaced: 14 },
       w: { Sunny: 18, Overcast: 40, Drizzle: 15, Chilly: 12, Windy: 10, Misty: 5 } },
     sco: { p: { green: 42, balanced: 30, dry: 2, slow: 8, cracked: 4, twoPaced: 14 },
@@ -445,13 +440,9 @@
       w: { Sunny: 40, Hot: 26, Humid: 22, Windy: 12 } },
     usa: { p: { green: 6, balanced: 24, dry: 8, slow: 32, cracked: 6, twoPaced: 24 },
       w: { Sunny: 46, Hot: 22, Overcast: 16, Windy: 16 } },
-    can: { p: { green: 8, balanced: 26, dry: 6, slow: 30, cracked: 6, twoPaced: 24 },
-      w: { Sunny: 40, Overcast: 22, Chilly: 20, Windy: 18 } },
     // African highveld-adjacent: honest surfaces slowing with wear
     zim: { p: { green: 8, balanced: 36, dry: 16, slow: 24, cracked: 8, twoPaced: 8 },
-      w: { Sunny: 50, Hot: 22, Overcast: 14, Windy: 14 } },
-    ken: { p: { green: 8, balanced: 38, dry: 16, slow: 22, cracked: 8, twoPaced: 8 },
-      w: { Sunny: 48, Hot: 24, Overcast: 14, Windy: 14 } }
+      w: { Sunny: 50, Hot: 22, Overcast: 14, Windy: 14 } }
   };
   // the groundsman leans the home square toward the home side's cricket
   var ARCH_TILT = {
@@ -560,7 +551,7 @@
     ind: 1934, pak: 1953, nzl: 1921, nz: 1921, sri: 1938, sl: 1938,
     wi: 1966, win: 1966, zim: 1970, ban: 1974, bng: 1974,
     afg: 1995, ire: 1968, irl: 1968, ned: 1962, nl: 1962,
-    sco: 1965, wal: 1969, ken: 1971, usa: 1961, can: 1966, nep: 1980
+    sco: 1965, usa: 1961, nep: 1980
   };
   function leagueBorn(rid) {
     if (LEAGUE_BORN[rid] != null) return LEAGUE_BORN[rid];
@@ -871,10 +862,7 @@
     bgd: { role: "fingerSpin",      q: 0.93, len: 16, end: 0, craft: "left-arm spin that never gave you the same ball twice" },
     nep: { role: "wristSpin",       q: 0.91, len: 2,  end: 0, craft: "twenty-one, leg-spin, and a nation on his shoulder" },
     sco: { role: "allRounder",      q: 0.92, len: 17, end: 0, craft: "opened the batting and the bowling, both of them into the gale" },
-    wal: { role: "seamFastMedium",  q: 0.90, len: 15, end: 0, craft: "late in-swing, later out-swing, and a baritone appeal" },
-    ken: { role: "middleOrderBat",  q: 0.91, len: 14, end: 0, craft: "finished innings the way lions finish sprints" },
     usa: { role: "middleOrderBat",  q: 0.92, len: 12, end: 0, craft: "launch angles, exit velocity, and no respect at all for par" },
-    can: { role: "wicketkeeper",    q: 0.90, len: 15, end: 0, craft: "kept wicket, captained, and let nothing past him" },
     gt:  { rid: "eng", role: "allRounder", q: 0.99, len: 21, end: 23,
            craft: "every trick from every nation, twenty years before he began teaching them" }
   };
@@ -1587,8 +1575,8 @@
     return null;
   }
 
-  // one repaint for however many nations answer at once: nineteen snapshots
-  // landing in the same second must not repaint the page nineteen times
+  // one repaint for however many nations answer at once: sixteen snapshots
+  // landing in the same second must not repaint the page sixteen times
   var repaintT = null;
   function planetRepaint() {
     if (repaintT) return;

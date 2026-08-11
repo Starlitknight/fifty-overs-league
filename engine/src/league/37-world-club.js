@@ -2,7 +2,7 @@
    THE WORLD SERVICE CLIENT — no page of its own any more.
 
    The served world is joinable: a signed-in manager holds a club in one of
-   the 19 nations, and the umpire plays that club at its nation's hour on the
+   the sixteen nations, and the umpire plays that club at its nation's hour on the
    real engine. This module is the client of that write surface - every call
    goes through the server's SECURITY DEFINER RPCs, which re-validate
    everything ("no client trust"): this file could lie all it wants and the

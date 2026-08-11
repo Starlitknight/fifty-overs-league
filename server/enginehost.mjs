@@ -255,11 +255,9 @@ globalThis.__svcWorldCfg = function () {
   // the world's shape read from the SHIPPED build itself — regions, club
   // names and national hours come from the same code the phones run, so the
   // served world and the client planet can never drift apart
-  // sixteen nations: the same cut the planet makes (wal/ken/can left the top
-  // table) - sidesOf below already refuses to know them, but the region list
-  // itself must agree or the server would found ghost leagues
-  var CUT = { wal: 1, ken: 1, can: 1 };
-  var regions = (window.__foCxAPI.regions() || []).filter(function (r) { return !r.final && !CUT[r.id]; });
+  // sixteen nations, straight off the shipped table - the three that left the
+  // top table are struck from it, so there is nothing here to filter
+  var regions = (window.__foCxAPI.regions() || []).filter(function (r) { return !r.final; });
   return JSON.stringify(regions.map(function (r) {
     var boss = null; (r.clubs || []).forEach(function (c) { if (c.boss) boss = c; });
     return {

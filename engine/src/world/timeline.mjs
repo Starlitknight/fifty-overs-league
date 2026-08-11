@@ -12,8 +12,8 @@
 //  (league on even days, cup on odd), then a 2-day break (rollover: ageing).
 //  → 14 league rounds + 14 cup days + 2 break.
 //
-//  Champions Cup: 20 teams = the PREVIOUS season's 19 league winners + Thorne
-//  (season 0 seeds the 19 bosses). Four groups of five, single round-robin, top
+//  Champions Cup: every nation's league winner from the PREVIOUS season plus
+//  Thorne (season 0 seeds the bosses). Four groups, dealt round, single round-robin, top
 //  two advance → QF → SF → 3rd place → final. Thorne beats every AI team in
 //  every cup match (groups included); only a human can end his reign.
 // ===========================================================================
@@ -40,7 +40,10 @@ function shuffle(arr, rnd) {   // deterministic Fisher-Yates
   return a;
 }
 
-// ---- the 19 nations (ids/names/bosses mirror FO_CX_REGIONS) + Thorne ---------
+// ---- the sixteen nations (ids/names/bosses mirror FO_CX_REGIONS) + Thorne ----
+// Wales, Kenya and Canada left the top table; a history that still crowned
+// them was a history of a world that no longer exists, which is how they kept
+// turning up in the almanack long after their leagues were gone.
 export const REGIONS = [
   { id: "eng", name: "England", boss: "Sir Giles Pemberley", arch: "master" },
   { id: "ire", name: "Ireland", boss: "Declan Moriarty", arch: "clutch" },
@@ -57,10 +60,7 @@ export const REGIONS = [
   { id: "bgd", name: "Bangladesh", boss: "Farhan Chowdhury", arch: "wizard" },
   { id: "nep", name: "Nepal", boss: "Sandeep Rana", arch: "younggun" },
   { id: "sco", name: "Scotland", boss: "Angus MacLeod", arch: "ironman" },
-  { id: "wal", name: "Wales", boss: "Gareth Llewellyn", arch: "clutch" },
-  { id: "ken", name: "Kenya", boss: "David Otieno", arch: "talisman" },
-  { id: "usa", name: "United States", boss: "Tyler Brooks", arch: "general" },
-  { id: "can", name: "Canada", boss: "Marcus Dhillon", arch: "clutch" }
+  { id: "usa", name: "United States", boss: "Tyler Brooks", arch: "general" }
 ];
 export const THORNE_ID = "thorne";
 export const THORNE = { id: THORNE_ID, name: "Thorne's Invincible XI", strength: 999, human: false, kind: "thorne" };
@@ -184,7 +184,7 @@ export function playLeague(league, resultFn) {
 }
 
 // ---- the Champions Cup field: last season's winners + Thorne ----------------
-// season 0 seeds the 19 bosses; season N seeds season (N-1)'s league winners.
+// season 0 seeds the bosses; season N seeds season (N-1)'s league winners.
 export function cupField(seed, season, resultFn) {
   const entrants = REGIONS.map(rg => {
     if (season === 0) {
@@ -195,7 +195,7 @@ export function cupField(seed, season, resultFn) {
     const w = playLeague(buildLeague(seed, rg, season - 1), resultFn).winnerTeam;
     return { id: w.id, name: w.name, strength: w.strength, human: !!w.human, regionId: rg.id };
   });
-  return [THORNE, ...entrants];   // 20 teams
+  return [THORNE, ...entrants];   // every nation, and Thorne
 }
 
 // Thorne beats every AI side; only a human result stands against him.
@@ -210,7 +210,7 @@ export function cupResult(resultFn) {
 // ---- the Champions Cup: groups -> knockout ----------------------------------
 export function drawGroups(field, seed, season) {
   const order = shuffle(field, stream(seed, "cupdraw", season));
-  return [0, 1, 2, 3].map(g => order.filter((_, i) => i % 4 === g));  // 4 groups of 5
+  return [0, 1, 2, 3].map(g => order.filter((_, i) => i % 4 === g));  // dealt round four groups
 }
 function playGroup(teams, resFn) {
   const table = tableFrom(teams);

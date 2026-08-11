@@ -52,7 +52,7 @@
 
   // ---- any nation's served league record, fetched on demand ----------------
   // Nation pages want the REAL season - the matches the umpire banked - for
-  // any of the 19 leagues. Same egress manners as the England feed: probe the
+  // any of the sixteen leagues. Same egress manners as the England feed: probe the
   // tiny updated_at, download the body only when the umpire wrote something
   // new, and keep the last copy in localStorage so the page paints instantly.
   var LG_BODY = {}, LG_TS = {}, LG_BUSY = {}, LG_AT = {}, LG_WAIT = {};
@@ -97,7 +97,7 @@
   // The anchor is taken from THIS DEVICE'S NATION where there is one - a
   // manager's own league is the calendar he lives by - and from England, the
   // reference nation the cup schedule is cut from, where there is not.
-  // get() runs for all nineteen nations on every planet repaint, so this must
+  // get() runs for all sixteen nations on every planet repaint, so this must
   // not parse storage each time: the claim in memory answers for free, and the
   // cached one is read once per page.
   var ANCH_NAT = null, ANCH_READ = 0;
@@ -122,9 +122,9 @@
   }
   function lgFetch(rid, cb) {
     if (!rid) return;
-    // THE WHOLE PLANET AT ONCE. The world page now asks for all nineteen
+    // THE WHOLE PLANET AT ONCE. The world page now asks for all sixteen
     // nations' standings, so without a courtesy window a repaint would put
-    // nineteen probes on the wire every time it painted. Inside that window
+    // sixteen probes on the wire every time it painted. Inside that window
     // the copy already in hand IS the answer - the caller has it from get() -
     // and no callback fires (see the note above lgFlush).
     if (!LG_BUSY[rid] && LG_AT[rid] && Date.now() - LG_AT[rid] < LG_TTL) return;

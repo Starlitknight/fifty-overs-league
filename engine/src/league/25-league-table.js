@@ -1,7 +1,7 @@
 // ---- 25-league-table.js — The League, the real one ---------------------------
 // One design for every league in the world. #/league is your nation's table and
 // #/nation?n=<id> is anybody else's - the SAME page, the same four rooms, the
-// same served data. There is no second-class league: the world runs nineteen of
+// same served data. There is no second-class league: the world runs sixteen of
 // them under one set of rules, and they should read that way.
 //
 // The page is a club programme: a navy plate with the country painted behind
@@ -125,9 +125,8 @@
     ned: "The low country, playing above itself.", ire: "Green, damp and defiant.",
     zim: "Flame lilies and hard yards.", afg: "Mountain fire, learned in exile.",
     bgd: "The tigers, and a country that roars with them.", nep: "Cricket on the roof of the world.",
-    sco: "Highland steel, in a cold wind.", wal: "Dragons at the crease.",
-    ken: "The rift valley game.", usa: "The new frontier of an old sport.",
-    can: "True north, and a short summer to prove it."
+    sco: "Highland steel, in a cold wind.",
+    usa: "The new frontier of an old sport."
   };
   // EVERY CLUB WEARS A SHIELD. The flagship has a painted crest; the rest get
   // a monogram in the colours their own name draws - stable, distinct, and
@@ -587,7 +586,7 @@
           "<div class='fo-lgx-mile'><i>Best bowling</i><b>" + (bowl0 && bowl0.bb ? bowl0.bb.w + "/" + bowl0.bb.r : "&mdash;") + "</b></div>" +
           "<div class='fo-lgx-mile'><i>Rounds played</i><b>" + playedRounds + " of " + rounds + "</b></div></div>" +
           "<div class='fo-lgx-card'><h3>The book</h3><p class='fo-lgx-dim'>Every run and every wicket here was scored in a match the umpire played and banked. Nothing is estimated.</p>" +
-          "<p class='fo-lgx-dim'><a href='#/stats'>The Stats Centre &rsaquo;</a> reads the same book across your own club, this league and all nineteen at once.</p></div>";
+          "<p class='fo-lgx-dim'><a href='#/stats'>The Stats Centre &rsaquo;</a> reads the same book across your own club, this league and all sixteen at once.</p></div>";
 
       } else {
         // ---- the pennant race, one panel per flight ------------------------
@@ -752,7 +751,7 @@
     // ---- the plate: the country behind the name of its league --------------
     "html body #page .fo-lgx-plate{position:relative;overflow:hidden;border-radius:20px;background:linear-gradient(135deg,#0C1B2E,#173257 62%,#0E2140);box-shadow:0 22px 50px rgba(12,27,51,.26)}",
     // THE PENNANT IS A CUP. Every nation's league plays for its own trophy -
-    // the nineteen painted cups, standing in the plate where the map used to be
+    // the painted cups, standing in the plate where the map used to be
     "html body #page .fo-lgx-cup{position:absolute;right:20px;bottom:4px;height:calc(100% - 12px);width:auto;max-width:30%;object-fit:contain;object-position:bottom right;filter:drop-shadow(0 14px 26px rgba(0,0,0,.45))}",
     "html body #page .fo-lgx-glow{position:absolute;right:0;top:-30%;width:44%;height:160%;background:radial-gradient(closest-side,rgba(232,185,106,.22),transparent 72%);pointer-events:none}",
     "html body #page .fo-lgx-plate:after{content:'';position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--gold)}",

@@ -63,7 +63,7 @@
     } catch (e) { return null; }
   }
 
-  // ---- the nineteen: every league's champion, seeded ------------------------
+  // ---- the sixteen: every league's champion, seeded -------------------------
   function entrants(season) {
     var pl = P(), my = myNation(), now = Date.now();
     var out = [];
@@ -215,11 +215,11 @@
     // status line: the race, the countdown, the rounds, or the crown
     var status, chip;
     if (p.di < 18) { status = ""; chip = "THE RACE IS ON"; }
-    else if (done === 0) { status = "The nineteen are known. The play-ins open the cup at " + when("pi") + "."; chip = "THE DRAW IS MADE"; }
+    else if (done === 0) { status = "The sixteen are known. The play-ins open the cup at " + when("pi") + "."; chip = "THE DRAW IS MADE"; }
     else if (done < 5) { var nxt = ORDER[done]; status = STAGE_NM[nxt] + " " + (done === 4 ? "crowns the champion" : "come next") + " · " + when(nxt) + "."; chip = "CUP IN PROGRESS"; }
     else { status = (br && br.champion ? br.champion.name + " are champions of the world's clubs." : "The cup is decided."); chip = "CHAMPIONS CROWNED"; }
 
-    // the entrants: nineteen champions, seeded, yours in gold
+    // the entrants: every league champion, seeded, yours in gold
     var provisional = p.di < 18;
     // every club named here is a door to its own page
     var teamA = function (x, inner) {
@@ -271,7 +271,7 @@
       "</div>" +
       champHTML +
       bracketHTML +
-      "<div class='fo-cl-sec'><h3>The nineteen" + (provisional ? " <span>as the tables stand</span>" : " <span>champions all</span>") + "</h3>" + entRows + "</div>" +
+      "<div class='fo-cl-sec'><h3>The sixteen" + (provisional ? " <span>as the tables stand</span>" : " <span>champions all</span>") + "</h3>" + entRows + "</div>" +
       "<div class='fo-cl-sched'><h3>The road</h3>" + ORDER.map(function (st, i) {
         return "<div class='fo-cl-schrow" + (done > i ? " done" : done === i ? " next" : "") + "'><b>" + STAGE_NM[st] + "</b><span>" + when(st) + "</span></div>";
       }).join("") + "</div>" +

@@ -1635,40 +1635,6 @@
           sig: "wall", intel: "MacLeod cannot be hurried and won't be intimidated - he plans to still be there at the end. Win the match around him: strangle the other ten and leave the mountain unclimbed.",
           winln: "Ye out-lasted me. On this ground, in that wind - that's the only compliment I own. Take it.", lossln: "The weather's free, the runs are not. Away and practise your leaving, and come north again." }
       ] },
-    { id: "wal", nm: "Wales", cty: "Wales", arch: "engine", type: "Valley Swing", ac: "#A62A2E",
-      arrive: "Wales. A river past the ground, the hills singing by lunch, and a ball that swings under that grey cloud like it's been told to. Miss it early and they'll sing you off the park.",
-      pitch: "green", wx: "Drizzle",
-      cond: "Soft air off the Taff, low cloud, and a ball that hoops till lunch. Survive the morning and the valley opens up.",
-      gaffer: "It's England's weather with better singing. The new ball talks for fifteen overs - play late, leave loud, and when the choir starts, that's for them, not you.",
-      academy: "swing bowlers and left-handed stylists",
-      trophy: "The Red Dragon Shield", nats: ["Wales"],
-      clubs: [
-        { boss: 1, mx: 50, my: 58, nm: "Cardiff CC", city: "Cardiff", capt: "clutch",
-          leader: "Gareth Llewellyn", note: "late in-swing, later out-swing, and a baritone appeal",
-          gq: "Llewellyn swings it both ways off the same grip and appeals in harmony with the crowd. Fifteen overs of care buys you thirty-five of freedom.",
-          taunt: "The river brings the cloud and the cloud sings in Welsh. You'll not read a word of it.",
-          nug: "Cardiff: Sophia Gardens under low valley cloud, and Llewellyn bending the new ball like a hymn. It's the last swinging morning on the tour - everything you learned in England and Ireland, spent in one innings.",
-          mult: 1.13,
-          sig: "swing", intel: "Llewellyn's spell IS the match - both ways, no tells, choir behind him. Bank overs, not runs, till the shine dies; then the valley's flat and the singing stops.",
-          winln: "You played the morning like a Welshman. There's no higher praise in this ground - take the Shield and the song with you.", lossln: "The cloud came down and you went up. Learn the difference, bach, and come back for the encore." }
-      ] },
-    { id: "ken", nm: "Kenya", cty: "Kenya", arch: "finisher", type: "Highland Tempo", ac: "#237A46",
-      arrive: "Kenya. A mile above the sea, jacarandas round the rope, and a club that once put the whole World Cup on its backside. They've been waiting thirty years to do it again. Don't volunteer.",
-      pitch: "flat", wx: "Sunny",
-      cond: "Hard, quick and a mile high - the thin air carries every drive a bounce further and every top-edge over the rope.",
-      gaffer: "The altitude bats at both ends: full faces fly for six, mishits carry to the sponsors' tents. Bowl fuller than feels right and never post a short boundary sweeper on hope.",
-      academy: "athletic all-rounders and death-overs hitters",
-      trophy: "The Rift Valley Horn", nats: ["Kenya"],
-      clubs: [
-        { boss: 1, mx: 50, my: 58, nm: "Nairobi CC", city: "Nairobi", capt: "talisman",
-          leader: "David Otieno", note: "finishes innings the way lions finish sprints",
-          gq: "Otieno holds himself back till over thirty-five, then hits the thin air like it owes him money. Get him in early - a waiting finisher is a wasted one.",
-          taunt: "This ground has beaten world champions, rafiki. You are not world champions.",
-          nug: "Nairobi: gymkhana shade, a lightning outfield, and Otieno pacing the pavilion till the death overs. At altitude his sixes need no invitation. Drag him to the crease before the fifteenth or plan your final overs like a siege.",
-          mult: 1.14,
-          sig: "barrage", intel: "Everything Otieno's men save is spent after over thirty-five - at this altitude a good death over still leaks ten. Take wickets early so the barrage starts from the bunker, not the balcony.",
-          winln: "Thirty years we waited to shock the world again, and you shocked us instead. Asante - now the Horn travels.", lossln: "The altitude is ours, rafiki. Train your lungs and your yorkers and come up the hill again." }
-      ] },
     { id: "usa", nm: "United States", cty: "United States", arch: "blade", type: "Franchise Fireworks", ac: "#33366E",
       arrive: "The United States. A drop-in pitch inside a converted ballpark, fireworks on the scoreboard, and a team bought like a heist crew. Subtle it is not - loud, rich, and a good yard quicker than the accent lets on.",
       pitch: "flat", wx: "Hot",
@@ -1685,23 +1651,6 @@
           mult: 1.15,
           sig: "runmachine", intel: "Brooks hits till he misses - and his whole order is built the same. Every dot is a crisis for them; three in a row is a collapse rehearsal. Cutters, wide lines, long side. No fuel, no fireworks.",
           winln: "Scoreboard don't lie, partner. First outfit to out-entertain us in our own park - the Gauntlet's yours.", lossln: "That's what peak exit velocity looks like, friend. Go work on your slower ball and book a rematch." }
-      ] },
-    { id: "can", nm: "Canada", cty: "Canada", arch: "gloveman", type: "Polar Poise", ac: "#C2483B",
-      arrive: "Canada. Maple woods round a country ground an hour north of Toronto, and the politest team that will ever quietly take you apart. They'll apologise for every wicket. Then take the next one.",
-      pitch: "balanced", wx: "Chilly",
-      cond: "Cool air, honest carry, a slow morning dew - and a side that apologises for every wicket it takes.",
-      gaffer: "Nothing flashy, nothing free. They field like curlers - every angle swept clean before you've hit it. Manufacture runs; the loose ball comes twice an hour, eh.",
-      academy: "safe-handed keepers and tidy seam-bowling all-rounders",
-      trophy: "The Maple Crown", nats: ["Canada"],
-      clubs: [
-        { boss: 1, mx: 50, my: 58, nm: "King City CC", city: "King City", capt: "clutch",
-          leader: "Marcus Dhillon", note: "keeper-captain; nothing past him, ever, sorry",
-          gq: "Dhillon keeps like the puck must never cross the line and captains the same way. You won't be given a run after over ten. Bank early, then grind without complaint.",
-          taunt: "Sorry in advance about your average, bud.",
-          nug: "King City: maple shade, a keeper-captain who hasn't conceded a bye all season, and fielders who cut angles like hockey defencemen. The freebies end at over ten sharp. Whatever you've banked by then, you'll defend the rest of the afternoon.",
-          mult: 1.16,
-          sig: "safehands", intel: "Dhillon's side never beats itself - no byes, no overthrows, no second chances. Post a total with running and placement, because the boundary board is shut from over ten.",
-          winln: "First side all year to make us reach. Genuinely happy for you, bud - the Crown suits your trophy room.", lossln: "Sorry about that, eh. Tighten up the singles and swing by again - door's always open." }
       ] },
     // -- the last door: not a nation but a man. Unlocks when every nation
     //    in the universe is conquered; beating it ends the world tour.
@@ -6440,7 +6389,7 @@
         "<div class='eb'>The World &middot; Knockout</div>" +
         "<h1>The Champions Cup</h1>" +
         "<div class='fo-lg-style'><span class='pill'>19 Champions</span><span class='pill ghost'>Single knockout</span><span class='pill ghost'>One trophy</span></div>" +
-        "<p class='fo-lg-tag'>&ldquo;The champions of all nineteen national leagues meet under one sky. Win yours &mdash; and take your place here.&rdquo;</p>" +
+        "<p class='fo-lg-tag'>&ldquo;The champions of all sixteen national leagues meet under one sky. Win yours &mdash; and take your place here.&rdquo;</p>" +
         "</div></section>" +
         "<div class='fo-lg-body'>" +
         champBanner +

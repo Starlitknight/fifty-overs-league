@@ -30,10 +30,7 @@ export const FLAGSHIPS = {
   bgd: { name: 'Abahani Limited', ground: 'Sher-e-Bangla Stadium' },
   nep: { name: 'Tribhuvan Army Club', ground: 'The TU Ground' },
   sco: { name: 'The Grange', ground: 'Raeburn Place' },
-  wal: { name: 'Glamorgan', ground: 'Sophia Gardens' },
-  ken: { name: 'Nairobi Gymkhana', ground: 'The Gymkhana Ground' },
-  usa: { name: 'Philadelphia Cricket Club', ground: "St Martin's" },
-  can: { name: 'Ontario', ground: 'Maple Leaf Ground' }
+  usa: { name: 'Philadelphia Cricket Club', ground: "St Martin's" }
 };
 
 // England hand-named: Division One is the boss and seven first-flight
@@ -196,7 +193,7 @@ export const isFullMember = id => FULL.has(id);
 export const ASSOC_STR = 0.885;                // ~1.25 rungs
 export const NAT_STR = Object.fromEntries(
   ['eng', 'ire', 'ned', 'win', 'rsa', 'zim', 'aus', 'nzl', 'slk', 'sub', 'pak', 'afg',
-   'bgd', 'nep', 'sco', 'wal', 'ken', 'usa', 'can'].map(id => [id, FULL.has(id) ? 1 : ASSOC_STR]));
+   'bgd', 'nep', 'sco', 'usa'].map(id => [id, FULL.has(id) ? 1 : ASSOC_STR]));
 
 // AND WHAT A COUNTRY IS WORTH WHEN IT PLAYS AS A COUNTRY. A national side used
 // to have no strength of its own at all: nations.mjs picks the best fifteen

@@ -3,7 +3,7 @@
 // (scheduling, standings, bracket, idempotency) without the engine.
 import { test } from "node:test";
 import assert from "node:assert/strict";
-import { THORNE_ID, dayState, SEASON_DAYS, rng, hash32 } from "../engine/src/world/timeline.mjs";
+import { REGIONS, THORNE_ID, dayState, SEASON_DAYS, rng, hash32 } from "../engine/src/world/timeline.mjs";
 import { newWorldState, advanceTo, viewDay, leagueStandings } from "../engine/src/world/day.mjs";
 import { wireForDay } from "../engine/src/world/wire.mjs";
 
@@ -47,7 +47,7 @@ test("the Champions Cup resolves through the cursor and Thorne reigns", () => {
   const s = newWorldState(42);
   advanceTo(s, SEASON_DAYS - 1, stub);      // through the whole season incl. the final
   const cup = s.cups[0];
-  assert.equal(cup.field.length, 20);
+  assert.equal(cup.field.length, REGIONS.length + 1);
   assert.equal(cup.qualifiers.flat().length, 8);         // top 2 of four groups
   assert.equal(cup.champion, THORNE_ID);                 // Thorne wins
   assert.notEqual(cup.runnerUp, THORNE_ID);
@@ -59,7 +59,7 @@ test("the cursor runs multiple seasons; next Cup seeds from last season's winner
   const s = newWorldState(3);
   advanceTo(s, SEASON_DAYS * 2 - 1, stub);   // two full seasons
   assert.equal(s.championsLog.length, 2);
-  assert.equal(s.cups[1].field.length, 20);
+  assert.equal(s.cups[1].field.length, REGIONS.length + 1);
   // season 1's cup entrants are season 0's league winners (+ Thorne)
   const s0winners = new Set(Object.keys(s.leagues).filter(k => k.startsWith("0:")).map(k => leagueStandings(s, 0, k.split(":")[1])[0].id));
   const s1entrants = new Set(s.cups[1].field.filter(t => t.id !== THORNE_ID).map(t => t.id));
