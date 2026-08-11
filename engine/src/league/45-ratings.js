@@ -20,6 +20,22 @@
   function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
   var clamp10 = function (v) { return Math.max(0, Math.min(10, +v.toFixed(1))); };
 
+  // WHERE A BATTING ORDER IS CUT, AND WHAT EACH PIECE IS FOR.
+  //
+  // One panel printed two answers off one card. These bars cut the order
+  // three, three and the rest; the club match rating printed beside them -
+  // teamRatings in 00-core.js, the marking the world rankings stand on - cuts
+  // it one-to-three, four-to-seven, eight-down, the way a scorer does. So a
+  // number seven's seventy was THE TAIL on the bars and THE MIDDLE ORDER in
+  // the figure underneath, and a side whose seven and eight had made the runs
+  // read as having the best tail in the league.
+  //
+  // The cut and the expectation both come from that same marking now: the par
+  // figures are the engine's own - what a top three, a middle order and a tail
+  // are worth in a fifty-over innings.
+  window.FO_BAT_CUT = { top: [0, 3], middle: [3, 7], tail: [7, 11] };
+  window.FO_BAT_PAR = { top: 110, middle: 95, tail: 25 };
+
   // THE UNITS. Mirrors server/ratings.mjs line for line.
   window.foUnitRatings = function (inn) {
     if (!inn) return null;
@@ -50,7 +66,9 @@
     var g = function (k) { return ks.reduce(function (s, n) { return s + (fld[n][k] || 0); }, 0); };
     var ct = g("ct"), st = g("st"), ro = g("ro");
     var units = {
-      top: batUnit(bat.slice(0, 3), 110), middle: batUnit(bat.slice(3, 6), 110), tail: batUnit(bat.slice(6), 45),
+      top: batUnit(bat.slice(window.FO_BAT_CUT.top[0], window.FO_BAT_CUT.top[1]), window.FO_BAT_PAR.top),
+      middle: batUnit(bat.slice(window.FO_BAT_CUT.middle[0], window.FO_BAT_CUT.middle[1]), window.FO_BAT_PAR.middle),
+      tail: batUnit(bat.slice(window.FO_BAT_CUT.tail[0], window.FO_BAT_CUT.tail[1]), window.FO_BAT_PAR.tail),
       seam: bowlUnit(bowlers.filter(function (b) { return !isSpin(b); })),
       spin: bowlUnit(bowlers.filter(isSpin)),
       // the hands are marked on CHANCES, not on a count

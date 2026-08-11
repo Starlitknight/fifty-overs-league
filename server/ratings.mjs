@@ -69,6 +69,23 @@ export function ratePoints(pts, touched) {
 // ---------------------------------------------------------------------------
 const clamp10 = v => Math.max(0, Math.min(10, +v.toFixed(1)));
 
+// WHERE A BATTING ORDER IS CUT, AND WHAT EACH PIECE IS FOR.
+//
+// One panel printed two answers off one card. These bars cut the order three,
+// three and the rest; the club match rating printed beside them - teamRatings
+// in engine/src/00-core.js, the marking the world rankings stand on - cuts it
+// one-to-three, four-to-seven, eight-down, the way a scorer does. So a number
+// seven's seventy was THE TAIL on the bars and THE MIDDLE ORDER in the figure
+// underneath, and a side whose seven and eight had made the runs read as
+// having the best tail in the league.
+//
+// The cut and the expectation both come from that same marking now. The par
+// figures are the engine's own - what a top three, a middle order and a tail
+// are worth in a fifty-over innings - so the two readings of a card cannot
+// drift apart again without somebody moving them together.
+export const BAT_CUT = { top: [0, 3], middle: [3, 7], tail: [7, 11] };
+export const BAT_PAR = { top: 110, middle: 95, tail: 25 };
+
 export function unitRatings(inn) {
   if (!inn) return null;
   const bat = (inn.bat || []).filter(b => b && (b.b > 0 || b.out));
@@ -109,7 +126,9 @@ export function unitRatings(inn) {
   const field = clamp10(3.6 + 5.6 * (outs ? Math.min(1, held / outs) : 0) + 0.6 * st + 0.7 * ro);
 
   const units = {
-    top: batUnit(slice(0, 3), 110), middle: batUnit(slice(3, 6), 110), tail: batUnit(slice(6), 45),
+    top: batUnit(slice(BAT_CUT.top[0], BAT_CUT.top[1]), BAT_PAR.top),
+    middle: batUnit(slice(BAT_CUT.middle[0], BAT_CUT.middle[1]), BAT_PAR.middle),
+    tail: batUnit(slice(BAT_CUT.tail[0], BAT_CUT.tail[1]), BAT_PAR.tail),
     seam: bowlUnit(seam), spin: bowlUnit(spin), field
   };
   const got = Object.keys(units).filter(k => units[k] != null);
