@@ -852,6 +852,21 @@
           (tal ? "<em class='fo-s2-tchip'" + (RK.traitTip ? " title='" + E(RK.traitTip(p)) + "'" : "") + ">" +
             E(RK.trait ? RK.trait(p) : talentWord(tal)) + "</em> " : "") +
           E(roleWord(p.role)) + " &middot; " + E(det) + "</span></span>" +
+          // the same track the squad room's roster carries, so the two rosters
+          // stay one grid. A rival's dossier is a scout's view and holds no
+          // career book and no wage, so the cell prints what a scout can see
+          // and nothing he cannot.
+          (function () {
+            var c9 = p.career || null, bits9 = [];
+            if (c9 && (c9.m | 0)) {
+              if ((c9.inns | 0) || (c9.runs | 0))
+                bits9.push("<b>" + (c9.runs | 0) + "</b> runs" + (c9.hs != null ? " <u>HS " + (c9.hs | 0) + "</u>" : ""));
+              if (c9.wkts | 0) bits9.push("<b>" + (c9.wkts | 0) + "</b> wkts" + (c9.bb ? " <u>" + E(c9.bb) + "</u>" : ""));
+            }
+            return "<span class='fo-s2-rec'>" + (bits9.length
+              ? "<s>" + (c9.m | 0) + (c9.m === 1 ? " match" : " matches") + "</s><em>" + bits9.join(" &middot; ") + "</em>"
+              : "<s>Scouted</s><em class='none'>" + E(det) + "</em>") + "</span>";
+          })() +
           "<span class='fo-s2-hand'>" + (p.hand === "L" ? "Left Hand" : "Right Hand") + "</span>" +
           "<span class='fo-s2-age'><i>Age</i> " + (p.age | 0) + "</span>" +
           rostStars(p, cls) +
