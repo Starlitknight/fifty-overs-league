@@ -18,7 +18,7 @@ import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
 import { EPOCH, dayIx, daySettled, seedOf, cupDraw, natHour, scheduleOf, seasonSchedules, ROUNDS, isWindowRound,
          CYCLE, LEAGUE_DAYS, roundOfDay, dayOfRound, CUP_DAYS, PLAYOFF_DAYS, FA_DAYS, TRANSITION_DAY,
          WINDOW_DAYS, isWorldCupSeason, REST_DAYS, COLTS_DAYS } from './clock.mjs';
-import { livingPatch, evolveCountry } from './living.mjs';
+import { livingPatch, evolveCountry, LIVING_VERSION } from './living.mjs';
 import { calibrate, countryConfigs, BASE_XI, NAT_STR, HUMAN_STR,
          nationTeamStr, isFullMember } from './init-world.mjs';
 import { layCandidates, ageYouth, playColtsStage, computeColts, coltRecords,
@@ -886,6 +886,28 @@ export async function runDue(pool, host, country, { now = Date.now(), failAfter 
       out.push({ day: null, namedNatSquad: stands });
     }
   } catch (eNb) { console.error('standing squad failed for ' + country + ':', eNb.message); }
+  // THE FOLD, WHEN THE FOLD ITSELF HAS MOVED. evolveCountry runs inside a
+  // day's settle, and a day already marked done never reruns - so a change to
+  // what the fold WRITES sat waiting for the next world day, exactly as the
+  // redeal at the top of this function once did. The living layer carries a
+  // version; when it moves, each country is refolded once, here, outside the
+  // per-day guard. Self-guarded by its own ticks row, so this costs one cheap
+  // read per tick for every tick after it has fired - and because the fold is
+  // a pure function of the record, a refold settles the same figures it would
+  // have settled anyway, plus whatever is new.
+  try {
+    const foldKey = country + ':fold:' + LIVING_VERSION;
+    const claimed = await pool.query(
+      `INSERT INTO ticks(key, status) VALUES ($1,'running')
+       ON CONFLICT (key) DO UPDATE SET key=EXCLUDED.key RETURNING status`, [foldKey]);
+    if (claimed.rows[0].status !== 'done') {
+      await evolveCountry(pool, country, now, host);
+      await pool.query(`UPDATE ticks SET status='done', finished_at=now() WHERE key=$1`, [foldKey]);
+      await rebuildSnapshots(pool, country, now, { world: world });
+      out.push({ day: null, refolded: LIVING_VERSION });
+      console.log('refolded ' + country + ' at living version ' + LIVING_VERSION);
+    }
+  } catch (eFd) { console.error('refold failed for ' + country + ':', eFd.message); }
   return out;
 }
 

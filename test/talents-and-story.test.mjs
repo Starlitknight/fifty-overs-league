@@ -150,7 +150,7 @@ test('a man story is read off his record, not off this device', () => {
 
 test('the fold writes a moment only where it is already deciding one', () => {
   assert.match(LIVING, /if \(c\.m === 1\) mile\('debut'/, 'the first cap');
-  assert.match(LIVING, /L\.hs > c\.hs\) mile\('hs'/, 'a new highest score, before the record moves');
+  assert.match(LIVING, /L\.hs > c\.hs\)\s*\n\s*mile\('hs'/, 'a new highest score, before the record moves');
   assert.match(LIVING, /mile\('bb', 'Achieved his best '/, 'a new best set of figures');
   assert.match(LIVING, /mile\('hundred'/, 'and the maidens');
   assert.match(LIVING, /mile\('fifty'/);
@@ -160,4 +160,40 @@ test('the fold writes a moment only where it is already deciding one', () => {
     'a man with nothing to say carries no empty list');
   // and the deals come off the board that already has them
   assert.match(LIVING, /FROM listings WHERE status = 'sold'/, 'the transfers are read, not recorded twice');
+});
+
+// A MAN BOUGHT MID-CAREER. The fold's book is the CLUB's book - nought for
+// everybody who walks in - so the first thing a signing did here was recorded
+// as the first thing he had ever done: a league debut for a cricketer with two
+// hundred appearances behind him, and a "highest score" of 5 against the 143
+// already on his record. What he brought with him is the carry the market
+// froze onto him, and the serve measures every first against it.
+test('a signing debut is a first appearance, and his firsts are measured against what he brought', () => {
+  assert.match(LIVING, /txt: 'First appearance for ' \+ club\.name/,
+    'his first match here is named for what it is');
+  assert.match(LIVING, /m\.k === 'hs' && \(m\.v \| 0\) <= \(car\.hs \| 0\)\) continue/,
+    'a score his own record beats is not a highest score');
+  assert.match(LIVING, /m\.k === 'fivefor' && \(car\.w5 \| 0\) > 0\) continue/,
+    'nor is a five-for a maiden when he has one already');
+  // it can only judge them if the figure travels with the line
+  assert.match(LIVING, /\{ intl: !!L\.intl, v: L\.hs \}/, 'the score rides on the moment');
+  assert.match(LIVING, /\{ intl: !!L\.intl, w: L\.wkts, r: L\.conc \}/, 'and so do the figures');
+});
+
+// THE FOLD IS GATED BEHIND A DAY. evolveCountry runs inside a settle, and a
+// day already marked done never reruns - so the day this fold learned to write
+// milestones, every club in the world went on serving the old shape until its
+// next world day came due. The living layer carries a version, and the tick
+// refolds once when it moves, outside that guard.
+test('a fold that has moved is redone on the next tick', () => {
+  const TICK = readFileSync(join(ROOT, 'server', 'tick.mjs'), 'utf8');
+  assert.match(LIVING, /export const LIVING_VERSION = \d+;/, 'the fold has a version');
+  assert.match(TICK, /const foldKey = country \+ ':fold:' \+ LIVING_VERSION;/,
+    'and the tick guards a refold on it');
+  assert.match(TICK, /if \(claimed\.rows\[0\]\.status !== 'done'\) \{\s*\n\s*await evolveCountry/,
+    'refolding once, when the version has moved');
+  // the guard is the same ticks row the day lock uses, so it is idempotent and
+  // costs one read per tick once it has fired
+  assert.match(TICK, /INSERT INTO ticks\(key, status\) VALUES \(\$1,'running'\)\s*\n\s*ON CONFLICT \(key\) DO UPDATE SET key=EXCLUDED\.key RETURNING status`, \[foldKey\]\)/,
+    'self-guarded by its own ticks row');
 });

@@ -122,3 +122,32 @@ test('the fold is a derivation: settling twice does not write the story twice', 
   after9.forEach(x => assert.equal(x.p.mile.length, before9.get(x.slot + '|' + x.p.name),
     x.p.name + ': his story grew on a settle that played no cricket'));
 });
+
+// THE REFOLD. evolveCountry runs inside a day's settle, behind a per-day lock
+// that never reruns a day already marked done - so the day the fold learned to
+// write a man's milestones, every club in the world went on serving the old
+// shape until its next world day came due. A cricketer who had played a league
+// match read as one who had never played. The living layer carries a version
+// now, and runDue refolds each country once when it moves, outside that guard.
+test('a fold that has moved is redone on the next tick, not the next world day', async () => {
+  const { runDue } = await import('../tick.mjs');
+  const { LIVING_VERSION } = await import('../living.mjs');
+  const key = 'eng:fold:' + LIVING_VERSION;
+  // the day is settled and locked; strip the fold's own guard and its output,
+  // which is exactly the state a club is in the moment the fold's code changes
+  await pool.query('DELETE FROM ticks WHERE key = $1', [key]);
+  await pool.query(
+    `UPDATE clubs SET squad = (
+       SELECT jsonb_agg(p - 'mile') FROM jsonb_array_elements(squad) p)
+     WHERE country_id = 'eng'`);
+  assert.equal((await storied()).length, 0, 'nobody has a story to start with');
+
+  const out = await runDue(pool, host, 'eng', { now: EPOCH + START * DAY + 22 * 3600000, world: false });
+  assert.ok(out.some(x => x.refolded === LIVING_VERSION), 'the tick says it refolded');
+  assert.ok((await storied()).length >= 40, 'and the stories are back without a new day');
+  assert.equal((await pool.query('SELECT status FROM ticks WHERE key=$1', [key])).rows[0].status, 'done');
+
+  // and it does not fire again: one refold per version, one cheap read after
+  const again = await runDue(pool, host, 'eng', { now: EPOCH + START * DAY + 23 * 3600000, world: false });
+  assert.ok(!again.some(x => x.refolded), 'the guard holds on the next tick');
+});

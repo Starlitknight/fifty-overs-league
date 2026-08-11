@@ -417,6 +417,25 @@ export function talentsEarned(q, prog, talT) {
   return q;
 }
 
+// THE FOLD HAS A VERSION, AND WHEN IT CHANGES THE WORLD IS REFOLDED.
+//
+// Everything below is a derivation: it replays a country's whole record on
+// every settle, which is what lets a column added today arrive filled for
+// matches played a hundred seasons ago. That promise is only kept if the
+// derivation is actually redone - and it runs INSIDE a day's settle, behind
+// a per-day lock that never reruns a day already marked done. So on the day
+// the fold learns to write something new, every club in the world goes on
+// serving the old shape until its next world day comes due, which can be
+// most of a day away. A man who played yesterday reads as a man who has
+// never played.
+//
+// Bump this whenever the fold's OUTPUT changes, and runDue refolds each
+// country once - one cheap read per tick forever after. Do not bump it for
+// a change that cannot alter what a squad row says.
+//   1  the fold as it stood
+//   2  a man's milestones (his story so far) ride with his record
+export const LIVING_VERSION = 2;
+
 export async function evolveCountry(pool, country, now = Date.now(), host = null) {
   const clubs = (await pool.query(
     'SELECT slot, name, squad, youth, training FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
@@ -687,18 +706,32 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     // past. Because this replays the whole record on every settle, a page
     // opened tomorrow carries the moments of every match ever played, not just
     // the ones played since the day this was written.
+    //
+    // EVERY MOMENT CARRIES ITS OWN FIGURE. This book is the CLUB's book - it
+    // starts at nought for everyone who walks in - so a man bought mid-career
+    // makes a "highest score" of 5 on his first afternoon here with 143
+    // already on his record. The number rides with the line so the serve can
+    // measure it against what he brought with him (see story() below) and
+    // throw away the ones that were never firsts at all.
     const cls = L.intl ? 'international' : 'league';
-    const mile = (k, txt) => { if (e.mile.length < 60) e.mile.push({ d: day, s: L.season, r: L.round, k, txt }); };
-    if (c.m === 1) mile('debut', 'Made his ' + cls + ' debut');
-    if (L.batted && L.hs > 0 && L.hs > c.hs) mile('hs', 'Made his highest ' + cls + ' score of ' + L.hs);
+    const mile = (k, txt, x) => {
+      if (e.mile.length < 60) e.mile.push({ d: day, s: L.season, r: L.round, k, txt, ...(x || {}) });
+    };
+    if (c.m === 1) mile('debut', 'Made his ' + cls + ' debut', { intl: !!L.intl });
+    if (L.batted && L.hs > 0 && L.hs > c.hs)
+      mile('hs', 'Made his highest ' + cls + ' score of ' + L.hs, { intl: !!L.intl, v: L.hs });
     if (L.hs > c.hs) c.hs = L.hs;
-    if (L.runs >= 100 && c.h100 === 1) mile('hundred', 'Maiden ' + cls + ' century: ' + L.runs + ' off ' + L.balls);
-    else if (L.runs >= 50 && c.h50 === 1 && !c.h100) mile('fifty', 'Maiden ' + cls + ' fifty: ' + L.runs + ' off ' + L.balls);
+    if (L.runs >= 100 && c.h100 === 1)
+      mile('hundred', 'Maiden ' + cls + ' century: ' + L.runs + ' off ' + L.balls, { intl: !!L.intl });
+    else if (L.runs >= 50 && c.h50 === 1 && !c.h100)
+      mile('fifty', 'Maiden ' + cls + ' fifty: ' + L.runs + ' off ' + L.balls, { intl: !!L.intl });
     if (L.ovb > 0 && (!c.bb || L.wkts > c.bb.w || (L.wkts === c.bb.w && L.conc < c.bb.r))) {
-      if (L.wkts > 0) mile('bb', 'Achieved his best ' + cls + ' bowling figures of ' + L.wkts + '-' + L.conc);
+      if (L.wkts > 0) mile('bb', 'Achieved his best ' + cls + ' bowling figures of ' + L.wkts + '-' + L.conc,
+        { intl: !!L.intl, w: L.wkts, r: L.conc });
       c.bb = { w: L.wkts, r: L.conc };
     }
-    if (L.wkts >= 5 && c.w5 === 1) mile('fivefor', 'Maiden ' + cls + ' five-for: ' + L.wkts + '-' + L.conc);
+    if (L.wkts >= 5 && c.w5 === 1)
+      mile('fivefor', 'Maiden ' + cls + ' five-for: ' + L.wkts + '-' + L.conc, { intl: !!L.intl });
     // the workload rides raw: the fold below prices it against the MAN -
     // his trade sets the per-over rate, his gloves and his armband add bills
     // the scorecard line alone cannot know
@@ -819,7 +852,27 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     // as the whole story so far; sixty lines is a long career and a cap the
     // squad blob will never notice.
     const story = (q, mile) => {
-      const all = mile.concat((deals.get(q.name) || []).map(d => ({
+      // A MAN BOUGHT MID-CAREER DID NOT DEBUT THE DAY HE ARRIVED, and the 5 he
+      // made that afternoon was not the highest score of his life. The book
+      // above is this CLUB's book - nought for everybody who walks in - so
+      // every first it recorded was a first HERE. What he brought with him is
+      // the carry the market froze onto him: where there is one, his first
+      // match is a first appearance for the club, and any "best" his own
+      // record already beats is not a moment at all and is struck out.
+      const said = [];
+      for (const m of mile) {
+        const car = m.intl ? q.carryIntl : q.carry;
+        if (!car || !car.m) { said.push(m); continue; }
+        if (m.k === 'debut') { said.push({ ...m, txt: 'First appearance for ' + club.name }); continue; }
+        if (m.k === 'hs' && (m.v | 0) <= (car.hs | 0)) continue;
+        if (m.k === 'bb' && car.bb && ((m.w | 0) < (car.bb.w | 0) ||
+          ((m.w | 0) === (car.bb.w | 0) && (m.r | 0) >= (car.bb.r | 0)))) continue;
+        if (m.k === 'hundred' && (car.h100 | 0) > 0) continue;
+        if (m.k === 'fifty' && ((car.h50 | 0) > 0 || (car.h100 | 0) > 0)) continue;
+        if (m.k === 'fivefor' && (car.w5 | 0) > 0) continue;
+        said.push(m);
+      }
+      const all = said.concat((deals.get(q.name) || []).map(d => ({
         d: d.day, k: 'buy',
         txt: d.how === 'club' && d.from
           ? 'Transferred from ' + d.from + ' for $' + (d.fee | 0).toLocaleString('en-US')
