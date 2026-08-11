@@ -1669,7 +1669,14 @@
         var m = (h.textContent || "").match(/Round\s+(\d+)\s+of\s+\d+/);
         if (m) h.innerHTML = h.innerHTML.replace(/-\s*[^<]*\d{4}/, "- " + dailyDate(+m[1] - 1));
       });
-      document.querySelectorAll("#page table").forEach(function (tb) {
+      // A BLANKET PASS NEEDS A WAY TO BE TOLD NO. This stamps the league's
+      // kick-off hour under every date in every table that has a Date column,
+      // which is right for a fixture list and wrong for anything else: the
+      // transfer register is a table with a Date column, and every deal in it
+      // read "9:00 AM ET" - the hour the CRICKET starts, printed against the
+      // day a cheque cleared. A table whose dates are not matchdays says so,
+      // and this leaves it alone.
+      document.querySelectorAll("#page table:not(.fo-nomtime)").forEach(function (tb) {
         var dateIx = -1, ths = tb.querySelectorAll("th");
         ths.forEach(function (th) { if (dateIx < 0 && /^\s*date\s*$/i.test(th.textContent)) dateIx = th.cellIndex; });
         if (dateIx < 0) return;

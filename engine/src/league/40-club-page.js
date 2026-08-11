@@ -741,7 +741,13 @@
           "<div id='fo-cp-chlist'></div></div>";
       }
 
-      var TABS = [["overview", "Overview"], ["squad", "Squad"], ["record", "Results"], ["honours", "Records"]];
+      // A ROOM WITH NO DOOR IS NOT A ROOM. The transfer register has been
+      // built and skinned since 038 and was reachable only by typing its
+      // address: no tab named it and no card linked to it, so the one page
+      // that answers "is this a buying club or a selling one" - the question
+      // you ask before you deal with somebody - was invisible. It is a tab.
+      var TABS = [["overview", "Overview"], ["squad", "Squad"], ["record", "Results"],
+                  ["transfers", "Transfers"], ["honours", "Records"]];
       var tabBar = "<div class='fo-cd-tabs' role='tablist'>" + TABS.map(function (t) {
         return "<a role='tab' aria-selected='" + (tab === t[0] ? "true" : "false") + "'" +
           " class='" + (tab === t[0] ? "on" : "") + "' href='#/team?c=" + encodeURIComponent(cid) + "&s=" + slot + "&t=" + t[0] + "'>" + t[1] + "</a>";
@@ -1045,12 +1051,43 @@
             return "<div class='m'><b>" + m9.t + "</b><span>" + m9.s + "</span></div>";
           }).join("") + "</div></div>";
 
+        // -- the transfer desk, in four figures and the last few deals -------
+        // The register itself is a page (the Transfers tab); this is the
+        // glance that sends you to it, in the same shape as the diary card:
+        // what the club has spent, what it has recouped, and who moved last.
+        var tf9 = transfersOf(cid + ":" + slot, cid, slot, function () {
+          if ((location.hash || "").indexOf("#/team") === 0) window.foRenderClubPage();
+        });
+        var trBody9;
+        if (tf9.loading || !tf9.d) {
+          trBody9 = "<p class='fo-cd-dim'>" + (tf9.loading ? "Opening the transfer register&hellip;"
+            : "The register could not be reached.") + "</p>";
+        } else {
+          var D9 = tf9.d, dl9 = D9.deals || [];
+          trBody9 = "<div class='sum'>" +
+            "<div class='k'><span>Paid out</span><b>" + trMoney(D9.spent) + "</b></div>" +
+            "<div class='k'><span>Taken in</span><b>" + trMoney(D9.received) + "</b></div>" +
+            "<div class='k" + (+D9.net >= 0 ? " up" : " dn") + "'><span>Net</span><b>" + trMoney(D9.net) + "</b></div>" +
+            "<div class='k'><span>Deals</span><b>" + (D9.transfers | 0) + "</b></div>" +
+            "</div>" +
+            (dl9.length ? dl9.slice(0, 4).map(function (d9) {
+              var in9 = d9.way === "in";
+              return "<div class='r'><i class='" + (in9 ? "in" : "out") + "'>" +
+                (d9.how === "released" ? "Rel" : d9.how === "free" ? "Free" : in9 ? "In" : "Out") + "</i>" +
+                "<span class='who'>" + E(d9.player) + "</span>" +
+                "<span class='fe'>" + trMoney(d9.fee) + "</span></div>";
+            }).join("")
+              : "<p class='fo-cd-dim'>No player has come or gone yet.</p>");
+        }
+        var trCard = "<div class='fo-cd-card fo-cd-trc'>" + sh("Transfer desk") + trBody9 +
+          "<a class='fo-cd-lnk' href='" + hrefT("transfers") + "'>Full transfer history</a></div>";
+
         bodyHTML =
           "<div class='fo-cd-z1'>" + idCard + gCard + posCard + "</div>" +
           tabBar +
           "<div class='fo-cd-z2'>" + nfCard + rfCard + diCard + "</div>" +
           "<div class='fo-cd-z3'>" + cmpCard + snCard + hnCard + "</div>" +
-          tlCard + chHTML;
+          trCard + tlCard + chHTML;
       } else if (tab === "record") {
         bodyHTML = "<div class='fo-cp-panel'>" +
           "<div class='fo-cp-ph'><h2>&#10022; The record &#10022;</h2>" +
@@ -1195,8 +1232,9 @@
             kvT("Average sold", D.avgSell == null ? "&mdash;" : trMoney(D.avgSell)) +
             "</div>";
           trBody = sums + (deals.length
-            ? "<div class='fo-cp-scroll'><table class='fo-cp-tr'>" +
-              "<thead><tr><th>S</th><th>Date</th><th>Deal</th><th class='nm'>Player</th>" +
+            // fo-nomtime: these dates are the days deals settled, not matchdays
+            ? "<div class='fo-cp-scroll'><table class='fo-cp-tr fo-nomtime'>" +
+              "<thead><tr><th>Season</th><th>Date</th><th>Deal</th><th class='nm'>Player</th>" +
               "<th class='nm'>To / from</th><th>Age</th><th>Fee</th></tr></thead><tbody>" +
               deals.map(function (d) {
                 var inb = d.way === "in";
@@ -1484,6 +1522,18 @@
       ".fo-cd-di .d{flex:none;width:42px;font:600 11px/1.7 Manrope,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--acc)}",
       ".fo-cd-di p{font:400 13px/1.5 Manrope,sans-serif;color:#33415a;margin:0;min-width:0}",
       "html body #page .fo-cd-di p a{color:var(--acc) !important;text-decoration:none !important;font-weight:600}",
+      // the transfer desk: four figures across the top, then who moved last
+      ".fo-cd-trc .sum{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px;margin:0 0 6px}",
+      ".fo-cd-trc .k{background:rgba(20,32,47,.035);border-radius:10px;padding:9px 11px}",
+      ".fo-cd-trc .k span{display:block;font:600 10px/1 Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(20,32,47,.45)}",
+      ".fo-cd-trc .k b{display:block;margin-top:5px;font:700 15px/1.15 Manrope,sans-serif;color:var(--navy);font-variant-numeric:tabular-nums}",
+      ".fo-cd-trc .k.up b{color:#1F7A50}.fo-cd-trc .k.dn b{color:#B23230}",
+      ".fo-cd-trc .r{display:flex;align-items:center;gap:10px;padding:8.5px 0;border-bottom:1px solid rgba(20,32,47,.05)}",
+      ".fo-cd-trc .r:last-of-type{border-bottom:0}",
+      ".fo-cd-trc i{flex:none;min-width:38px;text-align:center;font:700 10px/1 Manrope,sans-serif;font-style:normal;letter-spacing:.1em;text-transform:uppercase;color:#fff;border-radius:6px;padding:5px 6px;background:#41577A}",
+      ".fo-cd-trc i.in{background:#1F7A50}.fo-cd-trc i.out{background:#B07C22}",
+      ".fo-cd-trc .who{font:500 12.5px/1.35 Manrope,sans-serif;color:var(--ink);min-width:0}",
+      ".fo-cd-trc .fe{margin-left:auto;font:600 12.5px/1.35 Manrope,sans-serif;color:#5b6879;font-variant-numeric:tabular-nums;white-space:nowrap}",
       // competitions
       "html body #page .fo-cd-cmp .r{display:flex;align-items:center;gap:10px;padding:9px 0;border-bottom:1px solid rgba(20,32,47,.05);text-decoration:none !important;color:inherit}",
       ".fo-cd-cmp .r:last-of-type{border-bottom:0}",
@@ -1665,7 +1715,9 @@
       // the transfer register: six figures across the top, then the deals
       ".fo-cp-trsum{display:grid;grid-template-columns:repeat(auto-fit,minmax(126px,1fr));gap:8px;margin-bottom:14px}",
       ".fo-cp-trk{background:#FFFEFC;border:1px solid rgba(12,27,51,.1);border-radius:10px;padding:9px 11px}",
-      ".fo-cp-trk span{display:block;font:600 11px/1 Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(12,27,51,.45)}",
+      // the label rides on one line: "AVERAGE BOUGHT" wrapped at .16em and left
+      // one tile of the six a head taller than its neighbours
+      ".fo-cp-trk span{display:block;white-space:nowrap;font:600 10px/1 Manrope,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(12,27,51,.45)}",
       ".fo-cp-trk b{display:block;margin-top:5px;font:700 16px/1.15 Manrope,sans-serif;color:var(--navy);font-variant-numeric:tabular-nums}",
       ".fo-cp-trk.up b{color:var(--grn)}.fo-cp-trk.dn b{color:#B23230}",
       ".fo-cp-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:0 -4px;padding:0 4px}",
