@@ -386,7 +386,9 @@
     var k = cid + ":" + slot;
     var apply = function (names) {
       if (!names || !names.length) return;
-      [].slice.call(document.querySelectorAll(".fo-cp-row .nm b, .fo-cp-starn b")).forEach(function (el) {
+      // the Roster's name cell, which is where a man's name lives on this page
+      // now that the squad tab is drawn in the squad room's own shape
+      [].slice.call(document.querySelectorAll(".fo-cp-rost .fo-s2-id b")).forEach(function (el) {
         if (el.querySelector(".fo-cp-sale")) return;
         var nm = (el.textContent || "").trim();
         for (var i = 0; i < names.length; i++) {
@@ -464,7 +466,6 @@
     return "<img class='fo-cp-ico' src='" + roleIcon(p) + "' alt='' onerror=\"this.style.display='none'\">";
   }
 
-  var SORTS = [["ovr", "Strongest first"], ["age", "Youngest first"], ["wage", "Best paid"], ["name", "By name"]];
 
   // ---- A GROUND FOR EVERY CLUB ----------------------------------------------
   // Only a quarter of the world's grounds are painted. Every club whose own
@@ -539,7 +540,7 @@
     var q = qs(), cid = q.c || "eng", slot = parseInt(q.s || "0", 10) || 0;
     var cl = claim();
     var isMine = !!(cl && cl.country === cid && cl.slot === slot);
-    var tab = q.t || "overview", sortKey = q.o || "ovr";
+    var tab = q.t || "overview";
 
     var lg = null; try { lg = window.__foWorldLg ? window.__foWorldLg.get(cid) : null; } catch (e) {}
     try { if (window.__foWorldLg) window.__foWorldLg.want(cid, function () { if ((location.hash || "").indexOf("#/team") === 0) window.foRenderClubPage(); }); } catch (e) {}
@@ -771,47 +772,87 @@
       }).join("") + "</div>";
 
       // ---- the roster ------------------------------------------------------
+      // strongest first inside each group, which is how the dossier arrives
       var sorted = players.slice();
-      if (sortKey === "age") sorted.sort(function (a, b) { return (a.age || 99) - (b.age || 99); });
-      else if (sortKey === "wage") sorted.sort(function (a, b) { return (b.wage || 0) - (a.wage || 0); });
-      else if (sortKey === "name") sorted.sort(function (a, b) { return String(a.name).localeCompare(String(b.name)); });
 
       // the red star, on a rival's men as on your own: a club dossier that does
       // not say who is an international is hiding the thing you scout for
       var natStar = function (nm2) {
         try { return window.foNatStar ? window.foNatStar(nm2, slot, { rid: cid }) : ""; } catch (eNs) { return ""; }
       };
-      var star = sorted[0];
-      var starCard = star ? "<a class='fo-cp-star' href='" + playerHref(cid, slot, isMine, star.name) + "'>" +
-        "<img class='fo-cp-face' src='" + faceOf(star) + "' alt='' onerror=\"this.style.display='none'\">" +
-        "<div class='fo-cp-starin'>" +
-        "<div class='fo-cp-starn'>" + (natFlag(star.nat) ? "<img src='" + natFlag(star.nat) + "' alt='' onerror=\"this.style.display='none'\">" : "") +
-        "<b>" + E(star.name) + natStar(star.name) + "</b></div>" +
-        "<div class='fo-cp-starr'>" + E(roleWord(star.role)) + "</div>" +
-        "<div class='fo-cp-starf'><i>Form</i><span class='fo-cp-dots'>" + formDots(star.form) + "</span></div>" +
-        "<div class='fo-cp-startags'>" + (star.talents || []).slice(0, 2).map(function (t) {
-          return "<em>" + E(talentWord(t)) + "</em>"; }).join("") + "</div>" +
-        "</div>" +
-        "<div class='fo-cp-starnums'>" +
-        "<div class='fo-cp-starovr'><i>OVR</i><b>" + (star.ovr || "&mdash;") + "</b></div>" +
-        "<div class='fo-cp-starval'><i>Value</i><b>" + money(star.value) + "</b></div>" +
-        "</div></a>" : "";
-
-      var rosterRows = sorted.slice(1).map(function (p, i) {
-        return "<a class='fo-cp-row' href='" + playerHref(cid, slot, isMine, p.name) + "'>" +
-          "<span class='rk'>" + (i + 2) + "</span>" +
-          "<span class='rl' title='" + E(roleWord(p.role)) + "'>" + roleGlyph(p) + "</span>" +
-          "<span class='nm'><b>" + E(p.name) + natStar(p.name) + "</b><i>" + E(p.bowl && p.bowl !== "Does not bowl" ? p.bowl : roleWord(p.role)) + "</i></span>" +
-          "<span class='ov'>" + (p.ovr || "&mdash;") + "</span>" +
-          "<span class='fm'>" + formDots(p.form) + "</span>" +
-          "<span class='hd'>" + (p.hand === "L" ? "LHB" : "RHB") + "</span>" +
-          "<span class='wg'>" + money(p.wage) + "</span>" +
+      // ---- THE ROSTER, FOR SOMEBODY ELSE'S CLUB ----------------------------
+      //
+      // A rival's squad was a table: rank, glyph, name, overall, form, hand,
+      // wage. Your own squad is the Roster - the men grouped by what they are
+      // for, each with his face, his flag, his craft and a strip of ten stars.
+      // One of those is how this game shows a squad and the other was a
+      // spreadsheet, and the whole point of opening a rival's page is to size
+      // his players up against your own, which cannot be done across two
+      // different pictures of a cricketer.
+      //
+      // So this is the Roster, drawn with the squad room's OWN skin - its
+      // sections, its row grid, its star strip - lent over the wall as
+      // __foRosterKit, because the league layer is not one scope. What it does
+      // not have is what a scout may not see: the fifteen raw skills, the
+      // training plan, the expanding detail and the captaincy actions.
+      // Everything printed here is on the public dossier (016 and after),
+      // including the star composites, which are published as summaries
+      // precisely so a rival's men can wear the same stars their own manager
+      // sees rather than a guess at them.
+      var RK = window.__foRosterKit || {};
+      try { if (RK.css) RK.css(); } catch (eCss) {}
+      var rostClass = function (p) { return RK.classOf ? RK.classOf(p) : "bat"; };
+      var rostStars = function (p, cls) {
+        try {
+          var sf = window.foStarsFor; if (!sf) return "";
+          var cb = p.batComp, cw = p.bowlType ? p.bowlComp : null;
+          if (cb == null && cw == null) return "";
+          if (cb == null) cb = 0;
+          // the same choice the squad room makes: a bowler is starred on his
+          // bowling, an all-rounder on whichever of the two is higher
+          var useBowl = (cls === "bowl" && cw != null) || (cls === "ar" && cw != null && cw > cb);
+          return "<span class='fo-s2-st10" + (useBowl ? " bwl" : "") + "'>" +
+            sf.html(sf.stars(useBowl ? cw : cb)) + "</span>";
+        } catch (eSt) { return ""; }
+      };
+      var rostRow = function (p) {
+        var cls = rostClass(p), ovr = p.ovr | 0;
+        var det = (p.type && p.type !== "none" && p.type !== "Does not bowl") ? p.type
+          : (p.hand === "L" ? "LHB" : "RHB");
+        var fg = natFlag(p.nat), fc = faceOf(p);
+        var tal = (p.talents || [])[0];
+        var ix = FORMW.indexOf(String(p.form || "steady").toLowerCase());
+        var en = { pct: 100, raw: "rested", tired: false };
+        try { if (RK.energyOf) en = RK.energyOf(p); } catch (eEn) {}
+        var ec = en.tired ? "#B23230" : en.pct >= 80 ? "#177A57" : "#8F6A1C";
+        return "<a class='fo-s2-row' href='" + playerHref(cid, slot, isMine, p.name) + "'>" +
+          "<span class='fo-s2-pic'>" +
+          (fc ? "<img class='face' src='" + E(fc) + "' alt='' loading='lazy' decoding='async'>" : "") +
+          (fg ? "<em class='fo-s2-flag'><img src='" + E(fg) + "' alt='' onerror=\"this.parentNode.style.display='none'\"></em>" : "") +
+          "</span>" +
+          "<span class='fo-s2-id'><b>" + E(p.name) + natStar(p.name) + "</b><span>" +
+          (tal ? "<em class='fo-s2-tchip'" + (RK.traitTip ? " title='" + E(RK.traitTip(p)) + "'" : "") + ">" +
+            E(RK.trait ? RK.trait(p) : talentWord(tal)) + "</em> " : "") +
+          E(roleWord(p.role)) + " &middot; " + E(det) + "</span></span>" +
+          "<span class='fo-s2-hand'>" + (p.hand === "L" ? "Left Hand" : "Right Hand") + "</span>" +
+          "<span class='fo-s2-age'><i>Age</i> " + (p.age | 0) + "</span>" +
+          rostStars(p, cls) +
+          "<span class='fo-s2-form'>" + (RK.formGlyph ? RK.formGlyph({ formIx: ix < 0 ? 3 : ix }) : "") + "</span>" +
+          "<span class='fo-s2-fit'><i><u style='width:" + en.pct + "%;background:" + ec + "'></u></i>" +
+          "<b style='color:" + ec + "'>" + en.pct + "</b></span>" +
+          "<b class='fo-s2-ovr' style='color:" + (RK.qCol ? RK.qCol(ovr) : "#14243A") + "'>" + (ovr || "&mdash;") + "</b>" +
+          "<span class='fo-s2-car'>&rsaquo;</span>" +
           "</a>";
-      }).join("");
+      };
+      var rosterRows = [["bat", "Batters"], ["ar", "All-rounders"], ["bowl", "Bowlers"], ["wk", "Wicketkeepers"]]
+        .map(function (sec) {
+          var men = sorted.filter(function (p) { return rostClass(p) === sec[0]; });
+          if (!men.length) return "";
+          return "<div class='fo-s2-sec'><div class='fo-s2-seck'><span>" + sec[1] + "</span><em>" +
+            men.length + " player" + (men.length === 1 ? "" : "s") + "</em></div>" +
+            men.map(rostRow).join("") + "</div>";
+        }).join("");
 
-      var sortSel = "<select id='fo-cp-sort'>" + SORTS.map(function (s) {
-        return "<option value='" + s[0] + "'" + (s[0] === sortKey ? " selected" : "") + ">" + s[1] + "</option>";
-      }).join("") + "</select>";
 
       var bodyHTML;
       if (tab === "overview") {
@@ -1295,15 +1336,14 @@
           (feed.mine ? "<span class='fo-cp-full'>Your club &middot; <b>teamsheets shown</b></span>" : "") + "</div>" +
           evBody + "</div>";
       } else {
-        bodyHTML = "<div class='fo-cp-panel'>" +
-          "<div class='fo-cp-ph'><h2>&#10022; First XI &#10022;</h2>" +
-          "<span class='fo-cp-full'>Full squad <b>" + players.length + "</b></span>" +
-          "<span class='fo-cp-tools'>" + sortSel + "</span></div>" +
-          (players.length
-            ? starCard +
-              "<div class='fo-cp-cols'><span></span><span></span><span>Player</span><span>OVR</span>" +
-              "<span>Form</span><span>Hand</span><span>Wage</span></div>" +
-              rosterRows
+        // THE SORT PICKER GOES WITH THE TABLE IT SORTED. The Roster is grouped
+        // by what a man is for and ordered by class inside each group, which
+        // is an answer to the question the picker was asking; two orderings
+        // arguing over one list is worse than either.
+        bodyHTML = "<div class='fo-cp-panel fo-cp-rost'>" +
+          "<div class='fo-cp-ph'><h2>&#10022; The squad &#10022;</h2>" +
+          "<span class='fo-cp-full'>Full squad <b>" + players.length + "</b></span></div>" +
+          (players.length ? rosterRows
             : "<p class='fo-cp-dim'>The squad list is on its way from the World Service&hellip;</p>") +
           "</div>";
       }
@@ -1346,12 +1386,6 @@
       } catch (eK8) {}
       try { saleMarks(cid, slot); } catch (eSm) {}
 
-      try {
-        var sel = document.getElementById("fo-cp-sort");
-        if (sel) sel.addEventListener("change", function () {
-          location.hash = "#/team?c=" + encodeURIComponent(cid) + "&s=" + slot + "&t=" + tab + "&o=" + sel.value;
-        });
-      } catch (eSo) {}
       try {
         var chb = document.getElementById("fo-cd-chbtn");
         if (chb) chb.addEventListener("click", function () {
@@ -1624,47 +1658,31 @@
       ".fo-cp-ph h2{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:26px;color:var(--navy);margin:0}",
       ".fo-cp-full{font:600 11px/1 Manrope,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(12,27,51,.5)}",
       ".fo-cp-full b{color:var(--grn);margin-left:5px}",
-      ".fo-cp-tools{margin-left:auto}",
-      "html body #page .fo-cp-tools select{background:#FFFEFC !important;color:var(--navy) !important;border:1px solid rgba(12,27,51,.18);border-radius:8px;padding:9px 12px;font:600 11px/1 Manrope,sans-serif;letter-spacing:.1em;text-transform:uppercase;-webkit-appearance:menulist;appearance:menulist}",
-      ".fo-cp-star{position:relative;display:flex;align-items:stretch;gap:14px;background:linear-gradient(150deg,#16452F,#0E2C1F);border:2px solid var(--gold);border-radius:12px;padding:14px 16px;margin-bottom:16px;overflow:hidden;min-height:140px}",
       ".fo-cp-face{position:absolute;left:0;top:0;height:100%;width:126px;object-fit:cover;object-position:top center;-webkit-mask-image:linear-gradient(90deg,#000 55%,transparent);mask-image:linear-gradient(90deg,#000 55%,transparent)}",
-      ".fo-cp-starin{position:relative;z-index:2;margin-left:124px;display:flex;flex-direction:column;justify-content:center;gap:5px;min-width:0}",
-      ".fo-cp-starn{display:flex;align-items:center;gap:8px}",
-      ".fo-cp-starn img{width:19px;height:13px;object-fit:cover;border-radius:2px}",
-      ".fo-cp-starn b{font:700 22px/1.1 Manrope,sans-serif;color:#FFFEFC;text-transform:uppercase}",
-      ".fo-cp-starr{font:500 12.5px/1.3 Manrope,sans-serif;color:rgba(255,253,247,.7)}",
-      ".fo-cp-starf{display:flex;align-items:center;gap:9px;margin-top:2px}",
-      ".fo-cp-starf i{font:600 11px/1 Manrope,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,253,247,.5);font-style:normal}",
       ".fo-cp-dots{display:inline-flex;gap:4px}",
       ".fo-cp-dots i{width:8px;height:8px;border-radius:50%;background:rgba(255,253,247,.22);display:block}",
       ".fo-cp-dots i.on{background:#4FBF85}",
+      // THE ROSTER, AS A RIVAL READS IT. The squad room draws these rows to
+      // be opened in place; here every row is a door to the man's page, so it
+      // is an anchor and wears an anchor's manners. Nothing else about the
+      // shape is restated - the skin is the squad room's own.
+      "html body #page .fo-cp-rost a.fo-s2-row{color:#14243A !important;text-decoration:none !important}",
+      "html body #page .fo-cp-rost a.fo-s2-row:hover{background:#FFFDF6}",
+      ".fo-cp-rost .fo-s2-sec:last-child{margin-bottom:0}",
+      // the panel's padding is right for a page of text and wrong for a row of
+      // nine columns, where the name is the first thing to be squeezed out
+      // THE ROWS READ LEFT TO RIGHT. This page sets a right alignment high up,
+      // for the figures the old squad TABLE put in its right-hand columns; a
+      // roster row lays its own cells out and inherits it as a name pushed to
+      // the far side of a column it was given the width of.
+      "html body #page .fo-cp-rost .fo-s2-row{text-align:left}",
+      "html body #page .fo-cp-rost .fo-s2-ovr,html body #page .fo-cp-rost .fo-s2-age{text-align:right}",
+      "html body #page .fo-cp-panel.fo-cp-rost{padding:20px 12px 18px}",
+      "@media (max-width:760px){html body #page .fo-cp-panel.fo-cp-rost{padding:13px 3px 13px}html body #page .fo-cp-rost .fo-s2-sec{margin-bottom:10px}}",
+      ".fo-cp-rost .fo-s2-car{color:rgba(20,36,58,.4);font-size:17px;text-align:center}",
       ".fo-cp-sale{display:inline-block;font:700 11px/1 Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#7A5210;background:linear-gradient(120deg,#F3DFA9,#E8B96A);border-radius:5px;padding:3.5px 6px;vertical-align:2px;margin-left:7px;white-space:nowrap}",
-      ".fo-cp-startags{display:flex;gap:6px;flex-wrap:wrap;margin-top:4px}",
-      ".fo-cp-startags em{font-style:normal;font:700 11px/1 Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#BFE8CF;background:rgba(79,191,133,.18);border:1px solid rgba(79,191,133,.34);border-radius:6px;padding:5px 8px}",
-      ".fo-cp-starnums{position:relative;z-index:2;margin-left:auto;display:flex;align-items:center;gap:22px;padding-left:16px}",
-      ".fo-cp-starovr,.fo-cp-starval{text-align:right}",
-      ".fo-cp-starovr i,.fo-cp-starval i{display:block;font:600 11px/1 Manrope,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(255,253,247,.5);font-style:normal}",
-      ".fo-cp-starovr b{display:block;font:700 42px/1 Manrope,sans-serif;color:var(--gold);font-variant-numeric:tabular-nums}",
-      ".fo-cp-starval b{display:block;font:700 17px/1.2 Manrope,sans-serif;color:#FFFEFC;margin-top:4px}",
-      ".fo-cp-cols,.fo-cp-row{display:grid;grid-template-columns:30px 34px minmax(0,1fr) 54px 78px 54px 70px;gap:10px;align-items:center}",
-      ".fo-cp-cols{padding:0 12px 8px;font:600 11px/1 Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(12,27,51,.42);text-align:center}",
-      ".fo-cp-cols span:nth-child(3){text-align:left}",
-      ".fo-cp-row{background:#FFFEFC;border:1px solid rgba(12,27,51,.09);border-radius:10px;padding:11px 12px;margin-bottom:6px;text-decoration:none;color:inherit;transition:border-color .14s ease,transform .12s ease}",
-      "html body #page a.fo-cp-row{color:#0C1B2E;text-decoration:none}",
-      "html body #page a.fo-cp-row:hover{border-color:rgba(201,162,75,.7);transform:translateY(-1px);text-decoration:none}",
       "html body #page a.fo-cp-star{text-decoration:none;color:inherit}",
       "html body #page a.fo-cp-star:hover{text-decoration:none}",
-      ".fo-cp-row .rk{font:600 12px/1 Manrope,sans-serif;color:rgba(12,27,51,.4);text-align:center}",
-      ".fo-cp-row .rl{width:30px;height:30px;border-radius:50%;background:rgba(31,111,74,.1);display:flex;align-items:center;justify-content:center}",
-      ".fo-cp-row .nm{min-width:0}",
-      ".fo-cp-row .nm b{display:block;font:700 14px/1.2 Manrope,sans-serif;color:var(--navy);text-transform:uppercase;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      ".fo-cp-row .nm i{display:block;font:400 13px/1.3 Manrope,sans-serif;font-style:normal;color:rgba(12,27,51,.55);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      ".fo-cp-row .ov{font:700 19px/1 Manrope,sans-serif;color:var(--grn);text-align:center;font-variant-numeric:tabular-nums}",
-      ".fo-cp-row .fm{display:flex;gap:4px;justify-content:center}",
-      ".fo-cp-row .fm i{width:7px;height:7px;border-radius:50%;background:rgba(12,27,51,.14);display:block}",
-      ".fo-cp-row .fm i.on{background:#2E8B5E}",
-      ".fo-cp-row .hd,.fo-cp-row .wg{font:600 11.5px/1 Manrope,sans-serif;color:rgba(12,27,51,.62);text-align:center}",
-      ".fo-cp-row .wg{color:var(--navy)}",
       ".fo-cp-sub{font:600 11px/1 Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(12,27,51,.45);margin:20px 0 10px}",
       ".fo-cp-r{display:grid;grid-template-columns:38px minmax(0,1fr);gap:2px 10px;padding:9px 2px;border-top:1px solid rgba(12,27,51,.08);text-decoration:none;color:var(--navy)}",
       ".fo-cp-r i{grid-row:span 2;font:700 11px/1 Manrope,sans-serif;color:rgba(12,27,51,.38);font-style:normal;padding-top:3px}",
@@ -1770,17 +1788,7 @@
       "@media(max-width:760px){",
       ".fo-cp-panel{padding:15px 12px 20px;border-radius:12px}",
       ".fo-cp-ph h2{font-size:20px}.fo-cp-tools{margin-left:0;width:100%}",
-      "html body #page .fo-cp-tools select{width:100%}",
-      ".fo-cp-star{min-height:0;padding:12px;flex-wrap:wrap}",
       ".fo-cp-face{width:92px}.fo-cp-starin{margin-left:88px}",
-      ".fo-cp-starn b{font-size:17px}",
-      ".fo-cp-starnums{margin-left:88px;gap:18px;padding-left:0;width:100%;justify-content:flex-start;margin-top:8px}",
-      ".fo-cp-starovr,.fo-cp-starval{text-align:left}",
-      ".fo-cp-starovr b{font-size:30px}",
-      ".fo-cp-cols{display:none}",
-      ".fo-cp-row{grid-template-columns:22px 28px minmax(0,1fr) 40px 46px;gap:8px}",
-      ".fo-cp-row .fm,.fo-cp-row .hd{display:none}",
-      ".fo-cp-row .ov{font-size:17px}}"
     ].join("\n");
     document.head.appendChild(s);
   }

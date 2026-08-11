@@ -184,6 +184,19 @@ globalThis.__svcOvr = function (playersJson) {
     try { return window.foPkOvr(p); } catch (e) { return null; }
   }));
 };
+// THE STAR COMPOSITES the Roster rates a man on, straight from the shipped
+// orders room. A rival's page cannot see the raw skills these are built from
+// (016 draws that line on purpose), so the number itself is published and the
+// two are held to the same answer here - exactly as the card rating is.
+globalThis.__svcStarComp = function (playersJson) {
+  var ps = JSON.parse(playersJson);
+  var sf = window.foStarsFor || null;
+  return JSON.stringify(ps.map(function (p) {
+    try {
+      return { bat: sf ? sf.bat(p) : null, bowl: (sf && p.bowlType) ? sf.bowl(p) : null };
+    } catch (e) { return null; }
+  }));
+};
 globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson, weather) {
   var home = JSON.parse(homeJson), away = JSON.parse(awayJson);
   onMatchEnd = function () {};
@@ -284,6 +297,7 @@ globalThis.__svcWorldCfg = function () {
   const train = vm.runInContext('__svcTrain', eng.ctx);
   const der = vm.runInContext('__svcDerive', eng.ctx);
   const ovr = vm.runInContext('__svcOvr', eng.ctx);
+  const scomp = vm.runInContext('__svcStarComp', eng.ctx);
   const fan = vm.runInContext('__svcFantasy', eng.ctx);
   const tmr = vm.runInContext('__svcTeamRatings', eng.ctx);
   return {
@@ -298,6 +312,8 @@ globalThis.__svcWorldCfg = function () {
     derive(players) { return JSON.parse(der(JSON.stringify(players))); },
     // the 0-99 card rating the club pages show, per player
     pkOvr(players) { return JSON.parse(ovr(JSON.stringify(players))); },
+    // the batting and bowling composites the ten-star strip is drawn from
+    starComp(players) { return JSON.parse(scomp(JSON.stringify(players))); },
     // the client's own fantasy points for a set of innings
     fantasy(innings) { return JSON.parse(fan(JSON.stringify(innings))); },
     // the client's own match rating for one side of a banked card

@@ -1343,6 +1343,22 @@
       "</svg><b>" + pct + "</b></div>";
   }
 
+  // THE ROSTER, LENT OUT. A rival's club page draws its squad in this room's
+  // shape - same sections, same row grid, same star strip - so that a manager
+  // sizing up an opponent is reading the same picture of a cricketer he reads
+  // of his own. The league layer is not one scope, so what it needs has to be
+  // handed over the wall explicitly: the stylesheet, what class of player a
+  // man is, and the two little readings a row prints. Nothing here exposes a
+  // skill; every one of them takes what it is given.
+  try {
+    window.__foRosterKit = { css: foS2Css, classOf: foSqClass, formGlyph: foSqFormGlyph,
+                             qCol: foSqQCol, energyOf: foEnergyOf,
+                             // the chip's SHORT word - a talent chip that spells
+                             // "ROCKET ARM" eats the name column beside it
+                             trait: function (p) { return foS2Trait(p, 1); },
+                             traitTip: foS2TraitTip };
+  } catch (eRk) {}
+
   window.pgSquad = function () {
     try {
       foSqxCss(); foS2Css();
