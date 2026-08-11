@@ -1102,7 +1102,10 @@
           if (L.intro) return '<div class="fo-comm-intro">' + tal(L.txt) + "</div>";
           if (L.mile || /^End of over/i.test(L.txt || "")) {
             var txtM = L.txt || "";
-            if (target && L.inn === 1) {
+            // the umpire writes the equation onto the bar himself now, from the
+            // target and the ball cap he actually played to. This stays for
+            // cards banked before he did, and stands down the moment he speaks.
+            if (target && L.inn === 1 && !/\bneed \d+ from /i.test(txtM)) {
               var mO = /^End of over (\d+) .*- .*? (\d+)\/(\d+)\./.exec(txtM);
               if (mO) {
                 var needR = target - (+mO[2]), left = 300 - (+mO[1]) * 6;
@@ -1114,6 +1117,19 @@
           }
           var rowcls = L.out === "4" ? "four" : L.out === "6" ? "six" : _wk(L.out) ? "line wkt" : "line";
           var tag = foCommTag(L);
+          // GOOD WORK READS GREEN, A MISTAKE READS AMBER. Which side a piece of
+          // fielding falls on is the engine's own answer, off the same map that
+          // names it; the label test below is only for logs banked before that
+          // map existed, and a talent tag stays neutral - it is the man's own,
+          // neither a save nor a spill.
+          var tagCls = "";
+          if (tag) {
+            var g = (typeof foBallTagGood === "function") ? foBallTagGood(L) : null;
+            if (g == null && !(typeof foBallTagKind === "function" && foBallTagKind(L) === "tal"))
+              g = /dropped|misfield|fumble|chance missed/i.test(tag) ? 0
+                : /great fielding|catch|run out|direct hit|stumped/i.test(tag) ? 1 : null;
+            if (g === 1) tagCls = " good"; else if (g === 0) tagCls = " bad";
+          }
           var txt = L.txt || "";
           // the engine appends "Taken safely by <name>." after catches; drop it
           // when the commentary line already names the catcher
@@ -1122,7 +1138,7 @@
             if (mnm && txt.indexOf(mnm[1].split(" ").slice(-1)[0]) < txt.length - mnm[0].length) txt = txt.slice(0, -mnm[0].length);
           }
           return '<div class="' + rowcls + '"><div class="del">' + E(L.no || "") + '</div><div class="rslt">' + _rslt(L.out) +
-            '</div><div class="text">' + (tag ? '<b class="fo-ctag">[' + tag + ']</b> ' : "") + tal(txt) + '</div><div class="clear"></div></div>';
+            '</div><div class="text">' + (tag ? '<b class="fo-ctag' + tagCls + '">[' + tag + ']</b> ' : "") + tal(txt) + '</div><div class="clear"></div></div>';
         }).join("");
         return rows || '<div class="line"><div class="text" style="padding-left:8px">No commentary matches this filter.</div><div class="clear"></div></div>';
       };
@@ -1135,6 +1151,8 @@
       "body.ftpskin #ftpcomm .line.wkt .text{color:#8f231b !important}" +
       "body.ftpskin #ftpcomm .rslt .four{background:#22635F !important}" +
       "#ftpcomm .fo-ctag{font-weight:800;color:#14243A;font-style:normal}" +
+      "#ftpcomm .fo-ctag.good{color:#177A57}" +
+      "#ftpcomm .fo-ctag.bad{color:#C2610A}" +
       "#ftpcomm .fo-c-mile{background:#f7f2fb;border-bottom:1px solid #e6daf2;padding:4px 8px;color:#6b3fa0;font-style:normal;font-weight:600}" +
       "#ftpcomm .fo-c-fow{background:#fbf0ee;border-bottom:1px solid #efd6cf;padding:4px 8px;color:#8f231b;font-weight:600}" +
       "#ftpcomm .fo-c-flag{background:#fdf7e8;border-bottom:1px solid #efe2bd;padding:4px 8px;color:#7b5a0a}" +

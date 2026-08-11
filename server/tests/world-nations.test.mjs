@@ -343,8 +343,16 @@ test('the window: the selectors name a squad, it is banked, and the club loses t
   const filed = (await pool.query(`SELECT orders FROM matches WHERE id=$1`, [mine.id])).rows[0].orders[club];
   assert.ok(filed, 'the sheet was still filed');
   assert.equal(filed.xi.length, 11);
-  assert.ok(!filed.xi.includes(takenHere[0]), 'without the man his country took');
-  assert.equal(filed.xi.filter(n => xi.includes(n)).length, 10, 'and the other ten exactly as written');
+  // EVERY man his country took, not just the first. The selectors may take up
+  // to CLUB_LIMIT from one club, and this is the club they took their TOP pick
+  // from, so more than one of them can be on the sheet - as happens here. The
+  // law is that each one is covered and nobody else is touched, which is a
+  // count the sheet itself decides rather than a fixed ten.
+  const tookFromXi = xi.filter(n => takenHere.includes(n));
+  assert.ok(tookFromXi.length >= 1, 'the sheet named at least one wanted man');
+  assert.ok(!filed.xi.some(n => takenHere.includes(n)), 'without any man his country took');
+  assert.equal(filed.xi.filter(n => xi.includes(n)).length, 11 - tookFromXi.length,
+    'and every other name exactly as written');
 });
 
 test('the club is paid for the men it lost, in the books own walk', async () => {

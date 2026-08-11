@@ -76,8 +76,14 @@ test('runDue heals a tick that never fired at all, and rests on the rest day', a
   // Season 1 opens on day 101 (a Monday of the calendar's week), so 103 is
   // the Wednesday international day - no league round - and 104 is round 3.
   const out = await runDue(pool, host, 'eng', { now: afterPlay(104) });
-  const fresh = out.filter(x => !x.skipped);
-  assert.deepEqual(fresh.map(x => x.round), [null, 3], 'the rest day, then round 3');
+  // A DAY THAT RAN IS NOT THE ONLY THING runDue REPORTS. It also says when it
+  // prebanked the day's cards ahead of the window and when the selectors named
+  // a national squad - neither of which is a round, and neither of which
+  // carries one. Reading every unskipped entry as a round counted those as a
+  // nameless extra day; a round is an entry that HAS a round.
+  const fresh = out.filter(x => !x.skipped && 'round' in x);
+  assert.deepEqual(fresh.map(x => x.round), [null, 3],
+    'the rest day, then round 3 - got ' + JSON.stringify(out.map(x => ({ r: x.round, s: x.skipped }))));
   const n = await pool.query('SELECT count(*)::int AS n FROM matches');
   assert.equal(n.rows[0].n, 24, 'three rounds of eight matches - the rest day added none');
 });

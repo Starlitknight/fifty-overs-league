@@ -889,7 +889,15 @@ var FO_FLD={
   // spread and the angles balls arrive at: a routine ball fumbled about three
   // times in a hundred, a two cut off to one about a fifth of the time, a
   // certain four stopped about one in eight.
-  band:{dot:-60,'1':-59,'2':37,'3':31,'4':44,catch:16}
+  //
+  // The catch offset was set to 16 by eye and cost three quarters of a catch an
+  // innings - 3.67 down to 2.93 against the same squads on the same seeds, and
+  // with it the whole of a side's chance of being bowled out (21.2% down to
+  // 13.7%). Catching is over half of all dismissals in the real game and that
+  // had dropped it to 52%. Solved against the engine it replaced rather than
+  // against a feeling: at 2 the same squads take 3.62 catches an innings, 6.28
+  // wickets, 19.2% all out - the old cricket, decided by a contest now.
+  band:{dot:-60,'1':-59,'2':37,'3':31,'4':44,catch:2}
 };
 function foChanceDiff(band,ang,gate){
   var d=100*Math.pow(M.rand(),FO_FLD.skew)+(FO_FLD.band[band]||0)
@@ -1130,7 +1138,22 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
   if(!ext&&inn.legal%6===0){
     const ovNo=inn.legal/6;
     const ovRuns=inn.runs-(inn._ovStartR||0),ovWk=inn.wkts-(inn._ovStartW||0);
-    M.log.unshift({no:'',out:'●',txt:'End of over '+ovNo+' ('+ovRuns+' run'+(ovRuns===1?'':'s')+(ovWk?', '+ovWk+' wkt':'')+') - '+inn.batTeam+' '+inn.runs+'/'+inn.wkts+'. '+bowler.name+' '+Math.floor(brec.b/6)+'-'+brec.r+'-'+brec.w+'.',d:null,inn:M.inns,mile:true});
+    // THE EQUATION, ON THE BAR IT BELONGS ON. A chase is the only thing anybody
+    // reads an over summary for in the second innings, and the summary was
+    // silent about it - the reader had to hold the target in his head and do
+    // the subtraction himself. It is written HERE, where the target and the
+    // ball cap are both known exactly, rather than reconstructed downstream
+    // from the innings-break line: a DLS-revised target after rain moves both
+    // numbers, and only this end of the game has seen it happen. Overs while
+    // there are plenty left, balls once it is close enough to count them.
+    let chaseTx='';
+    if(M.target&&M.inns===1){
+      const need=M.target-inn.runs,left=foBallCap()-inn.legal;
+      if(need>0&&left>0)chaseTx=' '+inn.batTeam+' need '+need+' from '+
+        (left>36?(left/6)+' over'+(left===6?'':'s'):left+' ball'+(left===1?'':'s'))+
+        ' ('+(need/(left/6)).toFixed(2)+' an over).';
+    }
+    M.log.unshift({no:'',out:'●',txt:'End of over '+ovNo+' ('+ovRuns+' run'+(ovRuns===1?'':'s')+(ovWk?', '+ovWk+' wkt':'')+') - '+inn.batTeam+' '+inn.runs+'/'+inn.wkts+'. '+bowler.name+' '+Math.floor(brec.b/6)+'-'+brec.r+'-'+brec.w+'.'+chaseTx,d:null,inn:M.inns,mile:true});
     inn._ovStartR=inn.runs;inn._ovStartW=inn.wkts;
     // A MAIDEN IS A REAL FIGURE NOW. bowlerRecord has carried an mdn field
     // since it was written and nothing ever added to it, so every card ever
@@ -4784,6 +4807,18 @@ function foBallTag(L){
   const said=foTalSaid(L.txt); if(said)return said;
   if(L.fld&&FO_FLD_TAG[L.fld.k])return FO_FLD_TAG[L.fld.k];
   return null;
+}
+// AND WHICH SIDE OF THE LEDGER IT BELONGS ON. Every surface that shows these
+// tags wants to colour them, and each was working it out for itself by reading
+// the label back - which means a new kind is silently neutral until somebody
+// remembers to add it to a regex in three files. The map that NAMES the event
+// says whether it was good work or a mistake, so there is one answer.
+const FO_FLD_GOOD={save:1,catch:1,stumping:1,runout:1,
+  misfield:0,fumble:0,drop:0,stumpMiss:0};
+function foBallTagGood(L){
+  const k=L&&L.fld&&L.fld.k;
+  if(!k||FO_FLD_GOOD[k]==null)return null;    // not a fielding ball: no opinion
+  return FO_FLD_GOOD[k];
 }
 // a talent tag reads differently from a fielding one - it is the man's own
 function foBallTagKind(L){

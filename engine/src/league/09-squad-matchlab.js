@@ -1049,16 +1049,8 @@
       ".fo-s2-seck{display:flex;align-items:center;justify-content:space-between;background:#14243A;color:#F6F3EB;border-radius:9px 9px 0 0;padding:7px 14px;font:700 11px Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase}",
       ".fo-s2-seck em{font-style:normal;color:#E8B96A}",
       // ---- rows ----
-      ".fo-s2-row{display:grid;grid-template-columns:44px minmax(168px,330px) minmax(0,1fr) 92px 58px 136px 74px 78px 46px 26px;gap:10px;align-items:center;background:#FFFEFC;border:1px solid #eee7d9;border-top:none;padding:8px 14px;cursor:pointer}",
+      ".fo-s2-row{display:grid;grid-template-columns:44px minmax(170px,1.5fr) 92px 58px 136px 74px 78px 46px 26px;gap:10px;align-items:center;background:#FFFEFC;border:1px solid #eee7d9;border-top:none;padding:8px 14px;cursor:pointer}",
       // the standing switch sits above the band, where Grid and Int show it
-      ".fo-s2-rec{min-width:0;padding-right:8px}",
-      ".fo-s2-rec s{display:block;text-decoration:none;font:700 9.5px/1 Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#A79E8C}",
-      ".fo-s2-rec em{display:block;margin-top:4px;font-style:normal;font:500 12px/1.35 Manrope,sans-serif;color:#4B5768;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
-      ".fo-s2-rec em.none{color:#A79E8C}",
-      ".fo-s2-rec em b{font-weight:750;color:#1B2432}",
-      ".fo-s2-rec em u{text-decoration:none;color:#8a8272;font-size:11px}",
-      ".fo-s2-rec i{display:block;margin-top:3px;font-style:normal;font:600 10.5px/1 Manrope,sans-serif;color:#8a8272;font-variant-numeric:tabular-nums}",
-      "@media(max-width:1180px){.fo-s2-rec i{display:none}}",
       ".fo-s2-swrap{margin:0 0 12px}",
       // FORM AND FITNESS, set to read down the column rather than across the
       // row: the word under the arrow and the number beside the gauge, so a
@@ -1194,7 +1186,7 @@
       ".fo-s2-cell b{font-size:14px}.fo-s2-cell b i{display:none}",
       ".fo-s2-tools{display:none}",
       ".fo-s2-row{grid-template-columns:30px minmax(0,1.2fr) auto auto 28px 12px;gap:4px 6px;padding:8px 6px}.fo-s2-pic{grid-column:1;grid-row:1}.fo-s2-id{grid-column:2;grid-row:1;min-width:0}.fo-s2-age{grid-column:3;grid-row:1}.fo-s2-st10{grid-column:4;grid-row:1}.fo-s2-ovr{grid-column:5;grid-row:1}.fo-s2-car{grid-column:6;grid-row:1}",
-      ".fo-s2-hand,.fo-s2-form,.fo-s2-fit,.fo-s2-rec{display:none}",
+      ".fo-s2-hand,.fo-s2-form,.fo-s2-fit{display:none}",
       ".fo-s2-pic{width:30px;height:30px}.fo-s2-pic img.face{width:30px;height:30px}",
       ".fo-s2-flag{width:13px;height:9px;left:-4px;bottom:-2px}",
       ".fo-s2-id b{font-size:11.5px}.fo-s2-id span{font-size:10px}",
@@ -1665,30 +1657,6 @@
             if (L) return "<em class='fo-s2-tchip learn' title='" + E(foS2LearnTip(L)) + "'>" + E(FO_TAL_SHORT[L.t] || L.t) + " " + Math.round(L.r * 100) + "%</em> ";
             return "";
           })() + roleNm + " &middot; " + E(det) + (p.__y ? " &middot; Youth" : "") + "</span></span>" +
-          // THE DEAD MIDDLE. On a wide screen the name column stretched and left
-          // an acre of nothing between a man's name and his hand. What belongs
-          // in it is the one thing the row could not otherwise tell you: what
-          // he has actually DONE. Runs and a best score, wickets and best
-          // figures, catches - and what he costs, because picking a side is
-          // also a question about the wage bill.
-          (function () {
-            var c = p.career || null, bits = [];
-            if (c && (c.m | 0)) {
-              if ((c.inns | 0) || (c.runs | 0))
-                bits.push("<b>" + (c.runs | 0) + "</b> runs" + (c.hs != null ? " <u>HS " + (c.hs | 0) + "</u>" : ""));
-              if (c.wkts | 0)
-                bits.push("<b>" + (c.wkts | 0) + "</b> wkts" + (c.bb ? " <u>" + E(c.bb) + "</u>" : ""));
-              var ct = (c.ctf | 0) + (c.ctwk | 0) + (c.st | 0);
-              if (ct) bits.push("<b>" + ct + "</b> ct");
-            }
-            var wg = Number(p.wage) || 0;
-            return "<span class='fo-s2-rec'>" +
-              (bits.length
-                ? "<s>" + (c.m | 0) + (c.m === 1 ? " match" : " matches") + "</s><em>" + bits.join(" &middot; ") + "</em>"
-                : "<s>" + ((c && (c.m | 0)) ? (c.m | 0) + " played" : "Uncapped") + "</s><em class='none'>no first-team runs yet</em>") +
-              (wg ? "<i>" + (window.foMoney ? foMoney(wg) : "$" + wg.toLocaleString()) + " a week</i>" : "") +
-              "</span>";
-          })() +
           "<span class='fo-s2-hand'>" + (p.hand === "L" ? "Left Hand" : "Right Hand") + "</span>" +
           "<span class='fo-s2-age'><i>Age</i> " + (p.age | 0) + "</span>" +
           foS2RoleStars(p, rCls, ovr) +

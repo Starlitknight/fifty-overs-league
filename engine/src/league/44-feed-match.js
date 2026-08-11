@@ -1761,7 +1761,10 @@
       ".fo-fd .fd-strn em{font-style:normal;font-size:13px;line-height:1;color:#ddd5c7;letter-spacing:.5px}",
       ".fo-fd .fdtag{display:inline-block;margin-left:8px;vertical-align:1px;font:700 11px Manrope,sans-serif;letter-spacing:.14em;border-radius:5px;padding:2.5px 6px}",
       ".fo-fd .fdtag.g{color:#177A57;background:#E8F3ED;border:1px solid #bfdccf}",
-      ".fo-fd .fdtag.b{color:#B23230;background:#FBEFEA;border:1px solid #e8c9b8}",
+      // A DROP IS NOT A WICKET. Both wore the same red, so a card scanned for
+      // colour read a spilled catch as an event that ended somebody's innings.
+      // Red belongs to the wicket; work that went wrong in the field is amber.
+      ".fo-fd .fdtag.b{color:#B4600A;background:#FDF3E4;border:1px solid #ecd2a6}",
       ".fo-fd .fd-strn.bt em.f{color:#E8B96A}",
       ".fo-fd .fd-strn.bt em.h{color:#E8B96A;opacity:.45}",
       ".fo-fd .fd-strn.bw em.f{color:#0FB4C4}",
