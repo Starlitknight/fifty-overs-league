@@ -1276,6 +1276,35 @@
     return v;
   }
 
+  // ---- THE HOME CLUB'S CALL -------------------------------------------------
+  // Everything above says the conditions are a pure function of the fixture,
+  // and they still are. What changed is that a manager may now prepare his own
+  // square (server migration 083) - one fact no arithmetic here can derive. So
+  // the call is HANDED to this file rather than worked out in it: the served
+  // truth layer fills the register from the world's own table, condOf consults
+  // it, and every surface that already asks condOf - the fixtures page, the
+  // orders room, the prematch, the ground - tells the same story as the umpire
+  // without asking a second question.
+  //
+  // An empty register is two honest situations at once: a world before 083,
+  // and a device that has not heard yet. Both answer with the forecast, which
+  // IS what gets bowled when the home club said nothing.
+  var CALLED = {};
+  function callKey(rid, slot, seasonNo, round) {
+    return String(rid) + "|" + (slot | 0) + "|" + (seasonNo | 0) + "|" + (round | 0);
+  }
+  function pitchCall(rid, slot, seasonNo, round) {
+    return CALLED[callKey(rid, slot, seasonNo, round)] || null;
+  }
+  // rows exactly as world_pitch_calls serves them: { season, round, pitch }
+  function setPitchCalls(rid, slot, rows) {
+    for (var i = 0; i < (rows || []).length; i++) {
+      var r = rows[i];
+      if (!r || !r.pitch) continue;
+      CALLED[callKey(rid, slot, r.season, r.round)] = String(r.pitch);
+    }
+  }
+
   function condOf(rid, homeSlot, seasonNo, round) {
     var prof = NAT_COND[rid] || COND_DEFAULT;
     var p = {}, k;
@@ -1286,9 +1315,14 @@
       for (k in tilt) p[k] = (p[k] || 0) + tilt[k];
     } catch (e) {}
     var key = "cond|" + rid + "|" + (homeSlot | 0) + "|" + (seasonNo | 0) + "|" + (round | 0);
+    // the groundsman's own leaning is what the square does when nobody tells
+    // him otherwise; a call is somebody telling him otherwise. The sky is not
+    // anybody's to call.
+    var called = pitchCall(rid, homeSlot, seasonNo, round);
     return {
-      pitch: pickWeighted(p, rnd01(key + "|p")) || "balanced",
-      weather: pickWeighted(prof.w, rnd01(key + "|w")) || "Sunny"
+      pitch: called || pickWeighted(p, rnd01(key + "|p")) || "balanced",
+      weather: pickWeighted(prof.w, rnd01(key + "|w")) || "Sunny",
+      called: !!called
     };
   }
 
@@ -2090,5 +2124,5 @@
     FA_DAYS: FA_DAYS, faDayOf: faDayOf, faDrawR16: faDrawR16, cupDraw: cupDraw,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
     COLTS_DAYS: COLTS_DAYS, isRestDay: isRestDay, REST_DAYS: REST_DAYS, dayOfRound: dayOfRound, roundOfDay: roundOfDay,
-    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, heritageOf: heritageOf, honoursOf: honoursOf, histYear: histYear, careersOf: careersOf, seasonBook: seasonBook, careerBook: careerBook, careerWorld: careerWorld, bossOf: bossOf, bossesOf: bossesOf, bossLedger: bossLedger, wcYear: wcYear, wcHistory: wcHistory, seasonNo: seasonNo, seasonLabel: seasonLabel, sIdx: sIdx, histSeasons: histSeasons, seasonOne: seasonOne, natHonours: natHonours, WC_FROM: WC_FROM, crownYear: crownYear, histSpan: histSpan, leagueBorn: leagueBorn, foundedOf: foundedOf, HIST_END: HIST_END, CROWN_FROM: CROWN_FROM, condOf: condOf, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, nations: regionList, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
+    phaseOf: phaseOf, roundsDone: roundsDone, sidesOf: sidesOf, heritageOf: heritageOf, honoursOf: honoursOf, histYear: histYear, careersOf: careersOf, seasonBook: seasonBook, careerBook: careerBook, careerWorld: careerWorld, bossOf: bossOf, bossesOf: bossesOf, bossLedger: bossLedger, wcYear: wcYear, wcHistory: wcHistory, seasonNo: seasonNo, seasonLabel: seasonLabel, sIdx: sIdx, histSeasons: histSeasons, seasonOne: seasonOne, natHonours: natHonours, WC_FROM: WC_FROM, crownYear: crownYear, histSpan: histSpan, leagueBorn: leagueBorn, foundedOf: foundedOf, HIST_END: HIST_END, CROWN_FROM: CROWN_FROM, condOf: condOf, pitchCall: pitchCall, setPitchCalls: setPitchCalls, doctrineOf: doctrineOf, fixturesOf: fixturesOf, schedOf: schedOf, tableOf: tableOf, championOf: championOf, wcEntrants: wcEntrants, wcBracket: wcBracket, wcChampion: wcChampion, wcStagesDone: wcStagesDone, liveView: liveView, genWire: genWire, overrideSnapshot: overrideSnapshot, natHour: natHour, nations: regionList, dayIx: dayIx, EPOCH: EPOCH, CYCLE: CYCLE, ROUNDS: ROUNDS, DAY: DAY, LIVE_LEN: LIVE_LEN, WORLD_START: WORLD_START };
 })();

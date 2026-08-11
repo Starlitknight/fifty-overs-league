@@ -314,10 +314,28 @@
   };
   var PITCH_ORDER = ["balanced", "green", "flat", "dry", "slow", "cracked", "twoPaced"];
   function pitchNm(k) { return PITCH_NM[k] || String(k || ""); }
+  // THE FIELD GUIDE, LENT. The ground room lets a manager prepare his own
+  // square and has to say what each surface does; this table already says it,
+  // in the words the conditions primer uses. The league layer is not one
+  // scope, so it goes over the wall rather than being written out twice and
+  // drifting - a page offering "Crumbling" while another calls it "Dry" is
+  // two games.
+  window.__foPitchKit = { nm: PITCH_NM, note: PITCH_NOTE, order: PITCH_ORDER, name: pitchNm };
   // every home round this ground will stage this season, with what it deals
+  //
+  // A home club may have PREPARED some of these (server migration 083), and a
+  // ground page that printed the forecast for a square already under orders
+  // would be promising cricket that is not going to be played. The calls are
+  // public and the planet answers condOf with them, so all this room has to do
+  // is ask for the ground it is drawing and repaint when the world answers.
   function groundSeason(cid, slot) {
     var out = [], pl = window.__foPlanet, wt = window.__foWT;
     if (!pl || !pl.condOf || !wt || !wt.schedMirror) return out;
+    try {
+      if (window.foPitchCalls) window.foPitchCalls(cid, slot, function () {
+        if ((location.hash || "").indexOf("#/team") === 0) window.foRenderClubPage();
+      });
+    } catch (ePC) {}
     var cal = null; try { cal = wt.serverCal(Date.now()); } catch (e) { return out; }
     var season = Math.max(1, cal.seasonNo || 1);
     var rounds = wt.schedMirror(cid, season) || [];

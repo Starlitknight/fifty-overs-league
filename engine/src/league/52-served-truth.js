@@ -208,6 +208,44 @@
     return out;
   }
 
+  // ---- THE PITCH A GROUND HAS BEEN TOLD TO PREPARE --------------------------
+  // The conditions for a fixture are derived on the device, from the nation's
+  // climate and the home club's leaning, and every page in the game reads them
+  // off __foPlanet.condOf. A home club may now call its own pitch (migration
+  // 083), which is the one ingredient no device can derive - so it is fetched
+  // once per ground and handed to the planet, where condOf answers with it.
+  //
+  // Public, because the call is: a pitch is a physical thing at a ground and
+  // the fixtures page has promised the surface openly since conditions existed.
+  // Quiet on failure, because a device that cannot reach the world should show
+  // the forecast - which is exactly what a ground with no call plays on.
+  var PCALL = {};                                  // "cid:slot" -> {at, busy}
+  function pitchCalls(country, slot, onLand) {
+    if (!country || slot == null) return;
+    var k = country + ":" + (slot | 0), s = PCALL[k] || (PCALL[k] = { at: 0, busy: false });
+    if (s.busy || Date.now() - s.at < 60000) return;
+    s.busy = true;
+    var SB = "https://egaipdksvztqqgouriyc.supabase.co";
+    var AN = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+    var tok = ""; try { tok = (window.__foJWT && window.__foJWT()) || ""; } catch (e0) {}
+    fetch(SB + "/rest/v1/rpc/world_pitch_calls", {
+      method: "POST",
+      headers: { apikey: AN, Authorization: "Bearer " + (tok || AN), "content-type": "application/json" },
+      body: JSON.stringify({ p_country: country, p_slot: slot | 0 })
+    }).then(function (r) { return r.ok ? r.json() : []; })
+      .then(function (rows) {
+        s.busy = false; s.at = Date.now();
+        var P = planet();
+        if (P && P.setPitchCalls) P.setPitchCalls(country, slot | 0, rows || []);
+        if (onLand) { try { onLand(rows || []); } catch (e1) {} }
+      })
+      .catch(function () { s.busy = false; });
+  }
+  window.foPitchCalls = pitchCalls;
+  // the manager's own square, asked for the moment this file loads, so the
+  // orders room and the prematch are right the first time they are opened
+  try { var c0 = claim(); if (c0) pitchCalls(c0.country, c0.slot); } catch (e2) {}
+
   window.__foServed = {
     on: on, claim: claim, nation: nation, slot: mySlot, snapshot: snap,
     rows: rows, rowsOf: rowsOf, myDiv: myDiv, me: myRow, name: myName, form: form, formOf: formOf,

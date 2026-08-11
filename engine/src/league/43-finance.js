@@ -289,6 +289,36 @@
       ".fo-gb-row .tk u{display:block;margin-top:2px;text-decoration:none;font:600 9.5px/1.2 Manrope,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#9E978A}",
       ".fo-gb-row .tk em{display:block;margin-top:3px;font:600 10.5px/1.2 Manrope,sans-serif;font-style:normal;color:#C08A2E}",
       ".fo-gb-row .tk em.lk{color:#177A57}",
+      // ---- THE SQUARE: one pitch per home fixture, called once, shut 48h out
+      ".fo-sq{margin-top:15px;padding:0 15px 6px}",
+      ".fo-sq .fo-me-panelhead em{font:450 11.5px/1.3 Manrope,sans-serif;color:var(--mut);font-style:normal;letter-spacing:0;text-transform:none}",
+      "#page .fo-sq-row{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:start;padding:13px 0;border-bottom:1px solid #EFE9DC}",
+      ".fo-sq-row:last-child{border-bottom:0}",
+      ".fo-sq-row .rd{padding-top:2px;font:700 12px/1.2 Manrope,sans-serif;color:#14243A}",
+      ".fo-sq-row .rd u{display:block;margin-top:3px;text-decoration:none;font:500 10.5px/1.2 Manrope,sans-serif;color:#8a8272;white-space:nowrap}",
+      // a span by default is inline, and a flex row inside an inline box is
+      // sized by the text around it rather than by the column it sits in -
+      // which is how the picker walked off the right of the card on a phone
+      ".fo-sq-row .op{display:block;min-width:0}",
+      ".fo-sq-row .op b{display:block;font:650 13px/1.2 Manrope,sans-serif;color:#1B2432;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".fo-sq-row .op s{display:block;margin-top:5px;text-decoration:none;font:500 11px/1.4 Manrope,sans-serif;color:#6A6354}",
+      // a GRID, not a flex row: a track cannot overflow its column, and a
+      // wrapping flex line put the button off the right of a phone.
+      // The long class name is not decoration - the onboarding sheet owns a
+      // bare .pk{width:min(440px,96vw)}, and a two-letter class in a global
+      // stylesheet belongs to whoever wrote it first.
+      ".fo-sq-row .fo-sq-pk{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-top:9px;max-width:392px}",
+      "html body #page .fo-sq-row .fo-sq-pk select{width:100%;min-width:0;max-width:250px;height:38px;padding:0 10px !important;border:1px solid #CFC6B6 !important;border-radius:9px !important;background:#FFFEFA !important;color:#1B2432 !important;font:650 12.5px/1 Manrope,sans-serif !important}",
+      "html body #page .fo-sq-row .fo-sq-pk button{min-height:38px;padding:0 14px !important;border:1px solid var(--orange) !important;border-radius:9px !important;background:linear-gradient(180deg,#E85720,#D94313) !important;color:#fff !important;font:700 10px/1 Manrope,sans-serif !important;letter-spacing:.11em;text-transform:uppercase;box-shadow:none !important}",
+      ".fo-sq-row .st{text-align:right;white-space:nowrap;padding-top:2px}",
+      ".fo-sq-row .st b{display:block;font:700 13px/1.2 Manrope,sans-serif;color:#14243A}",
+      ".fo-sq-row .st u{display:block;margin-top:3px;text-decoration:none;font:600 9.5px/1.2 Manrope,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:#9E978A}",
+      ".fo-sq-row .st em{display:block;margin-top:4px;font:600 10.5px/1.2 Manrope,sans-serif;font-style:normal;color:#C08A2E}",
+      ".fo-sq-row .st em.lk{color:#177A57}",
+      ".fo-sq-row .st em.said{color:#177A57}",
+      // a phone reads a fixture as a stack, not three columns: the round and its
+      // date on one line, then who is visiting, then the decision
+      "@media(max-width:620px){#page .fo-sq-row{grid-template-columns:minmax(0,1fr);gap:4px}.fo-sq-row .rd{padding-top:0}.fo-sq-row .rd u{display:inline;margin-left:9px}.fo-sq-row .st{text-align:left;padding-top:9px;display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}.fo-sq-row .st b,.fo-sq-row .st u,.fo-sq-row .st em{display:inline;margin:0}}",
       ".fo-me-forecast{padding-bottom:13px}.fo-me-forecastbody{display:grid;grid-template-columns:138px minmax(0,1fr);gap:14px;padding:13px 16px 0;align-items:stretch}.fo-me-opp{display:flex;flex-direction:column;align-items:center;justify-content:center;border-right:1px solid #E5DFD4;text-align:center}.fo-me-shield{width:55px;height:61px;clip-path:polygon(8% 0,92% 0,88% 70%,50% 100%,12% 70%);display:grid;place-items:center;background:linear-gradient(150deg,#E0B53E,#C8951F);color:#102641;font:700 16px/1 Fraunces,serif}.fo-me-shield.arms,.fo-me-shield.crest{clip-path:none;background:none;width:auto;min-width:52px;height:61px;display:flex;align-items:center;justify-content:center}.fo-me-shield.crest{object-fit:contain;max-width:64px}.fo-me-shield.arms svg{display:block}.fo-me-opp b{margin-top:8px;font:650 16px/1.1 Fraunces,Georgia,serif}.fo-me-opp span{margin-top:6px;color:var(--mut);font:700 11px/1 Manrope,sans-serif;letter-spacing:.12em;text-transform:uppercase}",
       ".fo-me-fgrid{display:grid;grid-template-columns:1fr 1fr}.fo-me-fstat{padding:11px;border-bottom:1px solid #E9E4DB}.fo-me-fstat:nth-child(odd){border-right:1px solid #E9E4DB}.fo-me-fstat span{display:block;color:#778294;font:700 11px/1.25 Manrope,sans-serif;letter-spacing:.1em;text-transform:uppercase}.fo-me-fstat b{display:block;margin-top:6px;color:var(--ink);font:750 14px/1.1 Manrope,sans-serif;font-variant-numeric:tabular-nums}.fo-me-fstat.green b{color:var(--green)}",
       ".fo-me-recon{display:flex;flex-wrap:wrap;align-items:baseline;gap:6px 16px;padding:13px 16px;border:1px solid var(--edge);border-radius:13px;background:#FAF8F3;color:#667387;font:500 13px/1.5 Manrope,sans-serif}",
@@ -415,6 +445,48 @@
       return TKH.rows || [];
     } catch (e) { return TKH.rows || []; }
   }
+  // ---- THE SQUARE ----------------------------------------------------------
+  // A groundsman needs two days' notice, and the same two days sit in SQL as
+  // world_pitch_notice(). If they ever have to move, they move in both.
+  var SQ_NOTICE = 48 * 3600000;
+  // The calls standing at this ground (083), fetched once a minute and handed
+  // to the PLANET rather than kept here - condOf consults the register, so the
+  // prematch, the orders room and the fixtures page tell the same story as
+  // this board without any of them knowing this fetch happened.
+  //
+  // `rows` being null rather than empty is load-bearing: it is the difference
+  // between "this ground has called nothing" and "this device has not heard
+  // yet", and a board that painted the second as the first would offer a
+  // manager a decision he has already spent.
+  var PCH = { rows: null, at: 0, busy: false };
+  function sqCalls(cl) {
+    try {
+      if (!cl || !cl.country) return PCH.rows;
+      if (PCH.busy || (PCH.rows && Date.now() - PCH.at < 60000)) return PCH.rows;
+      PCH.busy = true;
+      rpc("world_pitch_calls", { p_country: cl.country, p_slot: cl.slot | 0 })
+        .then(function (rows) {
+          PCH.rows = Array.isArray(rows) ? rows : []; PCH.at = Date.now(); PCH.busy = false;
+          try {
+            var P = window.__foPlanet;
+            if (P && P.setPitchCalls) P.setPitchCalls(cl.country, cl.slot | 0, PCH.rows);
+          } catch (eP) {}
+          try { if ((location.hash || "").split("?")[0] === "#/ground") window.foRenderGroundPage(); } catch (e9) {}
+        })
+        .catch(function () { PCH.busy = false; PCH.rows = PCH.rows || []; });
+      return PCH.rows;
+    } catch (e) { return PCH.rows; }
+  }
+  // the field guide, borrowed from the club page so the two rooms cannot end
+  // up calling the same surface by two different names
+  function sqKit() {
+    var K = window.__foPitchKit || null;
+    if (K && K.nm && K.order) return K;
+    return { order: ["balanced", "green", "flat", "dry", "slow", "cracked", "twoPaced"],
+             nm: { balanced: "Balanced", flat: "Flat", green: "Green", dry: "Crumbling",
+                   slow: "Slow", cracked: "Sticky", twoPaced: "Two-paced" }, note: {} };
+  }
+
   // who is visiting moves the crowd: the flagship pulls hardest, a top-three
   // side after that - the same multipliers the umpire's walk applies
   function tkDraw(cl, oppSlot) {
@@ -759,10 +831,77 @@
           "<em>advance sales at today's mood &middot; the crowd locks 24h out</em></div>" + rows9 + "</section>";
       })();
 
+      // ---- THE SQUARE: a pitch for every home fixture ----------------------
+      //
+      // The soil used to be the weather's business. A fixture's pitch is dealt
+      // by the nation's climate and the home groundsman's own leaning, and the
+      // umpire bowls on exactly what the fixtures page promised - which left
+      // the one lever every home captain in cricket actually pulls out of the
+      // manager's hands. It is his now, under three rules the board prints on
+      // its face: his own ground, two days' notice, and said once.
+      //
+      // A row is a decision, so it shows what the square does today, what he
+      // may make of it, and what each choice would mean - the field guide's
+      // own words, so a manager is never picking a surface blind.
+      (function () {
+        var cl = st.claim || null;
+        try { cl = cl || window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eS0) {}
+        var PL = window.__foPlanet;
+        if (!cl || !PL || !PL.condOf || !PL.phaseOf) return;
+        // THIS SEASON'S HOME FIXTURES, and no further. The schedule reaches
+        // into next summer so a manager can see what is coming, but the world
+        // has no season row for it yet and no first ball to count back from -
+        // so a picker there would be a decision the umpire must refuse. The
+        // board offers what can actually be called.
+        var sNow = 0; try { sNow = (PL.phaseOf(Date.now()) || {}).season | 0; } catch (eP0) {}
+        var fxs = [];
+        try {
+          fxs = (window.foMyLeagueFixtures ? window.foMyLeagueFixtures(20) : [])
+            .filter(function (x) { return x.home && (!sNow || x.season === sNow); }).slice(0, 8);
+        } catch (eSf) {}
+        var heard = sqCalls(cl) != null;
+        var K = sqKit(), now = Date.now();
+        var nm = function (k) { return K.nm[k] || String(k || ""); };
+        var rowsS = fxs.map(function (x) {
+          var c = null; try { c = PL.condOf(cl.country, cl.slot | 0, x.season, x.round); } catch (eC) {}
+          var pitch = (c && c.pitch) || "balanced", said = !!(c && c.called);
+          var shut = x.t0 - SQ_NOTICE, locked = now >= shut, left = shut - now;
+          var dt = ""; try { dt = new Date(x.t0).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); } catch (eD) {}
+          // the SHORT advice on the row; the full field guide belongs in the
+          // question that spends the call, not in a paragraph per fixture
+          var gd = K.note[pitch] || [], guide = gd[1] || gd[0] || "";
+          // the state, in the words that name what a manager may still do
+          var st9 = said ? "<em class='said'>Prepared</em>"
+                  : locked ? "<em class='lk'>Shut</em>"
+                  : left < 86400000 ? "<em>shuts in " + Math.max(1, Math.round(left / 3600000)) + "h</em>"
+                  : "<em>shuts in " + Math.round(left / 86400000) + "d</em>";
+          var pick = "";
+          if (!said && !locked && heard) {
+            pick = "<div class='fo-sq-pk'><select data-sq='" + x.season + ":" + x.round + "'>" +
+              K.order.map(function (p) {
+                return "<option value='" + p + "'" + (p === pitch ? " selected" : "") + ">" + E(nm(p)) + "</option>";
+              }).join("") + "</select><button type='button' class='fo-sq-go'>Prepare</button></div>";
+          }
+          return "<div class='fo-sq-row'>" +
+            "<span class='rd'>R" + x.round + "<u>" + E(dt) + "</u></span>" +
+            "<span class='op'><b>v " + E(x.opp.name) + "</b>" +
+            "<s>" + (said ? "Your groundsman is preparing it." : locked ? "The square is already being prepared."
+                     : !heard ? "Reading the groundsman&rsquo;s orders&hellip;" : E(guide)) + "</s>" +
+            pick + "</span>" +
+            "<span class='st'><b>" + E(nm(pitch)) + "</b><u>" + (said ? "your call" : "as it lies") + "</u>" + st9 + "</span></div>";
+        }).join("");
+        html += "<section class='fo-me-card fo-sq'><div class='fo-me-panelhead'><span>The square</span>" +
+          "<em>your ground, your pitch &middot; a call shuts 48h out and is made once</em></div>" +
+          (rowsS || "<div class='fo-me-empty'>Every home fixture of the summer has been played. " +
+                    "Next season's square is yours to prepare once the fixtures are drawn.</div>") +
+          "</section>";
+      })();
+
       html += "<div class='fo-fin-foot'><a href='#/finance'>&lsaquo; Finances</a><a href='#/home'>The club &rsaquo;</a></div></div>";
       page.innerHTML = shell(html);
       wire(page, f, bank, st);
       wireGate(page);
+      wireSquare(page);
       return;
     }
 
@@ -964,6 +1103,37 @@
             ok.disabled = false;
             try { window.foSayAt && foSayAt(ok, String(e9.message).slice(0, 120), "error"); } catch (e8) {}
           });
+      });
+    });
+  }
+
+  // ONE CALL, AND NO TAKING IT BACK. The server refuses a second row for a
+  // match, so the page asks before it spends the only word a manager gets -
+  // and says which match, which surface, and what it will do to the cricket.
+  function wireSquare(page) {
+    page.querySelectorAll(".fo-sq-row [data-sq]").forEach(function (sel9) {
+      var row = sel9.closest(".fo-sq-row"), go = row && row.querySelector(".fo-sq-go");
+      if (!go) return;
+      var sr = String(sel9.getAttribute("data-sq")).split(":");
+      var K = sqKit();
+      go.addEventListener("click", function () {
+        // the row reads "v Lancashire"; the question reads "for Lancashire"
+        var p = sel9.value, foe = String((row.querySelector(".op b") || {}).textContent || "").replace(/^v\s+/, "");
+        var note = (K.note[p] || [])[0] || "";
+        var send = function () {
+          go.disabled = true; sel9.disabled = true;
+          rpc("world_call_pitch", { p_season: +sr[0], p_round: +sr[1], p_pitch: p })
+            .then(function () { PCH.rows = null; PCH.at = 0; reload(page); })
+            .catch(function (e9) {
+              go.disabled = false; sel9.disabled = false;
+              try { window.foSayAt && foSayAt(go, String(e9.message).slice(0, 140), "error"); } catch (e8) {}
+            });
+        };
+        if (!window.foDecide) { send(); return; }
+        window.foDecide(go, {
+          q: "Prepare a " + ((K.nm[p] || p) + "").toLowerCase() + " pitch for " + foe + "?",
+          note: note + " Your groundsman takes his orders once: this cannot be changed, and it shuts 48 hours before the first ball.",
+          ok: "Prepare it", onYes: send });
       });
     });
   }

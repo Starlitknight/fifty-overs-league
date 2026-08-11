@@ -70,6 +70,24 @@ async function fixturesFor(pool, country, season, round, now) {
   return out;
 }
 
+// THE HOME CLUB'S CALL (083). The forecast deals every fixture a pitch from
+// the nation's climate and the home groundsman's leaning; a manager who told
+// his own groundsman otherwise, in time, gets what he asked for.
+//
+// Read under the HOST's slot, which is the whole security model: a row is
+// written under the caller's own club, so a call for a match somebody else
+// hosts is a row nothing ever looks at. The deadline is the RPC's business -
+// anything that reached this table was called with 48 hours to spare - and a
+// database without the table is a world before 083, which plays the forecast.
+async function pitchCallsFor(pool, country, seasonNo, round) {
+  try {
+    const r = await pool.query(
+      `SELECT slot, pitch FROM pitch_calls WHERE country_id=$1 AND season_no=$2 AND round=$3`,
+      [country, seasonNo, round]);
+    return new Map(r.rows.map(x => [x.slot | 0, x.pitch]));
+  } catch (e) { return new Map(); }
+}
+
 async function playRound(pool, host, country, season, round, opts) {
   const now = opts && opts.now;
   const fixtures = await fixturesFor(pool, country, season, round, now || Date.now());
@@ -95,6 +113,7 @@ async function playRound(pool, host, country, season, round, opts) {
   // torn up. Absence rides into the banked living patch so the broadcast
   // fields the same eleven the umpire did.
   const abroad = await absentBySlot(pool, country, season.season_no, round);
+  const called = await pitchCallsFor(pool, country, season.season_no, round);
   // A BOT PLAYS ITS ARCHETYPE. A club nobody manages used to bat on the
   // engine's one default plan, so a Cavalier XI and a Stonewall XI played the
   // same innings. Each unmanaged club now files the sheet its identity would
@@ -135,7 +154,9 @@ async function playRound(pool, host, country, season, round, opts) {
     // club's own groundsman - deterministic, so the forecast a phone printed
     // is the pitch the umpire rolls out, and a healed day replays itself
     const cond = host.condFor(country, hs, season.season_no, round);
-    const resultJson = host.runMatch({ name: home.name, players: H.players }, { name: away.name, players: A.players }, cond.pitch, seed, tieOrders, cond.weather);
+    // ...unless the home club prepared its own square. The sky is nobody's.
+    const pitch = called.get(hs | 0) || cond.pitch;
+    const resultJson = host.runMatch({ name: home.name, players: H.players }, { name: away.name, players: A.players }, pitch, seed, tieOrders, cond.weather);
     if (!resultJson) throw new Error('engine failed to complete ' + id);
     // the living state these men carried into the match, banked with it:
     // the theatre lays it back over the generated squads and replays the
@@ -148,7 +169,7 @@ async function playRound(pool, host, country, season, round, opts) {
     await pool.query(
       `INSERT INTO matches(id, country_id, season_no, round, home_slot, away_slot, seed, engine_version, pitch, orders, result, result_canonical, home_name, away_name, living, ratings)
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10::jsonb,$11::jsonb,$12::text,$13,$14,$15::jsonb,$16::jsonb) ON CONFLICT (id) DO NOTHING`,
-      [id, country, season.season_no, round, hs, as, seed, ENGINE_VERSION, cond.pitch, JSON.stringify(tieOrders), resultJson, resultJson, home.name, away.name, JSON.stringify(living), rat ? JSON.stringify(rat) : null]);
+      [id, country, season.season_no, round, hs, as, seed, ENGINE_VERSION, pitch, JSON.stringify(tieOrders), resultJson, resultJson, home.name, away.name, JSON.stringify(living), rat ? JSON.stringify(rat) : null]);
     // THE COMMENTARY KEEPS FOR THE SEASON (066). The ball-by-ball is read off
     // the match just played and banked beside the card (never inside it - the
     // canonical result does not move). A failure here must not cost the round:
