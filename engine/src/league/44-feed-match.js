@@ -1105,6 +1105,35 @@
             "<div class='b'>" + (b9.b != null ? b9.b : "&mdash;") + "</div>" +
             "<div class='s'>" + (sr != null ? sr : "&mdash;") + "</div></div>";
         }).join("") +
+        // EXTRAS, SO THE CARD ADDS UP. The umpire's total counts wides,
+        // no-balls, byes and leg byes and the rows above never did, so the
+        // batting came up short of the score with nothing to say where the
+        // difference went. This book keeps no breakdown - the over summaries
+        // it is read from carry the score and the batters, not the byes - but
+        // extras ARE the score less the batting, so the figure is exact.
+        //
+        // A SUBTRACTION IS ONLY EXTRAS IF NOBODY IS MISSING FROM IT. This book
+        // is read off the umpire's running commentary, and a card built from a
+        // book the broadcast has not finished - or one whose early overs have
+        // been pruned - is short of batters. Subtracting then does not measure
+        // the byes, it measures whoever is not on the card.
+        //
+        // So the card has to account for every man who has been to the middle:
+        // that is one per wicket plus the two at the crease, and ten or more
+        // once the side is bowled out. And every one of them needs a tally the
+        // umpire has actually published - mid-over a new batter is named with
+        // no figures yet. Fail either and the row is left off, because a
+        // missing line is better than a wrong number.
+        (function () {
+          if (!tp9 || !I.bats.length) return "";
+          var w8 = tp9.wkts | 0, want = w8 >= 10 ? 10 : w8 + 2;
+          if (I.bats.length < want) return "";
+          if (!I.bats.every(function (b8) { return b8.r != null; })) return "";
+          var exN = (tp9.runs | 0) - I.bats.reduce(function (t, b8) { return t + (b8.r | 0); }, 0);
+          if (exN < 0) return "";
+          return "<div class='fd-sc-r fd-sc-ex'><div class='w'><b>Extras</b></div>" +
+            "<div class='r'>" + exN + "</div><div class='b'></div><div class='s'></div></div>";
+        })() +
         (tp9 ? "<div class='fd-sc-t'><span>" + tp9.wkts + " wicket" + (tp9.wkts === 1 ? "" : "s") +
           (ov9 ? " &middot; " + E(ov9) + " overs" : "") + "</span><b>" + tp9.runs + "</b></div>" : "") +
         (I.bowls.length ? "<div class='fd-sc-bh'>Bowling</div>" +
@@ -1552,6 +1581,10 @@
       ".fo-fd .fd-sc-r .w i{display:block;font-style:normal;font:400 10.5px/1.35 Manrope,sans-serif;color:var(--fdmut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-fd .fd-sc-r .r{font:800 14.5px Manrope,sans-serif;text-align:right;color:var(--fdink);font-variant-numeric:tabular-nums}",
       ".fo-fd .fd-sc-r .b,.fo-fd .fd-sc-r .s{font:500 12.5px Manrope,sans-serif;text-align:right;color:var(--fdmut);font-variant-numeric:tabular-nums}",
+      // extras is a line of the card, not a man on it: no face, no strike rate
+      ".fo-fd .fd-sc-ex{min-height:38px}",
+      ".fo-fd .fd-sc-ex .w b{font-weight:500;color:var(--fdmut)}",
+      ".fo-fd .fd-sc-ex .r{font-weight:600;color:var(--fdmut)}",
       ".fo-fd .fd-sc-r.on{background:#F4F6FF;box-shadow:inset 3px 0 0 var(--fdind)}",
       ".fo-fd .fd-sc-r.on .r{color:var(--fdind)}",
       ".fo-fd .fd-sc-r.ton .r,.fo-fd .fd-sc-r.on.ton .r{color:var(--fdbrz)}",

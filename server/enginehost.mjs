@@ -215,9 +215,19 @@ globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson, wea
   // the card as it is banked. Boundaries and the hands ride along because the
   // ratings page and a player's FORM are both scored off them - a match played
   // before this carried them simply rates without them, which is honest.
+  // WHAT WAS GIVEN AWAY. The umpire's total has always counted wides,
+  // no-balls, byes and leg byes; the rows under it never did. So every card
+  // in the game printed a total the batters could not add up to - four runs
+  // adrift in a typical innings, and nobody could see where they went. The
+  // four counters are the engine's own (inn.extras), and they ride with the
+  // card. A match banked before this simply has none, and a scorecard can
+  // still say what the extras came to by subtracting the batting from the
+  // total - which is exactly what the number means.
   var slim = function (inn) {
     if (!inn) return null;
+    var ex = inn.extras || null;
     return { batTeam: inn.batTeam, bowlTeam: inn.bowlTeam, runs: inn.runs, wkts: inn.wkts, legal: inn.legal,
+      extras: ex ? { wd: ex.wd | 0, nb: ex.nb | 0, b: ex.b | 0, lb: ex.lb | 0 } : null,
       bat: (inn.bat || []).map(function (b) {
         return { p: b.p, r: b.r, b: b.b, f4: b.f4 || 0, f6: b.f6 || 0, out: b.out };
       }),

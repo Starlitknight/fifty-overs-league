@@ -235,8 +235,16 @@
             "<td class='fo-sci-disc'>" + dis + "</td>" +
             "<td class='n'><b>" + b.r + (b.out ? "" : "*") + "</b></td><td class='n'>" + b.b + "</td><td class='n'>" + (b.f4 || 0) + "</td><td class='n'>" + (b.f6 || 0) + "</td><td class='n'>" + sr + "</td></tr>";
         }).join("");
-        var ex = inn.extras || { wd: 0, nb: 0, b: 0, lb: 0 };
-        var exN = ex.wd + ex.nb + ex.b + ex.lb;
+        // EXTRAS, AND THE CARD ADDS UP. The umpire's total counts wides,
+        // no-balls, byes and leg byes; the rows above do not. The four
+        // counters ride with a card banked since they were kept - and for
+        // every match played before that, the figure is still exactly
+        // knowable, because extras ARE the total less the batting. So an old
+        // card names the number and not the breakdown, which is honest, and
+        // never prints a zero it cannot stand behind.
+        var ex = inn.extras || null;
+        var batN = (inn.bat || []).reduce(function (t, b) { return t + (Number(b.r) || 0); }, 0);
+        var exN = ex ? (ex.wd + ex.nb + ex.b + ex.lb) : Math.max(0, (Number(inn.runs) || 0) - batN);
         var dnb = (inn.xi || []).filter(function (p) { return !played[p.name]; }).map(function (p) { return playerLink(p); }).join(", ");
         var fow = (inn.fow || []).map(function (f2) { return "<b>" + f2.w + "-" + f2.sc + "</b> (" + E(f2.who) + ", " + (f2.ov != null ? (+f2.ov).toFixed(1) : "-") + " ov)"; }).join(" &nbsp; ");
         var bowl = Object.values(inn.bowlers || {}).sort(function (a, b) { return b.w - a.w || a.r - b.r; }).map(function (rr2) {
@@ -250,7 +258,9 @@
         var tgt = "";
         return "<div class='panel fo-sci'><div class='fo-sci-head' onclick=\"this.parentNode.classList.toggle('fo-sci-closed')\" title='Tap to collapse'><b>" + E(inn.batTeam) + " innings</b><span><n>" + inn.runs + "/" + inn.wkts + "</n> <em>(" + ovTxt + " ov)</em><u class='fo-sci-tgl'>&#9662;</u></span></div>" + tgt + "<div class='pad'>" +
           "<table class='fo-sct'><thead><tr><th>Batter</th><th class='fo-sci-disc'>Dismissal</th><th class='n'>R</th><th class='n'>B</th><th class='n'>4s</th><th class='n'>6s</th><th class='n'>SR</th></tr></thead><tbody>" + rows +
-          "<tr class='fo-sci-ex'><td>Extras <span>(b " + ex.b + ", lb " + ex.lb + ", w " + ex.wd + ", nb " + ex.nb + ")</span></td><td class='fo-sci-disc'></td><td class='n'><b>" + exN + "</b></td><td colspan='4'></td></tr>" +
+          "<tr class='fo-sci-ex'><td>Extras" +
+            (ex ? " <span>(b " + ex.b + ", lb " + ex.lb + ", w " + ex.wd + ", nb " + ex.nb + ")</span>" : "") +
+            "</td><td class='fo-sci-disc'></td><td class='n'><b>" + exN + "</b></td><td colspan='4'></td></tr>" +
           "<tr class='fo-sci-tot'><td>Total <span class='fo-sci-totsub'>(" + inn.wkts + " wicket" + (inn.wkts === 1 ? "" : "s") + ", " + ovTxt + " overs)</span></td><td class='fo-sci-disc'></td><td class='n'><b>" + inn.runs + "</b></td><td colspan='4' class='fo-sci-rr'>RR " + (inn.legal ? (inn.runs / (inn.legal / 6)).toFixed(2) : "0") + "</td></tr></tbody></table>" +
           ((dnb || fow) ? "<div class='fo-sci-two'>" +
             (dnb ? "<div class='fo-sci-box'><b>Did not bat</b><span>" + dnb + "</span></div>" : "") +
