@@ -36,7 +36,7 @@
  * question about the size of the program, not about where the document came
  * from.
  */
-const BUILD = '20260811-1532-1f6ddf';
+const BUILD = '20260811-1608-a96b9a';
 
 self.addEventListener('install', e => {
   e.waitUntil(self.skipWaiting());

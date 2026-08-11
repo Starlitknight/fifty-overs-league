@@ -44,12 +44,22 @@ test('a phase plan changes how the club bats - rate up, wickets up', () => {
 });
 
 test("the away club's sheet is read too - the resolver has no home team", () => {
-  const seed = 4242;
-  const flat = eng.sim(A, B, 'balanced', 'Sunny', seed);
-  const away = eng.sim(A, B, 'balanced', 'Sunny', seed, { Brackenby: { phaseIntent: { pp: 2, mid: 2, death: 2 } } });
-  assert.ok(flat && away);
-  assert.notEqual(runsOf(flat, 'Brackenby'), runsOf(away, 'Brackenby'),
-    "Brackenby's own plan never reached the middle");
+  // WHAT "REACHED THE MIDDLE" MEANS. This compared the innings TOTAL and
+  // nothing else, on one seed - so a plan that changed every ball of the
+  // innings and happened to arrive at the same score read as a plan that was
+  // never heard. (The extras calibration produced exactly that coincidence:
+  // 234 both ways, off two completely different innings.) The question is
+  // whether the sheet altered the cricket, so the innings itself is what is
+  // compared, and over several seeds rather than one.
+  let heard = 0;
+  for (const seed of [4242, 4243, 4244]) {
+    const flat = eng.sim(A, B, 'balanced', 'Sunny', seed);
+    const away = eng.sim(A, B, 'balanced', 'Sunny', seed, { Brackenby: { phaseIntent: { pp: 2, mid: 2, death: 2 } } });
+    assert.ok(flat && away, 'a match failed to complete');
+    const inn = r => (r.innings || []).find(x => x && x.batTeam === 'Brackenby');
+    if (JSON.stringify(inn(flat)) !== JSON.stringify(inn(away))) heard++;
+  }
+  assert.equal(heard, 3, "Brackenby's own plan never reached the middle");
 });
 
 test("a batter's own instruction reaches his deliveries", () => {

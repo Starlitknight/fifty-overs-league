@@ -1070,10 +1070,19 @@ test('016b: the stats centre adds up to the scorecards it came from', async () =
   const byWkts = P.filter(x => x.wkts > 0).sort((a, b) => b.wkts - a.wkts || a.conc - b.conc);
   assert.equal(byWkts[0].name, lg.stats.bowl[0].name, 'the leading wicket-taker agrees');
   // and every column is arithmetic on the two the cards actually carry
+  // THE SAME ARITHMETIC, NOT MERELY EQUIVALENT ARITHMETIC. These used to fold
+  // the multiplier into the numerator - round(600 * conc / balls) / 100 where
+  // the umpire writes round(6 * conc / balls * 100) / 100 - which is the same
+  // number in algebra and not always in floating point, because the umpire's
+  // division rounds before the scaling. A figure landing on a half in the
+  // second decimal then went one way in the world and the other way here:
+  // 4.72 against 4.73, on a run rate nobody had touched. Mirror the
+  // expression, or this is a test of IEEE 754 wearing a cricket jumper.
+  const r1 = v => Math.round(v * 100) / 100;
   P.forEach(x => {
-    if (x.bf) assert.equal(x.sr, Math.round(10000 * x.runs / x.bf) / 100, x.name + ' strike rate');
-    if (x.wkts) assert.equal(x.bave, Math.round(100 * x.conc / x.wkts) / 100, x.name + ' bowling average');
-    if (x.balls) assert.equal(x.er, Math.round(600 * x.conc / x.balls) / 100, x.name + ' economy');
+    if (x.bf) assert.equal(x.sr, r1(100 * x.runs / x.bf), x.name + ' strike rate');
+    if (x.wkts) assert.equal(x.bave, r1(x.conc / x.wkts), x.name + ' bowling average');
+    if (x.balls) assert.equal(x.er, r1(6 * x.conc / x.balls), x.name + ' economy');
     assert.ok(x.inns >= x.no, x.name + ': not-outs cannot exceed innings');
     assert.ok(x.hs <= x.runs, x.name + ': a best score cannot beat the aggregate');
     assert.ok(x.m >= 1, x.name + ' played at least one match');
