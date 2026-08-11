@@ -16,9 +16,19 @@ import { readFileSync, readdirSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 import { REGIONS } from '../engine/src/world/timeline.mjs';
-import { NAT_STR } from '../server/init-world.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
+// THE SERVER'S ROSTER IS READ, NOT IMPORTED. init-world.mjs reaches db.mjs,
+// which reaches `pg` - a database driver the engine suite has no business
+// needing and CI does not install, so importing it here turned a green build
+// red on a machine that had never been near Postgres. The list is a literal;
+// this is the literal.
+const NAT_STR = (function () {
+  const src = readFileSync(join(ROOT, 'server', 'init-world.mjs'), 'utf8');
+  const at = src.indexOf('export const NAT_STR');
+  const lit = src.slice(src.indexOf('[', at), src.indexOf(']', src.indexOf('[', at)) + 1);
+  return Object.fromEntries([...lit.matchAll(/'(\w+)'/g)].map(m => [m[1], 1]));
+})();
 const GONE = ['wal', 'ken', 'can'];
 const GONE_NAMES = ['Wales', 'Kenya', 'Canada'];
 
