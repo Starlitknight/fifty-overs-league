@@ -373,15 +373,31 @@ export async function computeLeague(pool, country, seasonNo, now) {
   // stops the whole planet's cup. The semi already answers this - "a tied semi
   // sends the higher seed through" - and the final now answers it the same
   // way, which is also who hosted it: the better fourteen weeks wins the tie.
+  //
+  // AND A CHAMPION IS CALLED WHAT HIS CLUB IS CALLED TODAY. This was the one
+  // place that broke the rule the results loop above states - names as played
+  // map to a SLOT, and the snapshot then speaks the CURRENT name - because it
+  // handed back the card's winner verbatim. A club that has been renamed since
+  // finals night was therefore crowned under a name appearing nowhere else on
+  // the page: the board said Durham had won Division Two while every table on
+  // the site called that club Orange Club, and nothing could match the two up.
+  // The winner is resolved to his slot first, and the slot answers to the name
+  // the club goes by now.
   const finalWinner = d => {
     const f = ms.filter(m => m.round === 16 && (divOf[m.home_slot] || 1) === d)[0];
     if (!f || !f.result) return null;
-    if (f.result.winner) return f.result.winner;
-    const seed = Object.fromEntries((d === 2 ? table2 : table).map((x, i) => [x.slot, i]));
-    const hi = (seed[f.away_slot] != null && seed[f.home_slot] != null && seed[f.away_slot] < seed[f.home_slot])
-      ? f.away_slot : f.home_slot;
-    return hi === f.away_slot ? (f.away_name || bySlot[f.away_slot].name)
-                              : (f.home_name || bySlot[f.home_slot].name);
+    const hN = f.home_name || bySlot[f.home_slot].name, aN = f.away_name || bySlot[f.away_slot].name;
+    let slot;
+    if (f.result.winner) {
+      if (f.result.winner === aN) slot = f.away_slot;
+      else if (f.result.winner === hN) slot = f.home_slot;
+      else return f.result.winner;             // a winner belonging to neither side: say what the card says
+    } else {
+      const seed = Object.fromEntries((d === 2 ? table2 : table).map((x, i) => [x.slot, i]));
+      slot = (seed[f.away_slot] != null && seed[f.home_slot] != null && seed[f.away_slot] < seed[f.home_slot])
+        ? f.away_slot : f.home_slot;
+    }
+    return (bySlot[slot] && bySlot[slot].name) || (slot === f.away_slot ? aN : hN);
   };
   const champion = finalWinner(1);
   const champion2 = finalWinner(2);
