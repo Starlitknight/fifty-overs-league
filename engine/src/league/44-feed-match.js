@@ -1721,6 +1721,16 @@
       ".fo-fd .fd-sc-fow s{text-decoration:none;color:var(--fdmut);font-size:11.5px}",
       "@media(max-width:560px){.fo-fd .fd-sc-yet{grid-template-columns:minmax(0,1fr);gap:4px;padding-left:13px;padding-right:13px}}",
       ".fo-fd .fd-sc-b,.fo-fd .fd-sc-c.bwl{display:grid;grid-template-columns:minmax(0,1fr) 28px 24px 32px 22px 26px 40px;gap:7px;align-items:center}",
+      // A PHONE HAS NO ROOM FOR SEVEN COLUMNS AND A NAME. Six figure columns
+      // plus their gaps take 214px of a 390px screen, and what gives is the one
+      // thing that must not: "N. Wright (rfm)" became "N. Wright (...". The
+      // columns tighten and the gap halves below 520px, which buys the name
+      // about seventy pixels - enough for a surname and his trade.
+      "@media(max-width:520px){.fo-fd .fd-sc-b,.fo-fd .fd-sc-c.bwl{grid-template-columns:minmax(0,1fr) 22px 18px 28px 18px 22px 34px;gap:4px}}",
+      // and where even that will not do it, the trade drops under the name
+      // rather than being cut off mid-word
+      "@media(max-width:400px){.fo-fd .fd-sc-b b,.fo-fd .fd-sc-c.bwl>span:first-child{flex-wrap:wrap;line-height:1.25}",
+      ".fo-fd .fd-sc-b b>i{flex:0 0 100%;font-style:normal}}",
       ".fo-fd .fd-sc-b span.mdn{color:#B0B6C2}.fo-fd .fd-sc-b span.mdn.sm{color:var(--fdink);font-weight:700}",
       ".fo-fd .fd-sc-b{padding:9px 16px;border-top:1px solid var(--fdline)}",
       // a column of figures with no heading is a column of guesses

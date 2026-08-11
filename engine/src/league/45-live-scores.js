@@ -365,8 +365,7 @@
     }
     if (!body) body = "<div class='fo-lv-rest'><b>" +
       (world.length ? "Every league has finished for the day." : "A rest day across the whole world.") + "</b>" +
-      "<span>" + (world.length ? "Today&rsquo;s results are in the league room; the next round bowls tomorrow."
-                               : "Nobody is playing today. The next round bowls tomorrow.") + "</span>" +
+      "<span>" + (world.length ? "" : "Nobody is playing today.") + "</span>" +
       "<a href='#/league'>Your league &rsaquo;</a><a href='#/schedule'>The calendar &rsaquo;</a></div>";
     page.innerHTML = "<div class='fo-lv'><div class='fo-lv-in'>" + head + body +
       "<div class='fo-lv-foot'><a href='#/world'>&larr; The world</a><a href='#/league'>Your league</a></div>" +
