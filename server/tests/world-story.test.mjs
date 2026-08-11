@@ -151,3 +151,22 @@ test('a fold that has moved is redone on the next tick, not the next world day',
   const again = await runDue(pool, host, 'eng', { now: EPOCH + START * DAY + 23 * 3600000, world: false });
   assert.ok(!again.some(x => x.refolded), 'the guard holds on the next tick');
 });
+
+// AND IT HAS TO REACH THE PAGE. world_my_status serves the club's squad blob
+// whole, so a manager's own men carried their moments from the first settle.
+// world_squads - the public dossier, and the only way a page reads a
+// cricketer who is not yours - is a curated projection that names each field
+// it publishes, so the story was empty on every other man in the world.
+test('the public dossier publishes a man moments, not just his own manager', async () => {
+  const rows = (await pool.query(
+    `SELECT players FROM world_squads WHERE country_id='eng' AND slot=0`)).rows;
+  assert.equal(rows.length, 1, 'the club has a dossier');
+  const men = rows[0].players;
+  const storied9 = men.filter(p => (p.mile || []).length);
+  assert.ok(storied9.length >= 8, 'his moments come through the view (' + storied9.length + ')');
+  assert.ok(storied9.every(p => p.mile.every(m => m.txt && Number.isFinite(m.d))),
+    'whole, not flattened to a count');
+  // a man with nothing to say still reads as an empty list rather than absent,
+  // so the page never has to tell null from "he has not played"
+  assert.ok(men.every(p => Array.isArray(p.mile)), 'every row carries the key');
+});
