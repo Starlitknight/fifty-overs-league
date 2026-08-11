@@ -1670,23 +1670,29 @@
       ".fo-mr-by{font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:10px;color:#6E7F96;margin-top:22px;padding-top:12px;border-top:1px solid rgba(150,180,225,.14)}",
       // rail
       ".fo-mr-rail{display:flex;flex-direction:column;gap:14px}",
-      ".fo-mr-kick{font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.26em;font-size:10px;font-weight:600;color:var(--gold)}",
-      ".fo-mr-turn,.fo-mr-mom{padding:16px 17px;border-radius:13px;background:linear-gradient(180deg,rgba(16,27,50,.82),rgba(8,14,26,.82));border:1px solid rgba(230,177,94,.24)}",
-      ".fo-mr-turn h3,.fo-mr-mom h3{font-family:Manrope,sans-serif;font-weight:700;text-transform:uppercase;font-size:19px;line-height:1.1;margin:7px 0 8px;color:var(--paper)}",
-      ".fo-mr-turn p{font-family:Fraunces,Georgia,serif;font-size:13px;line-height:1.6;color:#aebbd2;margin:0}",
-      ".fo-mr-line{display:grid;grid-template-columns:1fr auto auto;align-items:baseline;gap:9px;padding:5px 0;border-top:1px solid rgba(150,180,225,.12)}",
-      ".fo-mr-line span{font-family:Fraunces,Georgia,serif;font-size:13px;color:#9FB0C6;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
-      ".fo-mr-line b{font-family:Manrope,sans-serif;font-size:14px;color:#fff;font-variant-numeric:tabular-nums}",
-      ".fo-mr-line i{font-family:Manrope,sans-serif;font-style:normal;font-size:10px;letter-spacing:.1em;color:#6E7F96}",
+      ".fo-mr-kick{font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:9.5px;font-weight:800;color:#3D4EE0}",
+      // THE SUMMARY CARDS ARE PAPER NOW. Three navy panels sat on a cream page
+      // carrying the only figures on it - the stand, the man of the match, and
+      // each innings - so the eye had to cross from light to dark and back for
+      // every number, and the gold-on-navy scoreline was the loudest thing in a
+      // quiet room. Same information, the light treatment the scorecard wears:
+      // white ground, cool graphite type, indigo on the figure that matters.
+      ".fo-mr-turn,.fo-mr-mom{padding:16px 17px;border-radius:13px;background:#FFFFFF;border:1px solid #EAECF2;box-shadow:0 1px 2px rgba(16,24,40,.04),0 10px 24px rgba(16,24,40,.05)}",
+      ".fo-mr-turn h3,.fo-mr-mom h3{font-family:Manrope,sans-serif;font-weight:800;text-transform:uppercase;font-size:18px;line-height:1.12;margin:7px 0 8px;color:#0F1522;letter-spacing:-.01em}",
+      ".fo-mr-turn p{font-family:Fraunces,Georgia,serif;font-size:13.5px;line-height:1.6;color:#4A5260;margin:0}",
+      ".fo-mr-line{display:grid;grid-template-columns:1fr auto auto;align-items:baseline;gap:9px;padding:6px 0;border-top:1px solid #EAECF2}",
+      ".fo-mr-line span{font-family:Manrope,sans-serif;font-weight:600;font-size:13px;color:#0F1522;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".fo-mr-line b{font-family:Manrope,sans-serif;font-weight:800;font-size:14.5px;color:#0F1522;font-variant-numeric:tabular-nums}",
+      ".fo-mr-line i{font-family:Manrope,sans-serif;font-style:normal;font-size:10.5px;letter-spacing:.06em;color:#79808E;font-variant-numeric:tabular-nums}",
       ".fo-mr-cards{display:grid;gap:12px}",
       ".fo-mr-row2{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;align-items:start;margin-bottom:14px}",
       ".fo-mr-cards--row{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:14px;margin-bottom:18px}",
-      ".fo-mr-side{padding:14px 16px;border-radius:13px;background:linear-gradient(140deg,#0C1B2E,#132E4E);border:1px solid rgba(235,194,113,.18);box-shadow:0 14px 30px rgba(11,29,51,.28)}",
+      ".fo-mr-side{padding:14px 16px;border-radius:13px;background:#FFFFFF;border:1px solid #EAECF2;box-shadow:0 1px 2px rgba(16,24,40,.04),0 10px 24px rgba(16,24,40,.05)}",
       ".fo-mr-sh{display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}",
-      ".fo-mr-sh b{font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:12.5px;color:var(--paper);flex:1;min-width:0}",
-      ".fo-mr-sh u{font-family:Manrope,sans-serif;font-weight:700;font-size:19px;color:var(--gold);text-decoration:none;font-variant-numeric:tabular-nums}",
-      ".fo-mr-sh i{font-family:Manrope,sans-serif;font-style:normal;font-size:10px;letter-spacing:.12em;color:#6E7F96}",
-      ".fo-mr-sub{font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.2em;font-size:10px;color:#7d8fad;margin:11px 0 2px}",
+      ".fo-mr-sh b{font-family:Manrope,sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.08em;font-size:12.5px;color:#0F1522;flex:1;min-width:0}",
+      ".fo-mr-sh u{font-family:Manrope,sans-serif;font-weight:800;font-size:21px;color:#3D4EE0;text-decoration:none;font-variant-numeric:tabular-nums;letter-spacing:-.02em}",
+      ".fo-mr-sh i{font-family:Manrope,sans-serif;font-style:normal;font-size:10.5px;letter-spacing:.08em;color:#79808E;font-variant-numeric:tabular-nums}",
+      ".fo-mr-sub{font-family:Manrope,sans-serif;font-weight:800;text-transform:uppercase;letter-spacing:.16em;font-size:9px;color:#79808E;margin:13px 0 2px}",
       // rules + worm
       ".fo-mr-rule{display:flex;align-items:center;gap:15px;margin:38px 0 14px}",
       // the partnership ladders on the charts tab: label, bar, runs, the pair
@@ -1799,9 +1805,11 @@
       ".fo-mr-eov .w{margin-top:5px;font:400 12px/1.6 Manrope,sans-serif;color:#5c6470;font-variant-numeric:tabular-nums}",
       ".fo-mr-eov .w strong{font-weight:700;color:#0F1522}",
       // the tag names the thing the engine did; the talent wears the gold
-      ".fo-mr-tag{font-style:normal;font-family:Manrope,sans-serif;font-size:11px;font-weight:700;letter-spacing:.04em;color:#22635F;white-space:nowrap}",
-      ".fo-mr-tag.tal{color:#8F6A1C}",
-      ".fo-mr-ball.tagged.wkt .fo-mr-tag{color:#A6392B}",
+      // THE TAG NAMES WHAT THE ENGINE DID, so it has to carry like a label rather
+      // than fade into the serif beside it: heavier, darker, and a shade tighter.
+      ".fo-mr-tag{font-style:normal;font-family:Manrope,sans-serif;font-size:11px;font-weight:800;letter-spacing:.02em;color:#0A4A40;white-space:nowrap}",
+      ".fo-mr-tag.tal{color:#6E5113}",
+      ".fo-mr-ball.tagged.wkt .fo-mr-tag{color:#7E1B10}",
       ".fo-mr-comm .fo-mr-by{color:#7a7566;border-top:1px solid rgba(20,28,40,.12);margin-top:12px;padding-top:10px}",
       ".fo-mr-cf{display:flex;align-items:center;gap:6px;margin:0 0 12px;flex-wrap:wrap}",
       "html body #page .fo-mr-cf label{font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.16em;font-size:10px;font-weight:600;color:#8F6A1C}",
