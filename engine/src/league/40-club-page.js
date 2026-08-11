@@ -694,16 +694,33 @@
       // their fixtures still to come - the rounds the results have not banked
       var lastRound = played.reduce(function (a, r) { return Math.max(a, r.round | 0); }, 0);
       var upcoming = fixtures.filter(function (f) { return f.round > lastRound; });
+      // WHEN A ROUND IS PLAYED IS THE WORLD'S TO SAY, NOT THIS DEVICE'S.
+      // This asked foRoundTimeTxt, which belongs to the LOCAL single-player
+      // clock: it anchors round numbers to "one round a day from tomorrow",
+      // counting from whatever round App.season happens to be on. That model
+      // has two things wrong with it here. The world runs three rounds and
+      // then rests, so a straight day-per-round is not its calendar; and the
+      // local anchor drifts from the served round, so it answered NOTHING for
+      // any round below its own (they fell back to a bare "R3", "R4") and
+      // dated the first round at or above it as tomorrow. A club four rounds
+      // from its next fixture was told round five was tomorrow.
+      //
+      // The planet already owns the one answer every page that dates a
+      // fixture must ask for: the world day that season's round falls on,
+      // rest days and all, at the hour that nation bowls its first ball.
       var roundWhen = function (r9) {
-        try { return (typeof window.foRoundTimeTxt === "function" && window.foRoundTimeTxt(r9)) || ""; } catch (eW9) { return ""; }
+        try {
+          var PL9 = window.__foPlanet;
+          return (PL9 && PL9.whenTxt(seasonNo, r9 | 0, cid) || "").replace(/&middot;/g, "\u00b7");
+        } catch (eW9) { return ""; }
       };
+      var seasonNo = (lg && lg.seasonNo) || 1;
       var meetingsWith = function (foe) {
         if (!foe || !lg || !lg.results) return [];
         return lg.results.filter(function (r) {
           return (r.home === name && r.away === foe) || (r.away === name && r.home === foe);
         });
       };
-      var seasonNo = (lg && lg.seasonNo) || 1;
 
       // ---- the challenge ---------------------------------------------------
       // Any club on earth can be played, and this is where you ask. The hour
@@ -1190,8 +1207,7 @@
           "<div class='fo-cp-sub'>The forecast</div>" +
           (toCome.length
             ? "<div class='fo-cp-gfc'>" + toCome.slice(0, 8).map(function (x) {
-                var when = "";
-                try { if (typeof window.foRoundTimeTxt === "function") when = window.foRoundTimeTxt(x.round) || ""; } catch (eW) {}
+                var when = roundWhen(x.round);
                 return "<div class='fo-cp-gfr'>" +
                   "<span class='r'>R" + x.round + "</span>" +
                   "<span class='o'>v " + E(nameAt9(x.foeSlot)) + (when ? "<i>" + E(when) + "</i>" : "") + "</span>" +
