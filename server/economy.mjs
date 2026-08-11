@@ -8,7 +8,8 @@
 //   supporters -> a crowd that grows on winning and drifts away on losing
 //   mood       -> what those supporters think, from recent form and position
 //   the gate   -> attendance x the ticket, split two thirds home, one third away
-//   sponsors   -> paid by the round, worth more the higher you finish
+//   sponsors   -> a contract signed each close season on where you finished,
+//                 then paid flat every round of it
 //   wages      -> the bill as it stands, every round played
 //   the academy-> upkeep by the round, and what its upgrades cost
 //   the ground -> seats you paid for, and the ceiling they put on a crowd
@@ -622,6 +623,23 @@ export async function computeFinance(pool, country, opts = {}) {
     // opening day; what resets is what those supporters currently think.)
     const sNo9 = R.ms.length ? R.ms[0].season_no : null;
     if (sNo9 !== null && sNo9 !== curSeason) {
+      // A SPONSOR SIGNS A CONTRACT, HE DOES NOT RE-READ THE TABLE EVERY WEEK.
+      // The cheque was priced off the club's position and mood on the morning
+      // of each round, so it moved every time the table did - a club that
+      // climbed from ninth to fifth and cheered up saw its sponsorship nearly
+      // double between one match and the next, which is not a thing sponsorship
+      // does. It is signed once, in the close season, on where the club
+      // FINISHED - the table as it stood when the previous summer ended, which
+      // is what posMap still holds at this exact moment - and paid flat every
+      // round until the next contract. Standing is still worth money; it is
+      // worth it a year at a time, the way a real deal is.
+      const posEnd = posMap();
+      for (const c8 of clubs) {
+        const t8 = S[c8.slot];
+        t8.sponsorFee = sponsorOf(
+          curSeason === null ? (c8.slot | 0) + 1 : (posEnd[c8.slot] || (c8.slot | 0) + 1),
+          MOOD_NEUTRAL, N);
+      }
       curSeason = sNo9;
       for (const c of clubs) { const t9 = S[c.slot]; t9.form = []; t9.mood = MOOD_NEUTRAL; t9.sPts = 0; t9.sPlayed = 0; }
     }
@@ -649,20 +667,14 @@ export async function computeFinance(pool, country, opts = {}) {
       H.gate += home; H.bcast += bc; H.atts.push(att); H.lastAtt = att; H.lastWeather = w.word;
       A.awayCut += away;
       takings[H.slot] += home + bc; takings[A.slot] += away;
-      // A GATE LINE MUST BE ABLE TO BE CHECKED. This one named the crowd and
-      // the CLOSING price and then banked a figure that was neither: the club
-      // keeps two thirds, and a manager who moved his price mid-window sold
-      // the early days at the old one, so nobody could get from "11,973 at $30"
-      // to $211,903 by any arithmetic - it looked like a hundred and fifty
-      // thousand pounds going missing. Every step is on the line now: what was
-      // actually taken per head, what the house took, and the share of it that
-      // is this club's. The visitor's line already said whose share it was.
-      const perHead = att ? Math.round((gate / att) * 100) / 100 : 0;
-      gates[H.slot].push({ kind: 'gate', label: 'Gate v ' + m.away_name + ' \u00b7 ' +
-        att.toLocaleString('en-US') + ' through the turnstiles \u00b7 $' + perHead.toFixed(2) +
-        ' a head \u00b7 two thirds of $' + gate.toLocaleString('en-US'), amount: home });
-      gates[H.slot].push({ kind: 'broadcast', label: 'Broadcast fee v ' + m.away_name + ' \u00b7 $7.50 a head', amount: bc });
-      gates[A.slot].push({ kind: 'gate-away', label: 'Away share at ' + m.home_name + ' \u00b7 one third of $' + gate.toLocaleString('en-US'), amount: away });
+      // THE LINE NAMES THE MATCH, AND THE FIGURE IS THE FIGURE. It carried the
+      // crowd, the price a head and the share, which was true and which nobody
+      // wanted to read on a statement: a ledger line is what came in and what
+      // it came in from. The arithmetic behind a gate lives on the ground page,
+      // where a manager sets the price.
+      gates[H.slot].push({ kind: 'gate', label: 'Gate takings v ' + m.away_name, amount: home });
+      gates[H.slot].push({ kind: 'broadcast', label: 'Broadcast fee v ' + m.away_name, amount: bc });
+      gates[A.slot].push({ kind: 'gate-away', label: 'Away share at ' + m.home_name, amount: away });
     }
     // the world moment this round's books are settled: its nation's own hour
     const roundAt = EPOCH + ((startOf[R.ms[0].season_no] ?? 0) +
@@ -675,7 +687,8 @@ export async function computeFinance(pool, country, opts = {}) {
       const c = S[slot];
       // a club already under administration signs a distressed deal: the
       // sponsor stays, but for half of what he would otherwise pay
-      const sp = Math.round(sponsorOf(pos[slot], c.mood, N) * (c.admin ? ADMIN_SPONSOR : 1));
+      const sp = Math.round((c.sponsorFee != null ? c.sponsorFee : sponsorOf(pos[slot], MOOD_NEUTRAL, N))
+        * (c.admin ? ADMIN_SPONSOR : 1));
       const up = academyUpkeep(c.academy);
       const f = feeAt[R.ms[0].season_no + ':' + R.ms[0].round + ':' + slot];
       const comp = f ? f.paid : 0;

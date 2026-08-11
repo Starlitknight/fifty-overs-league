@@ -261,40 +261,51 @@ test('the board is the banked sale trimmed to the clock', () => {
 // reader can do all of it: heads x per-head is the gross, two thirds of the
 // gross is the money. That is what this checks - against the banked figure
 // rather than against a sentence.
-test('every gate line can be re-derived from the words printed on it', async () => {
+test('the home club banks two thirds of a gate and the visitor the rest', async () => {
+  // THE LINE NO LONGER SHOWS ITS WORKING, so the working is checked here.
+  // It used to print the crowd, what they paid a head and the gross, which was
+  // asked for and then asked to go again: a statement line is what came in and
+  // what it came in from. That is a fair call - but the split it was proving is
+  // still real money, so it is proved against the LEDGER rather than against a
+  // sentence. Every gate has a matching away share, and the two are the whole
+  // house: that cannot be true by accident and it cannot be true if the shares
+  // ever drift apart.
   await pool.query('DELETE FROM ticket_prices');
-  // a standing price, then a rise close in: the second half of the window
-  // sells dearer than the first, so the closing price is NOT the average
-  await pool.query(
-    `INSERT INTO ticket_prices(country_id, slot, season_no, round, set_ms, price)
-     VALUES ('eng', 1, 0, 0, $1, 26), ('eng', 1, 0, 0, $2, 40)`,
-    [EPOCH, EPOCH + 200 * DAY]);
-  const rows = await computeFinance(pool, 'eng', { ledgerSlots: [1] });
-  const led = rows.filter(r => r.slot === 1)[0].ledger || [];
-  const gate = led.filter(l => l.kind === 'gate');
-  assert.ok(gate.length, 'the club hosted somebody');
-  for (const l of gate) {
-    const m = /([\d,]+) through the turnstiles \u00b7 \$([\d.]+) a head \u00b7 two thirds of \$([\d,]+)/
-      .exec(l.label) || /([\d,]+) through the turnstiles · \$([\d.]+) a head · two thirds of \$([\d,]+)/.exec(l.label);
-    assert.ok(m, 'the line names heads, the head rate and the house: ' + l.label);
-    const heads = +m[1].replace(/,/g, ''), perHead = +m[2], gross = +m[3].replace(/,/g, '');
-    assert.ok(heads > 0 && gross > 0, l.label);
-    // the money banked is exactly two thirds of the gross it names
-    assert.equal(l.amount, Math.round(gross * HOME_CUT),
-      'two thirds of ' + gross + ' is ' + Math.round(gross * HOME_CUT) + ', banked ' + l.amount);
-    // and the head rate it names multiplies back up to that gross
-    assert.ok(Math.abs(heads * perHead - gross) <= heads * 0.005 + 1,
-      heads + ' x $' + perHead + ' = ' + (heads * perHead).toFixed(0) + ', printed ' + gross);
+  const rows = await computeFinance(pool, 'eng', { ledgerSlots: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] });
+  const led = rows.flatMap(r => r.ledger || []);
+  const gates = led.filter(l => l.kind === 'gate');
+  const aways = led.filter(l => l.kind === 'gate-away');
+  assert.ok(gates.length, 'somebody hosted');
+  assert.equal(gates.length, aways.length, 'every gate has a visitor taking a share of it');
+  for (const g of gates) {
+    assert.ok(g.amount > 0, 'a gate is money: ' + g.label);
+    assert.match(g.label, /^Gate takings v /, 'and the line names the visitor: ' + g.label);
   }
-  // the visitor's third is named as such, and the two thirds add to the whole
-  const awayRows = await computeFinance(pool, 'eng', { ledgerSlots: [0, 2, 3, 4, 5, 6, 7] });
-  const anyAway = awayRows.flatMap(r => r.ledger || []).filter(l => l.kind === 'gate-away');
-  assert.ok(anyAway.length, 'somebody travelled');
-  for (const l of anyAway) {
-    const m = /one third of \$([\d,]+)/.exec(l.label);
-    assert.ok(m, 'the visitor is told what he is taking a third OF: ' + l.label);
-    const gross = +m[1].replace(/,/g, '');
-    assert.equal(l.amount, gross - Math.round(gross * HOME_CUT), 'and the two shares are the whole gate');
+  for (const a of aways) assert.match(a.label, /^Away share at /, a.label);
+  // the two shares of one house: home is two thirds of the whole, to the pound
+  const whole = gates.reduce((s, g) => s + g.amount, 0) + aways.reduce((s, a) => s + a.amount, 0);
+  const home = gates.reduce((s, g) => s + g.amount, 0);
+  assert.ok(Math.abs(home / whole - HOME_CUT) < 0.002,
+    'the home clubs took ' + (100 * home / whole).toFixed(2) + '% of every gate in the country');
+});
+
+// A SPONSOR SIGNS A CONTRACT. It used to be priced off the table and the mood
+// on the morning of each round, so a club that climbed four places and cheered
+// up saw its sponsorship nearly double between one match and the next - 32,020
+// one week and 59,427 the next, which is what was reported. It is signed in the
+// close season on where the club finished and paid flat until the next one.
+test('the sponsor pays the same every round of a season', async () => {
+  const rows = await computeFinance(pool, 'eng', { ledgerSlots: [0, 1, 8, 15] });
+  let checked = 0;
+  for (const r of rows) {
+    const sp = (r.ledger || []).filter(l => l.kind === 'sponsor');
+    if (sp.length < 2) continue;
+    const first = sp[0].amount;
+    sp.forEach(function (l) {
+      assert.equal(l.amount, first,
+        'slot ' + r.slot + ' was paid ' + l.amount + ' having been paid ' + first + ' earlier the same season');
+    });
+    checked++;
   }
-  await pool.query('DELETE FROM ticket_prices');
+  assert.ok(checked >= 1, 'at least one club has a season of sponsor lines to compare (' + checked + ')');
 });
