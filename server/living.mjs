@@ -518,7 +518,7 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     // reader of cricket expects, and every figure below is already in the
     // banked cards - so the fold, which replays the entire record on every
     // settle, brings the past along with it.
-    if (!m.has(name)) m.set(name, { caps: 0, apps: [],
+    if (!m.has(name)) m.set(name, { caps: 0, apps: [], mile: [],
       car: { m: 0, inns: 0, no: 0, runs: 0, balls: 0, hs: 0, f4: 0, f6: 0, h50: 0, h100: 0,
         wkts: 0, conc: 0, ovb: 0, mdn: 0, w3: 0, w5: 0, bb: null,
         ctf: 0, ctwk: 0, st: 0, ro: 0 },
@@ -679,8 +679,26 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     // a catch behind the stumps is the keeper's, and one in the field is not
     if (L.wk) c.ctwk += L.ct | 0; else c.ctf += L.ct | 0;
     c.st += L.st | 0; c.ro += L.ro | 0;
+    // THE STORY SO FAR, written as it happens. The record says a man's highest
+    // score is 87; it cannot say the afternoon he made it, and so his page had
+    // a heading with nothing under it. Every line below is a moment the fold
+    // is ALREADY deciding - the first cap, a new best, a maiden hundred - and
+    // it costs nothing to write down which round it happened in on the way
+    // past. Because this replays the whole record on every settle, a page
+    // opened tomorrow carries the moments of every match ever played, not just
+    // the ones played since the day this was written.
+    const cls = L.intl ? 'international' : 'league';
+    const mile = (k, txt) => { if (e.mile.length < 60) e.mile.push({ d: day, s: L.season, r: L.round, k, txt }); };
+    if (c.m === 1) mile('debut', 'Made his ' + cls + ' debut');
+    if (L.batted && L.hs > 0 && L.hs > c.hs) mile('hs', 'Made his highest ' + cls + ' score of ' + L.hs);
     if (L.hs > c.hs) c.hs = L.hs;
-    if (L.ovb > 0 && (!c.bb || L.wkts > c.bb.w || (L.wkts === c.bb.w && L.conc < c.bb.r))) c.bb = { w: L.wkts, r: L.conc };
+    if (L.runs >= 100 && c.h100 === 1) mile('hundred', 'Maiden ' + cls + ' century: ' + L.runs + ' off ' + L.balls);
+    else if (L.runs >= 50 && c.h50 === 1 && !c.h100) mile('fifty', 'Maiden ' + cls + ' fifty: ' + L.runs + ' off ' + L.balls);
+    if (L.ovb > 0 && (!c.bb || L.wkts > c.bb.w || (L.wkts === c.bb.w && L.conc < c.bb.r))) {
+      if (L.wkts > 0) mile('bb', 'Achieved his best ' + cls + ' bowling figures of ' + L.wkts + '-' + L.conc);
+      c.bb = { w: L.wkts, r: L.conc };
+    }
+    if (L.wkts >= 5 && c.w5 === 1) mile('fivefor', 'Maiden ' + cls + ' five-for: ' + L.wkts + '-' + L.conc);
     // the workload rides raw: the fold below prices it against the MAN -
     // his trade sets the per-over rate, his gloves and his armband add bills
     // the scorecard line alone cannot know
@@ -765,9 +783,50 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     }
   } catch (eFr) { /* pre-friendlies database: no exhibitions to read */ }
 
+  // HOW HE GOT HERE IS PART OF THE STORY. Every settled deal this country's
+  // clubs have done is on the board already, with the day it settled and the
+  // fee - so a man's page can say who signed him and what he cost without a
+  // second table and without anything new being written down. A deal where the
+  // other end is the open market, the bank or a release has no club to name
+  // (see migration 079 for the same four kinds, on the club diary).
+  const dealsBySlot = new Map();
+  try {
+    const rows = (await pool.query(
+      `SELECT player, fee, settled_day, country_id, slot, buyer_country, buyer_slot
+         FROM listings WHERE status = 'sold' AND settled_day IS NOT NULL
+          AND (country_id = $1 OR buyer_country = $1) ORDER BY settled_day`, [country])).rows;
+    const put = (slot, r) => {
+      if (slot == null || slot < 0) return;
+      if (!dealsBySlot.has(slot)) dealsBySlot.set(slot, new Map());
+      const m = dealsBySlot.get(slot);
+      if (!m.has(r.player)) m.set(r.player, []);
+      m.get(r.player).push(r);
+    };
+    const nameOf = new Map(clubs.map(c => [c.slot, c.name]));
+    for (const r of rows) {
+      if (r.buyer_country !== country) continue;              // he was bought INTO this world
+      const from = r.country_id === country ? (nameOf.get(r.slot) || null) : null;
+      const how = r.slot == null || r.slot < 0 ? 'free' : 'club';
+      put(r.buyer_slot, { player: r.player, day: r.settled_day | 0, fee: r.fee | 0, from, how });
+    }
+  } catch (eDl) { dealsBySlot.clear(); }   // a database without a board simply has no deals
+
   let touched = 0;
   for (const club of clubs) {
     const men = book.get(club.slot) || new Map();
+    const deals = dealsBySlot.get(club.slot) || new Map();
+    // his moments and his deals, one list, oldest first. The page reads this
+    // as the whole story so far; sixty lines is a long career and a cap the
+    // squad blob will never notice.
+    const story = (q, mile) => {
+      const all = mile.concat((deals.get(q.name) || []).map(d => ({
+        d: d.day, k: 'buy',
+        txt: d.how === 'club' && d.from
+          ? 'Transferred from ' + d.from + ' for $' + (d.fee | 0).toLocaleString('en-US')
+          : 'Signed off the open market for $' + (d.fee | 0).toLocaleString('en-US')
+      }))).sort((x, y) => (x.d | 0) - (y.d | 0));
+      if (all.length) q.mile = all.slice(-60); else delete q.mile;
+    };
     // the nets first: skills are the baseline plus every round genuinely
     // worked, so what the man is comes before what the season did to him
     // a managed club's replay collects its book of the nets on the way past;
@@ -795,6 +854,9 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
         // was bought, and his record travelled with him
         if (q.carry && q.carry.m) q.career = withCarry(null, q.carry); else delete q.career;
         if (q.carryIntl && q.carryIntl.m) q.intl = withCarry(null, q.carryIntl); else delete q.intl;
+        // he has played nothing for this club, but he was still signed, and
+        // the day he walked in is a story with one line in it
+        story(q, []);
         return q;
       }
       q.exp = Math.round(clamp(base + expGain(q.age || 27, e.caps), 0, 99));
@@ -824,6 +886,7 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
       q.career = withCarry(e.car, q.carry);
       const iBook = withCarry(e.intl, q.carryIntl);
       if (iBook.m) q.intl = iBook; else delete q.intl;
+      story(q, e.mile);
       return q;
     }).map(q => talentsEarned(q, (talBook.get(club.slot) || new Map()).get(q.name), talT));
     // THE STANDING LOAD OF THE NETS (training v2). A unit training light

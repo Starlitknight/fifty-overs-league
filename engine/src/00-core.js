@@ -864,6 +864,10 @@ function groundFieldingAdjust(inn,out,bowler){
     if(near&&pick&&near.ang<=11&&fs>=64&&M.rand()<0.26*prox(near)*Math.min(1,(fs-60)/50)){
       M._fielder=pick;M._fieldPos=near.spot.label;
       M._fieldingEvent=(isRocket?'Rocket Arm! ':'')+pick.name+' attacks the ball at '+near.spot.label+' and keeps it to one.';
+      // a talent that fired is a talent that fired, whether it saved the run
+      // or took the wicket - this one announced itself in the sentence for a
+      // long time and was never stamped, so the filter could not see it
+      if(isRocket)M._talEv='Rocket Arm';
       M._fldEv={k:'save',by:pick.name,at:near.spot.label,d:1,arm:!!isRocket};
       return '1';
     }
@@ -4677,7 +4681,24 @@ function foUpdateLiveTopbar(){
 window.addEventListener('hashchange',()=>setTimeout(foUpdateLiveTopbar,0));
 setInterval(foUpdateLiveTopbar,1200);
 
-function foIsTalentText(txt){return /SIX MACHINE|Finisher|PARTNERSHIP BREAKER|New Ball Specialist|Golden Arm|Mystery Ball|Bouncer|Lightning Hands|Rocket Arm|Safe Hands|Miser|Spin Killer|Pace Hunter|Fast Starter|Anchor|death specialist/i.test(txt||'')}
+// THE NINE SENTENCES A TALENT WRITES FOR ITSELF, and what to call each one.
+// A talent is stamped on the ball it fires on, so the stamp is the truth and
+// this is only for logs banked before the stamp existed - but it has to be the
+// ENGINE'S OWN WORDS, not a list of talent names loosely matched against the
+// prose. "A sharp bouncer at the badge" is a short ball; it contains the word
+// bouncer and nothing whatever fired. Searching for the name found five of
+// those an innings, put them under the Talents filter, and then had no name to
+// print beside them, because there was no talent there to name.
+const FO_TAL_SAY=[['SIX MACHINE delivers','Six Machine'],['instinct at the death','Finisher'],
+  ['PARTNERSHIP BREAKER strikes','Partnership Breaker'],['New Ball Specialist makes the cherry talk','New Ball Specialist'],
+  ['Golden Arm! First spell','Golden Arm'],['Mystery Ball completely deceives','Mystery Ball'],
+  ['the Bouncer talent tells','Bouncer'],['Lightning Hands from','Lightning Hands'],['Rocket Arm!','Rocket Arm']];
+function foTalSaid(txt){
+  const t=String(txt||''); if(!t)return null;
+  for(const [say,name] of FO_TAL_SAY)if(t.indexOf(say)>=0)return name;
+  return null;
+}
+function foIsTalentText(txt){return !!foTalSaid(txt)}
 // WHAT THE ENGINE ACTUALLY DID ON THIS BALL, IN TWO WORDS. Every kind below is
 // stamped by the code that MOVED something: groundFieldingAdjust when it turns
 // a four into two or a dot into one, the catch resolver when a chance is held
@@ -4689,11 +4710,17 @@ const FO_FLD_TAG={save:'great fielding',misfield:'misfield',fumble:'fumble',
 function foBallTag(L){
   if(!L)return null;
   if(L.tal)return L.tal;                                  // a talent that really fired
+  // a log banked before the stamp: the engine still SAID which one it was
+  const said=foTalSaid(L.txt); if(said)return said;
   if(L.fld&&FO_FLD_TAG[L.fld.k])return FO_FLD_TAG[L.fld.k];
   return null;
 }
 // a talent tag reads differently from a fielding one - it is the man's own
-function foBallTagKind(L){ return (L&&L.tal)?'tal':((L&&L.fld)?'fld':null); }
+function foBallTagKind(L){
+  if(!L)return null;
+  if(L.tal||foTalSaid(L.txt))return 'tal';
+  return L.fld?'fld':null;
+}
 function foCommPass(L,filter){
   filter=filter||'all'; if(filter==='all')return true;
   const txt=L.txt||'';
@@ -4705,9 +4732,10 @@ function foCommPass(L,filter){
   // that can be asked properly; the text tests below are for logs banked before
   // the stamp existed, where a sentence is all there is to go on.
   if(filter==='fielding'&&('fld' in L))return !!L.fld;
-  if(filter==='talents'&&('tal' in L))return !!L.tal;
+  // the stamp first, the engine's own sentence second - the same two readings
+  // foBallTag makes, so a ball this filter shows always has a name to wear
+  if(filter==='talents')return !!L.tal||!!foTalSaid(txt);
   if(filter==='fielding')return L.out==='wC'||L.out==='wRO'||L.out==='wST'||/DROPPED|Misfield|fumbles|Brilliant stop|diving stop|phenomenal stop|attacks the ball|Stumping chance missed|Rocket Arm|Lightning Hands|run out|caught (behind|at|by)|takes (a|the|it|his).{0,24}catch|saves two|cuts it off/i.test(txt);
-  if(filter==='talents')return foIsTalentText(txt);
   if(filter==='highlights')return L.mile||isWkt(L.out)||L.out==='4'||L.out==='6'||!!L.tal||foIsTalentText(txt)||/DROPPED|FIFTY|HUNDRED/i.test(txt);
   return true;
 }

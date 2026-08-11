@@ -61,9 +61,15 @@ const STUBS = [
   'function isWkt(o){return /^w/.test(String(o||""))&&o!=="wide"}'
 ].join('\n');
 
+// the sentences a talent writes for itself - a table, not a function, so it is
+// sliced out the same way the filter table above is
+const sayAt = CORE.indexOf('const FO_TAL_SAY=');
+assert.ok(sayAt > 0, 'the talent-sentence table should still exist');
+const SAY = CORE.slice(sayAt, CORE.indexOf('];', sayAt) + 2);
+
 const ctx = vm.createContext({ console });
-vm.runInContext([STUBS, TABLE,
-  grab(CORE, 'foIsTalentText'), grab(CORE, 'foCommPass'),
+vm.runInContext([STUBS, TABLE, SAY,
+  grab(CORE, 'foTalSaid'), grab(CORE, 'foIsTalentText'), grab(CORE, 'foCommPass'),
   grab(REPORT, 'foMrIsKey'), grab(REPORT, 'foMrCommentary')].join('\n'), ctx);
 const commentary = vm.runInContext('foMrCommentary', ctx);
 const MODES = vm.runInContext('FO_MR_FILTERS.map(function(f){return f[0]})', ctx);

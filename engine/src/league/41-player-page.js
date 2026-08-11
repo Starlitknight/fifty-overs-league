@@ -191,61 +191,6 @@
     }).join("") + "</div>";
   }
 
-  // ---- the club's next day out ----------------------------------------------
-  function nextFixtureFor(clubName) {
-    try {
-      var wt = window.__foWT, pl = window.__foPlanet;
-      var nat = ""; try { nat = (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || ""; } catch (eN) {}
-      if (wt && wt.serverFixtures && nat) {
-        var sv = wt.serverFixtures(nat, Date.now());
-        var hit = (sv.fx || []).filter(function (m) { return m.home.name === clubName || m.away.name === clubName; })[0];
-        if (hit) {
-          var home = hit.home.name === clubName;
-          var hour = pl ? pl.natHour(nat) : 14;
-          return { opp: home ? hit.away.name : hit.home.name, home: home, round: sv.cal.round,
-            hour: (hour < 10 ? "0" : "") + hour + ":00 UTC", ground: home ? clubGround(clubName) : clubGround(hit.home.name) };
-        }
-      }
-    } catch (e) {}
-    // the local mirror, for a season the world service has not reached
-    try {
-      var S0 = App.season; if (!S0) return null;
-      var rd = S0.schedule[S0.round] || [];
-      for (var i = 0; i < rd.length; i++) {
-        var a = GD.teams[rd[i][0]], b = GD.teams[rd[i][1]];
-        if (!a || !b) continue;
-        if (a.name === clubName) return { opp: b.name, home: true, round: S0.round + 1, hour: "", ground: a.ground };
-        if (b.name === clubName) return { opp: a.name, home: false, round: S0.round + 1, hour: "", ground: a.ground };
-      }
-    } catch (e2) {}
-    return null;
-  }
-  function clubGround(nm) {
-    try {
-      var t = (GD.teams || []).filter(function (x) { return x.name === nm; })[0];
-      if (t && t.ground) return t.ground;
-    } catch (e) {}
-    return "";
-  }
-
-  // ---- the batting order he is down for -------------------------------------
-  function xiSpot(p, team) {
-    try {
-      var mine = isMine(p.name);
-      if (mine && App.orders && App.orders.batOrder && App.orders.batOrder.length) {
-        var ix = App.orders.batOrder.indexOf(p.name);
-        if (ix >= 0 && ix < 11) return { n: ix + 1, src: "your teamsheet" };
-      }
-    } catch (e) {}
-    // no teamsheet yet: the squad's own order is the club's default XI
-    try {
-      var list = (team && team.players) || [];
-      var ix2 = list.indexOf(p);
-      if (ix2 >= 0 && ix2 < 11) return { n: ix2 + 1, src: "the club's usual order" };
-    } catch (e2) {}
-    return null;
-  }
-
   // ---- form, fatigue and the mood of the man --------------------------------
   function condition(p) {
     var fatWord = String(p.fatWord || p.fatigue || "fresh");
@@ -258,16 +203,79 @@
   }
 
   // ---- the story so far ------------------------------------------------------
+  //
+  // IT WAS A HEADING WITH NOTHING UNDER IT. The tab read p._career, which is
+  // written by the chronicle as a match is watched on THIS device - so in the
+  // served world, where the umpire plays every round while nobody is looking,
+  // it was empty for every cricketer alive, and the card printed its one
+  // fallback line: "Next match - League debut", to a man with two hundred
+  // appearances behind him.
+  //
+  // His moments are now folded on the server out of the record itself
+  // (living.mjs), which replays every match ever played on every settle: the
+  // first cap, each new highest score, each new best figures, the maiden
+  // fifty, hundred and five-for, and the deals that brought him here. Because
+  // it is a derivation and not a diary, the whole of his past arrived filled
+  // in the moment it was written. Two local books join it - the chronicle for
+  // a match played on this device, and the nets log for the mornings his
+  // numbers moved - and the three are sorted into one column, newest first.
+  var MILE_KIND = { debut: "Debut", hs: "Best score", bb: "Best figures", fifty: "Fifty",
+    hundred: "Hundred", fivefor: "Five-for", buy: "Transfer", nets: "The nets", note: "" };
+  // ONE CLOCK FOR THREE BOOKS. A served moment carries the world DAY it fell
+  // on; a local one carries a season and a round. The planet turns the second
+  // into the first, so all three sort against each other instead of stacking.
+  function mileDayMs(d) {
+    try { return window.__foPlanet.EPOCH + (d | 0) * window.__foPlanet.DAY; } catch (e) { return 0; }
+  }
+  function roundDay(s, r) {
+    try { var d = window.__foPlanet.dayOfSeasonRound(s | 0, r | 0); return d == null ? null : d; } catch (e) { return null; }
+  }
+  function mileDate(ms) {
+    try {
+      var dt = new Date(ms);
+      if (ms && isFinite(dt.getTime())) return dt.toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" });
+    } catch (e) {}
+    return "";
+  }
+  function roundWhen(s, r) {
+    try { var wd = window.foRoundDate ? window.foRoundDate(s, r) : null; if (wd && !/^S\d+ R\d+$/.test(wd)) return wd; } catch (e) {}
+    return "Season " + s;
+  }
   function moments(p) {
     var out = [];
+    // a local book has a season and a round; add(day, tie, when, kind, txt)
+    var add = function (day, tie, when, kind, txt) {
+      if (!txt) return;
+      out.push({ ord: (day == null ? -1 : day) * 10 + tie, when: when || "", kind: kind || "", txt: txt });
+    };
+    // the served record, as the fold wrote it
     try {
-      (p._career || []).slice(0, 6).forEach(function (c) {
-        var when = "Season " + c.s;
-        try { var wd = window.foRoundDate ? window.foRoundDate(c.s, c.r) : null; if (wd && !/^S\d+ R\d+$/.test(wd)) when = wd; } catch (eW) {}
-        out.push({ when: when, txt: c.txt, done: true });
+      (p.mile || []).forEach(function (m) {
+        if (!m) return;
+        add(m.d, 0, mileDate(mileDayMs(m.d)) || roundWhen(m.s, m.r), MILE_KIND[m.k] || "", m.txt);
       });
     } catch (e) {}
-    return out;
+    // a match watched on this device writes its own moments
+    try {
+      (p._career || []).forEach(function (c) {
+        if (!c) return;
+        add(roundDay(c.s, c.r), 1, roundWhen(c.s, c.r), MILE_KIND[c.ev] || "", c.txt);
+      });
+    } catch (e2) {}
+    // the mornings at the nets when a number moved
+    try {
+      (window.__foPops ? window.__foPops.forPlayer(p.name) : []).forEach(function (l) {
+        if (!l || !(l.r >= 0)) return;
+        add(roundDay(l.s, (l.r | 0) + 1), 2, roundWhen(l.s, (l.r | 0) + 1), MILE_KIND.nets,
+          (l.why ? cap(String(l.why)) : "Training") + " improved at the nets");
+      });
+    } catch (e3) {}
+    // newest first, because a reader arrives asking what he has just done
+    out.sort(function (a, b) { return b.ord - a.ord; });
+    var seen = {};
+    return out.filter(function (m) {
+      var k = m.when + "|" + m.txt; if (seen[k]) return false; seen[k] = 1; return true;
+    }).slice(0, 30);
   }
   function provLine(p, team) {
     var prov = p._prov, born = "";
@@ -593,11 +601,18 @@
       var ms1 = moments(p);
       room =
         "<div class='fo-pp-col fo-pp-wide'>" +
-        "<div class='fo-pp-card'><h3>The story so far</h3>" +
+        "<div class='fo-pp-card'><h3>The story so far<span>" + ms1.length +
+          " moment" + (ms1.length === 1 ? "" : "s") + "</span></h3>" +
         (ms1.length ? "<div class='fo-pp-story'>" + ms1.map(function (m) {
-          return "<div class='fo-pp-ev done'><i></i><span><u>" + E(m.when) + "</u>" + E(m.txt) + "</span></div>";
+          return "<div class='fo-pp-ev done'><i></i><span><u>" + E(m.when) + "</u>" +
+            (m.kind ? "<b>" + E(m.kind) + "</b>" : "") + E(m.txt) + "</span></div>";
         }).join("") + "</div>"
-          : "<div class='fo-pp-story'><div class='fo-pp-ev'><i></i><span><u>Next match</u>League debut</span></div></div>") +
+          // A MAN WITH NO MOMENTS HAS NOT PLAYED YET, and the page should say
+          // that rather than invent a fixture for him. It used to print "Next
+          // match - League debut" to everybody, because the story was read out
+          // of a book only this device ever wrote in.
+          : "<p class='fo-pp-dim'>Nothing on his sheet yet. His first cap, his first fifty, his best "
+            + "figures and every deal he is part of are written here as they happen.</p>") +
         "</div>" +
         "</div>";
     } else {
@@ -640,8 +655,6 @@
       // THE WHOLE MAN ON ONE PAGE, in the order a reader asks for him: what he
       // is, what he has just done, what he has done in all. The decisions and
       // the fixture ride the rail beside it, so nothing needs another tab.
-      var fxO = nextFixtureFor(team.name || "");
-      var spotO = xiSpot(p, team);
       if (mine) setTimeout(function () { try { ppFillLog(p, hit, team); } catch (eL) {} }, 30);
       room =
         "<div class='fo-pp-col'>" +
@@ -658,13 +671,6 @@
         "</div>" +
         "<div class='fo-pp-rail'>" +
         (mine ? ppJumpCard(p, team) : "") +
-        (fxO ? "<div class='fo-pp-card dark'><h3>Next assignment</h3>" +
-          "<div class='fo-pp-nx'><b>" + E(team.name || "") + "</b><i>v</i><b>" + E(fxO.opp) + "</b></div>" +
-          "<div class='fo-pp-nxm'>Round " + fxO.round + (fxO.hour ? " &middot; " + E(fxO.hour) : "") +
-          " &middot; " + (fxO.home ? "home" : "away") + "</div>" +
-          (fxO.ground ? "<div class='fo-pp-nxm'>" + E(fxO.ground) + "</div>" : "") +
-          (spotO ? "<div class='fo-pp-nxbat'>Batting at " + spotO.n + "<span>" + E(spotO.src) + "</span></div>" : "") +
-          "</div>" : "") +
         "<div class='fo-pp-card'><h3>Match readiness</h3>" +
         meter("Form", cap(cond.formWord), cond.formPct) +
         meter("Fitness", cond.fitPct + "%", cond.fitPct) +
@@ -1783,11 +1789,16 @@
     "html body #page .fo-pp-card.dark .fo-pp-meter i{color:rgba(255,254,252,.6)}",
     "html body #page .fo-pp-card.dark .fo-pp-meter em{color:#FFFEFC}",
     "html body #page .fo-pp-story{display:flex;flex-direction:column;gap:0}",
-    "html body #page .fo-pp-ev{display:flex;gap:10px;align-items:flex-start;padding:7px 0}",
-    "html body #page .fo-pp-ev i{flex:0 0 auto;width:15px;height:15px;border-radius:50%;border:2px solid rgba(20,28,40,.18);margin-top:2px}",
-    "html body #page .fo-pp-ev.done i{background:#177A57;border-color:#177A57;position:relative}",
-    "html body #page .fo-pp-ev.done i:after{content:'';position:absolute;left:4px;top:1.5px;width:4px;height:7px;border:solid #FFFEFC;border-width:0 2px 2px 0;transform:rotate(45deg)}",
-    "html body #page .fo-pp-ev span{font:420 12.5px/1.5 Fraunces,Georgia,serif;color:rgba(20,28,40,.7)}",
+    // A MILESTONE LOG, NOT A CHECKLIST. These lines used to wear the green tick
+    // of a to-do that had been done; they are entries in a record book, so they
+    // get a rule between them, a marker rather than a tick, and room for the
+    // kind of moment each one is.
+    "html body #page .fo-pp-ev{display:flex;gap:11px;align-items:flex-start;padding:10px 0;border-top:1px solid rgba(20,28,40,.09)}",
+    "html body #page .fo-pp-ev:first-child{border-top:0;padding-top:2px}",
+    "html body #page .fo-pp-ev i{flex:0 0 auto;width:7px;height:7px;border-radius:50%;background:rgba(20,28,40,.2);margin-top:7px}",
+    "html body #page .fo-pp-ev.done i{background:var(--nac)}",
+    "html body #page .fo-pp-ev span{display:block;font:420 13px/1.5 Fraunces,Georgia,serif;color:rgba(20,28,40,.82)}",
+    "html body #page .fo-pp-ev span b{display:inline-block;margin:0 7px 0 0;font:700 9.5px/1.45 Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.5);background:rgba(20,28,40,.06);border-radius:4px;padding:1px 6px;vertical-align:1px}",
     "html body #page .fo-pp-ev u{display:block;text-decoration:none;font:700 11px/1 Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--nac);font-style:normal;margin-bottom:3px}",
     "html body #page .fo-pp-pos{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:12px}",
     "html body #page .fo-pp-pos span{width:23px;height:23px;border-radius:50%;display:inline-flex;align-items:center;justify-content:center;font:600 11px/1 Manrope,sans-serif;color:rgba(20,28,40,.4);background:rgba(20,28,40,.05)}",
@@ -1796,11 +1807,6 @@
     "html body #page .fo-pp-role img{width:38px;height:38px;object-fit:contain;opacity:.85}",
     "html body #page .fo-pp-role b{display:block;font:600 13px/1.3 Manrope,sans-serif;color:#1B2432}",
     "html body #page .fo-pp-role i{display:block;font:420 13px/1.45 Fraunces,Georgia,serif;color:rgba(20,28,40,.55)}",
-    "html body #page .fo-pp-nx{display:flex;align-items:center;justify-content:center;gap:10px;font:600 13px/1.3 Manrope,sans-serif;color:#FFFEFC;text-align:center}",
-    "html body #page .fo-pp-nx i{font:400 13px/1 Fraunces,Georgia,serif;color:rgba(255,254,252,.45)}",
-    "html body #page .fo-pp-nxm{margin-top:6px;text-align:center;font:700 11px/1.5 Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(255,254,252,.6)}",
-    "html body #page .fo-pp-nxbat{margin-top:10px;padding-top:9px;border-top:1px solid rgba(255,254,252,.14);text-align:center;font:600 13px/1.3 Manrope,sans-serif;color:#E8C06A}",
-    "html body #page .fo-pp-nxbat span{display:block;margin-top:3px;font:420 13px/1.4 Fraunces,Georgia,serif;color:rgba(255,254,252,.55)}",
     "html body #page .fo-pp-track{display:flex;flex-wrap:wrap;gap:6px}",
     "html body #page .fo-pp-track span{font:700 11px/1 Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:rgba(20,28,40,.55);background:rgba(20,28,40,.05);border-radius:999px;padding:7px 11px}",
     "html body #page .fo-pp-hist{display:grid;grid-template-columns:auto auto minmax(0,1fr);gap:10px;align-items:baseline;padding:9px 0;border-top:1px solid rgba(20,28,40,.08)}",
