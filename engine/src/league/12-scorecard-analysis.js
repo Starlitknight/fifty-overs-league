@@ -6394,7 +6394,7 @@
         "<section class='fo-lg-cine'>" +
         "<img class='fo-lg-cimg' src='" + cupArt + "' alt='' onerror=\"this.src='" + FO_ART + "circuit/world.webp'\">" +
         "<div class='fo-lg-csky'></div><div class='fo-lg-cbloom'></div><div class='fo-lg-cstars'></div><div class='fo-lg-cgrain'></div>" +
-        "<div class='fo-lg-cnav'><a href='#/home'>&#8962; Club</a><a href='#/league'>&#9862; Your league</a><a href='#/world'>&#127760; World</a></div>" +
+        "<div class='fo-lg-cnav'><a href='#/home'>&#8962; Club</a><a href='#/league'>&#9862; Your league</a><a href='#/live'>&#9679; Live scores</a><a href='#/world'>&#127760; World</a></div>" +
         "<div class='fo-lg-ctitle'>" +
         "<div class='eb'>The World &middot; Knockout</div>" +
         "<h1>The Champions Cup</h1>" +

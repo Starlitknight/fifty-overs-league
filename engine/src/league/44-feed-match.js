@@ -1458,6 +1458,37 @@
       "<span class='fd-lg'>" + E(rid).toUpperCase() + (fr ? " &middot; FRIENDLY" : (cal && cal.round ? " &middot; ROUND " + cal.round : "")) + "</span>" + ground + chip + "</div>" +
       inner + "</div></div>";
   }
+  // THE UMPIRE'S BOOK, LENT OUT. A live-scores page is this page asked about
+  // every match at once, and the only honest way to build one is to read the
+  // same record the same way - the same fetch, the same clock, the same
+  // reconstruction. A second copy of any of that is a second answer waiting to
+  // disagree with the broadcast it sits beside. So the three pieces that turn
+  // (nation, match) into "what the score is right now" are lent out whole.
+  window.__foFeedKit = {
+    logFetch: logFetch,
+    bookState: bookState,
+    parseTop: parseTop,
+    // the balls a viewer has been shown by now, off the same wall clock the
+    // broadcast runs on: deliveries reveal one at a time, and the umpire's
+    // notes travel with the delivery they precede
+    seenAt: function (log, winStart, BALL_MS, now) {
+      var over = now >= winStart + 600 * BALL_MS;
+      var nBalls = over ? 1e9 : Math.max(0, Math.floor((now - winStart) / BALL_MS));
+      var seen = [], balls = 0, total = 0;
+      for (var i = 0; i < log.length; i++) {
+        var r = log[i], isBall = r && r.no !== "" && !r._top && !r.intro;
+        if (isBall) total++;
+      }
+      for (var j = 0; j < log.length; j++) {
+        var r2 = log[j], isB2 = r2 && r2.no !== "" && !r2._top && !r2.intro;
+        if (isB2 && balls >= nBalls) break;
+        seen.push(r2);
+        if (isB2) balls++;
+      }
+      return { seen: seen, balls: balls, total: total,
+        live: !over && balls > 0 && balls < total, done: over || balls >= total };
+    }
+  };
   window.addEventListener("hashchange", function () {
     if ((location.hash || "").split("?")[0] !== "#/feed") {
       document.body.classList.remove("fo-fd-on");

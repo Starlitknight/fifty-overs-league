@@ -52,3 +52,4 @@
 57-stats-centre.js
 61-notifications.js
 63-mobile-triage.js
+45-live-scores.js
