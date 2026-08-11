@@ -226,7 +226,7 @@ export function nationTeamStr(id) {
   return (FULL.has(id) ? (NAT_TEAM_XI[id] || 44000) : ASSOC_TEAM_XI) / BASE_XI;
 }
 
-const xiOf = sq => {
+export const xiOf = sq => {
   const best = sq.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 11);
   return best.reduce((s, p) => s + (p.rating || 0), 0) / Math.max(1, best.length);
 };
@@ -244,11 +244,17 @@ const xiOf = sq => {
 //
 // Worse, it was a loop. Fielding feeds a man's rating, so widening the bell
 // raised the rating, so calibration scaled harder, so the bell came out
-// narrower than it went in. Holding these four out breaks the loop, and it
-// costs nothing that matters: the bell is the same for every club on earth, so
-// its contribution to a club's rating is the same for every club, and what
-// calibration is actually for - telling a county from an associate - is
-// untouched.
+// narrower than it went in.
+//
+// The first answer was to hold these four out of the pass entirely, on the
+// reasoning that the bell is the same for every club so its contribution is
+// the same for every club. That reasoning was wrong in one word - "same". It
+// meant a flagship's cordon was no better than a bottom club's, which is not
+// what anybody believes about cricket, and once catches began converting
+// properly it started costing giants matches: p3 caught flagships going down
+// in three nations of sixteen. They take HALF a club's factor now, which
+// breaks the loop without flattening the ladder. world-ladder measures both
+// ends of that trade in a second, so neither can drift again.
 // the hands: dealt on the world's own bell, and scaled at HAND_SCALE of a
 // club's factor rather than the full one (see calibrate below)
 const NOT_SCALED = { fielding: 1, catching: 1, keeping: 1, stumping: 1 };
