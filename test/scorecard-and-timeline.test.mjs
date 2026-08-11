@@ -45,7 +45,7 @@ function liftCard() {
     'function bKey(n){return String(n||"").toLowerCase().replace(/[^a-z]/g,"");}' +
     'function plink(n){return E(n);} function pstar(){return "";} function sStars(){return "";}' +
     'var T={rid:"eng"};', ctx);
-  vm.runInContext([grab('parseTop'), grab('howOut'), grab('cardPanel')].join('\n'), ctx);
+  vm.runInContext([grab('parseTop'), grab('howOut'), grab('fdEngineXI'), grab('fdYetToBat'), grab('cardPanel')].join('\n'), ctx);
   return vm.runInContext('cardPanel', ctx);
 }
 const cardPanel = liftCard();
@@ -91,6 +91,34 @@ test('the head carries the score, the overs and the run rate', () => {
   assert.match(html, /<em>279\/7<\/em>/);
   assert.match(html, /48\.2 overs &middot; RR 5\.7[0-9]/, 'the rate is runs over overs, not a guess');
   assert.match(html, /7 wickets &middot; 48\.2 overs<\/span><b>279<\/b>/, 'and the foot totals it');
+});
+
+// A MAN'S NAME IS THE ONE THING ON HIS ROW THAT CANNOT BE ABBREVIATED, and it
+// was the only thing being cut. The ten-star strip carried flex-basis:100%,
+// written for the crease box where the strip belongs on a line of its own
+// under the name. A card row does not wrap, so on a column thirteen hundred
+// pixels wide the strip claimed all of it and the anchor beside it shrank to
+// its minimum: "Reuben Whiteh...", "F. Ogden (rf...", with an acre of white
+// space to the right of both.
+test('the star strip takes what it needs, not the whole row', () => {
+  assert.match(feed, /"\.fo-fd \.fd-sc-r \.ss,\.fo-fd \.fd-sc-b \.ss\{flex:0 0 auto;margin-top:0\}"/,
+    'the strip stops claiming the line in a card row');
+  assert.match(feed, /"\.fo-fd \.fd-sc-r \.w b,\.fo-fd \.fd-sc-b b\{flex-wrap:wrap\}"/,
+    'and where the two really will not fit, the strip wraps rather than eating him');
+  // the crease box keeps the rule the basis was written for
+  assert.match(feed, /"\.fo-fd \.ss\{display:block;flex-basis:100%;margin-top:1px\}"/);
+  // the clipping itself stays: a name long enough to break the grid still
+  // ellipses rather than pushing the figures off the card
+  assert.match(feed, /"\.fo-fd \.fd-sc-r \.w b>a,\.fo-fd \.fd-sc-b b>a\{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap\}"/);
+});
+
+test('the bowling figures are headed, in the same grid they are printed in', () => {
+  assert.match(html, /<div class='fd-sc-c bwl'><span>Bowling<\/span><span>O<\/span><span>R<\/span><span>W<\/span><span title='wides and no-balls charged to him'>Ex<\/span><span>Econ<\/span><\/div>/,
+    'four figures and an extras column, each one named');
+  // the head and the rows are one grid declaration, so a column added to one
+  // can never sit over a different column in the other
+  assert.match(feed, /"\.fo-fd \.fd-sc-b,\.fo-fd \.fd-sc-c\.bwl\{display:grid;grid-template-columns:minmax\(0,1fr\) 30px 32px 22px 26px 40px;/);
+  assert.ok(!/fd-sc-bh/.test(feed), 'the unlabelled caption it replaced is gone, CSS and all');
 });
 
 // ---- the ribbon -----------------------------------------------------------

@@ -19,7 +19,7 @@ import assert from 'node:assert';
 import { execSync } from 'node:child_process';
 import { makePool } from '../db.mjs';
 import { migrate } from '../migrate.mjs';
-import { initWorld } from '../init-world.mjs';
+import { initWorld, BASE_XI, nationTeamStr } from '../init-world.mjs';
 import { makeHost, ENGINE_VERSION } from '../enginehost.mjs';
 import { runDue, computeRankings } from '../tick.mjs';
 import { computeFinance } from '../economy.mjs';
@@ -445,13 +445,36 @@ test('the ladder and the room read the international game', async () => {
   const rk = await computeRankings(pool, Date.now());
   const played = rk.countries.filter(c => c.natP > 0);
   assert.equal(played.length, 4, 'game one of two series: four nations carry a record');
-  // the ladder is the game's own match ratings now, not Elo: every figure is on
-  // the club rating scale, an untoured nation sits on the presumption of 3,500,
-  // and a nation with cricket behind it does not
-  assert.ok(rk.countries.every(c => c.natRating >= 350 && c.natRating <= 6790),
-    'every mark is on the club rating scale');
-  assert.ok(played.some(c => c.natRating !== 3500), 'and the ladder moved for the nations that played');
-  assert.ok(rk.countries.filter(c => c.natP === 0).every(c => c.natRating === 3500),
+  // THE LADDER IS STRENGTH; FORM IS THE COLUMN BESIDE IT.
+  //
+  // This test used to make both claims about natRating, because both were once
+  // true of it: the nations table was an average of MATCH MARKS, on the club
+  // rating scale, with a 3,500 presumption behind a side that had not toured.
+  // It moved off that lens for exactly the reason the club ladder did - a
+  // nation's XI has usually played nothing, so every country showed the same
+  // neutral base beside its name, and one round of CLUB results was enough to
+  // put an associate first in the world and England eleventh.
+  //
+  // natRating is what the shirt is worth now: the rung the selectors' XI is
+  // calibrated to, true on day one and on the same scale as a club's best
+  // eleven. natForm is how a nation has actually been going, and that is the
+  // figure the match-mark scale and the presumption belong to.
+  const rung = id => Math.round(BASE_XI * nationTeamStr(id));
+  rk.countries.forEach(c => {
+    assert.equal(c.natRating, rung(c.id), c.id + ' is seated at the rung its XI is built to');
+    assert.ok(c.natRating >= 40000 && c.natRating <= 48000,
+      c.id + ' rates on the club rating scale, not the match one: ' + c.natRating);
+  });
+  // a full member's shirt outranks an associate's, before anybody plays
+  const fullMin = Math.min(...rk.countries.filter(c => c.full).map(c => c.natRating));
+  const assocMax = Math.max(...rk.countries.filter(c => !c.full).map(c => c.natRating));
+  assert.ok(fullMin > assocMax, 'the full members sit above the associates: ' + fullMin + ' vs ' + assocMax);
+  assert.deepEqual(rk.countries.map(c => c.rank), rk.countries.map((_, i) => i + 1), 'the table is ranked');
+  // and the FORM column is the one the cricket moves
+  assert.ok(rk.countries.every(c => c.natForm >= 350 && c.natForm <= 6790),
+    'every form mark is on the match rating scale');
+  assert.ok(played.some(c => c.natForm !== 3500), 'and it moved for the nations that played');
+  assert.ok(rk.countries.filter(c => c.natP === 0).every(c => c.natForm === 3500),
     'a nation whose tour is still to come sits on the presumption');
 
   const na = await computeNations(pool, atDay(WIN_DAY, 23));

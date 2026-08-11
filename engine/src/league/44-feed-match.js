@@ -130,7 +130,7 @@
   function isWicket(r) { return !!(r && r.out && r.out[0] === "w" && r.out !== "wide"); }
 
   function bookState(seen) {
-    var mk = function () { return { bats: [], byKey: {}, bowls: [], bowlByKey: {}, overs: [], fow: [], top: null, who: null, team: null, brk: null, target: null, striker: null, bowler: null, sinceTop: [], open: false, lastNo: null, pshipBalls: 0 }; };
+    var mk = function () { return { bats: [], byKey: {}, bowls: [], bowlByKey: {}, exBy: {}, overs: [], fow: [], top: null, who: null, team: null, brk: null, target: null, striker: null, bowler: null, sinceTop: [], open: false, lastNo: null, pshipBalls: 0 }; };
     var inns = [mk(), mk()], pendingWk = null;
     for (var i = 0; i < seen.length; i++) {
       var r = seen[i]; if (!r) continue;
@@ -172,6 +172,16 @@
           if (!I.byKey[ks]) { var ne = { nm: r.strikerNm, r: null, b: null, out: null }; I.byKey[ks] = ne; I.bats.push(ne); }
         }
         if (r.bowlerNm) I.bowler = r.bowlerNm;
+        // WHAT A BOWLER GAVE AWAY. The umpire's figure line is overs, runs
+        // and wickets and never says how much of the runs was his own wide.
+        // The deliveries do, so the wides and no-balls are counted here as
+        // they go by. Byes are not counted: a ball the keeper missed is not
+        // the bowler's, and charging him for it would be a new lie in place
+        // of the old silence.
+        if (r.bowlerNm && (r.out === "wide" || r.out === "noball")) {
+          var ke = bKey(r.bowlerNm);
+          I.exBy[ke] = (I.exBy[ke] || 0) + ballRuns(r);
+        }
         if (r.out && r.out[0] === "w" && r.out !== "wide")
           pendingWk = { code: r.out, bowler: r.bowlerNm, fld: r.ev && r.ev.fldNm, no: r.no };
         continue;
@@ -1136,15 +1146,27 @@
         })() +
         (tp9 ? "<div class='fd-sc-t'><span>" + tp9.wkts + " wicket" + (tp9.wkts === 1 ? "" : "s") +
           (ov9 ? " &middot; " + E(ov9) + " overs" : "") + "</span><b>" + tp9.runs + "</b></div>" : "") +
-        (I.bowls.length ? "<div class='fd-sc-bh'>Bowling</div>" +
+        // WHO IS LEFT. Under the total, the way a card has always carried it:
+        // the men still padded up while the innings is alive, and the men who
+        // never got in once it is over.
+        (function () {
+          var yet = fdYetToBat(nm9, m, T.rid, I.bats.map(function (b8) { return b8.nm; }));
+          if (!yet.length) return "";
+          return "<div class='fd-sc-yet'><span>" + (live9 ? "Yet to bat" : "Did not bat") + "</span>" +
+            "<div>" + yet.map(function (n9) { return plink(n9) + pstar(n9, T.rid); }).join(", ") + "</div></div>";
+        })() +
+        (I.bowls.length ? "<div class='fd-sc-c bwl'><span>Bowling</span><span>O</span><span>R</span>" +
+          "<span>W</span><span title='wides and no-balls charged to him'>Ex</span><span>Econ</span></div>" +
           I.bowls.map(function (w9) {
             // the umpire's figure line carries whole overs; runs over overs
             // is the economy, printed to one decimal like every broadcast
             var ec9 = w9.o > 0 ? (w9.r / w9.o).toFixed(1) : null;
             var onB = live9 && I.bowler && bKey(I.bowler) === bKey(w9.nm);
+            var ex9 = (I.exBy && I.exBy[bKey(w9.nm)]) || 0;
             return "<div class='fd-sc-b" + (onB ? " on" : "") + "'>" +
               "<b>" + plink(w9.nm) + pstar(w9.nm, T.rid) + "<span class='ss'>" + sStars(w9.nm, "bowl") + "</span></b>" +
               "<span>" + w9.o + "</span><span>" + w9.r + "</span><span class='wk'>" + w9.w + "</span>" +
+              "<span class='ex" + (ex9 ? " sm" : "") + "'>" + ex9 + "</span>" +
               "<span>" + (ec9 != null ? ec9 : "&mdash;") + "</span></div>";
           }).join("") : "") +
         "</div>";
@@ -1333,6 +1355,37 @@
       return { names: xi.map(function (p) { return p.name; }), captain: capt, keeper: kp ? kp.name : null };
     } catch (e) { return null; }
   }
+  // WHO IS STILL PADDED UP. A card that lists only the men who have been in
+  // answers "what has happened" and never "what is left", and the second is
+  // the question a reader watching a collapse is actually asking. The order
+  // is the one the teamsheets panel already prints - the manager's own if he
+  // filed one, the engine's pick if he did not - so the two rooms name the
+  // same eleven in the same order or neither does.
+  //
+  // Matching is by initial-and-surname, because the umpire abbreviates in his
+  // over summaries ("R. Whitehead") and a teamsheet does not. A name that
+  // cannot be matched stays on the list, which reads as one man too many; a
+  // looser match would drop a man who is genuinely still to bat, which reads
+  // as a side with nobody left.
+  function fdYetToBat(teamNm, m, rid, onCard) {
+    try {
+      var ord = (T.ord && T.ord[T.id]) || {};
+      var o = ord[teamNm], list = o && (o.batOrder || o.xi), names = null;
+      if (list && list.length) {
+        names = list.slice(0, 11).map(function (p9) { return typeof p9 === "string" ? p9 : (p9 && p9.name) || ""; });
+      } else {
+        var side = m && m.home && m.home.name === teamNm ? m.home
+                 : (m && m.away && m.away.name === teamNm ? m.away : null);
+        var eng = side ? fdEngineXI(side.slot, side.__c || rid) : null;
+        names = eng ? eng.names : null;
+      }
+      if (!names || !names.length) return [];
+      var seen = {};
+      (onCard || []).forEach(function (n9) { seen[bKey(n9)] = 1; });
+      return names.filter(function (n9) { return n9 && !seen[bKey(n9)]; });
+    } catch (e) { return []; }
+  }
+
   function teamsPanel(m, rid) {
     var ord = T.ord[T.id];
     if (!ord) return "<div class='fd-panel'><div class='fd-ch'>The teamsheets</div><p class='fd-dim'>Fetching the named elevens&hellip;</p></div>";
@@ -1592,8 +1645,16 @@
       ".fo-fd .fd-sc-t{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 16px;background:var(--fdalt)}",
       ".fo-fd .fd-sc-t span{font:700 10px Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--fdmut)}",
       ".fo-fd .fd-sc-t b{font:800 15px Manrope,sans-serif;color:var(--fdink);font-variant-numeric:tabular-nums}",
-      ".fo-fd .fd-sc-bh{padding:13px 16px 7px;font:800 9px Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fdmut)}",
-      ".fo-fd .fd-sc-b{display:grid;grid-template-columns:minmax(0,1fr) 30px 32px 22px 40px;gap:8px;align-items:center;padding:9px 16px;border-top:1px solid var(--fdline)}",
+      ".fo-fd .fd-sc-yet{display:grid;grid-template-columns:96px minmax(0,1fr);gap:10px;align-items:baseline;padding:11px 16px;border-top:1px solid var(--fdline)}",
+      ".fo-fd .fd-sc-yet>span{font:800 9px Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fdmut)}",
+      ".fo-fd .fd-sc-yet>div{font:500 12.5px/1.5 Manrope,sans-serif;color:var(--fdink)}",
+      "@media(max-width:560px){.fo-fd .fd-sc-yet{grid-template-columns:minmax(0,1fr);gap:4px;padding-left:13px;padding-right:13px}}",
+      ".fo-fd .fd-sc-b,.fo-fd .fd-sc-c.bwl{display:grid;grid-template-columns:minmax(0,1fr) 30px 32px 22px 26px 40px;gap:8px;align-items:center}",
+      ".fo-fd .fd-sc-b{padding:9px 16px;border-top:1px solid var(--fdline)}",
+      // a column of figures with no heading is a column of guesses
+      ".fo-fd .fd-sc-c.bwl{padding:0 16px;border-top:1px solid var(--fdline)}",
+      ".fo-fd .fd-sc-b span.ex{color:#B0B6C2}",
+      ".fo-fd .fd-sc-b span.ex.sm{color:var(--fdmut)}",
       ".fo-fd .fd-sc-b b{display:flex;align-items:center;gap:5px;font:600 12.5px Manrope,sans-serif;color:var(--fdink);min-width:0}",
       ".fo-fd .fd-sc-b span{text-align:right;font:500 12px Manrope,sans-serif;color:var(--fdmut);font-variant-numeric:tabular-nums}",
       ".fo-fd .fd-sc-b span.wk{font-weight:800;color:var(--fdink)}",
@@ -1603,7 +1664,7 @@
       // the screen is narrow, and it is what made the old table too wide
       "@media(max-width:560px){.fo-fd .fd-sc .ss{display:none}",
       ".fo-fd .fd-sc-c,.fo-fd .fd-sc-r{grid-template-columns:minmax(0,1fr) 36px 28px 34px;padding-left:13px;padding-right:13px}",
-      ".fo-fd .fd-sc-h,.fo-fd .fd-sc-t,.fo-fd .fd-sc-b,.fo-fd .fd-sc-bh{padding-left:13px;padding-right:13px}}",
+      ".fo-fd .fd-sc-h,.fo-fd .fd-sc-t{padding-left:13px;padding-right:13px}}",
       ".fo-fd .fd-note{font:400 13px/1.6 Fraunces,Georgia,serif;color:var(--fomut);margin:8px 0 2px}",
       // partnerships
       ".fo-fd .fd-ph{font:700 11px Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fomut);margin:10px 0 6px}",
@@ -1665,6 +1726,16 @@
       ".fo-fd .fd-strn.bw em.f{color:#0FB4C4}",
       ".fo-fd .fd-strn.bw em.h{color:#0FB4C4;opacity:.45}",
       ".fo-fd .ss{display:block;flex-basis:100%;margin-top:1px}",
+      // IN A CARD ROW THE STRIP IS NOT A LINE OF ITS OWN. flex-basis:100%
+      // was written for the crease box, where the strip belongs under the
+      // name. A card row does not wrap, so the strip claimed the entire
+      // column and the anchor beside it - the NAME, the one thing on the row
+      // a reader cannot do without - was shrunk to its minimum and clipped:
+      // a hundred pixels of name in a column thirteen hundred wide. The
+      // strip takes what it needs here, and if the two genuinely will not
+      // fit the row wraps rather than eating him.
+      ".fo-fd .fd-sc-r .ss,.fo-fd .fd-sc-b .ss{flex:0 0 auto;margin-top:0}",
+      ".fo-fd .fd-sc-r .w b,.fo-fd .fd-sc-b b{flex-wrap:wrap}",
       ".fo-fd .ss:empty{display:none}",
       ".fo-fd .fd-xic .c span u.ssin{display:inline-flex;margin:0 0 0 4px;text-decoration:none}",
       "html body #page .fo-fd a.fd-plink,html body #page .fo-fd a.fd-plink:visited{color:inherit !important;text-decoration:none !important;border-bottom:none !important}",

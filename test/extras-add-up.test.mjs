@@ -35,8 +35,11 @@ const feed = readFileSync(join(ROOT, 'engine', 'src', 'league', '44-feed-match.j
 const SCI = readFileSync(join(ROOT, 'engine', 'src', 'league', '12-scorecard-analysis.js'), 'utf8');
 const HOST = readFileSync(join(ROOT, 'server', 'enginehost.mjs'), 'utf8');
 
-// the same lift the live-card test uses: one function, its own braces
-function liftCard() {
+// the same lift the live-card test uses: one function, its own braces.
+// `order` is the teamsheet the broadcast would be holding - the card asks for
+// it to name the men still to come, and answers with nothing when there is
+// none, which is the state every test but one here runs in.
+function liftCard(order) {
   const grab = name => {
     const at = feed.indexOf('function ' + name + '(');
     if (at < 0) throw new Error('missing ' + name);
@@ -55,11 +58,13 @@ function liftCard() {
     'function surname(n){var a=String(n||"").split(" ");return a[a.length-1];}' +
     'function bKey(n){return String(n||"").toLowerCase().replace(/[^a-z]/g,"");}' +
     'function plink(n){return E(n);} function pstar(){return "";} function sStars(){return "";}' +
-    'var T={rid:"eng"};', ctx);
-  vm.runInContext([grab('parseTop'), grab('howOut'), grab('cardPanel')].join('\n'), ctx);
+    'var T=' + JSON.stringify({ rid: 'eng', id: 'm1',
+      ord: order ? { m1: { Derbyshire: { batOrder: order } } } : undefined }) + ';', ctx);
+  vm.runInContext([grab('parseTop'), grab('howOut'), grab('fdEngineXI'), grab('fdYetToBat'), grab('cardPanel')].join('\n'), ctx);
   return vm.runInContext('cardPanel', ctx);
 }
 const cardPanel = liftCard();
+const liftWithOrder = (xi, fn) => fn(liftCard(xi));
 const M = { home: { name: 'Derbyshire' }, away: { name: 'Mashed Potatoes' } };
 const EMPTY = { open: false, bats: [], bowls: [], top: null, close: null };
 const B = (nm, r, b, out) => ({ nm, r, b, out });
@@ -125,6 +130,50 @@ test('the full card reads the counters when it has them and derives when it does
   // the breakdown is printed only when it is known - a row reading
   // "(b 0, lb 0, w 0, nb 0)" beside a figure of 4 is a card arguing with itself
   assert.match(code, /\(ex \? " <span>\(b " \+ ex\.b \+ ", lb " \+ ex\.lb \+ ", w " \+ ex\.wd \+ ", nb " \+ ex\.nb \+ "\)<\/span>" : ""\)/);
+});
+
+// AND THE CARD SAYS WHO GAVE THEM AWAY. An innings total of extras answers
+// "how many"; a manager reading a bowling card wants "whose". The umpire's
+// figure line is overs-runs-wickets and never breaks his runs down, but the
+// deliveries do, so the wides and no-balls are counted off the book as they
+// go by. Byes are deliberately not counted: a ball the keeper missed is not
+// the bowler's, and charging him for it would be a new lie in place of the
+// old silence - which is also why this column and the innings extras above it
+// are not expected to agree.
+test('a bowling card says which bowler gave the extras away', () => {
+  const w = { ...SIX_DOWN, bowls: [{ nm: 'N. Wright', o: 8, r: 40, w: 3 }, { nm: 'F. Ogden', o: 8, r: 50, w: 3 }],
+    // keyed the way the card keys a bowler (bKey), which the lift stubs
+    exBy: { nwright: 5, fogden: 0 } };
+  const html = cardPanel([w, EMPTY], M, false);
+  const ex = [...html.matchAll(/<span class='ex[^']*'>(\d+)<\/span>/g)].map(m => +m[1]);
+  assert.deepEqual(ex, [5, 0], 'his own wides, and a nought for the man who bowled straight');
+  // the counting itself: wides and no-balls, by their run value, charged to
+  // the bowler who sent them down - and byes left out of it
+  const book = feed.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  assert.match(book, /if \(r\.bowlerNm && \(r\.out === "wide" \|\| r\.out === "noball"\)\) \{/);
+  assert.match(book, /I\.exBy\[ke\] = \(I\.exBy\[ke\] \|\| 0\) \+ ballRuns\(r\);/);
+  // an innings built by hand, or by an older build, simply has no tally
+  assert.match(book, /var ex9 = \(I\.exBy && I\.exBy\[bKey\(w9\.nm\)\]\) \|\| 0;/);
+});
+
+// WHO IS STILL PADDED UP. A card listing only the men who have been in answers
+// "what has happened" and never "what is left" - and the second is the
+// question a reader watching a collapse is actually asking.
+test('the card names the men still to come, from the order the teamsheets print', () => {
+  const XI = ['Tom Cole', 'Henry Barker', 'Reuben Whitehead', 'Daniel Gibbs', 'George Brown',
+    'Eddie Norris', 'Louis Chadwick', 'Archie Wright', 'Frank Ogden', 'Nathan Wright', 'Tom Mercer'];
+  const withOrd = fn => liftWithOrder(XI, fn);
+  const html = withOrd(cp => cp([SIX_DOWN, EMPTY], M, false));
+  assert.match(html, /<div class='fd-sc-yet'><span>Yet to bat<\/span>/, 'named while the innings is alive');
+  assert.match(html, /Frank Ogden, Nathan Wright, Tom Mercer/, 'the three who have not been in, in order');
+  // ...and nobody who has: the umpire abbreviates in his summaries and a
+  // teamsheet does not, so the match is by initial and surname
+  assert.ok(!/Daniel Gibbs<\/a>, /.test(html.slice(html.indexOf('fd-sc-yet'))), 'not a man already at the crease');
+  // once the innings is shut they did not bat, they are not yet to
+  const shut = withOrd(cp => cp([{ ...SIX_DOWN, open: false, close: { runs: 125, wkts: 6 } }, EMPTY], M, true));
+  assert.match(shut, /<span>Did not bat<\/span>/);
+  // and with no sheet and no squad to pick from, the line is simply absent
+  assert.ok(!/fd-sc-yet/.test(cardPanel([SIX_DOWN, EMPTY], M, false)), 'never a guess at an eleven');
 });
 
 test('the umpire banks the four counters with the card from now on', () => {
