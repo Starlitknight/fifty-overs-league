@@ -50,7 +50,7 @@
   // a shield as the last resort - so a scores page asks it rather than drawing
   // its own. Two words of a name become the fallback letters.
   function crest(nm, px) {
-    try { if (window.foClubCrest) return "<span class='fo-lv-cr'>" + window.foClubCrest(nm, px || 26) + "</span>"; } catch (e) {}
+    try { if (window.foClubCrest) return "<span class='fo-lv-cr'>" + window.foClubCrest(nm, px || 38) + "</span>"; } catch (e) {}
     var w = String(nm || "").split(/\s+/).filter(Boolean);
     var ini = (w.length > 1 ? w.map(function (x) { return x[0] || ""; }).join("") : String(w[0] || ""))
       .replace(/[^A-Za-z]/g, "").slice(0, 2).toUpperCase() || "FC";
@@ -112,38 +112,32 @@
     if (need <= 0 || s.runs == null) return "";
     var ovs = String(s.ovs || "0.0").split("."), left = 300 - ((+ovs[0] || 0) * 6 + (+ovs[1] || 0));
     if (left <= 0) return "";
-    return "<div class='fo-lv-need'>Need <b>" + need + "</b> from <b>" + left + "</b> ball" +
-      (left === 1 ? "" : "s") + "<em>" + (need / (left / 6)).toFixed(2) + " an over</em></div>";
+    return "<div class='fo-lv-need'><b>" + need + "</b> needed off <b>" + left + "</b>" +
+      "<em>" + (need / (left / 6)).toFixed(2) + " an over</em></div>";
   }
   function card(n, m, idx, now, mine) {
     var s = n.state === "live" ? readScore(n, m, now) : null;
     var href = "#/feed?n=" + encodeURIComponent(n.id) + "&f=" + idx;
-    var battingFirst = s && s.inn === 1;
+    // A SIDE IS A CREST, A NAME AND A SCORE, on a grid rather than a flex row.
+    // Flex let the name decide where everything after it began, so the crest on
+    // the row WITH a score and the crest on the row without it started at
+    // different places - two badges an inch apart down a card that is meant to
+    // read as one column. Three fixed tracks, and they cannot drift.
     var side = function (nm, isBat) {
       return "<div class='fo-lv-side" + (isBat ? " bat" : "") + "'>" + crest(nm) +
-        "<span>" + E(nm) + "</span>" +
-        (isBat && s ? "<i>" + scoreLine(s) + "</i>" : "") + "</div>";
+        "<span class='nm'>" + E(nm) + "</span>" +
+        (isBat && s && s.runs != null
+          ? "<span class='sc'><b>" + s.runs + "/" + s.wkts + "</b>" +
+            (s.ovs ? "<u>" + E(s.ovs) + "</u>" : "") + "</span>"
+          : "<span class='sc'></span>") + "</div>";
     };
-    var body;
-    if (n.state === "live") {
-      var homeBat = s && s.team === m.home.name;
-      body = side(m.home.name, !!s && homeBat) + side(m.away.name, !!s && !homeBat) +
-        chaseLine(s, m) +
-        (s && s.bats && s.bats.length
-          ? "<div class='fo-lv-at'>" + s.bats.map(function (b) {
-              return "<span>" + E(b.nm) + " <b>" + (b.r | 0) + "</b><u>(" + (b.b | 0) + ")</u></span>"; }).join("") +
-            (s.bowler ? "<em>" + E(s.bowler) + "</em>" : "") + "</div>"
-          : "");
-    } else if (n.state === "fin") {
-      body = side(m.home.name) + side(m.away.name) +
-        "<div class='fo-lv-res'>Stumps &middot; the scorecard is filed</div>";
-    } else {
-      body = side(m.home.name) + side(m.away.name) +
-        "<div class='fo-lv-res dim'>First ball " + (P().hhTxt ? P().hhTxt(n.hour) : n.hour + ":00") + "</div>";
-    }
-    return "<a class='fo-lv-card" + (n.state === "live" ? " on" : "") + (mine ? " mine" : "") + "' href='" + href + "'>" +
-      (mine ? "<em class='fo-lv-mine'>YOUR CLUB</em>" : "") + body +
-      "<span class='fo-lv-go'>" + (n.state === "live" ? "Watch &rsaquo;" : n.state === "fin" ? "Watch it back &rsaquo;" : "The XIs &rsaquo;") + "</span></a>";
+    var homeBat = s && s.team === m.home.name;
+    var body = side(m.home.name, !!s && homeBat) + side(m.away.name, !!s && !homeBat);
+    if (n.state === "live") body += chaseLine(s, m);
+    else if (n.state === "up") body += "<div class='fo-lv-when'>First ball " +
+      (P().hhTxt ? P().hhTxt(n.hour) : n.hour + ":00") + "</div>";
+    return "<a class='fo-lv-card" + (n.state === "live" ? " on" : "") + (mine ? " mine" : "") +
+      "' href='" + href + "'>" + body + "</a>";
   }
 
   function block(n, now, claim) {
@@ -250,33 +244,30 @@
       "@keyframes foLvP{0%,100%{opacity:1}50%{opacity:.25}}",
       "@media(prefers-reduced-motion:reduce){.fo-lv-dot{animation:none}}",
       ".fo-lv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:12px}",
-      ".fo-lv-card{display:block;position:relative;text-decoration:none;color:inherit;background:var(--paper);border:1px solid var(--brd);border-radius:13px;padding:13px 14px 11px;box-shadow:0 2px 10px rgba(20,36,58,.05);transition:box-shadow .15s,transform .15s}",
-      ".fo-lv-card:hover{box-shadow:0 6px 18px rgba(20,36,58,.10);transform:translateY(-1px)}",
-      ".fo-lv-card.on{border-left:3px solid var(--live);padding-left:12px}",
-      ".fo-lv-card.mine{border-color:#C89A2E;box-shadow:0 2px 10px rgba(200,154,46,.18)}",
-      ".fo-lv-mine{position:absolute;top:-8px;right:11px;background:#C89A2E;color:#fff;font:800 9px Manrope,sans-serif;letter-spacing:.14em;padding:2px 7px;border-radius:4px;font-style:normal}",
-      ".fo-lv-side{display:flex;align-items:center;gap:9px;padding:3px 0}",
-      ".fo-lv-cr{flex:none;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;border-radius:6px}",
-      ".fo-lv-cr img,.fo-lv-cr svg{width:100%;height:100%;object-fit:contain;display:block}",
-      // a club with no arms in the world still wears something: its letters, cut
-      // into the same navy shield the dossier uses
-      ".fo-lv-cr.ini{background:var(--navy);color:#FFFEFC;font:800 10px/1 Manrope,sans-serif;letter-spacing:.04em}",
-      ".fo-lv-side span{font:600 14px Manrope,sans-serif;color:#5b5344;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}",
-      ".fo-lv-side.bat span{color:var(--ink);font-weight:800}",
-      ".fo-lv-side i{font-style:normal;display:flex;align-items:baseline;gap:6px;flex:0 0 auto}",
-      ".fo-lv-side i b{font:600 21px/1 Fraunces,Georgia,serif;letter-spacing:-.01em;color:var(--navy);font-variant-numeric:tabular-nums}",
-      ".fo-lv-side i u{text-decoration:none;font:600 11px Manrope,sans-serif;color:var(--mut);font-variant-numeric:tabular-nums}",
-      ".fo-lv-wait{font:500 12px Manrope,sans-serif;color:var(--mut)}",
-      ".fo-lv-need{margin-top:7px;padding-top:7px;border-top:1px solid rgba(27,36,50,.08);font:600 12px Manrope,sans-serif;color:var(--brand)}",
+      // WIDER CARDS, FEWER OF THEM. At 272px a county name had nowhere to go and
+      // every card in the world ended in an ellipsis - "Band-e...", "Kunduz...".
+      // A name is the one thing on the card that cannot be abbreviated.
+      ".fo-lv-grid{grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:13px}",
+      ".fo-lv-card{display:grid;gap:7px;position:relative;text-decoration:none;color:inherit;background:var(--paper);border:1px solid var(--brd);border-radius:12px;padding:15px 17px 14px;box-shadow:0 1px 3px rgba(20,36,58,.05);transition:box-shadow .16s,border-color .16s}",
+      ".fo-lv-card:hover,.fo-lv-card:focus-visible{box-shadow:0 6px 20px rgba(20,36,58,.11);border-color:#cfc6b2;outline:none}",
+      ".fo-lv-card.on{border-left:3px solid var(--brand);padding-left:15px}",
+      ".fo-lv-card.mine{border-color:#C89A2E;box-shadow:0 2px 14px rgba(200,154,46,.18)}",
+      ".fo-lv-mine{position:absolute;top:-8px;right:13px;background:#C89A2E;color:#FFFEFC;font:800 9px/1 Manrope,sans-serif;letter-spacing:.14em;padding:3px 8px;border-radius:3px;font-style:normal}",
+      // three fixed tracks: the badge, the name, the figures. Both rows of a
+      // card sit on the same grid, so the crests line up down the column.
+      ".fo-lv-side{display:grid;grid-template-columns:38px minmax(0,1fr) auto;align-items:center;gap:12px}",
+      ".fo-lv-cr{width:38px;height:38px;display:flex;align-items:center;justify-content:center;overflow:hidden}",
+      ".fo-lv-cr>*,.fo-lv-cr img,.fo-lv-cr svg{width:100%;height:100%;object-fit:contain;display:block}",
+      ".fo-lv-cr.ini{background:var(--navy);color:#FFFEFC;border-radius:7px;font:800 13px/1 Manrope,sans-serif;letter-spacing:.03em}",
+      ".fo-lv-side .nm{min-width:0;font:600 15px/1.2 Manrope,sans-serif;color:#6E6656;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".fo-lv-side.bat .nm{color:var(--ink);font-weight:800}",
+      ".fo-lv-side .sc{display:flex;align-items:baseline;gap:7px;font-variant-numeric:tabular-nums;white-space:nowrap}",
+      ".fo-lv-side .sc b{font:600 24px/1 Fraunces,Georgia,serif;letter-spacing:-.015em;color:var(--navy)}",
+      ".fo-lv-side .sc u{text-decoration:none;font:600 11px/1 Manrope,sans-serif;color:var(--mut)}",
+      ".fo-lv-need,.fo-lv-when{margin-top:1px;padding-top:9px;border-top:1px solid rgba(27,36,50,.08);font:600 12.5px/1 Manrope,sans-serif;color:var(--brand);display:flex;align-items:baseline;gap:9px}",
       ".fo-lv-need b{font-weight:800}",
-      ".fo-lv-need em{font-style:normal;color:var(--mut);margin-left:7px;font-weight:500}",
-      ".fo-lv-at{margin-top:6px;display:flex;flex-wrap:wrap;gap:4px 12px;font:500 11.5px Manrope,sans-serif;color:#5b5344}",
-      ".fo-lv-at b{font-weight:800;color:var(--ink);font-variant-numeric:tabular-nums}",
-      ".fo-lv-at u{text-decoration:none;color:var(--mut);font-variant-numeric:tabular-nums}",
-      ".fo-lv-at em{font-style:normal;color:var(--mut);margin-left:auto}",
-      ".fo-lv-res{margin-top:6px;font:500 12px Manrope,sans-serif;color:#5b5344}",
-      ".fo-lv-res.dim{color:var(--mut)}",
-      ".fo-lv-go{display:block;margin-top:9px;font:700 11px Manrope,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--brand)}",
+      ".fo-lv-need em{font-style:normal;color:var(--mut);font-weight:500;margin-left:auto}",
+      ".fo-lv-when{color:var(--mut);font-weight:600}",
       ".fo-lv-rule{display:flex;align-items:center;gap:12px;margin:26px 0 14px;color:var(--mut)}",
       ".fo-lv-rule span{font:700 10.5px Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase;white-space:nowrap}",
       ".fo-lv-rule:after{content:'';flex:1;height:1px;background:var(--brd)}",

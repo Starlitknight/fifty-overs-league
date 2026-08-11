@@ -204,9 +204,28 @@
   // a small club sounds like a small club - the pattern is a pure function of
   // the seat, so every device names the same club the same way
   var DIV2_STYLE = ["%s CC", "%s Athletic", "%s District XI", "%s Colts", "%s Wanderers", "%s Gymkhana", "%s Rovers", "%s Union CC"];
-  function div2Name(rid, slot, city) {
-    var pat = DIV2_STYLE[h32(rid + "|d2nm|" + slot) % DIV2_STYLE.length];
-    return pat.replace("%s", city);
+  // TWO CLUBS IN ONE LEAGUE CANNOT SHARE A NAME. The style was drawn from the
+  // slot alone, so when the city pool handed the same town to two seats - which
+  // it does, there being fewer towns than clubs - both could also draw the same
+  // suffix, and a nation ended up with two clubs called "Galway CC". Distinct
+  // seats, distinct squads, distinct fixtures, one name: nothing on any page
+  // could tell them apart, and a live-scores card looked like one club playing
+  // itself. Seven of sixteen nations had at least one such pair.
+  //
+  // The draw now steps to the next style until the name is unused. `taken` is
+  // the names already assigned in this nation, and the caller fills slots in
+  // ascending order, so this stays what it has to be: the same everywhere,
+  // from the seat, with no state kept anywhere.
+  function div2Name(rid, slot, city, taken) {
+    var i0 = h32(rid + "|d2nm|" + slot) % DIV2_STYLE.length;
+    for (var k = 0; k < DIV2_STYLE.length; k++) {
+      var nm = DIV2_STYLE[(i0 + k) % DIV2_STYLE.length].replace("%s", city);
+      if (!taken || !taken[nm]) { if (taken) taken[nm] = 1; return nm; }
+    }
+    // every style used on this city already: the seat itself breaks the tie
+    var last = DIV2_STYLE[i0].replace("%s", city) + " " + (slot + 1);
+    if (taken) taken[last] = 1;
+    return last;
   }
   // England is hand-named on the server (the counties) - the mirror MUST carry
   // the same names, or orders keyed by club name would miss and the claim
@@ -1342,11 +1361,18 @@
       out.push({ slot: s, boss: false, name: ct + " CC", city: ct, div: 1,
         arch: archOf(rid, s, ct), str: strOf(rid, s) });
     }
-    // the founding seats: the eight small clubs of Division Two
+    // the founding seats: the eight small clubs of Division Two.
+    // Seeded with the names Division One already holds, because that is where
+    // the clash actually came from: a county is "<city> CC" and so is the first
+    // entry of DIV2_STYLE, so a small club drawing the same town AND that style
+    // took a name already on the ladder above it. Seeding rather than renaming
+    // means no established club is touched - only the newcomer steps aside.
+    var d2Taken = {};
+    out.forEach(function (o0) { d2Taken[o0.name] = 1; });
     var d2 = DIV2_CITY[rid] || [];
     for (var s9 = 8; s9 <= 15; s9++) {
       var ct2 = d2[s9 - 8] || (r.nm + " " + s9);
-      out.push({ slot: s9, boss: false, name: div2Name(rid, s9, ct2), city: ct2, div: 2,
+      out.push({ slot: s9, boss: false, name: div2Name(rid, s9, ct2, d2Taken), city: ct2, div: 2,
         arch: archOf(rid, s9, ct2), str: strOf(rid, s9) });
     }
     return out;
