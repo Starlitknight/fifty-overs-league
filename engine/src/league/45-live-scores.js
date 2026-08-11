@@ -66,6 +66,125 @@
     return "";
   }
 
+  // ---- the cups, which are a different animal ------------------------------
+  //
+  // A LEAGUE MATCH AND A CUP TIE ARE NOT THE SAME KIND OF THING HERE, and the
+  // difference is architectural rather than cosmetic. A league round is banked
+  // ball by ball and revealed on a clock, so a card can carry a running score.
+  // A cup stage is played only once its window has CLOSED - stageClosed asks
+  // for the window plus three hours - and no ball-by-ball is written for it at
+  // all: match_logs is filled for league matches and friendlies and nothing
+  // else. So a cup tie has no running score to show, and inventing a card that
+  // waits for one would leave it blank for ever.
+  //
+  // What is true is this: while the window is open the tie is being played and
+  // nobody knows anything, and when it closes the result is the record. Both
+  // are worth a card; neither is a score ticking over.
+  var SB = "https://egaipdksvztqqgouriyc.supabase.co";
+  var AK = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+  var SNAP = {};
+  function snap(key, cb) {
+    if (SNAP[key] !== undefined) return SNAP[key];
+    SNAP[key] = null;
+    fetch(SB + "/rest/v1/world_snapshots?key=eq." + encodeURIComponent(key) + "&select=body",
+      { headers: { apikey: AK } })
+      .then(function (r) { return r.json(); })
+      .then(function (j) { SNAP[key] = (j && j[0] && j[0].body) || false; if (cb) cb(); })
+      .catch(function () { SNAP[key] = false; });
+    return null;
+  }
+  var STAGE_NM = { g1: "group stage", g2: "group stage", g3: "group stage", qf: "quarter-finals",
+    sf: "semi-finals", final: "final", r16: "round of 16", semi: "semi-finals" };
+  // the Champions Cup bowls at 15:00 UTC, and 18:00 for the last two rounds
+  function cupHour(stage) { return (stage === "sf" || stage === "final") ? 18 : 15; }
+
+  function tieCard(t, href) {
+    var sideT = function (sd, sc, won) {
+      return "<div class='fo-lv-side" + (won ? " bat" : "") + "'>" + crest(sd && sd.name) +
+        "<span class='nm'>" + E((sd && sd.name) || "?") + "</span>" +
+        "<span class='sc'>" + (sc ? "<b>" + E(String(sc).split(" ")[0].split("/")[0]) +
+          (String(sc).indexOf("/") > 0 ? "/" + String(sc).split("/")[1] : "") + "</b>" : "") + "</span></div>";
+    };
+    var w = t.winner;
+    return "<a class='fo-lv-card on' href='" + href + "'>" +
+      sideT(t.a, t.as_, w && t.a && w === t.a.name) +
+      sideT(t.b, t.bs_, w && t.b && w === t.b.name) +
+      (t.text ? "<div class='fo-lv-when'>" + E(t.text) + "</div>" : "") + "</a>";
+  }
+  // A STAGE UNDER WAY WITH NOTHING BANKED IS A NOTICE, NOT A FIXTURE. Dressing
+  // it as a card with two crests meant inventing two clubs called "The sixteen
+  // champions" and "are playing this stage", which is what it looked like.
+  function stageNotice(what, href) {
+    return "<a class='fo-lv-note' href='" + href + "'><b>" + E(what) + "</b>" +
+      "<span>Out in the middle now &middot; the result is filed when the window shuts</span>" +
+      "<u>The draw &rsaquo;</u></a>";
+  }
+
+  // the world's own cup day, and each nation's - returned as blocks in the same
+  // shape a league block has, so the page renders them without knowing which
+  function cupBlocks(now, repaint) {
+    var pl = P(), out = [];
+    var ph; try { ph = pl.phaseOf(now); } catch (e) { return out; }
+    if (!ph) return out;
+    var day = pl.EPOCH + pl.dayIx(now) * 86400000;
+    var hNow = (now - day) / 3600000, LEN = pl.LIVE_LEN || 3;
+    var season = ph.season || 1;
+
+    if (ph.kind === "cup" && ph.stage) {
+      var h0 = cupHour(ph.stage);
+      var st = hNow < h0 ? "up" : hNow < h0 + LEN ? "live" : "fin";
+      var body = snap("cup/s" + season, repaint);
+      var ties = (body && body.stages && body.stages[ph.stage]) || [];
+      // A RESULT IS A RESULT, WHATEVER THE CLOCK SAYS. The umpire plays a cup
+      // stage only once its window has shut, so during the window there is
+      // nothing banked and these cards are pairings. But the page must not
+      // depend on that being true: if the record already names a winner the tie
+      // is over, and printing "Cricket Club of India win by 81 runs" under a
+      // pulsing LIVE dot is the one thing a scores page may never do. Caught by
+      // pinning the clock to a cup day against a world that had already played
+      // it - which is exactly the case the calendar promises cannot happen.
+      if (ties.length && ties.every(function (t) { return t && t.winner; })) st = "fin";
+      out.push({ kind: "cup", id: "wcl", nm: "Champions Cup", hour: h0, state: st,
+        title: "Champions Cup \u00b7 " + (STAGE_NM[ph.stage] || ph.stage),
+        html: ties.length
+          ? ties.map(function (t) { return tieCard(t, "#/cup"); }).join("")
+          : (st === "live" ? stageNotice("The " + (STAGE_NM[ph.stage] || ph.stage) + " are being played", "#/cup") : "") });
+    }
+    if (ph.kind === "facup" && ph.stage) {
+      var body2Key = null;
+      (pl.nations() || []).forEach(function (r) {
+        var hF = pl.natHour(r.id);
+        var stF = hNow < hF ? "up" : hNow < hF + LEN ? "live" : "fin";
+        var bd = snap("facup/" + r.id + "/s" + season, repaint);
+        var ts = (bd && bd.stages && bd.stages[ph.stage]) || [];
+        if (ts.length && ts.every(function (t) { return t && t.winner; })) stF = "fin";
+        if (!ts.length && stF !== "live") return;
+        out.push({ kind: "facup", id: r.id, nm: r.nm || r.id.toUpperCase(), hour: hF, state: stF,
+          title: "FA Cup \u00b7 " + (STAGE_NM[ph.stage] || ph.stage),
+          html: ts.length ? ts.map(function (t) { return tieCard(t, "#/facup"); }).join("")
+            : stageNotice("The " + (STAGE_NM[ph.stage] || ph.stage) + " are being played", "#/facup") });
+      });
+    }
+    if (ph.kind === "rest" && ph.window) {
+      out.push({ kind: "intl", id: "intl", nm: "The international game", hour: 12, state:
+        hNow < 12 ? "up" : hNow < 12 + LEN ? "live" : "fin",
+        title: "International window \u00b7 round " + ph.window,
+        html: stageNotice("Every full member is on tour", "#/nations") });
+    }
+    return out;
+  }
+  function compBlock(c) {
+    if (!c.html) return "";
+    return "<section class='fo-lv-blk " + c.state + "'>" +
+      "<div class='fo-lv-bh'>" + (c.kind === "facup" ? flagOf(c.id) : "") +
+      "<h2>" + E(c.nm) + "</h2>" +
+      "<span class='fo-lv-rd'>" + (c.kind === "intl" ? "International" : "Cup") + "</span>" +
+      "<span class='fo-lv-st'>" + (c.state === "live" ? "<s class='fo-lv-dot'></s>LIVE"
+        : (P().hhTxt ? P().hhTxt(c.hour) : c.hour + ":00")) + "</span></div>" +
+      "<div class='fo-lv-comp'><h3>" + E(c.title) + "</h3></div>" +
+      "<div class='fo-lv-grid'>" + c.html + "</div></section>";
+  }
+
   function matchId(n, m) {
     return n.id + ":s" + n.cal.seasonNo + ":r" + n.cal.round + ":h" + m.home.slot + "a" + m.away.slot;
   }
@@ -212,14 +331,24 @@
       if (n.state !== "live") return;
       n.fx.forEach(function (m, i) { wantScore(n, m, i, repaint); });
     });
+    // the cups and the international game ride in the same three-way split as a
+    // league does, so a cup tie in progress sorts above a league round that has
+    // not started rather than below every nation on the page
+    var comps = cupBlocks(now, repaint);
+    var cLive = comps.filter(function (c) { return c.state === "live" && c.html; });
+    var cUp = comps.filter(function (c) { return c.state === "up" && c.html; });
     var live = world.filter(function (n) { return n.state === "live"; });
     var up = world.filter(function (n) { return n.state === "up"; }).sort(function (a, b) { return a.hour - b.hour; });
-    var fin = world.filter(function (n) { return n.state === "fin"; });
-    var nMatches = live.reduce(function (s, n) { return s + n.fx.length; }, 0);
+    // a NOTICE is a competition under way without a card per tie, so it counts
+    // toward "how many competitions" and not toward "how many matches"
+    var nMatches = live.reduce(function (s, n) { return s + n.fx.length; }, 0) +
+      cLive.reduce(function (s, c) { return s + (c.html.match(/fo-lv-card/g) || []).length; }, 0);
+    var nComp = live.length + cLive.length;
     var head = "<div class='fo-lv-hd'><div class='eb'>Around the world</div>" +
       "<h1>Live scores</h1><div class='ty'>" +
-      (nMatches ? "<b>" + nMatches + "</b> match" + (nMatches === 1 ? "" : "es") + " in play in <b>" + live.length + "</b> " +
-        (live.length === 1 ? "league" : "leagues")
+      (nMatches ? "<b>" + nMatches + "</b> match" + (nMatches === 1 ? "" : "es") + " in play in <b>" + nComp + "</b> " +
+        (nComp === 1 ? "competition" : "competitions")
+        : nComp ? "<b>" + nComp + "</b> competition" + (nComp === 1 ? "" : "s") + " under way"
         : up.length ? "Nothing in play &middot; first ball " + (P().hhTxt ? P().hhTxt(up[0].hour) : up[0].hour + ":00")
         : "No cricket anywhere today") + "</div></div>";
     // A SCORES PAGE SHOWS WHAT IS ON. Finished matches were a third of the page
@@ -227,11 +356,12 @@
     // and a reader who came here came for cricket in progress. They are gone.
     // What is still to come is kept only when nothing is live, because the one
     // thing worse than a finished match on a scores page is an empty one.
-    var body = live.map(function (n) { return block(n, now, claim); }).join("");
-    if (!live.length && up.length) {
+    var body = cLive.map(compBlock).join("") + live.map(function (n) { return block(n, now, claim); }).join("");
+    if (!body && (cUp.length || up.length)) {
+      var soon = cUp.length ? cUp[0].hour : up[0].hour;
       body = "<div class='fo-lv-rule'><span>First ball " +
-        (P().hhTxt ? P().hhTxt(up[0].hour) : up[0].hour + ":00") + "</span></div>" +
-        up.map(function (n) { return block(n, now, claim); }).join("");
+        (P().hhTxt ? P().hhTxt(soon) : soon + ":00") + "</span></div>" +
+        cUp.map(compBlock).join("") + up.map(function (n) { return block(n, now, claim); }).join("");
     }
     if (!body) body = "<div class='fo-lv-rest'><b>" +
       (world.length ? "Every league has finished for the day." : "A rest day across the whole world.") + "</b>" +
@@ -316,6 +446,10 @@
       ".fo-lv-need b{font-weight:800}",
       ".fo-lv-need em{font-style:normal;color:var(--mut);font-weight:500;margin-left:auto}",
       ".fo-lv-when{color:var(--mut);font-weight:600}",
+      ".fo-lv-note{display:grid;gap:5px;text-decoration:none;color:inherit;background:var(--paper);border:1px solid var(--brd);border-left:3px solid var(--brand);border-radius:12px;padding:15px 17px}",
+      ".fo-lv-note b{font:800 15px/1.25 Manrope,sans-serif;color:var(--ink)}",
+      ".fo-lv-note span{font:500 12.5px/1.45 Manrope,sans-serif;color:var(--mut)}",
+      ".fo-lv-note u{text-decoration:none;font:700 11px/1 Manrope,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--brand);margin-top:3px}",
       ".fo-lv-rule{display:flex;align-items:center;gap:12px;margin:26px 0 14px;color:var(--mut)}",
       ".fo-lv-rule span{font:700 10.5px Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase;white-space:nowrap}",
       ".fo-lv-rule:after{content:'';flex:1;height:1px;background:var(--brd)}",
