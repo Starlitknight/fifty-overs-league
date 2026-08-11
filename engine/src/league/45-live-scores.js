@@ -140,18 +140,59 @@
       "' href='" + href + "'>" + body + "</a>";
   }
 
+  // WHAT COMPETITION IS THIS? A nation's day is one competition at a time - the
+  // calendar says which - and the two divisions play their round side by side.
+  // Grouping everything under one flag said "Afghanistan, Round 2" over sixteen
+  // clubs from two different leagues, which is not a thing that exists: a first
+  // division fixture and a second division fixture share a date and nothing
+  // else. The day names the competition, the fixture names its division.
+  var COMP = { playoff: "Playoff", facup: "FA Cup", cup: "Champions Cup" };
+  function compOf(now) {
+    try {
+      var ph = P().phaseOf(now);
+      if (!ph) return null;
+      if (ph.kind === "league") return { league: 1, round: ph.round };
+      if (COMP[ph.kind]) return { name: COMP[ph.kind], stage: ph.stage || "", round: ph.round };
+      if (ph.kind === "rest" && ph.window) return { name: "International window", stage: "" };
+      return null;
+    } catch (e) { return null; }
+  }
+  function groupTitle(comp, div) {
+    if (!comp) return div === 2 ? "Division Two" : "Division One";
+    if (comp.league) return div === 2 ? "Division Two" : "Division One";
+    var st = { semi: "semi-finals", final: "final", g1: "group stage", g2: "group stage",
+      g3: "group stage", qf: "quarter-finals", sf: "semi-finals", r16: "round of 16" }[comp.stage] || "";
+    return comp.name + (st ? " \u00b7 " + st : "") + (comp.league ? "" : "") +
+      (div ? " \u00b7 " + (div === 2 ? "Division Two" : "Division One") : "");
+  }
+  function group(n, fx, title, now, claim) {
+    if (!fx.length) return "";
+    return "<div class='fo-lv-comp'><h3>" + E(title) + "</h3><span class='fo-lv-n'>" +
+      fx.length + "</span></div><div class='fo-lv-grid'>" + fx.map(function (f) {
+        var m = f.m, mine = !!(claim && claim.country === n.id &&
+          (m.home.name === claim.club || m.away.name === claim.club));
+        return card(n, m, f.i, now, mine);
+      }).join("") + "</div>";
+  }
   function block(n, now, claim) {
-    var flag = n.state === "live"
-      ? "<s class='fo-lv-dot'></s>LIVE"
-      : n.state === "fin" ? "Stumps" : (P().hhTxt ? P().hhTxt(n.hour) : n.hour + ":00");
+    var flag = n.state === "live" ? "<s class='fo-lv-dot'></s>LIVE"
+      : (P().hhTxt ? P().hhTxt(n.hour) : n.hour + ":00");
+    var comp = compOf(now);
+    // a fixture carries its own division, so the split is the record's, not a
+    // guess off the slot number - promotion moves a club between them
+    var d1 = [], d2 = [];
+    n.fx.forEach(function (m, i) {
+      var dv = (m.home && m.home.div) || (m.away && m.away.div) || 1;
+      (dv === 2 ? d2 : d1).push({ m: m, i: i });
+    });
+    var round = comp && comp.round ? " &middot; Round " + comp.round : "";
     return "<section class='fo-lv-blk " + n.state + "'>" +
       "<div class='fo-lv-bh'>" + flagOf(n.id) + "<h2>" + E(n.nm) + "</h2>" +
-      "<span class='fo-lv-rd'>Round " + (n.cal.round | 0) + "</span>" +
+      "<span class='fo-lv-rd'>" + (comp && !comp.league ? E(comp.name) : "League") + round.replace("&middot;", "\u00b7") + "</span>" +
       "<span class='fo-lv-st'>" + flag + "</span></div>" +
-      "<div class='fo-lv-grid'>" + n.fx.map(function (m, i) {
-        var mine = !!(claim && claim.country === n.id && (m.home.name === claim.club || m.away.name === claim.club));
-        return card(n, m, i, now, mine);
-      }).join("") + "</div></section>";
+      group(n, d1, groupTitle(comp, 1), now, claim) +
+      group(n, d2, groupTitle(comp, 2), now, claim) +
+      "</section>";
   }
 
   window.foRenderLiveScores = function () {
@@ -247,7 +288,14 @@
       // WIDER CARDS, FEWER OF THEM. At 272px a county name had nowhere to go and
       // every card in the world ended in an ellipsis - "Band-e...", "Kunduz...".
       // A name is the one thing on the card that cannot be abbreviated.
-      ".fo-lv-grid{grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:13px}",
+      ".fo-lv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:13px}",
+      // a competition rule INSIDE the nation: quieter than the nation's own
+      // heading, because it divides rather than announces
+      ".fo-lv-comp{display:flex;align-items:baseline;gap:9px;margin:15px 0 9px}",
+      ".fo-lv-comp:first-of-type{margin-top:11px}",
+      ".fo-lv-comp h3{margin:0;font:800 11px/1 Manrope,sans-serif;letter-spacing:.19em;text-transform:uppercase;color:var(--ink)}",
+      ".fo-lv-comp .fo-lv-n{font:700 10.5px/1 Manrope,sans-serif;color:var(--mut);font-variant-numeric:tabular-nums}",
+      ".fo-lv-comp:after{content:'';flex:1;height:1px;background:rgba(27,36,50,.11)}",
       ".fo-lv-card{display:grid;gap:7px;position:relative;text-decoration:none;color:inherit;background:var(--paper);border:1px solid var(--brd);border-radius:12px;padding:15px 17px 14px;box-shadow:0 1px 3px rgba(20,36,58,.05);transition:box-shadow .16s,border-color .16s}",
       ".fo-lv-card:hover,.fo-lv-card:focus-visible{box-shadow:0 6px 20px rgba(20,36,58,.11);border-color:#cfc6b2;outline:none}",
       ".fo-lv-card.on{border-left:3px solid var(--brand);padding-left:15px}",
