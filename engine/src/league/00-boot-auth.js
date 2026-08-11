@@ -1016,6 +1016,27 @@
       var want = mineNow ? "LIVE" : "Live";
       if (lbl.textContent !== want) lbl.textContent = want;
       ml.classList.toggle("mine", !!mineNow);
+      // AND WHEN NOTHING OF MINE IS ON AIR, THE PILL IS STILL A DOOR - just a
+      // quieter one. It used to go dark whenever the cricket in progress
+      // belonged to somebody else, which is most of the time: the summons is
+      // reserved for my own match (that is what .mine is for), but "there is
+      // cricket happening somewhere" now has a page to open, so the pill points
+      // at it rather than doing nothing.
+      if (!go) {
+        try {
+          var pl8 = window.__foPlanet, wt8 = window.__foWT;
+          if (pl8 && wt8 && wt8.serverFixtures && pl8.nations) {
+            var nw8 = Date.now();
+            var hN8 = (nw8 - (pl8.EPOCH + pl8.dayIx(nw8) * 86400000)) / 3600000;
+            (pl8.nations() || []).forEach(function (r8) {
+              if (go) return;
+              var h8 = pl8.natHour(r8.id);
+              if (hN8 < h8 || hN8 >= h8 + (pl8.LIVE_LEN || 3)) return;
+              try { if ((wt8.serverFixtures(r8.id, nw8).fx || []).length) go = "#/live"; } catch (e8) {}
+            });
+          }
+        } catch (eAny) {}
+      }
       if (go) { ml.setAttribute("data-go", go); ml.classList.add("on"); } else ml.classList.remove("on");
       // the world clock is pinned to the right of the topbar and out of flow,
       // so on a phone the pill lands underneath it and the two print on top of

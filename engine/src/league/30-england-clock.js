@@ -197,8 +197,13 @@
       var el = document.getElementById("fo-wclock");
       if (!el) {
         el = document.createElement("a");
-        el.id = "fo-wclock"; el.href = "#/planet";
-        el.addEventListener("click", function (e) { e.preventDefault(); location.hash = "#/planet"; if (typeof window.route === "function") window.route(); });
+        // THE CLOCK IS A DOOR, AND IT WAS THE WRONG ONE. It reads the day, the
+        // season and how many leagues are in play, and clicking that "1 LIVE"
+        // landed on the world MAP - a beautiful page that says nothing about
+        // the cricket being played on it. A chip that counts live matches
+        // should open the live matches.
+        el.id = "fo-wclock"; el.href = "#/live";
+        el.addEventListener("click", function (e) { e.preventDefault(); location.hash = "#/live"; if (typeof window.route === "function") window.route(); });
       }
       // SELF-HEALING, WITH TWO LAWFUL HOMES. The clock is an <a>, and the
       // topbar has decorators that round up anchors and file them elsewhere -
