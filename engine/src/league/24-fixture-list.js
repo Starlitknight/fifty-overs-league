@@ -203,7 +203,18 @@
     var my = (myRow && ((names && names[claim.slot]) || myRow.name)) || claim.club;
     var groundOf = function (slot) { return (mgr && mgr["g" + slot]) || ((bySlot[slot] || "the ground") + "'s ground"); };
     var pl0 = null; try { pl0 = window.__foPlanet; } catch (ePl) {}
-    var seasonNo = window.foSeasonN ? foSeasonN(snap.seasonNo || 1) : (snap.seasonNo || 1);
+    // A LABEL IS NOT AN INDEX. foSeasonN turns the world's season into the
+    // number a reader sees: the record carries 136 baked seasons, so the live
+    // season 1 is billed as Season 137. This page bound that label to
+    // `seasonNo` and then handed it to the calendar - dayOfSeasonRound,
+    // faDayOf, schedMirror, the cup draw - which want the world's OWN season.
+    // Asked for season 137 while the world sits in season 1, the calendar
+    // answered honestly: a hundred and thirty-six years of forty-two days
+    // each, five thousand seven hundred days out. Every fixture on the page
+    // was dated in 2042, and because a row prints "1 Apr" without a year, it
+    // read as next April.
+    var seasonNo = (snap.seasonNo | 0) || 1;                     // the world's
+    var seasonLbl = window.foSeasonN ? foSeasonN(seasonNo) : seasonNo;   // the reader's
     var EP = pl0 ? pl0.EPOCH : 0, DAYMS = pl0 ? pl0.DAY : 86400000;
     var tsOfDay = function (d9) { return d9 == null ? 0 : EP + d9 * DAYMS; };
     var dayOf = function (round) {
@@ -394,7 +405,7 @@
 
     page.innerHTML =
       "<div class='fo-fl'>" +
-      heroHtml(E(my) + (divNm ? " &middot; " + divNm : "") + " &middot; Season " + seasonNo, chips, form) +
+      heroHtml(E(my) + (divNm ? " &middot; " + divNm : "") + " &middot; Season " + seasonLbl, chips, form) +
       feature +
       (resRows ? "<div class='fo-fl-k'>Results</div><div class='fo-fl-list'>" + resRows + "</div>" : "") +
       "<div class='fo-fl-k'>Still to play</div><div class='fo-fl-list'>" + upRows + "</div>" +
