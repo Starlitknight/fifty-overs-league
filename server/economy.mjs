@@ -149,6 +149,15 @@ export const TICKET_ELASTICITY = 1.4;
 export const TICKET_KNEE = 62, TICKET_KNEE_W = 9;
 const cliffAt = p => 1 / (1 + Math.exp((p - TICKET_KNEE) / TICKET_KNEE_W));
 export const TICKET_LOCK_MS = 24 * 3600000;
+// THE QUEUE MOVES DURING THE DAY. The sale was banked a whole day at a time:
+// the board a manager watches took a day's tickets in one lump at the day
+// boundary and then stood perfectly still for twenty-four hours, which reads
+// as a broken page rather than as an advance sale. A sale day is served in six
+// four-hourly parts now - the same day, the same total, arriving the way a
+// queue actually arrives. A day already past is whole, so nothing about a
+// banked gate moves by a penny.
+export const TICKET_TICK_MS = 4 * 3600000;
+export const TICKET_TICKS = 6;                      // six of them make the day
 // THE PACE OF THE QUEUE IS THE MATCH'S OWN. A cold fixture sells the old
 // way: a short window, most of it in the last days before the lock. A HOT
 // one - the flagship visiting, an ecstatic following, a late-season decider
@@ -196,6 +205,11 @@ export function gateSale(demand, seats, matchMs, prices, nowMs, heat) {
     const p = pAt(at);
     if (flat == null) flat = p; else if (p !== flat) allFlat = false;
     let n = demand * win.fr[k] * priceMult(p);
+    // the part of this sale day that has actually happened
+    if (nowMs != null) {
+      const ticks = Math.max(0, Math.min(TICKET_TICKS, Math.floor((nowMs - at) / TICKET_TICK_MS)));
+      n = n * (ticks / TICKET_TICKS);
+    }
     if (sold + n > seats) n = seats - sold;
     if (n <= 0) continue;
     sold += n; take += n * p;

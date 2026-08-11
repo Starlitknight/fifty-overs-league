@@ -184,6 +184,35 @@ test('the crowd locks 24 hours out', () => {
   assert.deepEqual(b, a, 'a price set inside the last day touches no remaining sale');
 });
 
+test('the queue moves every four hours, not once a midnight', () => {
+  // THE BOARD STOOD STILL FOR A DAY AT A TIME. A sale day was banked in one
+  // lump at its own boundary, so a manager watching the gate board saw the
+  // same figure for twenty-four hours and then a jump - which reads as a
+  // broken page, not as an advance sale. The day is served in six parts now.
+  const mm = EPOCH + 320 * DAY + 14 * 3600000;
+  const lockAt = mm - 24 * 3600000, day = lockAt - 2 * DAY;
+  const at = h => gateSale(14000, 20000, mm, null, day + h * 3600000, 0.4).sold;
+  const every4 = [0, 4, 8, 12, 16, 20, 24].map(at);
+  for (let i = 1; i < every4.length; i++)
+    assert.ok(every4[i] > every4[i - 1], 'the queue moved between hour ' + (4 * i - 4) + ' and ' + 4 * i);
+  // six moves in the day and no more: a trickle, not a live counter
+  const hourly = []; for (let h = 0; h <= 24; h++) hourly.push(at(h));
+  const moves = hourly.slice(1).filter((v, i) => v !== hourly[i]).length;
+  assert.equal(moves, 6, 'six four-hourly steps make the day, got ' + moves);
+  // the six steps are one day's sale, cut six ways and no more
+  const steps = every4.slice(1).map((v, i) => v - every4[i]);
+  assert.equal(steps.reduce((a, b) => a + b, 0), every4[6] - every4[0], 'the parts are the day');
+  assert.ok(Math.max(...steps) - Math.min(...steps) <= 1, 'and they are even: ' + steps.join(','));
+  // the next day has begun but not yet ticked, so the board holds
+  assert.equal(at(25), at(24), 'the board holds until the next four hours are up');
+  // THE BANKED GATE DOES NOT MOVE BY A PENNY. Everything above is the advance
+  // board; the umpire's own figure takes every sale day whole.
+  const banked = gateSale(14000, 20000, mm, null, null, 0.4);
+  const board = gateSale(14000, 20000, mm, null, lockAt + DAY, 0.4);
+  assert.equal(board.sold, banked.sold, 'at the lock the board IS the gate');
+  assert.equal(board.take, banked.take, 'and so is the money');
+});
+
 test('a hot fixture queues early; a cold one is a late rush; both bank the same house', () => {
   const mm = EPOCH + 300 * DAY + 14 * 3600000;
   const tenOut = mm - 10 * DAY;

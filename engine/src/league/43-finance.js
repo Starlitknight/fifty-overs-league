@@ -329,7 +329,10 @@
   // (26/price)^1.15.
   // ==========================================================================
   var TK = { BASE: 26, MIN: 10, MAX: 100, EL: 1.4, KNEE: 62, KW: 9, BCAST: 7.5, LOCK: 24 * 3600000,
-             WBASE: 6, WMAX: 14 };
+             WBASE: 6, WMAX: 14,
+             // a sale day arrives in six four-hourly parts, so the board moves
+             // through the day instead of standing still between midnights
+             TICK: 4 * 3600000, TICKS: 6 };
   function tkWindow(heat) {
     var h = Math.max(0, Math.min(1, heat || 0));
     var days = TK.WBASE + Math.round((TK.WMAX - TK.WBASE) * h);
@@ -374,6 +377,10 @@
       if (nowMs != null && at > nowMs) break;
       var pr = pAt(at);
       var n = demand * win.fr[k] * tkMult(pr);
+      if (nowMs != null) {
+        var tk9 = Math.max(0, Math.min(TK.TICKS, Math.floor((nowMs - at) / TK.TICK)));
+        n = n * (tk9 / TK.TICKS);
+      }
       if (sold + n > seats) n = seats - sold;
       if (n <= 0) continue;
       sold += n; take += n * pr;

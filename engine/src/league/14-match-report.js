@@ -478,8 +478,15 @@
       var tg = (typeof foBallTag === "function") ? foBallTag(L) : null;
       var tk = (typeof foBallTagKind === "function") ? foBallTagKind(L) : null;
       var tgH = tg ? "<i class='fo-mr-tag" + (tk === "tal" ? " tal" : "") + "'>[" + E(tg) + "]</i> " : "";
+      // THE BALL SAYS WHAT IT WAS BEFORE THE SENTENCE DOES. A reader running
+      // an eye down forty overs is looking for three things - a wicket, a four,
+      // a six - and was made to read for them. The mark rides beside the ball
+      // number, in the colour that thing already wears everywhere else.
+      var badge = o === "4" ? "<s class='fo-mr-bg four'>4</s>"
+        : o === "6" ? "<s class='fo-mr-bg six'>6</s>"
+        : (o && o[0] === "w" && o !== "wide") ? "<s class='fo-mr-bg wkt'>W</s>" : "";
       return rows += "<div class='fo-mr-ball" + (cls ? " " + cls : "") + (tg ? " tagged" : "") + "'>" +
-        "<b>" + E(L.no || o || "") + "</b><span>" + tgH + E(foMrMend(L.txt || "")) + "</span></div>";
+        "<b>" + E(L.no || o || "") + badge + "</b><span>" + tgH + E(foMrMend(L.txt || "")) + "</span></div>";
     });
     return "<div class='fo-mr-comm'>" +
       "<div class='fo-mr-rule'><span>Ball by ball</span></div>" + toggle +
@@ -1781,7 +1788,13 @@
       ".fo-mr-commlist{display:flex;flex-direction:column;gap:0}",
       ".fo-mr-ball{display:grid;grid-template-columns:48px minmax(0,1fr);gap:10px;align-items:baseline;padding:9px 8px;border-radius:0;background:transparent;border-bottom:1px solid #efe9dc}",
       ".fo-mr-ball:last-child{border-bottom:0}",
-      ".fo-mr-ball b{font-family:Manrope,sans-serif;font-size:11px;letter-spacing:.06em;color:#7a7566;font-variant-numeric:tabular-nums}",
+      ".fo-mr-ball b{display:flex;align-items:center;gap:6px;font-family:Manrope,sans-serif;font-size:11px;letter-spacing:.06em;color:#7a7566;font-variant-numeric:tabular-nums}",
+      // the mark: a wicket, a four, a six - each in the colour it already
+      // wears on this page, small enough to scan and never to shout
+      ".fo-mr-bg{flex:none;display:inline-flex;align-items:center;justify-content:center;width:17px;height:17px;border-radius:5px;font:800 10.5px/1 Manrope,sans-serif;text-decoration:none;color:#FFFEFC;letter-spacing:0}",
+      ".fo-mr-bg.four{background:#1B7A73}",
+      ".fo-mr-bg.six{background:#B07C22}",
+      ".fo-mr-bg.wkt{background:#A6392B}",
       ".fo-mr-ball span{font-family:Fraunces,Georgia,serif;font-size:13.5px;line-height:1.6;color:#2a2b2e}",
       ".fo-mr-ball.four b{color:#22635F;font-weight:700}",
       ".fo-mr-ball.six b{color:#9a6b12;font-weight:700}",

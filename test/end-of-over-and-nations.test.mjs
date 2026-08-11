@@ -101,5 +101,19 @@ test('the page prints a rung on the strength scale, not the day scale', () => {
   assert.match(rk, /rkStr\(\{ strength: n\.natRating \}\)/, 'the XI figure is a strength');
   assert.match(rk, /rkStr\(\{ strength: n\.clubRating \}\)/, 'and so is the league figure');
   assert.ok(!/fmtDay\(n\.natRating\)/.test(rk), 'neither goes through the day-mark scale any more');
-  assert.match(rk, /FULL MEMBER/, 'and the row says which rung it is on');
+});
+
+// A NAME, A FIGURE, AND NOTHING ARGUING WITH THEM. Every row carried a badge
+// beside the club - YOU, FLAGSHIP, a star with the titles on it - and the
+// nations table wore FULL MEMBER or ASSOCIATE. On a phone the badges won: the
+// names truncated to make room for them.
+test('a ranking row is a name and a figure, with no badge between', () => {
+  assert.match(rk, /"<b>" \+ E\(c\.name\) \+ "<\/b>"/, 'a club row is its name');
+  assert.match(rk, /"<b>" \+ E\(n\.name\) \+ "<\/b>"/, 'and so is a nation row');
+  // the file may still NARRATE the badges - this note does - so read the code
+  // the page runs, not the prose around it
+  const code = rk.split('\n').filter(l => !/^\s*\/\//.test(l)).join('\n');
+  ['YOU<\/em>', 'FLAGSHIP', 'FULL MEMBER', 'ASSOCIATE', 'honourStar'].forEach(function (chip) {
+    assert.ok(!new RegExp(chip).test(code), 'no row wears "' + chip + '" any more');
+  });
 });

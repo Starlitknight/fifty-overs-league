@@ -126,31 +126,13 @@
       // which is the thing a manager is looking at the list to find out. The
       // world rank is not lost: it is the row's tooltip, and the ladder is
       // still ORDERED by it, so the two readings never disagree.
-      // THE LADDER IS FORM; THE STAR IS HISTORY. Strength ranks a squad as it
-      // is today, which says nothing about whether the club behind it has a
-      // cupboard. A club with league titles carries them here too.
-      // ONLY WHERE WE KNOW WHO RUNS IT. A claimed club was founded this
-      // season and has won nothing; the manager map that says so is fetched
-      // per nation and is not on the device for every one of them. Where it
-      // is missing the club is left plain rather than told a history it may
-      // not have - a wrong star on somebody's own club is a lie, a missing
-      // one is only a quiet row.
-      var mgrMapOf = function (rid) {
-        try { return (window.__foWorldNames && window.__foWorldNames.mgr) ? window.__foWorldNames.mgr(rid) : null; }
-        catch (eM9) { return null; }
-      };
-      var honourStar = function (c, isMine) {
-        try {
-          if (isMine) return "";
-          var mm = mgrMapOf(c.country);
-          if (!mm || mm[c.slot]) return "";
-          var pl9 = window.__foPlanet;
-          if (!pl9 || !pl9.heritageOf) return "";
-          var h9 = pl9.heritageOf(c.country, c.slot, false);
-          if (!h9 || !h9.titles) return "";
-          return " <em class='tt' title='" + h9.titles + " league titles before this season'>&#9733; " + h9.titles + "</em>";
-        } catch (eS9) { return ""; }
-      };
+      // A NAME, A FIGURE, AND NOTHING ARGUING WITH THEM. Every row used to
+      // carry a badge beside the club - YOU, FLAGSHIP, a star with the titles
+      // on it - and the nations table wore FULL MEMBER or ASSOCIATE. Five ways
+      // of labelling a row a reader came to for one name and one number, and
+      // on a phone the badges won: the names truncated to make room for them.
+      // The manager's own row is already washed and its figure already wears
+      // the accent, which is that fact said once instead of three times.
       var rowOf = function (c, iRow) {
         var isMine = !!(cl && c.country === cl.country && c.slot === cl.slot);
         var num = (natPick && iRow != null) ? (iRow + 1) : c.rank;
@@ -158,7 +140,7 @@
         return "<a class='fo-rk-row" + (isMine ? " mine" : "") + (c.boss ? " boss" : "") + "' href='#/team?c=" + encodeURIComponent(c.country) + "&s=" + c.slot + "'" + tip + ">" +
           "<i>" + num + "</i>" +
           "<img src='" + flagOf(c.country) + "' alt='' onerror=\"this.style.display='none'\">" +
-          "<b>" + E(c.name) + (isMine ? " <em>YOU</em>" : (c.boss ? " <em class='bs'>FLAGSHIP</em>" : "")) + honourStar(c, isMine) + "</b>" +
+          "<b>" + E(c.name) + "</b>" +
           "<u>" + E(natName(c.country)) + "</u>" +
           formOf(c) +
           "<span class='rec'>" + c.w + "-" + c.l + (c.t ? "-" + c.t : "") + "</span>" +
@@ -168,16 +150,6 @@
       // clubs - the dropdown narrows the ladder, it never re-ranks it
       var natPick = RK_NAT && RK.clubs.some(function (c) { return c.country === RK_NAT; }) ? RK_NAT : "";
       var shown = natPick ? RK.clubs.filter(function (c) { return c.country === natPick; }) : RK.clubs.slice(0, 30);
-      // ask who runs the clubs of the league on screen, so the honours stars
-      // above can tell an old county from a club somebody founded on Monday
-      try {
-        var askNat = natPick || (cl && cl.country) || "";
-        if (askNat && window.__foWorldNames && window.__foWorldNames.want) {
-          window.__foWorldNames.want(askNat, function () {
-            if ((location.hash || "").split("?")[0] === "#/rankings") window.foRenderRankingsPage();
-          });
-        }
-      } catch (eNw) {}
       var top = shown.map(rowOf).join("");
       var mineExtra = (!natPick && mine && mine.rank > 30)
         ? "<div class='fo-rk-gap'>&middot;&middot;&middot;</div>" + rowOf(mine)
@@ -207,7 +179,7 @@
         return "<a class='fo-rk-row nat" + (isMineN ? " mine" : "") + "' href='#/nation?n=" + encodeURIComponent(n.id) + "'>" +
           "<i>" + n.rank + "</i>" +
           "<img src='" + flagOf(n.id) + "' alt='' onerror=\"this.style.display='none'\">" +
-          "<b>" + E(n.name) + (n.full ? "<em class='fm'>FULL MEMBER</em>" : "<em class='as'>ASSOCIATE</em>") + "</b>" +
+          "<b>" + E(n.name) + "</b>" +
           "<u>league " + rkStr({ strength: n.clubRating }) + " &middot; " + frm + "</u>" +
           "<span class='pts'>" + rkStr({ strength: n.natRating }) + "</span></a>";
       }).join("");
@@ -263,13 +235,6 @@
       ".fo-rk-row i{font:700 13px/1 Manrope,sans-serif;font-style:normal;color:rgba(20,28,40,.4);width:30px;text-align:right;flex:none;font-variant-numeric:tabular-nums}",
       ".fo-rk-row img{width:22px;height:15px;object-fit:cover;border-radius:2px;flex:none}",
       ".fo-rk-row b{font:600 13px/1.25 Manrope,sans-serif;flex:1 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
-      ".fo-rk-row b em{font-style:normal;font:700 11px/1 Manrope,sans-serif;letter-spacing:.12em;color:#C9571F;border:1px solid rgba(200,84,47,.45);border-radius:999px;padding:2px 6px;vertical-align:1px}",
-      ".fo-rk-row b em.bs{color:#8a6d3b;border-color:rgba(138,109,59,.4)}",
-      ".fo-rk-row b em.tt{color:#2F6B45;border-color:rgba(47,107,69,.35);letter-spacing:.06em}",
-      // full member or associate: the rung the world actually deals a
-      // country, said in words beside the figure it produces
-      ".fo-rk-row b em.fm{color:#1B4D89;border-color:rgba(27,77,137,.35);letter-spacing:.1em}",
-      ".fo-rk-row b em.as{color:#79808E;border-color:rgba(121,128,142,.35);letter-spacing:.1em}",
       ".fo-rk-row u{text-decoration:none;font:400 12px/1 Manrope,sans-serif;color:rgba(20,28,40,.45);flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}",
       ".fo-rk-row .rec{font:500 12px/1 Manrope,sans-serif;color:rgba(20,28,40,.45);flex:none;font-variant-numeric:tabular-nums}",
       // the three marks behind the figure - oldest on the left, as a scorebook reads
