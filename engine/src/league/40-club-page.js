@@ -1037,8 +1037,11 @@
         lgTitles.forEach(function (sn9) { tlItems.push({ t: "Season " + sn9, s: E(natName(cid)) + " champions" }); });
         ccTitles.forEach(function (sn9) { tlItems.push({ t: "Season " + sn9, s: "Champions Cup winners" }); });
         if (played.length) tlItems.push({ t: "Season " + seasonNo, s: played.length + " match" + (played.length === 1 ? "" : "es") + " into the campaign" });
+        // the thread between the marks has to know how many there are, so the
+        // count rides in as a custom property rather than a guessed percentage
+        var tlShown = tlItems.slice(0, 8);
         var tlCard = "<div class='fo-cd-card fo-cd-tl'>" + sh("The club's story") +
-          "<div class='tl'>" + tlItems.slice(0, 8).map(function (m9) {
+          "<div class='tl' style='--n:" + tlShown.length + "'>" + tlShown.map(function (m9) {
             return "<div class='m'><b>" + m9.t + "</b><span>" + m9.s + "</span></div>";
           }).join("") + "</div></div>";
 
@@ -1532,10 +1535,19 @@
       ".fo-cd-pos .xtra .fx{display:flex;justify-content:center;gap:6px}",
       ".fo-cd-pos .xtra .gap{font:400 13px/1.55 Manrope,sans-serif;color:rgba(244,239,228,.66);margin-top:13px}",
       "html body #page .fo-cd-pos .vt{display:flex;align-items:center;justify-content:center;min-height:40px;border:1.5px solid rgba(235,194,113,.45);border-radius:9px;margin-top:12px}",
-      ".fo-cd-tl{display:block}",
-      ".fo-cd-tl .tl{position:relative;display:flex;justify-content:flex-start;gap:110px;margin-top:8px}",
-      ".fo-cd-tl .tl:before{content:'';position:absolute;left:1.5%;right:30%;top:calc(100% - 4px);height:1.5px;background:rgba(20,32,47,.12)}",
-      ".fo-cd-tl .m{text-align:center;position:relative;padding-bottom:18px;max-width:200px}",
+      ".fo-cd-tl{display:block;overflow:hidden}",
+      // A RIBBON HAS TO FIT THE CARD IT IS PINNED TO. This was a flex row with
+      // a fixed 110px gap between marks: eight of them needed 770px of gap
+      // before a single word was set, so a club with a long story pushed its
+      // last seasons off the right of the card and off the page with them.
+      // The marks share the width instead - one track each, however many there
+      // are - and the lane scrolls rather than the page if a word cannot break.
+      ".fo-cd-tl .tl{position:relative;display:grid;grid-auto-flow:column;" +
+        "grid-auto-columns:minmax(0,1fr);gap:18px;margin-top:8px;overflow-x:auto;-webkit-overflow-scrolling:touch}",
+      // the thread runs from the first dot to the last, which is half a track
+      // in from each end - the count rides in as --n, so it is exact
+      ".fo-cd-tl .tl:before{content:'';position:absolute;left:calc(50% / var(--n,1));right:calc(50% / var(--n,1));top:calc(100% - 4px);height:1.5px;background:rgba(20,32,47,.12)}",
+      ".fo-cd-tl .m{text-align:center;position:relative;padding-bottom:18px;min-width:0}",
       ".fo-cd-tl .m:after{content:'';position:absolute;left:50%;bottom:-7px;transform:translateX(-50%);width:8px;height:8px;border-radius:50%;background:var(--gold)}",
       ".fo-cd-tl .m b{display:block;font:600 13px/1 Manrope,sans-serif;letter-spacing:.04em;color:var(--ink)}",
       ".fo-cd-tl .m span{display:block;font:400 13px/1.45 Manrope,sans-serif;color:var(--mut);margin-top:5px}",

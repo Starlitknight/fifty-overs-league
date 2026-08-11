@@ -1049,41 +1049,76 @@
   }
 
   // ---- THE LIVE SCORECARD, from the umpire's prints ------------------------
-  function innTitle(I, m, ix) {
-    var nm = I.team || (ix ? m.away.name : m.home.name);
-    var sc = I.close ? I.close.runs + "/" + I.close.wkts
-      : I.top ? (function (t9) { return t9 ? t9.runs + "/" + t9.wkts : ""; })(parseTop(I.top.txt)) : "";
-    return "<div class='fd-ih'><b>" + E(nm) + "</b><span>" + sc + (I.close ? "" : I.open ? " &middot; batting" : "") + "</span></div>";
+  // THE CARD, SET AS A CARD RATHER THAN AS A TABLE. It was five columns of a
+  // plain table: a man's name wrapped onto two lines, his dismissal wrapped
+  // onto two more, and a batter took ninety pixels of a phone. Nine of them
+  // and five bowlers ran past three screens, which is why the room read long
+  // and flat however good the cricket was.
+  //
+  // A row is one line a man now - name over dismissal in the small print,
+  // figures in three tight columns - so the whole innings fits a screen. What
+  // colour there is, is doing work: the pair AT THE CREASE carry an indigo
+  // rail, a hundred goes bronze, and the bowler in his spell carries a green
+  // dot. Nothing here is a new measurement: the striker, the bowler and every
+  // figure are already in the umpire's prints.
+  function howOut(b9) {
+    if (!b9.out) return "not out";
+    var o = b9.out, bw = E(surname(o.bowler || ""));
+    return o.how === "caught" && o.fld ? "c " + E(surname(o.fld)) + " b " + bw
+      : o.how === "bowled" ? "b " + bw
+      : o.how === "lbw" ? "lbw b " + bw
+      : o.how === "stumped" ? "st &dagger; b " + bw : E(o.how);
   }
   function cardPanel(inns, m, done) {
     var out = "";
     for (var ix = 0; ix < 2; ix++) {
       var I = inns[ix];
       if (!I.open && !I.bats.length) continue;
-      out += innTitle(I, m, ix);
-      out += "<div class='fd-tbw'><table class='fd-tb'><tr><th>Batting</th><th></th><th class='r'>R</th><th class='r'>B</th><th class='r'>SR</th></tr>" +
+      var nm9 = I.team || (ix ? m.away.name : m.home.name);
+      var tp9 = I.close ? { runs: I.close.runs, wkts: I.close.wkts } : (I.top ? parseTop(I.top.txt) : null);
+      var ov9 = I.lastNo ? String(I.lastNo) : (tp9 && tp9.over != null ? tp9.over + ".0" : "");
+      var rr9 = (tp9 && ov9) ? (function (o8) {
+        var w8 = Math.floor(o8), b8 = Math.round((o8 - w8) * 10);
+        var balls = w8 * 6 + b8;
+        return balls > 0 ? (tp9.runs / (balls / 6)).toFixed(2) : null;
+      })(parseFloat(ov9)) : null;
+      var live9 = !I.close && I.open && !done;
+      var crease = {};
+      // the two men not out are the two at the crease; the striker is the one
+      // the last delivery was bowled to
+      I.bats.forEach(function (b8) { if (!b8.out) crease[bKey(b8.nm)] = 1; });
+      out += "<div class='fd-sc'>" +
+        "<div class='fd-sc-h'><div><b>" + E(nm9) + "</b>" +
+          (ov9 ? "<u>" + E(ov9) + " overs" + (rr9 ? " &middot; RR " + rr9 : "") + "</u>" : "") + "</div>" +
+          "<div class='sc'><em>" + (tp9 ? tp9.runs + "/" + tp9.wkts : "&mdash;") + "</em>" +
+          (live9 ? "<span class='lv'><s></s>LIVE</span>" : I.close ? "<span class='cl'>CLOSED</span>" : "") +
+          "</div></div>" +
+        "<div class='fd-sc-c'><span>Batting</span><span>R</span><span>B</span><span>SR</span></div>" +
         I.bats.map(function (b9) {
-          var how = b9.out
-            ? (b9.out.how === "caught" && b9.out.fld ? "c " + E(surname(b9.out.fld)) + " b " + E(surname(b9.out.bowler || "")) :
-               b9.out.how === "bowled" ? "b " + E(surname(b9.out.bowler || "")) :
-               b9.out.how === "lbw" ? "lbw b " + E(surname(b9.out.bowler || "")) :
-               b9.out.how === "stumped" ? "st &dagger; b " + E(surname(b9.out.bowler || "")) : E(b9.out.how))
-            : "not out";
           var sr = (b9.r != null && b9.b > 0) ? Math.round(b9.r / b9.b * 100) : null;
-          return "<tr class='" + (b9.out ? "o" : "no") + "'><td>" + plink(b9.nm) + pstar(b9.nm, T.rid) + "<span class='ss'>" + sStars(b9.nm, "bat") + "</span></td><td class='h'>" + how + "</td>" +
-            "<td class='r'>" + (b9.r != null ? b9.r + (b9.out ? "" : "*") : "&mdash;") + "</td>" +
-            "<td class='r'>" + (b9.b != null ? b9.b : "&mdash;") + "</td>" +
-            "<td class='r'>" + (sr != null ? sr : "&mdash;") + "</td></tr>";
-        }).join("") + "</table></div>";
-      if (I.bowls.length)
-        out += "<div class='fd-tbw'><table class='fd-tb'><tr><th>Bowling</th><th class='r'>O</th><th class='r'>R</th><th class='r'>W</th><th class='r'>Econ</th></tr>" +
+          var on = !b9.out && live9, ton = (b9.r | 0) >= 100, fifty = (b9.r | 0) >= 50 && !ton;
+          return "<div class='fd-sc-r" + (on ? " on" : "") + (ton ? " ton" : fifty ? " fifty" : "") + "'>" +
+            "<div class='w'><b>" + plink(b9.nm) + pstar(b9.nm, T.rid) +
+              "<span class='ss'>" + sStars(b9.nm, "bat") + "</span></b>" +
+              "<i>" + howOut(b9) + (on ? " &middot; at the crease" : "") + "</i></div>" +
+            "<div class='r'>" + (b9.r != null ? b9.r + (b9.out ? "" : "*") : "&mdash;") + "</div>" +
+            "<div class='b'>" + (b9.b != null ? b9.b : "&mdash;") + "</div>" +
+            "<div class='s'>" + (sr != null ? sr : "&mdash;") + "</div></div>";
+        }).join("") +
+        (tp9 ? "<div class='fd-sc-t'><span>" + tp9.wkts + " wicket" + (tp9.wkts === 1 ? "" : "s") +
+          (ov9 ? " &middot; " + E(ov9) + " overs" : "") + "</span><b>" + tp9.runs + "</b></div>" : "") +
+        (I.bowls.length ? "<div class='fd-sc-bh'>Bowling</div>" +
           I.bowls.map(function (w9) {
             // the umpire's figure line carries whole overs; runs over overs
             // is the economy, printed to one decimal like every broadcast
             var ec9 = w9.o > 0 ? (w9.r / w9.o).toFixed(1) : null;
-            return "<tr><td>" + plink(w9.nm) + pstar(w9.nm, T.rid) + "<span class='ss'>" + sStars(w9.nm, "bowl") + "</span></td><td class='r'>" + w9.o + "</td><td class='r'>" + w9.r + "</td><td class='r'>" + w9.w + "</td>" +
-              "<td class='r'>" + (ec9 != null ? ec9 : "&mdash;") + "</td></tr>";
-          }).join("") + "</table></div>";
+            var onB = live9 && I.bowler && bKey(I.bowler) === bKey(w9.nm);
+            return "<div class='fd-sc-b" + (onB ? " on" : "") + "'>" +
+              "<b>" + plink(w9.nm) + pstar(w9.nm, T.rid) + "<span class='ss'>" + sStars(w9.nm, "bowl") + "</span></b>" +
+              "<span>" + w9.o + "</span><span>" + w9.r + "</span><span class='wk'>" + w9.w + "</span>" +
+              "<span>" + (ec9 != null ? ec9 : "&mdash;") + "</span></div>";
+          }).join("") : "") +
+        "</div>";
       if (ix === 0 && I.brk) out += "<div class='fd-note'>" + E(I.brk) + "</div>";
     }
     if (!out) out = "<p class='fd-dim'>The umpire prints the first tallies at the end of over one.</p>";
@@ -1487,25 +1522,55 @@
       "html body #page .fo-fd .fd-viewsc:hover{border-color:var(--foor) !important;color:var(--foor) !important}",
       // ---- the scorecard tables
       ".fo-fd .fd-ch{font:700 11px Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:var(--fomut);margin:2px 0 8px}",
-      ".fo-fd .fd-ih{display:flex;align-items:baseline;gap:10px;margin:12px 0 6px}",
-      ".fo-fd .fd-ih b{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:16px;color:var(--foink)}",
-      ".fo-fd .fd-ih span{font:700 13px Manrope,sans-serif;color:var(--foor)}",
-      // THE SCORECARD RAN OFF THE PHONE. The table was width:100% inside a
-      // panel with eighteen pixels of padding each side, and nothing said what
-      // to do when its contents were wider than that - so the strike-rate
-      // column was sliced down the middle of its digits by the panel edge,
-      // with no way to reach it. A table wider than its column scrolls INSIDE
-      // its own box; the page never scrolls sideways for it.
-      ".fo-fd .fd-tbw{overflow-x:auto;-webkit-overflow-scrolling:touch;margin:4px -4px 10px;padding:0 4px}",
-      ".fo-fd .fd-tb{width:100%;min-width:330px;border-collapse:collapse;margin:0;font:400 12.5px/1.5 Manrope,sans-serif}",
-      // and the ten-star strip is what made it too wide: on a narrow screen it
-      // is the thing a reader needs least standing beside the runs
-      "@media(max-width:520px){.fo-fd .fd-tb .ss{display:none}}",
-      ".fo-fd .fd-tb th{font:700 11px Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fomut);text-align:left;padding:4px 6px;border-bottom:1px solid var(--fobrd)}",
-      ".fo-fd .fd-tb td{padding:5px 6px;border-bottom:1px solid #f3eee1;color:var(--foink)}",
-      ".fo-fd .fd-tb .r{text-align:right;font-variant-numeric:tabular-nums}",
-      ".fo-fd .fd-tb td.h{font-size:11.5px;color:var(--fomut);font-style:normal}",
-      ".fo-fd .fd-tb tr.no td:first-child{font-weight:600}",
+      // ---- THE CARD, SET AS A CARD (the "Court" treatment) ----------------
+      // A white ground, cool graphite type and ONE strong accent. The old
+      // table is gone: a batter is a row 44px tall with his dismissal in the
+      // small print under his name, so an innings fits a screen instead of
+      // running past three. Indigo marks a man at the crease, bronze marks a
+      // hundred, green marks the bowler in his spell - three jobs, three
+      // colours, and no colour that is not doing one of them.
+      ".fo-fd{--fdind:#3D4EE0;--fdgrn:#0EA47A;--fdbrz:#B07C22;--fdline:#EAECF2;--fdalt:#F7F8FB;--fdink:#0F1522;--fdmut:#79808E}",
+      ".fo-fd .fd-sc{background:#FFFFFF;border:1px solid var(--fdline);border-radius:14px;overflow:hidden;margin:10px 0 14px}",
+      ".fo-fd .fd-sc-h{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;padding:14px 16px 12px;border-bottom:1px solid var(--fdline)}",
+      ".fo-fd .fd-sc-h b{display:block;font:700 16px Manrope,sans-serif;letter-spacing:-.01em;color:var(--fdink)}",
+      ".fo-fd .fd-sc-h u{display:block;text-decoration:none;font:600 11px Manrope,sans-serif;color:var(--fdmut);margin-top:2px;font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-sc-h .sc{text-align:right;flex:none}",
+      ".fo-fd .fd-sc-h em{font-style:normal;font:800 25px/1 Manrope,sans-serif;color:var(--fdind);font-variant-numeric:tabular-nums;letter-spacing:-.02em}",
+      ".fo-fd .fd-sc-h .lv,.fo-fd .fd-sc-h .cl{display:flex;align-items:center;justify-content:flex-end;gap:5px;font:800 9.5px Manrope,sans-serif;letter-spacing:.14em;margin-top:5px;color:var(--fdgrn)}",
+      ".fo-fd .fd-sc-h .cl{color:var(--fdmut)}",
+      ".fo-fd .fd-sc-h .lv s{width:6px;height:6px;border-radius:50%;background:var(--fdgrn);text-decoration:none;animation:fdPulse 1.4s ease-in-out infinite}",
+      "@keyframes fdPulse{0%,100%{opacity:1}50%{opacity:.3}}",
+      "@media(prefers-reduced-motion:reduce){.fo-fd .fd-sc-h .lv s{animation:none}}",
+      ".fo-fd .fd-sc-c,.fo-fd .fd-sc-r{display:grid;grid-template-columns:minmax(0,1fr) 38px 30px 38px;gap:8px;align-items:center;padding:0 16px}",
+      ".fo-fd .fd-sc-c{height:28px;background:var(--fdalt);border-bottom:1px solid var(--fdline)}",
+      ".fo-fd .fd-sc-c span{font:800 9px Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fdmut);text-align:right}",
+      ".fo-fd .fd-sc-c span:first-child{text-align:left}",
+      ".fo-fd .fd-sc-r{min-height:44px;padding-top:5px;padding-bottom:5px;border-bottom:1px solid var(--fdline)}",
+      ".fo-fd .fd-sc-r .w{min-width:0}",
+      ".fo-fd .fd-sc-r .w b{display:flex;align-items:center;gap:5px;font:600 13.5px/1.25 Manrope,sans-serif;color:var(--fdink);min-width:0}",
+      ".fo-fd .fd-sc-r .w b>a,.fo-fd .fd-sc-b b>a{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".fo-fd .fd-sc-r .w i{display:block;font-style:normal;font:400 10.5px/1.35 Manrope,sans-serif;color:var(--fdmut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-fd .fd-sc-r .r{font:800 14.5px Manrope,sans-serif;text-align:right;color:var(--fdink);font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-sc-r .b,.fo-fd .fd-sc-r .s{font:500 12.5px Manrope,sans-serif;text-align:right;color:var(--fdmut);font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-sc-r.on{background:#F4F6FF;box-shadow:inset 3px 0 0 var(--fdind)}",
+      ".fo-fd .fd-sc-r.on .r{color:var(--fdind)}",
+      ".fo-fd .fd-sc-r.ton .r,.fo-fd .fd-sc-r.on.ton .r{color:var(--fdbrz)}",
+      ".fo-fd .fd-sc-r.fifty .r{color:var(--fdink)}",
+      ".fo-fd .fd-sc-t{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:11px 16px;background:var(--fdalt)}",
+      ".fo-fd .fd-sc-t span{font:700 10px Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--fdmut)}",
+      ".fo-fd .fd-sc-t b{font:800 15px Manrope,sans-serif;color:var(--fdink);font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-sc-bh{padding:13px 16px 7px;font:800 9px Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fdmut)}",
+      ".fo-fd .fd-sc-b{display:grid;grid-template-columns:minmax(0,1fr) 30px 32px 22px 40px;gap:8px;align-items:center;padding:9px 16px;border-top:1px solid var(--fdline)}",
+      ".fo-fd .fd-sc-b b{display:flex;align-items:center;gap:5px;font:600 12.5px Manrope,sans-serif;color:var(--fdink);min-width:0}",
+      ".fo-fd .fd-sc-b span{text-align:right;font:500 12px Manrope,sans-serif;color:var(--fdmut);font-variant-numeric:tabular-nums}",
+      ".fo-fd .fd-sc-b span.wk{font-weight:800;color:var(--fdink)}",
+      ".fo-fd .fd-sc-b.on{background:#F1FBF7}",
+      ".fo-fd .fd-sc-b.on b:before{content:'';flex:none;width:6px;height:6px;border-radius:50%;background:var(--fdgrn)}",
+      // the ten-star strip is what a reader needs least beside the runs when
+      // the screen is narrow, and it is what made the old table too wide
+      "@media(max-width:560px){.fo-fd .fd-sc .ss{display:none}",
+      ".fo-fd .fd-sc-c,.fo-fd .fd-sc-r{grid-template-columns:minmax(0,1fr) 36px 28px 34px;padding-left:13px;padding-right:13px}",
+      ".fo-fd .fd-sc-h,.fo-fd .fd-sc-t,.fo-fd .fd-sc-b,.fo-fd .fd-sc-bh{padding-left:13px;padding-right:13px}}",
       ".fo-fd .fd-note{font:400 13px/1.6 Fraunces,Georgia,serif;color:var(--fomut);margin:8px 0 2px}",
       // partnerships
       ".fo-fd .fd-ph{font:700 11px Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--fomut);margin:10px 0 6px}",
