@@ -363,10 +363,25 @@ export async function computeLeague(pool, country, seasonNo, now) {
   // of its playoff final (round 16); the table's leader after the fourteen is
   // the SHIELD winner - both are honours, only one is the title. A season that
   // has not reached finals night yet has no champion, whatever the table says.
+  //
+  // AND A TIED FINAL IS STILL WON. A fifty-over match ties about once in every
+  // seventy, so across sixteen finals a season - eight nations, two divisions
+  // each - roughly one summer in five ends with a division uncrowned. Nothing
+  // ever replays it: the match is banked, so that division simply has no
+  // champion for good, and because the Champions Cup will not start until all
+  // sixteen champions exist, ONE tied final in one division of one country
+  // stops the whole planet's cup. The semi already answers this - "a tied semi
+  // sends the higher seed through" - and the final now answers it the same
+  // way, which is also who hosted it: the better fourteen weeks wins the tie.
   const finalWinner = d => {
-    const f = ms.filter(m => m.round === 16 && (divOf[m.home_slot] || 1) === d)
-      .map(m => m.result && m.result.winner).filter(Boolean)[0];
-    return f || null;
+    const f = ms.filter(m => m.round === 16 && (divOf[m.home_slot] || 1) === d)[0];
+    if (!f || !f.result) return null;
+    if (f.result.winner) return f.result.winner;
+    const seed = Object.fromEntries((d === 2 ? table2 : table).map((x, i) => [x.slot, i]));
+    const hi = (seed[f.away_slot] != null && seed[f.home_slot] != null && seed[f.away_slot] < seed[f.home_slot])
+      ? f.away_slot : f.home_slot;
+    return hi === f.away_slot ? (f.away_name || bySlot[f.away_slot].name)
+                              : (f.home_name || bySlot[f.home_slot].name);
   };
   const champion = finalWinner(1);
   const champion2 = finalWinner(2);
@@ -1174,10 +1189,21 @@ async function playStage(pool, host, comp, seasonNo, stage, pairs) {
        VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9::jsonb,$10::text,$11::jsonb) ON CONFLICT (comp, season_no, stage, gi) DO NOTHING`,
       [comp, seasonNo, stage, gi, JSON.stringify(A), JSON.stringify(B), seed, ENGINE_VERSION, resultJson, resultJson, JSON.stringify(living)]);
     const w = JSON.parse(resultJson).winner;
-    winners.push(w === A.name ? A : B);
+    winners.push(w === B.name ? B : A);   // a tied tie goes to the higher seed
   }
   return winners;
 }
+
+// A KNOCKOUT TIE STILL SENDS SOMEBODY THROUGH. A fifty-over match ties about
+// once in seventy, and a bracket has no room for one - the next round needs a
+// name, and the final needs a champion or the trophy is simply never awarded.
+// The higher seed goes through, which in every pairing this file builds is `a`:
+// group winners are drawn as `a` in the quarters and the quarter order carries
+// forward into the semis. It is the rule the league's finals night already
+// uses. A GROUP tie is left alone - there the points are shared, which is what
+// a tie is for.
+const KNOCKOUT = { qf: 1, sf: 1, final: 1 };
+const cupThrough = r => (r.result && r.result.winner) || r.a.name;
 
 async function rebuildCupSnapshot(pool, comp, seasonNo, now) {
   const rows = await pool.query('SELECT stage, gi, a, b, result FROM cup_matches WHERE comp=$1 AND season_no=$2 ORDER BY stage, gi', [comp, seasonNo]);
@@ -1185,10 +1211,11 @@ async function rebuildCupSnapshot(pool, comp, seasonNo, now) {
   let champion = null;
   rows.rows.forEach(r => {
     (stages[r.stage] = stages[r.stage] || []).push({
-      gi: r.gi, a: r.a, b: r.b, winner: r.result.winner, text: r.result.text,
+      gi: r.gi, a: r.a, b: r.b,
+      winner: KNOCKOUT[r.stage] ? cupThrough(r) : r.result.winner, text: r.result.text,
       as_: scoreOf(r.result.innings[0]), bs_: scoreOf(r.result.innings[1])
     });
-    if (r.stage === 'final') champion = r.result.winner;
+    if (r.stage === 'final') champion = cupThrough(r);
   });
   const body = { comp, seasonNo, stages, champion, engineVersion: ENGINE_VERSION, generatedAtDay: dayIx(now) };
   await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ($1,$2,now())
@@ -1249,7 +1276,7 @@ async function runCupSeason(pool, host, seasonNo, startDay, now) {
       } else {
         const prev = { sf: 'qf', final: 'sf' }[stage];
         const rows = await pool.query('SELECT a,b,result FROM cup_matches WHERE comp=$1 AND season_no=$2 AND stage=$3 ORDER BY gi', [comp, seasonNo, prev]);
-        const w = rows.rows.map(r => r.result.winner === r.a.name ? r.a : r.b);
+        const w = rows.rows.map(r => cupThrough(r) === r.b.name ? r.b : r.a);
         pairs = stage === 'sf' ? [[w[0], w[2]], [w[1], w[3]]] : [[w[0], w[1]]];
       }
       pairs = pairs.filter(p => p && p[0] && p[1]);
@@ -1412,10 +1439,10 @@ async function rebuildFaSnapshot(pool, country, seasonNo, now) {
   let champion = null;
   rows.rows.forEach(r => {
     (stages[r.stage] = stages[r.stage] || []).push({
-      gi: r.gi, a: r.a, b: r.b, winner: r.result.winner, text: r.result.text,
+      gi: r.gi, a: r.a, b: r.b, winner: cupThrough(r), text: r.result.text,
       as_: scoreOf(r.result.innings[0]), bs_: scoreOf(r.result.innings[1])
     });
-    if (r.stage === 'final') champion = r.result.winner;
+    if (r.stage === 'final') champion = cupThrough(r);
   });
   const body = { comp: 'fa', country, seasonNo, stages, champion, engineVersion: ENGINE_VERSION, generatedAtDay: dayIx(now) };
   await pool.query(`INSERT INTO snapshots(key, body, updated_at) VALUES ($1,$2,now())
@@ -1452,8 +1479,10 @@ export async function rollSeasons(pool, { now = Date.now() } = {}) {
       }
       if (upChamp == null || upChamp === upShield) {
         // the beaten finalist takes the second place; failing that, the runner-up
+        // read off the CHAMPION rather than off the card's winner, so a final
+        // settled on seed still names the side that lost it
         const final2 = board.results.filter(x => x.round === 16)
-          .map(x => board.table2.find(t => t.name === (x.winner === x.home ? x.away : x.home)))
+          .map(x => board.table2.find(t => t.name === (board.champion2 === x.home ? x.away : x.home)))
           .filter(Boolean)[0];
         upChamp = (final2 && final2.slot !== upShield) ? final2.slot : board.table2[1].slot;
       }

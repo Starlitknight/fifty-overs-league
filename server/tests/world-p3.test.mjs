@@ -25,7 +25,7 @@ import { academyRate } from '../living.mjs';
 import { fantasyPoints, unitRatings, matchRatings, teamRatings, matchRating,
          ladderRating, strengthRating, RATING_UNITS, RANK_BASE } from '../ratings.mjs';
 import { roundRobin, bracket, roundsOf, closeEnrolment, playComps, computeComp, rebuildComps } from '../comps.mjs';
-import { academyUpkeep, academyBuild, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, DEBT_LIMIT, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance, supportTarget, stature, foundingBank, foundingSeats, foundingSupport } from '../economy.mjs';
+import { academyUpkeep, academyBuild, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, MOOD_MAX, DEBT_LIMIT, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance, supportTarget, stature, foundingBank, foundingSeats, foundingSupport } from '../economy.mjs';
 import { EPOCH, DAY, seedOf, dayOfRound } from '../clock.mjs';
 import { seasonTourPlan } from '../nations.mjs';
 
@@ -340,6 +340,53 @@ test('009: season leaders come straight from the banked scorecards', async () =>
   if (!anyComplete) assert.deepEqual(H.seasons, {}, 'the honours book stays empty until a season completes');
   else assert.ok(H.seasons.s1 && Object.keys(H.seasons.s1.league).length,
     'a completed season is written into the book');
+});
+
+// A FINAL THAT TIES IS STILL A FINAL SOMEBODY WINS.
+//
+// A fifty-over match ties about once in every seventy. Across the sixteen
+// finals a season - eight nations, two divisions each - that is roughly one
+// summer in five that ended with a division uncrowned, and uncrowned FOR GOOD:
+// nothing ever replays a banked match, so the title was simply never awarded.
+// It cost more than the one division, too. The Champions Cup will not start
+// until all sixteen national champions exist, so a single tied final in one
+// division of one country stopped the whole planet's cup - which is exactly
+// how this was found, twice in one world.
+//
+// The round before it has always had the answer: "a tied semi sends the higher
+// seed through". The final says the same thing now, which is also who hosted
+// it - fourteen weeks of cricket is the tiebreak, and it is already ranked.
+test('009b: a tied final is won by the better fourteen weeks', async () => {
+  const before = await computeLeague(pool, 'eng', 1, EPOCH + 200 * DAY);
+  const fin = (await pool.query(
+    `SELECT id, home_slot, away_slot, result FROM matches
+      WHERE country_id='eng' AND season_no=1 AND round=16 ORDER BY id`)).rows;
+  assert.ok(fin.length >= 1, 'finals night is on the record');
+  for (const m of fin) {
+    const div = before.table.some(t => t.slot === m.home_slot) ? 1 : 2;
+    const kept = JSON.stringify(m.result);
+    try {
+      // the same card, with the one line a tie takes out of it
+      await pool.query(`UPDATE matches SET result = $1::jsonb WHERE id = $2`,
+        [JSON.stringify(Object.assign({}, m.result, { winner: null, text: 'Match tied' })), m.id]);
+      const lg = await computeLeague(pool, 'eng', 1, EPOCH + 200 * DAY);
+      const champ = div === 2 ? lg.champion2 : lg.champion;
+      const tbl = div === 2 ? lg.table2 : lg.table;
+      assert.ok(champ, 'division ' + div + ' is crowned even so');
+      const seats = [m.home_slot, m.away_slot]
+        .map(s => tbl.findIndex(t => t.slot === s)).filter(i => i >= 0).sort((a, b) => a - b);
+      assert.equal(seats.length, 2, 'both finalists are in their own table');
+      assert.equal(champ, tbl[seats[0]].name,
+        'the higher seed takes it (' + tbl[seats[0]].name + ' over ' + tbl[seats[1]].name + ')');
+      assert.ok(seats[0] < 4, 'and a champion is always a finals-night qualifier');
+    } finally {
+      await pool.query(`UPDATE matches SET result = $1::jsonb WHERE id = $2`, [kept, m.id]);
+    }
+  }
+  // and the world is exactly as it was found
+  const after = await computeLeague(pool, 'eng', 1, EPOCH + 200 * DAY);
+  assert.equal(after.champion, before.champion, 'the real champion is put back');
+  assert.equal(after.champion2, before.champion2);
 });
 
 test('010: the world rankings stand on squad strength, with form beside them', async () => {
@@ -1577,10 +1624,16 @@ test('020: the books are a ledger, and they recompute from the record', async ()
   // first; one being moved by something other than mood and position would fail
   // the second.
   // the band is bounded by STATURE at both ends now: the smallest club having
-  // its worst season at the bottom, the flagship having its best at the top
+  // its worst season at the bottom, the flagship having its best at the top.
+  // A MOOD IS NOT A FIVE. The ceiling was written as supportTarget(5, ...) back
+  // when the scale ran nought to five; MOOD_MAX has been eight for a long time,
+  // so the band was cut three moods short of what the rule can actually reach
+  // and any club whose summer went better than "5" fell out of a bound this
+  // test invented rather than one the model promises. The ends are read off
+  // the scale itself now, so the two can never drift apart again.
   const stats = rows.map(r => stature(r.slot, r.is_boss));
   const lo = supportTarget(0, N, N, Math.min(...stats));
-  const hi = supportTarget(5, 1, N, Math.max(...stats));
+  const hi = supportTarget(MOOD_MAX, 1, N, Math.max(...stats));
   const crowds = new Set();
   rows.forEach(r => {
     const s = r.finance.supporters;

@@ -129,7 +129,27 @@ export function applyLiving(squad, patch, host) {
     if (L.e != null) { p.exp = L.e; p.expWord = expWordOf(L.e); }
     if (L.f != null) { p.formIx = L.f; p.formWord = FORMW[L.f] || 'steady'; }
     if (L.n != null) { p.fatN = L.n; p.fatWord = fatWordOf(L.n); p.fatigue = p.fatWord; }
-    if (L.s) { skilled = true; for (const k in L.s) if (p.skills) p.skills[k] = L.s[k]; }
+    // AND THE WHOLE TRUTH ABOUT WHAT HE COULD DO, for exactly the reason the
+    // talent state below is. The patch carries only the skills that had
+    // ALREADY moved off his generated baseline by that afternoon - so a skill
+    // he was still at baseline for THEN, and has trained up SINCE, has no
+    // entry to correct him with, and the replay quietly fields the improved
+    // cricketer. Put him back on his baseline first and lay the patch over
+    // that: it is the same shape the talent strip-and-restore uses, and the
+    // only one a later net cannot leak through. p3 said so - a whole innings
+    // apart, and two clubs batting in a different order from the one the
+    // book recorded, because a batting skill trained in September had walked
+    // backwards into a match played in June.
+    if (p.skills && (p.baseSkills || L.s)) {
+      // and never write THROUGH the object we were handed: callers pass squads
+      // built with a shallow spread, so the skills map is shared with the club
+      // the replay was laid over
+      p.skills = Object.assign({}, p.skills);
+      if (p.baseSkills)
+        for (const k in p.baseSkills)
+          if (p.skills[k] !== p.baseSkills[k]) { p.skills[k] = p.baseSkills[k]; skilled = true; }
+      if (L.s) { skilled = true; for (const k in L.s) p.skills[k] = L.s[k]; }
+    }
     // THE PATCH IS THE AUTHORITY ON WHAT HE HAD LEARNED THAT DAY, in both
     // directions. Adding a talent back is the easy half; the half that matters
     // is taking one AWAY. A replay is laid over the club's squad AS IT STANDS
