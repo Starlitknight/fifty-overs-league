@@ -45,6 +45,27 @@
     return out;
   }
 
+  // A CLUB WEARS SOMETHING. The dossier already dresses every club - a real
+  // crest where the world has one, an arms mark where it does not, initials in
+  // a shield as the last resort - so a scores page asks it rather than drawing
+  // its own. Two words of a name become the fallback letters.
+  function crest(nm, px) {
+    try { if (window.foClubCrest) return "<span class='fo-lv-cr'>" + window.foClubCrest(nm, px || 26) + "</span>"; } catch (e) {}
+    var w = String(nm || "").split(/\s+/).filter(Boolean);
+    var ini = (w.length > 1 ? w.map(function (x) { return x[0] || ""; }).join("") : String(w[0] || ""))
+      .replace(/[^A-Za-z]/g, "").slice(0, 2).toUpperCase() || "FC";
+    return "<span class='fo-lv-cr ini'>" + E(ini) + "</span>";
+  }
+  function flagOf(id) {
+    try {
+      var nm = { eng: "England", aus: "Australia", sub: "India", pak: "Pakistan", rsa: "South Africa",
+        nzl: "New Zealand", slk: "Sri Lanka", bgd: "Bangladesh", win: "West Indies", zim: "Zimbabwe",
+        ire: "Ireland", afg: "Afghanistan", sco: "Scotland", ned: "Netherlands", nep: "Nepal", usa: "USA" }[id];
+      if (nm && typeof foFlag === "function") return foFlag(nm) || "";
+    } catch (e) {}
+    return "";
+  }
+
   function matchId(n, m) {
     return n.id + ":s" + n.cal.seasonNo + ":r" + n.cal.round + ":h" + m.home.slot + "a" + m.away.slot;
   }
@@ -99,7 +120,8 @@
     var href = "#/feed?n=" + encodeURIComponent(n.id) + "&f=" + idx;
     var battingFirst = s && s.inn === 1;
     var side = function (nm, isBat) {
-      return "<div class='fo-lv-side" + (isBat ? " bat" : "") + "'><span>" + E(nm) + "</span>" +
+      return "<div class='fo-lv-side" + (isBat ? " bat" : "") + "'>" + crest(nm) +
+        "<span>" + E(nm) + "</span>" +
         (isBat && s ? "<i>" + scoreLine(s) + "</i>" : "") + "</div>";
     };
     var body;
@@ -129,7 +151,7 @@
       ? "<s class='fo-lv-dot'></s>LIVE"
       : n.state === "fin" ? "Stumps" : (P().hhTxt ? P().hhTxt(n.hour) : n.hour + ":00");
     return "<section class='fo-lv-blk " + n.state + "'>" +
-      "<div class='fo-lv-bh'><h2>" + E(n.nm) + "</h2>" +
+      "<div class='fo-lv-bh'>" + flagOf(n.id) + "<h2>" + E(n.nm) + "</h2>" +
       "<span class='fo-lv-rd'>Round " + (n.cal.round | 0) + "</span>" +
       "<span class='fo-lv-st'>" + flag + "</span></div>" +
       "<div class='fo-lv-grid'>" + n.fx.map(function (m, i) {
@@ -162,16 +184,25 @@
     var head = "<div class='fo-lv-hd'><div class='eb'>Around the world</div>" +
       "<h1>Live scores</h1><div class='ty'>" +
       (nMatches ? "<b>" + nMatches + "</b> match" + (nMatches === 1 ? "" : "es") + " in play in <b>" + live.length + "</b> " +
-        (live.length === 1 ? "league" : "leagues") : "No cricket in progress right now") +
-      (up.length ? " &middot; next ball " + (P().hhTxt ? P().hhTxt(up[0].hour) : up[0].hour + ":00") : "") + "</div></div>";
-    var body = live.map(function (n) { return block(n, now, claim); }).join("") +
-      (up.length ? "<div class='fo-lv-rule'><span>Still to come today</span></div>" +
-        up.map(function (n) { return block(n, now, claim); }).join("") : "") +
-      (fin.length ? "<div class='fo-lv-rule'><span>Done for the day</span></div>" +
-        fin.map(function (n) { return block(n, now, claim); }).join("") : "");
-    if (!world.length) body = "<div class='fo-lv-rest'><b>A rest day across the whole world.</b>" +
-      "<span>Nobody is playing today. The next round bowls tomorrow.</span>" +
-      "<a href='#/schedule'>The season&rsquo;s calendar &rsaquo;</a></div>";
+        (live.length === 1 ? "league" : "leagues")
+        : up.length ? "Nothing in play &middot; first ball " + (P().hhTxt ? P().hhTxt(up[0].hour) : up[0].hour + ":00")
+        : "No cricket anywhere today") + "</div></div>";
+    // A SCORES PAGE SHOWS WHAT IS ON. Finished matches were a third of the page
+    // and none of the point - the record keeps them, the league room lists them,
+    // and a reader who came here came for cricket in progress. They are gone.
+    // What is still to come is kept only when nothing is live, because the one
+    // thing worse than a finished match on a scores page is an empty one.
+    var body = live.map(function (n) { return block(n, now, claim); }).join("");
+    if (!live.length && up.length) {
+      body = "<div class='fo-lv-rule'><span>First ball " +
+        (P().hhTxt ? P().hhTxt(up[0].hour) : up[0].hour + ":00") + "</span></div>" +
+        up.map(function (n) { return block(n, now, claim); }).join("");
+    }
+    if (!body) body = "<div class='fo-lv-rest'><b>" +
+      (world.length ? "Every league has finished for the day." : "A rest day across the whole world.") + "</b>" +
+      "<span>" + (world.length ? "Today&rsquo;s results are in the league room; the next round bowls tomorrow."
+                               : "Nobody is playing today. The next round bowls tomorrow.") + "</span>" +
+      "<a href='#/league'>Your league &rsaquo;</a><a href='#/schedule'>The calendar &rsaquo;</a></div>";
     page.innerHTML = "<div class='fo-lv'><div class='fo-lv-in'>" + head + body +
       "<div class='fo-lv-foot'><a href='#/world'>&larr; The world</a><a href='#/league'>Your league</a></div>" +
       "</div></div>";
@@ -202,15 +233,20 @@
       ".fo-lv-hd{padding:6px 0 16px;border-bottom:1px solid var(--brd);margin-bottom:18px}",
       ".fo-lv-hd .eb{font:700 11px Manrope,sans-serif;letter-spacing:.22em;text-transform:uppercase;color:var(--brand)}",
       ".fo-lv-hd h1{font-family:Fraunces,Georgia,serif;font-weight:600;font-size:34px;line-height:1.1;margin:6px 0 4px;color:var(--navy)}",
+      // the masthead sits on a rule the way a board does, not a hairline
+      ".fo-lv-hd{border-bottom-width:2px;border-bottom-color:var(--navy)}",
       ".fo-lv-hd .ty{font:500 13.5px Manrope,sans-serif;color:var(--mut)}",
       ".fo-lv-hd .ty b{color:var(--ink);font-weight:800}",
       ".fo-lv-blk{margin-bottom:20px}",
-      ".fo-lv-bh{display:flex;align-items:baseline;gap:11px;margin:0 0 9px;padding-bottom:7px;border-bottom:1px solid rgba(27,36,50,.09)}",
+      ".fo-lv-bh{display:flex;align-items:center;gap:10px;margin:0 0 9px;padding-bottom:7px;border-bottom:1px solid rgba(27,36,50,.09)}",
+      // the nation's own flag, at the size the world map uses
+      ".fo-lv-bh img{width:26px;height:18px;object-fit:cover;border-radius:3px;flex:none;box-shadow:0 1px 3px rgba(20,36,58,.22)}",
       ".fo-lv-bh h2{font:800 15px Manrope,sans-serif;letter-spacing:.02em;margin:0;color:var(--navy)}",
       ".fo-lv-rd{font:600 11px Manrope,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:var(--mut)}",
       ".fo-lv-st{margin-left:auto;font:800 11px Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:var(--mut);display:flex;align-items:center;gap:6px}",
-      ".fo-lv-blk.live .fo-lv-st{color:var(--live)}",
-      ".fo-lv-dot{width:7px;height:7px;border-radius:50%;background:var(--live);display:inline-block;animation:foLvP 1.6s ease-in-out infinite}",
+      ".fo-lv-blk.live .fo-lv-st{color:var(--brand)}",
+      ".fo-lv-dot{width:7px;height:7px;border-radius:50%;background:var(--brand);display:inline-block;animation:foLvP 1.6s ease-in-out infinite}",
+      ".fo-lv-card.on{border-left-color:var(--brand)}",
       "@keyframes foLvP{0%,100%{opacity:1}50%{opacity:.25}}",
       "@media(prefers-reduced-motion:reduce){.fo-lv-dot{animation:none}}",
       ".fo-lv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(272px,1fr));gap:12px}",
@@ -219,11 +255,16 @@
       ".fo-lv-card.on{border-left:3px solid var(--live);padding-left:12px}",
       ".fo-lv-card.mine{border-color:#C89A2E;box-shadow:0 2px 10px rgba(200,154,46,.18)}",
       ".fo-lv-mine{position:absolute;top:-8px;right:11px;background:#C89A2E;color:#fff;font:800 9px Manrope,sans-serif;letter-spacing:.14em;padding:2px 7px;border-radius:4px;font-style:normal}",
-      ".fo-lv-side{display:flex;align-items:baseline;gap:9px;padding:3px 0}",
+      ".fo-lv-side{display:flex;align-items:center;gap:9px;padding:3px 0}",
+      ".fo-lv-cr{flex:none;width:26px;height:26px;display:inline-flex;align-items:center;justify-content:center;overflow:hidden;border-radius:6px}",
+      ".fo-lv-cr img,.fo-lv-cr svg{width:100%;height:100%;object-fit:contain;display:block}",
+      // a club with no arms in the world still wears something: its letters, cut
+      // into the same navy shield the dossier uses
+      ".fo-lv-cr.ini{background:var(--navy);color:#FFFEFC;font:800 10px/1 Manrope,sans-serif;letter-spacing:.04em}",
       ".fo-lv-side span{font:600 14px Manrope,sans-serif;color:#5b5344;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;flex:1}",
       ".fo-lv-side.bat span{color:var(--ink);font-weight:800}",
       ".fo-lv-side i{font-style:normal;display:flex;align-items:baseline;gap:6px;flex:0 0 auto}",
-      ".fo-lv-side i b{font:800 17px Manrope,sans-serif;color:var(--navy);font-variant-numeric:tabular-nums}",
+      ".fo-lv-side i b{font:600 21px/1 Fraunces,Georgia,serif;letter-spacing:-.01em;color:var(--navy);font-variant-numeric:tabular-nums}",
       ".fo-lv-side i u{text-decoration:none;font:600 11px Manrope,sans-serif;color:var(--mut);font-variant-numeric:tabular-nums}",
       ".fo-lv-wait{font:500 12px Manrope,sans-serif;color:var(--mut)}",
       ".fo-lv-need{margin-top:7px;padding-top:7px;border-top:1px solid rgba(27,36,50,.08);font:600 12px Manrope,sans-serif;color:var(--brand)}",
