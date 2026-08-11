@@ -450,6 +450,27 @@
         rows += "<div class='fo-mr-innmark'>" + E(innName(inn)) + "</div>";
       }
       var o = String(L.out || "");
+      // THE END OF AN OVER IS NOT A BALL. It was printed as one more row in the
+      // column - a bullet where the ball number goes and the umpire's sentence
+      // beside it - so the one line that tells a reader where the match has
+      // actually got to looked exactly like the six that preceded it. It is a
+      // band now: the over, what it cost, the score it left, and the men at
+      // the crease with the bowler's figures. Every part of that is already in
+      // the print; the second line is the umpire's own over-summary, which
+      // this page has been carrying and never shown.
+      if (L._top) {
+        var eo = /End of over (\d+)\s*\((\d+) runs?[^)]*\)[^-]*-\s*(.+?)\s+(\d+)\/(\d+)\./.exec(L.txt || "");
+        if (eo) {
+          var rr = +eo[1] > 0 ? (+eo[4] / +eo[1]).toFixed(2) : null;
+          rows += "<div class='fo-mr-eov'>" +
+            "<div class='t'><b>End of over " + eo[1] + "</b><span>" + eo[2] + " run" + (eo[2] === "1" ? "" : "s") + "</span></div>" +
+            "<div class='s'><b>" + E(eo[3]) + "</b><em>" + eo[4] + "/" + eo[5] + "</em>" +
+              (rr ? "<i>RR " + rr + "</i>" : "") + "</div>" +
+            (L.oversumTop ? "<div class='w'>" + L.oversumTop + "</div>" : "") +
+            "</div>";
+          return;
+        }
+      }
       var cls = o === "4" ? "four" : o === "6" ? "six" : (foMrIsKey(L) && !FO_MR_MARK[o] && o !== "4" && o !== "6") ? "wkt" : "";
       if (FO_MR_MARK[o]) cls = "mark";
       // the tag the engine stamped: [great fielding], [dropped], [Six Machine].
@@ -1761,6 +1782,22 @@
       ".fo-mr-ball.wkt{background:#FBF0EE}.fo-mr-ball.wkt b{color:#A6392B;font-weight:700}",
       ".fo-mr-ball.wkt span{color:#8f231b}",
       ".fo-mr-ball.mile{background:#FDF7E8;box-shadow:inset 3px 0 0 #8F6A1C}",
+      // THE END-OF-OVER BAND. The one row a reader uses to find where the
+      // match has got to, and it used to look like every other line. It gets
+      // its own ground, its own rule and its own rhythm now: the over and what
+      // it cost above, the score it left in the middle, the two men in and the
+      // bowler's figures beneath - the umpire's own over-summary, which the
+      // page has always carried and never printed.
+      ".fo-mr-eov{margin:2px 0;padding:11px 13px;background:#F5F7FB;border-top:1px solid #e3e7ef;border-bottom:1px solid #e3e7ef;box-shadow:inset 3px 0 0 #3D4EE0}",
+      ".fo-mr-eov .t{display:flex;align-items:baseline;justify-content:space-between;gap:10px}",
+      ".fo-mr-eov .t b{font:800 10px Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:#3D4EE0}",
+      ".fo-mr-eov .t span{font:600 10.5px Manrope,sans-serif;color:#79808E;font-variant-numeric:tabular-nums}",
+      ".fo-mr-eov .s{display:flex;align-items:baseline;gap:8px;margin-top:3px;flex-wrap:wrap}",
+      ".fo-mr-eov .s b{font:600 14px Manrope,sans-serif;color:#0F1522}",
+      ".fo-mr-eov .s em{font-style:normal;font:800 17px Manrope,sans-serif;color:#0F1522;font-variant-numeric:tabular-nums;letter-spacing:-.01em}",
+      ".fo-mr-eov .s i{font-style:normal;font:600 11px Manrope,sans-serif;color:#79808E;font-variant-numeric:tabular-nums}",
+      ".fo-mr-eov .w{margin-top:5px;font:400 12px/1.6 Manrope,sans-serif;color:#5c6470;font-variant-numeric:tabular-nums}",
+      ".fo-mr-eov .w strong{font-weight:700;color:#0F1522}",
       // the tag names the thing the engine did; the talent wears the gold
       ".fo-mr-tag{font-style:normal;font-family:Manrope,sans-serif;font-size:11px;font-weight:700;letter-spacing:.04em;color:#22635F;white-space:nowrap}",
       ".fo-mr-tag.tal{color:#8F6A1C}",

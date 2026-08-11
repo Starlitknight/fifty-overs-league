@@ -186,39 +186,37 @@
         return "<option value='" + E(n.id) + "'" + (natPick === n.id ? " selected" : "") + ">" + E(n.name) + "</option>";
       }).join("");
       var natSel = "<label class='fo-rk-natf'>League <select id='fo-rk-nat'>" + natOpts + "</select></label>";
-      // A LIST IN ALPHABETICAL ORDER IS NOT A RANKING, AND MUST NOT LOOK LIKE ONE.
+      // A RANKING OF COUNTRIES IS A RANKING OF SIDES, NOT OF LAST WEEKEND.
       //
-      // Nations are rated on MATCH ratings, and a world that has just been dealt
-      // has played none - every nation sits on 3,500, the neutral middle. With
-      // every rating tied the sort falls back on insertion order, so the table
-      // came out Afghanistan 1, Australia 2, Bangladesh 3, England 4: a column
-      // of ranks that is really the alphabet. The "unproven" note that said so
-      // lives in <u>, which the phone hides to make room - so on the device most
-      // of this is read on, 3,500 looked like a considered figure.
+      // Both figures here used to be averages of MATCH MARKS - the lens the
+      // club ladder above was already moved off, and a worse one on a country,
+      // because a national XI has usually played nothing at all. So every
+      // nation showed the same neutral base ("XI 46,140 - unproven", sixteen
+      // times) and the order was one round of club results: Afghanistan, an
+      // ASSOCIATE, stood first in the world with England eleventh.
       //
-      // Until somebody has played, the numerals go and the card says plainly
-      // that nobody has bowled a ball yet. The moment a match is banked the
-      // ranks mean something and they come straight back.
-      var natsPlayed = (RK.countries || []).some(function (n) { return (n.natP | 0) || (n.clubP | 0); });
+      // The rungs the world is built on now do the work. What the shirt is
+      // worth is the rung the selectors' XI is calibrated to; what the league
+      // is worth is the mean of its clubs' best elevens - the same figure the
+      // club ladder seats a club by. Both are true before a ball is bowled.
+      // The match marks are still here, as form, where they belong.
       var natRows = (RK.countries || []).map(function (n) {
         var isMineN = !!(cl && cl.country === n.id);
+        var frm = (n.natP | 0) ? "form " + fmtDay(n.natForm)
+          : (n.clubP | 0) ? "league form " + fmtDay(n.clubForm) : "no cricket yet";
         return "<a class='fo-rk-row nat" + (isMineN ? " mine" : "") + "' href='#/nation?n=" + encodeURIComponent(n.id) + "'>" +
-          "<i>" + (natsPlayed ? n.rank : "&ndash;") + "</i>" +
+          "<i>" + n.rank + "</i>" +
           "<img src='" + flagOf(n.id) + "' alt='' onerror=\"this.style.display='none'\">" +
-          "<b>" + E(n.name) + "</b>" +
-          "<u>XI " + fmtDay(n.natRating) + (n.natP ? "" : " &middot; unproven") + "</u>" +
-          "<span class='pts'>" + fmtDay(n.clubRating) + "</span></a>";
+          "<b>" + E(n.name) + (n.full ? "<em class='fm'>FULL MEMBER</em>" : "<em class='as'>ASSOCIATE</em>") + "</b>" +
+          "<u>league " + rkStr({ strength: n.clubRating }) + " &middot; " + frm + "</u>" +
+          "<span class='pts'>" + rkStr({ strength: n.natRating }) + "</span></a>";
       }).join("");
-      // the "nobody has played yet" notice is gone: a reader who can see 3,500
-      // beside every name and "unproven" beside every rating has already been
-      // told, and a paragraph saying it again is the page apologising for
-      // itself
       var natNote = "";
       body = mineChip +
         "<div class='fo-rk-card'><h3>The club ladder <span>" +
         (natPick ? E(natName(natPick)) + " &middot; all " + shown.length + " clubs &middot; league order" : "top 30 of " + RK.clubs.length + " &middot; last three match ratings") +
         "</span>" + natSel + "</h3>" + top + mineExtra + "</div>" +
-        "<div class='fo-rk-card'><h3>The nations <span>league strength &middot; national XI</span></h3>" +
+        "<div class='fo-rk-card'><h3>The nations <span>national XI &middot; league strength</span></h3>" +
         natNote + natRows + "</div>";
     }
     page.innerHTML = "<div class='fo-rk'><div class='fo-rk-in'>" +
@@ -268,6 +266,10 @@
       ".fo-rk-row b em{font-style:normal;font:700 11px/1 Manrope,sans-serif;letter-spacing:.12em;color:#C9571F;border:1px solid rgba(200,84,47,.45);border-radius:999px;padding:2px 6px;vertical-align:1px}",
       ".fo-rk-row b em.bs{color:#8a6d3b;border-color:rgba(138,109,59,.4)}",
       ".fo-rk-row b em.tt{color:#2F6B45;border-color:rgba(47,107,69,.35);letter-spacing:.06em}",
+      // full member or associate: the rung the world actually deals a
+      // country, said in words beside the figure it produces
+      ".fo-rk-row b em.fm{color:#1B4D89;border-color:rgba(27,77,137,.35);letter-spacing:.1em}",
+      ".fo-rk-row b em.as{color:#79808E;border-color:rgba(121,128,142,.35);letter-spacing:.1em}",
       ".fo-rk-row u{text-decoration:none;font:400 12px/1 Manrope,sans-serif;color:rgba(20,28,40,.45);flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;text-align:right}",
       ".fo-rk-row .rec{font:500 12px/1 Manrope,sans-serif;color:rgba(20,28,40,.45);flex:none;font-variant-numeric:tabular-nums}",
       // the three marks behind the figure - oldest on the left, as a scorebook reads

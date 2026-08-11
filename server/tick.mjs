@@ -19,7 +19,8 @@ import { EPOCH, dayIx, daySettled, seedOf, cupDraw, natHour, scheduleOf, seasonS
          CYCLE, LEAGUE_DAYS, roundOfDay, dayOfRound, CUP_DAYS, PLAYOFF_DAYS, FA_DAYS, TRANSITION_DAY,
          WINDOW_DAYS, isWorldCupSeason, REST_DAYS, COLTS_DAYS } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
-import { calibrate, countryConfigs, BASE_XI, NAT_STR, HUMAN_STR } from './init-world.mjs';
+import { calibrate, countryConfigs, BASE_XI, NAT_STR, HUMAN_STR,
+         nationTeamStr, isFullMember } from './init-world.mjs';
 import { layCandidates, ageYouth, playColtsStage, computeColts, coltRecords,
          COLTS_STAGES } from './youth.mjs';
 import { settleMoney } from './economy.mjs';
@@ -508,19 +509,41 @@ export async function computeRankings(pool, now) {
     .map((x, i) => ({ rank: i + 1, country: x.country, slot: x.slot, name: x.name, boss: x.boss,
                       rating: x.strength, strength: x.strength, formRating: x.form5,
                       form: x.form, p: x.p, w: x.w, l: x.l, t: x.t }));
-  // THE NATIONS ARE COMPARED ON STRENGTH, NOT FORM. Ten clubs' three-match form
-  // averages straight back to fifty, so the club ladder's window is the wrong
-  // lens on a whole league: here every mark a nation's clubs have ever earned
-  // counts, and the same for its XI. Form for a club, a body of work for a country.
+  // THE NATIONS ARE COMPARED ON STRENGTH, THE WAY THE CLUB LADDER IS.
+  //
+  // They were not. Both figures on the nations table were averages of MATCH
+  // MARKS - the same lens the club ladder had already been moved off, and a
+  // far worse one here, because a nation's XI has usually played nothing at
+  // all. So every country showed the identical neutral base beside its name
+  // ("XI 46,140 - unproven", sixteen times), and the ladder itself was one
+  // round of club results: on the morning this was written, Afghanistan - an
+  // associate, whose clubs carry the 0.885 multiplier and whose XI is pegged
+  // at 41,000 - stood first in the world and England eleventh.
+  //
+  // The rungs the world is actually built on were sitting unread. A nation's
+  // XI is calibrated to nationTeamStr() when the selectors pick it, so THAT
+  // is what the shirt is worth - 47,500 for the strongest full member down to
+  // 41,000 for an associate. A league is worth the mean of its clubs' best
+  // elevens, the same figure the club ladder seats a club by. Both are true on
+  // day one, before a ball is bowled, which is exactly what a ranking has to
+  // be. The match marks stay, as FORM, in a column of their own.
   const countries = countryRows.map(c => {
     const mine = Object.values(R).filter(x => x.country === c.id);
     const marks = mine.reduce((a, x) => a.concat(x.hist), []);
+    const strengths = mine.map(x => x.strength).filter(s => s > 0);
+    const clubStrength = strengths.length
+      ? Math.round(strengths.reduce((a, s) => a + s, 0) / strengths.length) : 0;
     return {
-      id: c.id, name: c.name,
-      clubRating: strengthRating(marks), clubP: marks.length,
-      natRating: strengthRating(N[c.id].hist), natP: N[c.id].p
+      id: c.id, name: c.name, full: isFullMember(c.id),
+      // what the shirt is worth: the rung the selectors' XI is calibrated to
+      natRating: Math.round(BASE_XI * nationTeamStr(c.id)),
+      // what the league is worth: its clubs' best elevens, averaged
+      clubRating: clubStrength,
+      // and how everybody has actually been going, which is a different question
+      natForm: strengthRating(N[c.id].hist), natP: N[c.id].p,
+      clubForm: strengthRating(marks), clubP: marks.length
     };
-  }).sort((a, b) => b.clubRating - a.clubRating || b.natRating - a.natRating || a.id.localeCompare(b.id))
+  }).sort((a, b) => b.natRating - a.natRating || b.clubRating - a.clubRating || a.id.localeCompare(b.id))
     .map((c, i) => ({ rank: i + 1, ...c }));
   return { clubs: clubList, countries, window: RANK_WINDOW, base: RANK_BASE, generatedAtDay: dayIx(now) };
 }

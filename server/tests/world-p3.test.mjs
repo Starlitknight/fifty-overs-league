@@ -396,6 +396,39 @@ test('010: the world rankings stand on squad strength, with form beside them', a
   // promise and a strength table can - it is the one thing the ladder is for.
   const engClubs = rk.clubs.filter(c => c.country === 'eng').sort((a, b) => b.strength - a.strength);
   assert.ok(engClubs[0].boss, "England's strongest side is its flagship, got " + engClubs[0].name);
+
+  // AND THE NATIONS STAND ON THE SAME PRINCIPLE. They did not: both figures
+  // were averages of MATCH MARKS, so every XI showed the identical neutral
+  // base ("unproven", sixteen times) and the order was one round of club
+  // results - which put Afghanistan, an ASSOCIATE, first in the world. The
+  // world deals every country a rung; the table reads it now.
+  const nats = rk.countries;
+  nats.forEach(c => {
+    assert.ok(c.natRating > 0, c.name + ' is worth something in its own shirt');
+    assert.ok(c.clubRating > 0, c.name + ' has a league strength before a ball is bowled');
+    assert.equal(typeof c.full, 'boolean', c.name + ' says which kind of member it is');
+  });
+  // no two nations share the identical pair of figures the old table showed
+  assert.ok(new Set(nats.map(c => c.natRating)).size > 1,
+    'the XIs are not all the same number any more');
+  // every full member outranks every associate, because the rungs say so
+  const worstFull = Math.min(...nats.filter(c => c.full).map(c => c.natRating));
+  const bestAssoc = Math.max(...nats.filter(c => !c.full).map(c => c.natRating));
+  assert.ok(nats.some(c => c.full) && nats.some(c => !c.full), 'the world has both kinds');
+  assert.ok(worstFull > bestAssoc,
+    'a full member is worth more in the shirt than an associate: ' + worstFull + ' v ' + bestAssoc);
+  const afg = nats.find(c => c.id === 'afg'), eng = nats.find(c => c.id === 'eng');
+  if (afg && eng) assert.ok(eng.rank < afg.rank,
+    'England stands above Afghanistan, which is what the rungs say (' + eng.rank + ' v ' + afg.rank + ')');
+  // ranks run 1..n in the order of the figure they are ranked on
+  nats.forEach((c, i) => assert.equal(c.rank, i + 1, 'the nations are numbered in order'));
+  for (let i = 1; i < nats.length; i++)
+    assert.ok(nats[i - 1].natRating >= nats[i].natRating, 'and sorted by what the shirt is worth');
+  // form is still here, in a column of its own, on the match-mark scale
+  nats.forEach(c => {
+    assert.ok(c.natForm >= 350 && c.natForm <= 6790, c.name + ' XI form on the match scale');
+    assert.ok(c.clubForm >= 350 && c.clubForm <= 6790, c.name + ' league form on the match scale');
+  });
   // REBUILT FROM GENESIS, TWICE, THE SAME: nothing about the ladder is stored
   const again = await computeRankings(pool, EPOCH + 102 * DAY);
   assert.deepEqual(again.clubs, rk.clubs, 'the same record gives the same ladder');
