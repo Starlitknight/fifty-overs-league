@@ -143,23 +143,59 @@
     return out;
   }
   // what happened the last times these two met
-  // WHAT HAPPENED THE LAST TIMES THESE TWO MET, as rows a reader can open. The
-  // league preview built this inline; a friendly wants it too - the whole point
-  // of a challenge is the pair, and "they have met four times, you have lost
-  // three" is the most interesting sentence on the page.
-  window.foPmH2HRows = function (natId, hn, an) {
+  // WHAT HAPPENED THE LAST TIMES THESE TWO MET, as rows a reader can open.
+  //
+  // EVERY OFFICIAL MEETING COUNTS, and only official ones: the league's own
+  // results, the nation's cup, and the Champions Cup. A friendly is an
+  // arrangement between two clubs rather than a fixture the world dealt them,
+  // and it appears in none of those three books - which is exactly why it does
+  // not count here.
+  var PM_H2H_ASK = {};
+  function foPmH2HSnap(key, again) {
+    var v = foPmSnap(key, function () {
+      if (PM_H2H_ASK[key]) return;
+      PM_H2H_ASK[key] = 1;
+      try { if (again) again(); } catch (e) {}
+    });
+    return v || null;
+  }
+  // one tie from a cup's bracket, if these two are the pair in it
+  function foPmCupTie(t, hn, an, comp) {
+    var A = (t && t.a && t.a.name) || "", B = (t && t.b && t.b.name) || "";
+    if (!((A === hn && B === an) || (A === an && B === hn))) return null;
+    if (!t.winner && !t.text) return null;               // drawn but not played
+    return { comp: comp, home: A, away: B, text: t.text || "", id: t.id || "" };
+  }
+  window.foPmH2HRows = function (natId, seasonNo, hn, an, again) {
     var out = [];
     try {
       var snap = window.__foWorldLg && window.__foWorldLg.get(natId);
       ((snap && snap.results) || []).forEach(function (r) {
-        if ((r.home === hn && r.away === an) || (r.home === an && r.away === hn)) out.push(r);
+        if ((r.home === hn && r.away === an) || (r.home === an && r.away === hn)) {
+          out.push({ comp: "League", home: r.home, away: r.away, text: r.text || "",
+                     id: r.id || "", round: r.round | 0, nat: natId });
+        }
       });
     } catch (e) {}
+    var sn = (seasonNo | 0) || 1;
+    [["facup/" + natId + "/s" + sn, "Cup"], ["cup/s" + sn, "Champions Cup"]].forEach(function (pair) {
+      try {
+        var body = foPmH2HSnap(pair[0], again);
+        var st = (body && body.stages) || null;
+        if (!st) return;
+        Object.keys(st).forEach(function (k) {
+          (st[k] || []).forEach(function (t) {
+            var row = foPmCupTie(t, hn, an, pair[1]);
+            if (row) { row.stage = k; out.push(row); }
+          });
+        });
+      } catch (e2) {}
+    });
     return out;
   };
   window.foPmH2HHTML = function (natId, rows, hn, an) {
     if (!rows || !rows.length) {
-      return "<p class='fo-pm-dim'>They have not met yet this season. This is the first time of asking.</p>";
+      return "<p class='fo-pm-dim'>They have not yet met.</p>";
     }
     var w = 0, l = 0, d = 0;
     rows.forEach(function (r) {
@@ -169,22 +205,19 @@
     var tally = "<p class='fo-pm-dim'>" + foPmE(hn) + " " + w + " &middot; " +
       foPmE(an) + " " + l + (d ? " &middot; " + d + " drawn" : "") + "</p>";
     return tally + rows.map(function (r) {
-      var href = "#/report?n=" + encodeURIComponent(natId) + "&w=" + encodeURIComponent(r.id || "");
-      return "<a class='fo-pm-h2h' href='" + href + "'>" +
-        "<i>R" + (r.round | 0) + "</i>" +
+      var tag = r.comp === "League" ? "R" + (r.round | 0) : foPmE(r.comp);
+      var inner = "<i>" + tag + "</i>" +
         "<b>" + foPmE(r.home) + " v " + foPmE(r.away) + "</b>" +
-        "<span>" + foPmE(r.text || "") + "</span><s>&#8250;</s></a>";
+        "<span>" + foPmE(r.text || "") + "</span>";
+      // a league result opens its report; a cup tie is only a door where the
+      // world published an id for it
+      if (r.comp === "League" && r.id) {
+        return "<a class='fo-pm-h2h' href='#/report?n=" + encodeURIComponent(r.nat || natId) +
+          "&w=" + encodeURIComponent(r.id) + "'>" + inner + "<s>&#8250;</s></a>";
+      }
+      return "<div class='fo-pm-h2h flat'>" + inner + "</div>";
     }).join("");
   };
-  function foPmH2H(g, hSlot, aSlot) {
-    var hn = foPmName(g, hSlot), an = foPmName(g, aSlot), out = [];
-    try {
-      ((g.snap && g.snap.results) || []).forEach(function (r) {
-        if ((r.home === hn && r.away === an) || (r.home === an && r.away === hn)) out.push(r);
-      });
-    } catch (e) {}
-    return out;
-  }
 
   // ---- A CLUB IN ONE LINE, shared by both front pages -----------------------
   // The league preview built these inside its own render; the friendly's
@@ -465,7 +498,11 @@
       var hBoss = hSlot === 0, aBoss = aSlot === 0;
       var ground = foPmGround(g, hSlot);
       var hSt = foPmStanding(g, hSlot), aSt = foPmStanding(g, aSlot);
-      var h2h = foPmH2H(g, hSlot, aSlot);
+      var againH2H = function () {
+        page.__foPmSig = null;
+        try { window.foRenderPreviewPage(); } catch (e) {}
+      };
+      var h2h = window.foPmH2HRows(natId, g.seasonNo, hN, aN, againH2H);
       var now = Date.now(), c0 = foPmCountText(g, now);
       var art = foPmGroundArt(g, hSlot);
 
@@ -759,6 +796,12 @@
         if (cl) { myNat = cl.country; mySlot = cl.slot; }
       } catch (eC) {}
       var mineH = myNat === hNat && mySlot === hSlot, mineA = myNat === aNat && mySlot === aSlot;
+      // which season's cup books to look in
+      var seasonNoFr = 1;
+      try {
+        var calFr = window.__foWT && window.__foWT.serverCal && window.__foWT.serverCal(Date.now());
+        if (calFr && calFr.seasonNo) seasonNoFr = calFr.seasonNo | 0;
+      } catch (eSn) {}
       var mine = mineH || mineA;
 
       // each club's standing, read out of ITS OWN league's snapshot; a book
@@ -917,7 +960,10 @@
         (hNat === aNat
           ? "<div class='fo-pm-cap'>Head to head</div>" +
             "<div class='fo-pm-h2hs'>" +
-            window.foPmH2HHTML(hNat, window.foPmH2HRows(hNat, hN, aN), hN, aN) + "</div>"
+            window.foPmH2HHTML(hNat, window.foPmH2HRows(hNat, seasonNoFr, hN, aN, function () {
+              page.__foPmSig = null;
+              try { window.foRenderPreviewPage(); } catch (e) {}
+            }), hN, aN) + "</div>"
           : "") +
 
         condHTML +

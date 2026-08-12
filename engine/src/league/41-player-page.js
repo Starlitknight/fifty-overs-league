@@ -23,10 +23,13 @@
   // THE RED STAR. A man named in his country's current fifteen wears it
   // wherever his name is written - the same mark the squad room and the
   // teamsheets use, so an international is recognisable in every room.
-  function natStar(name, rid, slot, big) {
+  // the man, his nation and his club: the id settles it outright, and the
+  // club-and-name pair settles it for a fifteen banked before ids existed
+  function natStar(p, rid, slot, big) {
     try {
       if (!window.foNatStar) return "";
-      return window.foNatStar(name, slot == null ? null : slot, { rid: rid || undefined, big: !!big });
+      return window.foNatStar(p && p.name, slot == null ? null : slot,
+        { rid: rid || undefined, big: !!big, pid: p && p.pid });
     } catch (e) { return ""; }
   }
   // which seat in the world this device holds - the address of your own club
@@ -455,7 +458,7 @@
       "<div class='fo-pp-k'>" + E(kindLbl(p).toUpperCase()) + " &middot; " + (p.hand === "L" ? "LHB" : "RHB") +
       (p.btLabel && !/does not bowl/i.test(p.btLabel) ? " &middot; " + E(String(p.btLabel).toUpperCase()) : "") +
       " &middot; " + E(String(p.nat || "").toUpperCase()) + "</div>" +
-      "<h1>" + E(p.name) + natStar(p.name, (hit.world && hit.world.rid) || null, (hit.world && hit.world.slot), true) +
+      "<h1>" + E(p.name) + natStar(p, (hit.world && hit.world.rid) || null, (hit.world && hit.world.slot), true) +
       (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
       "<p class='fo-pp-prov'>" + E(pv.how) + pv.born + "</p>" +
       "<div class='fo-pp-strip'>" +
@@ -927,7 +930,7 @@
     var nm = (pl && pl.name) || "";
     var rec = cid ? servedIntl(cid, nm, again) : null;
     var inSquad = "";
-    try { inSquad = window.foNatStar ? window.foNatStar(nm, null, { rid: cid || undefined }) : ""; } catch (e) {}
+    try { inSquad = window.foNatStar ? window.foNatStar(nm, null, { rid: cid || undefined, pid: pl && pl.pid }) : ""; } catch (e) {}
     var natNm = "";
     try {
       var r0 = (window.__foCxAPI.regions() || []).filter(function (x) { return x.id === cid; })[0];
@@ -1001,7 +1004,7 @@
         "<span class='fo-pp-no'>No. " + no + "/199</span></div>" +
         "<div class='fo-pp-id'>" +
         "<div class='fo-pp-k'>" + E(kind.toUpperCase()) + " &middot; " + (sp.hand === "L" ? "LHB" : "RHB") + " &middot; " + E(String(sp.nat || "").toUpperCase()) + "</div>" +
-        "<h1>" + E(sp.name) + natStar(sp.name, cid, slot, true) +
+        "<h1>" + E(sp.name) + natStar(sp, cid, slot, true) +
         (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
         "<p class='fo-pp-prov'>Scouted from the boundary &middot; " + E(clubNm || "a world club") + "</p>" +
         "<div class='fo-pp-strip'>" +

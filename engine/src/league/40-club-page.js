@@ -795,8 +795,8 @@
 
       // the red star, on a rival's men as on your own: a club dossier that does
       // not say who is an international is hiding the thing you scout for
-      var natStar = function (nm2) {
-        try { return window.foNatStar ? window.foNatStar(nm2, slot, { rid: cid }) : ""; } catch (eNs) { return ""; }
+      var natStar = function (p2) {
+        try { return window.foNatStar ? window.foNatStar(p2 && p2.name, slot, { rid: cid, pid: p2 && p2.pid }) : ""; } catch (eNs) { return ""; }
       };
       // ---- THE ROSTER, FOR SOMEBODY ELSE'S CLUB ----------------------------
       //
@@ -848,7 +848,7 @@
           (fc ? "<img class='face' src='" + E(fc) + "' alt='' loading='lazy' decoding='async'>" : "") +
           (fg ? "<em class='fo-s2-flag'><img src='" + E(fg) + "' alt='' onerror=\"this.parentNode.style.display='none'\"></em>" : "") +
           "</span>" +
-          "<span class='fo-s2-id'><b>" + E(p.name) + natStar(p.name) + "</b><span>" +
+          "<span class='fo-s2-id'><b>" + E(p.name) + natStar(p) + "</b><span>" +
           (tal ? "<em class='fo-s2-tchip'" + (RK.traitTip ? " title='" + E(RK.traitTip(p)) + "'" : "") + ">" +
             E(RK.trait ? RK.trait(p) : talentWord(tal)) + "</em> " : "") +
           E(roleWord(p.role)) + " &middot; " + E(det) + "</span></span>" +

@@ -147,6 +147,31 @@
     }
     return cand;   // tiny name bank: accept rather than loop forever
   }
+  // ---- WHO A CRICKETER IS -----------------------------------------------
+  //
+  // A NAME IS NOT AN IDENTITY. The name banks are small and every squad in
+  // the world is drawn from them independently, so the same man's name comes
+  // up again and again: measured on the live world, England holds eighteen
+  // names shared by two clubs, Nepal seventy-five - and in the smaller banks
+  // a name can land TWICE INSIDE ONE SQUAD, because the no-duplicates draw
+  // above gives up after eighty tries rather than loop for ever.
+  //
+  // So anything that asks "is this the same cricketer?" by comparing names is
+  // wrong, and wrong in the way that is hardest to see: it is right for most
+  // men on most days. It put a red international star on a Gloucestershire
+  // batsman because somebody who shared his name had been picked elsewhere.
+  //
+  // Every man is therefore stamped with an id THE MOMENT HE IS GENERATED,
+  // derived from the seed that made his squad and his place in it. That makes
+  // it free of any lookup, identical on every device and on the server - both
+  // derive the same squad from the same seed - and stable for life: the id
+  // rides in the player object through transfers, retirement and the archive.
+  // Ids minted anywhere else in the world (a graduate, a signing) wear their
+  // own prefix, so no two sources can ever collide.
+  function foQsPid(seed, country, i) {
+    return "g" + (foHash32(String(seed) + "|" + String(country)) >>> 0).toString(36) + "-" + i;
+  }
+  window.__foPid = foQsPid;
   // engine-faithful talent eligibility (mirrors genDraftPool's rules)
   function foQsElig(p, t) {
     var isB = p.bowlTypeFull && p.bowlTypeFull !== "none" && !/^partTime/.test(p.bowlTypeFull);
@@ -355,7 +380,20 @@
     // because the best player in a side plausibly arrives with a gift.
     var st = A.starter || {};
     var players = [];
-    slots.forEach(function (sl) { players.push(foQsPlayer({ role: sl.role, ages: A.ages, q: sl.q, age: sl.age }, country, rnd, firsts, lasts)); });
+    slots.forEach(function (sl, iN) {
+      var p9 = foQsPlayer({ role: sl.role, ages: A.ages, q: sl.q, age: sl.age }, country, rnd, firsts, lasts);
+      p9.pid = foQsPid(seed, country, iN);
+      players.push(p9);
+    });
+    // KEYED BY NAME, AND IT HAS TO STAY THAT WAY. Two men in one squad can
+    // carry the same name where the bank is small, and this ladder then hands
+    // one of them the other's rung. It is a real flaw - but every bot squad in
+    // the served world was GENERATED through these lines and is stored as it
+    // came out, while each device re-derives the same squad from the same seed.
+    // Correcting the keying would change what the generator returns, and the
+    // derived squad would stop matching the banked one. The id above is
+    // deliberately additive for exactly this reason: it names the men without
+    // moving one number of theirs.
     var qOf = {}; slots.forEach(function (sl, i5) { qOf[players[i5].name] = sl.q; });
     // the standout is whoever the ladder put on top - a fact about the squad,
     // not a title granted to a man

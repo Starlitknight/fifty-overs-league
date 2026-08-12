@@ -468,8 +468,10 @@ test('a tour publishes its fixture and the hour it was bowled, always', async ()
   for (const m of ms) {
     const j = (await pool.query('SELECT world_nat_match($1) j', [m.id])).rows[0].j;
     assert.ok(j, m.id + ' answers');
-    assert.ok(j.text, 'the verdict is never embargoed - the scores page prints it');
-    assert.ok(j.a && j.b && j.aCountry && j.bCountry, 'and both sides are named');
+    assert.ok(j.a && j.b && j.aCountry && j.bCountry, 'both sides are named');
+    // the FIXTURE is always public - it is how the broadcast is addressed -
+    // and the VERDICT waits for the window, exactly as a league round's does
+    assert.equal(!!j.text, !j.live, 'the verdict answers once the window has shut, and not before');
     // the hour the umpire played it, which is what the seal is measured from
     assert.equal(Number(j.playAtMs), epoch + Number(m.world_day) * 86400000 + 18 * 3600000,
       'the tour hour is published so the reader can pace it');
@@ -489,7 +491,9 @@ test('the card opens when the broadcast has shown its last ball, and not before'
     await move(today + 1);
     let j = await ask();
     assert.equal(j.card, null, 'a tour still to come has no card to read');
-    assert.ok(j.text, 'though the fixture itself still answers');
+    assert.equal(j.text, null, 'nor a verdict - it is banked early so it can be watched');
+    assert.ok(j.a && j.b, 'though the fixture itself answers - that is the door into the broadcast');
+    assert.equal(j.live, true, 'and it says so');
 
     // the day before yesterday: the afternoon was read out long ago
     await move(today - 2);
@@ -498,6 +502,44 @@ test('the card opens when the broadcast has shown its last ball, and not before'
       'a tour whose reveal has run hands over the innings');
     assert.equal(j.card.text, j.text, 'and the card is the same match as the verdict');
     assert.ok(j.card.winner, 'with the umpire\'s own winner on it');
+  } finally {
+    await move(m.world_day);
+  }
+});
+
+// THE WHOLE POINT OF BANKING EARLY. A league round is played an hour before
+// its first ball, and that early bank IS the broadcast - the phone reveals the
+// umpire's own book one delivery every eighteen seconds from the hour. A tour
+// used to be played only once its window had already SHUT, so the ball-by-ball
+// did not exist until the match was over: a manager who opened an international
+// at the hour found a preview saying "scheduled" and no way in, and by the time
+// there was anything to watch the result was already on the scores page.
+test('a tour is on the shelf while it is being played, with its result sealed', async () => {
+  const m = (await pool.query('SELECT id, world_day FROM nat_matches ORDER BY id LIMIT 1')).rows[0];
+  const epoch = Number((await pool.query('SELECT epoch_ms FROM worlds WHERE id=1')).rows[0].epoch_ms);
+  const today = Math.floor((Date.now() - epoch) / 86400000);
+  const move = d => pool.query('UPDATE nat_matches SET world_day=$2 WHERE id=$1', [m.id, d]);
+  try {
+    // stand the tour on today, so its window is open and its three hours are
+    // still running - the state a viewer is in when he opens the broadcast
+    await move(today);
+    const j = (await pool.query('SELECT world_nat_match($1) j', [m.id])).rows[0].j;
+    assert.ok(j.a && j.b, 'the fixture is named');
+    assert.equal(j.live, true, 'and it is live');
+    assert.equal(j.text, null, 'the verdict is sealed');
+    // AND THE BALL-BY-BALL IS THERE, which is the thing that was missing: the
+    // reveal has something to read out from the very first ball
+    const log = (await pool.query('SELECT world_match_log($1,$2) l', [j.bCountry, m.id])).rows[0].l;
+    assert.ok(log && log.log && log.log.length > 300,
+      'the umpire\'s whole afternoon is banked and readable while it is on air');
+    const balls = log.log.filter(e => e && e.no && !e._top && !e.intro);
+    assert.ok(balls.length > 200, 'and it is deliveries, which is what the eighteen-second clock counts');
+    // the list is equally discreet
+    const row = (await pool.query(
+      'SELECT winner, text, live FROM world_nat_matches WHERE id=$1', [m.id])).rows[0];
+    assert.equal(row.live, true, 'the list says it is live');
+    assert.equal(row.winner, null, 'and gives away neither the winner');
+    assert.equal(row.text, null, 'nor the verdict');
   } finally {
     await move(m.world_day);
   }

@@ -135,21 +135,36 @@
     try { var L = window.__foWorldLg; if (!L) return null; L.want(rid, function () {}); return L.get(rid) || null; }
     catch (e) { return null; }
   }
-  var CAP_AT = null, CAP_KEY = null, CAP_NM = null;
+  // Keyed on the SQUAD ITSELF, not on a description of it. A nation, a round
+  // and a headcount named the same three things for two different fifteens -
+  // the world's book is replaced wholesale when it refreshes, and a squad that
+  // changed without changing length went on being answered from the old sets.
+  // a sentinel no squad can ever be, so the first ask always builds
+  var CAP_AT = {}, CAP_KEY = null, CAP_NM = null, CAP_ID = null;
   function capSets(rid) {
-    var n = natOf(rid), key = (rid || nation()) + '|' + (n ? n.round : 'x') + '|' + (n ? n.squad.length : 0);
-    if (CAP_AT === key) return { slots: CAP_KEY, names: CAP_NM };
-    CAP_KEY = {}; CAP_NM = {}; CAP_AT = key;
+    var n = natOf(rid), key = (n && n.squad) || null;
+    if (CAP_AT === key) return { slots: CAP_KEY, names: CAP_NM, ids: CAP_ID };
+    CAP_KEY = {}; CAP_NM = {}; CAP_ID = {}; CAP_AT = key;
     ((n && n.squad) || []).forEach(function (m) {
-      if (!m || !m.name) return;
+      if (!m) return;
+      if (m.pid) CAP_ID[m.pid] = 1;
+      if (!m.name) return;
       CAP_KEY[(m.slot | 0) + '|' + m.name] = 1; CAP_NM[m.name] = 1;
     });
-    return { slots: CAP_KEY, names: CAP_NM };
+    return { slots: CAP_KEY, names: CAP_NM, ids: CAP_ID };
   }
-  // name alone: right whenever a league holds one man of that name, which is
-  // the ordinary case and every case the generator produces
+  // WHO THE MAN IS, not what he is called. Every cricketer is stamped with an
+  // id when he is generated, and the selectors' fifteen carries those ids, so
+  // this is the answer whenever both ends have one.
+  function isNatId(pid, rid) { return !!(pid && capSets(rid).ids[pid]); }
+  // name alone: WRONG whenever two cricketers in a nation share a name, which
+  // is not rare - eighteen shared names in England on the live world, and in
+  // the smaller name banks a name can be held by six clubs at once. Kept only
+  // for the one caller that cannot do better (an umpire's scorecard names a
+  // man and no more), and only where every man on the page is in the squad
+  // anyway. Nothing that draws a CLUB may use it.
   function isNat(name, rid) { return !!(name && capSets(rid).names[name]); }
-  // name AND club: exact, for a surface that knows which club it is drawing
+  // name AND club: as exact as a squad banked before ids existed can be
   function isNatAt(slot, name, rid) { return !!(name && capSets(rid).slots[(slot | 0) + '|' + name]); }
   function natSquad(rid) { var n = natOf(rid); return (n && n.squad) || []; }
   function natRound(rid) { var n = natOf(rid); return n ? n.round : null; }
@@ -252,7 +267,8 @@
     round: round, roundsPlayed: roundsPlayed, totalRounds: totalRounds,
     seasonNo: seasonNo, startDay: startDay, opensIn: opensIn,
     ballAt: ballAt, fixtures: fixtures,
-    nat: natOf, natSquad: natSquad, natRound: natRound, isNat: isNat, isNatAt: isNatAt
+    nat: natOf, natSquad: natSquad, natRound: natRound, isNat: isNat, isNatAt: isNatAt,
+    isNatId: isNatId
   };
 
   // ---- THE RED STAR ---------------------------------------------------------
@@ -285,7 +301,23 @@
       // are.
       var rid = opts && opts.rid;
       if (rid ? !natOf(rid) : !on()) return "";
-      var yes = (slot == null) ? isNat(name, rid) : isNatAt(slot, name, rid);
+      // THE ORDER MATTERS, AND IT IS AN ORDER OF CERTAINTY.
+      //
+      // A caller holding the player object passes his id and gets the only
+      // answer that is always right. A caller holding a name and the club it
+      // belongs to gets the next best - and that is what every surface that
+      // draws a squad now passes, so a man is never starred for somebody
+      // else's cap at another county. Name alone is the last resort and says
+      // so at isNat: it is reserved for the umpire's own scorecard, where the
+      // two sides ARE the two squads and there is nobody else it could mean.
+      //
+      // A squad banked before ids existed carries none, so a pid that finds
+      // nothing falls through to the club-and-name test rather than declaring
+      // an international out of the side. Once the selectors next meet, the
+      // fifteen carries ids and the first test answers.
+      var pid = opts && opts.pid;
+      var yes = (pid && isNatId(pid, rid)) ||
+                (slot == null ? isNat(name, rid) : isNatAt(slot, name, rid));
       if (!yes) return "";
       starCss();
       var nm = (opts && opts.nation) || "";

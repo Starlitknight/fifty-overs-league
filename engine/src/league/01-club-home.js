@@ -2123,7 +2123,10 @@
     try {
       var sv = window.__foServed;
       if (!sv || !sv.on() || !window.foNatStar) return "";
-      return window.foNatStar(p && p.name, null, { big: true });
+      // by his id, which the card already holds: the card is drawn for men
+      // from any club in the world, so a name on its own would lend him a
+      // namesake's cap
+      return window.foNatStar(p && p.name, null, { big: true, pid: p && p.pid });
     } catch (e) { return ""; }
   }
   function foHoloCardHTML(p, teamName) {

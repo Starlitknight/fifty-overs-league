@@ -155,6 +155,12 @@ export function makeRecruit(host, nat, arch, tier, seed) {
   // input to a derivation, never the answer. The formula lives only on the
   // server, so the seed on his card tells a reader nothing.
   boy.yseed = seed;
+  // AND HIS OWN IDENTITY, NOT THE ONE HE WAS CUT FROM. A recruit is a copy of
+  // a man out of a throwaway pool, so without this he would walk in wearing
+  // that man's id - and two boys cut from the same pool at two academies would
+  // be, to every lookup in the game, the same cricketer. His birth seed is his
+  // alone, so it names him too.
+  boy.pid = 'y' + (h32(seed + '|pid') >>> 0).toString(36);
   delete boy.career; delete boy.formIx; delete boy.formWord;
   delete boy.fatN; delete boy.fatWord; delete boy.trainProgress;
   return boy;

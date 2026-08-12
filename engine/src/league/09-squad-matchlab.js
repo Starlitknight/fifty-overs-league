@@ -2007,7 +2007,7 @@
     try {
       var sv = window.__foServed;
       if (!sv || !sv.on() || !window.foNatStar) return "";
-      return window.foNatStar(p && p.name, sv.slot(), { big: !!big });
+      return window.foNatStar(p && p.name, sv.slot(), { big: !!big, pid: p && p.pid });
     } catch (e) { return ""; }
   }
   function foSqShortName(n) {

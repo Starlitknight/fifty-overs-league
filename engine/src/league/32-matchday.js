@@ -169,14 +169,16 @@
         .replace("{dogStar}", dogStar).replace("{pitch}", pitch);
 
   // the red star: this man is in his country's fifteen as it stands
-  function foNS(nm, rid) {
+  // takes the MAN, not his name: the id he was generated with is the only
+  // thing that separates him from a namesake at another county
+  function foNS(p, rid) {
     try { return (window.foNatStar && window.__foServed && window.__foServed.on())
-      ? window.foNatStar(nm, null, rid ? { rid: rid } : undefined) : ""; } catch (e) { return ""; }
+      ? window.foNatStar(p && p.name, null, { rid: rid || undefined, pid: p && p.pid }) : ""; } catch (e) { return ""; }
   }
       var xiCol = function (team, prob, label) {
         return "<div class='fo-md-xi'><i>" + E(label) + (prob.fromOrders ? " &middot; your card" : " &middot; the XI") + "</i>" +
           prob.xi.map(function (p, k) {
-            return "<div class='p'><u>" + (k + 1) + "</u><b>" + E(p.name) + foNS(p.name) + "</b>" +
+            return "<div class='p'><u>" + (k + 1) + "</u><b>" + E(p.name) + foNS(p) + "</b>" +
               (p.keeper || p.role === "wicketkeeper" ? "<em>&dagger;</em>" : p.bowlType ? "<em>&#9679;</em>" : "") + "</div>";
           }).join("") + "</div>";
       };

@@ -128,6 +128,14 @@ jobs:
       - name: Found or expand the world (idempotent)
         working-directory: server
         run: node init-world.mjs
+      # A cricketer is not his name (089): every man made from here on is
+      # stamped with an id at birth, and this hands the same ids to the men
+      # who were already on the books. Idempotent, and a club where everybody
+      # has one is skipped without touching the generator, so once the world
+      # is stamped this step is one cheap read per club.
+      - name: Stamp any cricketer still without an id
+        working-directory: server
+        run: node backfill-pids.mjs --write
       - name: Settle everything due, every nation
         working-directory: server
         run: node tick.mjs

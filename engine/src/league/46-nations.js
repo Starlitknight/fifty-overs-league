@@ -301,8 +301,9 @@
     // room in the game the moment his country names him, and the one list that
     // IS that naming had nothing. The mark reads the nation's own snapshot, so
     // the page has to have asked for it - and repaint when it lands.
-    var natStar = function (nm2, slot2) {
-      try { return window.foNatStar ? window.foNatStar(nm2, slot2 == null ? null : (slot2 | 0), { rid: ST.nation }) : ""; }
+    var natStar = function (m2, slot2) {
+      try { return window.foNatStar ? window.foNatStar(m2 && m2.name, slot2 == null ? null : (slot2 | 0),
+        { rid: ST.nation, pid: m2 && m2.pid }) : ""; }
       catch (eS) { return ""; }
     };
     try {
@@ -317,7 +318,7 @@
       var isMine = myClub && m.club === myClub;
       return manRow("fo-nat-man" + (isMine ? " mine" : ""),
         "<i>" + (i + 1) + "</i>" + natFlag +
-        "<b>" + E(m.name) + natStar(m.name, m.slot) + "</b><span>" + E(m.club || "") +
+        "<b>" + E(m.name) + natStar(m, m.slot) + "</b><span>" + E(m.club || "") +
         (m.age ? " &middot; " + m.age : "") + "</span>" +
         "<u>" + (m.caps ? m.caps + " cap" + (m.caps === 1 ? "" : "s") : "uncapped") + "</u>",
         m.name, m.slot);
@@ -331,7 +332,7 @@
     var tours = (n.tours || []).map(tieRow).join("");
     var caps = (n.caps || []).map(function (c, i) {
       return manRow("fo-nat-man",
-        "<i>" + (i + 1) + "</i>" + natFlag + "<b>" + E(c.name) + natStar(c.name) + "</b>" +
+        "<i>" + (i + 1) + "</i>" + natFlag + "<b>" + E(c.name) + natStar(c) + "</b>" +
         "<span>" + c.caps + " cap" + (c.caps === 1 ? "" : "s") +
         (c.runs ? " &middot; " + c.runs + " runs" + (c.hs ? " (" + c.hs + " best)" : "") : "") +
         (c.wkts ? " &middot; " + c.wkts + " wickets" + (c.bb ? " (" + c.bb.w + "-" + c.bb.r + ")" : "") : "") +

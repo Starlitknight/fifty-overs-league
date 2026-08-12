@@ -31,7 +31,7 @@
 // exactly his form that morning; heal a window days late and the selectors
 // have seen a little cricket the players had not. Once named, it is fixed.
 import { dayIx, seedOf, isWindowRound, WINDOWS, WINDOW_DAYS, windowRoundOfDay,
-         INTL_HOUR, hourSettled, ROUNDS, isWorldCupSeason, cupDraw } from './clock.mjs';
+         INTL_HOUR, hourSettled, ROUNDS, isWorldCupSeason, cupDraw, EPOCH, DAY } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
 import { makeHost } from './enginehost.mjs';
 import { calibrate, nationTeamStr, BASE_XI } from './init-world.mjs';
@@ -221,8 +221,14 @@ export async function ensureNatSquad(pool, country, seasonNo, round) {
   const have = await pool.query(
     'SELECT squad FROM nat_squad WHERE country_id=$1 AND season_no=$2 AND round=$3', key);
   if (have.rowCount) return have.rows[0].squad;
+  // THE FIFTEEN NAMES MEN, NOT NAMES. A cricketer's id is stamped on him when
+  // he is generated and rides in the player object for life, so the squad can
+  // say exactly WHO was picked - which is what every surface that draws a red
+  // star needs. Names alone cannot do it: England holds eighteen names shared
+  // by two clubs on the live world, and one of those cost a Gloucestershire
+  // batsman a cap he never had.
   const picked = selectSquad(await nationMen(pool, country)).map((p, i) => ({
-    pick: i, slot: p.slot, club: p.club || null, name: p.name,
+    pick: i, slot: p.slot, club: p.club || null, name: p.name, pid: p.pid || null,
     age: p.age == null ? null : (p.age | 0), rating: Math.round(+p.rating || 0),
     keeper: !!p.keeper, bowler: isBowler(p), fee: feeFor(p.age)
   }));
@@ -281,9 +287,9 @@ export async function ensureCallups(pool, country, seasonNo, round) {
   for (let i = 0; i < squad.length; i++) {
     const p = squad[i];
     await pool.query(
-      `INSERT INTO callups(country_id, season_no, round, pick, slot, player, age, fee)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) ON CONFLICT DO NOTHING`,
-      [country, seasonNo, round, i, p.slot, p.name, p.age || null, feeFor(p.age)]);
+      `INSERT INTO callups(country_id, season_no, round, pick, slot, player, pid, age, fee)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9) ON CONFLICT DO NOTHING`,
+      [country, seasonNo, round, i, p.slot, p.name, p.pid || null, p.age || null, feeFor(p.age)]);
   }
   return (await pool.query(
     'SELECT * FROM callups WHERE country_id=$1 AND season_no=$2 AND round=$3 ORDER BY pick',
@@ -405,7 +411,9 @@ async function menFor(pool, country, named) {
   const bySlot = Object.fromEntries(clubs.map(c => [c.slot, c.squad || []]));
   const out = [];
   for (const r of named) {
-    const p = (bySlot[r.slot] || []).find(x => x && x.name === r.player);
+    const men = bySlot[r.slot] || [];
+    const p = (r.pid && men.find(x => x && x.pid === r.pid)) ||
+              men.find(x => x && x.name === r.player);
     if (p) out.push(p);
   }
   return badgeUp(country, out);
@@ -415,7 +423,7 @@ async function menFor(pool, country, named) {
 // they came from.
 export async function squadPlayers(pool, country, seasonNo, round) {
   const rows = (await pool.query(
-    'SELECT slot, player FROM callups WHERE country_id=$1 AND season_no=$2 AND round=$3 ORDER BY pick',
+    'SELECT slot, player, pid FROM callups WHERE country_id=$1 AND season_no=$2 AND round=$3 ORDER BY pick',
     [country, seasonNo, round])).rows;
   return menFor(pool, country, rows);
 }
@@ -432,7 +440,7 @@ export async function seasonSquad(pool, country, seasonNo) {
       ORDER BY round DESC LIMIT 1`, [country, seasonNo])).rows[0];
   if (standing) {
     const men = await menFor(pool, country,
-      (standing.squad || []).map(m => ({ slot: m.slot, player: m.name })));
+      (standing.squad || []).map(m => ({ slot: m.slot, player: m.name, pid: m.pid || null })));
     if (men.length) return men;
   }
   for (const round of WINDOWS.slice().reverse()) {
@@ -469,7 +477,15 @@ export async function runWindows(pool, host, engineVersion, { now = Date.now(), 
   const today = dayIx(now);
   const played = [];
   for (let day = today - backDays; day <= today; day++) {
-    if (!hourSettled(now, day, INTL_HOUR)) continue;
+    // AN HOUR OF DAYLIGHT BEFORE THE FIRST BALL, exactly as a league round
+    // gets (tick.mjs). A tour used to be played only once its whole window had
+    // SHUT, which meant the ball-by-ball it banks did not exist until the
+    // match was already over - so an international could not be watched at
+    // all, only read about afterwards. The broadcast reveals the umpire's own
+    // book one delivery every eighteen seconds from the hour, and for that the
+    // book has to be on the shelf before the hour. It is banked early and
+    // EMBARGOED: nothing it decides is published until the window closes.
+    if (now < EPOCH + day * DAY + (INTL_HOUR - 1) * 3600000) continue;
     const inWindow = await windowsOn(pool, day);
     if (inWindow.length < 2) continue;
     // EVERY FOURTH SEASON THE TOUR DAYS ARE THE WORLD CUP'S (docs/PYRAMID.md
@@ -573,12 +589,17 @@ export async function runWindows(pool, host, engineVersion, { now = Date.now(), 
 // capped man has done for his country. A separate career from his club's -
 // a Test cap is not a county cap - but the same arithmetic.
 // ---------------------------------------------------------------------------
-export async function intlBook(pool, country = null) {
+export async function intlBook(pool, country = null, now = Date.now()) {
   const args = country ? [country] : [];
   const where = country ? 'WHERE m.a_country=$1 OR m.b_country=$1' : '';
-  const rows = (await pool.query(
+  const all = (await pool.query(
     `SELECT m.id, m.season_no, m.round, m.world_day, m.a_country, m.b_country, m.a_name, m.b_name, m.result
        FROM nat_matches m ${where} ORDER BY m.season_no, m.round, m.id`, args)).rows;
+  // A CAP IS WON WHEN THE MATCH IS OVER. Tours are banked as their window
+  // opens so they can be watched, so this table holds afternoons still being
+  // read out - and a caps book that counted them would put a hundred beside a
+  // man's name while he was, on the broadcast, still walking out to bat.
+  const rows = all.filter(m => hourSettled(now, m.world_day, INTL_HOUR));
   const book = new Map();
   const at = (nat, name) => {
     const k = nat + '|' + name;
@@ -643,7 +664,7 @@ export async function computeNations(pool, now = Date.now()) {
   const clubs = (await pool.query('SELECT country_id, slot, name FROM clubs')).rows;
   const clubName = {};
   clubs.forEach(c => { clubName[c.country_id + ':' + c.slot] = c.name; });
-  const book = await intlBook(pool);
+  const book = await intlBook(pool, null, now);
 
   // THE SEASON'S TOUR CALENDAR, resolved to names a page can print. One plan
   // per season number in play (in practice one for the whole world).
@@ -665,30 +686,48 @@ export async function computeNations(pool, now = Date.now()) {
     const games = tours.filter(g => g.seasonNo === sn &&
       [g.aCountry, g.bCountry].sort().join('|') === pair)
       .sort((a, b) => a.round - b.round);
-    const winsOf = id => games.filter(g =>
+    // A GAME STILL ON AIR IS NOT A RESULT. It is listed - the broadcast is
+    // addressed by its id - but the standing is walked off the settled ones
+    // only, or a series would call itself decided while its last game was
+    // being bowled.
+    const over = games.filter(g => !g.live);
+    const winsOf = id => over.filter(g =>
       (g.winner === g.a && g.aCountry === id) || (g.winner === g.b && g.bCountry === id)).length;
     const wA = winsOf(t.away), wH = winsOf(t.home);
-    const done = games.length >= SERIES_LEN;
+    const done = over.length >= SERIES_LEN;
     const lead = wA > wH ? t.away : wH > wA ? t.home : null;
     const score = Math.max(wA, wH) + '-' + Math.min(wA, wH);
-    const verdict = !games.length ? null
+    const verdict = !over.length ? null
       : done ? (lead ? (nameOf[lead] || lead) + ' win the series ' + score
                      : 'The series is shared ' + wA + '-' + wH)
       : lead ? (nameOf[lead] || lead) + ' lead the series ' + score
              : 'The series stands level at ' + wA + '-' + wH;
-    return { played: games.length, of: SERIES_LEN, winsAway: wA, winsHome: wH, done, verdict,
-      games: games.map(g => ({ id: g.id, round: g.round, text: g.text, winner: g.winner })) };
+    return { played: over.length, of: SERIES_LEN, winsAway: wA, winsHome: wH, done, verdict,
+      games: games.map(g => ({ id: g.id, round: g.round, text: g.text, winner: g.winner,
+                               live: !!g.live })) };
   };
 
   const ties = (await pool.query(
     `SELECT id, world_day, season_no, round, a_country, b_country, a_name, b_name, result
        FROM nat_matches ORDER BY season_no DESC, round DESC, id`)).rows;
+  // THE EMBARGO. A tour is banked when its window opens so it can be watched,
+  // which means a tie sitting in this table may be one still being read out
+  // ball by ball. Its FIXTURE is public - the two sides, the id the broadcast
+  // is addressed by - and its OUTCOME is not, until the window shuts. Same law
+  // as the league's settledRound, and the reason a scores page cannot spoil an
+  // afternoon it is in the middle of showing.
+  const settled = m => hourSettled(now, m.world_day, INTL_HOUR);
   const scoreOf = inn => inn ? inn.runs + (inn.wkts >= 10 ? ' all out' : '/' + inn.wkts) : '';
-  const tours = ties.map(m => ({
+  const tours = ties.map(m => (settled(m) ? {
     id: m.id, day: m.world_day, seasonNo: m.season_no, round: m.round,
     a: m.a_name, b: m.b_name, aCountry: m.a_country, bCountry: m.b_country,
     as_: scoreOf(m.result.innings[0]), bs_: scoreOf(m.result.innings[1]),
     winner: m.result.winner, text: m.result.text
+  } : {
+    // out in the middle: named, addressable, and silent about the result
+    id: m.id, day: m.world_day, seasonNo: m.season_no, round: m.round,
+    a: m.a_name, b: m.b_name, aCountry: m.a_country, bCountry: m.b_country,
+    as_: '', bs_: '', winner: null, text: null, live: true
   }));
 
   // WHO IS STILL ON THE BOOKS. The by-name caps book is bounded to
