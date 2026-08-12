@@ -98,7 +98,53 @@ test('no team sheet is offered, because nobody files one', () => {
   const { html } = preview(5);
   assert.ok(!/team sheet/i.test(html), 'the room never asks for a sheet');
   assert.ok(!/#\/orders/.test(html), 'and never sends the reader to file one');
-  assert.match(html, /The selectors do/, 'it says whose call the side is');
+  // the paragraph explaining that the selectors pick came out: a room with no
+  // sheet in it does not need a note saying so, and the space is the squads'
+  assert.ok(!/Who picks the side/.test(html), 'and does not lecture about it either');
+});
+
+test('the series stands at a scoreline, not a sentence', () => {
+  const { html } = preview(5);
+  // Afghanistan (touring) 0, Scotland (hosts) 1, best of three
+  // the fixture carries no win counts, so this also proves the fallback: the
+  // figure is walked off the games rather than quietly reading 0-0 above a
+  // sentence that says otherwise
+  assert.match(html, /class='fo-pm-big'>0&#8211;1 <em>\(Best of 3\)<\/em>/,
+    'the touring side leads the figure, because it leads the billing');
+  assert.ok(!/Nothing has been bowled/.test(html), 'the old sentence is gone');
+  // a series with nothing bowled reads the same way rather than differently
+  const fresh = { ...BOOK, calendar: { seasonNo: 1, series: [
+    { ...BOOK.calendar.series[0], series: { of: 3, played: 0, verdict: null, games: [] } }] } };
+  const p = newPage();
+  eng.ctx.foRenderIntlPreview(p, fresh, 'afg', 'sco', 5);
+  assert.match(String(p.innerHTML), /class='fo-pm-big'>0&#8211;0 <em>\(Best of 3\)<\/em>/,
+    'nought-all before a ball is bowled');
+});
+
+test('the conditions are the umpire\'s own, and never invented', () => {
+  const { html } = preview(5);
+  // runTours passes 'balanced' literally and no weather, so a tour is played
+  // on a true pitch under a clear sky - every tour, every window
+  assert.match(html, /Pitch report/, 'the pitch is reported');
+  assert.match(html, /class='fo-pm-big'>Balanced<\/div>/, 'and it is the one the umpire plays with');
+  assert.match(html, /class='fo-pm-big'>Sunny<\/div>/, 'as is the weather');
+  assert.match(html, /the same for both sides and the same every window/,
+    'and the page says why it never varies rather than pretending it does');
+});
+
+test('the bar is offered, and it is the fixture played out, not a formula', () => {
+  const { html } = preview(5);
+  assert.match(html, /id='fo-pm-wp'/, 'the win probability has a home on the page');
+  assert.match(html, /Win probability &middot; projected/, 'labelled as a projection');
+  const src51 = src('51-prematch.js');
+  assert.match(src51, /function foPmWpRunTeams\(host, sig, key, H, A\)/,
+    'and it is run on two built sides');
+  assert.match(src51, /G\.simWorld\(H, A, "balanced", "Sunny"/,
+    'through the engine the umpire uses, on the tour\'s own conditions');
+  assert.match(src51, /world_squads\?country_id=eq\./,
+    'with the men read off the world\'s published cards');
+  assert.match(src51, /return out\.length >= 11 \? out : null;/,
+    'and no bar at all unless a side can actually be fielded');
 });
 
 test('the touring party is listed, man by man, with his club and his caps', () => {
@@ -128,9 +174,43 @@ test('a nation\'s form is read off its tours, which are banked under the side na
 test('the series is walked game by game: what is bowled opens its report, what is not says when', () => {
   const { html } = preview(5);
   assert.match(html, /href='#\/report\?nat=nat%3Ad2%3Ag1'/, 'the bowled game opens the tour report');
-  assert.match(html, /This one &middot; round 5/, 'the game being previewed is marked as this one');
-  assert.match(html, /To come &middot; round 7/, 'and the one after it is still to come');
+  assert.match(html, /<span>This one<\/span>/, 'the game being previewed is marked as this one');
+  assert.match(html, /<span>To come<\/span>/, 'and the one after it is still to come');
   assert.ok(!/href='#\/report\?nat='/.test(html), 'an unbowled game is never a door to an empty report');
+});
+
+// A ROUND NUMBER IS NOT A DATE. "Round 5" made the reader do calendar
+// arithmetic to find out when his cricketers are away from the club.
+test('every game of the series carries the day and the hour it is bowled', () => {
+  const { html } = preview(5);
+  const rows = html.split(/class='fo-pm-h2h[' ]/).slice(1);
+  assert.equal(rows.length, 3, 'three games');
+  rows.forEach((r, i) => {
+    const stamp = (r.match(/<u>([^<]*)<\/u>/) || [])[1] || '';
+    assert.match(stamp, /\d/, 'game ' + (i + 1) + ' is dated: ' + JSON.stringify(stamp));
+    assert.match(stamp, /&middot;/, 'with an hour beside the day: ' + JSON.stringify(stamp));
+  });
+});
+
+test('the header names the date as well as the tour', () => {
+  const { html } = preview(5);
+  const folio = html.split("class='fo-pm-folio'")[1].split('</div>')[0];
+  assert.match(folio, /Afghanistan tour of Scotland/, 'the tour is named');
+  assert.match(folio, /<em>[^<]*\d[^<]*<\/em>/, 'and dated, at the very top of the page');
+});
+
+test('every man in a party wears the flag he plays under', () => {
+  const { html } = preview(5);
+  const men = html.split("class='fo-pm-cap-man").slice(1);
+  assert.equal(men.length, PARTY_A.length + PARTY_H.length, 'every man has a row');
+  men.forEach(m => assert.match(m, /class='fo-pm-mfl' src='[^']*flags\//, 'and a flag on it'));
+});
+
+test('a side is a squad number, not a table of tallies', () => {
+  const { html } = preview(5);
+  assert.ok(!/CAPPED/.test(html), 'capped and uncapped counts came off the side rows');
+  assert.ok(!/men from \d+ clubs/.test(html), 'and so did the men-from-clubs line');
+  assert.match(html, /<u>SQUAD<b>4<\/b><\/u>/, 'the squad number stays');
 });
 
 test('the game already bowled sends the reader to its broadcast, not back here', () => {

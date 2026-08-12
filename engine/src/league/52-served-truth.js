@@ -470,6 +470,29 @@
       __card: 1, __ovr: +c.ovr || 0
     };
     if (p.formIx < 0) p.formIx = 3;
+    // AND THE FIGURES THE BALL ENGINE ITSELF READS. A generated player carries
+    // his skills TWICE: the fifteen facets, and a handful of flattened numbers
+    // hung off the player - bat, threat, control, field - which is what every
+    // delivery is actually resolved against (jsDerive, 00-core). A card player
+    // had only the facets, so he was a perfectly good object to LOOK at and a
+    // ruinous one to PLAY: handed to the engine, both sides batted out fifty
+    // overs for one run without losing a wicket, because every ball was
+    // resolved against undefined. Nothing showed an error; the match simply
+    // did not happen.
+    //
+    // Nothing here is invented - these are jsDerive's own formulas over the
+    // facets already set above. What the CARD publishes and this does not
+    // touch: his rating, his keeper's gloves and his bowling label, all of
+    // which are the world's own word and outrank anything re-derived.
+    var sk = p.skills;
+    p.vsPace = sk.vsPace; p.vsSpin = sk.vsSpin;
+    p.power = sk.power; p.rotation = sk.rotation; p.temperament = sk.temperament;
+    p.bat = Math.round(0.32 * sk.vsPace + 0.32 * sk.vsSpin + 0.16 * sk.rotation + 0.20 * sk.temperament);
+    p.threat = p.bowlType ? sk.wicket : 0;
+    p.control = p.bowlType ? sk.economy : 0;
+    p.bowl = p.bowlType ? Math.round((p.threat + p.control) / 2) : 0;
+    p.field = sk.fielding;
+    p.keeping = sk.keeping;
     return p;
   }
   window.__foCardToPlayer = cardToPlayer;

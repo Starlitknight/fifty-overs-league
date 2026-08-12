@@ -969,7 +969,12 @@
       try {
         can = !!(window.foFindAnyPlayer && window.foFindAnyPlayer(m.name, rid, m.slot == null ? null : (m.slot | 0)));
       } catch (e) {}
-      var inner = "<i>" + (i + 1) + "</i><b>" + foPmE(m.name) + "</b>" +
+      // EVERY MAN WEARS THE FLAG HE IS PLAYING UNDER, the same as he does in
+      // the caps book and on the nations page
+      var fl = foPmNatFlag(rid);
+      var inner = "<i>" + (i + 1) + "</i>" +
+        (fl ? "<img class='fo-pm-mfl' src='" + fl + "' alt='' onerror=\"this.style.display='none'\">" : "") +
+        "<b>" + foPmE(m.name) + "</b>" +
         "<span>" + foPmE(m.club || "") + (m.age ? " &middot; " + (m.age | 0) : "") + "</span>" +
         "<u>" + (m.caps ? m.caps + " cap" + (m.caps === 1 ? "" : "s") : "uncapped") + "</u>";
       if (!can) return "<div class='fo-pm-cap-man" + (mine ? " mine" : "") + "'>" + inner + "</div>";
@@ -996,21 +1001,100 @@
   function foPmIntlRow(rid, n, role, rank, mine) {
     var form = foPmIntlForm(n);
     var men = (n.tourSquad && n.tourSquad.length) ? n.tourSquad : (n.squad || []);
-    var capped = men.filter(function (m) { return (m.caps | 0) > 0; }).length;
-    var clubs = {}; men.forEach(function (m) { if (m.club) clubs[m.club] = 1; });
     return "<a class='fo-pm-sl" + (mine ? " mine" : "") + "' href='#/nations?n=" + encodeURIComponent(rid) + "'>" +
       foPmNatShield(rid) +
       "<b>" + foPmE(n.name || rid) + " <i>" + foPmE(role) + (rank ? " &middot; #" + (rank | 0) + " in the world" : "") + "</i></b>" +
-      "<span class='fo-pm-her'>" + (men.length ? foPmPl(men.length, "man", "men") + " from " +
-        foPmPl(Object.keys(clubs).length, "club", "clubs") : "No party named") + "</span>" +
       "<span class='fo-pm-beads'>" + (form.length
         ? form.map(function (k) { return "<i class='" + k + "'>" + k.toUpperCase() + "</i>"; }).join("")
         : "<span class='fo-pm-none'>no tours yet</span>") + "</span>" +
-      "<span class='fo-pm-slst'>" +
-      "<u>SQUAD<b>" + men.length + "</b></u>" +
-      "<u>CAPPED<b>" + capped + "</b></u>" +
-      "<u>UNCAPPED<b>" + (men.length - capped) + "</b></u>" +
-      "</span><s class='fo-pm-chev'>&#8250;</s></a>";
+      "<span class='fo-pm-slst'><u>SQUAD<b>" + men.length + "</b></u></span>" +
+      "<s class='fo-pm-chev'>&#8250;</s></a>";
+  }
+
+  // ---- WHEN, IN WORDS ------------------------------------------------------
+  // A tour is a date as much as a pairing, and every place this page names one
+  // it names it the same way: the day in the reader's own week, and the hour
+  // on his own clock.
+  function foPmDay(ms) {
+    if (!ms) return "";
+    try { return new Date(ms).toLocaleDateString([], { weekday: "short", day: "numeric", month: "short" }); }
+    catch (e) { return ""; }
+  }
+  function foPmClock(ms) {
+    if (!ms) return "";
+    try { return new Date(ms).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }); }
+    catch (e) { return ""; }
+  }
+
+  // ---- FORTY PLAYINGS, WITH THE MEN THE SELECTORS ACTUALLY NAMED -----------
+  //
+  // The league fixture's bar is not modelled: the match is PLAYED forty times
+  // on the engine the umpire uses, and the bar is how often each side won. A
+  // tour gets the same treatment and it must, because a formula off two world
+  // rankings would be the one invented number on a page where everything else
+  // was earned.
+  //
+  // The only difficulty is whose men. A national side has no club seat to
+  // generate a squad from - it is fifteen cricketers drawn out of a whole
+  // league - so the squads are read from world_squads, the public card every
+  // club's men are published as, and turned into engine players through the
+  // one door that conversion has (__foCardToPlayer). Two requests, one per
+  // nation, and both are cached for the session.
+  var PM_NAT_MEN = {};
+  function foPmNatMen(rid, cb) {
+    if (PM_NAT_MEN[rid] !== undefined) return PM_NAT_MEN[rid];
+    PM_NAT_MEN[rid] = null;
+    var SB = "https://egaipdksvztqqgouriyc.supabase.co";
+    var AK = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+    fetch(SB + "/rest/v1/world_squads?country_id=eq." + encodeURIComponent(rid) + "&select=slot,players",
+      { headers: { apikey: AK } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (rows) {
+        var by = {};
+        (rows || []).forEach(function (row) {
+          (row.players || []).forEach(function (c) {
+            if (c && c.name) by[(row.slot | 0) + "|" + c.name] = c;
+          });
+        });
+        PM_NAT_MEN[rid] = Object.keys(by).length ? by : false;
+        if (cb) cb();
+      })
+      .catch(function () { PM_NAT_MEN[rid] = false; if (cb) cb(); });
+    return null;
+  }
+  // the fifteen the selectors named, as engine players
+  function foPmNatXI(rid, party, book) {
+    if (!book) return null;
+    var out = [];
+    (party || []).forEach(function (m) {
+      var c = book[(m.slot | 0) + "|" + m.name];
+      if (!c) return;
+      var p = null;
+      try { p = window.__foCardToPlayer ? window.__foCardToPlayer(c) : null; } catch (e) {}
+      if (p) out.push(p);
+    });
+    return out.length >= 11 ? out : null;
+  }
+  // the same forty playings the league bar runs, on teams already built
+  function foPmWpRunTeams(host, sig, key, H, A) {
+    var G = window.__foGame;
+    if (!G || !G.simWorld || !G.hash || !H || !A) { host.style.display = "none"; return; }
+    var v = { h: 0, a: 0, t: 0, n: FO_PM_WP_N }, i = 0;
+    var step = function () {
+      if (location.hash !== sig) return;                       // the reader moved on
+      for (var c = 0; c < FO_PM_WP_CHUNK && i < FO_PM_WP_N; c++, i++) {
+        var out = null;
+        try { out = G.simWorld(H, A, "balanced", "Sunny", (G.hash(key + "|wp|" + i) >>> 0) || 1, null); } catch (eS) {}
+        if (!out || !out.result) { v.t++; continue; }
+        var w = out.result.winner;
+        if (w === H.name) v.h++; else if (w === A.name) v.a++; else v.t++;
+      }
+      var done = i >= FO_PM_WP_N;
+      foPmWpPaint(host, v, done);
+      if (done) { foPmWpSave(key, v); return; }
+      setTimeout(step, 0);
+    };
+    step();
   }
 
   // THE ROOM ITSELF. Same card, same dress, same clock as a round's preview.
@@ -1073,21 +1157,47 @@
       // season and it has never been printed anywhere a reader could reach it.
       var played = {};
       ((st.games) || []).forEach(function (x) { played[x.round | 0] = x; });
+      // EVERY GAME IS A DATE. A row that said only "round 5" made the reader
+      // do calendar arithmetic to find out when his cricketers are away; each
+      // one carries the day it is bowled on and the hour, in his own clock.
       var seriesRows = (t.rounds || []).map(function (r, i) {
         var gm = played[r | 0];
+        var when = window.foPmIntlStart(seasonNo, r | 0, hourUtc);
+        var stamp = when ? foPmDay(when) + " &middot; " + foPmClock(when) : "Round " + (r | 0);
         if (gm) {
           return "<a class='fo-pm-h2h' href='#/report?nat=" + encodeURIComponent(gm.id || "") + "'>" +
-            "<i>" + (i + 1) + "</i><b>Game " + (i + 1) + "</b>" +
+            "<i>" + (i + 1) + "</i><b>Game " + (i + 1) + "<u>" + stamp + "</u></b>" +
             "<span>" + foPmE(gm.text || "") + "</span><s>&#8250;</s></a>";
         }
         var here = (r | 0) === (round | 0);
         return "<div class='fo-pm-h2h flat" + (here ? " now" : "") + "'>" +
-          "<i>" + (i + 1) + "</i><b>Game " + (i + 1) + "</b>" +
-          "<span>" + (here ? "This one &middot; round " + (r | 0)
-            : "To come &middot; round " + (r | 0)) + "</span></div>";
+          "<i>" + (i + 1) + "</i><b>Game " + (i + 1) + "<u>" + stamp + "</u></b>" +
+          "<span>" + (here ? "This one" : "To come") + "</span></div>";
       }).join("");
 
-      var standing = st.verdict || "Nothing has been bowled in this series yet.";
+      // THE SERIES AS A SCORELINE. "Nothing has been bowled in this series
+      // yet" is a sentence where a reader wants a number; a best-of-three
+      // stands at nought-all before it starts, exactly as it stands at 1-0
+      // after a game, and the two should be read the same way. The touring
+      // side leads the figure because it leads the billing.
+      // The server counts the wins, but an older cached snapshot may carry the
+      // verdict sentence without them - and a figure that quietly said 0-0
+      // above a sentence saying "Scotland lead the series 1-0" is exactly the
+      // kind of self-contradiction this page must not print. Where the counts
+      // are missing they are walked off the games themselves, matching the
+      // side name the umpire banks a tour under as well as the bare nation.
+      var wA9 = st.winsAway, wH9 = st.winsHome;
+      if (wA9 == null || wH9 == null) {
+        var isNat9 = function (s, n) { return !!s && (s === n.name || s === n.name + " XI"); };
+        wA9 = 0; wH9 = 0;
+        ((st.games) || []).forEach(function (gm) {
+          if (!gm || !gm.winner) return;
+          if (isNat9(gm.winner, nA)) wA9++;
+          else if (isNat9(gm.winner, nH)) wH9++;
+        });
+      }
+      var standing = (wA9 | 0) + "&#8211;" + (wH9 | 0);
+      var standSub = st.verdict || "";
 
       var actions = [];
       if (found.game && found.game.id) {
@@ -1101,9 +1211,15 @@
       page.innerHTML =
         "<div class='fo-pm'><div class='fo-pm-in'><div class='fo-pm-card'>" +
 
+        // THE DATE BELONGS AT THE TOP. The folio named the tour and left the
+        // reader to hunt for when it is bowled; it now says the day and the
+        // hour in his own clock, which is the second thing anybody wants off
+        // a fixture and was four cards down the page.
         "<div class='fo-pm-folio'>" +
         (foPmNatFlag(host) ? "<img src='" + foPmNatFlag(host) + "' alt='' onerror=\"this.style.display='none'\">" : "") +
-        "<span>" + foPmE(t.title || "International") + "</span></div>" +
+        "<span>" + foPmE(t.title || "International") + "</span>" +
+        (start ? "<em>" + foPmDay(start) + " &middot; " + foPmClock(start) +
+          (tzA ? " " + foPmE(tzA) : "") + "</em>" : "") + "</div>" +
 
         "<div class='fo-pm-bill'>" +
         billSide(away, (t.names || [])[0] || away, true) +
@@ -1136,14 +1252,41 @@
         "</div>" +
 
         "<div class='fo-pm-rail'>" +
+        "<div id='fo-pm-wp' class='fo-pm-wp'>" +
+        "<div class='fo-pm-cap'>Win probability &middot; projected</div>" +
+        "<div class='fo-pm-wptop'>" +
+        "<span class='fo-pm-wph'>" + foPmNatShield(host) + "<u>" + foPmE(nH.name || host) + "</u><b>&mdash;</b></span>" +
+        "<span class='fo-pm-wpa'><b>&mdash;</b><u>" + foPmE(nA.name || away) + "</u>" + foPmNatShield(away) + "</span>" +
+        "</div>" +
+        "<div class='fo-pm-wpbar'><span class='h'></span><span class='t'></span><span class='a'></span></div>" +
+        "</div>" +
+
         "<div class='fo-pm-box'><div class='fo-pm-cap'>The series</div>" +
-        "<div class='fo-pm-big'>" + foPmE(standing) + "</div>" +
+        "<div class='fo-pm-big'>" + standing +
+        " <em>(Best of " + ((snap.seriesLen || found.of || 3) | 0) + ")</em></div>" +
+        (standSub ? "<p class='fo-pm-prn'>" + foPmE(standSub) + "</p>" : "") +
         "<div class='fo-pm-h2hs'>" + seriesRows + "</div></div>" +
 
         "<div class='fo-pm-cap'>The two sides</div>" +
         "<div class='fo-pm-two'>" +
         foPmIntlRow(away, nA, "Touring", rankOf(away), away === myNat) +
         foPmIntlRow(host, nH, "Hosts", rankOf(host), host === myNat) +
+        "</div>" +
+
+        // THE CONDITIONS, AND THEY ARE NOT A GUESS. runTours plays every
+        // international on a BALANCED pitch under a clear sky - the umpire
+        // passes both literally - so that is what this says, and it says why
+        // it will never say anything else rather than inventing weather to
+        // make the panel look busier.
+        "<div class='fo-pm-duo'>" +
+        "<div class='fo-pm-box'><div class='fo-pm-cap'>The weather</div>" +
+        "<div class='fo-pm-big'>Sunny</div>" +
+        "<p class='fo-pm-prn'>No effect on batters or bowlers.</p></div>" +
+        "<div class='fo-pm-box'><div class='fo-pm-cap'>Pitch report</div>" +
+        "<div class='fo-pm-big'>Balanced</div>" +
+        "<p class='fo-pm-prn'>No advantage or disadvantage to batters or bowlers. " +
+        "Every tour is played on a true pitch in clear weather - a neutral ground " +
+        "for a neutral contest, the same for both sides and the same every window.</p></div>" +
         "</div>" +
 
         (myMen.length
@@ -1153,11 +1296,6 @@
             " of yours " + (myMen.length === 1 ? "is" : "are") + " away with the selectors" +
             " while this is bowled. The board pays you for every round they miss.</p></div>"
           : "") +
-
-        "<div class='fo-pm-box'><div class='fo-pm-cap'>Who picks the side</div>" +
-        "<p class='fo-pm-prn'>The selectors do, and no manager files a sheet for a tour. " +
-        "Fifteen are named the morning of the series&rsquo; first game and stand for all " +
-        (snap.seriesLen || 3) + ". Your club is paid for every round a man of yours is away.</p></div>" +
         "</div>" +
 
         // THE TWO PARTIES GO ACROSS THE PAGE, not down the rail. Thirty names
@@ -1183,6 +1321,42 @@
       if (host9) host9.__g = g;
       try { if (window.__foPmTimer) clearInterval(window.__foPmTimer); } catch (eT) {}
       window.__foPmTimer = setInterval(foPmTick, 1000);
+
+      // THE BAR: the same forty playings a league fixture gets, with the two
+      // parties the selectors actually named. The men are read off world_squads
+      // and the two books are asked for once; when they land the page repaints
+      // and this runs. Until then the bar simply waits - it never shows a
+      // number it has not played for.
+      try {
+        var wpHost9 = document.getElementById("fo-pm-wp");
+        if (wpHost9) {
+          var wpKey9 = "nat" + away + "-" + host + ":s" + seasonNo + ":r" + (round | 0);
+          var cached9 = foPmWpLoad(wpKey9);
+          if (cached9) foPmWpPaint(wpHost9, cached9, true);
+          else {
+            var again9 = function () {
+              page.__foPmSig = null;
+              try { window.foRenderPreviewPage(); } catch (e) {}
+            };
+            var bkA9 = foPmNatMen(away, again9), bkH9 = foPmNatMen(host, again9);
+            var partyA9 = (nA.tourSquad && nA.tourSquad.length) ? nA.tourSquad : nA.squad;
+            var partyH9 = (nH.tourSquad && nH.tourSquad.length) ? nH.tourSquad : nH.squad;
+            var menA9 = foPmNatXI(away, partyA9, bkA9), menH9 = foPmNatXI(host, partyH9, bkH9);
+            if (menA9 && menH9) {
+              // the HOST bats second the way the umpire plays it, and takes
+              // the home side of the bar
+              foPmWpRunTeams(wpHost9, location.hash, wpKey9,
+                { name: (nH.name || host) + " XI", ground: ga.name || "", players: menH9 },
+                { name: (nA.name || away) + " XI", players: menA9 });
+            } else if (bkA9 === false || bkH9 === false) {
+              wpHost9.style.display = "none";      // the books cannot be had
+            }
+          }
+        }
+      } catch (eWp9) {
+        try { console.error("tour preview: win probability failed", eWp9); } catch (eL9) {}
+        try { var wpDead9 = document.getElementById("fo-pm-wp"); if (wpDead9) wpDead9.style.display = "none"; } catch (eD9) {}
+      }
       return true;
     } catch (e) {
       try { console.error("foRenderIntlPreview", e); } catch (e2) {}
@@ -1201,7 +1375,7 @@
       // THE DAYLIGHT PREVIEW: the same room, with the lights on. Cream page,
       // white card, navy ink, the club-dashboard's orange - the night skin
       // retired with the rest of the dark pages.
-      "#page .fo-pm{--acc:#C9571F;--navy:#14243A;--ink:#1B2432;--mut:#67748a;--edge:rgba(27,36,50,.09);--grn:#136A4B;position:relative;min-height:60vh;background:#F1EEE6;color:var(--ink);overflow-x:clip;padding:clamp(10px,2vw,20px) 0 clamp(30px,5vw,56px)}",
+      "#page .fo-pm{--acc:#C9571F;--navy:#14243A;--ink:#1B2432;--mut:#4A5668;--edge:rgba(27,36,50,.09);--grn:#136A4B;position:relative;min-height:60vh;background:#F1EEE6;color:var(--ink);overflow-x:clip;padding:clamp(10px,2vw,20px) 0 clamp(30px,5vw,56px)}",
       "#page .fo-pm *{box-sizing:border-box}",
       "body.fo-pm-on #page{padding:0;max-width:none}",
       "html body.ftpskin.fo-pm-on,html body.fo-pm-on{background:#F1EEE6 !important}",
@@ -1235,13 +1409,15 @@
       "}",
       ".fo-pm-folio{display:inline-flex;align-items:center;gap:9px;align-self:flex-start;background:rgba(20,36,58,.05);border:1px solid var(--edge);border-radius:999px;padding:6px 14px 6px 7px}",
       ".fo-pm-folio img{width:20px;height:14px;object-fit:cover;border-radius:3px;flex:0 0 auto}",
-      ".fo-pm-folio span{font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.18em;font-size:10px;color:var(--navy)}",
+      // the date rides in the folio, divided off the tour's name
+      ".fo-pm-folio em{font:700 10.5px/1 Manrope,sans-serif;font-style:normal;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);padding-left:11px;margin-left:2px;border-left:1px solid rgba(27,36,50,.14);white-space:nowrap}",
+      ".fo-pm-folio span{font-family:Manrope,sans-serif;font-weight:700;text-transform:uppercase;letter-spacing:.16em;font-size:10.5px;color:var(--navy)}",
       ".fo-pm-bill{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:clamp(7px,2vw,14px)}",
       ".fo-pm-billside{display:flex;align-items:center;gap:10px;min-width:0}",
       ".fo-pm-billside.a{flex-direction:row-reverse;text-align:right}",
       ".fo-pm-billside>div{min-width:0}",
       ".fo-pm-billside b{display:block;font-family:Manrope,sans-serif;font-weight:700;text-transform:uppercase;line-height:1.04;letter-spacing:.005em;font-size:clamp(14px,3.9vw,21px);color:var(--navy);overflow-wrap:anywhere}",
-      ".fo-pm-billside i{display:block;margin-top:3px;font-family:Manrope,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.22em;font-size:10px;color:#9FB0C6}",
+      ".fo-pm-billside i{display:block;margin-top:3px;font-family:Manrope,sans-serif;font-weight:700;font-style:normal;text-transform:uppercase;letter-spacing:.2em;font-size:10.5px;color:#5A6B84}",
       ".fo-pm-v{display:grid;place-items:center;width:40px;height:40px;border-radius:50%;border:1.5px solid rgba(201,87,31,.55);flex:0 0 auto}",
       ".fo-pm-v span{font-family:Manrope,sans-serif;font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);line-height:1}",
       ".fo-pm-sh{display:grid;place-items:center;width:29px;height:29px;border-radius:7px;background:var(--sc,#14243A);color:#fff;font:700 11px/1 Manrope,sans-serif;letter-spacing:.04em;flex:0 0 auto}",
@@ -1257,9 +1433,9 @@
       ".fo-pm-fact{display:flex;align-items:center;gap:9px;padding:11px 11px;min-width:0;border-left:1px solid var(--edge)}",
       ".fo-pm-fact:first-child{border-left:0}",
       ".fo-pm-fact>div{min-width:0}",
-      ".fo-pm-ic{flex:0 0 auto;color:#9FB0C6;opacity:.9}",
+      ".fo-pm-ic{flex:0 0 auto;color:#5A6B84;opacity:1}",
       ".fo-pm-fact b{display:block;font-family:Manrope,sans-serif;font-weight:600;font-size:clamp(11.5px,3vw,15px);line-height:1.2;color:var(--navy);font-variant-numeric:tabular-nums;overflow-wrap:anywhere}",
-      ".fo-pm-fact i{display:block;margin-top:3px;font-family:Manrope,sans-serif;font-style:normal;text-transform:uppercase;letter-spacing:.14em;font-size:10px;color:#9FB0C6;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-pm-fact i{display:block;margin-top:3px;font-family:Manrope,sans-serif;font-weight:700;font-style:normal;text-transform:uppercase;letter-spacing:.12em;font-size:10.5px;color:#5A6B84;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       "#page .fo-pm-fact[data-k=live] b{color:#B23230}",
       "#page .fo-pm-fact[data-k=live] .fo-pm-ic{color:#B23230;opacity:1}",
       "@media(max-width:430px){.fo-pm-fact{flex-direction:column;align-items:flex-start;gap:6px;padding:10px 8px}",
@@ -1293,49 +1469,56 @@
       "#page a.fo-pm-sl b{grid-column:2;grid-row:1}",
       "#page a.fo-pm-sl b i{font-family:Manrope,sans-serif;font-style:normal;font-weight:600;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);margin-left:5px}",
       "#page a.fo-pm-sl b i u{text-decoration:none;font-size:10px}",
-      "#page a.fo-pm-sl .fo-pm-her{grid-column:2;grid-row:2;font:500 12px/1.35 Manrope,sans-serif;color:rgba(27,36,50,.55)}",
+      "#page a.fo-pm-sl .fo-pm-her{grid-column:2;grid-row:2;font:600 12.5px/1.35 Manrope,sans-serif;color:#4A5668}",
       "#page a.fo-pm-sl .fo-pm-beads{grid-column:2;grid-row:3}",
       "#page a.fo-pm-sl .fo-pm-slst{grid-column:2;grid-row:4;display:flex;gap:14px}",
-      "#page a.fo-pm-sl .fo-pm-slst u{text-decoration:none;font:600 11px/1 Manrope,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#9FB0C6}",
+      "#page a.fo-pm-sl .fo-pm-slst u{text-decoration:none;font:700 11px/1 Manrope,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#5A6B84}",
       "#page a.fo-pm-sl .fo-pm-slst u b{display:block;grid-column:auto;grid-row:auto;font:600 12.5px/1.5 Manrope,sans-serif;color:var(--ink);letter-spacing:0;margin:0;font-variant-numeric:tabular-nums}",
       "#page a.fo-pm-sl .fo-pm-chev{grid-column:3;grid-row:span 4;text-decoration:none;font:400 20px/1 Fraunces,Georgia,serif;color:rgba(27,36,50,.4)}",
       ".fo-pm-beads{display:flex;gap:4px}",
       ".fo-pm-beads i{display:grid;place-items:center;width:19px;height:19px;border-radius:4px;font:700 10px/1 Manrope,sans-serif;font-style:normal;color:#fff}",
       ".fo-pm-beads i.w{background:#1F7A50}.fo-pm-beads i.l{background:#B23230}.fo-pm-beads i.t{background:#9FB0C6}",
-      ".fo-pm-none{font-family:Fraunces,Georgia,serif;font-style:normal;font-size:12px;color:var(--mut)}",
+      ".fo-pm-none{font:600 11.5px/1.2 Manrope,sans-serif;color:#4A5668}",
       ".fo-pm-h2hs{display:flex;flex-direction:column;gap:6px}",
       "#page a.fo-pm-h2h{display:grid;grid-template-columns:34px minmax(0,1fr) auto;gap:2px 10px;align-items:center;padding:9px 12px;border-radius:10px;background:#FFFEFC;border:1px solid var(--edge);text-decoration:none;color:var(--ink)}",
       "#page a.fo-pm-h2h:hover{border-color:rgba(201,87,31,.5)}",
-      "#page a.fo-pm-h2h i{grid-row:span 2;font:700 11px/1 Manrope,sans-serif;font-style:normal;color:#9FB0C6}",
-      "#page a.fo-pm-h2h b{font:600 12.5px/1.3 Manrope,sans-serif;color:var(--navy)}",
-      "#page a.fo-pm-h2h span{grid-column:2;font:400 13px/1.4 Fraunces,Georgia,serif;color:var(--mut)}",
+      "#page a.fo-pm-h2h i{grid-row:span 2;font:800 12px/1 Manrope,sans-serif;font-style:normal;color:#5A6B84}",
+      "#page a.fo-pm-h2h b{font:700 12.5px/1.3 Manrope,sans-serif;color:var(--navy);display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}",
+      "#page a.fo-pm-h2h span{grid-column:2;font:600 12.5px/1.4 Manrope,sans-serif;color:#4A5668}",
       "#page a.fo-pm-h2h s{grid-column:3;grid-row:span 2;text-decoration:none;font:400 18px/1 Fraunces,Georgia,serif;color:rgba(27,36,50,.4)}",
       // A GAME OF THE SERIES THAT HAS NOT BEEN BOWLED IS NOT A DOOR, so it is
       // not a link - the same row, without the hover and without the chevron.
       // The one being previewed wears the accent so the reader knows where in
       // the three he is standing.
       "#page .fo-pm-h2h.flat{display:grid;grid-template-columns:34px minmax(0,1fr);gap:2px 10px;align-items:center;padding:9px 12px;border-radius:10px;background:#FBF8F1;border:1px dashed var(--edge);color:var(--ink)}",
-      "#page .fo-pm-h2h.flat i{grid-row:span 2;font:700 11px/1 Manrope,sans-serif;font-style:normal;color:#9FB0C6}",
-      "#page .fo-pm-h2h.flat b{font:600 12.5px/1.3 Manrope,sans-serif;color:var(--navy)}",
-      "#page .fo-pm-h2h.flat span{grid-column:2;font:400 13px/1.4 Fraunces,Georgia,serif;color:var(--mut)}",
+      "#page .fo-pm-h2h.flat i{grid-row:span 2;font:800 12px/1 Manrope,sans-serif;font-style:normal;color:#5A6B84}",
+      "#page .fo-pm-h2h.flat b{font:700 12.5px/1.3 Manrope,sans-serif;color:var(--navy);display:flex;align-items:baseline;gap:9px;flex-wrap:wrap}",
+      "#page .fo-pm-h2h.flat span{grid-column:2;font:600 12.5px/1.4 Manrope,sans-serif;color:#4A5668}",
       "#page .fo-pm-h2h.flat.now{background:#FBF6EA;border:1px solid rgba(201,87,31,.45)}",
       "#page .fo-pm-h2h.flat.now i,#page .fo-pm-h2h.flat.now span{color:var(--acc)}",
       // THE TOURING PARTY. Fifteen names, the club each was taken from and
       // what he has already won - a list a manager reads down looking for his
       // own, which is why his own are marked.
       ".fo-pm-party{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:6px}",
-      "#page .fo-pm-cap-man{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:1px 8px;align-items:baseline;padding:8px 11px;border-radius:10px;background:#FFFEFC;border:1px solid var(--edge);text-decoration:none;color:var(--ink)}",
+      "#page .fo-pm-cap-man{display:grid;grid-template-columns:20px 22px minmax(0,1fr) auto;gap:1px 8px;align-items:baseline;padding:8px 11px;border-radius:10px;background:#FFFEFC;border:1px solid var(--edge);text-decoration:none;color:var(--ink)}",
       "#page a.fo-pm-cap-man:hover{border-color:rgba(201,87,31,.5)}",
       "#page .fo-pm-cap-man.mine{border-color:rgba(201,87,31,.45);background:#FBF6EA}",
-      "#page .fo-pm-cap-man i{grid-row:span 2;font:700 10px/1.4 Manrope,sans-serif;font-style:normal;color:#9FB0C6;font-variant-numeric:tabular-nums}",
+      "#page .fo-pm-cap-man i{grid-row:span 3;font:800 11px/1.4 Manrope,sans-serif;font-style:normal;color:#5A6B84;font-variant-numeric:tabular-nums}",
       "#page .fo-pm-cap-man b{font:600 12.5px/1.3 Manrope,sans-serif;color:var(--navy);overflow-wrap:anywhere}",
-      "#page .fo-pm-cap-man span{grid-column:2;font:400 11.5px/1.35 Manrope,sans-serif;color:var(--mut);overflow-wrap:anywhere}",
-      "#page .fo-pm-cap-man u{grid-column:3;grid-row:1;text-decoration:none;font:600 9.5px/1.3 Manrope,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--grn);white-space:nowrap}",
-      "#page .fo-pm-cap-man s{grid-column:3;grid-row:2;text-decoration:none;font:400 15px/1 Fraunces,Georgia,serif;color:rgba(27,36,50,.35);text-align:right}",
+      "#page .fo-pm-cap-man span{grid-column:3;grid-row:2;font:600 11.5px/1.35 Manrope,sans-serif;color:#4A5668;overflow-wrap:anywhere}",
+      "#page .fo-pm-cap-man u{grid-column:4;grid-row:1;text-decoration:none;font:700 9.5px/1.3 Manrope,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--grn);white-space:nowrap}",
+      "#page .fo-pm-cap-man s{grid-column:4;grid-row:2;text-decoration:none;font:400 15px/1 Fraunces,Georgia,serif;color:rgba(27,36,50,.45);text-align:right}",
+      // THE FLAG HE PLAYS UNDER, beside his number
+      "#page .fo-pm-mfl{grid-column:2;grid-row:span 2;width:22px;height:15px;object-fit:cover;border-radius:3px;align-self:center;box-shadow:0 0 0 1px rgba(27,36,50,.1)}",
       ".fo-pm-duo{display:grid;grid-template-columns:1fr;gap:9px}",
       "@media(min-width:560px){.fo-pm-duo{grid-template-columns:1fr 1.2fr}}",
       ".fo-pm-box{padding:12px 14px;border-radius:12px;background:linear-gradient(0deg,#FBF6EA,#FDFAF2);border:1px solid var(--edge);display:flex;flex-direction:column;gap:9px}",
-      ".fo-pm-big{font:700 24px/1.05 Manrope,sans-serif;color:var(--navy);letter-spacing:-.3px}",
+      ".fo-pm-big{font:700 24px/1.05 Manrope,sans-serif;color:var(--navy);letter-spacing:-.3px;font-variant-numeric:tabular-nums}",
+      // the series scoreline's tail: 1-0 (Best of 3)
+      ".fo-pm-big em{font:700 12px/1 Manrope,sans-serif;font-style:normal;letter-spacing:.06em;text-transform:uppercase;color:#4A5668;margin-left:7px;vertical-align:2px}",
+      // the day and hour a game of the series is bowled on, beside its name
+      "#page .fo-pm-h2h b u{text-decoration:none;font:700 10.5px/1 Manrope,sans-serif;letter-spacing:.09em;text-transform:uppercase;color:#5A6B84;white-space:nowrap;font-variant-numeric:tabular-nums}",
+      "#page .fo-pm-h2h.now b u{color:var(--acc)}",
       ".fo-pm-prn{margin:0;font:400 13px/1.55 Manrope,sans-serif;color:#3c4757}",
       ".fo-pm-dim{margin:0;font-family:Fraunces,Georgia,'Times New Roman',serif;font-style:normal;font-size:13px;line-height:1.5;color:var(--mut)}",
       ".fo-pm-lost{font-family:Manrope,sans-serif;font-weight:700;text-transform:uppercase;font-size:clamp(24px,3.4vw,40px);color:var(--navy);margin:14px 0 8px}",
