@@ -520,9 +520,14 @@ test('a tour is on the shelf while it is being played, with its result sealed', 
   const today = Math.floor((Date.now() - epoch) / 86400000);
   const move = d => pool.query('UPDATE nat_matches SET world_day=$2 WHERE id=$1', [m.id, d]);
   try {
-    // stand the tour on today, so its window is open and its three hours are
-    // still running - the state a viewer is in when he opens the broadcast
-    await move(today);
+    // STAND THE TOUR ON A DAY WHOSE WINDOW IS STILL OPEN. A window shuts three
+    // hours after the tour hour, and "today" is only open if the clock has not
+    // passed that - so a run late enough in the world day would put the match
+    // on the shelf and fail on the truth. The day is chosen against the clock
+    // rather than assumed, and the test reads the same at any hour.
+    const intoDay = (Date.now() - epoch) % 86400000;
+    const day = intoDay < 21 * 3600000 ? today : today + 1;
+    await move(day);
     const j = (await pool.query('SELECT world_nat_match($1) j', [m.id])).rows[0].j;
     assert.ok(j.a && j.b, 'the fixture is named');
     assert.equal(j.live, true, 'and it is live');

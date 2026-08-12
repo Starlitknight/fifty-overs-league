@@ -111,3 +111,65 @@ test('a settle writes the hands back in step, whatever it was handed', async () 
   const men = (await everyMan()).filter(p => p.__at.startsWith('eng/') && !p.__at.endsWith('colt'));
   assert.deepEqual(outOfStep(men).map(p => p.__at + ' ' + p.name), []);
 });
+
+// ---- AND THE SCALE ITSELF ---------------------------------------------------
+// 084 put the world's hands on a real scale and the first refold took it
+// straight back off, because the nets replay from a baseline no migration had
+// ever written. The live world proved it in the one place a refold cannot
+// reach: a listing is a snapshot taken when a man was put up for sale, and of
+// 74 men on both the market and their club's card, 73 disagreed about their own
+// hands - by exactly one application of 084's map.
+//
+// resync-hands RE-DERIVES rather than re-stretching. Stretching again would
+// need to know which men had already been stretched, and the two ranges
+// overlap, so a wrong guess doubles a man's hands for ever.
+test('a world wound back to the old scale is put back on the bell', async () => {
+  const { resyncWorld } = await import('../resync-hands.mjs');
+  // THE INVERSE OF 084'S MAP, on the skill and its baseline alike - which is
+  // the live world's actual state, because the refold that lost the stretch
+  // did it by copying the baseline over the skill.
+  const old = v => Math.max(2, Math.round(36 + (v - 50) / 1.44));
+  const rows = (await pool.query('SELECT country_id, slot, squad FROM clubs')).rows;
+  for (const row of rows) {
+    const squad = row.squad || [];
+    squad.forEach(p => {
+      ['fielding', 'catching'].forEach(k => {
+        if (p.skills && p.skills[k] != null) p.skills[k] = old(p.skills[k]);
+        if (p.baseSkills && p.baseSkills[k] != null) p.baseSkills[k] = old(p.baseSkills[k]);
+      });
+    });
+    await pool.query('UPDATE clubs SET squad=$3::jsonb WHERE country_id=$1 AND slot=$2',
+      [row.country_id, row.slot, JSON.stringify(squad)]);
+  }
+  const before = await resyncWorld(pool, host, { write: false, quiet: true });
+  assert.ok(before.meanBefore < 40,
+    'the world really is on the old scale: mean fielding ' + before.meanBefore);
+  const done = await resyncWorld(pool, host, { write: true, quiet: true });
+  assert.ok(done.meanAfter >= 45,
+    'and the bell puts it back: mean fielding ' + done.meanAfter);
+  assert.ok(done.moved > 1000, 'a whole world of numbers moved: ' + done.moved);
+});
+
+test('running it again moves nothing at all', async () => {
+  const { resyncWorld } = await import('../resync-hands.mjs');
+  const again = await resyncWorld(pool, host, { write: true, quiet: true });
+  assert.equal(again.moved, 0, 'idempotent: it cannot be applied twice');
+  assert.equal(again.clubs, 0);
+});
+
+test('and the hands are still in step with the numbers the engine fields with', async () => {
+  const men = await everyMan();
+  assert.deepEqual(outOfStep(men).map(p => p.__at + ' ' + p.name), []);
+  // THE BASELINE IS ON THE BELL; THE SKILL IS THE BASELINE PLUS WHAT HE HAS
+  // TRAINED. Those are not the same number and must not be: a man who has
+  // earned a point of fielding stands above his own baseline, and the resync
+  // lifts rather than levels precisely so it can never take that point back.
+  const below = men.filter(p => p.baseSkills && p.skills &&
+    p.baseSkills.fielding != null && p.skills.fielding < p.baseSkills.fielding);
+  assert.deepEqual(below.map(p => p.__at + ' ' + p.name), [],
+    'nobody sits below his own baseline');
+  const trained = men.filter(p => p.baseSkills && p.skills &&
+    p.skills.fielding > p.baseSkills.fielding);
+  trained.forEach(p => assert.ok(p.skills.fielding - p.baseSkills.fielding < 15,
+    p.name + ' is above his baseline by what the nets gave him, not by a scale'));
+});

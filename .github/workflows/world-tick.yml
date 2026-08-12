@@ -136,6 +136,15 @@ jobs:
       - name: Stamp any cricketer still without an id
         working-directory: server
         run: node backfill-pids.mjs --write
+      # The hands a man plays with (091/092): 084 put the world's hands on a
+      # real scale and a refold took it straight back off, because the nets
+      # replay from a baseline no migration had ever written. This reads every
+      # generated man's hands off the clean squad his own seed makes, matched
+      # by id - exact, idempotent, and impossible to apply twice. A world
+      # already in step costs one derive per club and writes nothing.
+      - name: Put any hands still on the old scale back on the bell
+        working-directory: server
+        run: node resync-hands.mjs --write
       - name: Settle everything due, every nation
         working-directory: server
         run: node tick.mjs
