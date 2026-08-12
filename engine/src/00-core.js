@@ -4649,7 +4649,16 @@ function money(n){return '$'+Math.round(n||0).toLocaleString()}
 // to read. Stretched onto 10,000-100,000 it says what it means: a club
 // founded this morning is a 10k, an England flagship a 60k, Australia a 100k.
 // Display only - nothing downstream reads it, and it is NOT a player figure.
-function foRate(r){return Math.max(1000,Math.min(100000,Math.round(4.69*(+r||0)-122700)))}
+//
+// RE-ANCHORED WHEN A SIDE BECAME A SIDE YOU COULD FIELD. The figure this is
+// handed used to be the mean of a club's best eleven men by rating - an eleven
+// nobody can put out, owing nothing to a keeper or to five bowlers. It is now
+// the eleven the engine would actually pick, which is 3.03% lower across the
+// world's 256 clubs (measured, not assumed). The multiplier is divided by that
+// same 0.9697 and the offset left alone, so every club prints the number it
+// printed yesterday and the weakest side in the world still clears the floor
+// instead of piling up on it.
+function foRate(r){return Math.max(1000,Math.min(100000,Math.round(4.8365*(+r||0)-122700)))}
 function foRateTxt(r){return foRate(r).toLocaleString()}
 // THE DAY'S MARK, on the same reading scale. The engine marks a day's play
 // around 3,500 (=real-ODI par); this puts it on the 1k-100k scale foRate

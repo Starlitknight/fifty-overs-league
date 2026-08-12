@@ -28,7 +28,7 @@ import { runComps } from './comps.mjs';
 import { ensureCallups, absentBySlot, coverSheet, runWindows, rebuildNations, seasonSquad,
          ensureNatSquad, natSquadNow } from './nations.mjs';
 import { runMarket, settleMarket, rebuildMarket, stockMarket } from './market.mjs';
-import { matchRating, ladderRating, strengthRating, ratingsOf, RANK_WINDOW, RANK_BASE } from './ratings.mjs';
+import { matchRating, ladderRating, strengthRating, squadStrength, ratingsOf, RANK_WINDOW, RANK_BASE } from './ratings.mjs';
 
 export function matchId(country, seasonNo, round, h, a) {
   return country + ':s' + seasonNo + ':r' + round + ':h' + h + 'a' + a;
@@ -440,17 +440,12 @@ export async function computeRankings(pool, now) {
   const clubs = (await pool.query(
     'SELECT country_id, slot, name, is_boss, squad FROM clubs ORDER BY country_id, slot')).rows;
   const key = (c, s) => c + ':' + s;
-  // HOW GOOD THE SIDE IS, as against how it has been going. The mean rating of
-  // a club's best eleven - the engine's own figure for each man, which is what
-  // decides the cricket. It answers a different question from the form ladder
-  // below and it answers it on day one, before a ball is bowled, which the form
-  // ladder cannot: a club with no record is not "ordinary", it is whatever its
-  // squad says it is.
-  const xiStrength = squad => {
-    const men = (squad || []).filter(p => p && p.rating).sort((a, b) => b.rating - a.rating).slice(0, 11);
-    if (!men.length) return 0;
-    return Math.round(men.reduce((t, p) => t + p.rating, 0) / men.length);
-  };
+  // HOW GOOD THE SIDE IS, as against how it has been going - the eleven a club
+  // can actually field, by the engine's own pick (squadStrength in
+  // ratings.mjs). It answers a different question from the form ladder below,
+  // and it answers it on day one, before a ball is bowled, which the form
+  // ladder cannot.
+  const xiStrength = squadStrength;
   const R = {};
   clubs.forEach(c => R[key(c.country_id, c.slot)] = {
     country: c.country_id, slot: c.slot, name: c.name, boss: c.is_boss,

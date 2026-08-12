@@ -63,6 +63,49 @@ export function ratePoints(pts, touched) {
 }
 
 // ---------------------------------------------------------------------------
+// THE ELEVEN A CLUB CAN ACTUALLY FIELD.
+//
+// How strong a club is used to be answered with the mean rating of its best
+// eleven men by card rating - an eleven nobody can ever put on a field, because
+// it owes nothing to a keeper or to five bowlers. Every real side carries both,
+// and the specialists who fill them rate lower than the batsmen they displace,
+// so the published figure flattered every club in the world by about three per
+// cent, and flattered the unbalanced squads most.
+//
+// This is the engine's own pick - pickXI in engine/src/00-core.js, its
+// deterministic branch, ported line for line the way the fantasy points are.
+// A test holds the two to the same eleven on real generated squads, so the side
+// the rankings weigh cannot drift from the side the umpire would put out.
+//
+// (The `p.key !== keeper` in the bowlers filter is the engine's own: p.key is
+// nothing, so the test is always true and a keeper who bowls can be counted
+// among the five. Ported as it stands - this is a port, not a correction, and
+// a correction belongs in the engine where the cricket would feel it.)
+export function fieldableXI(players) {
+  const P = (players || []).slice();
+  if (P.length <= 11) return P;
+  const kps = P.filter(p => p.keeper).sort((a, b) => b.bat - a.bat);
+  const keeper = kps[0] || P.sort((a, b) => b.bat - a.bat)[0];
+  const bowlers = P.filter(p => p.bowlType && p.key !== keeper)
+    .sort((a, b) => (b.threat + b.control) - (a.threat + a.control));
+  const five = bowlers.slice(0, 5);
+  const chosen = new Set([keeper.name, ...five.map(b => b.name)]);
+  const rest = P.filter(p => !chosen.has(p.name)).sort((a, b) => b.bat - a.bat);
+  for (const r of rest) { if (chosen.size >= 11) break; chosen.add(r.name); }
+  return P.filter(p => chosen.has(p.name));
+}
+
+// WHAT THAT ELEVEN IS WORTH: the mean of the engine's own rating for each man,
+// which is the figure that decides the cricket. Answered on day one, before a
+// ball is bowled, which the form ladder cannot: a club with no record is not
+// "ordinary", it is whatever its squad says it is.
+export function squadStrength(squad) {
+  const men = fieldableXI((squad || []).filter(p => p && p.rating));
+  if (!men.length) return 0;
+  return Math.round(men.reduce((t, p) => t + (p.rating || 0), 0) / men.length);
+}
+
+// ---------------------------------------------------------------------------
 // THE MATCH RATING THE GAME ALREADY WRITES.
 //
 // Every match in Fifty Overs has always been marked at stumps, on the Match

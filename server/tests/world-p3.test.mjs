@@ -22,7 +22,7 @@ import { evolveCountry, applyLiving, livingPatch } from '../living.mjs';
 import { SQUAD_CAP, RETIRE_AT, ACADEMY_FLOOR, makeRecruit, ageYouth,
   coltRecords } from '../youth.mjs';
 import { academyRate } from '../living.mjs';
-import { fantasyPoints, teamRatings, matchRating,
+import { fantasyPoints, teamRatings, matchRating, squadStrength,
          ladderRating, strengthRating, RATING_UNITS, RANK_BASE } from '../ratings.mjs';
 import { roundRobin, bracket, roundsOf, closeEnrolment, playComps, computeComp, rebuildComps } from '../comps.mjs';
 import { academyUpkeep, academyBuild, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, MOOD_MAX, DEBT_LIMIT, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance, supportTarget, stature, foundingBank, foundingSeats, foundingSupport } from '../economy.mjs';
@@ -414,8 +414,9 @@ test('010: the world rankings stand on squad strength, with form beside them', a
   // not whether it won, so a side can be beaten and still have had the better
   // day - which is the point of ranking on it.
   // THE HEADLINE FIGURE IS THE SIDE, NOT THE WEEK. rating and strength are the
-  // same number - the mean rating of the best eleven - and form is carried
-  // separately, still on the three-match window it was always for.
+  // same number - the mean rating of the eleven the club could actually field -
+  // and form is carried separately, still on the three-match window it was
+  // always for.
   played.forEach(c => {
     assert.equal(c.rating, c.strength, c.name + ' is ranked on its strength');
     assert.ok(c.form.length && c.form.length <= 3, c.name + ' carries up to three marks');
@@ -425,6 +426,25 @@ test('010: the world rankings stand on squad strength, with form beside them', a
   // and the strength is a real XI rating, in the band the engine ranks in
   rk.clubs.forEach(c => assert.ok(c.strength >= 15000 && c.strength <= 60000,
     c.name + ' strength on the XI scale: ' + c.strength));
+  // AND IT IS AN ELEVEN SOMEBODY COULD TAKE THE FIELD WITH. The published
+  // figure is squadStrength's - the engine's own pick, keeper and five bowlers
+  // - and never the best eleven by rating, which no club can put out. Held
+  // against the stored squads themselves so the ladder cannot quietly go back
+  // to the idealisation.
+  const sqRows = (await pool.query('SELECT country_id, slot, squad FROM clubs')).rows;
+  let idealised = 0;
+  for (const row of sqRows) {
+    const c = rk.clubs.filter(x => x.country === row.country_id && x.slot === row.slot)[0];
+    if (!c) continue;
+    assert.equal(c.strength, squadStrength(row.squad),
+      c.name + ' is ranked on the eleven it could field');
+    const men = row.squad.filter(p => p && p.rating).sort((a, b) => b.rating - a.rating).slice(0, 11);
+    const best = Math.round(men.reduce((t, p) => t + p.rating, 0) / men.length);
+    if (c.strength < best) idealised++;
+  }
+  assert.ok(idealised > sqRows.length * 0.5,
+    'and the old best-eleven figure really did flatter most of the world (' +
+    idealised + ' of ' + sqRows.length + ')');
   // every mark is on the club rating scale, and every match a club played is
   // accounted for in its won-lost-tied
   played.forEach(c => {
