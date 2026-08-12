@@ -354,8 +354,14 @@
         "<label class='fo-lgx-hop'><span>Change league</span><select id='fo-lt-nat'>" + hop + "</select></label>" +
         "</div></div></div>";
 
+      // THE FLIGHT RIDES WITH THE TAB. Every room on this page is about one
+      // division - the plate says which, the standings walk between them with
+      // ?d=, the fixtures and results are already drawn for it - but the tab
+      // bar dropped ?d= on the way, so a reader looking at Division Two's
+      // table was thrown back to his own the moment he tapped Fixtures.
       var tabBar = "<div class='fo-lgx-tabs'>" + TABS.map(function (t) {
-        var href = (own ? "#/league?" : "#/nation?n=" + encodeURIComponent(natId) + "&") + "t=" + t[0];
+        var href = (own ? "#/league?" : "#/nation?n=" + encodeURIComponent(natId) + "&") + "t=" + t[0] +
+          (hasDivs ? "&d=" + (plateDiv | 0) : "");
         return "<a class='" + (tab === t[0] ? "on" : "") + "' href='" + href + "'>" + t[1] + "</a>";
       }).join("") + "</div>";
 
@@ -525,11 +531,27 @@
             "<div><b>" + (myPos ? myPos : "&mdash;") + "</b><i>Table</i></div></div></div>" : "");
 
       } else if (tab === "stats") {
-        var st = (snap && snap.stats) || { bat: [], bowl: [], sr: [], econ: [] };
-        var bat0 = (st.bat || [])[0], bowl0 = (st.bowl || [])[0], sr0 = (st.sr || [])[0];
+        // ONE BOOK PER FLIGHT. Two divisions play two separate competitions -
+        // different clubs, different fixtures, different standard - and this
+        // tab was pouring both into one table, so a Division Two batsman was
+        // ranked against men he will never bowl at and the leading run-scorer
+        // of a division nobody could see was nobody's leading run-scorer.
+        //
+        // The page already knows which flight it is on: ?d= is the address the
+        // standings walk the pyramid with, and the masthead above already says
+        // "Division One" or "Division Two". The book reads that same call now,
+        // with the same signpost across to the other flight, so every tab on
+        // this page is about one division and the whole page agrees with its
+        // own headline.
         var bookKey = qparam("k"); if (!BOOKS[bookKey]) bookKey = "bat";
         var BK = BOOKS[bookKey];
         var full = statsOf(natId, function () { if (onPage()) foRenderLeagueTablePage(); });
+        var otherDiv9 = plateDiv === 1 ? 2 : 1;
+        var divNm9 = function (d) { return d === 1 ? "Division One" : "Division Two"; };
+        // a row banked before the world had two flights carries no division;
+        // it belongs to the first, which is where the league started
+        var inDiv9 = function (x) { return !hasDivs || (x.div | 0 || 1) === plateDiv; };
+        var book9 = (full || []).filter(inDiv9);
         // YOUR OWN MEN, LIT. A table of two hundred names is a wall until the
         // eleven that are yours stand out of it.
         var myClub = "";
@@ -539,19 +561,24 @@
         } catch (eC9) {}
         if (!myClub && own) { try { myClub = userTeam().name || ""; } catch (eU9) {} }
 
+        // every door out of this tab keeps the flight it was opened in
+        var statHref9 = function (k, d) {
+          return "#/" + (own ? "league" : "nation") + "?" +
+            (own ? "" : "n=" + encodeURIComponent(natId) + "&") +
+            "t=stats&k=" + k + (hasDivs ? "&d=" + (d | 0) : "");
+        };
         var bookTabs = "<div class='fo-lgx-books'>" + Object.keys(BOOKS).map(function (k) {
-          return "<a class='" + (k === bookKey ? "on" : "") + "' href='#/" +
-            (own ? "league" : "nation") + "?" + (own ? "" : "n=" + encodeURIComponent(natId) + "&") +
-            "t=stats&k=" + k + "'>" + BOOKS[k].label + "</a>";
+          return "<a class='" + (k === bookKey ? "on" : "") + "' href='" + statHref9(k, plateDiv) + "'>" +
+            BOOKS[k].label + "</a>";
         }).join("") + "</div>";
 
         var body9;
         if (full === null) {
           body9 = "<p class='fo-lgx-dim'>Sending for the scorebooks&hellip;</p>";
         } else {
-          var rows9 = full.filter(BK.keep).sort(BK.sort);
+          var rows9 = book9.filter(BK.keep).sort(BK.sort);
           if (!rows9.length) {
-            body9 = "<p class='fo-lgx-dim'>Nobody has " +
+            body9 = "<p class='fo-lgx-dim'>Nobody in " + (hasDivs ? divNm9(plateDiv) : "this league") + " has " +
               (bookKey === "bat" ? "faced a ball" : bookKey === "bowl" ? "bowled one" : "taken a catch") +
               " yet. The numbers begin at " + (function(h9){try{return window.__foPlanet.hhTxt(h9);}catch(e9){return (h9<10?"0":"")+h9+":00";}})(hour) + ".</p>";
           } else {
@@ -574,18 +601,40 @@
           }
         }
 
+        var cross9 = hasDivs
+          ? "<a class='fo-lgx-cross' href='" + statHref9(bookKey, otherDiv9) + "'>" +
+            (otherDiv9 === 1 ? "&#8593;" : "&#8595;") + " " + divNm9(otherDiv9) + "</a>"
+          : "";
         main = "<div class='fo-lgx-panel'>" +
-          "<div class='fo-lgx-ph'><h2>The stats centre</h2><span class='fo-lgx-sub'>Season " +
-          (window.foSeasonN ? foSeasonN((snap && snap.seasonNo) || 1) : ((snap && snap.seasonNo) || 1)) + " &middot; after round " + playedRounds + "</span></div>" +
+          "<div class='fo-lgx-ph'><h2>" + (hasDivs ? divNm9(plateDiv) + " &middot; the book" : "The stats centre") + "</h2>" +
+          "<span class='fo-lgx-sub'>Season " +
+          (window.foSeasonN ? foSeasonN((snap && snap.seasonNo) || 1) : ((snap && snap.seasonNo) || 1)) + " &middot; after round " + playedRounds + "</span>" +
+          cross9 + "</div>" +
           bookTabs + body9 + "</div>";
 
-        rail = "<div class='fo-lgx-card dark'><h3>The season so far</h3>" +
+        // THE SEASON SO FAR IS THIS DIVISION'S SEASON. These five lines came
+        // off the league snapshot's own precomputed leaders, which are kept
+        // for the whole nation, so a Division Two reader was shown Division
+        // One's leading run-scorer above a table that did not contain him.
+        // They are read off the same rows the table is now.
+        var topOf9 = function (keep, cmp) {
+          var l = book9.filter(keep).sort(cmp);
+          return l[0] || null;
+        };
+        var bat0 = topOf9(BOOKS.bat.keep, BOOKS.bat.sort);
+        var bowl0 = topOf9(BOOKS.bowl.keep, BOOKS.bowl.sort);
+        var hs0 = topOf9(BOOKS.bat.keep, function (a, b) { return b.hs - a.hs || b.runs - a.runs; });
+        var bb0 = topOf9(function (x) { return x.balls > 0 && x.bb; },
+          function (a, b) { return (b.bb.w - a.bb.w) || (a.bb.r - b.bb.r); });
+        rail = "<div class='fo-lgx-card dark'><h3>The season so far" +
+          (hasDivs ? "<span>" + divNm9(plateDiv) + "</span>" : "") + "</h3>" +
           "<div class='fo-lgx-mile'><i>Most runs</i><b>" + (bat0 ? E(say(bat0.name)) + " &middot; " + bat0.runs : "&mdash;") + "</b></div>" +
           "<div class='fo-lgx-mile'><i>Most wickets</i><b>" + (bowl0 ? E(say(bowl0.name)) + " &middot; " + bowl0.wkts : "&mdash;") + "</b></div>" +
-          "<div class='fo-lgx-mile'><i>Highest score</i><b>" + (bat0 ? bat0.hs : "&mdash;") + "</b></div>" +
-          "<div class='fo-lgx-mile'><i>Best bowling</i><b>" + (bowl0 && bowl0.bb ? bowl0.bb.w + "/" + bowl0.bb.r : "&mdash;") + "</b></div>" +
+          "<div class='fo-lgx-mile'><i>Highest score</i><b>" + (hs0 ? hs0.hs + (hs0.hsNo ? "*" : "") + " &middot; " + E(say(hs0.name)) : "&mdash;") + "</b></div>" +
+          "<div class='fo-lgx-mile'><i>Best bowling</i><b>" + (bb0 ? bb0.bb.w + "/" + bb0.bb.r + " &middot; " + E(say(bb0.name)) : "&mdash;") + "</b></div>" +
           "<div class='fo-lgx-mile'><i>Rounds played</i><b>" + playedRounds + " of " + rounds + "</b></div></div>" +
-          "<div class='fo-lgx-card'><h3>The book</h3><p class='fo-lgx-dim'>Every run and every wicket here was scored in a match the umpire played and banked. Nothing is estimated.</p>" +
+          "<div class='fo-lgx-card'><h3>The book</h3><p class='fo-lgx-dim'>Every run and every wicket here was scored in a match the umpire played and banked. Nothing is estimated." +
+          (hasDivs ? " The two divisions play separate competitions, so each keeps its own book." : "") + "</p>" +
           "<p class='fo-lgx-dim'><a href='#/stats'>The Stats Centre &rsaquo;</a> reads the same book across your own club, this league and all sixteen at once.</p></div>";
 
       } else {

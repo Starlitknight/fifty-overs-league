@@ -51,6 +51,21 @@
   function myNation() { var c = claim(); return (c && c.country) || (function () {
     try { return (window.__foLgAPI && window.__foLgAPI.nation && window.__foLgAPI.nation()) || "eng"; } catch (e) { return "eng"; }
   })(); }
+  // WHICH FLIGHT IS THE READER IN. Two divisions play two separate
+  // competitions, so a table that pours both into one ranks a man against
+  // opponents he will never face. The book opens on the reader's own division
+  // and "Both divisions" stays one tap away for anybody who wants the whole
+  // nation at once - which is why Both has to be an ADDRESS ("d=0") rather
+  // than an absent parameter, or choosing it would fall straight back here.
+  function myDivOf(natId) {
+    try {
+      var sv = window.__foServed;
+      if (sv && sv.on && sv.on() && sv.nation && sv.nation() === natId && sv.myDiv) {
+        return sv.myDiv() === 2 ? "2" : "1";
+      }
+    } catch (e) {}
+    return "1";
+  }
 
   // ---- the scorebooks, fetched a nation at a time ---------------------------
   // Each nation's book is its own document. The world scope wants one from
@@ -462,6 +477,13 @@
       "html body #page .fo-stw-hd i{display:block;font:600 11px/1 Manrope,sans-serif;font-style:normal;letter-spacing:.24em;text-transform:uppercase;color:#E8B96A;margin-bottom:6px}",
       "html body #page .fo-stw-hd b{font:700 22px/1 Manrope,sans-serif;letter-spacing:.02em;text-transform:uppercase;color:#FFFEFC}",
       "html body #page .fo-stw-hd>span{font:600 11px/1.5 Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(244,239,228,.5)}",
+      // WHICH FLIGHT THE WALL IS SHOWING - the quiet line the controls inside
+      // the books already speak: the live one lit in gold, the rest at 45%,
+      // nothing shaped like a lozenge.
+      "html body #page .fo-stw-divs{display:flex;gap:16px;flex-wrap:wrap;padding:0 5px 12px}",
+      "html body #page .fo-stw-divs a{text-decoration:none;font:600 11px/1.2 Manrope,sans-serif;letter-spacing:.12em;text-transform:uppercase;color:rgba(244,239,228,.45);padding-bottom:3px;border-bottom:1.5px solid transparent}",
+      "html body #page .fo-stw-divs a.on{color:#E8B96A;border-bottom-color:#E8B96A}",
+      "html body #page .fo-stw-divs a:hover{color:rgba(244,239,228,.8)}",
       "html body #page .fo-stw-kpis{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:7px}",
       "html body #page .fo-stw-kpi{border:1px solid rgba(232,185,106,.18);border-radius:11px;background:rgba(255,253,247,.05);padding:10px 11px;min-width:0}",
       "html body #page .fo-stw-kpi span{display:block;font:700 11px/1 Manrope,sans-serif;letter-spacing:.16em;text-transform:uppercase;color:rgba(241,238,230,.5)}",
@@ -513,7 +535,10 @@
   // the filters a reader has already set instead of silently resetting them.
   // The division filter is dropped on the club scope, where it means nothing.
   function href(v, sc, q, d) {
-    return "#/stats?v=" + v + "&sc=" + sc + (q ? "&q=1" : "") + (d && sc !== "club" ? "&d=" + d : "");
+    // the division always rides in the address - "0" is Both, and it must be
+    // written down or the next paint would default it back to the reader's own
+    return "#/stats?v=" + v + "&sc=" + sc + (q ? "&q=1" : "") +
+      (sc === "club" ? "" : "&d=" + (d || "0"));
   }
 
   // ---- the index: THE DATA WALL --------------------------------------------
@@ -523,9 +548,26 @@
   // and every book a chip. The old index was nine doors, six more doors and
   // a five-point essay on how to read a table; the wall says the season at
   // a glance and each chip is one tap into the full sortable book.
-  function indexBody(natId, mine) {
+  function indexBody(natId, mine, divPick) {
     var g = gather("league", natId);
     var rounds = g.rounds;
+    // THE WALL IS ONE DIVISION'S WALL. Its two charts and its two feats are
+    // the leading figures of a competition, and a nation runs two of them -
+    // so a Division Two reader was met by Division One's leading run-scorer
+    // on the front page of his own stats room, with nothing on it to say so
+    // and no way to ask for his own.
+    var divOf9 = function (x) { return String(x.div || 1); };
+    var rowsD9 = divPick ? g.rows.filter(function (x) { return divOf9(x) === divPick; }) : g.rows;
+    var hasD2_9 = g.rows.some(function (x) { return divOf9(x) === "2"; });
+    var divLbl9 = divPick === "2" ? "Division Two" : divPick === "1" ? "Division One" : "Both divisions";
+    var divSeg9 = hasD2_9
+      ? "<div class='fo-stw-divs'>" + [["1", "Division One"], ["2", "Division Two"], ["", "Both"]].map(function (it) {
+          return "<a class='" + (it[0] === divPick ? "on" : "") + "' href='#/stats?n=" +
+            encodeURIComponent(natId) + "&d=" + (it[0] || "0") + "'>" + it[1] + "</a>";
+        }).join("") + "</div>"
+      : "";
+    // every door out of the wall keeps the flight the reader is standing in
+    var bookDoor9 = function (k) { return href(k, "league", false, divPick || "0"); };
     var sN = g.seasonNo ? (window.foSeasonN ? window.foSeasonN(g.seasonNo) : g.seasonNo) : 0;
     var shortNm = function (n) { try { return window.foShortName ? window.foShortName(n) : n; } catch (e) { return n; } };
     var abbr = function (club) {
@@ -549,18 +591,19 @@
     };
 
     var charts = "", duo = "";
-    if (g.rows.length) {
-      var bats = g.rows.filter(BOOKS.bat.keep);
+    var where9 = E(natName(natId)) + (hasD2_9 && divPick ? " &middot; " + divLbl9 : "");
+    if (rowsD9.length) {
+      var bats = rowsD9.filter(BOOKS.bat.keep);
       var topRuns = bats.slice().sort(BOOKS.bat.sort).slice(0, 5);
-      var topWkts = g.rows.filter(BOOKS.bowl.keep).sort(BOOKS.bowl.sort).slice(0, 5);
+      var topWkts = rowsD9.filter(BOOKS.bowl.keep).sort(BOOKS.bowl.sort).slice(0, 5);
       var byHs = bats.slice().sort(function (a, b) { return b.hs - a.hs || b.sr - a.sr; })[0];
-      var byBb = g.rows.filter(function (x) { return x.bb && x.bb.w; })
+      var byBb = rowsD9.filter(function (x) { return x.bb && x.bb.w; })
         .sort(function (a, b) { return valOf(b, "bb") - valOf(a, "bb"); })[0];
       charts = "<div class='fo-stw-grid'>" +
-        chart("Most runs &middot; " + E(natName(natId)), topRuns,
-          function (x) { return x.runs | 0; }, function (x) { return x.runs; }, false, href("bat", "league")) +
-        chart("Most wickets &middot; " + E(natName(natId)), topWkts,
-          function (x) { return x.wkts | 0; }, function (x) { return x.wkts; }, true, href("bowl", "league")) +
+        chart("Most runs &middot; " + where9, topRuns,
+          function (x) { return x.runs | 0; }, function (x) { return x.runs; }, false, bookDoor9("bat")) +
+        chart("Most wickets &middot; " + where9, topWkts,
+          function (x) { return x.wkts | 0; }, function (x) { return x.wkts; }, true, bookDoor9("bowl")) +
         "</div>";
       var mini = function (t, man, big) {
         if (!man) return "";
@@ -574,6 +617,10 @@
         "</div>";
     } else if (g.waiting) {
       charts = "<p class='fo-stw-dim'>Sending for the scorebooks&hellip;</p>";
+    } else if (g.rows.length) {
+      // the nation has played; this flight has not
+      charts = "<p class='fo-stw-dim'>No cricket in " + divLbl9.toLowerCase() +
+        " has been banked yet this season.</p>";
     } else {
       charts = "<p class='fo-stw-dim'>No cricket has been played yet this season. The wall fills with the first round.</p>";
     }
@@ -586,16 +633,18 @@
       return "<a class='fo-stw-door' href='" + to + "'><b>" + label + "</b><i>" + note + "</i><s>&rsaquo;</s></a>";
     };
     var chips = "<div class='fo-stw-doors'>" +
-      door("Batting", "runs &middot; average &middot; strike rate", href("bat", "league")) +
-      door("Bowling", "wickets &middot; economy &middot; best figures", href("bowl", "league")) +
-      door("Fielding", "catches &middot; stumpings &middot; run-outs", href("field", "league")) +
+      door("Batting", "runs &middot; average &middot; strike rate", bookDoor9("bat")) +
+      door("Bowling", "wickets &middot; economy &middot; best figures", bookDoor9("bowl")) +
+      door("Fielding", "catches &middot; stumpings &middot; run-outs", bookDoor9("field")) +
       door("The record", "every season this league has played", "#/stats?v=hist&n=" + encodeURIComponent(natId)) +
       door("All-time careers", "whole careers, ranked", "#/stats?v=career&n=" + encodeURIComponent(natId)) +
       "</div>";
 
     return "<div class='fo-stw'>" +
       "<div class='fo-stw-hd'><div><i>Every run was played</i><b>Stats Centre</b></div>" +
-      "<span>" + E(natName(natId)) + (rounds ? " &middot; after round " + rounds : "") + "</span></div>" +
+      "<span>" + E(natName(natId)) + (hasD2_9 && divPick ? " &middot; " + divLbl9 : "") +
+      (rounds ? " &middot; after round " + rounds : "") + "</span></div>" +
+      divSeg9 +
       "<div class='fo-stw-kpis'>" +
       (sN ? "<div class='fo-stw-kpi'><span>Season</span><b>" + sN + "</b></div>" : "") +
       "<div class='fo-stw-kpi'><span>Rounds</span><b>" + rounds + " / 14</b></div>" +
@@ -631,8 +680,8 @@
       seg([["bat", "Batting"], ["bowl", "Bowling"], ["field", "Fielding"]], bookKey,
           function (k) { return href(k, scope, qualOn, divPick); }) +
       "<div class='fo-stc-filt'>" +
-      (scope === "club" ? "" : seg([["", "Both divisions"], ["1", "Division One"], ["2", "Division Two"]], divPick,
-          function (k) { return href(bookKey, scope, qualOn, k); })) +
+      (scope === "club" ? "" : seg([["1", "Division One"], ["2", "Division Two"], ["", "Both divisions"]], divPick,
+          function (k) { return href(bookKey, scope, qualOn, k || "0"); })) +
       "<a class='fo-stc-qual" + (qualOn ? " on" : "") + "' href='" + href(bookKey, scope, !qualOn, divPick) + "'>" +
       "<i></i>Qualified only</a></div></div>";
     var body;
@@ -1060,10 +1109,14 @@
     // a manager with no seat in the world has no club to scope to
     if (scope === "club" && !mine) scope = "league";
     var qualOn = qparam("q") === "1";
-    var divPick = qparam("d") === "1" ? "1" : qparam("d") === "2" ? "2" : "";
+    // "" is Both, and only "d=0" asks for it; an address that names no
+    // division opens on the reader's own, because that is the competition he
+    // is actually in and the one a ranking means something in.
+    var dRaw = qparam("d");
+    var divPick = dRaw === "0" ? "" : (dRaw === "1" || dRaw === "2") ? dRaw : myDivOf(natId);
 
     page.innerHTML = "<div class='fo-stc'>" +
-      (v ? tableBody(v, scope, natId, mine, qualOn, divPick) : indexBody(natId, mine)) +
+      (v ? tableBody(v, scope, natId, mine, qualOn, divPick) : indexBody(natId, mine, divPick)) +
       "</div>";
   };
 })();
