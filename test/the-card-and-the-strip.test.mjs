@@ -11,13 +11,12 @@
 // international's carries the names alone. Reading p.name off a string gives
 // undefined, which then passed the "did not bat" test for every man in the XI.
 //
-// THE SECOND is a ladder that could not be climbed. It put nought at composite
-// 15 and ten at 92, and nothing in the game reaches 92: measured across all
-// 4,207 cricketers alive, batting composites run p1 3.8, median 35.0, p95
-// 52.9, best 62.2, and bowling p1 17.6, median 39.0, p95 59.6, best 75.4. So
-// the best batsman in the world wore six stars, the median two and a half, and
-// the top four tenths of every strip was dead space. Everybody bunched low on
-// the bar, which is exactly why an international and a county pro looked alike.
+// THE SECOND is a strip that disagreed with the number printed beside it. A
+// manager reads a man's overall on the same row as his stars, so the two have
+// to be one opinion: ninety is nine stars, and a cricketer maxed at ninety-nine
+// is the ten. The strip is the card over ten now, and the composite is the card
+// before its own stretch - fitted over the live world, a pure batter's overall
+// is 1.328 x his batting composite - 1.9 (n=1,646).
 import { test } from 'node:test';
 import assert from 'node:assert';
 import { makeEngine } from './engine-vm.mjs';
@@ -61,39 +60,90 @@ test('a club XI of player objects reads exactly as it always did', () => {
 });
 
 // ---- the strip -------------------------------------------------------------
-// The percentiles below are the live world's, measured off world_squads.
-const BAT = { p1: 3.8, median: 35.0, p95: 52.9, best: 62.2 };
-const BOWL = { p1: 17.6, median: 39.0, p95: 59.6, best: 75.4 };
+// A STRIP IS THE CARD, OVER TEN. The composite a strip is drawn from is the
+// card before world_pk_num's own stretch, so putting it back on the card scale
+// needs no anchor anybody has to defend.
+const cardToComp = (c, bowl) => bowl ? (c + 0.3) / 1.394 : (c + 1.9) / 1.328;
 
-test('the star ladder spans the world it has to describe', () => {
-  const st = W.foStarsFor.stars;
-  // the top of the strip is reachable by the men who are actually alive
-  assert.ok(st(BAT.best) >= 7, 'the best batsman alive is a seven at least: ' + st(BAT.best));
-  assert.ok(st(BOWL.best) >= 8.5, 'and the best bowler is near the top: ' + st(BOWL.best));
-  // an ordinary cricketer sits around the middle rather than down in the dust
-  assert.ok(st(BAT.median) >= 3.5 && st(BAT.median) <= 5.5,
-    'the median batsman is a middling strip: ' + st(BAT.median));
-  assert.ok(st(BOWL.median) >= 3.5 && st(BOWL.median) <= 5.5,
-    'and so is the median bowler: ' + st(BOWL.median));
-  // the bottom is still the bottom
-  assert.ok(st(BAT.p1) <= 0.5, 'the worst batsman in the world is no stars: ' + st(BAT.p1));
+test('a ninety overall is nine stars, and a maxed cricketer is the ten', () => {
+  const S = W.foStarsFor;
+  [[50, 5], [70, 7], [80, 8], [90, 9], [99, 10]].forEach(function (pair) {
+    assert.equal(S.stars(cardToComp(pair[0], false), false), pair[1],
+      'a ' + pair[0] + ' overall bats at ' + pair[1] + ' stars');
+    assert.equal(S.stars(cardToComp(pair[0], true), true), pair[1],
+      'and bowls at ' + pair[1] + ' stars');
+  });
 });
 
-// TEN IS STILL SOMETHING TO EARN. A ladder that hands the best man alive full
-// marks has nowhere left to go, and this world trains for a hundred seasons.
-test('ten stars is headroom, not the going rate', () => {
-  const st = W.foStarsFor.stars;
-  assert.ok(st(BAT.best) < 10, 'the best batsman alive has somewhere left to climb');
-  assert.ok(st(BOWL.best) < 10, 'and so does the best bowler');
-  assert.equal(st(1000), 10, 'the strip still tops out at ten');
-  assert.equal(st(-50), 0, 'and floors at nought');
+test('the strip reads the same ladder as the card, both ends', () => {
+  const S = W.foStarsFor;
+  assert.equal(S.stars(-50), 0, 'it floors at nought');
+  assert.equal(S.stars(1000), 10, 'and tops out at ten');
+  // and the card it is built on never runs past the card's own ceiling
+  assert.ok(S.card(1000, false) <= 99 && S.card(1000, true) <= 99);
+  assert.ok(S.card(-50, false) >= 0);
+});
+
+// the live world, measured off world_squads: batting composites run median
+// 35.0, p95 52.9, best 62.2; bowling median 39.0, p95 59.6, best 75.4
+test('an ordinary cricketer sits mid-strip and a great one near the top', () => {
+  const S = W.foStarsFor;
+  assert.ok(S.stars(35.0) >= 4 && S.stars(35.0) <= 5.5,
+    'the median batsman is middling: ' + S.stars(35.0));
+  assert.ok(S.stars(39.0, true) >= 4.5 && S.stars(39.0, true) <= 6,
+    'and so is the median bowler: ' + S.stars(39.0, true));
+  assert.ok(S.stars(62.2) >= 7.5, 'the best batsman alive is up near the top: ' + S.stars(62.2));
+  assert.ok(S.stars(75.4, true) >= 9, 'and the best bowler is at it: ' + S.stars(75.4, true));
 });
 
 test('the strip separates a country from a county', () => {
-  const st = W.foStarsFor.stars;
+  const S = W.foStarsFor;
   // measured on the live world: the England fifteen average a batting
   // composite of 47.4 against Gloucestershire's 30.5
-  const country = st(47.4), county = st(30.5);
+  const country = S.stars(47.4), county = S.stars(30.5);
   assert.ok(country - county >= 1.5,
     'a national side must look like one: ' + country + ' against ' + county);
+});
+
+// A CRAFT STRIP RATES THE CRAFT, NOT THE CRICKETER. A bowler rated 90 overall
+// is not a nine-star batsman, and he is not a nine-star bowler either: the 90
+// is what the whole man is worth, and neither of his two trades on its own is
+// worth all of it. The strips answer the narrower question, each from its own
+// skills - which is also why they are steady through a match, because a
+// composite is built from p.skills and never from the form-and-fatigue numbers
+// the engine works a delivery with.
+test('a craft strip rates the craft, so a bowler is no batsman', () => {
+  const S = W.foStarsFor;
+  // a genuine bowler: fine with the ball, a tail-ender with the bat
+  const bowler = { bowlType: 'seamFastMedium',
+    skills: { vsPace: 18, vsSpin: 16, rotation: 20, temperament: 25, power: 14,
+              wicket: 82, economy: 78, discipline: 74, moveTurn: 80, variation: 70, stamina: 72 } };
+  const bat = S.stars(S.bat(bowler), false), ball = S.stars(S.bowl(bowler), true);
+  assert.ok(ball >= 8, 'he is a fine bowler: ' + ball + ' stars');
+  assert.ok(bat <= 3, 'and no batsman at all: ' + bat + ' stars');
+  assert.ok(ball - bat >= 5, 'the two strips are nothing like each other');
+});
+
+test('a maxed cricketer is the ten, in whichever craft he maxed', () => {
+  const S = W.foStarsFor;
+  const maxed = {};
+  ['vsPace', 'vsSpin', 'rotation', 'temperament', 'power', 'wicket', 'economy',
+   'discipline', 'moveTurn', 'variation', 'stamina'].forEach(k => { maxed[k] = 99; });
+  const man = { bowlType: 'seamFastMedium', skills: maxed };
+  assert.equal(S.stars(S.bat(man), false), 10, 'ninety-nine with the bat is the ten');
+  assert.equal(S.stars(S.bowl(man), true), 10, 'and ninety-nine with the ball is too');
+});
+
+// THE STRIP IS THE MAN, NOT THE AFTERNOON. Form, fatigue and the conditions
+// move what a cricketer does on the day; they must not move what his card says
+// he is, or a strip would flicker ball to ball.
+test('form and fatigue do not move a single star', () => {
+  const S = W.foStarsFor;
+  const base = { bowlType: 'seamFastMedium',
+    skills: { vsPace: 60, vsSpin: 58, rotation: 55, temperament: 62, power: 50,
+              wicket: 64, economy: 60, discipline: 58, moveTurn: 62, variation: 55, stamina: 60 } };
+  const onSong = Object.assign({}, base, { bat: 90, threat: 90, control: 90, formIx: 5, fatN: 0 });
+  const spent = Object.assign({}, base, { bat: 20, threat: 20, control: 20, formIx: 1, fatN: 90 });
+  assert.equal(S.stars(S.bat(onSong)), S.stars(S.bat(spent)), 'the batting strip does not move');
+  assert.equal(S.stars(S.bowl(onSong), true), S.stars(S.bowl(spent), true), 'nor the bowling');
 });

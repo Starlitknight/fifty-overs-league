@@ -2137,7 +2137,7 @@
     var roleLbl = (p.btLabel && !/does not bowl/i.test(p.btLabel)) ? p.btLabel : (FO_PK_ROLELBL[p.role] || "Player");
     var batS = foOrdStars(foOrdBatComp(p));
     var secLbl = p.keeper ? "KEEPING" : "BOWLING";
-    var secS = p.keeper ? foOrdStars(aggKeep(p)) : foOrdStars(foOrdBowlComp(p));
+    var secS = p.keeper ? foOrdStars(aggKeep(p)) : foOrdStars(foOrdBowlComp(p), true);
     var tals = (p.talents || []).slice(0, 2).map(function (t) {
       var tip = (typeof TALTIPS !== "undefined" && TALTIPS[t]) || "Triggers in matches when the moment fits.";
       return "<div class='pht'><span class='pht-k'>TALENT</span><div><b>" + E((typeof TALN !== "undefined" && TALN[t]) || t) + "</b><p>" + E(tip) + "</p></div></div>";

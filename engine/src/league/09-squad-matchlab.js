@@ -1315,7 +1315,7 @@
         // bowling teal, so one glance says which craft is being rated
         var useBowl = (cls === "bowl" && cw != null) || (cls === "ar" && cw != null && cw > cb);
         var comp = useBowl ? cw : cb;
-        return "<span class='fo-s2-st10" + (useBowl ? " bwl" : "") + "'>" + sf.html(sf.stars(comp)) + "</span>";
+        return "<span class='fo-s2-st10" + (useBowl ? " bwl" : "") + "'>" + sf.html(sf.stars(comp, useBowl)) + "</span>";
       }
     } catch (eSt) {}
     return foS2Stars(ovr);

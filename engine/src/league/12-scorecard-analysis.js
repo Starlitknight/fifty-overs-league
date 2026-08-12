@@ -220,7 +220,7 @@
         var stars = function (pl, bowl) {
           try {
             if (!pl || !pl.skills) return "";
-            var n = foOrdStars(bowl ? foOrdBowlComp(pl) : foOrdBatComp(pl));
+            var n = foOrdStars(bowl ? foOrdBowlComp(pl) : foOrdBatComp(pl), !!bowl);
             if (n == null) return "";
             return "<span class='fo-scst " + (bowl ? "fo-scst-w" : "fo-scst-b") + "'>" + foOrdStarHTML(n) + "</span>";
           } catch (eSt) { return ""; }

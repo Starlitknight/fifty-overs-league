@@ -830,7 +830,7 @@
           // bowling, an all-rounder on whichever of the two is higher
           var useBowl = (cls === "bowl" && cw != null) || (cls === "ar" && cw != null && cw > cb);
           return "<span class='fo-s2-st10" + (useBowl ? " bwl" : "") + "'>" +
-            sf.html(sf.stars(useBowl ? cw : cb)) + "</span>";
+            sf.html(sf.stars(useBowl ? cw : cb, useBowl)) + "</span>";
         } catch (eSt) { return ""; }
       };
       var rostRow = function (p) {

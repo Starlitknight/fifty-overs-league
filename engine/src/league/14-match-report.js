@@ -1089,7 +1089,7 @@
     try {
       var sf = window.foStarsFor;
       if (sf && p && p.skills) {
-        var n = sf.stars(bowl ? sf.bowl(p) : sf.bat(p));
+        var n = sf.stars(bowl ? sf.bowl(p) : sf.bat(p), !!bowl);
         return "<span class='fo-ms-st'>" + sf.html(n) + "</span>";
       }
     } catch (e) {}

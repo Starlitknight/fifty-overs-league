@@ -3264,7 +3264,7 @@
       // the who-card stars now live HERE - same math as the theatre's
       var FS = window.foStarsFor, batStars = "", bowlStars = "";
       try { if (FS && s1) batStars = "<div class='stars'>" + FS.html(FS.stars(FS.bat(s1.p))) + "</div>"; } catch (eS1) {}
-      try { if (FS && bw) bowlStars = "<div class='stars'>" + FS.html(FS.stars(FS.bowl(bw))) + "</div>"; } catch (eS2) {}
+      try { if (FS && bw) bowlStars = "<div class='stars'>" + FS.html(FS.stars(FS.bowl(bw), true)) + "</div>"; } catch (eS2) {}
       var batPanel = (!M.done && s1) ?
         "<div class='fo-mst-p pbat'><img src='" + pArt(s1.p) + "' alt=''><div class='pc'>" +
         "<div class='rl'>On strike &middot; " + (s1.p.hand === "L" ? "LHB" : "RHB") + "</div>" +

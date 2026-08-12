@@ -68,7 +68,8 @@ test('the stars are the same stars, and a bowler is starred on his bowling', () 
     'read off the published composites, not guessed from the aggregate');
   assert.match(code, /var useBowl = \(cls === "bowl" && cw != null\) \|\| \(cls === "ar" && cw != null && cw > cb\);/,
     'the same choice the squad room makes');
-  assert.match(code, /sf\.html\(sf\.stars\(useBowl \? cw : cb\)\)/, 'drawn by the one star ladder');
+  assert.match(code, /sf\.html\(sf\.stars\(useBowl \? cw : cb, useBowl\)\)/,
+    'drawn by the one star ladder, on the craft being rated');
   // a dossier served before the composites existed simply has no stars, and
   // the row still draws
   assert.match(code, /if \(cb == null && cw == null\) return "";/, 'and no stars is a row, not a crash');

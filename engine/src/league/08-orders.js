@@ -196,7 +196,7 @@
       // his stars, the same language as the cards he'd be joining: gold with
       // the bat for every man, teal with the ball where he bowls
       var sts = "<span class='osh-sts'><span class='osh-st bat'>" + foOrdStarHTML(foOrdStars(foOrdBatComp(p))) + "</span>" +
-        (p.bowlType && p.bowlType !== "none" ? "<span class='osh-st bwl'>" + foOrdStarHTML(foOrdStars(foOrdBowlComp(p))) + "</span>" : "") + "</span>";
+        (p.bowlType && p.bowlType !== "none" ? "<span class='osh-st bwl'>" + foOrdStarHTML(foOrdStars(foOrdBowlComp(p), true)) + "</span>" : "") + "</span>";
       return "<button class='fo-osh-row' data-fo-bench='" + E(p.name) + "' " + (ok ? "" : "disabled") + ">" +
         "<div><b>" + E(p.name) + "</b>" + sts + "<span class='small'>" + bits.join(" · ") + (tals ? " · " + E(tals) : "") + "</span></div>" +
         (ok ? "" : "<span class='fo-osh-note bad'>would leave fewer than five bowlers</span>") + "</button>";
@@ -399,24 +399,38 @@
   // ABSOLUTE calibration, out of ten, and the same ladder for every player in
   // the world so a strip means the same thing wherever it is drawn.
   //
-  // MEASURED, NOT GUESSED. The old anchors were 15 for nought and 92 for ten,
-  // which nothing in the game could reach: across all 4,207 cricketers alive,
-  // batting composites run p1 3.8, median 35.0, p95 52.9, best 62.2, and
-  // bowling p1 17.6, median 39.0, p95 59.6, best 75.4. So the best batsman in
-  // the world wore six stars, the median cricketer two and a half, and the top
-  // four tenths of every strip in the game was dead space nobody would ever
-  // occupy. Everybody bunched into a narrow band low on the bar, which is why
-  // an England international and a second-division county pro looked alike.
+  // A STRIP IS THE CARD, OVER TEN. A manager reads a man's overall on the same
+  // row as his stars, so the two have to be the same opinion: ninety is nine
+  // stars, and a cricketer maxed at ninety-nine is the ten.
   //
-  // The anchors are now the world's own range with honest headroom: nought at
-  // 4, ten at 82. That reads a median cricketer at four stars, a fine one at
-  // six and a half, the best batsman alive at seven and a half and the best
-  // bowler at nine - and leaves ten as something still to be earned rather
-  // than something unreachable.
-  var FO_ST_LO = 4, FO_ST_HI = 82;
-  function foOrdStars(comp) {
-    return Math.max(0, Math.min(10,
-      Math.round(((comp - FO_ST_LO) / (FO_ST_HI - FO_ST_LO) * 10) * 2) / 2));
+  // The composite IS the card before the card's own stretch - fitted over the
+  // live world, a pure batter's overall is 1.328 x his batting composite - 1.9
+  // (n=1,646) and a bowler's is 1.394 x his bowling composite - 0.3 (n=1,751),
+  // which is the 1.32 stretch world_pk_num applies, recovered from the data.
+  // So putting a composite back on the card scale needs no new invention and
+  // no anchor anybody has to defend: it is the number the roster row already
+  // shows, divided by ten.
+  //
+  // Two ladders before this failed the same way, from opposite ends. The
+  // original put nought at 15 and ten at 92, which nothing alive could reach -
+  // across all 4,207 cricketers, batting composites run p1 3.8, median 35.0,
+  // p95 52.9, best 62.2 - so the best batsman in the world wore six stars and
+  // the median two and a half, everybody bunched low on the bar, and an
+  // England international looked like a second-division county pro. Widening
+  // it to 4-and-82 spread them out but was still a scale of its own, and still
+  // disagreed with the overall printed beside it.
+  //
+  // The card runs p1 25, median 56, p95 82, max 99 - so as stars: two and a
+  // half, five and a half, eight, and a ten that has been earned.
+  var FO_ST_A_BAT = 1.328, FO_ST_B_BAT = -1.9;
+  var FO_ST_A_BWL = 1.394, FO_ST_B_BWL = -0.3;
+  // a composite on the card's own 0-99 scale
+  function foOrdCard(comp, bowl) {
+    var v = bowl ? (FO_ST_A_BWL * comp + FO_ST_B_BWL) : (FO_ST_A_BAT * comp + FO_ST_B_BAT);
+    return Math.max(0, Math.min(99, v));
+  }
+  function foOrdStars(comp, bowl) {
+    return Math.max(0, Math.min(10, Math.round((foOrdCard(comp, bowl) / 10) * 2) / 2));
   }
   // FTP-style role glyphs beside each name: bat / ball / bat+ball / stumps.
   // Keeper wins (the gloves define his job), then the declared all-rounder,
@@ -450,7 +464,8 @@
     window.__foStarLadder = {
       bat: function (p) { return foOrdBatComp(p); },
       bowl: function (p) { return foOrdBowlComp(p); },
-      stars: function (c) { return foOrdStars(c); },
+      stars: function (c, bowl) { return foOrdStars(c, bowl); },
+      card: function (c, bowl) { return foOrdCard(c, bowl); },
       html: function (n) { return foOrdStarHTML(n); },
       roleIcon: function (p) { return foOrdRoleIcon(p); }
     };
@@ -658,7 +673,7 @@
             for (var iS = 0; iS < fullS; iS++) tS += "<em class='f'>&#9733;</em>";
             if (halfS) tS += "<em class='h'>&#9733;</em>";
             return "<s class='st' title='" + nS + " / 10'>" + (tS || "<em>&#9733;</em>") + "</s>";
-          })(foOrdStars(foOrdBowlComp(p9c)));
+          })(foOrdStars(foOrdBowlComp(p9c), true));
           return "<button type='button' class='mgb mgb-c" + colorIx[n9] + (n9 === armNm ? " on" : "") + "' data-fo-arm='" + E(n9) + "'>" +
             "<span class='bw-h'><b>" + E(dispNm(n9)) + "</b><span class='ov' title='Overall rating'><b>" + foPkOvr(p9c) + "</b></span></span>" +
             "<span class='bw-m'><span class='bt'>" + E(foOrdBType(p9c)) + " &middot; " + (tot[n9] || 0) + " ov</span>" +
@@ -708,7 +723,7 @@
     try {
       var m = {}; try { m = JSON.parse(lsGet("fo_starmap") || "{}"); } catch (e0) {}
       (list || []).forEach(function (p9) {
-        if (p9 && p9.name) m[p9.name] = { b: foOrdStars(foOrdBatComp(p9)), w: foOrdStars(foOrdBowlComp(p9)) };
+        if (p9 && p9.name) m[p9.name] = { b: foOrdStars(foOrdBatComp(p9)), w: foOrdStars(foOrdBowlComp(p9), true) };
       });
       var ks = Object.keys(m);
       if (ks.length > 800) ks.slice(0, ks.length - 800).forEach(function (k9) { delete m[k9]; });
@@ -734,7 +749,7 @@
         var tb9 = td.closest("table");
         var bowl9 = !!(tb9 && (tb9.classList.contains("fo-sct-bowl") || tb9.classList.contains("ftp-bowling")));
         var p9 = by9[nm9], starsN = null;
-        if (p9) starsN = foOrdStars(bowl9 ? foOrdBowlComp(p9) : foOrdBatComp(p9));
+        if (p9) starsN = foOrdStars(bowl9 ? foOrdBowlComp(p9) : foOrdBatComp(p9), !!bowl9);
         else { var e9 = foStarmapGet(nm9); if (e9) starsN = bowl9 ? e9.w : e9.b; }   // departed circuit visitor
         if (starsN == null) return;
         var s9 = document.createElement("span");
@@ -760,7 +775,7 @@
     try { if (/^#\/(scorecard|reports|match|friendly|matchday)/.test(location.hash || "")) foScStars(); } catch (e) {}
   }, 800);
   // the oval's who-cards borrow the star language
-  try { window.foStarsFor = { bat: foOrdBatComp, bowl: foOrdBowlComp, stars: foOrdStars, html: foOrdStarHTML, btype: foOrdBType }; } catch (eSF) {}
+  try { window.foStarsFor = { bat: foOrdBatComp, bowl: foOrdBowlComp, stars: foOrdStars, card: foOrdCard, html: foOrdStarHTML, btype: foOrdBType }; } catch (eSF) {}
   function foOrdersUI() {
     var page = document.getElementById("page"); if (!page) return;
     var t = userTeam(), xi = foOrdXI();

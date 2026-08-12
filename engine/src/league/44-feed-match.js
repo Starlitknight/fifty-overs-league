@@ -219,10 +219,10 @@
   }
 
   // STRENGTH, ON THE SAME LADDER AS EVERYWHERE ELSE. The roster's absolute
-  // ten-star scale (foStarsFor: composite 15 -> 0 stars, 92 -> 10), read off
-  // the same served squads the umpire fields. Gold for the bat, teal for the
-  // ball. A man the seed cannot derive (a mid-season signing on a claimed
-  // club) simply shows no stars - never the wrong ones.
+  // ten-star scale (foStarsFor: a man's card over ten, so a ninety overall is
+  // nine stars), read off the same served squads the umpire fields. Gold for
+  // the bat, teal for the ball. A man the seed cannot derive (a mid-season
+  // signing on a claimed club) simply shows no stars - never the wrong ones.
   function squadMap(rid, m) {
     // a league fixture's two clubs share a nation; a friendly's may not -
     // each side carries its own country (__c) and the map remembers, per
@@ -254,7 +254,7 @@
       var comp = mode === "bowl" ? FS.bowl(p) : FS.bat(p);
       if (!(comp > 0)) return "";
       // a strip of ten hollow stars says nothing a blank cannot say better
-      var n9 = FS.stars(comp);
+      var n9 = FS.stars(comp, mode === "bowl");
       if (!(n9 >= 0.5)) return "";
       return "<span class='fd-strn " + (mode === "bowl" ? "bw" : "bt") + "'>" + FS.html(n9) + "</span>";
     } catch (e) { return ""; }
