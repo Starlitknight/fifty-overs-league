@@ -137,8 +137,15 @@ test('the bar is offered, and it is the fixture played out, not a formula', () =
   assert.match(html, /id='fo-pm-wp'/, 'the win probability has a home on the page');
   assert.match(html, /Win probability &middot; projected/, 'labelled as a projection');
   const src51 = src('51-prematch.js');
-  assert.match(src51, /function foPmWpRunTeams\(host, sig, key, H, A\)/,
+  assert.match(src51, /function foPmWpRunTeams\(host, sig, key, H, A, codes\)/,
     'and it is run on two built sides');
+  // forty playings could not tell a four-per-cent gap from noise: the same
+  // fixture came out anywhere from 32% to 65% depending on the seeds drawn
+  assert.match(src51, /var FO_PM_WP_TOUR_N = 200;/, 'at a sample that can carry an answer');
+  assert.match(src51, /foPmWpPaint\(host, v, done, 5\)/,
+    'and printed to the nearest five, which is all two hundred playings earn');
+  assert.match(src51, /gap < 10 \? "Evenly matched"/,
+    'with "evenly matched" inside the margin rather than a false favourite');
   assert.match(src51, /G\.simWorld\(H, A, "balanced", "Sunny"/,
     'through the engine the umpire uses, on the tour\'s own conditions');
   assert.match(src51, /world_squads\?country_id=eq\./,
@@ -174,8 +181,12 @@ test('a nation\'s form is read off its tours, which are banked under the side na
 test('the series is walked game by game: what is bowled opens its report, what is not says when', () => {
   const { html } = preview(5);
   assert.match(html, /href='#\/report\?nat=nat%3Ad2%3Ag1'/, 'the bowled game opens the tour report');
-  assert.match(html, /<span>This one<\/span>/, 'the game being previewed is marked as this one');
-  assert.match(html, /<span>To come<\/span>/, 'and the one after it is still to come');
+  // a fixture list says SCHEDULED; "this one" and "to come" are not how a
+  // scoreboard writes, and the previewed row is marked by its accent instead
+  assert.equal((html.match(/<span>Scheduled<\/span>/g) || []).length, 2,
+    'the two unbowled games read as scheduled');
+  assert.ok(!/This one|To come/.test(html), 'and neither says "this one" or "to come"');
+  assert.match(html, /class='fo-pm-h2h flat now'/, 'the previewed game is marked by its accent');
   assert.ok(!/href='#\/report\?nat='/.test(html), 'an unbowled game is never a door to an empty report');
 });
 

@@ -212,9 +212,15 @@
       : (window.foIntlPreviewHref && t.away && t.home && x.round)
         ? window.foIntlPreviewHref(t.away, t.home, x.round)
         : "#/nations";
+    // A MATCH THAT HAS NOT STARTED IS NOT OUT IN THE MIDDLE. This said it was
+    // from the moment the card appeared, which on a window morning is hours
+    // before anybody walks out. The clock decides: before the first ball it is
+    // a build-up, after it and with nothing banked it really is in progress.
+    var started = !x.startMs || Date.now() >= x.startMs;
     var foot = (s && !s.done) ? ""
       : g ? E(g.text || "")
-      : "Out in the middle &middot; the build-up, the parties and the series &rsaquo;";
+      : started ? "Out in the middle &middot; the result is filed when the window shuts"
+      : "The build-up, the squads and the series &rsaquo;";
     var standing = x.st && x.st.verdict && (!s || s.done) ? E(x.st.verdict) : "";
     return "<a class='fo-lv-card on' href='" + href + "'>" +
       side(0) + side(1) +
@@ -460,12 +466,20 @@
     var nMatches = live.reduce(function (s, n) { return s + n.fx.length; }, 0) +
       cLive.reduce(function (s, c) { return s + (c.html.match(/fo-lv-card/g) || []).length; }, 0);
     var nComp = live.length + cLive.length;
+    // WHAT IS STILL TO COME INCLUDES THE CRICKET THAT IS NOT A LEAGUE ROUND.
+    // This counted only the nations' own rounds, so on a rest day whose only
+    // fixtures are the international window - two tours listed on the page
+    // directly below, with their first ball named - the page said "No cricket
+    // anywhere today" above them. A cup day said it too.
+    var upHours = up.map(function (n) { return n.hour; })
+      .concat(cUp.map(function (c) { return c.hour; }))
+      .filter(function (h) { return h != null; }).sort(function (a, b) { return a - b; });
     var head = "<div class='fo-lv-hd'><div class='eb'>Around the world</div>" +
       "<h1>Live scores</h1><div class='ty'>" +
       (nMatches ? "<b>" + nMatches + "</b> match" + (nMatches === 1 ? "" : "es") + " in play in <b>" + nComp + "</b> " +
         (nComp === 1 ? "competition" : "competitions")
         : nComp ? "<b>" + nComp + "</b> competition" + (nComp === 1 ? "" : "s") + " under way"
-        : up.length ? "Nothing in play &middot; first ball " + (P().hhTxt ? P().hhTxt(up[0].hour) : up[0].hour + ":00")
+        : upHours.length ? "Nothing in play &middot; first ball " + (P().hhTxt ? P().hhTxt(upHours[0]) : upHours[0] + ":00")
         : "No cricket anywhere today") + "</div></div>";
     // A SCORES PAGE SHOWS WHAT IS ON. Finished matches were a third of the page
     // and none of the point - the record keeps them, the league room lists them,
