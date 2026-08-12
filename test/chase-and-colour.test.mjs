@@ -51,10 +51,19 @@ test('the second innings is told what it needs, every over', () => {
       // a won chase has nothing left to ask for
       const m = /^End of over (\d+) .*- (.+?) (\d+)\/(\d+)\./.exec(L.txt);
       assert.ok(m, 'the bar still reads as a bar: ' + L.txt);
-      const need = /need (\d+) from (\d+) (ball|over)s? \(([0-9.]+) an over\)\./.exec(L.txt);
+      // NAMED ONCE, AND BOTH RATES CARRIED. The bar opens with the side and
+      // its score, so the clause that follows does not say the club again -
+      // it just carries on about them. And it now ends on the two numbers a
+      // chase is actually read by: what they are scoring at, and what they
+      // have to score at.
+      const need = /Need (\d+) from (\d+) (ball|over)s? \u00b7 REQ ([0-9.]+)\./.exec(L.txt);
       if (!need) continue;
       checked++;
-      assert.ok(String(L.txt).indexOf(m[2] + ' need ') > 0, 'the side chasing is named');
+      assert.equal(String(L.txt).indexOf(m[2] + ' need '), -1,
+        'the chasing side is not named twice in one line: ' + L.txt);
+      const rr = / RR ([0-9.]+)/.exec(L.txt);
+      assert.ok(rr, 'the bar carries the current run rate: ' + L.txt);
+      assert.equal(rr[1], (+m[3] / (+m[1])).toFixed(2), 'and it is the score over the overs');
       // the equation agrees with the score on the same line
       const left = need[3] === 'over' ? +need[2] * 6 : +need[2];
       assert.equal(+need[1], target - (+m[3]),

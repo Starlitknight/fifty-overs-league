@@ -7455,7 +7455,12 @@
           // and the wickets; nothing is carried across a match in memory.
           return ok ? { innings: M.innings, result: M.result, batFirstTeam: M.batFirstTeam,
             log: M.log || [], worm: M.worm || [[], []], tal: M._tal || {} } : null;
-        } catch (eSim) { return null; }
+        // A REPLAY THAT FAILS SAYS NOTHING, AND THAT IS EXPENSIVE. Returning
+        // null is right - a half-played match is not a match, and every caller
+        // already handles the empty answer - but the reason used to die here
+        // with it, so a broken engine looked exactly like a match with no
+        // ball-by-ball. The last one is kept where a console can reach it.
+        } catch (eSim) { try { window.__foSimErr = String((eSim && eSim.stack) || eSim); } catch (e9) {} return null; }
         finally {
           try { window.onMatchEnd = prevOME; } catch (e2) {}
           try { M = prevM; } catch (e3) {}

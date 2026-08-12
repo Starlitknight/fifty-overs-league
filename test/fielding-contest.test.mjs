@@ -80,7 +80,7 @@ test('a chance is a difficulty and a man, and the angle is part of it', () => {
     'skewed toward the routine, lifted by what the ball was worth');
   assert.match(CORE, /\+FO_FLD\.ang\*Math\.min\(1,ang\/\(gate\|\|FO_FLD\.gate\)\)/,
     'and by how far he had to go');
-  assert.match(CORE, /const fs=foFieldSkill\(pick\), diff=foChanceDiff\(out,near\.ang\), won=fs>=diff;/,
+  assert.match(CORE, /const fs=foFieldSkill\(pick\)\+foLvlShift\('field'\), diff=foChanceDiff\(out,near\.ang\), won=fs>=diff;/,
     'his fielding against the chance - one comparison, no thresholds');
   assert.match(CORE, /if\(!near\|\|!pick\|\|near\.ang>FO_FLD\.gate\)return out;/, 'and nothing at all beyond the gate');
 });
@@ -101,7 +101,7 @@ test('winning means different things depending on what the ball was worth', () =
 });
 
 test('a catch is the same contest, and a beaten fielder is not a dropper', () => {
-  assert.match(CORE, /const cSkill=cat\+\(TF\('safeHands'\)\?11:0\)\+\(\(TF\('lightningHands'\)&&f\.keeper\)\?10:0\);/,
+  assert.match(CORE, /const cSkill=cat\+foLvlShift\('catch'\)\+\(TF\('safeHands'\)\?11:0\)\+\(\(TF\('lightningHands'\)&&f\.keeper\)\?10:0\);/,
     'a talent is worth points on the chance, so it is worth most on a hard one');
   assert.match(CORE, /const cDiff=foChanceDiff\('catch',\(M\._fieldPos!=null&&near\)\?near\.ang:0,FO_FLD\.cgate\);/);
   assert.match(CORE, /else if\(cDiff-cSkill<=FO_FLD\.drop\)\{/, 'lose narrowly and he put it down');
@@ -136,4 +136,28 @@ test('the keeper is measured against a par the world can actually reach', () => 
     'byes, wides and stumpings hang off the world median, not off 55');
   assert.match(CORE, /miss=foClamp\(0\.20-0\.0038\*\(kq-FO_KQ_PAR\),0\.014,0\.30\);/);
   assert.ok(!/keeperQuality-55/.test(CODE), 'nothing counts from a number nothing reaches');
+});
+
+// AND THE OFFSETS ARE NOT ALLOWED TO BE ABSOLUTE FOR EVER.
+//
+// They were solved against freshly generated cricketers who field 50. A world
+// that runs for a hundred seasons does not stay there - the live one fell to a
+// median club fielding of 36 - and because a good stop must BEAT a +37 or +44
+// offset while a misfield need only lose to a -59, the drift switched the good
+// half off and turned the bad half up. Measured per innings before the fix:
+// 5.5 good stops at 51, 1.4 at 37, 0.3 at 31.
+//
+// ONE-SIDED, deliberately. A field better than the standard is judged exactly
+// as it always was, because that edge is real and it is what a manager buys -
+// and because pulling elite sides down to par broke the frozen calibration on
+// the spot (267 in the first innings against a golden 251).
+test('the chance offsets know what standard of cricket they are judging', () => {
+  assert.match(CORE, /par:50,/, 'the fielding the offsets were solved against');
+  assert.match(CORE, /cpar:51,/, 'and the catching');
+  assert.match(CORE, /_fldLvl:foFieldLevel\(userTeam,aiTeam\),/,
+    'read off the two squads at the toss, so both ends of a replay agree');
+  assert.match(CORE, /return Math\.max\(0,Math\.min\(FO_FLD\.lvlCap,d\)\);/,
+    'it only ever lifts a world that has fallen below the standard');
+  assert.ok(!/Math\.max\(-FO_FLD\.lvlCap/.test(CODE),
+    'and never blunts one that is above it');
 });

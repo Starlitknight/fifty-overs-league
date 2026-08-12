@@ -704,6 +704,12 @@ function newMatch(userTeam,aiTeam,pitch,seed){
     // travels out with the scorecard, because the record is the only thing
     // allowed to remember it. seedKey makes a part-learnt talent's firing
     // reproducible from the match's own identity rather than the dice.
+    // THE STANDARD OF CRICKET THIS MATCH IS PLAYED AT, read off the two
+    // squads once. The fielding contest judges every man against it (FO_FLD),
+    // so the world can get better or worse without the field going silent.
+    _fldLvl:foFieldLevel(userTeam,aiTeam),
+    // which passive talents have already spoken: innings|man|talent
+    _talSaid:{},
     _tal:{},seedKey:String(seed)};
 }
 function fhash(str){let h=2166136261;for(let i=0;i<str.length;i++){h^=str.charCodeAt(i);h=Math.imul(h,16777619)}return h>>>0}
@@ -924,8 +930,70 @@ var FO_FLD={
   // had dropped it to 52%. Solved against the engine it replaced rather than
   // against a feeling: at 2 the same squads take 3.62 catches an innings, 6.28
   // wickets, 19.2% all out - the old cricket, decided by a contest now.
-  band:{dot:-60,'1':-59,'2':37,'3':31,'4':44,catch:2}
+  band:{dot:-60,'1':-59,'2':37,'3':31,'4':44,catch:2},
+  // ---- AND WHAT POPULATION THEY WERE SOLVED AGAINST ------------------------
+  //
+  // Those offsets are absolute numbers on an absolute scale, and that is the
+  // one thing a difficulty must never be. They were solved against freshly
+  // generated cricketers, who field 50 and catch 51 on average. The live world
+  // does not: 137 seasons of ageing, graduating and trading have carried it
+  // down to a median club fielding of 36.
+  //
+  // Batting and bowling survive that drift because they are contests between
+  // two men - a weaker batsman faces a weaker bowler and the cricket comes out
+  // the same. Fielding does not, because a fielder is put against a NUMBER.
+  // And the drift is not even-handed: a good stop has to BEAT a +37 or +44
+  // offset while a misfield only has to lose to a -59, so dropping the whole
+  // population fifteen points switches the good half off and turns the bad
+  // half up. Measured, per innings: at 51 it is 5.5 good stops to 7.2
+  // misfields; at 37 it is 1.4 to 15.3; at 31 it is 0.3 to 19.9. A manager
+  // watching the live world saw twelve misfields and not one good stop, which
+  // is not a broadcast anybody wants and is not cricket either.
+  //
+  // So the contest is told what standard of cricket it is judging. Every man
+  // is measured against the level of the thirty on the two teamsheets - a fair
+  // sample of the world he plays in - rather than against a number solved once
+  // for a world that no longer exists. The rates hold wherever the population
+  // goes, and they go on holding when it moves again.
+  //
+  // WITHIN a match nothing is flattened: the shift is one number applied to
+  // everybody, so a side that fields ten points better than its opponent still
+  // fields visibly better, and a manager who picks his best fielders still
+  // gets what he picked. It is only the world's absolute level that stops
+  // mattering, which is exactly the thing that should never have mattered.
+  par:50,         // the fielding the offsets were solved against
+  cpar:51,        // and the catching
+  lvlCap:25       // no sample drags the contest further than this
 };
+function foFieldLevel(a,b){
+  var f=0,c=0,n=0;
+  [a,b].forEach(function(t){((t&&t.players)||[]).forEach(function(p){
+    if(!p)return;
+    f+=(p.field||((p.skills&&p.skills.fielding)||50));
+    c+=((p.skills&&p.skills.catching)||50);
+    n++;
+  })});
+  if(!n)return{f:FO_FLD.par,c:FO_FLD.cpar};
+  return{f:f/n,c:c/n};
+}
+// ONE-SIDED, AND THAT IS THE WHOLE OF THE CARE IN IT.
+//
+// The offsets set a STANDARD, and a field better than the standard is judged
+// exactly as it always was: two fine fielding sides go on taking their extra
+// catches and cutting off their extra boundaries, because that edge is real
+// and it is the thing a manager buys. Measured when the shift ran both ways,
+// the frozen contract broke at once - two elite sides pulled down to par made
+// 267 in the first innings against a golden 251, and were bowled out a third
+// as often. That is not a fielding fix, that is a different game.
+//
+// It only ever lifts a world that has fallen BELOW the standard, which is the
+// one thing that was actually wrong: a population fifteen points down was
+// being asked to clear a bar set for a population that no longer exists.
+function foLvlShift(which){
+  var L=M&&M._fldLvl;if(!L)return 0;
+  var d=which==='catch'?(FO_FLD.cpar-L.c):(FO_FLD.par-L.f);
+  return Math.max(0,Math.min(FO_FLD.lvlCap,d));
+}
 function foChanceDiff(band,ang,gate){
   var d=100*Math.pow(M.rand(),FO_FLD.skew)+(FO_FLD.band[band]||0)
        +FO_FLD.ang*Math.min(1,ang/(gate||FO_FLD.gate));
@@ -946,7 +1014,7 @@ function groundFieldingAdjust(inn,out,bowler){
   if(near&&pick&&near.ang<=16)foTalCount(M._tal,inn.bowlTeam,pick,{},['rocketArm']);
   if(out==='6')return out;                       // it cleared them all
   if(!near||!pick||near.ang>FO_FLD.gate)return out;
-  const fs=foFieldSkill(pick), diff=foChanceDiff(out,near.ang), won=fs>=diff;
+  const fs=foFieldSkill(pick)+foLvlShift('field'), diff=foChanceDiff(out,near.ang), won=fs>=diff;
   const deep=!!near.spot.deep, at=near.spot.label;
   const isRocket=foTalHas(pick,{key:M._talKey})('rocketArm');
   const say=(txt,k,d,arm)=>{M._fielder=pick;M._fieldPos=at;M._fieldingEvent=txt;
@@ -1051,7 +1119,7 @@ function stepBall(){
     // Hands are worth points on the contest rather than a flat cut in a drop
     // rate, so a talent is worth more on a hard chance, which is when it is
     // actually worth having.
-    const cSkill=cat+(TF('safeHands')?11:0)+((TF('lightningHands')&&f.keeper)?10:0);
+    const cSkill=cat+foLvlShift('catch')+(TF('safeHands')?11:0)+((TF('lightningHands')&&f.keeper)?10:0);
     const cDiff=foChanceDiff('catch',(M._fieldPos!=null&&near)?near.ang:0,FO_FLD.cgate);
     if(cSkill>=cDiff){M._fielder=f;M._fldEv={k:'catch',by:f.name,at:M._fieldPos||null,d:0};}
     else if(cDiff-cSkill<=FO_FLD.drop){
@@ -1145,6 +1213,67 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
   // balanced band on 60 seeds a cell). The sentence was the lie; the number
   // was never the problem.
   else if(out==='dot'||out==='1'){M.rand();}
+  // ---- THE TALENTS THAT NEVER SAID A WORD ---------------------------------
+  //
+  // Eight of the seventeen had no line anywhere: Busy Runner, Safe Hands, Pace
+  // Hunter, Fast Starter, Anchor, Miser, Spin Killer and Death Specialist. All
+  // eight are applied in ballDist - they move the numbers on the balls they
+  // suit - they were simply never narrated, so the Talents filter could not
+  // find them and a manager had no way of seeing what he had paid for.
+  // Measured on the live world: 58% of every talent held could never appear.
+  // Busy Runner alone, the commonest talent in the game at 17%, was silent.
+  //
+  // Each line below repeats the condition ballDist ITSELF applied the talent
+  // under, so the sentence reports an edge that was really taken. The passive
+  // ones would otherwise talk on half the balls of an innings, so each man
+  // says each of his once per innings, the first time it genuinely tells.
+  //
+  // AFTER the chain above and never inside it. That chain ends on a draw from
+  // the dice for a dot or a single - a draw that decides nothing but is part
+  // of the stream every match ever played was dealt from - and a branch of
+  // mine catching a dot first would skip it and renumber every ball after.
+  if(!M._talEv){
+    const tcNow=typeClass(bowler.bowlType||'fastMedium');
+    const bnd=(out==='4'||out==='6');
+    // the striker's own count and the state of the chase, read the way the
+    // Mystery Ball line above reads them. Both are a ball further on than the
+    // copies ballDist was handed - this delivery has been counted by now -
+    // which moves no gate that matters: a talent that applied on the ball is
+    // still applying a ball later.
+    const facedNow=inn.faced[sb.p.name]||0;
+    let rrNow=0;
+    if(M.target&&inn.legal>0){const rem=(foBallCap()-inn.legal)/6;
+      const req=(M.target-inn.runs)/Math.max(0.5,rem);rrNow=(req-inn.runs/(inn.legal/6))/6}
+    // keyed by the innings, so it clears itself at the break. Built on demand
+    // as well as at the toss: a match restored from an older save has never
+    // heard of this ledger and must not throw on the first ball.
+    const once=(who,t)=>{
+      const led=M._talSaid||(M._talSaid={});
+      const k=M.inns+'|'+who+'|'+t;
+      if(led[k])return false;
+      led[k]=1;return true;
+    };
+    const say2=(who,t,name,line)=>{
+      if(!once(who,t))return false;
+      txt+=' '+line;M._talEv=name;return true;
+    };
+    if(out==='wC'&&M._fielder&&(M._fielder.talents||[]).includes('safeHands'))
+      say2(M._fielder.name,'safeHands','Safe Hands','Safe Hands - it was never going to go down.');
+    else if(bnd&&TB2.includes('spinKiller')&&tcNow==='spin')
+      say2(sb.p.name,'spinKiller','Spin Killer','The Spin Killer is at home against the slow bowlers.');
+    else if(bnd&&TB2.includes('paceHunter')&&tcNow==='pace')
+      say2(sb.p.name,'paceHunter','Pace Hunter','The Pace Hunter is at home against the quicks.');
+    else if(bnd&&TB2.includes('fastStarter')&&facedNow<12)
+      say2(sb.p.name,'fastStarter','Fast Starter','A Fast Starter - he needs no time to settle.');
+    else if(out==='2'&&TB2.includes('busyRunner'))
+      say2(sb.p.name,'busyRunner','Busy Runner','Busy Runner - there is always a second run in him.');
+    else if((out==='dot'||isWkt(out))&&TW2.includes('deathSpecialist')&&phaseOf(over)==='death')
+      say2(bowler.name,'deathSpecialist','Death Specialist','The Death Specialist knows exactly where to put it.');
+    else if(out==='dot'&&TW2.includes('miser')&&brec.b>=18)
+      say2(bowler.name,'miser','Miser','The Miser gives away nothing - the pressure builds.');
+    else if((out==='dot'||out==='1')&&TB2.includes('anchor')&&rrNow<=0&&facedNow>=24)
+      say2(sb.p.name,'anchor','Anchor','The Anchor has this innings under control.');
+  }
   M.log.unshift({no:ballNo,out,txt,d,inn:M.inns,mile:false,ev,fld:M._fldEv||null,tal:M._talEv||null});
   for(const m of milestones)M.log.unshift({no:'',out:'★',txt:m,d:null,inn:M.inns,mile:true});
   if(wk){
@@ -1177,14 +1306,25 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
     // from the innings-break line: a DLS-revised target after rain moves both
     // numbers, and only this end of the game has seen it happen. Overs while
     // there are plenty left, balls once it is close enough to count them.
+    // THE TWO NUMBERS EVERY SCOREBOARD CARRIES. What a side is scoring at, and
+    // in a chase what it has to score at - the pair a reader compares at a
+    // glance to know whether a run chase is on. The over divider is where a
+    // broadcast puts them and it was carrying neither.
+    let rrTx='';
+    if(inn.legal>0)rrTx=' RR '+(inn.runs/(inn.legal/6)).toFixed(2);
     let chaseTx='';
     if(M.target&&M.inns===1){
       const need=M.target-inn.runs,left=foBallCap()-inn.legal;
-      if(need>0&&left>0)chaseTx=' '+inn.batTeam+' need '+need+' from '+
+      // NAMED ONCE. The line opens with the side and its score - "Mashed
+      // Potatoes 44/1" - so saying it again four words later ("Mashed Potatoes
+      // need 226") is the same club twice in one sentence, and no scoreboard
+      // or commentator has ever done that. The subject is already established;
+      // this clause just carries on about them.
+      if(need>0&&left>0)chaseTx=' \u00b7 Need '+need+' from '+
         (left>36?(left/6)+' over'+(left===6?'':'s'):left+' ball'+(left===1?'':'s'))+
-        ' ('+(need/(left/6)).toFixed(2)+' an over).';
+        ' \u00b7 REQ '+(need/(left/6)).toFixed(2);
     }
-    M.log.unshift({no:'',out:'●',txt:'End of over '+ovNo+' ('+ovRuns+' run'+(ovRuns===1?'':'s')+(ovWk?', '+ovWk+' wkt':'')+') - '+inn.batTeam+' '+inn.runs+'/'+inn.wkts+'. '+bowler.name+' '+Math.floor(brec.b/6)+'-'+brec.r+'-'+brec.w+'.'+chaseTx,d:null,inn:M.inns,mile:true});
+    M.log.unshift({no:'',out:'●',txt:'End of over '+ovNo+' ('+ovRuns+' run'+(ovRuns===1?'':'s')+(ovWk?', '+ovWk+' wkt':'')+') - '+inn.batTeam+' '+inn.runs+'/'+inn.wkts+'. '+bowler.name+' '+Math.floor(brec.b/6)+'-'+brec.r+'-'+brec.w+'.'+(rrTx+chaseTx?rrTx+chaseTx+'.':''),d:null,inn:M.inns,mile:true});
     inn._ovStartR=inn.runs;inn._ovStartW=inn.wkts;
     // A MAIDEN IS A REAL FIGURE NOW. bowlerRecord has carried an mdn field
     // since it was written and nothing ever added to it, so every card ever

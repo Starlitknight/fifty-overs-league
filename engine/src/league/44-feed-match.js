@@ -872,7 +872,13 @@
         third = "";
       } else if (innNow && inns[1].target) {
         var need = inns[1].target - tp.runs, bLeft = (50 - tp.over) * 6;
-        third = need > 0 ? "<div class='mt'><u>NEEDED</u><b>" + need + " <s>off " + bLeft + "b</s></b></div>" : "";
+        // THE PAIR A CHASE IS READ BY. What they are scoring at is already on
+        // the left of this row; what they HAVE to score at is the number that
+        // says whether the chase is on, and the banner was carrying the runs
+        // and the balls but never the rate between them.
+        third = need > 0 ? "<div class='mt'><u>NEEDED</u><b>" + need + " <s>off " + bLeft + "b</s></b></div>" +
+          (bLeft > 0 ? "<div class='mt'><u>REQUIRED</u><b>" + (need / (bLeft / 6)).toFixed(2) + "</b></div>" : "")
+          : "";
       } else {
         third = "<div class='mt'><u>PROJECTED</u><b>" + Math.round(rr * 50) + "</b></div>";
       }
@@ -1680,6 +1686,12 @@
       ".fo-fd .fd-scorerow .op{font:400 15px/1.5 Fraunces,Georgia,serif;color:rgba(255,254,252,.8)}",
       ".fo-fd .fd-mets{display:flex;gap:0;margin-top:14px;flex-wrap:wrap}",
       ".fo-fd .fd-mets .mt{padding:0 22px;border-left:1px solid rgba(255,254,252,.16)}",
+      // A CHASE CARRIES FOUR OF THESE - run rate, last five, needed and the
+      // required rate - and four will not sit on one line of a phone. Left
+      // to wrap they broke three-and-one, which reads as a mistake; on a
+      // narrow screen they are a deliberate two-by-two instead, and the
+      // divider drops from whichever tile starts a row.
+      "@media (max-width:560px){.fo-fd .fd-mets{display:grid;grid-template-columns:1fr 1fr;row-gap:14px}.fo-fd .fd-mets .mt{padding:0 0 0 14px}.fo-fd .fd-mets .mt:nth-child(odd){padding-left:0;border-left:none}.fo-fd .fd-mets b{font-size:19px}}",
       ".fo-fd .fd-mets .mt:first-child{padding-left:0;border-left:none}",
       ".fo-fd .fd-mets u{display:block;text-decoration:none;font:700 11px/1 Manrope,sans-serif;letter-spacing:.2em;color:rgba(255,254,252,.5);margin-bottom:5px}",
       ".fo-fd .fd-mets b{font:700 21px/1 Manrope,sans-serif;color:#FFFEFC;font-variant-numeric:tabular-nums}",
