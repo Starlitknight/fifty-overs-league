@@ -1070,6 +1070,27 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
         takenNo[v] = q.name; q.no = v;
       });
     } catch (eNo) {}
+    // THE HANDS A MAN PLAYS WITH FOLLOW THE HANDS HE HAS.
+    //
+    // A cricketer carries his hands twice: in skills, and again at the top
+    // level as field and keeping, which jsDerive mirrors out of the skills
+    // when he is made. The BALL ENGINE READS THE TOP LEVEL FIRST -
+    // foFieldSkill(p) = p.field || p.skills.fielding || 50 - so the two
+    // drifting apart is not cosmetic: the man fields at one number while
+    // every page in the game shows him another.
+    //
+    // They drifted once already. 084 rescaled the world's hands in skills and
+    // nothing re-derived the top level, so a world whose cards read a healthy
+    // 55 was fielding at the number it had before, and the banked ball-by-ball
+    // came back three good pieces of fielding to 117 misfields. 091 repairs
+    // the men on the books; this is what stops it happening again, because
+    // every squad in the world passes through here.
+    squad.forEach(q => {
+      const sk = q && q.skills;
+      if (!sk) return;
+      if (sk.fielding != null) q.field = sk.fielding;
+      if (sk.keeping != null) q.keeping = sk.keeping;
+    });
     // AND THE BOYS GO BACK TOO. A colt has no career, no form and no tired
     // legs - he plays one competition a season and it keeps its own book - so
     // he carries nothing the fold above adds to a senior. What the academy
