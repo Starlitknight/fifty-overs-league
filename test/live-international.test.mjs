@@ -72,7 +72,11 @@ test('a game that has been filed carries its verdict; one that has not says so',
   // ball-by-ball beside the card now, so the tour is followed the way a league
   // round is - the same reader, the same eighteen seconds a delivery.
   assert.match(hAfg, /href='#\/feed\?nat=nat%3Ad2%3Ag1'/, 'the played tie opens the umpire\'s book');
-  assert.match(hBgd, /href='#\/nations'/, 'a tie not yet filed has nothing to watch, so it points at the room');
+  // AND A TIE NOT YET BOWLED OPENS ITS BUILD-UP - the pre-match room every
+  // other fixture in the game has always had. It used to point at #/nations,
+  // a page that says nothing about this particular tie.
+  assert.match(hBgd, /href='#\/preview\?nat=bgd-rsa&r=3'/,
+    'a tie not yet filed opens its own preview, addressed by the tie and the window round');
   assert.ok(hAfg.indexOf('Afghanistan') >= 0 && hAfg.indexOf('Scotland') >= 0, 'both nations are named');
 });
 

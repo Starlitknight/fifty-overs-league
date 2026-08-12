@@ -419,6 +419,10 @@
   // broadcast is special-cased: the only things a country needs that a club
   // does not are its own name and the hour the tours start.
   var NATS = {};
+  // the umpire's own verdict, kept by match id so the stage can print FULL
+  // TIME under a tour the way it does under a friendly. It rides in on the
+  // fixture call, which is never embargoed - only the CARD is.
+  var NAT_TX = {};
   function natFetch(natId, fresh) {
     var k = "nat:" + natId;
     if (NATS[k] && !fresh) return NATS[k];
@@ -450,6 +454,7 @@
       // log is filed under his country - the pair the reader asks with
       var rid = j.bCountry;
       T.rid = rid;
+      if (j.text) NAT_TX[id] = j.text;
       var m = { home: { name: j.b, slot: null, city: null, __c: j.bCountry },
                 away: { name: j.a, slot: null, city: null, __c: j.aCountry } };
       var cal = { round: j.round | 0, seasonNo: j.seasonNo | 0, __nat: true };
@@ -458,8 +463,20 @@
       logFetch(rid, natId).then(function (log) {
         if (T.id !== id || (location.hash || "").split("?")[0] !== "#/feed") return;
         if (!log || !log.length) {
+          // NO BOOK MEANS NO BROADCAST, and a holding line is not a page. The
+          // build-up room knows this tie - who is touring whom, which game of
+          // three, the party each side named - so the reader is sent there
+          // rather than left staring at a sentence. Only a tour banked before
+          // the umpire started keeping the afternoon (085) lands here at all.
+          var to = (window.foIntlPreviewHref && j.aCountry && j.bCountry && j.round)
+            ? window.foIntlPreviewHref(j.aCountry, j.bCountry, j.round | 0) : "";
           page.innerHTML = shell(rid, cal, "up", m,
-            stageShell(m, null, "International &middot; the umpire is walking out"));
+            stageShell(m, null, "International &middot; the umpire is walking out") +
+            (to ? "<div class='fd-rest'><b>No ball-by-ball was kept for this one.</b>" +
+              "<span>The build-up, the touring party and the series as it stands are all in its preview.</span>" +
+              "<a href='" + to + "'>The build-up &rsaquo;</a>" +
+              (NAT_TX[id] ? "<a href='#/report?nat=" + encodeURIComponent(natId) + "'>The full report &rsaquo;</a>" : "") +
+              "</div>" : ""));
           clearTimeout(T.timer);
           T.timer = setTimeout(function () { window.foRenderFeedPage(); }, 30000);
           return;
@@ -886,10 +903,18 @@
         return "<div class='fd-ftime'><u>FULL TIME</u><b>" +
           (rTx ? E(rTx) : "the umpire is signing the card&hellip;") + "</b></div>";
       })() : "") +
-      (done && !cal.__fr ? "<a class='fd-enter' href='#/report?n=" + encodeURIComponent(rid) + "&w=" + encodeURIComponent(id) + "'>The full report &rsaquo;</a>" : "") +
+      // AND SO DOES A TOUR, from the moment the last ball has been read out -
+      // the card unseals on the very same tick the reveal finishes (087)
+      (done && cal.__nat ? (function () {
+        var tx = NAT_TX[id];
+        return "<div class='fd-ftime'><u>FULL TIME</u><b>" +
+          (tx ? E(tx) : "the umpire is signing the card&hellip;") + "</b></div>";
+      })() : "") +
+      (done && !cal.__fr && !cal.__nat ? "<a class='fd-enter' href='#/report?n=" + encodeURIComponent(rid) + "&w=" + encodeURIComponent(id) + "'>The full report &rsaquo;</a>" : "") +
       // A FRIENDLY GETS THE FULL REPORT NOW, the same Journal page a league
       // match opens - so the stage sends the reader there rather than to a tab
       (done && cal.__fr ? "<a class='fd-enter' href='#/report?fr=" + E(String(id).replace(/^fr:/, "")) + "'>The full report &rsaquo;</a>" : "") +
+      (done && cal.__nat ? "<a class='fd-enter' href='#/report?nat=" + encodeURIComponent(id) + "'>The full report &rsaquo;</a>" : "") +
       strip +
       "</div></div>";
 
@@ -914,6 +939,8 @@
       body +
       (cal.__fr
         ? "<div class='fd-foot'><a href='#/home'>&#8592; The club</a><a href='#/team?c=" + encodeURIComponent(m.away.__c || rid) + "&s=" + (m.away.slot | 0) + "'>The visitors &rsaquo;</a></div>"
+        : cal.__nat
+        ? "<div class='fd-foot'><a href='#/live'>&#8592; Live scores</a><a href='#/nations?n=" + encodeURIComponent(rid) + "'>The international game &rsaquo;</a></div>"
         : "<div class='fd-foot'><a href='#/league?t=fixtures'>&#8592; The round</a><a href='#/home'>The club &rsaquo;</a></div>"));
   }
 

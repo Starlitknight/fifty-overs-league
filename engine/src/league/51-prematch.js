@@ -335,6 +335,33 @@
 
       var natId = foPmQ("n") || "eng";
       var round = parseInt(foPmQ("r") || "0", 10) | 0;
+      // A TOUR NAMES BOTH NATIONS, not a nation and two slots - there are no
+      // clubs in it. Same address, same room, its own reading.
+      var pair = foPmQ("nat");
+      if (pair) {
+        var two = String(pair).split("-");
+        var sigI = "pmi|" + pair + "|" + round;
+        if (page.__foPmSig === sigI && page.querySelector(".fo-pm")) return;
+        if (two.length !== 2 || !two[0] || !two[1] || !round) {
+          foPmLost(page, "That tour is not on the calendar."); return;
+        }
+        var nb = foPmSnap("nations", function () {
+          page.__foPmSig = null;
+          try { window.foRenderPreviewPage(); } catch (e) {}
+        });
+        if (nb === null) {
+          foPmCss();
+          page.innerHTML = "<div class='fo-pm'><div class='fo-pm-in fo-pm-body'>" +
+            "<p class='fo-pm-dim'>Asking the selectors&hellip;</p></div></div>";
+          document.body.classList.add("fo-pm-on");
+          return;
+        }
+        if (!nb || !window.foRenderIntlPreview(page, nb, two[0], two[1], round)) {
+          foPmLost(page, "That tour is not on the calendar."); return;
+        }
+        page.__foPmSig = sigI;
+        return;
+      }
       var stage = foPmQ("fa") || "";
       if (stage && !FO_PM_FA[stage]) stage = "";
       var hSlot = parseInt(foPmQ("h") || "-1", 10);
@@ -859,6 +886,315 @@
     }
   };
 
+  // ---- AND SO DOES A TOUR ----------------------------------------------------
+  //
+  // A league fixture has a room before it and a report after it. A friendly
+  // has both. A tour had neither - it appeared on the live-scores page at
+  // 18:00 already being bowled, and vanished into a scoreline when it was
+  // done. The international is the one week of the season a manager watches
+  // rather than plays, which is an argument for MORE build-up than a round
+  // gets, not less.
+  //
+  // The one thing this room does not have, and must not pretend to, is a team
+  // sheet. The selectors are autonomous: ensureCallups names the fifteen the
+  // morning of the series' first game and they stand for all three, so there
+  // is nothing to file and nothing to lock. What there IS to read is who they
+  // named, which club each man was taken from, how many caps he carries, where
+  // the series stands after the games already bowled, and how the two nations
+  // are going. All of that is in the nations snapshot, so this is one fetch.
+  var PM_SNAP = {};
+  function foPmSnap(key, cb) {
+    if (PM_SNAP[key] !== undefined) return PM_SNAP[key];
+    PM_SNAP[key] = null;
+    var SB = "https://egaipdksvztqqgouriyc.supabase.co";
+    var AK = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+    fetch(SB + "/rest/v1/world_snapshots?key=eq." + encodeURIComponent(key) + "&select=body",
+      { headers: { apikey: AK } })
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) { PM_SNAP[key] = (j && j[0] && j[0].body) || false; if (cb) cb(); })
+      .catch(function () { PM_SNAP[key] = false; if (cb) cb(); });
+    return null;
+  }
+  function foPmNatFlag(rid) {
+    try {
+      var ff = window.__foCxAPI && window.__foCxAPI.flagFile ? window.__foCxAPI.flagFile(rid) : rid;
+      return ff ? (foPmArt() + "flags/" + ff + ".svg") : "";
+    } catch (e) { return ""; }
+  }
+  function foPmNatShield(rid, big) {
+    var src = foPmNatFlag(rid);
+    if (!src) return "<span class='fo-pm-sh" + (big ? " big" : "") + "'>" + foPmE(String(rid || "?").toUpperCase()) + "</span>";
+    return "<img class='fo-pm-sh" + (big ? " big" : "") + " crest' src='" + src +
+      "' alt='' onerror=\"this.style.display='none'\">";
+  }
+  // THE TIE THIS ADDRESS NAMES. The calendar publishes every series of the
+  // season with the three window rounds it is played over; a preview is one
+  // of those series at one of those rounds.
+  window.foPmIntlTie = function (snap, away, host, round) {
+    try {
+      var ser = (snap && snap.calendar && snap.calendar.series) || [];
+      for (var i = 0; i < ser.length; i++) {
+        var t = ser[i];
+        if (t.away !== away || t.home !== host) continue;
+        var leg = (t.rounds || []).indexOf(round | 0);
+        if (leg < 0) continue;
+        return { tie: t, leg: leg + 1, of: (t.rounds || []).length,
+                 st: t.series || {},
+                 game: ((t.series && t.series.games) || []).filter(function (g) {
+                   return (g.round | 0) === (round | 0); })[0] || null };
+      }
+    } catch (e) {}
+    return null;
+  };
+  // when the first ball of a tour round is bowled: the window day the calendar
+  // deals that round, in the season it belongs to, at the one hour every tour
+  // in the game starts at
+  window.foPmIntlStart = function (seasonNo, round, hourUtc) {
+    try {
+      var PL = window.__foPlanet; if (!PL) return 0;
+      var i = (PL.WINDOW_DAYS && PL.WINDOWS) ? PL.WINDOWS.indexOf(round | 0) : -1;
+      if (i < 0) return 0;
+      var day = PL.seasonStart(seasonNo | 0) + PL.WINDOW_DAYS[i];
+      return PL.EPOCH + day * PL.DAY + (hourUtc == null ? 18 : hourUtc | 0) * 3600000;
+    } catch (e) { return 0; }
+  };
+
+  function foPmIntlSquadRows(men, rid, mySlot, myNat) {
+    if (!men || !men.length) {
+      return "<p class='fo-pm-dim'>The selectors have not named this party yet. Fifteen are picked the morning of the series&rsquo; first game.</p>";
+    }
+    return "<div class='fo-pm-party'>" + men.map(function (m, i) {
+      var mine = (rid === myNat && (m.slot | 0) === (mySlot | 0));
+      var can = false;
+      try {
+        can = !!(window.foFindAnyPlayer && window.foFindAnyPlayer(m.name, rid, m.slot == null ? null : (m.slot | 0)));
+      } catch (e) {}
+      var inner = "<i>" + (i + 1) + "</i><b>" + foPmE(m.name) + "</b>" +
+        "<span>" + foPmE(m.club || "") + (m.age ? " &middot; " + (m.age | 0) : "") + "</span>" +
+        "<u>" + (m.caps ? m.caps + " cap" + (m.caps === 1 ? "" : "s") : "uncapped") + "</u>";
+      if (!can) return "<div class='fo-pm-cap-man" + (mine ? " mine" : "") + "'>" + inner + "</div>";
+      return "<a class='fo-pm-cap-man go" + (mine ? " mine" : "") + "' href='#/player?n=" +
+        encodeURIComponent(m.name) + "&r=" + encodeURIComponent(rid) + "&s=" + (m.slot | 0) + "'>" +
+        inner + "<s>&#8250;</s></a>";
+    }).join("") + "</div>";
+  }
+  // a nation's recent form, off its own banked tours - newest last, the way
+  // the beads read everywhere else in the game
+  function foPmIntlForm(n) {
+    try {
+      // THE SIDE IS "SCOTLAND XI"; THE NATION IS "SCOTLAND". The umpire banks
+      // a tour under the side names, so a bare nation name matches nothing in
+      // this book and every nation reads as having played no cricket at all.
+      var us = n.name, usXI = n.name + " XI";
+      var isUs = function (s) { return s === us || s === usXI; };
+      return (n.tours || []).map(function (t) {
+        if (!isUs(t.a) && !isUs(t.b)) return "";
+        return !t.winner ? "t" : isUs(t.winner) ? "w" : "l";
+      }).filter(Boolean).slice(-5);
+    } catch (e) { return []; }
+  }
+  function foPmIntlRow(rid, n, role, rank, mine) {
+    var form = foPmIntlForm(n);
+    var men = (n.tourSquad && n.tourSquad.length) ? n.tourSquad : (n.squad || []);
+    var capped = men.filter(function (m) { return (m.caps | 0) > 0; }).length;
+    var clubs = {}; men.forEach(function (m) { if (m.club) clubs[m.club] = 1; });
+    return "<a class='fo-pm-sl" + (mine ? " mine" : "") + "' href='#/nations?n=" + encodeURIComponent(rid) + "'>" +
+      foPmNatShield(rid) +
+      "<b>" + foPmE(n.name || rid) + " <i>" + foPmE(role) + (rank ? " &middot; #" + (rank | 0) + " in the world" : "") + "</i></b>" +
+      "<span class='fo-pm-her'>" + (men.length ? foPmPl(men.length, "man", "men") + " from " +
+        foPmPl(Object.keys(clubs).length, "club", "clubs") : "No party named") + "</span>" +
+      "<span class='fo-pm-beads'>" + (form.length
+        ? form.map(function (k) { return "<i class='" + k + "'>" + k.toUpperCase() + "</i>"; }).join("")
+        : "<span class='fo-pm-none'>no tours yet</span>") + "</span>" +
+      "<span class='fo-pm-slst'>" +
+      "<u>SQUAD<b>" + men.length + "</b></u>" +
+      "<u>CAPPED<b>" + capped + "</b></u>" +
+      "<u>UNCAPPED<b>" + (men.length - capped) + "</b></u>" +
+      "</span><s class='fo-pm-chev'>&#8250;</s></a>";
+  }
+
+  // THE ROOM ITSELF. Same card, same dress, same clock as a round's preview.
+  window.foRenderIntlPreview = function (page, snap, away, host, round) {
+    try {
+      if (!page || !snap || !snap.nations) return false;
+      foPmCss();
+      var found = window.foPmIntlTie(snap, away, host, round);
+      if (!found) return false;
+      var t = found.tie, st = found.st, hourUtc = snap.hourUtc == null ? 18 : snap.hourUtc | 0;
+      var nA = snap.nations[away] || {}, nH = snap.nations[host] || {};
+      var seasonNo = (snap.calendar && snap.calendar.seasonNo) || nH.seasonNo || nA.seasonNo || 1;
+      var start = window.foPmIntlStart(seasonNo, round, hourUtc);
+      var PL = window.__foPlanet;
+      var g = { start: start, stop: start + ((PL && PL.LIVE_LEN) || 3) * 3600000 };
+      var c0 = foPmCountText(g, Date.now());
+
+      var mySlot = -1, myNat = "";
+      try {
+        var cl = window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null");
+        if (cl) { myNat = cl.country; mySlot = cl.slot; }
+      } catch (eC) {}
+      var rankOf = function (rid) {
+        try {
+          var rk = JSON.parse(localStorage.getItem("fo_world_rk") || "null");
+          var list = (rk && (rk.countries || rk.nations)) || [];
+          var hit = list.filter(function (x) { return x.id === rid || x.country === rid; })[0];
+          return hit && hit.rank ? hit.rank | 0 : 0;
+        } catch (e) { return 0; }
+      };
+      // MY OWN MEN, ON EITHER SIDE. The one thing a manager cares about in a
+      // window is which of his cricketers is missing and who has him.
+      var minesA = ((nA.tourSquad && nA.tourSquad.length) ? nA.tourSquad : (nA.squad || []))
+        .filter(function (m) { return away === myNat && (m.slot | 0) === (mySlot | 0); });
+      var minesH = ((nH.tourSquad && nH.tourSquad.length) ? nH.tourSquad : (nH.squad || []))
+        .filter(function (m) { return host === myNat && (m.slot | 0) === (mySlot | 0); });
+      var myMen = minesA.concat(minesH);
+
+      var ga = { art: "", name: "" };
+      try { if (window.foNatGround) ga = window.foNatGround(host) || ga; } catch (eG) {}
+      var art = ga.art || (foPmArt() + "home/arches-summer-noon.webp");
+
+      var whenT = start ? new Date(start).toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }) : "";
+      var utcT = start ? new Date(start).toISOString().slice(11, 16) : "";
+      var tzA = ""; try { tzA = (typeof foTzAbbr === "function" && foTzAbbr()) || ""; } catch (eTz) {}
+
+      var ic = function (d) {
+        return "<svg class='fo-pm-ic' viewBox='0 0 24 24' width='16' height='16' fill='none' stroke='currentColor' " +
+          "stroke-width='1.8' stroke-linecap='round' stroke-linejoin='round' aria-hidden='true'>" + d + "</svg>";
+      };
+      var billSide = function (rid, nm, isAway) {
+        return "<div class='fo-pm-billside" + (isAway ? " a" : "") + "'>" +
+          foPmNatShield(rid, true) +
+          "<div><b>" + foPmE(nm) + "</b><i>" + (isAway ? "Touring" : "Hosts") + "</i></div></div>";
+      };
+
+      // THE SERIES, GAME BY GAME. Best of three over three window rounds: what
+      // has been bowled says its result and opens its report, what has not says
+      // which round it falls on. This is the whole shape of an international
+      // season and it has never been printed anywhere a reader could reach it.
+      var played = {};
+      ((st.games) || []).forEach(function (x) { played[x.round | 0] = x; });
+      var seriesRows = (t.rounds || []).map(function (r, i) {
+        var gm = played[r | 0];
+        if (gm) {
+          return "<a class='fo-pm-h2h' href='#/report?nat=" + encodeURIComponent(gm.id || "") + "'>" +
+            "<i>" + (i + 1) + "</i><b>Game " + (i + 1) + "</b>" +
+            "<span>" + foPmE(gm.text || "") + "</span><s>&#8250;</s></a>";
+        }
+        var here = (r | 0) === (round | 0);
+        return "<div class='fo-pm-h2h flat" + (here ? " now" : "") + "'>" +
+          "<i>" + (i + 1) + "</i><b>Game " + (i + 1) + "</b>" +
+          "<span>" + (here ? "This one &middot; round " + (r | 0)
+            : "To come &middot; round " + (r | 0)) + "</span></div>";
+      }).join("");
+
+      var standing = st.verdict || "Nothing has been bowled in this series yet.";
+
+      var actions = [];
+      if (found.game && found.game.id) {
+        actions.push("<a class='fo-pm-cta' href='#/feed?nat=" + encodeURIComponent(found.game.id) + "'>" +
+          "Watch the broadcast</a>");
+      }
+      actions.push("<a class='fo-pm-back' href='#/nations?n=" + encodeURIComponent(myNat || host) + "'>The international game</a>");
+      actions.push("<a class='fo-pm-back' href='#/live'>Live scores</a>");
+
+      page.__foPmSig = null;
+      page.innerHTML =
+        "<div class='fo-pm'><div class='fo-pm-in'><div class='fo-pm-card'>" +
+
+        "<div class='fo-pm-folio'>" +
+        (foPmNatFlag(host) ? "<img src='" + foPmNatFlag(host) + "' alt='' onerror=\"this.style.display='none'\">" : "") +
+        "<span>" + foPmE(t.title || "International") + "</span></div>" +
+
+        "<div class='fo-pm-bill'>" +
+        billSide(away, (t.names || [])[0] || away, true) +
+        "<div class='fo-pm-v'><span>at</span></div>" +
+        billSide(host, (t.names || [])[1] || host, false) +
+        "</div>" +
+
+        "<div class='fo-pm-main'>" +
+        "<figure class='fo-pm-plate'><img src='" + art + "' alt='' " +
+        "onerror=\"this.parentNode.style.display='none'\"></figure>" +
+
+        // FOUR FACTS, TWO BY TWO. The round's preview has three and lays them
+        // in a rank; a tour has a fourth - which game of the series - and a
+        // fourth in a three-column rank is one card alone on a second row with
+        // its caption clipped.
+        "<div class='fo-pm-facts four'>" +
+        "<div class='fo-pm-fact' id='fo-pm-count' data-k='" + c0.k + "'>" +
+        ic("<circle cx='12' cy='12' r='9'/><path d='M12 7v5l3 2'/>") +
+        "<div><b>" + foPmE(c0.big) + "</b><i>" + foPmE(c0.sub) + "</i></div></div>" +
+        "<div class='fo-pm-fact'>" +
+        ic("<path d='M12 21s7-5.3 7-11a7 7 0 1 0-14 0c0 5.7 7 11 7 11z'/><circle cx='12' cy='10' r='2.6'/>") +
+        "<div><b>" + foPmE(ga.name || ((nH.name || host) + " at home")) + "</b><i>" + foPmE(nH.name || host) + "</i></div></div>" +
+        "<div class='fo-pm-fact'>" +
+        ic("<rect x='3.5' y='5' width='17' height='16' rx='2.5'/><path d='M3.5 10h17M8 3v4M16 3v4'/>") +
+        "<div><b>Game " + found.leg + " of " + found.of + "</b><i>Round " + (round | 0) + " &middot; the window</i></div></div>" +
+        "<div class='fo-pm-fact'>" +
+        ic("<circle cx='12' cy='12' r='9'/><path d='M5.4 8.2c4 1.6 9.2 1.6 13.2 0M5.4 15.8c4-1.6 9.2-1.6 13.2 0'/>") +
+        "<div><b>" + foPmE(whenT + (tzA ? " " + tzA : "")) + "</b><i>First ball &middot; " + foPmE(utcT) + " UTC</i></div></div>" +
+        "</div>" +
+        "</div>" +
+
+        "<div class='fo-pm-rail'>" +
+        "<div class='fo-pm-box'><div class='fo-pm-cap'>The series</div>" +
+        "<div class='fo-pm-big'>" + foPmE(standing) + "</div>" +
+        "<div class='fo-pm-h2hs'>" + seriesRows + "</div></div>" +
+
+        "<div class='fo-pm-cap'>The two sides</div>" +
+        "<div class='fo-pm-two'>" +
+        foPmIntlRow(away, nA, "Touring", rankOf(away), away === myNat) +
+        foPmIntlRow(host, nH, "Hosts", rankOf(host), host === myNat) +
+        "</div>" +
+
+        (myMen.length
+          ? "<div class='fo-pm-box'><div class='fo-pm-cap'>Your men in this one</div>" +
+            "<p class='fo-pm-prn'>" + foPmE(myMen.map(function (m) { return m.name; }).join(", ")) +
+            " &mdash; " + foPmPl(myMen.length, "cricketer", "cricketers") +
+            " of yours " + (myMen.length === 1 ? "is" : "are") + " away with the selectors" +
+            " while this is bowled. The board pays you for every round they miss.</p></div>"
+          : "") +
+
+        "<div class='fo-pm-box'><div class='fo-pm-cap'>Who picks the side</div>" +
+        "<p class='fo-pm-prn'>The selectors do, and no manager files a sheet for a tour. " +
+        "Fifteen are named the morning of the series&rsquo; first game and stand for all " +
+        (snap.seriesLen || 3) + ". Your club is paid for every round a man of yours is away.</p></div>" +
+        "</div>" +
+
+        // THE TWO PARTIES GO ACROSS THE PAGE, not down the rail. Thirty names
+        // in a column the width of a scoreline is a page nobody reads; the
+        // card's two halves both belong to them here.
+        "<div class='fo-pm-wide'>" +
+        "<div class='fo-pm-sq'>" +
+        "<div class='fo-pm-cap'>" + foPmE((t.names || [])[0] || away) + " &middot; the touring party</div>" +
+        foPmIntlSquadRows((nA.tourSquad && nA.tourSquad.length) ? nA.tourSquad : nA.squad, away, mySlot, myNat) +
+        "</div>" +
+        "<div class='fo-pm-sq'>" +
+        "<div class='fo-pm-cap'>" + foPmE((t.names || [])[1] || host) + " &middot; the hosts&rsquo; squad</div>" +
+        foPmIntlSquadRows((nH.tourSquad && nH.tourSquad.length) ? nH.tourSquad : nH.squad, host, mySlot, myNat) +
+        "</div>" +
+        "</div>" +
+
+        "<div class='fo-pm-foot'>" + actions.join("") + "</div>" +
+        "</div></div></div>";
+
+      document.body.classList.add("fo-pm-on");
+      FO_PM_ON = true;
+      var host9 = document.getElementById("fo-pm-count");
+      if (host9) host9.__g = g;
+      try { if (window.__foPmTimer) clearInterval(window.__foPmTimer); } catch (eT) {}
+      window.__foPmTimer = setInterval(foPmTick, 1000);
+      return true;
+    } catch (e) {
+      try { console.error("foRenderIntlPreview", e); } catch (e2) {}
+      return false;
+    }
+  };
+  // A TOUR IS A DOOR TOO. The address names the tie and the window round, so
+  // it stands whether the game has been bowled or not.
+  window.foIntlPreviewHref = function (away, host, round) {
+    return "#/preview?nat=" + encodeURIComponent(away + "-" + host) + "&r=" + (round | 0);
+  };
+
   function foPmCss() {
     if (document.getElementById("fo-pm-css")) return;
     var css = [
@@ -873,6 +1209,10 @@
       ".fo-pm-in{width:min(720px,100%);margin:0 auto;padding:0 clamp(10px,2.6vw,16px)}",
       ".fo-pm-card{background:#FFFEFC;border:1px solid var(--edge);border-radius:16px;padding:clamp(12px,2.4vw,17px);display:flex;flex-direction:column;gap:clamp(11px,1.8vw,14px);box-shadow:0 1px 3px rgba(14,35,63,.05)}",
       ".fo-pm-main,.fo-pm-rail{display:flex;flex-direction:column;gap:clamp(11px,1.8vw,14px);min-width:0}",
+      // the tour's two touring parties: stacked on a phone, side by side once
+      // the card takes the width (the desktop rule is in the media block below)
+      ".fo-pm-wide{display:grid;grid-template-columns:1fr;gap:14px;min-width:0}",
+      ".fo-pm-sq{display:flex;flex-direction:column;gap:8px;min-width:0}",
       // THE DESKTOP SPREAD. A 720px card on a wide monitor was a column of
       // cream either side of it. Past 980px the card takes the width: billing
       // across the top, the ground and its facts filling the left, the
@@ -881,9 +1221,10 @@
       "@media(min-width:980px){",
       ".fo-pm-in{width:min(1150px,100%)}",
       ".fo-pm-card{display:grid;grid-template-columns:1.3fr .95fr;gap:15px 18px;padding:20px 22px;align-items:start}",
-      ".fo-pm-folio,.fo-pm-bill,.fo-pm-foot{grid-column:1/-1}",
+      ".fo-pm-folio,.fo-pm-bill,.fo-pm-foot,.fo-pm-wide{grid-column:1/-1}",
       ".fo-pm-main{grid-column:1;align-self:stretch}",
       ".fo-pm-rail{grid-column:2}",
+      ".fo-pm-wide{grid-template-columns:1fr 1fr;gap:18px}",
       // the painting absorbs whatever height the rail sets: absolutely
       // positioned inside its plate, it contributes no height of its own, so
       // the row is the rail's and the left column is all art down to the facts
@@ -912,6 +1253,7 @@
       ".fo-pm-plate img{display:block;width:100%;height:auto;aspect-ratio:32/12.5;object-fit:cover;object-position:center 45%}",
       "@media(max-width:760px){.fo-pm-plate img{aspect-ratio:16/8}}",
       ".fo-pm-facts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));background:linear-gradient(0deg,#FBF6EA,#FDFAF2);border:1px solid var(--edge);border-radius:12px}",
+      ".fo-pm-facts.four{grid-template-columns:repeat(2,minmax(0,1fr))}",
       ".fo-pm-fact{display:flex;align-items:center;gap:9px;padding:11px 11px;min-width:0;border-left:1px solid var(--edge)}",
       ".fo-pm-fact:first-child{border-left:0}",
       ".fo-pm-fact>div{min-width:0}",
@@ -968,6 +1310,28 @@
       "#page a.fo-pm-h2h b{font:600 12.5px/1.3 Manrope,sans-serif;color:var(--navy)}",
       "#page a.fo-pm-h2h span{grid-column:2;font:400 13px/1.4 Fraunces,Georgia,serif;color:var(--mut)}",
       "#page a.fo-pm-h2h s{grid-column:3;grid-row:span 2;text-decoration:none;font:400 18px/1 Fraunces,Georgia,serif;color:rgba(27,36,50,.4)}",
+      // A GAME OF THE SERIES THAT HAS NOT BEEN BOWLED IS NOT A DOOR, so it is
+      // not a link - the same row, without the hover and without the chevron.
+      // The one being previewed wears the accent so the reader knows where in
+      // the three he is standing.
+      "#page .fo-pm-h2h.flat{display:grid;grid-template-columns:34px minmax(0,1fr);gap:2px 10px;align-items:center;padding:9px 12px;border-radius:10px;background:#FBF8F1;border:1px dashed var(--edge);color:var(--ink)}",
+      "#page .fo-pm-h2h.flat i{grid-row:span 2;font:700 11px/1 Manrope,sans-serif;font-style:normal;color:#9FB0C6}",
+      "#page .fo-pm-h2h.flat b{font:600 12.5px/1.3 Manrope,sans-serif;color:var(--navy)}",
+      "#page .fo-pm-h2h.flat span{grid-column:2;font:400 13px/1.4 Fraunces,Georgia,serif;color:var(--mut)}",
+      "#page .fo-pm-h2h.flat.now{background:#FBF6EA;border:1px solid rgba(201,87,31,.45)}",
+      "#page .fo-pm-h2h.flat.now i,#page .fo-pm-h2h.flat.now span{color:var(--acc)}",
+      // THE TOURING PARTY. Fifteen names, the club each was taken from and
+      // what he has already won - a list a manager reads down looking for his
+      // own, which is why his own are marked.
+      ".fo-pm-party{display:grid;grid-template-columns:repeat(auto-fill,minmax(228px,1fr));gap:6px}",
+      "#page .fo-pm-cap-man{display:grid;grid-template-columns:22px minmax(0,1fr) auto;gap:1px 8px;align-items:baseline;padding:8px 11px;border-radius:10px;background:#FFFEFC;border:1px solid var(--edge);text-decoration:none;color:var(--ink)}",
+      "#page a.fo-pm-cap-man:hover{border-color:rgba(201,87,31,.5)}",
+      "#page .fo-pm-cap-man.mine{border-color:rgba(201,87,31,.45);background:#FBF6EA}",
+      "#page .fo-pm-cap-man i{grid-row:span 2;font:700 10px/1.4 Manrope,sans-serif;font-style:normal;color:#9FB0C6;font-variant-numeric:tabular-nums}",
+      "#page .fo-pm-cap-man b{font:600 12.5px/1.3 Manrope,sans-serif;color:var(--navy);overflow-wrap:anywhere}",
+      "#page .fo-pm-cap-man span{grid-column:2;font:400 11.5px/1.35 Manrope,sans-serif;color:var(--mut);overflow-wrap:anywhere}",
+      "#page .fo-pm-cap-man u{grid-column:3;grid-row:1;text-decoration:none;font:600 9.5px/1.3 Manrope,sans-serif;letter-spacing:.06em;text-transform:uppercase;color:var(--grn);white-space:nowrap}",
+      "#page .fo-pm-cap-man s{grid-column:3;grid-row:2;text-decoration:none;font:400 15px/1 Fraunces,Georgia,serif;color:rgba(27,36,50,.35);text-align:right}",
       ".fo-pm-duo{display:grid;grid-template-columns:1fr;gap:9px}",
       "@media(min-width:560px){.fo-pm-duo{grid-template-columns:1fr 1.2fr}}",
       ".fo-pm-box{padding:12px 14px;border-radius:12px;background:linear-gradient(0deg,#FBF6EA,#FDFAF2);border:1px solid var(--edge);display:flex;flex-direction:column;gap:9px}",

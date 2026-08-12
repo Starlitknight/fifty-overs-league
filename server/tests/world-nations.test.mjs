@@ -454,6 +454,55 @@ test('the umpire keeps the afternoon, so a tour can be watched', async () => {
   }
 });
 
+// AND A TOUR IS READABLE AFTERWARDS. The card was the one thing the umpire
+// kept back: an international could be watched from the first ball to the last
+// and then had nowhere to go - no scorecard, no partnerships, no man of the
+// match - because world_nat_match answered with everything about the fixture
+// except what happened in it. It serves the card now, under the same law the
+// league card lives by (087, after 047): sealed while the broadcast is still
+// reading the afternoon out, open the moment it shows the last ball.
+test('a tour publishes its fixture and the hour it was bowled, always', async () => {
+  const ms = (await pool.query('SELECT id, world_day FROM nat_matches ORDER BY id')).rows;
+  assert.ok(ms.length, 'there are tours to read');
+  const epoch = Number((await pool.query('SELECT epoch_ms FROM worlds WHERE id=1')).rows[0].epoch_ms);
+  for (const m of ms) {
+    const j = (await pool.query('SELECT world_nat_match($1) j', [m.id])).rows[0].j;
+    assert.ok(j, m.id + ' answers');
+    assert.ok(j.text, 'the verdict is never embargoed - the scores page prints it');
+    assert.ok(j.a && j.b && j.aCountry && j.bCountry, 'and both sides are named');
+    // the hour the umpire played it, which is what the seal is measured from
+    assert.equal(Number(j.playAtMs), epoch + Number(m.world_day) * 86400000 + 18 * 3600000,
+      'the tour hour is published so the reader can pace it');
+  }
+});
+
+// The seal is arithmetic on the world clock, not a flag, so the only way to
+// stand on either side of it is to move the tour's day and put it back.
+test('the card opens when the broadcast has shown its last ball, and not before', async () => {
+  const m = (await pool.query('SELECT id, world_day FROM nat_matches ORDER BY id LIMIT 1')).rows[0];
+  const epoch = Number((await pool.query('SELECT epoch_ms FROM worlds WHERE id=1')).rows[0].epoch_ms);
+  const today = Math.floor((Date.now() - epoch) / 86400000);
+  const ask = async () => (await pool.query('SELECT world_nat_match($1) j', [m.id])).rows[0].j;
+  const move = d => pool.query('UPDATE nat_matches SET world_day=$2 WHERE id=$1', [m.id, d]);
+  try {
+    // tomorrow: the umpire has not walked out, never mind finished
+    await move(today + 1);
+    let j = await ask();
+    assert.equal(j.card, null, 'a tour still to come has no card to read');
+    assert.ok(j.text, 'though the fixture itself still answers');
+
+    // the day before yesterday: the afternoon was read out long ago
+    await move(today - 2);
+    j = await ask();
+    assert.ok(j.card && j.card.innings && j.card.innings.length,
+      'a tour whose reveal has run hands over the innings');
+    assert.equal(j.card.text, j.text, 'and the card is the same match as the verdict');
+    assert.ok(j.card.winner, 'with the umpire\'s own winner on it');
+  } finally {
+    await move(m.world_day);
+  }
+});
+
 test('a cap is a real cap: its own book, and it is felt at the club', async () => {
   const eng = (await pool.query(
     `SELECT * FROM nat_matches WHERE a_country=$1 OR b_country=$1 LIMIT 1`, [TC])).rows[0];

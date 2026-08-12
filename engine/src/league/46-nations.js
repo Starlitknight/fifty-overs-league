@@ -69,6 +69,11 @@
     var nm = pool[0].split("-").map(function (w) { return w.charAt(0).toUpperCase() + w.slice(1); }).join(" ") + " Ground";
     return { art: natArt(rid, 0), name: nm };
   }
+  // WHERE A NATION PLAYS AT HOME, for the rooms that are not this one. The
+  // tour preview paints it and the tour report names it, and neither should
+  // have to keep its own copy of the gallery.
+  try { window.foNatGround = natGround; } catch (eNg) {}
+  try { window.foNatArt = natArt; } catch (eNa) {}
   function money(v) {
     var n = Number(v) || 0;
     return "$" + (n >= 1000000 ? (n / 1000000).toFixed(n >= 10000000 ? 0 : 1) + "m"
@@ -130,6 +135,11 @@
       "html body #page .fo-nat-tie u{text-decoration:none;color:rgba(20,28,40,.5);font-variant-numeric:tabular-nums}",
       "html body #page .fo-nat-tie em{font-style:normal;color:rgba(20,28,40,.3);font-size:10px}",
       "html body #page .fo-nat-tie i{flex:1 0 100%;font-style:normal;font-size:11px;color:rgba(20,28,40,.5)}",
+      "html body #page a.fo-nt-door{display:inline-flex;align-items:center;gap:6px;margin:2px 0 10px;padding:8px 13px;border-radius:9px;background:#FBF6EA;border:1px solid rgba(201,87,31,.4);text-decoration:none;font:600 12px/1 Manrope,sans-serif;letter-spacing:.02em;color:#C9571F}",
+      "html body #page a.fo-nt-door:hover{background:#F6EBD8}",
+      "html body #page a.fo-nat-tie{text-decoration:none;color:inherit}",
+      "html body #page a.fo-nat-tie:hover{background:rgba(201,87,31,.05)}",
+      "html body #page a.fo-nat-tie s{margin-left:auto;text-decoration:none;font:400 16px/1 Fraunces,Georgia,serif;color:rgba(20,28,40,.32)}",
       "html body #page .fo-nat-pay{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}",
       "html body #page .fo-nat-pay span{font:500 12px/1 Manrope,sans-serif;color:rgba(20,28,40,.62);background:rgba(20,28,40,.06);border-radius:999px;padding:6px 10px}",
       "html body #page .fo-nat-pay span.mine{background:rgba(232,185,106,.32);color:#6B520F;font-weight:700}",
@@ -242,7 +252,16 @@
       return;
     }
     var ids = Object.keys(snap.nations).sort();
-    if (!ST.nation || ids.indexOf(ST.nation) < 0) ST.nation = (mine && mine.country) || (ids.indexOf("eng") >= 0 ? "eng" : ids[0]);
+    // A NATION IS AN ADDRESS. Every room that names one - a tour's build-up,
+    // a broadcast's footer, the two rows of a preview - wants to hand the
+    // reader THAT nation's front page, not England's and not his own.
+    var want = "";
+    try {
+      var mq = /[?&]n=([a-z]+)/.exec(location.hash || "");
+      if (mq && ids.indexOf(mq[1]) >= 0) want = mq[1];
+    } catch (eQ) {}
+    if (want) ST.nation = want;
+    else if (!ST.nation || ids.indexOf(ST.nation) < 0) ST.nation = (mine && mine.country) || (ids.indexOf("eng") >= 0 ? "eng" : ids[0]);
     var n = snap.nations[ST.nation] || {};
     var myClub = mine ? mine.club : null;
 
@@ -332,10 +351,15 @@
       if (nr9 && nr9.rank) natRank = nr9;
     } catch (eRk) {}
     // the tours read newest-last: the nation's own results become its form
+    // THE SIDE IS "SCOTLAND XI"; THE NATION IS "SCOTLAND". The umpire banks a
+    // tour under the side names (nations.mjs writes name + ' XI'), so matching
+    // on the bare nation name found nothing and every nation in the game read
+    // as having played no cricket - the form strip was empty for all sixteen,
+    // for ever. Both spellings are the nation now.
+    var isUs9 = function (s9) { return s9 === n.name || s9 === n.name + " XI"; };
     var formChips = (n.tours || []).map(function (t9) {
-      var us = n.name;
-      if (t9.a !== us && t9.b !== us) return "";
-      var k9 = !t9.winner ? "t" : t9.winner === us ? "w" : "l";
+      if (!isUs9(t9.a) && !isUs9(t9.b)) return "";
+      var k9 = !t9.winner ? "t" : isUs9(t9.winner) ? "w" : "l";
       return "<i class='" + k9 + "'>" + k9.toUpperCase() + "</i>";
     }).join("");
     var ga = natGround(ST.nation);
@@ -512,8 +536,28 @@
     var payCard = "<div class='fo-ac-card'><h3>What the window paid<span>season " + (n.seasonNo || 1) + "</span></h3>" +
         (pay ? "<div class='fo-nat-pay'>" + pay + "</div>" : "<div class='fo-ac-note'>No window has paid out yet.</div>") +
         "<div class='fo-ac-note'>$50,000 a senior, $20,000 a man under twenty-one &mdash; paid to the club he was taken from, every window.</div></div>";
+    // THE NEXT GAME OF THE SERIES HAS A ROOM. Which of the three window rounds
+    // has not been bowled yet is arithmetic the snapshot already answers - the
+    // rounds the calendar dealt, less the games the umpire has filed.
+    var nextR9 = null;
+    if (n.tour && tourRounds.length) {
+      var doneR9 = {};
+      ((ser9 && ser9.games) || []).forEach(function (g9) { doneR9[g9.round | 0] = 1; });
+      for (var iR9 = 0; iR9 < tourRounds.length; iR9++) {
+        if (!doneR9[tourRounds[iR9] | 0]) { nextR9 = tourRounds[iR9] | 0; break; }
+      }
+    }
+    var nextDoor9 = "";
+    try {
+      if (nextR9 && window.foIntlPreviewHref && n.tour.away && n.tour.home) {
+        nextDoor9 = "<a class='fo-nt-door' href='" +
+          window.foIntlPreviewHref(n.tour.away, n.tour.home, nextR9) + "'>" +
+          "The build-up to game " + (tourRounds.indexOf(nextR9) + 1) + " &rsaquo;</a>";
+      }
+    } catch (eD9) {}
     var toursCard = "<div class='fo-ac-card'><h3>The tours" + (formChips ? "<span>recent form</span>" : "") + "</h3>" +
         (formChips ? "<div class='fo-nt-form'>" + formChips + "</div>" : "") +
+        nextDoor9 +
         (tours || "<div class='fo-ac-note'>" +
           (n.tour ? "No game of the series has been bowled yet &mdash; the first is played after the round-" +
               (tourRounds[0] || windows9[0]) + " window at " + hour9 + "."
@@ -558,6 +602,13 @@
     page.querySelectorAll("[data-nat]").forEach(function (b) {
       b.addEventListener("click", function () {
         ST.nation = b.getAttribute("data-nat");
+        // the address follows the flag: otherwise an arrival at #/nations?n=aus
+        // would keep re-selecting Australia every time the reader clicked away
+        try {
+          if (/[?&]n=[a-z]+/.test(location.hash || "")) {
+            history.replaceState(null, "", "#/nations?n=" + encodeURIComponent(ST.nation));
+          }
+        } catch (eH) {}
         render(page, snap, st);
         try { page.scrollIntoView({ block: "start" }); } catch (e) {}
       });
@@ -572,9 +623,14 @@
 
   function tieRow(t) {
     var win = function (side) { return t.winner === side ? " w" : ""; };
-    return "<div class='fo-nat-tie'><b class='" + win(t.a) + "'>" + E(t.a) + "</b><u>" + E(t.as_ || "") + "</u>" +
+    // A TOUR HAS A REPORT NOW - the same Journal page a league match and a
+    // friendly open (087). Every banked tie in this list is a door to it.
+    var inner = "<b class='" + win(t.a) + "'>" + E(t.a) + "</b><u>" + E(t.as_ || "") + "</u>" +
       "<em>v</em><b class='" + win(t.b) + "'>" + E(t.b) + "</b><u>" + E(t.bs_ || "") + "</u>" +
-      (t.text ? "<i>" + E(t.text) + "</i>" : "") + "</div>";
+      (t.text ? "<i>" + E(t.text) + "</i>" : "");
+    if (!t.id) return "<div class='fo-nat-tie'>" + inner + "</div>";
+    return "<a class='fo-nat-tie go' href='#/report?nat=" + encodeURIComponent(t.id) + "'>" +
+      inner + "<s>&#8250;</s></a>";
   }
 
   function howItWorks() { return ""; }

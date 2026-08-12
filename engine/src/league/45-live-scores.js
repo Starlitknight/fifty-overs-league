@@ -143,7 +143,8 @@
       // so the two are matched by the id they share
       var sc = null;
       if (game) sc = ((nb && nb.tours) || []).filter(function (q) { return q && q.id === game.id; })[0] || null;
-      out.push({ tie: t, leg: leg + 1, of: rounds.length, st: st, game: game, score: sc, done: !!game });
+      out.push({ tie: t, leg: leg + 1, of: rounds.length, round: round | 0,
+                 st: st, game: game, score: sc, done: !!game });
     });
     return out;
   }
@@ -203,9 +204,17 @@
         "<span class='sc'>" + (runs ? "<b>" + E(String(runs).split(" ")[0]) + "</b>" +
           (/all out/.test(String(runs)) ? "<u>all out</u>" : ov) : "") + "</span></div>";
     };
-    // the door: a tour that is being read out opens its own broadcast
-    var href = (g && g.id) ? "#/feed?nat=" + encodeURIComponent(g.id) : "#/nations";
-    var foot = (s && !s.done) ? "" : (g ? E(g.text || "") : "Out in the middle &middot; filed when the window shuts");
+    // THE DOOR. A tour being read out opens its own broadcast; one the umpire
+    // has not played yet opens its build-up, the same as any other fixture in
+    // the game still to come - which used to be the nations page, a room that
+    // says nothing about this particular tie.
+    var href = (g && g.id) ? "#/feed?nat=" + encodeURIComponent(g.id)
+      : (window.foIntlPreviewHref && t.away && t.home && x.round)
+        ? window.foIntlPreviewHref(t.away, t.home, x.round)
+        : "#/nations";
+    var foot = (s && !s.done) ? ""
+      : g ? E(g.text || "")
+      : "Out in the middle &middot; the build-up, the parties and the series &rsaquo;";
     var standing = x.st && x.st.verdict && (!s || s.done) ? E(x.st.verdict) : "";
     return "<a class='fo-lv-card on' href='" + href + "'>" +
       side(0) + side(1) +

@@ -124,7 +124,7 @@
     var b = foMrInnsFacts(r.innings[1], w[1]);
     var res = r.result || {};
     var f = {
-      rec: r, ix: r.ix, date: r.date, ground: r.ground, pitch: r.pitch, weather: r.weather,
+      rec: r, ix: r.ix, date: r.date, ground: r.ground, art: r.art, pitch: r.pitch, weather: r.weather,
       comp: r.comp, first: a, second: b, result: res, text: res.text || "",
       winner: res.winner || null, tied: !res.winner
     };
@@ -314,13 +314,19 @@
         return "<div class='fo-mr-pshr'><span class='w'>" + foMrOrd(p.w | 0) + " wkt</span>" +
           "<span class='bar'><i style='width:" + Math.max(4, Math.round((p.runs | 0) / mx * 100)) + "%'></i></span>" +
           "<b>" + (p.runs | 0) + "</b>" +
-          "<span class='nm'>" + E(String(p.pair || "").replace(" / ", " &amp; ")) + (p.balls ? " &middot; " + p.balls + "b" : "") + "</span></div>";
+          // ESCAPE FIRST, THEN JOIN THE PAIR. The ampersand was written as an
+          // entity and then escaped along with the names, so every partnership
+          // in the game read "Kerr &amp; Lamont" on the page.
+          "<span class='nm'>" + E(String(p.pair || "")).replace(" / ", " &amp; ") + (p.balls ? " &middot; " + p.balls + "b" : "") + "</span></div>";
       }).join("") + "</div>";
     });
     return out;
   }
 
   function foMrGroundArt(f) {
+    // a tour is not played at a club ground and never will be in the slug
+    // table; it names its own painting
+    if (f && f.art) return f.art;
     var slug = FO_MR_GROUND[f.ground] || "";
     return slug ? (ART + "cities/" + slug + "-ground.webp") : (ART + "home/hgm-dressing-room.webp");
   }
@@ -889,7 +895,15 @@
   // verdict, then key moments, top performers, conditions, league impact,
   // momentum, runs-per-over, partnerships and the next engagement - every
   // figure read off the banked record, never invented.
+  // A NATIONAL SIDE WEARS ITS FLAG, not an invented club crest. foClubCrest
+  // draws arms from the letters of a name, which for "Scotland XI" produced a
+  // shield reading SX beside a saltire-less scoreline. A tour fills this in
+  // when it builds its record; everything else in the game is a club and is
+  // unaffected.
+  var MR_FLAG = {};
   function foMrSumCrest(nm) {
+    var fl = MR_FLAG[nm];
+    if (fl) return "<img class='fo-mr-flag' src='" + fl + "' alt='' onerror=\"this.style.display='none'\">";
     try { if (window.foClubCrest) return window.foClubCrest(nm, 66) || ""; } catch (e) {}
     return "";
   }
@@ -1329,15 +1343,20 @@
       var crumb = "<div class='fo-ms-crumb'>&#8249;&#8249; &nbsp;" +
         (f.ground ? E(f.ground) + " &nbsp;&middot;&nbsp; " : "") +
         (O.roundNo ? "Round " + (O.roundNo | 0) + " &nbsp;&middot;&nbsp; " : (f.date ? E(f.date) + " &nbsp;&middot;&nbsp; " : "")) +
-        // a friendly is not a league match and should not claim to be one
-        (rec.friendly ? "Friendly" : rec.seasonNo ? "Season " + (window.foSeasonN ? foSeasonN(rec.seasonNo | 0) : (rec.seasonNo | 0)) : "League") + "</div>";
+        // a friendly is not a league match and should not claim to be one -
+        // and neither is a tour, which belongs to a series, not a table
+        (rec.friendly ? "Friendly"
+          : rec.intl ? "International" + (rec.seasonNo ? " &nbsp;&middot;&nbsp; Season " + (window.foSeasonN ? foSeasonN(rec.seasonNo | 0) : (rec.seasonNo | 0)) : "")
+          : rec.seasonNo ? "Season " + (window.foSeasonN ? foSeasonN(rec.seasonNo | 0) : (rec.seasonNo | 0)) : "League") + "</div>";
       // three doors read as one each: where you came from, the league, the
       // club - a friendly's "came from" IS the club, so it gets two, not a
       // "The club / Club" stutter
       var dayFoot = "<div class='fo-mr-foot'>" +
         "<a class='fo-mr-back day' href='" + (O.back || "#/fixtures") + "'>" +
-        (O.backLbl || (rec.friendly ? "&#8592; The broadcast" : "&#8592; Results")) + "</a>" +
+        (O.backLbl || ((rec.friendly || rec.intl) ? "&#8592; The broadcast" : "&#8592; Results")) + "</a>" +
         (rec.friendly ? "<a class='fo-mr-back day' href='#/home'>The club</a>"
+          : rec.intl ? "<a class='fo-mr-back day' href='#/nations'>The nations</a>" +
+                       "<a class='fo-mr-back day' href='#/home'>Club</a>"
                       : "<a class='fo-mr-back day' href='#/league'>The league</a>" +
                         "<a class='fo-mr-back day' href='#/home'>Club</a>") +
         "</div>";
@@ -1583,12 +1602,119 @@
       });
   }
 
+  // ---- AND A TOUR IS READ HERE (#/report?nat=<id>) ---------------------------
+  //
+  // Every other match in the game finishes into a report. A tour finished into
+  // nothing: the broadcast read the last ball out and the reader was left on a
+  // page with no door, because the umpire kept the international's card to
+  // himself. Migration 087 serves it - under the same embargo the league card
+  // lives by, so the scorecard cannot outrun the broadcast showing it - and
+  // this dresses it as the record every view in this room already reads.
+  //
+  // A tour needs nothing special once it is in that shape. It has no club
+  // ground, so it borrows the host nation's; it has no filed conditions,
+  // because nobody filed a sheet; and its "round" is the LEAGUE round the
+  // window robs, which is a fact about the clubs it took men from and not
+  // about this match, so it is not printed as one.
+  window.foMrRecFromNat = function (j, log) {
+    try {
+      var c = j && j.card;
+      if (!c || !c.innings || !c.innings[0]) return null;
+      var ga = { art: "", name: "" };
+      try { if (window.foNatGround) ga = window.foNatGround(j.bCountry) || ga; } catch (eG) {}
+      // both sides wear their own flag wherever this record is painted
+      try {
+        var flagOf = function (rid) {
+          var ff = window.__foCxAPI && window.__foCxAPI.flagFile ? window.__foCxAPI.flagFile(rid) : rid;
+          return ff ? (ART + "flags/" + ff + ".svg") : "";
+        };
+        if (j.a) MR_FLAG[j.a] = flagOf(j.aCountry);
+        if (j.b) MR_FLAG[j.b] = flagOf(j.bCountry);
+      } catch (eF) {}
+      return {
+        ix: "nat" + (j.id || ""),
+        home: j.b, away: j.a, comp: "international", intl: true,
+        natHost: j.bCountry, natAway: j.aCountry,
+        date: j.playAtMs ? new Date(+j.playAtMs).toISOString().slice(0, 10) : "",
+        ground: ga.name || (String(j.b || "").replace(/ XI$/, "") + " Ground"),
+        art: ga.art || "",
+        pitch: null, weather: null,
+        innings: c.innings, worm: c.worm || [[], []],
+        result: { text: c.text || "", winner: c.winner || null, mom: c.mom || null },
+        // the broadcast's own book, newest-first, which is how every reader
+        // downstream in this room takes it
+        log: (log || []).slice(),
+        seasonNo: j.seasonNo | 0, round: j.round | 0,
+        __servedCard: 1
+      };
+    } catch (e) { return null; }
+  };
+  var NAT_REC = {};
+  function foMrNatFetch(id) {
+    if (NAT_REC[id]) return Promise.resolve(NAT_REC[id]);
+    return fetch(MR_SB + "/rest/v1/rpc/world_nat_match", {
+      method: "POST",
+      headers: { apikey: MR_KEY, Authorization: "Bearer " + MR_KEY, "content-type": "application/json" },
+      body: JSON.stringify({ p_id: String(id) })
+    }).then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (j) {
+        if (!j || !j.card) return null;              // still sealed, or not played
+        // the ball-by-ball is banked under the HOST's country (nations.mjs)
+        return foMrLogFetch(j.bCountry, String(id)).then(function (log) {
+          var rec = window.foMrRecFromNat(j, log || []);
+          if (rec) NAT_REC[id] = rec;
+          return rec;
+        });
+      });
+  }
+
   window.foRenderReport = function () {
     try {
       try { if (typeof window.foCxNav === "function") window.foCxNav(); } catch (eN) {}
       if ((location.hash || "").split("?")[0] !== "#/report") return;
       var page = document.getElementById("page"); if (!page) return;
       foMrCss();
+      // A TOUR NAMES ITSELF BY THE UMPIRE'S OWN MATCH ID. Same page, same
+      // painter - the id carries colons, so it is matched loosely and decoded.
+      var mnat = /[?&]nat=([^&]+)/.exec(location.hash || "");
+      if (mnat) {
+        var natId = decodeURIComponent(mnat[1]);
+        var mtN = /[?&]t=(\w+)/.exec(location.hash || "");
+        var tabN = mtN ? mtN[1] : "sum";
+        if (["sum", "card", "comm", "chart", "fantasy"].indexOf(tabN) < 0) tabN = "sum";
+        var sigN = "mrn|" + natId + "|" + tabN + "|" + foMrFilterOf(location.hash);
+        if (page.__foMrSig === sigN && page.querySelector(".fo-mr")) return;
+        page.__foMrSig = sigN;
+        document.body.classList.add("fo-mr-on");
+        var ownN = location.hash;
+        var backN = "#/feed?nat=" + encodeURIComponent(natId);
+        page.innerHTML = foMrWaitCard("Sending for the book",
+          "Reaching the umpire for this tour's record.");
+        foMrNatFetch(natId).then(function (rec) {
+          if (location.hash !== ownN) return;         // the reader moved on
+          if (!rec) {
+            // the commonest reason by far is that the afternoon is still being
+            // read out - the card is sealed until the broadcast shows the last
+            // ball - so the door back is the broadcast itself
+            page.innerHTML = foMrWaitCard("The card is not open yet",
+              "A tour's scorecard is sealed until the broadcast has shown its last ball.",
+              backN, "The match");
+            return;
+          }
+          var baseN = "#/report?nat=" + encodeURIComponent(natId);
+          foMrPaint(rec, page, {
+            tab: tabN, commF: foMrFilterOf(location.hash),
+            href: function (t) { return baseN + "&t=" + t; },
+            others: [], back: backN
+          });
+        }).catch(function (eN2) {
+          try { console.warn("international report failed", eN2); } catch (e2) {}
+          if (location.hash !== ownN) return;
+          page.innerHTML = foMrWaitCard("The book would not open",
+            String((eN2 && eN2.message) || eN2).slice(0, 140), backN, "The match");
+        });
+        return;
+      }
       // A FRIENDLY NAMES ITSELF BY ITS OWN ID. Same page, same painter.
       var mfr = /[?&]fr=(\d+)/.exec(location.hash || "");
       if (mfr) {
@@ -1903,6 +2029,7 @@
       ".fo-ms-side{display:flex;align-items:center;gap:16px}",
       ".fo-ms-side.right{justify-content:flex-end;text-align:right}",
       ".fo-ms-side .cr svg{filter:drop-shadow(0 4px 12px rgba(0,0,0,.4))}",
+      ".fo-mr-flag{display:block;width:60px;height:auto;border-radius:4px;box-shadow:0 4px 12px rgba(0,0,0,.4)}",
       ".fo-ms-side .tn{font:600 12.5px Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:#c9d0da}",
       ".fo-ms-side .sc{font:800 48px Manrope,sans-serif;letter-spacing:-.02em;color:#fff;line-height:1;margin:4px 0 3px;font-variant-numeric:tabular-nums}",
       ".fo-ms-side .ov{font:600 11px Manrope,sans-serif;letter-spacing:.16em;color:#8ea0b8}",
