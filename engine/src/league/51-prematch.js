@@ -143,6 +143,39 @@
     return out;
   }
   // what happened the last times these two met
+  // WHAT HAPPENED THE LAST TIMES THESE TWO MET, as rows a reader can open. The
+  // league preview built this inline; a friendly wants it too - the whole point
+  // of a challenge is the pair, and "they have met four times, you have lost
+  // three" is the most interesting sentence on the page.
+  window.foPmH2HRows = function (natId, hn, an) {
+    var out = [];
+    try {
+      var snap = window.__foWorldLg && window.__foWorldLg.get(natId);
+      ((snap && snap.results) || []).forEach(function (r) {
+        if ((r.home === hn && r.away === an) || (r.home === an && r.away === hn)) out.push(r);
+      });
+    } catch (e) {}
+    return out;
+  };
+  window.foPmH2HHTML = function (natId, rows, hn, an) {
+    if (!rows || !rows.length) {
+      return "<p class='fo-pm-dim'>They have not met yet this season. This is the first time of asking.</p>";
+    }
+    var w = 0, l = 0, d = 0;
+    rows.forEach(function (r) {
+      var t = String(r.text || "");
+      if (t.indexOf(hn) === 0) w++; else if (t.indexOf(an) === 0) l++; else d++;
+    });
+    var tally = "<p class='fo-pm-dim'>" + foPmE(hn) + " " + w + " &middot; " +
+      foPmE(an) + " " + l + (d ? " &middot; " + d + " drawn" : "") + "</p>";
+    return tally + rows.map(function (r) {
+      var href = "#/report?n=" + encodeURIComponent(natId) + "&w=" + encodeURIComponent(r.id || "");
+      return "<a class='fo-pm-h2h' href='" + href + "'>" +
+        "<i>R" + (r.round | 0) + "</i>" +
+        "<b>" + foPmE(r.home) + " v " + foPmE(r.away) + "</b>" +
+        "<span>" + foPmE(r.text || "") + "</span><s>&#8250;</s></a>";
+    }).join("");
+  };
   function foPmH2H(g, hSlot, aSlot) {
     var hn = foPmName(g, hSlot), an = foPmName(g, aSlot), out = [];
     try {
@@ -177,26 +210,25 @@
     } catch (eHr) { return ""; }
     if (!h) return "";
     if (h.human) return "<span class='fo-pm-her'>Founded this season &middot; first campaign</span>";
-    var won = [];
-    if (h.titles) won.push(foPmPl(h.titles, "league title", "league titles"));
-    if (h.cups) won.push(foPmPl(h.cups, "national cup", "national cups"));
-    if (h.crowns) won.push(foPmPl(h.crowns, "Champions Cup", "Champions Cups"));
+    // WHEN THE CLUB STARTED, and nothing else. The trophy cabinet used to be
+    // read out here - three league titles, seven national cups - which is the
+    // club's whole history in a row that is meant to say who is in front of
+    // you today. It lives on the club's own page, which this row opens.
     return "<span class='fo-pm-her'>Est. " + h.founded + " &middot; " +
-      foPmPl(h.seasons, "season", "seasons") + " played" +
-      (won.length ? " &middot; " + won.join(", ") : " &middot; no honours") + "</span>";
+      foPmPl(h.seasons, "season", "seasons") + " played</span>";
   }
   function foPmSideRow(natId, slot, nm, boss, st, isMine, mgrs) {
+    // WHO THEY ARE AND HOW THEY ARE GOING. This carried the league table as
+    // well - played, won, lost, points, net run rate - which is a second copy
+    // of a table the reader can reach in one tap, printed in numerals too
+    // small to read, under a heading that says "team status". The status is
+    // the form: five results, in order, in colour.
     return "<a class='fo-pm-sl" + (isMine ? " mine" : "") +
       "' href='#/team?c=" + encodeURIComponent(natId) + "&s=" + slot + "'>" +
       foPmShield(nm, boss, natId) +
-      "<b>" + foPmE(nm) + " <i>" + foPmPosOrd(st.pos) +
-      (st.p ? " &middot; " + st.pts + " pts" : "") + "</i></b>" +
+      "<b>" + foPmE(nm) + "</b>" +
       foPmHonours(natId, slot, isMine, mgrs) +
       "<span class='fo-pm-beads'>" + foPmBeads(st) + "</span>" +
-      "<span class='fo-pm-slst'>" +
-      "<u>P<b>" + st.p + "</b></u><u>W<b>" + st.w + "</b></u><u>L<b>" + st.l + "</b></u>" +
-      "<u>PTS<b>" + st.pts + "</b></u><u>NRR<b>" + (st.p ? (st.nrr >= 0 ? "+" : "") + st.nrr.toFixed(2) : "&mdash;") + "</b></u>" +
-      "</span>" +
       "<s class='fo-pm-chev'>&#8250;</s></a>";
   }
 
@@ -457,15 +489,7 @@
         return foPmSideRow(natId, slot, nm, boss, st, slot === mySlot, g.mgrs);
       };
 
-      var h2hHTML = h2h.length
-        ? h2h.map(function (r) {
-            var href = "#/report?n=" + encodeURIComponent(natId) + "&w=" + encodeURIComponent(r.id || "");
-            return "<a class='fo-pm-h2h' href='" + href + "'>" +
-              "<i>R" + (r.round | 0) + "</i>" +
-              "<b>" + foPmE(r.home) + " v " + foPmE(r.away) + "</b>" +
-              "<span>" + foPmE(r.text || "") + "</span><s>&#8250;</s></a>";
-          }).join("")
-        : "<p class='fo-pm-dim'>They have not met yet this season. This is the first time of asking.</p>";
+      var h2hHTML = window.foPmH2HHTML(natId, h2h, hN, aN);
 
       // THE CONDITIONS: the strip the groundsman prepared and the sky the
       // season deals, both pure functions of the world - the same weather the
@@ -887,6 +911,15 @@
         foPmSideRow(aNat, aSlot, aN, aSlot === 0, aSt, mineA, mgrsA) +
         "</div>" +
 
+        // THE PAIR'S OWN RECORD. Only where the two stand in the same league,
+        // because the record is that league's results book - two clubs from
+        // different nations have never met in anything it holds.
+        (hNat === aNat
+          ? "<div class='fo-pm-cap'>Head to head</div>" +
+            "<div class='fo-pm-h2hs'>" +
+            window.foPmH2HHTML(hNat, window.foPmH2HRows(hNat, hN, aN), hN, aN) + "</div>"
+          : "") +
+
         condHTML +
         "</div>" +
 
@@ -1057,7 +1090,7 @@
   function foPmIntlRow(rid, n, role, rank, mine) {
     var form = foPmIntlForm(n);
     var men = (n.tourSquad && n.tourSquad.length) ? n.tourSquad : (n.squad || []);
-    return "<a class='fo-pm-sl" + (mine ? " mine" : "") + "' href='#/nations?n=" + encodeURIComponent(rid) + "'>" +
+    return "<a class='fo-pm-sl nat" + (mine ? " mine" : "") + "' href='#/nations?n=" + encodeURIComponent(rid) + "'>" +
       foPmNatShield(rid) +
       "<b>" + foPmE(n.name || rid) + " <i>" + foPmE(role) + (rank ? " &middot; #" + (rank | 0) + " in the world" : "") + "</i></b>" +
       "<span class='fo-pm-beads'>" + (form.length
@@ -1525,10 +1558,10 @@
       ".fo-pm-wpbar .a{background:linear-gradient(90deg,#C9571F,#C9571F)}",
       "@media(prefers-reduced-motion:reduce){.fo-pm-wpbar span{transition:none}}",
       ".fo-pm-two{display:flex;flex-direction:column;gap:7px}",
-      "#page a.fo-pm-sl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto auto auto;column-gap:11px;row-gap:4px;align-items:center;padding:11px 12px;border-radius:11px;background:#FFFEFC;border:1px solid var(--edge);text-decoration:none}",
+      "#page a.fo-pm-sl{display:grid;grid-template-columns:auto minmax(0,1fr) auto;grid-template-rows:auto auto auto;column-gap:11px;row-gap:4px;align-items:center;padding:11px 12px;border-radius:11px;background:#FFFEFC;border:1px solid var(--edge);text-decoration:none}",
       "#page a.fo-pm-sl:hover{border-color:rgba(201,87,31,.5)}",
       "#page a.fo-pm-sl.mine{border-color:rgba(201,87,31,.45);background:#FBF6EA}",
-      "#page a.fo-pm-sl .fo-pm-sh{grid-row:span 4}",
+      "#page a.fo-pm-sl .fo-pm-sh{grid-row:span 3}",
       "#page a.fo-pm-sl b{font-family:Manrope,sans-serif;font-weight:600;text-transform:uppercase;letter-spacing:.02em;font-size:14px;color:var(--navy);overflow-wrap:anywhere}",
       "#page a.fo-pm-sl b{grid-column:2;grid-row:1}",
       "#page a.fo-pm-sl b i{font-family:Manrope,sans-serif;font-style:normal;font-weight:600;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:var(--acc);margin-left:5px}",
@@ -1536,9 +1569,12 @@
       "#page a.fo-pm-sl .fo-pm-her{grid-column:2;grid-row:2;font:600 12.5px/1.35 Manrope,sans-serif;color:#4A5668}",
       "#page a.fo-pm-sl .fo-pm-beads{grid-column:2;grid-row:3}",
       "#page a.fo-pm-sl .fo-pm-slst{grid-column:2;grid-row:4;display:flex;gap:14px}",
+      // a national side has no founding line, so its two lines close up
+      "#page a.fo-pm-sl.nat .fo-pm-beads{grid-row:2}",
+      "#page a.fo-pm-sl.nat .fo-pm-slst{grid-row:3}",
       "#page a.fo-pm-sl .fo-pm-slst u{text-decoration:none;font:700 11px/1 Manrope,sans-serif;letter-spacing:.1em;text-transform:uppercase;color:#5A6B84}",
       "#page a.fo-pm-sl .fo-pm-slst u b{display:block;grid-column:auto;grid-row:auto;font:600 12.5px/1.5 Manrope,sans-serif;color:var(--ink);letter-spacing:0;margin:0;font-variant-numeric:tabular-nums}",
-      "#page a.fo-pm-sl .fo-pm-chev{grid-column:3;grid-row:span 4;text-decoration:none;font:400 20px/1 Fraunces,Georgia,serif;color:rgba(27,36,50,.4)}",
+      "#page a.fo-pm-sl .fo-pm-chev{grid-column:3;grid-row:span 3;text-decoration:none;font:400 20px/1 Fraunces,Georgia,serif;color:rgba(27,36,50,.4)}",
       ".fo-pm-beads{display:flex;gap:4px}",
       ".fo-pm-beads i{display:grid;place-items:center;width:19px;height:19px;border-radius:4px;font:700 10px/1 Manrope,sans-serif;font-style:normal;color:#fff}",
       ".fo-pm-beads i.w{background:#1F7A50}.fo-pm-beads i.l{background:#B23230}.fo-pm-beads i.t{background:#9FB0C6}",
