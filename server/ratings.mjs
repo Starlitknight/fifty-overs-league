@@ -9,9 +9,8 @@
 // moves a player's FORM in the living layer. A manager reading the ratings page
 // is reading the reason his batsman is out of nick, not a second opinion.
 //
-// UNIT RATINGS: the same card read as a coach reads it - the top order, the
-// middle, the tail, the seam, the spin and the hands, each out of ten. All
-// derived; nothing stored.
+// THE CLUB MARKING: the same card put on the club rating scale, which is what
+// the world rankings stand on. All derived; nothing stored.
 
 // ---------------------------------------------------------------------------
 // THE POINTS. Ported from the client, line for line.
@@ -61,99 +60,6 @@ export function fantasyPoints(innings) {
 export function ratePoints(pts, touched) {
   if (!touched) return 0.6;
   return Math.max(-0.5, Math.min(5, pts / 26));
-}
-
-// ---------------------------------------------------------------------------
-// THE UNITS, out of ten, as a coach reads a card. Each is scored against what
-// that job is worth in a fifty-over innings, then squashed to 0-10.
-// ---------------------------------------------------------------------------
-const clamp10 = v => Math.max(0, Math.min(10, +v.toFixed(1)));
-
-// WHERE A BATTING ORDER IS CUT, AND WHAT EACH PIECE IS FOR.
-//
-// One panel printed two answers off one card. These bars cut the order three,
-// three and the rest; the club match rating printed beside them - teamRatings
-// in engine/src/00-core.js, the marking the world rankings stand on - cuts it
-// one-to-three, four-to-seven, eight-down, the way a scorer does. So a number
-// seven's seventy was THE TAIL on the bars and THE MIDDLE ORDER in the figure
-// underneath, and a side whose seven and eight had made the runs read as
-// having the best tail in the league.
-//
-// The cut and the expectation both come from that same marking now. The par
-// figures are the engine's own - what a top three, a middle order and a tail
-// are worth in a fifty-over innings - so the two readings of a card cannot
-// drift apart again without somebody moving them together.
-export const BAT_CUT = { top: [0, 3], middle: [3, 7], tail: [7, 11] };
-export const BAT_PAR = { top: 110, middle: 95, tail: 25 };
-
-export function unitRatings(inn) {
-  if (!inn) return null;
-  const bat = (inn.bat || []).filter(b => b && (b.b > 0 || b.out));
-  const slice = (a, b) => bat.slice(a, b);
-  const sum = (xs, f) => xs.reduce((s, x) => s + (f(x) || 0), 0);
-  // a group of batters: runs against what that slot is expected to make, plus
-  // a nudge for the rate they made them at
-  const batUnit = (xs, par) => {
-    if (!xs.length) return null;
-    const runs = sum(xs, x => x.r), balls = sum(xs, x => x.b);
-    const sr = balls ? 100 * runs / balls : 0;
-    return clamp10(3 + 6 * Math.min(1.6, runs / par) + (sr >= 100 ? 1 : sr >= 85 ? 0.5 : sr < 60 ? -1 : 0));
-  };
-  // a group of bowlers: wickets are the job and economy is the craft, both
-  // measured against the overs the unit actually sent down - so three wickets
-  // in ten is a spell and three in thirty is a shift
-  const bowlUnit = list => {
-    if (!list.length) return null;
-    const w = sum(list, x => x.w), balls = sum(list, x => x.b), conc = sum(list, x => x.r);
-    if (balls < 12) return null;
-    const ov = balls / 6, ec = conc / ov;
-    const per10 = w / (ov / 10);
-    return clamp10(3.2 + 1.9 * Math.min(3, per10) + (ec <= 4 ? 1.8 : ec <= 5 ? 1 : ec <= 6 ? 0 : ec <= 7 ? -1 : -2.2));
-  };
-  const bowlers = Object.keys(inn.bowlers || {}).map(k => Object.assign({ name: k }, inn.bowlers[k]));
-  const isSpin = b => {
-    const t = String((b.p && (b.p.bowlTypeFull || b.p.bowlType)) || '').toLowerCase();
-    return /spin|orthodox|legbreak|offbreak|wrist|finger/.test(t);
-  };
-  const seam = bowlers.filter(b => !isSpin(b)), spin = bowlers.filter(isSpin);
-  const fld = inn.fielding || {};
-  const ct = Object.keys(fld).reduce((s, k) => s + (fld[k].ct || 0), 0);
-  const st = Object.keys(fld).reduce((s, k) => s + (fld[k].st || 0), 0);
-  const ro = Object.keys(fld).reduce((s, k) => s + (fld[k].ro || 0), 0);
-  // the hands are marked on CHANCES, not on a count: five catches in an
-  // innings is ordinary if ten men were dismissed and outstanding if six were
-  const outs = inn.wkts || 0, held = ct + st + ro;
-  const field = clamp10(3.6 + 5.6 * (outs ? Math.min(1, held / outs) : 0) + 0.6 * st + 0.7 * ro);
-
-  const units = {
-    top: batUnit(slice(BAT_CUT.top[0], BAT_CUT.top[1]), BAT_PAR.top),
-    middle: batUnit(slice(BAT_CUT.middle[0], BAT_CUT.middle[1]), BAT_PAR.middle),
-    tail: batUnit(slice(BAT_CUT.tail[0], BAT_CUT.tail[1]), BAT_PAR.tail),
-    seam: bowlUnit(seam), spin: bowlUnit(spin), field
-  };
-  const got = Object.keys(units).filter(k => units[k] != null);
-  units.overall = got.length ? clamp10(got.reduce((s, k) => s + units[k], 0) / got.length) : null;
-  return units;
-}
-
-// both sides of one match, batting units for the side that batted and bowling
-// units for the side that bowled, folded together per club
-export function matchRatings(result) {
-  const innings = (result && result.innings || []).filter(Boolean);
-  const by = {};
-  const at = nm => by[nm] || (by[nm] = { club: nm });
-  innings.forEach(inn => {
-    const u = unitRatings(inn);
-    if (!u) return;
-    Object.assign(at(inn.batTeam), { top: u.top, middle: u.middle, tail: u.tail });
-    Object.assign(at(inn.bowlTeam), { seam: u.seam, spin: u.spin, field: u.field });
-  });
-  Object.keys(by).forEach(nm => {
-    const x = by[nm];
-    const got = ['top', 'middle', 'tail', 'seam', 'spin', 'field'].filter(k => x[k] != null);
-    x.overall = got.length ? clamp10(got.reduce((s, k) => s + x[k], 0) / got.length) : null;
-  });
-  return { sides: by, points: fantasyPoints(innings) };
 }
 
 // ---------------------------------------------------------------------------

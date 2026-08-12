@@ -22,7 +22,7 @@ import { evolveCountry, applyLiving, livingPatch } from '../living.mjs';
 import { SQUAD_CAP, RETIRE_AT, ACADEMY_FLOOR, makeRecruit, ageYouth,
   coltRecords } from '../youth.mjs';
 import { academyRate } from '../living.mjs';
-import { fantasyPoints, unitRatings, matchRatings, teamRatings, matchRating,
+import { fantasyPoints, teamRatings, matchRating,
          ladderRating, strengthRating, RATING_UNITS, RANK_BASE } from '../ratings.mjs';
 import { roundRobin, bracket, roundsOf, closeEnrolment, playComps, computeComp, rebuildComps } from '../comps.mjs';
 import { academyUpkeep, academyBuild, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, MOOD_MAX, DEBT_LIMIT, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance, supportTarget, stature, foundingBank, foundingSeats, foundingSupport } from '../economy.mjs';
@@ -1910,29 +1910,20 @@ test('022: a card marks itself, and those marks are what move form', async () =>
   assert.ok(byName.Quick > byName.Dear, 'five-for beats nought for seventy-eight');
   assert.ok(byName.Gloves > 0, 'the keeper is paid for his hands');
 
-  // THE MARKS, out of ten, for both sides of a real match
-  const rat = matchRatings(m.result);
-  const sides = Object.keys(rat.sides);
+  // THE CLUB MARKING, for both sides of a real match
+  const rat = matchRating(m.result);
+  const sides = Object.keys(rat);
   assert.equal(sides.length, 2);
   for (const nm of sides) {
-    const s = rat.sides[nm];
-    assert.ok(s.overall > 0 && s.overall <= 10, nm + ' has an overall mark: ' + s.overall);
-    ['top', 'middle', 'seam', 'field'].forEach(k => {
-      if (s[k] != null) assert.ok(s[k] >= 0 && s[k] <= 10, nm + ' ' + k + ' is out of ten');
-    });
+    assert.ok(rat[nm].rating > 0, nm + ' carries a mark: ' + rat[nm].rating);
+    assert.ok(rat[nm].counted.length, nm + ' names the units it was averaged over');
+    // scale(5) to scale(97): the marking cannot leave the club rating scale
+    assert.ok(rat[nm].rating >= 350 && rat[nm].rating <= 6790,
+      nm + ' is marked on the club scale: ' + rat[nm].rating);
   }
-  // the side that batted carries batting marks, the side that bowled carries bowling
-  const first = m.result.innings[0];
-  assert.ok(rat.sides[first.batTeam].top != null, 'the batting side is marked on its batting');
-  assert.ok(rat.sides[first.bowlTeam].seam != null || rat.sides[first.bowlTeam].spin != null,
-    'the bowling side on its bowling');
-  // a great card outmarks a poor one
-  const good = unitRatings({ bat: [{ p: {}, r: 120, b: 90 }, { p: {}, r: 80, b: 70 }, { p: {}, r: 40, b: 30 }],
-    bowlers: {}, fielding: {}, wkts: 2 });
-  const bad = unitRatings({ bat: [{ p: {}, r: 4, b: 20 }, { p: {}, r: 1, b: 9 }, { p: {}, r: 0, b: 2, out: 'b X' }],
-    bowlers: {}, fielding: {}, wkts: 9 });
-  assert.ok(good.top > bad.top, 'runs are marked above no runs (' + good.top + ' v ' + bad.top + ')');
-  assert.ok(good.top <= 10 && bad.top >= 0);
+  // both sides are counted over the same units - that is the like-with-like rule
+  assert.deepEqual(rat[sides[0]].counted, rat[sides[1]].counted,
+    'the two sides are averaged over the same units');
 
   // FORM IS FED BY THOSE POINTS. Recompute the living layer and a man who has
   // had a good run is in better nick than one who has had a bad one.
