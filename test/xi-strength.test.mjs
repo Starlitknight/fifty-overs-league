@@ -272,3 +272,42 @@ test('a card stripped to bare names still marks BOTH sides', () => {
     assert.match(html, /Bowling - Seam/, 'and the attacks are marked');
   } finally { setTeams(prev); }
 });
+
+// ---------------------------------------------------------------------------
+// A BOWLING FIGURE IS NOT ALWAYS WRITTEN THE SAME WAY. The engine counts balls
+// (`b`); a card served or rebuilt for a page counts `balls`, or prints overs
+// in the scorer's O.B. Reading only the first is why a report out of the
+// archive had no attack on it at all - the men were there and every one of
+// them had bowled nought.
+// ---------------------------------------------------------------------------
+const reBowl = (inns, f) => JSON.parse(JSON.stringify(inns)).map(inn => {
+  const out = {};
+  Object.keys(inn.bowlers || {}).forEach(k => { out[k] = f(inn.bowlers[k]); });
+  inn.bowlers = out;
+  return inn;
+});
+
+test('overs are read however the card happens to write them', () => {
+  const want = strength(CARD.innings, A.name);
+  const asBalls = strength(reBowl(CARD.innings, r => ({ p: r.p, r: r.r, w: r.w, balls: r.b })), A.name);
+  ROWS.forEach(k => assert.equal(asBalls[k], want[k], k + " off a card that counts 'balls'"));
+  assert.equal(asBalls.seamOv, want.seamOv, 'and the seam overs are the same overs');
+
+  // the scorer's O.B: 8.3 is fifty-one deliveries, not eight and a third
+  const asOvers = strength(reBowl(CARD.innings, r => ({
+    p: r.p, r: r.r, w: r.w, overs: Math.floor(r.b / 6) + '.' + (r.b % 6)
+  })), A.name);
+  ROWS.forEach(k => assert.equal(asOvers[k], want[k], k + ' off a card that prints overs'));
+  assert.equal(asOvers.seamOv, want.seamOv, 'eight point three is fifty-one balls');
+  assert.equal(asOvers.spinOv, want.spinOv);
+});
+
+test('a card that never names the bowling side still has an attack', () => {
+  const want = strength(CARD.innings, A.name);
+  const nameless = JSON.parse(JSON.stringify(CARD.innings)).map(inn => { delete inn.bowlTeam; return inn; });
+  const got = strength(nameless, A.name);
+  assert.ok(got, 'the side is still marked');
+  assert.equal(got.seam, want.seam, 'and its seam is its own seam');
+  assert.equal(got.spin, want.spin);
+  assert.equal(got.seamOv, want.seamOv);
+});

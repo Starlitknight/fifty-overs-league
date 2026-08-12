@@ -87,6 +87,10 @@
       if (!theirs && inns[i].bowlTeam === nm) theirs = inns[i];
     }
     if (!mine) return null;
+    // A CARD NEED NOT NAME THE SIDE THAT WAS BOWLING - a banked friendly names
+    // only who batted - and in a two-innings match the other innings IS the
+    // other side's, so it is taken rather than given up on.
+    if (!theirs) for (var j = 0; j < inns.length; j++) if (inns[j] && inns[j] !== mine) { theirs = inns[j]; break; }
     // A SAVE SLIMMED BEFORE THE AGGREGATES WERE KEPT cannot be repaired - those
     // skills are gone off the disk - but the cricketer usually is not: he is
     // still on a roster, and his card is what "on paper" means. His rating THAT
@@ -133,11 +137,27 @@
     // match, and a seam attack of four is not judged on the part-timer who was
     // never thrown it. The overs beside each stand for the spells From the
     // Pavilion prints there: how much of the fifty this half of the attack got.
+    // HOW LONG HE BOWLED IS NOT ALWAYS WRITTEN THE SAME WAY. The engine's own
+    // card counts balls (`b`); a card served or rebuilt for a page counts
+    // `balls`, or prints overs in the scorer's O.B - eight point three being
+    // fifty-one deliveries and not eight and a third. Reading only the first
+    // of the four is why a report out of the archive had no attack on it at
+    // all: the men were there, and every one of them had bowled nought.
+    var ballsOf = function (br) {
+      if (br.b > 0) return br.b | 0;
+      if (br.balls > 0) return br.balls | 0;
+      var o = br.o != null ? br.o : br.overs;
+      if (o == null) return 0;
+      var m = /^(\d+)(?:\.(\d))?$/.exec(String(o));
+      return m ? (+m[1] * 6 + (+m[2] || 0)) : 0;
+    };
     var spells = [];
     for (var bk in ((theirs && theirs.bowlers) || {})) {
       var br = theirs.bowlers[bk];
-      if (!br || !(br.b > 0)) continue;
-      spells.push({ p: resolve(br.p || { name: bk }, nm), balls: br.b | 0 });
+      if (!br) continue;
+      var bb = ballsOf(br);
+      if (!bb) continue;
+      spells.push({ p: resolve(br.p || { name: bk }, nm), balls: bb });
     }
     var bowlOf = function (list) {
       if (!list.length) return null;
@@ -305,10 +325,10 @@
       // a ratings table is a narrow thing: given a whole desktop it would put
       // the department at one edge and the figures at the other, which is a
       // comparison nobody can make in one glance
-      ".fo-rat-tbl{display:block;font-variant-numeric:tabular-nums;max-width:580px}",
-      ".fo-rat-row{display:grid;grid-template-columns:minmax(0,1fr) 96px 96px;align-items:center;" +
+      ".fo-rat-tbl{display:block;font-variant-numeric:tabular-nums;max-width:620px}",
+      ".fo-rat-row{display:grid;grid-template-columns:minmax(0,1fr) 120px 120px;align-items:center;" +
         "gap:6px;padding:8px 0;border-top:1px solid rgba(12,27,51,.08)}",
-      ".fo-rat-tbl.one .fo-rat-row{grid-template-columns:minmax(0,1fr) 96px}",
+      ".fo-rat-tbl.one .fo-rat-row{grid-template-columns:minmax(0,1fr) 120px}",
       ".fo-rat-row>span{font:500 13px/1.3 Manrope,sans-serif;color:rgba(12,27,51,.62);min-width:0;" +
         "white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-rat-row>b{text-align:right;font:700 15px/1.1 Manrope,sans-serif;color:#0C1B2E}",
@@ -317,11 +337,20 @@
       // the two club names, which are a heading and not a row of figures
       ".fo-rat-row.hd{border-top:0;padding-top:0;padding-bottom:6px;" +
         "border-bottom:1px solid rgba(12,27,51,.16)}",
-      // a club with a long name gets a second line rather than losing its
-      // second half - "MASHED PO" is not a heading, it is a mistake
+      // A CLUB'S NAME BREAKS BETWEEN ITS WORDS OR NOT AT ALL. Wrapping anywhere
+      // fits the column and reads as gibberish - Leicestershire came out as
+      // "LEICESTERS HIRE", which is not a heading, it is a mistake. It takes a
+      // second line at a space and a single long word simply gets the room.
+      //
+      // AND IT IS NOT SHOUTED. Every other micro-label in the room is set in
+      // caps, but caps cost about a sixth of the width for nothing, and
+      // "LEICESTERSHIRE" then outgrew its column and painted over the club
+      // beside it. A club is a name, not a label; it is set like one - which is
+      // how the pavilion prints it too. overflow:hidden is the last guard, for
+      // a device that never loaded the face and renders it wider still.
       ".fo-rat-row.hd>i{font-style:normal;text-align:right;min-width:0;white-space:normal;" +
-        "overflow-wrap:anywhere;font:700 10.5px/1.25 Manrope,sans-serif;align-self:end;" +
-        "letter-spacing:.07em;text-transform:uppercase;color:rgba(12,27,51,.55)}",
+        "overflow-wrap:normal;word-break:keep-all;hyphens:none;overflow:hidden;" +
+        "font:600 11.5px/1.25 Manrope,sans-serif;align-self:end;color:rgba(12,27,51,.62)}",
       // the total, at the foot where a ratings table has always put it
       ".fo-rat-row.ft{border-top:1.5px solid rgba(12,27,51,.22);margin-top:2px;padding-top:10px}",
       ".fo-rat-row.ft>span{font-weight:700;color:#0C1B2E;letter-spacing:.01em}",
@@ -332,10 +361,10 @@
       ".fo-rat .lvl{color:rgba(12,27,51,.75)}",
       ".fo-rat .none{color:rgba(12,27,51,.28);font-weight:600}",
       // a narrow phone gives the numbers a little less room, never a column less
-      "@media(max-width:430px){.fo-rat-row{grid-template-columns:minmax(0,1fr) 66px 66px;gap:5px}" +
-        ".fo-rat-tbl.one .fo-rat-row{grid-template-columns:minmax(0,1fr) 66px}" +
-        ".fo-rat-row>span{font-size:12.5px}.fo-rat-row>b{font-size:14.5px}" +
-        ".fo-rat-row.ft>b{font-size:15px}.fo-rat-row.hd>i{font-size:9.5px;letter-spacing:.04em}}",
+      "@media(max-width:430px){.fo-rat-row{grid-template-columns:minmax(0,1fr) 92px 92px;gap:4px}" +
+        ".fo-rat-tbl.one .fo-rat-row{grid-template-columns:minmax(0,1fr) 92px}" +
+        ".fo-rat-row>span{font-size:12px}.fo-rat-row>b{font-size:14.5px}" +
+        ".fo-rat-row.ft>b{font-size:15px}.fo-rat-row.hd>i{font-size:10px}}",
       ".fo-rat-sub{margin:15px 0 5px;font:700 11px/1 Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(12,27,51,.4)}",
       ".fo-rat-p{display:flex;align-items:baseline;gap:8px;padding:5px 0;border-top:1px solid rgba(12,27,51,.07);font:500 13px/1.3 Manrope,sans-serif}",
       ".fo-rat-p i{font-style:normal;font:700 11px/1 Manrope,sans-serif;color:rgba(12,27,51,.35);width:12px}",
