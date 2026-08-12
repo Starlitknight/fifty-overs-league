@@ -237,6 +237,96 @@
       "</div></div>";
   }
 
+  // ---- THE SIGNATURE IS THE REVEAL ------------------------------------------
+  //
+  // The scout hands over a REPORT, not a file: ranges where the skills should
+  // be, an estimate instead of a rating, and one sentence of opinion. The whole
+  // point of that fog is the moment it lifts - and the moment it lifted, the
+  // manager was put on the squad page with twenty-one names on it and left to
+  // find his own signing among them. The reveal happened to nobody.
+  //
+  // It happens here now, on the page where he took the decision: the man's own
+  // card, and beside it what the scout guessed against what he actually is,
+  // skill by skill, on the very rails the report was drawn on.
+  function truthGrid(rep, man) {
+    var sb = (rep && rep.skillBands) || {}, sk = (man && man.skills) || {}, out = "";
+    for (var g = 0; g < SKILLS.length; g++) {
+      var rows = "";
+      for (var i = 0; i < SKILLS[g][1].length; i++) {
+        var k = SKILLS[g][1][i], v = +sk[k], b = sb[k];
+        if (!isFinite(v)) continue;
+        var val = Math.max(0, Math.min(100, Math.round(v)));
+        var band = "";
+        if (b && isFinite(+b.lo) && isFinite(+b.hi)) {
+          var lo = Math.max(0, Math.min(100, +b.lo)), hi = Math.max(lo + 2, Math.min(100, +b.hi));
+          band = "<u class='bnd' style='left:" + lo + "%;width:" + (hi - lo) + "%'></u>";
+        }
+        rows += "<div class='fo-ac-sk rv'><i>" + E(SKILL_NM[k] || k) + "</i>" +
+          "<s class='rail'>" + band + "<em class='tru' style='left:" + val + "%'></em></s>" +
+          "<b class='rng num'>" + val + "</b></div>";
+      }
+      if (rows) out += "<div class='fo-ac-skg'><h5>" + E(SKILLS[g][0]) + "</h5>" + rows + "</div>";
+    }
+    return out ? "<div class='fo-ac-skills'>" + out + "</div>" : "";
+  }
+  // HOW HE READ AGAINST THE REPORT, in one line. The estimate was the headline
+  // of the scout's card, so the verdict on it is the headline of this one.
+  function verdictOf(rep, man) {
+    var o = null;
+    try { o = (typeof foPkOvr === "function") ? foPkOvr(man) : null; } catch (e) {}
+    var rb = rep && rep.ratingBand;
+    if (o == null) return "";
+    if (!rb || !isFinite(+rb.lo) || !isFinite(+rb.hi))
+      return "<div class='fo-ac-rvv'>He is a <b>" + o + "</b>.</div>";
+    var word = o > +rb.hi ? "better than the scout dared put on paper"
+      : o < +rb.lo ? "short of what the scout hoped"
+      : "exactly the man the scout described";
+    return "<div class='fo-ac-rvv'>The report said <b>" + Math.round(+rb.lo) + "&ndash;" +
+      Math.round(+rb.hi) + "</b>. He is a <b>" + o + "</b> &mdash; " + word + ".</div>";
+  }
+  function revealHTML(man, rep, club) {
+    var card = "";
+    try { card = ((window.foHoloCardHTML && window.foHoloCardHTML(man, club || "")) || {}).html || ""; } catch (e) {}
+    var tals = (man.talents || []).map(function (t) {
+      return "<span class='fo-ac-tal'>" + E((typeof TALN !== "undefined" && TALN[t]) || t) + "</span>";
+    }).join("");
+    return "<div class='fo-ac-reveal'>" +
+      "<div class='fo-ac-rvk'>Signed &middot; the file is open</div>" +
+      // fo-phw is the club page's own "this card, dropped anywhere else"
+      // wrapper - the perspective the tilt needs comes with it
+      "<div class='fo-ac-rvcard fo-phw'>" + card + "</div>" +
+      verdictOf(rep, man) +
+      (tals ? "<div class='fo-ac-rvtal'><h5>What he can do</h5>" + tals + "</div>"
+            : "<div class='fo-ac-rvtal none'>No talent has shown itself yet. They are earned.</div>") +
+      "<div class='fo-ac-rvh'>The report, and the man</div>" +
+      truthGrid(rep, man) +
+      "<div class='fo-ac-obtns'>" +
+      "<a class='fo-ac-btn' href='#/player?n=" + encodeURIComponent(man.name) + "'>His page</a>" +
+      "<button type='button' class='fo-ac-btn ghost' data-fo-rvback>Back to the academy</button>" +
+      "</div></div>";
+  }
+  // the reveal as a pure string: what it says is worth holding to, and a page
+  // this rare is worth being able to look at without signing anybody
+  window.foAcademyRevealHTML = revealHTML;
+  // the man himself, off the world's own copy of the squad - the page has just
+  // changed it, so it is asked again rather than trusted
+  function showReveal(page, name, rep) {
+    return rpc("world_my_status", {}).then(function (st) {
+      var man = ((st && st.squad) || []).filter(function (q) { return q && q.name === name; })[0];
+      if (!man) return false;
+      var club = (st.claim && st.claim.club) || "";
+      page.innerHTML = shell(revealHTML(man, rep, club));
+      try {
+        var wrap = page.querySelector(".fo-ac-rvcard");
+        if (wrap && window.foHoloTilt) window.foHoloTilt(wrap);
+      } catch (eT) {}
+      var back = page.querySelector("[data-fo-rvback]");
+      if (back) back.addEventListener("click", function () { window.foRenderAcademyPage(); });
+      try { window.scrollTo(0, 0); } catch (eS) {}
+      return true;
+    }).catch(function () { return false; });
+  }
+
   function render(page, ac) {
     var top = Math.max(5, Math.min(ACAD_MAX, +ac.maxLevel || ACAD_MAX));
     var lv = Math.max(1, Math.min(top, +ac.level || 2));
@@ -334,14 +424,23 @@
     page.querySelectorAll("[data-fo-rec]").forEach(function (b) {
       b.addEventListener("click", function () {
         var act = b.getAttribute("data-fo-rec");
+        // what the scout SAID, kept before the signature, because the report is
+        // gone from the world the instant the man is signed and the reveal is
+        // worth nothing without it
+        var rep = null;
+        try { rep = (ac.pending && ac.pending.recruit) || null; } catch (eR) {}
         var run = function () {
           b.disabled = true; b.textContent = act === "sign" ? "Signing…" : "Letting him go…";
           rpc("world_recruit", { p_action: act })
-            .then(function () {
+            .then(function (res) {
               // he stands in the squad room now, so the world's copy of the
               // squad must be re-read before any page shows the old twenty
               try { if (window.__foWorldRefreshPlan) window.__foWorldRefreshPlan(); } catch (e2) {}
-              window.foRenderAcademyPage();
+              if (act !== "sign") { window.foRenderAcademyPage(); return; }
+              var nm = (res && res.name) || (rep && rep.name) || "";
+              return showReveal(page, nm, rep).then(function (ok) {
+                if (!ok) window.foRenderAcademyPage();
+              });
             })
             .catch(function (e) { b.disabled = false; window.foRenderAcademyPage(); sayAt(b, String(e.message).slice(0, 200)); });
         };
@@ -575,6 +674,36 @@
       "html body #page .fo-ac-sk s.rail{position:relative;overflow:hidden}",
       "html body #page .fo-ac-sk s.rail u.bnd{position:absolute;top:0;bottom:0;height:auto;border-radius:999px;background:linear-gradient(90deg,rgba(232,185,106,.55),#C9571F,rgba(232,185,106,.55))}",
       "html body #page .fo-ac-sk b.rng{flex:0 0 42px}",
+      // ---- THE REVEAL: the file opens on the page he was signed from --------
+      // The scout's band stays exactly where it was drawn and the truth lands
+      // ON it, so a manager reads his own guess and the answer in one glance.
+      "html body #page .fo-ac-sk.rv s.rail{overflow:visible}",
+      "html body #page .fo-ac-sk.rv s.rail u.bnd{opacity:.32}",
+      "html body #page .fo-ac-sk.rv em.tru{position:absolute;top:-4px;width:3px;height:13px;margin-left:-1px;" +
+        "border-radius:2px;background:#1B2432;box-shadow:0 0 0 2px #FDFBF7}",
+      "html body #page .fo-ac-sk.rv b.num{flex:0 0 26px}",
+      "html body #page .fo-ac-reveal{padding:2px 0 4px}",
+      "html body #page .fo-ac-rvk{font:700 11px/1 Manrope,sans-serif;letter-spacing:.22em;text-transform:uppercase;" +
+        "color:#C9571F;text-align:center;margin:2px 0 12px}",
+      "html body #page .fo-ac-rvcard{margin:0 0 14px}",
+      "html body #page .fo-ac-rvcard .phc{max-width:340px;width:100%}",
+      "html body #page .fo-ac-rvv{text-align:center;font:400 15px/1.5 Fraunces,Georgia,serif;color:rgba(20,28,40,.72);margin:0 0 14px}",
+      "html body #page .fo-ac-rvv b{font-weight:700;color:#1B2432;font-variant-numeric:tabular-nums}",
+      "html body #page .fo-ac-rvtal{margin:0 0 14px;text-align:center}",
+      "html body #page .fo-ac-rvtal h5{margin:0 0 7px;font:700 11px/1 Manrope,sans-serif;letter-spacing:.16em;" +
+        "text-transform:uppercase;color:rgba(20,28,40,.42)}",
+      "html body #page .fo-ac-rvtal.none{font:400 13.5px/1.5 Fraunces,Georgia,serif;color:rgba(20,28,40,.5)}",
+      "html body #page .fo-ac-tal{display:inline-block;margin:0 4px 5px;padding:6px 11px;border-radius:999px;" +
+        "background:rgba(201,87,31,.09);border:1px solid rgba(201,87,31,.25);" +
+        "font:700 11px/1 Manrope,sans-serif;letter-spacing:.06em;color:#A8461A}",
+      "html body #page .fo-ac-rvh{margin:16px 0 2px;font:700 11px/1 Manrope,sans-serif;letter-spacing:.2em;" +
+        "text-transform:uppercase;color:rgba(20,28,40,.42);border-top:1px solid rgba(20,28,40,.1);padding-top:14px}",
+      // he arrives rather than appearing: one lift, once, and never for a
+      // reader who has asked the room to keep still
+      "@media(prefers-reduced-motion:no-preference){" +
+        "html body #page .fo-ac-rvcard .phc{animation:foAcRv .5s cubic-bezier(.2,.9,.3,1) both}" +
+        "html body #page .fo-ac-rvk{animation:foAcRv .4s ease both}}",
+      "@keyframes foAcRv{from{opacity:0;transform:translateY(14px) scale(.97)}to{opacity:1;transform:none}}",
       "html body #page .fo-ac-oh u.rng{font-variant-numeric:tabular-nums}",
       "html body #page .fo-ac-obtns{display:flex;gap:8px;margin-top:13px;flex-wrap:wrap}",
       "html body #page .fo-ac-obtns .fo-ac-btn{flex:1 1 150px}",

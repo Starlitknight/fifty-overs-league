@@ -2166,6 +2166,10 @@
       "</div></div>";
     return { html: html, tier: tier, ac: ac };
   }
+  // THE CARD IS SHARED PROPERTY. Five rooms already draw it, and they can only
+  // do so because they sit inside this scope; the academy's reveal does not,
+  // and a signing is exactly the moment a manager should be handed the card.
+  try { window.foHoloCardHTML = foHoloCardHTML; } catch (eHx) {}
   // the tilt: the card leans toward the cursor and the holo sheen sweeps
   function foHoloTilt(wrap) {
     var card = wrap && wrap.querySelector(".phc"); if (!card) return;
@@ -2182,6 +2186,7 @@
       card.style.transform = ""; card.style.setProperty("--mx", 0.5); card.style.setProperty("--my", 0.35);
     });
   }
+  try { window.foHoloTilt = foHoloTilt; } catch (eHt) {}
   function foPlayerHero() {
     try {
       // the player page is its own dossier now (league/41-player-page.js);
