@@ -4555,21 +4555,36 @@ function runTour(){
     return Math.min(t.seats||10000,Math.max(400,Math.round((t.supporters||FO_SOLO_SUPPORT)*moodMult*wx*imp)));
   };
 
+  // EVERY SESSION HAS FIELDING IN IT, because every session of cricket ever
+  // held has. Ten of these fourteen programmes carried no hands at all - a
+  // specialist batsman on Batting and a seamer on New-ball seam did slip
+  // catches and ground work for a career and came away with exactly the hands
+  // he arrived with. And since defaultProg assigns one of those to almost
+  // every bot in the world, the hands were a number that could only ever be
+  // dealt, never earned: measured on the live world, 58% of all training
+  // banked touched fielding for nobody at all.
+  //
+  // A SMALL SHARE, NOT A FREE ONE. Thirteen points of a hundred-odd goes to
+  // the hands on a general programme, which is a warm-up and a slip cordon
+  // rather than a session; the specialist Fielding programme still moves them
+  // five times faster, and the batting or bowling it is bought with is real -
+  // every primary skill on these programmes gives up about a ninth of its
+  // rate. That is the trade a coach actually makes with an afternoon.
   const TRAIN_PROGS={
-    'Batting':{vsPace:25,vsSpin:25,rotation:20,temperament:20,stamina:10},
-    'New-ball batting':{vsPace:45,temperament:25,rotation:15,stamina:15},
-    'Spin batting':{vsSpin:45,rotation:20,temperament:20,power:15},
-    'Power hitting':{power:50,vsPace:15,vsSpin:15,temperament:10,stamina:10},
-    'Finishing':{power:35,temperament:25,rotation:20,vsPace:10,vsSpin:10},
-    'Bowling':{wicket:25,economy:25,discipline:20,moveTurn:15,variation:10,stamina:5},
-    'New-ball seam':{moveTurn:30,wicket:25,discipline:20,economy:15,stamina:10},
-    'Spin bowling':{moveTurn:30,wicket:25,variation:20,economy:15,discipline:10},
-    'Death bowling':{economy:30,discipline:30,variation:20,stamina:15,wicket:5},
-    'Control bowling':{economy:40,discipline:30,variation:15,stamina:15},
+    'Batting':{vsPace:25,vsSpin:25,rotation:20,temperament:20,stamina:10,fielding:8,catching:5},
+    'New-ball batting':{vsPace:45,temperament:25,rotation:15,stamina:15,fielding:8,catching:5},
+    'Spin batting':{vsSpin:45,rotation:20,temperament:20,power:15,fielding:8,catching:5},
+    'Power hitting':{power:50,vsPace:15,vsSpin:15,temperament:10,stamina:10,fielding:8,catching:5},
+    'Finishing':{power:35,temperament:25,rotation:20,vsPace:10,vsSpin:10,fielding:8,catching:5},
+    'Bowling':{wicket:25,economy:25,discipline:20,moveTurn:15,variation:10,stamina:5,fielding:8,catching:5},
+    'New-ball seam':{moveTurn:30,wicket:25,discipline:20,economy:15,stamina:10,fielding:8,catching:5},
+    'Spin bowling':{moveTurn:30,wicket:25,variation:20,economy:15,discipline:10,fielding:8,catching:5},
+    'Death bowling':{economy:30,discipline:30,variation:20,stamina:15,wicket:5,fielding:8,catching:5},
+    'Control bowling':{economy:40,discipline:30,variation:15,stamina:15,fielding:8,catching:5},
     'Keeping':{keeping:30,catching:25,stumping:25,fielding:15,stamina:5},
     'Fielding':{fielding:40,catching:30,stamina:20,power:10},
-    'Fitness':{stamina:65,power:25,fielding:10},
-    'All-rounder':{vsPace:15,vsSpin:15,wicket:15,economy:15,fielding:20,stamina:20},
+    'Fitness':{stamina:65,power:25,fielding:10,catching:5},
+    'All-rounder':{vsPace:15,vsSpin:15,wicket:15,economy:15,fielding:20,catching:5,stamina:20},
     'Rest':{}
   };
   // WHAT A MANAGER IS OFFERED, as against what the table can price. From the

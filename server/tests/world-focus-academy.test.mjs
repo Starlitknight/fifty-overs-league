@@ -75,9 +75,11 @@ test('a bare programme name trains exactly as it always did', () => {
 });
 
 test('a focus doubles that skill\'s share and rescales the rest', () => {
-  // Batting is {vsPace:25, vsSpin:25, rotation:20, temperament:20, stamina:10}.
-  // Focused on playing spin that becomes 50/25/20/20/10 = 125, so spin takes
-  // 40% where it took 25, and everything else gives up ground to pay for it.
+  // THE ARITHMETIC, NOT ONE PROGRAMME'S ARITHMETIC. A focus doubles the named
+  // skill's WEIGHT and the session is renormalised, so every other skill gives
+  // up ground proportionally. The shares are read off the programme itself:
+  // Batting has gained a share for the hands since this was written, and a
+  // test that had memorised its old fractions would call that a regression.
   const men = host.genSquad('focus|spin', 'England', 'balanced', 'general')
     .filter(p => p.skills && p.skills.vsSpin != null && p.skills.vsPace != null).slice(0, 6).map(rested);
   assert.ok(men.length >= 3, 'found batters with both skills to read');
@@ -85,6 +87,11 @@ test('a focus doubles that skill\'s share and rescales the rest', () => {
   men.forEach(p => { auto[p.name] = 'Batting'; focused[p.name] = { p: 'Batting', f: 'vsSpin' }; });
   const A = host.trainRound(men.map(rested), auto, 1, null).players.map(banked);
   const F = host.trainRound(men.map(rested), focused, 1, null).players.map(banked);
+  const BAT = host.trainProgs ? host.trainProgs()['Batting'] : null;
+  const sum = w => Object.values(w).reduce((a, b) => a + b, 0);
+  const wantAuto = BAT ? BAT.vsSpin / sum(BAT) : 0.25;
+  const wantFocus = BAT ? (2 * BAT.vsSpin) / (sum(BAT) + BAT.vsSpin) : 0.40;
+  const wantPace = BAT ? BAT.vsPace / (sum(BAT) + BAT.vsSpin) : 0.20;
   let checked = 0;
   for (let i = 0; i < men.length; i++) {
     const ta = total(A[i]), tf = total(F[i]);
@@ -93,11 +100,17 @@ test('a focus doubles that skill\'s share and rescales the rest', () => {
     assert.ok(Math.abs(ta - tf) / ta < 0.02,
       men[i].name + ': the session is the same size (' + ta.toFixed(1) + ' vs ' + tf.toFixed(1) + ')');
     const shareA = A[i].vsSpin / ta, shareF = F[i].vsSpin / tf;
-    assert.ok(Math.abs(shareA - 0.25) < 0.02, men[i].name + ': auto sends a quarter to spin (' + shareA.toFixed(3) + ')');
-    assert.ok(Math.abs(shareF - 0.40) < 0.02, men[i].name + ': focused sends two fifths (' + shareF.toFixed(3) + ')');
-    // and the others fall proportionally: playing pace goes 25% -> 20%
+    assert.ok(Math.abs(shareA - wantAuto) < 0.02,
+      men[i].name + ': auto sends the programme\'s own share to spin (' +
+      shareA.toFixed(3) + ' against ' + wantAuto.toFixed(3) + ')');
+    assert.ok(Math.abs(shareF - wantFocus) < 0.02,
+      men[i].name + ': focused sends double the weight (' +
+      shareF.toFixed(3) + ' against ' + wantFocus.toFixed(3) + ')');
+    // and the others fall proportionally to pay for it
     const paceF = F[i].vsPace / tf;
-    assert.ok(Math.abs(paceF - 0.20) < 0.02, men[i].name + ': pace gives up ground to pay for it (' + paceF.toFixed(3) + ')');
+    assert.ok(Math.abs(paceF - wantPace) < 0.02,
+      men[i].name + ': pace gives up ground to pay for it (' +
+      paceF.toFixed(3) + ' against ' + wantPace.toFixed(3) + ')');
     checked++;
   }
   assert.ok(checked >= 3, 'the arithmetic was checkable on several men (' + checked + ')');

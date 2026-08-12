@@ -348,6 +348,15 @@ globalThis.__svcWorldCfg = function () {
       return JSON.parse(train(JSON.stringify(players), JSON.stringify(plan || {}), rate,
         (Array.isArray(xi) && xi.length) ? JSON.stringify(xi) : null));
     },
+    // THE PROGRAMME TABLE THE UMPIRE ACTUALLY WORKS FROM. Read out of the
+    // shipped engine rather than restated here, so nothing on this side can
+    // hold a second opinion of what a session is made of - and so a test can
+    // check the ARITHMETIC of a focus instead of memorising one programme's
+    // fractions, which go stale the moment a programme gains a skill.
+    trainProgs() {
+      try { return JSON.parse(JSON.stringify(vm.runInContext('window.FO_TRAIN_PROGS', eng.ctx))); }
+      catch (e) { return null; }
+    },
     // recompute bat/threat/control/rating/wage from skills, engine's own map
     derive(players) { return JSON.parse(der(JSON.stringify(players))); },
     // the 0-99 card rating the club pages show, per player

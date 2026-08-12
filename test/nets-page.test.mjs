@@ -273,9 +273,23 @@ test('the focus arithmetic the page quotes is the engine\'s own', () => {
   const got = JSON.parse(w);
   assert.equal(got.vsSpin, 50, 'the focused share is doubled');
   assert.equal(got.vsPace, 25, 'the others are untouched in weight');
+  // THE ARITHMETIC, NOT THE ARITHMETIC OF ONE PROGRAMME. What the focus
+  // promises is that the named skill takes double its weight and every other
+  // gives up ground proportionally - so the shares are read off the programme
+  // rather than written down here, and a programme that gains or loses a skill
+  // (the hands, when every session got some) does not make this a lie.
+  const base = JSON.parse(run(`JSON.stringify(window.FO_TRAIN_PROGS['Batting'])`));
   const total = Object.values(got).reduce((a, b) => a + b, 0);
-  assert.ok(Math.abs(got.vsSpin / total - 0.40) < 1e-9, 'which is two fifths of the session');
-  assert.ok(Math.abs(got.vsPace / total - 0.20) < 1e-9, 'and a fifth for playing pace');
+  const want = total ? (2 * base.vsSpin) / (Object.values(base).reduce((a, b) => a + b, 0) + base.vsSpin) : 0;
+  assert.ok(Math.abs(got.vsSpin / total - want) < 1e-9,
+    'the focused skill takes double its weight of the session');
+  assert.ok(got.vsSpin / total > got.vsPace / total,
+    'and more of it than the one it was focused away from');
+  Object.keys(base).forEach(k => {
+    if (k === 'vsSpin') return;
+    assert.ok(got[k] / total < base[k] / Object.values(base).reduce((a, b) => a + b, 0) + 1e-9,
+      k + ' gives up ground, it does not gain any');
+  });
   // an unnamed focus is the programme untouched
   assert.equal(run(`JSON.stringify(window.FO_TRAIN_FOCUS('Batting',null))`),
     run(`JSON.stringify(window.FO_TRAIN_PROGS['Batting'])`), 'auto is the programme itself');
@@ -363,4 +377,35 @@ test('saving from one tab never files a plan with the other half missing', () =>
   assert.equal(named.length, SQUAD.length, 'the whole senior staff is filed, no more and no fewer');
   const read = n => (typeof plan[n] === 'string' ? plan[n] : plan[n] && plan[n].p);
   assert.equal(read('Cass Iremonger'), 'Keeping', 'the keeper is filed as a keeper');
+});
+
+// EVERY SESSION HAS FIELDING IN IT, because every session of cricket ever held
+// has. Ten of the fourteen programmes carried no hands at all, and defaultProg
+// assigns one of those to almost every bot in the world - so a specialist
+// batsman did slip catches for a career and came away with exactly the hands he
+// arrived with, and the hands were a number that could only ever be dealt.
+test('no programme sends a cricketer out with nothing for his hands', () => {
+  const progs = JSON.parse(run(`JSON.stringify(window.FO_TRAIN_PROGS)`));
+  const mute = Object.keys(progs).filter(k => {
+    const w = progs[k];
+    return Object.keys(w).length > 0 && !w.fielding && !w.catching;   // Rest is meant to be empty
+  });
+  assert.deepEqual(mute, [], 'programmes with no hands at all: ' + mute.join(', '));
+});
+
+// A SMALL SHARE, NOT A FREE ONE. The specialist programme has to stay the way
+// a manager actually builds a fielding side; a warm-up must not match it.
+test('the Fielding programme is still far and away the fastest way to hands', () => {
+  const progs = JSON.parse(run(`JSON.stringify(window.FO_TRAIN_PROGS)`));
+  const share = w => {
+    const tot = Object.values(w).reduce((a, b) => a + b, 0);
+    return tot ? ((w.fielding || 0) + (w.catching || 0)) / tot : 0;
+  };
+  const spec = share(progs['Fielding']);
+  ['Batting', 'New-ball seam', 'Spin bowling', 'Finishing'].forEach(k => {
+    assert.ok(share(progs[k]) > 0, k + ' does some work in the field');
+    assert.ok(share(progs[k]) * 3 < spec,
+      k + ' must not rival the specialist: ' + (100 * share(progs[k])).toFixed(1) +
+      '% against ' + (100 * spec).toFixed(1) + '%');
+  });
 });
