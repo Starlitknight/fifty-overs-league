@@ -395,12 +395,28 @@
   }
   // the batting order shows BATTING stars for everyone (a tail-ender must
   // never out-star the opener); bowling stars live on the bowler cards
-  // ABSOLUTE calibration, out of ten: composite 15 or below (dreadful in
-  // everything) is 0 stars, 92+ (legendary in all three ingredients) is 10,
-  // linear between. The same ladder for every player in the world - a
-  // starting club reads ~4-5 stars with the whole climb ahead of it.
+  //
+  // ABSOLUTE calibration, out of ten, and the same ladder for every player in
+  // the world so a strip means the same thing wherever it is drawn.
+  //
+  // MEASURED, NOT GUESSED. The old anchors were 15 for nought and 92 for ten,
+  // which nothing in the game could reach: across all 4,207 cricketers alive,
+  // batting composites run p1 3.8, median 35.0, p95 52.9, best 62.2, and
+  // bowling p1 17.6, median 39.0, p95 59.6, best 75.4. So the best batsman in
+  // the world wore six stars, the median cricketer two and a half, and the top
+  // four tenths of every strip in the game was dead space nobody would ever
+  // occupy. Everybody bunched into a narrow band low on the bar, which is why
+  // an England international and a second-division county pro looked alike.
+  //
+  // The anchors are now the world's own range with honest headroom: nought at
+  // 4, ten at 82. That reads a median cricketer at four stars, a fine one at
+  // six and a half, the best batsman alive at seven and a half and the best
+  // bowler at nine - and leaves ten as something still to be earned rather
+  // than something unreachable.
+  var FO_ST_LO = 4, FO_ST_HI = 82;
   function foOrdStars(comp) {
-    return Math.max(0, Math.min(10, Math.round(((comp - 15) / 77 * 10) * 2) / 2));
+    return Math.max(0, Math.min(10,
+      Math.round(((comp - FO_ST_LO) / (FO_ST_HI - FO_ST_LO) * 10) * 2) / 2));
   }
   // FTP-style role glyphs beside each name: bat / ball / bat+ball / stumps.
   // Keeper wins (the gloves define his job), then the declared all-rounder,

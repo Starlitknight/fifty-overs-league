@@ -245,7 +245,14 @@
         var ex = inn.extras || null;
         var batN = (inn.bat || []).reduce(function (t, b) { return t + (Number(b.r) || 0); }, 0);
         var exN = ex ? (ex.wd + ex.nb + ex.b + ex.lb) : Math.max(0, (Number(inn.runs) || 0) - batN);
-        var dnb = (inn.xi || []).filter(function (p) { return !played[p.name]; }).map(function (p) { return playerLink(p); }).join(", ");
+        // AN XI IS A LIST OF MEN OR A LIST OF NAMES, depending on which book
+        // the card came out of: a club's card carries the player objects, an
+        // international's carries the names alone. Reading p.name off a string
+        // gives undefined for every man - which passed the "did not bat" test
+        // for all eleven and printed the word eleven times.
+        var xiNm = function (x) { return (x && typeof x === "object") ? (x.name || "") : (typeof x === "string" ? x : ""); };
+        var dnb = (inn.xi || []).map(xiNm).filter(function (n) { return n && !played[n]; })
+          .map(function (n) { return playerLink({ name: n }); }).join(", ");
         var fow = (inn.fow || []).map(function (f2) { return "<b>" + f2.w + "-" + f2.sc + "</b> (" + E(f2.who) + ", " + (f2.ov != null ? (+f2.ov).toFixed(1) : "-") + " ov)"; }).join(" &nbsp; ");
         var bowl = Object.values(inn.bowlers || {}).sort(function (a, b) { return b.w - a.w || a.r - b.r; }).map(function (rr2) {
           // bowler type baked into the row (not left to the async decorator,
