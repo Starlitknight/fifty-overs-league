@@ -126,19 +126,20 @@
       return men;
     } catch (e) { return null; }
   }
-  // A CRICKETER BY NAME, WHEREVER HE PLAYS.
+  // WHERE A CLUB SITS, BY THE NAME IT ANSWERS TO.
   //
   // A card out of the archive names its men and says no more about them, and a
-  // panel that marks a side on its men then has nothing to mark it with. The
-  // reader's own club is rescued by his own roster - but the OPPONENT's eleven
-  // is on no roster this device holds, so a match ratings table could mark one
-  // column and leave the other blank, which is the one thing a comparison must
-  // never do.
+  // panel that marks a side on its men then has nothing to mark the OPPONENT
+  // with - the reader's own club is on his own roster, theirs is on nobody's.
   //
-  // The world's squads are derived rather than stored, so any club on earth can
-  // simply be asked for its men. The index from a club's name to its seat is
-  // built once per generation and thrown away with the squads when a redeal
-  // moves everybody.
+  // This says which country and which seat a club is, and no more than that.
+  // It deliberately does NOT hand back a regenerated squad: the generator makes
+  // the right MEN but not the right cricketers, because the World Service
+  // calibrates every club onto its rung after it deals them and the client
+  // cannot. A regenerated Leicestershire read three thousand rating points
+  // above the real one - a Division Two side printed as a flagship - and the
+  // errors ran both ways, which is worse than a blank column. The seat is
+  // enough: world_squads publishes what the club actually is, to anyone.
   var CLUB_IX = null, CLUB_IX_GEN = null;
   function clubIndex() {
     var gen = (window.__foWorldGen | 0) || 1;
@@ -163,11 +164,8 @@
     CLUB_IX = ix; CLUB_IX_GEN = gen;
     return ix;
   }
-  function squadByClub(name) {
-    try {
-      var hit = name ? clubIndex()[name] : null;
-      return hit ? serverSquad(hit.rid, hit.slot) : null;
-    } catch (e) { return null; }
+  function clubSeat(name) {
+    try { return (name && clubIndex()[name]) || null; } catch (e) { return null; }
   }
 
   // The server's calendar for a world day. It used to do the arithmetic itself
@@ -747,7 +745,7 @@
   // same calendar and the same live states the theatre plays from
   window.__foWT = { flagOf: flagOf, forgetSquads: forgetSquads,
     get guessedSquad() { return GUESSED; }, serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror, divMembers: divMembers,
-    serverSquad: serverSquad, squadByClub: squadByClub, applyLiving: applyLiving,
+    serverSquad: serverSquad, clubSeat: clubSeat, applyLiving: applyLiving,
     // A CLUB WITH NO MANAGER STILL FIELDS ELEVEN MEN. The watch page has
     // named them since it was built - the engine's pick is a pure function of
     // the squad - and the broadcast's Lineups tab was the one room that

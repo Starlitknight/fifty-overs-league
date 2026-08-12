@@ -75,6 +75,70 @@
     return !(t === "fast" || t === "fastMedium" || t === "medium");
   }
 
+  // ---- THE WORLD'S OWN CARD FOR A CLUB --------------------------------------
+  //
+  // world_squads publishes every club's men as the public card - batting,
+  // bowling, fielding, rating - and any device may read any club's, the same
+  // way the standings are public. __foCardToPlayer turns a card into an engine
+  // player whose aggBat/aggBowl/aggField give back the published figures to the
+  // number, so a man read this way marks exactly as he would off a full
+  // scorecard.
+  //
+  // The fetch is late and the panel is not, so a club is asked for once, the
+  // marks it can make are made without it, and the panel redraws itself where
+  // it stands when the answer lands. A club that cannot be placed, or has
+  // nothing published, is remembered as such and never asked again.
+  var BOOKS = {}, ASKED = {};
+  var SB_RAT = "https://egaipdksvztqqgouriyc.supabase.co";
+  var KEY_RAT = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
+  // the men of one club, keyed by name - set by the fetch, and settable by hand
+  // so a caller (or a test) can hand the panel a squad it already has
+  window.foRatSquad = function (club, players) {
+    var by = {};
+    (players || []).forEach(function (c) {
+      var q = null;
+      try { q = window.__foCardToPlayer ? window.__foCardToPlayer(c) : c; } catch (e) {}
+      if (q && q.name) by[q.name] = q;
+    });
+    BOOKS[club] = by;
+    return by;
+  };
+  window.foRatBook = function (club) {
+    if (BOOKS[club] !== undefined) return BOOKS[club];
+    if (ASKED[club]) return null;
+    ASKED[club] = 1;
+    var seat = null;
+    try { seat = window.__foWT && window.__foWT.clubSeat && window.__foWT.clubSeat(club); } catch (e) {}
+    if (!seat) { BOOKS[club] = null; return null; }
+    try {
+      fetch(SB_RAT + "/rest/v1/world_squads?country_id=eq." + encodeURIComponent(seat.rid) +
+        "&slot=eq." + (seat.slot | 0) + "&select=players", { headers: { apikey: KEY_RAT } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (rows) {
+          var men = rows && rows[0] && rows[0].players;
+          if (men && men.length) window.foRatSquad(club, men); else BOOKS[club] = null;
+          redraw();
+        })
+        .catch(function () { BOOKS[club] = null; });
+    } catch (e) { BOOKS[club] = null; }
+    return null;
+  };
+  // THE PANEL REDRAWS ITSELF WHERE IT STANDS. It is built as a string and
+  // inserted by whoever asked for it - a report tab, a scorecard - so the only
+  // thing that can put a later answer on the screen is the panel itself.
+  var LAST = null;
+  function redraw() {
+    try {
+      var el = document.querySelector("#page .fo-rat");
+      if (!el || !LAST) return;
+      var html = window.foRatingsPanelHTML(LAST.innings, LAST.result);
+      if (!html) return;
+      var wrap = document.createElement("div");
+      wrap.innerHTML = html;
+      if (wrap.firstChild) el.parentNode.replaceChild(wrap.firstChild, el);
+    } catch (e) {}
+  }
+
   // THE ELEVEN, DEPARTMENT BY DEPARTMENT. Six skills off the men who filled
   // each job, plus the side's strength on the club rating scale (mean card
   // rating, which is exactly what the squad-strength figure on the club page
@@ -98,25 +162,18 @@
     // cricketer nobody has any more is simply left as he came.
     // AND THE OPPONENT IS NOT ON ANY ROSTER THIS DEVICE HOLDS, which is why one
     // column of the table could be marked and the other left blank - the one
-    // thing a comparison must never do. The world's squads are derived, so the
-    // other club is simply asked for its men (__foWT.squadByClub).
-    var books = {};
-    var bookOf = function (club) {
-      if (books[club] !== undefined) return books[club];
-      var by = null;
-      try {
-        var sq = window.__foWT && window.__foWT.squadByClub && window.__foWT.squadByClub(club);
-        if (sq && sq.length) { by = {}; sq.forEach(function (q) { if (q && q.name) by[q.name] = q; }); }
-      } catch (e) {}
-      books[club] = by;
-      return by;
-    };
+    // thing a comparison must never do. What fills it is the world's own
+    // published card for that club (world_squads, readable by anybody, the same
+    // door the club pages and the player pages use). NOT a regenerated squad:
+    // the generator makes the right men but not the right cricketers, because
+    // the World Service calibrates a club onto its rung after it deals them.
+    // See foRatBook below - it arrives late and the panel redraws itself.
     var resolve = function (p, club) {
       if (!p || p.skills || p.sk) return p;
       var f = null, src = null;
       try { f = (typeof findPlayer === "function") ? findPlayer(p.name) : null; } catch (e) {}
       if (f && f.p && f.p.skills) src = f.p;
-      if (!src) { var bk = bookOf(club); src = (bk && bk[p.name]) || null; }
+      if (!src) { var bk = window.foRatBook(club); src = (bk && bk[p.name]) || null; }
       if (!src || !src.skills) return p;
       var q = {}; for (var k in src) q[k] = src[k];
       if (typeof p.rating === "number" && p.rating > 0) q.rating = p.rating;
@@ -223,6 +280,7 @@
       });
     });
     if (!names.length) return "";
+    LAST = { innings: inns, result: result || null };
     // the panel carries its own stylesheet wherever it is asked for - it is not
     // only the scorecard's any more, and unstyled marks are worse than none
     try { css(); } catch (eC) {}
