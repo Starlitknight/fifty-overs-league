@@ -24,11 +24,18 @@
 
   function E(s) { return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;"); }
 
-  // WHERE A BATTING ORDER IS CUT. One to three, four to seven, eight down -
-  // the way a scorer cuts it, and the way the engine's own club marking
-  // (teamRatings in 00-core.js, which the world rankings stand on) cuts it. A
-  // number seven is the middle order in both readings or in neither.
-  window.FO_BAT_CUT = { top: [0, 3], middle: [3, 7], tail: [7, 11] };
+  // WHERE A BATTING ORDER IS CUT. One to four, five to eight, nine down: the
+  // cut From the Pavilion marks a side on, and this panel is the same kind of
+  // reading - what an eleven is worth, department by department, off the men's
+  // own skills.
+  //
+  // It is NOT the cut the engine's club marking uses (teamRatings in
+  // 00-core.js takes one-to-three, four-to-seven, eight-down, the way a scorer
+  // adds up an innings). That marking is a different quantity - what the
+  // AFTERNOON was worth, which is what the world rankings stand on - and the
+  // two are never printed beside each other, so they are free to cut where
+  // each of them means to.
+  window.FO_BAT_CUT = { top: [0, 4], middle: [4, 8], tail: [8, 11] };
   var ROWS = ["top", "middle", "tail", "seam", "spin", "field"];
 
   // A MAN'S QUALITY AT ONE JOB, through the engine's own summaries - the same
@@ -73,25 +80,29 @@
   // rating, which is exactly what the squad-strength figure on the club page
   // and the world rankings are built from).
   window.foXIStrength = function (innings, nm) {
-    var inns = (innings || []).filter(Boolean), mine = null;
-    for (var i = 0; i < inns.length; i++) if (inns[i] && inns[i].batTeam === nm) { mine = inns[i]; break; }
+    var inns = (innings || []).filter(Boolean), mine = null, theirs = null;
+    for (var i = 0; i < inns.length; i++) {
+      if (!inns[i]) continue;
+      if (!mine && inns[i].batTeam === nm) mine = inns[i];
+      if (!theirs && inns[i].bowlTeam === nm) theirs = inns[i];
+    }
     if (!mine) return null;
+    // A SAVE SLIMMED BEFORE THE AGGREGATES WERE KEPT cannot be repaired - those
+    // skills are gone off the disk - but the cricketer usually is not: he is
+    // still on a roster, and his card is what "on paper" means. His rating THAT
+    // DAY stays the card's; only the departments are read off the man. A
+    // cricketer nobody has any more is simply left as he came.
+    var resolve = function (p) {
+      if (!p || p.skills || p.sk) return p;
+      var f = null;
+      try { f = (typeof findPlayer === "function") ? findPlayer(p.name) : null; } catch (e) {}
+      if (!f || !f.p || !f.p.skills) return p;
+      var q = {}; for (var k in f.p) q[k] = f.p[k];
+      if (typeof p.rating === "number" && p.rating > 0) q.rating = p.rating;
+      return q;
+    };
     var xi = (mine.bat || []).map(function (b) { return b && b.p; })
-      .filter(function (p) { return p && p.name; })
-      // A SAVE SLIMMED BEFORE THE AGGREGATES WERE KEPT cannot be repaired -
-      // those skills are gone off the disk - but the cricketer usually is not:
-      // he is still on a roster, and his card is what "on paper" means. His
-      // rating THAT DAY stays the card's; only the departments are read off
-      // the man. A cricketer nobody has any more is simply left as he came.
-      .map(function (p) {
-        if (p.skills || p.sk) return p;
-        var f = null;
-        try { f = (typeof findPlayer === "function") ? findPlayer(p.name) : null; } catch (e) {}
-        if (!f || !f.p || !f.p.skills) return p;
-        var q = {}; for (var k in f.p) q[k] = f.p[k];
-        if (typeof p.rating === "number" && p.rating > 0) q.rating = p.rating;
-        return q;
-      });
+      .filter(function (p) { return p && p.name; }).map(resolve);
     // a card with no men on it - a hand-built fixture, a card rebuilt from the
     // commentary - is left unmarked rather than marked wrongly
     if (xi.length < 5) return null;
@@ -99,10 +110,28 @@
     var batOf = function (a, b) {
       return sk99(mean(xi.slice(a, b).map(function (p) { return agg(p, "bat"); })));
     };
+    // THE ATTACK IS THE MEN WHO BOWLED, not the men who could have. A side
+    // that carries a spinner and never gives him the ball has no spin in this
+    // match, and a seam attack of four is not judged on the part-timer who was
+    // never thrown it. The overs beside each stand for the spells From the
+    // Pavilion prints there: how much of the fifty this half of the attack got.
+    var spells = [];
+    for (var bk in ((theirs && theirs.bowlers) || {})) {
+      var br = theirs.bowlers[bk];
+      if (!br || !(br.b > 0)) continue;
+      spells.push({ p: resolve(br.p || { name: bk }), balls: br.b | 0 });
+    }
     var bowlOf = function (list) {
-      return list.length ? sk99(mean(list.map(function (p) { return agg(p, "bowl"); }))) : null;
+      if (!list.length) return null;
+      return sk99(mean(list.map(function (q) { return agg(q.p, "bowl"); })));
     };
-    var bowlers = xi.filter(function (p) { return p.bowlType; });
+    var oversOf = function (list) {
+      if (!list.length) return null;
+      var b = list.reduce(function (a, q) { return a + q.balls; }, 0);
+      return Math.round(b / 6);
+    };
+    var seamers = spells.filter(function (q) { return !isSpin(q.p); });
+    var spinners = spells.filter(function (q) { return isSpin(q.p); });
     // the hands are the whole eleven's ground fielding with the gloves folded
     // in - one man in four hundred deliveries is the keeper's, and the other
     // ten are everybody's
@@ -116,8 +145,8 @@
       top: batOf(cut.top[0], cut.top[1]),
       middle: batOf(cut.middle[0], cut.middle[1]),
       tail: batOf(cut.tail[0], cut.tail[1]),
-      seam: bowlOf(bowlers.filter(function (p) { return !isSpin(p); })),
-      spin: bowlOf(bowlers.filter(isSpin)),
+      seam: bowlOf(seamers), seamOv: oversOf(seamers),
+      spin: bowlOf(spinners), spinOv: oversOf(spinners),
       field: sk99(fld == null ? null : (kv == null ? fld : 0.75 * fld + 0.25 * kv))
     };
     // nothing to say about a side is not the same as a side worth nothing
@@ -125,8 +154,12 @@
     return s;
   };
 
-  var LABEL = { top: "Top order", middle: "Middle order", tail: "The tail",
-    seam: "Seam", spin: "Spin", field: "In the field" };
+  // the names From the Pavilion gives them, so a manager who reads both games
+  // is reading one vocabulary
+  var LABEL = { top: "Batting - Top Order", middle: "Batting - Middle Order",
+    tail: "Batting - Tail", seam: "Bowling - Seam", spin: "Bowling - Spin",
+    field: "Fielding/Keeping" };
+  var OVERS = { seam: "seamOv", spin: "spinOv" };
   // THE SKILL TONES THE REST OF THE GAME USES, so a department that would be
   // painted red on a player's own page is painted red here. A tail reading
   // low is not a fault in the marking: a tail IS low, and a side whose eight
@@ -200,10 +233,11 @@
       var hi = Math.max.apply(null, real), lo = Math.min.apply(null, real);
       return hi === lo ? null : hi;
     };
-    var cell = function (v, hi, fmt) {
+    var cell = function (v, hi, fmt, sub) {
       if (v == null) return "<b class='none'>&ndash;</b>";
       var cls = hi == null ? "lvl" : (v === hi ? "up" : "dn");
-      return "<b class='" + cls + "'>" + (fmt ? fmt(v) : v) + "</b>";
+      return "<b class='" + cls + "'>" + (fmt ? fmt(v) : v) +
+        (sub != null ? "<em>(" + sub + ")</em>" : "") + "</b>";
     };
     var head = "<div class='fo-rat-row hd'><span></span>" +
       sides.map(function (x) { return "<i>" + E(x.nm) + "</i>"; }).join("") + "</div>";
@@ -211,7 +245,11 @@
       var vals = sides.map(function (x) { return x.s[k]; });
       var hi = lead(vals);
       return "<div class='fo-rat-row'><span>" + LABEL[k] + "</span>" +
-        vals.map(function (v) { return cell(v, hi); }).join("") + "</div>";
+        vals.map(function (v, i2) {
+          // the overs this half of the attack sent down, beside its mark
+          var ov = OVERS[k] ? sides[i2].s[OVERS[k]] : null;
+          return cell(v, hi, null, ov);
+        }).join("") + "</div>";
     }).join("");
     // and the side's own figure, printed through foRate so the whole game reads
     // one scale: the same number the club page, the dossiers and the world
@@ -221,7 +259,7 @@
       return x.s.rating == null ? null : (window.foRate ? window.foRate(x.s.rating) : x.s.rating);
     });
     var foot = strs.some(function (v) { return v != null; })
-      ? "<div class='fo-rat-row ft'><span>Strength of the XI</span>" +
+      ? "<div class='fo-rat-row ft'><span>Overall</span>" +
         strs.map(function (v) { return cell(v, lead(strs), function (n) { return n.toLocaleString(); }); }).join("") +
         "</div>"
       : "";
@@ -231,7 +269,7 @@
     // AND THE PANEL IS NAMED AFTER WHAT IS IN IT. A card too old or too thin
     // to mark a side on left "The two sides" standing over nothing but the
     // points - a heading promising a thing the panel had not got.
-    return "<div class='panel fo-rat'><h4>" + (sides.length ? "The two sides" : "The day&rsquo;s points") +
+    return "<div class='panel fo-rat'><h4>" + (sides.length ? "Match ratings" : "The day&rsquo;s points") +
       "</h4><div class='pad'>" +
       (sides.length ? table : "") +
       (best ? (sides.length ? "<div class='fo-rat-sub'>The day&rsquo;s points</div>" : "") + best : "") +
@@ -256,6 +294,8 @@
       ".fo-rat-row>span{font:500 13px/1.3 Manrope,sans-serif;color:rgba(12,27,51,.62);min-width:0;" +
         "white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
       ".fo-rat-row>b{text-align:right;font:700 15px/1.1 Manrope,sans-serif;color:#0C1B2E}",
+      // the overs beside a bowling mark, quiet enough not to be read as part of it
+      ".fo-rat-row>b em{font-style:normal;font-weight:600;font-size:11px;margin-left:3px;opacity:.62}",
       // the two club names, which are a heading and not a row of figures
       ".fo-rat-row.hd{border-top:0;padding-top:0;padding-bottom:6px;" +
         "border-bottom:1px solid rgba(12,27,51,.16)}",

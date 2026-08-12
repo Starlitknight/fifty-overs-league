@@ -57,7 +57,10 @@ test('the marks do not move when the scoreline does', () => {
   const wiped = JSON.parse(JSON.stringify(CARD.innings)).map(inn => {
     inn.runs = 0; inn.wkts = 10; inn.legal = 60;
     (inn.bat || []).forEach(b => { b.r = 0; b.b = 0; b.f4 = 0; b.f6 = 0; b.out = 'b Nobody'; });
-    inn.bowlers = {}; inn.fielding = {};
+    // the same attack, the same overs, and every one of them hit for nothing
+    // and taking nothing: who bowled is the lineup, how it went is the day
+    Object.keys(inn.bowlers || {}).forEach(k => { inn.bowlers[k].r = 0; inn.bowlers[k].w = 0; });
+    inn.fielding = {};
     return inn;
   });
   const after = strength(wiped, A.name);
@@ -79,11 +82,40 @@ test('better men make a better top order', () => {
   assert.equal(now.tail, was.tail, 'and the tail');
 });
 
-test('the batting order is cut where a scorer cuts it', () => {
-  assert.deepEqual(eng.ctx.FO_BAT_CUT, { top: [0, 3], middle: [3, 7], tail: [7, 11] });
-  // the same cut the engine's own club marking uses, read off the engine itself
+test('the batting order is cut one-to-four, five-to-eight, nine down', () => {
+  assert.deepEqual(eng.ctx.FO_BAT_CUT, { top: [0, 4], middle: [4, 8], tail: [8, 11] },
+    'the cut From the Pavilion marks a side on');
+  // and DELIBERATELY not the engine's own club marking, which cuts 3 / 7 the
+  // way a scorer adds up an innings. That is a different quantity - what the
+  // afternoon was worth, which the world rankings stand on - and the two are
+  // never printed beside each other.
   assert.match(core, /const g\s*=\s*i<3\?'top':\(i<7\?'mid':'tail'\)/,
-    'the engine still cuts 3 / 7, which is where these boundaries came from');
+    'the engine still cuts 3 / 7 for its own marking');
+});
+
+test('the attack is the men who bowled, with the overs they sent down', () => {
+  const s = strength(CARD.innings, A.name);
+  const theirs = CARD.innings.filter(i => i.bowlTeam === A.name)[0];
+  const used = Object.keys(theirs.bowlers).filter(k => theirs.bowlers[k].b > 0);
+  const isSpin = p => !['fast', 'fastMedium', 'medium'].includes(String(p.bowlType));
+  const grp = spin => used.map(k => theirs.bowlers[k]).filter(x => isSpin(x.p) === spin);
+  const balls = xs => xs.reduce((n, x) => n + (x.b | 0), 0);
+  assert.equal(s.seamOv, Math.round(balls(grp(false)) / 6), 'the seam overs are the seam overs');
+  assert.equal(s.spinOv, Math.round(balls(grp(true)) / 6), 'and the spin overs the spin overs');
+  assert.equal((s.seamOv || 0) + (s.spinOv || 0), Math.round(balls(used.map(k => theirs.bowlers[k])) / 6),
+    'and together they are the innings they bowled');
+
+  // A MAN WHO NEVER GOT A BOWL IS NO PART OF THE ATTACK. Take a seamer's overs
+  // off the card and the seam mark is the mean of the ones who are left.
+  const dropped = grp(false)[0].p.name;
+  const without = JSON.parse(JSON.stringify(CARD.innings));
+  delete without.filter(i => i.bowlTeam === A.name)[0].bowlers[dropped];
+  const now = strength(without, A.name);
+  assert.notEqual(now.seamOv, s.seamOv, 'his overs go with him');
+  assert.ok(now.seam != null && now.seam !== s.seam,
+    'and so does his skill (' + s.seam + ' -> ' + now.seam + ')');
+  assert.equal(now.spin, s.spin, 'the spinners are untouched');
+  assert.equal(now.top, s.top, 'and so is the batting');
 });
 
 test('a card with no men on it is left unmarked rather than marked wrongly', () => {
@@ -97,8 +129,7 @@ test('a card with no men on it is left unmarked rather than marked wrongly', () 
 test('the panel prints the strength and never the day', () => {
   const html = eng.ctx.foRatingsPanelHTML(CARD.innings, CARD.result);
   assert.ok(html, 'the panel renders');
-  assert.match(html, /Strength of the XI/, 'the headline is what the side is worth');
-  assert.ok(!/Match rating/.test(html), 'and not what the afternoon was worth');
+  assert.match(html, /Match ratings/, 'the panel is named the way the game names the tab');
   assert.match(html, /The day&rsquo;s points/, 'the day still has its points underneath');
   [A.name, B.name].forEach(nm => assert.ok(html.indexOf(nm) >= 0, nm + ' is on the panel'));
   // IT IS ONE TABLE READ ACROSS, not two stacks of cards: every row carries
@@ -110,7 +141,9 @@ test('the panel prints the strength and never the day', () => {
     assert.equal(cells, 2, 'row ' + i + ' carries both sides, not ' + cells);
   });
   assert.match(html, /fo-rat-row hd'><span><\/span><i>/, 'the two clubs head their own columns');
-  assert.match(html, /fo-rat-row ft'><span>Strength of the XI/, 'the total sits at the foot');
+  assert.match(html, /fo-rat-row ft'><span>Overall/, 'the overall sits at the foot');
+  assert.match(html, /Bowling - Seam<\/span><b[^>]*>\d+<em>\(\d+\)<\/em>/,
+    'the seam mark carries the overs that half of the attack bowled');
   // and the better of the two is said in the ink rather than left to be worked out
   assert.match(html, /class='up'/, 'somebody wins a line');
   assert.match(html, /class='dn'/, 'and somebody loses it');
@@ -128,6 +161,7 @@ test('the panel prints the strength and never the day', () => {
 test('a slimmed card still knows what the two sides were worth', () => {
   const slim = JSON.parse(JSON.stringify(CARD.innings)).map(inn => {
     inn.bat = inn.bat.map(b => Object.assign({}, b, { p: eng.ctx.foSlimPlayer(b.p) }));
+    Object.keys(inn.bowlers || {}).forEach(k => { inn.bowlers[k].p = eng.ctx.foSlimPlayer(inn.bowlers[k].p); });
     return inn;
   });
   // the save really has taken the skills away
@@ -145,6 +179,9 @@ test('a save slimmed before the aggregates were kept reads the men off the roste
     inn.bat = inn.bat.map(b => Object.assign({}, b, {
       p: { name: b.p.name, keeper: !!b.p.keeper, bowlType: b.p.bowlType, role: b.p.role, rating: b.p.rating }
     }));
+    Object.keys(inn.bowlers || {}).forEach(k => {
+      const q = inn.bowlers[k].p; inn.bowlers[k].p = { name: q.name, bowlType: q.bowlType };
+    });
     return inn;
   });
   const was = strength(CARD.innings, A.name);
@@ -166,6 +203,7 @@ test('and a card that never carried the men says nothing rather than nothing muc
   // a card rebuilt from the commentary names the men and knows no more
   const named = JSON.parse(JSON.stringify(CARD.innings)).map(inn => {
     inn.bat = inn.bat.map(b => ({ p: { name: b.p.name }, r: b.r, b: b.b, f4: b.f4, f6: b.f6, out: b.out }));
+    Object.keys(inn.bowlers || {}).forEach(k => { inn.bowlers[k].p = { name: k }; });
     return inn;
   });
   assert.equal(strength(named, A.name), null, 'no marks to be had');
