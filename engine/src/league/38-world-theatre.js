@@ -103,7 +103,7 @@
   // (52-served-truth fetches it), so anything derived before it lands is
   // provisional - which is why the cache is dropped when it does.
   var SQ_CACHE = {}, SQ_GEN = null, GUESSED = false;
-  function forgetSquads() { SQ_CACHE = {}; SQ_GEN = null; GUESSED = false; }
+  function forgetSquads() { SQ_CACHE = {}; SQ_GEN = null; GUESSED = false; CLUB_IX = null; }
   function serverSquad(rid, slot) {
     var cfg = regionCfg(rid); if (!cfg) return null;
     try {
@@ -126,6 +126,50 @@
       return men;
     } catch (e) { return null; }
   }
+  // A CRICKETER BY NAME, WHEREVER HE PLAYS.
+  //
+  // A card out of the archive names its men and says no more about them, and a
+  // panel that marks a side on its men then has nothing to mark it with. The
+  // reader's own club is rescued by his own roster - but the OPPONENT's eleven
+  // is on no roster this device holds, so a match ratings table could mark one
+  // column and leave the other blank, which is the one thing a comparison must
+  // never do.
+  //
+  // The world's squads are derived rather than stored, so any club on earth can
+  // simply be asked for its men. The index from a club's name to its seat is
+  // built once per generation and thrown away with the squads when a redeal
+  // moves everybody.
+  var CLUB_IX = null, CLUB_IX_GEN = null;
+  function clubIndex() {
+    var gen = (window.__foWorldGen | 0) || 1;
+    if (CLUB_IX && CLUB_IX_GEN === gen) return CLUB_IX;
+    var ix = {};
+    try {
+      var PL = window.__foPlanet;
+      (PL.nations() || []).forEach(function (r) {
+        var rid = r && r.id; if (!rid) return;
+        (PL.sidesOf(rid) || []).forEach(function (sd) {
+          if (sd && sd.name && !ix[sd.name]) ix[sd.name] = { rid: rid, slot: sd.slot | 0 };
+        });
+        // and the names their managers christened them, which is what a card
+        // carries and the planet's own table does not know
+        var nm = null;
+        try { nm = window.__foWorldNames && window.__foWorldNames.get(rid); } catch (eN) {}
+        if (nm) Object.keys(nm).forEach(function (k) {
+          if (nm[k] && !ix[nm[k]]) ix[nm[k]] = { rid: rid, slot: k | 0 };
+        });
+      });
+    } catch (e) {}
+    CLUB_IX = ix; CLUB_IX_GEN = gen;
+    return ix;
+  }
+  function squadByClub(name) {
+    try {
+      var hit = name ? clubIndex()[name] : null;
+      return hit ? serverSquad(hit.rid, hit.slot) : null;
+    } catch (e) { return null; }
+  }
+
   // The server's calendar for a world day. It used to do the arithmetic itself
   // (season = day/25, round = day%25 + 1) which was true only while every day
   // was a match day. The planet owns the mapping now; this asks it - INCLUDING
@@ -703,7 +747,7 @@
   // same calendar and the same live states the theatre plays from
   window.__foWT = { flagOf: flagOf, forgetSquads: forgetSquads,
     get guessedSquad() { return GUESSED; }, serverFixtures: serverFixtures, serverCal: serverCal, schedMirror: schedMirror, divMembers: divMembers,
-    serverSquad: serverSquad, applyLiving: applyLiving,
+    serverSquad: serverSquad, squadByClub: squadByClub, applyLiving: applyLiving,
     // A CLUB WITH NO MANAGER STILL FIELDS ELEVEN MEN. The watch page has
     // named them since it was built - the engine's pick is a pure function of
     // the squad - and the broadcast's Lineups tab was the one room that

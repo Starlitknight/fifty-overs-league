@@ -225,3 +225,50 @@ test("the reader's own club takes the left-hand column", () => {
     assert.deepEqual(flipped, [asCard[1], asCard[0]], 'my club leads');
   } finally { setTeams(prev); }
 });
+
+// ---------------------------------------------------------------------------
+// THE OPPONENT IS ON NO ROSTER THIS DEVICE HOLDS. A card out of the archive
+// names its men and says no more about them. The reader's own club is rescued
+// by his own squad list - but the other eleven is nowhere, so the table marked
+// one column and left the other blank, which is the one thing a comparison
+// must never do. The world's squads are derived, so the other club is simply
+// asked for its men.
+// ---------------------------------------------------------------------------
+const world = nm => eng.ctx.__foWT.squadByClub(nm);
+test('any club on earth can be asked for its men by name', () => {
+  const lei = world('Leicestershire');
+  assert.ok(lei && lei.length >= 11, 'Leicestershire have a squad: ' + (lei || []).length);
+  assert.ok(lei.every(p => p && p.name && p.skills), 'and every man of it is a cricketer');
+  assert.equal(world('Nowhere CC'), null, 'a club that does not exist has no men');
+});
+
+test('a card stripped to bare names still marks BOTH sides', () => {
+  const H = { name: 'Leicestershire', ground: 'Grace Road', players: world('Leicestershire') };
+  const A2 = { name: 'Derbyshire', ground: 'The County Ground', players: world('Derbyshire') };
+  const played = eng.sim(H, A2, 'balanced', 'Sunny', 771010);
+  assert.ok(played && played.innings.length === 2, 'the match played');
+  const full = [H.name, A2.name].map(n => strength(played.innings, n));
+  assert.ok(full.every(Boolean), 'both sides mark off a full card');
+
+  // every man reduced to a name, on both the batting card and the bowling one
+  const bare = JSON.parse(JSON.stringify(played.innings)).map(inn => {
+    inn.bat = inn.bat.map(b => Object.assign({}, b, { p: { name: b.p.name } }));
+    Object.keys(inn.bowlers || {}).forEach(k => { inn.bowlers[k].p = { name: k }; });
+    return inn;
+  });
+  // and nothing on any roster to rescue them with
+  const prev = setTeams([{ name: 'Somebody Else', players: [] }]);
+  try {
+    const now = [H.name, A2.name].map(n => strength(bare.map(x => x), n));
+    now.forEach((s, i) => {
+      assert.ok(s, [H.name, A2.name][i] + ' is still marked');
+      ROWS.forEach(k => assert.equal(s[k], full[i][k],
+        [H.name, A2.name][i] + ' ' + k + ': ' + full[i][k] + ' -> ' + s[k]));
+    });
+    // the panel therefore carries two columns, not one
+    const html = eng.ctx.foRatingsPanelHTML(bare, played.result);
+    const hd = (html.split("class='fo-rat-row hd'")[1] || '').split('</div>')[0];
+    assert.equal((hd.match(/<i>/g) || []).length, 2, 'both clubs head a column');
+    assert.match(html, /Bowling - Seam/, 'and the attacks are marked');
+  } finally { setTeams(prev); }
+});

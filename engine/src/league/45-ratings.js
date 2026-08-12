@@ -92,17 +92,35 @@
     // still on a roster, and his card is what "on paper" means. His rating THAT
     // DAY stays the card's; only the departments are read off the man. A
     // cricketer nobody has any more is simply left as he came.
-    var resolve = function (p) {
+    // AND THE OPPONENT IS NOT ON ANY ROSTER THIS DEVICE HOLDS, which is why one
+    // column of the table could be marked and the other left blank - the one
+    // thing a comparison must never do. The world's squads are derived, so the
+    // other club is simply asked for its men (__foWT.squadByClub).
+    var books = {};
+    var bookOf = function (club) {
+      if (books[club] !== undefined) return books[club];
+      var by = null;
+      try {
+        var sq = window.__foWT && window.__foWT.squadByClub && window.__foWT.squadByClub(club);
+        if (sq && sq.length) { by = {}; sq.forEach(function (q) { if (q && q.name) by[q.name] = q; }); }
+      } catch (e) {}
+      books[club] = by;
+      return by;
+    };
+    var resolve = function (p, club) {
       if (!p || p.skills || p.sk) return p;
-      var f = null;
+      var f = null, src = null;
       try { f = (typeof findPlayer === "function") ? findPlayer(p.name) : null; } catch (e) {}
-      if (!f || !f.p || !f.p.skills) return p;
-      var q = {}; for (var k in f.p) q[k] = f.p[k];
+      if (f && f.p && f.p.skills) src = f.p;
+      if (!src) { var bk = bookOf(club); src = (bk && bk[p.name]) || null; }
+      if (!src || !src.skills) return p;
+      var q = {}; for (var k in src) q[k] = src[k];
       if (typeof p.rating === "number" && p.rating > 0) q.rating = p.rating;
       return q;
     };
     var xi = (mine.bat || []).map(function (b) { return b && b.p; })
-      .filter(function (p) { return p && p.name; }).map(resolve);
+      .filter(function (p) { return p && p.name; })
+      .map(function (p) { return resolve(p, nm); });
     // a card with no men on it - a hand-built fixture, a card rebuilt from the
     // commentary - is left unmarked rather than marked wrongly
     if (xi.length < 5) return null;
@@ -119,7 +137,7 @@
     for (var bk in ((theirs && theirs.bowlers) || {})) {
       var br = theirs.bowlers[bk];
       if (!br || !(br.b > 0)) continue;
-      spells.push({ p: resolve(br.p || { name: bk }), balls: br.b | 0 });
+      spells.push({ p: resolve(br.p || { name: bk }, nm), balls: br.b | 0 });
     }
     var bowlOf = function (list) {
       if (!list.length) return null;
