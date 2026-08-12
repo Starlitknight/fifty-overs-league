@@ -1192,7 +1192,9 @@ async function playStage(pool, host, comp, seasonNo, stage, pairs) {
     // a cup tie is staged in the first-drawn side's conditions - its country's
     // climate without any groundsman tilt (slot 0 hosts, the neutral big ground)
     const cCond = host.condFor(A.country || 'eng', 0, seasonNo, seed % 997);
-    const resultJson = host.runMatch({ name: A.name, players: sqA }, { name: B.name, players: sqB }, cCond.pitch, seed, undefined, cCond.weather);
+    // NEUTRAL: the tie is staged at a big ground neither side calls home, so
+    // the draw's first-written name must not collect the home edge
+    const resultJson = host.runMatch({ name: A.name, players: sqA }, { name: B.name, players: sqB }, cCond.pitch, seed, undefined, cCond.weather, true);
     if (!resultJson) throw new Error('engine failed cup match ' + comp + ':' + stage + ':' + gi);
     const living = { [A.name]: livingPatch(sqA), [B.name]: livingPatch(sqB) };
     await pool.query(

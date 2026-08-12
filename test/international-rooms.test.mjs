@@ -132,26 +132,19 @@ test('the conditions are the umpire\'s own, and never invented', () => {
     'and the page says why it never varies rather than pretending it does');
 });
 
-test('the bar is offered, and it is the fixture played out, not a formula', () => {
+test('the bar is offered, and it says who is stronger the same way every time', () => {
   const { html } = preview(5);
   assert.match(html, /id='fo-pm-wp'/, 'the win probability has a home on the page');
   assert.match(html, /Win probability &middot; projected/, 'labelled as a projection');
   const src51 = src('51-prematch.js');
-  assert.match(src51, /function foPmWpRunTeams\(host, sig, key, H, A, codes\)/,
-    'and it is run on two built sides');
   // forty playings could not tell a four-per-cent gap from noise: the same
-  // fixture came out anywhere from 32% to 65% depending on the seeds drawn
-  assert.match(src51, /var FO_PM_WP_TOUR_N = 200;/, 'at a sample that can carry an answer');
-  assert.match(src51, /foPmWpPaint\(host, v, done, 5\)/,
-    'and printed to the nearest five, which is all two hundred playings earn');
-  assert.match(src51, /gap < 10 \? "Evenly matched"/,
-    'with "evenly matched" inside the margin rather than a false favourite');
-  assert.match(src51, /G\.simWorld\(H, A, "balanced", "Sunny"/,
-    'through the engine the umpire uses, on the tour\'s own conditions');
-  assert.match(src51, /world_squads\?country_id=eq\./,
-    'with the men read off the world\'s published cards');
-  assert.match(src51, /return out\.length >= 11 \? out : null;/,
-    'and no bar at all unless a side can actually be fielded');
+  // fixture came out anywhere from 32% to 65% depending on the seeds drawn,
+  // so the odds are read off the squads and never move
+  assert.ok(!/simWorld/.test(src51), 'the preview no longer plays the fixture out at all');
+  assert.match(src51, /var FO_PM_ODDS_S = 16250;/, 'the curve is the engine\'s own, measured');
+  assert.match(src51, /var FO_PM_ODDS_H = 525;/, 'and so is what the ground is worth');
+  assert.match(src51, /window\.foPmStrength = function/, 'strength is the eleven that will take the field');
+  assert.match(src51, /world_squads\?country_id=eq\./, 'read off the world\'s published cards');
 });
 
 test('the touring party is listed, man by man, with his club and his caps', () => {

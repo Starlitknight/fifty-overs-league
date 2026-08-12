@@ -515,8 +515,13 @@ export async function runWindows(pool, host, engineVersion, { now = Date.now(), 
       if ((await pool.query('SELECT 1 FROM nat_matches WHERE id=$1', [id])).rowCount) continue;
       const aName = (byId[aId] || {}).name + ' XI', bName = (byId[bId] || {}).name + ' XI';
       const seed = seedOf(id + '|' + aId + '|' + bId);
+      // THE HOST IS AT HOME, which matters now that being at home is worth
+      // something (FO_HOME_EDGE). This had the TOURING side in the home slot,
+      // so a tour of South Africa would have handed the visitors the ground's
+      // advantage. b is the host throughout this file - it is bId that owns
+      // the fixture - so b goes first.
       const resultJson = host.runMatch(
-        { name: aName, players: A.men }, { name: bName, players: B.men }, 'balanced', seed, null);
+        { name: bName, players: B.men }, { name: aName, players: A.men }, 'balanced', seed, null);
       if (!resultJson) throw new Error('engine failed international ' + id);
       const living = { [aName]: livingPatch(A.men), [bName]: livingPatch(B.men) };
       await pool.query(

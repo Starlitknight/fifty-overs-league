@@ -197,13 +197,17 @@ globalThis.__svcStarComp = function (playersJson) {
     } catch (e) { return null; }
   }));
 };
-globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson, weather) {
+globalThis.__svcRun = function (homeJson, awayJson, pitch, seed, ordersJson, weather, neutral) {
   var home = JSON.parse(homeJson), away = JSON.parse(awayJson);
   onMatchEnd = function () {};
   M = newMatch(home, away, pitch, (seed >>> 0) || 1);
   // weather rides into the same meta the client's own matches use - Overcast
   // swings, Drizzle can cut overs and revise the chase by DLS, heat tires
-  M.meta = { home: home.name, away: away.name, pitch: pitch, weather: weather || 'Sunny', comp: 'world', isUser: false };
+  // A NEUTRAL TIE HAS NO HOME SIDE. The engine gives the home side a small
+  // edge (FO_HOME_EDGE), and a cup staged at a neutral ground must not hand it
+  // to whichever side the draw happened to write down first.
+  M.meta = { home: home.name, away: away.name, pitch: pitch, weather: weather || 'Sunny',
+             comp: 'world', isUser: false, neutral: !!neutral };
   // a claimed club's submitted orders ride in keyed by club name; the
   // engine's ordersFor/pickXI consult M.ordersMap before anything else
   M.isUserMatch = false; M.ordersMap = ordersJson ? JSON.parse(ordersJson) : {};
@@ -355,9 +359,9 @@ globalThis.__svcWorldCfg = function () {
     // the client's own match rating for one side of a banked card
     teamRatings(result, teamName) { return JSON.parse(tmr(JSON.stringify(result), teamName)); },
     // returns the canonical result JSON STRING — stored verbatim, compared verbatim
-    runMatch(homeTeam, awayTeam, pitch, seed, ordersMap, weather) {
+    runMatch(homeTeam, awayTeam, pitch, seed, ordersMap, weather, neutral) {
       return run(JSON.stringify(homeTeam), JSON.stringify(awayTeam), pitch, seed,
-        ordersMap ? JSON.stringify(ordersMap) : null, weather || 'Sunny');
+        ordersMap ? JSON.stringify(ordersMap) : null, weather || 'Sunny', !!neutral);
     },
     // how many triggers each talent takes to earn, straight off the engine
     talThresholds() { return JSON.parse(talT()); },

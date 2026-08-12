@@ -230,6 +230,12 @@
   };
 
   window.__foWorldLg = {
+    // WHICH NATION'S BOOK SETS THE CALENDAR. Only one does - anchorTo ignores
+    // every other - so a page that needs the world anchored before it can date
+    // anything has to ask for THAT one. Exported rather than reimplemented,
+    // because a caller guessing wrong asks for a book that anchors nothing and
+    // waits for ever.
+    anchorNation: anchorNation,
     // the cached copy anchors the calendar too: it is something the world
     // already said, and the first paint of a cold page happens before the
     // fetch lands. It is overwritten by the live body the moment that arrives.

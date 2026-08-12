@@ -162,10 +162,10 @@ export function makeEngine() {
       var sq = f(seed, country, archId);
       return sq ? JSON.stringify(sq) : null;
     }
-    function __vmSim(taJson, tbJson, pitch, weather, seed, ordersJson){
+    function __vmSim(taJson, tbJson, pitch, weather, seed, ordersJson, neutral){
       var g = window.__foGame; if(!g || !g.simWorld) return null;
       var r = g.simWorld(JSON.parse(taJson), JSON.parse(tbJson), pitch, weather, seed,
-        ordersJson ? JSON.parse(ordersJson) : null);
+        ordersJson ? JSON.parse(ordersJson) : null, !!neutral);
       return r ? JSON.stringify(r) : null;
     }
     return { gen: __vmGen, sim: __vmSim };
@@ -188,9 +188,10 @@ export function makeEngine() {
     // Living World: play two team objects ({name, players}) -> real result
     // ordersMap is the saved sheets, keyed by club name - the same channel
     // the World Service uses to hand a manager's plan to the resolver
-    sim: (tA, tB, pitch, weather, seed, ordersMap) => {
+    // `neutral` plays the fixture with no home side at all - the cup's own law
+    sim: (tA, tB, pitch, weather, seed, ordersMap, neutral) => {
       const r = worldFns.sim(JSON.stringify(tA), JSON.stringify(tB), pitch || 'balanced', weather || 'Sunny',
-        (seed >>> 0) || 1, ordersMap ? JSON.stringify(ordersMap) : null);
+        (seed >>> 0) || 1, ordersMap ? JSON.stringify(ordersMap) : null, !!neutral);
       return r ? JSON.parse(r) : null;
     }
   };

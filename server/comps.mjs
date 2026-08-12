@@ -139,8 +139,9 @@ export async function playComps(pool, host, engineVersion, now = Date.now()) {
         const a = await sq(A), b = await sq(B);
         if (!a || !b) continue;
         const seed = seedOf(id);
+        // neutral ground: a world competition is nobody's home fixture
         const resultJson = host.runMatch(
-          { name: a.name, players: a.squad }, { name: b.name, players: b.squad }, 'balanced', seed, null);
+          { name: a.name, players: a.squad }, { name: b.name, players: b.squad }, 'balanced', seed, null, 'Sunny', true);
         if (!resultJson) throw new Error('engine failed to complete ' + id);
         await pool.query(
           `INSERT INTO comp_matches(id, comp_id, round, gi, a_seat, b_seat, a_name, b_name,

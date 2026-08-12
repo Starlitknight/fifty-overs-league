@@ -7424,14 +7424,18 @@
       // onMatchEnd is suppressed so nothing leaks into App.results,
       // player history or fatigue. Same pattern as the engine's own
       // simBackground and the overlay's practice broadcast.
-      simWorld: function (tA, tB, pitch, weather, seed, ordersMap) {
+      // `neutral` turns the home side's edge off: a cup tie staged where
+      // neither club lives belongs to neither of them, and the first argument
+      // must not collect the ground's advantage just for being written first
+      simWorld: function (tA, tB, pitch, weather, seed, ordersMap, neutral) {
         var prevM = null, prevToss = null, prevOME = null, ok = false;
         try { prevM = M; } catch (e0) {}
         try { prevToss = App.tossState; } catch (e1) {}
         try {
           prevOME = window.onMatchEnd; window.onMatchEnd = function () {};
           M = newMatch(tA, tB, pitch, (seed >>> 0) || 1);
-          M.meta = { home: tA.name, away: tB.name, pitch: pitch, weather: weather || "Sunny", comp: "world", isUser: false };
+          M.meta = { home: tA.name, away: tB.name, pitch: pitch, weather: weather || "Sunny",
+                     comp: "world", isUser: false, neutral: !!neutral };
           M.isUserMatch = false;
           // per-team orders (captain, keeper, batting order, phase intent):
           // this is how NPC managers' decisions reach actual deliveries —

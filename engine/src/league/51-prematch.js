@@ -234,35 +234,76 @@
   // For the many fixtures where nobody manages either club it is not even an
   // approximation: the umpire files a sheet only where one exists and lets the
   // engine pick the rest, which is exactly what happens here.
+  // ---- THE ODDS, OFF WHAT THE TWO SIDES ARE ON PAPER -----------------------
+  //
+  // This used to PLAY the fixture forty times and report how often each side
+  // won. The thinking was that a played-out number cannot be argued with, and
+  // for a lopsided fixture that held. For an even one it was a lottery: the
+  // same tour, played forty times, came out anywhere between 32% and 65%
+  // depending only on which forty seeds it drew, and the page printed whichever
+  // it got as though it meant something. Two readers, two answers, one match.
+  //
+  // A win probability does not have to name the winner. It has to say who is
+  // stronger and by how much, the same way every time - 99-to-1 still loses one
+  // time in a hundred and nobody calls that bar wrong. So the odds are read off
+  // the two squads directly, and they never move.
+  //
+  // NOTHING HERE IS INVENTED. The curve is the ENGINE'S OWN, measured: 72
+  // 184 pairings spanning the whole strength band from 0.70x to 1.30x of a
+  // baked side plus ordinary generated squads, every pairing played both ways
+  // round - 12,880 matches - and the win rate fitted against the rating gap by
+  // maximum likelihood. It lands within about six points of the engine on
+  // average, against thirty for assuming every match is even.
+  // FO_PM_ODDS_S is the gap worth ten to one;
+  // FO_PM_ODDS_H is what the ground is worth in the same currency, taken from a
+  // separate 1,600-fixture measurement of two equal sides (51.6% to the host).
+  // Across nine gap bands the curve sits within about two points of what the
+  // engine actually does - test/win-odds.test.mjs replays that check.
   var FO_PM_FA = { r16: "Cup round of 16", qf: "Cup quarter-final", sf: "Cup semi-final", final: "The Cup final" };
-  var FO_PM_WP_N = 40;              // how many times the fixture is played out
-  var FO_PM_WP_CHUNK = 4;           // per tick, so a phone never locks up
-  var FO_PM_WP = {};                // this session, by fixture id
-  // `want` is how many playings the CALLER runs - a cached answer from a
-  // different sample size is a different answer and is thrown away, which is
-  // also how raising the count retires every stale bar without a migration
-  function foPmWpLoad(key, want) {
-    var n = want || FO_PM_WP_N;
-    var hit = FO_PM_WP[key];
-    if (hit) return hit.n === n ? hit : null;
+  var FO_PM_ODDS_S = 16250;         // rating points worth 10:1
+  var FO_PM_ODDS_H = 525;           // and what being at home is worth
+  var FO_PM_ODDS_TIE = 0.02;        // the engine ties about one match in fifty
+
+  // THE ELEVEN A SIDE CAN ACTUALLY FIELD, and what it averages. pickXI is the
+  // engine's own selector - the very one that will pick the side on the day -
+  // so this is the strength of the team that takes the field, not of fifteen
+  // names on a list.
+  window.foPmStrength = function (players) {
     try {
-      var raw = localStorage.getItem("fo_wp_" + key);
-      if (raw) { var v = JSON.parse(raw); if (v && v.n === n) { FO_PM_WP[key] = v; return v; } }
-    } catch (e) {}
-    return null;
-  }
-  function foPmWpSave(key, v) {
-    FO_PM_WP[key] = v;
-    try { localStorage.setItem("fo_wp_" + key, JSON.stringify(v)); } catch (e) {}
-  }
-  // `step` rounds the printed figures to that many points - a sample of two
-  // hundred cannot tell 47% from 48%, so a tour asks for fives rather than
-  // printing a digit it has not earned
-  function foPmWpPaint(host, v, done, step) {
-    if (!host) return;
-    var n = v.h + v.a + v.t; if (!n) return;
-    var q = function (x) { return step > 1 ? Math.round(x / step) * step : Math.round(x); };
-    var ph = q(100 * v.h / n), pa = q(100 * v.a / n);
+      var men = (players || []).filter(function (p) { return p && p.name; });
+      if (!men.length) return null;
+      var xi = men;
+      if (men.length > 11 && typeof pickXI === "function") {
+        try { xi = pickXI({ name: " odds", players: men }) || men; } catch (eP) { xi = men; }
+      }
+      if (xi.length > 11) {
+        xi = xi.slice().sort(function (a, b) { return (+b.rating || 0) - (+a.rating || 0); }).slice(0, 11);
+      }
+      var n = 0, t = 0;
+      xi.forEach(function (p) { var r = +p.rating || 0; if (r > 0) { t += r; n++; } });
+      return n ? t / n : null;
+    } catch (e) { return null; }
+  };
+  // the two figures the bar prints, from two strengths. A neutral tie passes
+  // `neutral` and nobody collects the ground.
+  window.foPmOdds = function (sHome, sAway, neutral) {
+    if (!(sHome > 0) || !(sAway > 0)) return null;
+    var d = sHome - sAway + (neutral ? 0 : FO_PM_ODDS_H);
+    var p = 1 / (1 + Math.pow(10, -d / FO_PM_ODDS_S));
+    var live = 1 - FO_PM_ODDS_TIE;
+    return { home: p * live, away: (1 - p) * live, tie: FO_PM_ODDS_TIE };
+  };
+  // and the verdict beneath it, in the language a preview speaks
+  window.foPmOddsSay = function (o, homeNm, awayNm) {
+    if (!o) return "";
+    var gap = Math.abs(o.home - o.away) * 100;
+    if (gap < 4) return "Evenly matched";
+    var who = o.home > o.away ? homeNm : awayNm;
+    return who + (gap < 12 ? " slightly favoured" : gap < 30 ? " favoured" : " strongly favoured");
+  };
+  function foPmWpPaint(host, o, homeNm, awayNm) {
+    if (!host || !o) { if (host) host.style.display = "none"; return; }
+    var ph = Math.round(100 * o.home), pa = Math.round(100 * o.away);
     var pt = Math.max(0, 100 - ph - pa);
     var bar = host.querySelector(".fo-pm-wpbar");
     if (bar) {
@@ -273,33 +314,19 @@
     var hp = host.querySelector(".fo-pm-wph b"), ap = host.querySelector(".fo-pm-wpa b");
     if (hp) hp.textContent = ph + "%";
     if (ap) ap.textContent = pa + "%";
-    host.classList.toggle("settled", !!done);
+    var say = host.querySelector(".fo-pm-wpsay");
+    if (say) say.textContent = window.foPmOddsSay(o, homeNm, awayNm);
+    host.classList.add("settled");
   }
-  // each side carries its own nation: a league fixture's two clubs share one,
-  // a friendly's may not, and the forty playings must field the right squads
+  // A LEAGUE FIXTURE OR A FRIENDLY: each side carries its own nation, because a
+  // friendly's two clubs may stand in different ones.
   function foPmWpRun(host, sig, key, hS, aS, ground) {
-    var G = window.__foGame, WT = window.__foWT;
-    if (!G || !G.simWorld || !G.hash || !WT || !WT.serverSquad) { host.style.display = "none"; return; }
+    var WT = window.__foWT;
+    if (!WT || !WT.serverSquad) { host.style.display = "none"; return; }
     var sqH = WT.serverSquad(hS.nat, hS.slot), sqA = WT.serverSquad(aS.nat, aS.slot);
     if (!sqH || !sqA) { host.style.display = "none"; return; }
-    var hN = hS.name, aN = aS.name;
-    var H = { name: hN, ground: ground, players: sqH }, A = { name: aN, players: sqA };
-    var v = { h: 0, a: 0, t: 0, n: FO_PM_WP_N }, i = 0;
-    var step = function () {
-      if (location.hash !== sig) return;                       // the reader moved on
-      for (var c = 0; c < FO_PM_WP_CHUNK && i < FO_PM_WP_N; c++, i++) {
-        var out = null;
-        try { out = G.simWorld(H, A, "balanced", "Sunny", (G.hash(key + "|wp|" + i) >>> 0) || 1, null); } catch (eS) {}
-        if (!out || !out.result) { v.t++; continue; }
-        var w = out.result.winner;
-        if (w === hN) v.h++; else if (w === aN) v.a++; else v.t++;
-      }
-      var done = i >= FO_PM_WP_N;
-      foPmWpPaint(host, v, done);
-      if (done) { foPmWpSave(key, v); return; }
-      setTimeout(step, 0);
-    };
-    step();
+    foPmWpPaint(host, window.foPmOdds(window.foPmStrength(sqH), window.foPmStrength(sqA)),
+      foPmSideCode(hS.name), foPmSideCode(aS.name));
   }
 
   // ---- the countdown --------------------------------------------------------
@@ -577,10 +604,11 @@
         "<div id='fo-pm-wp' class='fo-pm-wp'>" +
         "<div class='fo-pm-cap'>Win probability &middot; projected</div>" +
         "<div class='fo-pm-wptop'>" +
-        "<span class='fo-pm-wph'>" + foPmShield(hN, hBoss, natId) + "<u>" + foPmE(hN) + "</u><b>&mdash;</b></span>" +
-        "<span class='fo-pm-wpa'><b>&mdash;</b><u>" + foPmE(aN) + "</u>" + foPmShield(aN, aBoss, natId) + "</span>" +
+        "<span class='fo-pm-wph'>" + foPmShield(hN, hBoss, natId) + "<u>" + foPmE(foPmSideCode(hN)) + "</u><b>&mdash;</b></span>" +
+        "<span class='fo-pm-wpa'><b>&mdash;</b><u>" + foPmE(foPmSideCode(aN)) + "</u>" + foPmShield(aN, aBoss, natId) + "</span>" +
         "</div>" +
         "<div class='fo-pm-wpbar'><span class='h'></span><span class='t'></span><span class='a'></span></div>" +
+        "<div class='fo-pm-wpsay'></div>" +
         "</div>" +
 
         "<div class='fo-pm-cap'>Team status</div>" +
@@ -603,12 +631,9 @@
       try {
         var wpHost = document.getElementById("fo-pm-wp");
         if (wpHost) {
-          // the key is the fixture and nothing else: what was known can no
-          // longer change what the bar says, so a cached number is never stale
-          var wpKey = natId + ":s" + g.seasonNo + ":" + (stage ? "fa" + stage : "r" + round) + ":h" + hSlot + "a" + aSlot;
-          var cached = foPmWpLoad(wpKey);
-          if (cached) foPmWpPaint(wpHost, cached, true);
-          else foPmWpRun(wpHost, location.hash, wpKey,
+          // no key and no cache any more: the odds are a function of the two
+          // squads, so they are the same every time this page is opened
+          foPmWpRun(wpHost, location.hash, "",
             { nat: natId, slot: hSlot, name: hN }, { nat: natId, slot: aSlot, name: aN }, ground);
         }
       } catch (eWp) {
@@ -849,10 +874,11 @@
         "<div id='fo-pm-wp' class='fo-pm-wp'>" +
         "<div class='fo-pm-cap'>Win probability &middot; projected</div>" +
         "<div class='fo-pm-wptop'>" +
-        "<span class='fo-pm-wph'>" + foPmShield(hN, hSlot === 0, hNat) + "<u>" + foPmE(hN) + "</u><b>&mdash;</b></span>" +
-        "<span class='fo-pm-wpa'><b>&mdash;</b><u>" + foPmE(aN) + "</u>" + foPmShield(aN, aSlot === 0, aNat) + "</span>" +
+        "<span class='fo-pm-wph'>" + foPmShield(hN, hSlot === 0, hNat) + "<u>" + foPmE(foPmSideCode(hN)) + "</u><b>&mdash;</b></span>" +
+        "<span class='fo-pm-wpa'><b>&mdash;</b><u>" + foPmE(foPmSideCode(aN)) + "</u>" + foPmShield(aN, aSlot === 0, aNat) + "</span>" +
         "</div>" +
         "<div class='fo-pm-wpbar'><span class='h'></span><span class='t'></span><span class='a'></span></div>" +
+        "<div class='fo-pm-wpsay'></div>" +
         "</div>" +
 
         "<div class='fo-pm-cap'>Team status</div>" +
@@ -874,14 +900,11 @@
       try { if (window.__foPmTimer) clearInterval(window.__foPmTimer); } catch (eT) {}
       window.__foPmTimer = setInterval(foPmTick, 1000);
 
-      // the bar: the same forty playings, keyed to the friendly itself
+      // the bar: the two squads, read the same way a league fixture reads them
       try {
         var wpHost = document.getElementById("fo-pm-wp");
         if (wpHost) {
-          var wpKey = "fr" + frId + ":" + hNat + hSlot + "v" + aNat + aSlot;
-          var cached = foPmWpLoad(wpKey);
-          if (cached) foPmWpPaint(wpHost, cached, true);
-          else foPmWpRun(wpHost, location.hash, wpKey,
+          foPmWpRun(wpHost, location.hash, "",
             { nat: hNat, slot: hSlot, name: hN }, { nat: aNat, slot: aSlot, name: aN }, ground);
         }
       } catch (eWp) {
@@ -944,6 +967,15 @@
     var w = String(nm || rid || "").replace(/[^A-Za-z ]/g, "").trim().split(/\s+/);
     return (w.length > 1 ? w.map(function (x) { return x.charAt(0); }).join("")
                          : (w[0] || "").slice(0, 3)).toUpperCase();
+  }
+  // A SCOREBOARD CODE FOR A CLUB. Nations have official three-letter codes;
+  // clubs do not, so one is made the way a scoreboard would - and it is made
+  // rather than clipped, because "GLOUCESTERSH..." is not a name.
+  function foPmSideCode(nm) {
+    var w = String(nm || "").replace(/[^A-Za-z ]/g, "").trim().split(/\s+/).filter(Boolean);
+    if (!w.length) return "?";
+    if (w.length > 1) return w.map(function (x) { return x.charAt(0); }).join("").slice(0, 3).toUpperCase();
+    return w[0].slice(0, 3).toUpperCase();
   }
   function foPmNatShield(rid, big) {
     var src = foPmNatFlag(rid);
@@ -1099,58 +1131,6 @@
     });
     return out.length >= 11 ? out : null;
   }
-  // HOW MANY PLAYINGS AN ANSWER ACTUALLY NEEDS.
-  //
-  // Forty was too few, and measurably so. Playing one real tour - South Africa
-  // against Bangladesh, two sides four per cent apart on paper - forty times
-  // gave the touring side anywhere from 32% to 65% depending only on which
-  // forty seeds it drew. The page had been reporting the seed lottery as a
-  // verdict, and named the weaker side favourite.
-  //
-  // The obvious alternative, estimating from paper strength instead of playing
-  // at all, was measured too and is worse: over forty pairs at two hundred
-  // playings each, a rating-gap model missed by 20 points on average, a
-  // batting-and-bowling model by 8.2 - and simply saying "even" missed by 8.5.
-  // The paper model named the WRONG favourite nine times in forty. A stable
-  // wrong answer is not an improvement on a noisy one.
-  //
-  // So: the engine stays, at two hundred playings (about nine seconds, filled
-  // in progressively and then cached for good), and the display stops claiming
-  // more than the sample can carry - figures to the nearest five, and a verdict
-  // that says "evenly matched" when the two are inside the margin.
-  var FO_PM_WP_TOUR_N = 200;
-  function foPmWpSay(host, v, codes) {
-    var el = host && host.querySelector(".fo-pm-wpsay"); if (!el) return;
-    var n = v.h + v.a + v.t; if (!n) return;
-    var ph = 100 * v.h / n, pa = 100 * v.a / n, gap = Math.abs(ph - pa);
-    // two hundred playings put the standard error near 3.5 points, so a gap
-    // inside ten is not a difference this page can honestly call
-    el.textContent = gap < 10 ? "Evenly matched"
-      : (ph > pa ? codes[0] : codes[1]) + " favoured" + (gap < 20 ? ", narrowly" : "");
-  }
-  function foPmWpRunTeams(host, sig, key, H, A, codes) {
-    var G = window.__foGame;
-    if (!G || !G.simWorld || !G.hash || !H || !A) { host.style.display = "none"; return; }
-    var N = FO_PM_WP_TOUR_N;
-    var v = { h: 0, a: 0, t: 0, n: N }, i = 0;
-    var step = function () {
-      if (location.hash !== sig) return;                       // the reader moved on
-      for (var c = 0; c < FO_PM_WP_CHUNK && i < N; c++, i++) {
-        var out = null;
-        try { out = G.simWorld(H, A, "balanced", "Sunny", (G.hash(key + "|wp|" + i) >>> 0) || 1, null); } catch (eS) {}
-        if (!out || !out.result) { v.t++; continue; }
-        var w = out.result.winner;
-        if (w === H.name) v.h++; else if (w === A.name) v.a++; else v.t++;
-      }
-      var done = i >= N;
-      foPmWpPaint(host, v, done, 5);
-      if (codes) foPmWpSay(host, v, codes);
-      if (done) { foPmWpSave(key, v); return; }
-      setTimeout(step, 0);
-    };
-    step();
-  }
-
   // THE ROOM ITSELF. Same card, same dress, same clock as a round's preview.
   window.foRenderIntlPreview = function (page, snap, away, host, round) {
     try {
@@ -1161,8 +1141,25 @@
       var t = found.tie, st = found.st, hourUtc = snap.hourUtc == null ? 18 : snap.hourUtc | 0;
       var nA = snap.nations[away] || {}, nH = snap.nations[host] || {};
       var seasonNo = (snap.calendar && snap.calendar.seasonNo) || nH.seasonNo || nA.seasonNo || 1;
-      var start = window.foPmIntlStart(seasonNo, round, hourUtc);
       var PL = window.__foPlanet;
+      // EVERY DATE ON THIS PAGE COMES OFF THE WORLD'S CALENDAR, and until the
+      // world has said when its season opened that calendar is a guess. This
+      // room is reached straight from a link and never asks for a league book,
+      // which is what anchors it - so it was dating a tour a week early, off a
+      // season assumed to open on day nought when it really opens on day seven.
+      // Ask, once, and paint again when the answer lands.
+      try {
+        if (PL && PL.anchored && !PL.anchored() && window.__foWorldLg && window.__foWorldLg.want && !page.__foPmAnch) {
+          page.__foPmAnch = 1;
+          var anchNat = "eng";
+          try { if (window.__foWorldLg.anchorNation) anchNat = window.__foWorldLg.anchorNation(); } catch (eA0) {}
+          window.__foWorldLg.want(anchNat, function () {
+            page.__foPmSig = null;
+            try { window.foRenderPreviewPage(); } catch (e) {}
+          });
+        }
+      } catch (eAn) {}
+      var start = window.foPmIntlStart(seasonNo, round, hourUtc);
       var g = { start: start, stop: start + ((PL && PL.LIVE_LEN) || 3) * 3600000 };
       var c0 = foPmCountText(g, Date.now());
 
@@ -1383,37 +1380,32 @@
       try { if (window.__foPmTimer) clearInterval(window.__foPmTimer); } catch (eT) {}
       window.__foPmTimer = setInterval(foPmTick, 1000);
 
-      // THE BAR: the same forty playings a league fixture gets, with the two
-      // parties the selectors actually named. The men are read off world_squads
-      // and the two books are asked for once; when they land the page repaints
-      // and this runs. Until then the bar simply waits - it never shows a
-      // number it has not played for.
+      // THE BAR, off the two parties the selectors actually named. The men are
+      // read out of world_squads - the public card every club's men are
+      // published as - and the two books are asked for once; when they land the
+      // page repaints and this runs.
       try {
         var wpHost9 = document.getElementById("fo-pm-wp");
         if (wpHost9) {
-          var wpKey9 = "nat" + away + "-" + host + ":s" + seasonNo + ":r" + (round | 0);
-          var codes9 = [foPmNatCode(away, nA.name), foPmNatCode(host, nH.name)];
-          var cached9 = foPmWpLoad(wpKey9, FO_PM_WP_TOUR_N);
-          if (cached9) { foPmWpPaint(wpHost9, cached9, true, 5); foPmWpSay(wpHost9, cached9, codes9); }
-          else {
-            var again9 = function () {
-              page.__foPmSig = null;
-              try { window.foRenderPreviewPage(); } catch (e) {}
-            };
-            var bkA9 = foPmNatMen(away, again9), bkH9 = foPmNatMen(host, again9);
-            var partyA9 = (nA.tourSquad && nA.tourSquad.length) ? nA.tourSquad : nA.squad;
-            var partyH9 = (nH.tourSquad && nH.tourSquad.length) ? nH.tourSquad : nH.squad;
-            var menA9 = foPmNatXI(away, partyA9, bkA9), menH9 = foPmNatXI(host, partyH9, bkH9);
-            if (menA9 && menH9) {
-              // the umpire's own order: the touring side first (nations.mjs
-              // runTours), so this plays the fixture that will actually be bowled
-              foPmWpRunTeams(wpHost9, location.hash, wpKey9,
-                { name: (nA.name || away) + " XI", players: menA9 },
-                { name: (nH.name || host) + " XI", ground: ga.name || "", players: menH9 },
-                [foPmNatCode(away, nA.name), foPmNatCode(host, nH.name)]);
-            } else if (bkA9 === false || bkH9 === false) {
-              wpHost9.style.display = "none";      // the books cannot be had
+          var again9 = function () {
+            page.__foPmSig = null;
+            try { window.foRenderPreviewPage(); } catch (e) {}
+          };
+          var bkA9 = foPmNatMen(away, again9), bkH9 = foPmNatMen(host, again9);
+          var partyA9 = (nA.tourSquad && nA.tourSquad.length) ? nA.tourSquad : nA.squad;
+          var partyH9 = (nH.tourSquad && nH.tourSquad.length) ? nH.tourSquad : nH.squad;
+          var menA9 = foPmNatXI(away, partyA9, bkA9), menH9 = foPmNatXI(host, partyH9, bkH9);
+          if (menA9 && menH9) {
+            // the HOST is at home and collects the ground, so the odds are
+            // worked from its side; the bar leads with the tourist, as the
+            // billing does, so the two are handed over the other way round
+            var o9 = window.foPmOdds(window.foPmStrength(menH9), window.foPmStrength(menA9));
+            if (o9) {
+              foPmWpPaint(wpHost9, { home: o9.away, away: o9.home, tie: o9.tie },
+                foPmNatCode(away, nA.name), foPmNatCode(host, nH.name));
             }
+          } else if (bkA9 === false || bkH9 === false) {
+            wpHost9.style.display = "none";      // the books cannot be had
           }
         }
       } catch (eWp9) {
@@ -1511,12 +1503,19 @@
       ".fo-pm-cap:before{content:'';display:inline-block;width:7px;height:7px;background:var(--acc);border-radius:2px;margin-right:8px;vertical-align:1px}",
       ".fo-pm-wp{padding:13px 14px;border-radius:12px;background:linear-gradient(0deg,#FBF6EA,#FDFAF2);border:1px solid var(--edge);display:flex;flex-direction:column;gap:9px}",
       ".fo-pm-wp .fo-pm-cap{text-align:center}",
-      ".fo-pm-wptop{display:flex;align-items:center;justify-content:space-between;gap:10px}",
+      // A GRID, NOT A FLEX ROW. Two flexible halves meeting in the middle let a
+      // long club name walk straight over the percentage beside it - which is
+      // exactly what "MASHED POTATOES 58%" did. Three columns: each side gets
+      // its own, the middle is empty air, and nothing can reach across.
+      ".fo-pm-wptop{display:grid;grid-template-columns:minmax(0,1fr) 14px minmax(0,1fr);align-items:center;gap:0}",
       ".fo-pm-wph,.fo-pm-wpa{display:flex;align-items:center;gap:8px;min-width:0}",
+      ".fo-pm-wpa{grid-column:3;justify-content:flex-end}",
       // a code, never a clipped name: no ellipsis is allowed in this strip
       ".fo-pm-wph u,.fo-pm-wpa u{text-decoration:none;font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:11.5px;color:var(--ink);white-space:nowrap;font-weight:800}",
       ".fo-pm-wpsay{text-align:center;font:700 10.5px/1 Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:#4A5668}",
-      ".fo-pm-wph b,.fo-pm-wpa b{font-family:Manrope,sans-serif;font-weight:700;font-size:clamp(20px,5vw,26px);line-height:1;font-variant-numeric:tabular-nums}",
+      ".fo-pm-wph b,.fo-pm-wpa b{font-family:Manrope,sans-serif;font-weight:700;font-size:clamp(19px,4.4vw,25px);line-height:1;font-variant-numeric:tabular-nums;flex:0 0 auto;white-space:nowrap}",
+      ".fo-pm-wph u,.fo-pm-wpa u{flex:0 1 auto}",
+      ".fo-pm-wpsay{margin-top:2px}",
       ".fo-pm-wph b{color:var(--grn)}",
       ".fo-pm-wpa b{color:var(--acc)}",
       ".fo-pm-wpbar{display:flex;height:12px;border-radius:999px;overflow:hidden;background:#EBE6DA}",

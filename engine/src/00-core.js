@@ -21,6 +21,30 @@ function foAgeTireFactor(p){
   return a<=22?0.88:(a<=25?0.94:(a<=29?1.00:(a<=32?1.09:(a<=35?1.19:1.32))));
 }
 function foExperienceFactor(p){return foClamp(((p&&p.exp)||55)-55,-45,45)/45;}
+/* HOME ADVANTAGE, in the currency the whole distribution speaks.
+ *
+ * The engine gave the home side nothing at all - two identical squads split
+ * 47.7/51.0, which is noise - so a tour of South Africa was no harder than a
+ * tour of anywhere else, and the ground a club has played on all its life was
+ * worth precisely as much as a field it had never seen. Real one-day cricket
+ * puts the home side nearer 55%.
+ *
+ * This is deliberately SHORT of that. It is a nudge, not a thumb: the home
+ * batter is worth this many skill points more with the bat and the home bowler
+ * this many more with the ball, applied per delivery and passed through the
+ * same soft ceiling every other skill term goes through. Exactly one side is
+ * at home, so the edge runs one way across both innings and cancels to nothing
+ * over a season's home-and-away.
+ *
+ * Sized by measurement, not taste: see test/home-advantage.test.mjs, which
+ * plays equal sides and holds the resulting win share inside a band. Turn it
+ * to nought and the engine is exactly what it was.
+ */
+const FO_HOME_EDGE=1.6;                       // skill points, both disciplines
+function foHomeEdge(ctx,which){
+  if(!ctx||!ctx.homeSide)return 0;
+  return ctx.homeSide===which?FO_HOME_EDGE:0;
+}
 function foFatigueLoad(p){
   const ix=foFatigueIndex(p), st=(p&&p.skills&&p.skills.stamina)||p.stamina||50;
   const ageExtra=Math.max(0,foAgeTireFactor(p)-1)*0.055;
@@ -231,8 +255,11 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   // beyond it they compress. Applied per delivery, per player, uniformly -
   // the match is still nothing but the sum of its balls.
   const SOFT=CAL.skill_soft>0?(v=>CAL.skill_soft*Math.tanh(v/CAL.skill_soft)):(v=>v);
-  const bs=SOFT(bat.bat-CAL.mean_bat+CAL.matchup*lean),bp=SOFT(bat.power-CAL.mean_pow),br=SOFT(bat.rotation-CAL.mean_rot);
-  const wt=SOFT(bowl.threat-CAL.mean_thr),wc=SOFT(bowl.control-CAL.mean_ctl);
+  // the home side's small edge enters here, as skill points, so it is softened
+  // and compounded exactly like every other difference between two cricketers
+  const hB=foHomeEdge(ctx,'bat'),hW=foHomeEdge(ctx,'bowl');
+  const bs=SOFT(bat.bat-CAL.mean_bat+CAL.matchup*lean+hB),bp=SOFT(bat.power-CAL.mean_pow+hB),br=SOFT(bat.rotation-CAL.mean_rot+hB);
+  const wt=SOFT(bowl.threat-CAL.mean_thr+hW),wc=SOFT(bowl.control-CAL.mean_ctl+hW);
   const batExp=foExperienceFactor(bat), bowlExp=foExperienceFactor(bowl);
   const pressureBase=(ph==='death'?1.00:(ph==='pp'?0.35:0.55))+(ctx&&ctx.chase?0.35:0)+(ctx&&ctx.wkts>=4?0.25:0)+(rrDef>0?Math.min(0.45,rrDef*0.55):0);
   // v11.2: experience now matters under pressure. Experienced batters panic less; experienced bowlers hold line/length.
@@ -984,7 +1011,11 @@ function stepBall(){
   foTalCount(M._tal,inn.batTeam,batP,_talC,FO_TAL_BAT);
   foTalCount(M._tal,inn.bowlTeam,bowler,_talC,FO_TAL_BOWL);
   if(keeperObj&&keeperObj.name)foTalCount(M._tal,inn.bowlTeam,keeperObj,_talC,['lightningHands']);
-  const d=ballDist(batP,bowler,phaseOf(over),faced,intent,rrDef,M.pitch,field,over,{freeHit:!!inn.freeHit,weather:((M.meta&&M.meta.weather)||'sunny').toLowerCase(),pship:inn.pshipR,chase:M.inns===1,bballs:brec?brec.b:0,ballsThisSpell:brec?brec.spellB||0:0,wkts:inn.wkts,ballsLeft:remBalls,reqRate,fieldAvg,keeperQuality,rocketArms:inn.bxi.filter(p=>(p.talents||[]).includes('rocketArm')).length,lightningKeeper:keeperTalent.includes('lightningHands'),mixed:!!(inn.bat[inn.nonstriker]&&!inn.bat[inn.nonstriker].out&&batP.hand!==inn.bat[inn.nonstriker].p.hand),batFat:M.fat[batP.name]||0,bowlFat:M.fat[bowler.name]||0,captBowl:inn.captBowl,captBat:inn.captBat,key:_talKey});
+  // WHICH SIDE IS AT HOME, for this delivery: the meta names the home team, so
+  // whichever of the two is currently batting or bowling carries the edge
+  const _homeNm=(M.meta&&M.meta.neutral)?'':((M.meta&&M.meta.home)||'');
+  const _homeSide=!_homeNm?null:(inn.batTeam===_homeNm?'bat':(inn.bowlTeam===_homeNm?'bowl':null));
+  const d=ballDist(batP,bowler,phaseOf(over),faced,intent,rrDef,M.pitch,field,over,{freeHit:!!inn.freeHit,homeSide:_homeSide,weather:((M.meta&&M.meta.weather)||'sunny').toLowerCase(),pship:inn.pshipR,chase:M.inns===1,bballs:brec?brec.b:0,ballsThisSpell:brec?brec.spellB||0:0,wkts:inn.wkts,ballsLeft:remBalls,reqRate,fieldAvg,keeperQuality,rocketArms:inn.bxi.filter(p=>(p.talents||[]).includes('rocketArm')).length,lightningKeeper:keeperTalent.includes('lightningHands'),mixed:!!(inn.bat[inn.nonstriker]&&!inn.bat[inn.nonstriker].out&&batP.hand!==inn.bat[inn.nonstriker].p.hand),batFat:M.fat[batP.name]||0,bowlFat:M.fat[bowler.name]||0,captBowl:inn.captBowl,captBat:inn.captBat,key:_talKey});
   const r=M.rand();let c=0,out='dot';
   for(const k in d){c+=d[k];if(r<=c){out=k;break}}
   M._fielder=null;M._dropped=false;M._fieldingEvent=null;M._fieldPos=null;M._fldEv=null;M._talEv=null;

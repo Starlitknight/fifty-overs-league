@@ -124,12 +124,21 @@
   // 31-world-feed.js, so no page has to remember to do this arithmetic itself.
   var WORLD_START = 0;
   var ANCHOR = { start: WORLD_START, season: 1 };
+  // HAS THE WORLD SAID YET? Until it has, the anchor above is an ASSUMPTION,
+  // and a page that dates a fixture off an assumed calendar prints a wrong
+  // day - the tour preview did exactly that, giving a game bowled on the 12th
+  // as the 5th, because the real season opens on world day 7 and nothing had
+  // told this device so. A caller that needs a DATE (rather than a rough
+  // ordering) can ask, and wait for the answer instead of guessing.
+  var ANCHORED = false;
   function anchorWorld(startDay, seasonNo) {
     if (startDay == null || !(seasonNo >= 1)) return ANCHOR;
     ANCHOR = { start: startDay | 0, season: seasonNo | 0 };
+    ANCHORED = true;
     return ANCHOR;
   }
   function anchorOf() { return ANCHOR; }
+  function anchored() { return ANCHORED; }
   // the world day a season opens on, walked from the anchor a cycle at a time
   function seasonStart(season) { return ANCHOR.start + ((season | 0) - ANCHOR.season) * CYCLE; }
   function phaseOf(now) {
@@ -2145,7 +2154,7 @@
     return a[0].charAt(0) + ". " + a.slice(1).join(" ");
   };
   window.__foPlanet = { roundOfDay: roundOfDay, dayOfRound: dayOfRound, dayOfSeasonRound: dayOfSeasonRound,
-    anchorWorld: anchorWorld, anchorOf: anchorOf, seasonStart: seasonStart,
+    anchorWorld: anchorWorld, anchorOf: anchorOf, anchored: anchored, seasonStart: seasonStart,
     dateTxt: dateTxt, hhTxt: hhTxt, whenTxt: whenTxt, atTxt: atTxt, tzAbbr: tzAbbr, localHM: hm, localDate: dmy,
     FA_DAYS: FA_DAYS, faDayOf: faDayOf, faDrawR16: faDrawR16, cupDraw: cupDraw,
     WINDOWS: WINDOWS, WINDOW_DAYS: WINDOW_DAYS, LEAGUE_DAYS: LEAGUE_DAYS, CUP_DAYS: CUP_DAYS,
