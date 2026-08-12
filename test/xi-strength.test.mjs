@@ -101,12 +101,19 @@ test('the panel prints the strength and never the day', () => {
   assert.ok(!/Match rating/.test(html), 'and not what the afternoon was worth');
   assert.match(html, /The day&rsquo;s points/, 'the day still has its points underneath');
   [A.name, B.name].forEach(nm => assert.ok(html.indexOf(nm) >= 0, nm + ' is on the panel'));
-  // and the two columns line up: a side with no spinner is not a row short,
-  // or every department below it reads against the wrong one opposite
-  const cols = html.split("class='fo-rat-side'").slice(1);
-  assert.equal(cols.length, 2, 'two columns');
-  const rows = h => (h.match(/fo-rat-r/g) || []).length;
-  assert.equal(rows(cols[0]), rows(cols[1]), 'both columns carry the same departments');
+  // IT IS ONE TABLE READ ACROSS, not two stacks of cards: every row carries
+  // both sides, so a manager never has to scroll to find the other number
+  const rows = html.split("class='fo-rat-row").slice(1);
+  assert.ok(rows.length >= 4, 'the table has rows: ' + rows.length);
+  rows.forEach((r, i) => {
+    const cells = (r.split('</div>')[0].match(/<[bi] class=|<i>/g) || []).length;
+    assert.equal(cells, 2, 'row ' + i + ' carries both sides, not ' + cells);
+  });
+  assert.match(html, /fo-rat-row hd'><span><\/span><i>/, 'the two clubs head their own columns');
+  assert.match(html, /fo-rat-row ft'><span>Strength of the XI/, 'the total sits at the foot');
+  // and the better of the two is said in the ink rather than left to be worked out
+  assert.match(html, /class='up'/, 'somebody wins a line');
+  assert.match(html, /class='dn'/, 'and somebody loses it');
   const missing = [A.name, B.name].some(nm => ROWS.some(k => strength(CARD.innings, nm)[k] == null));
   if (missing) assert.match(html, /class='none'>&ndash;/,
     'a department nobody fills shows a dash rather than vanishing');
@@ -165,4 +172,18 @@ test('and a card that never carried the men says nothing rather than nothing muc
   const html = eng.ctx.foRatingsPanelHTML(named, CARD.result);
   assert.ok(!/The two sides/.test(html), 'and the panel does not promise two sides it cannot show');
   assert.match(html, /The day&rsquo;s points/, 'the points are still worth printing');
+});
+
+test("the reader's own club takes the left-hand column", () => {
+  const other = eng.ctx.foRatingsPanelHTML(CARD.innings, CARD.result);
+  const order = h => ((h.split("class='fo-rat-row hd'")[1] || '').split('</div>')[0]
+    .match(/<i>([^<]+)<\/i>/g) || []).map(x => x.replace(/<\/?i>/g, ''));
+  const asCard = order(other);
+  assert.equal(asCard.length, 2, 'two column headings');
+  // claim the side the card happens to list second
+  const prev = setTeams([{ name: asCard[1], players: [] }]);
+  try {
+    const flipped = order(eng.ctx.foRatingsPanelHTML(CARD.innings, CARD.result));
+    assert.deepEqual(flipped, [asCard[1], asCard[0]], 'my club leads');
+  } finally { setTeams(prev); }
 });

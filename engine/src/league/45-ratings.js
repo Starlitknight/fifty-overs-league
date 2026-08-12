@@ -161,6 +161,13 @@
       try { s = window.foXIStrength(inns, n); } catch (eS) {}
       if (s) sides.push({ nm: n, s: s });
     });
+    // AND THE READER'S OWN CLUB GOES FIRST. He is comparing his side with
+    // theirs, not two strangers, and the column he cares about should be the
+    // one his eye lands on. Everywhere else the order is the card's.
+    try {
+      var mine = GD.teams[App.teamIx] && GD.teams[App.teamIx].name;
+      if (mine && sides.length === 2 && sides[1].nm === mine) sides.reverse();
+    } catch (eM) {}
     var pts = [];
     try { pts = (window.foFantasyPoints && window.foFantasyPoints(inns)) || []; } catch (e) {}
     var best = pts.slice(0, 5).map(function (p, i) {
@@ -169,43 +176,64 @@
     }).join("");
     if (!sides.length && !best) return "";
 
-    // THE SAME ROWS ON BOTH SIDES. One side with no spinner used to be one row
-    // shorter than the other, so every department below it read against the
-    // wrong department opposite - which is the one thing two columns side by
-    // side exist to make easy. A side that has nobody in a department shows a
-    // dash there, which is itself worth knowing.
+    // ONE TABLE, NOT TWO COLUMNS OF CARDS. Both sides were drawn as blocks
+    // side by side, which is a comparison on a desk and no comparison at all
+    // on a phone: the grid collapses, one side sits above the other, and a
+    // reader who wants to know whether his top order outguns theirs has to
+    // remember a number while he scrolls. A ratings table is read ACROSS, so
+    // it is built across - label, mine, theirs - and it stays that way at any
+    // width, the way From the Pavilion has always printed it.
+    //
+    // The same rows on both sides, too: one side with no spinner used to be a
+    // row shorter than the other, so every department below it read against
+    // the wrong department opposite. A side with nobody in a department shows
+    // a dash, which is itself worth knowing.
     var shownRows = ROWS.filter(function (k) {
       return sides.some(function (x) { return x.s[k] != null; });
     });
-    var side = function (x) {
-      var s = x.s;
-      var rows = shownRows.map(function (k) {
-        var v = s[k];
-        if (v == null) return "<div class='fo-rat-r'><span>" + LABEL[k] + "</span>" +
-          "<s class='fo-rat-bar'></s><b class='none'>&ndash;</b></div>";
-        return "<div class='fo-rat-r'><span>" + LABEL[k] + "</span>" +
-          "<s class='fo-rat-bar'><u class='" + band(v) + "' style='width:" + v + "%'></u></s>" +
-          "<b class='" + band(v) + "'>" + v + "</b></div>";
-      }).join("");
-      // the side's strength, printed through foRate so the whole game reads one
-      // scale: the same figure the club page, the dossiers and the world
-      // rankings put on a squad. A card that never carried the men's ratings
-      // simply has no figure, and says so by not printing one.
-      var mark = "";
-      if (s.rating != null) {
-        var str = window.foRate ? window.foRate(s.rating) : s.rating;
-        mark = "<div class='fo-rat-tm'><span>Strength of the XI</span><b class='" + strBand(str) + "'>" +
-          str.toLocaleString() + "</b></div>";
-      }
-      return "<div class='fo-rat-side'><div class='fo-rat-h'><b>" + E(x.nm) + "</b></div>" +
-        mark + rows + "</div>";
+    // WHO WINS EACH LINE. The point of two columns is the difference between
+    // them, so the better of the two is said in the ink rather than left for
+    // the reader to work out - and where they are level, neither is.
+    var lead = function (vals) {
+      var real = vals.filter(function (v) { return v != null; });
+      if (real.length < 2) return null;
+      var hi = Math.max.apply(null, real), lo = Math.min.apply(null, real);
+      return hi === lo ? null : hi;
     };
+    var cell = function (v, hi, fmt) {
+      if (v == null) return "<b class='none'>&ndash;</b>";
+      var cls = hi == null ? "lvl" : (v === hi ? "up" : "dn");
+      return "<b class='" + cls + "'>" + (fmt ? fmt(v) : v) + "</b>";
+    };
+    var head = "<div class='fo-rat-row hd'><span></span>" +
+      sides.map(function (x) { return "<i>" + E(x.nm) + "</i>"; }).join("") + "</div>";
+    var body = shownRows.map(function (k) {
+      var vals = sides.map(function (x) { return x.s[k]; });
+      var hi = lead(vals);
+      return "<div class='fo-rat-row'><span>" + LABEL[k] + "</span>" +
+        vals.map(function (v) { return cell(v, hi); }).join("") + "</div>";
+    }).join("");
+    // and the side's own figure, printed through foRate so the whole game reads
+    // one scale: the same number the club page, the dossiers and the world
+    // rankings put on a squad. It sits at the foot, where a ratings table has
+    // always put its total.
+    var strs = sides.map(function (x) {
+      return x.s.rating == null ? null : (window.foRate ? window.foRate(x.s.rating) : x.s.rating);
+    });
+    var foot = strs.some(function (v) { return v != null; })
+      ? "<div class='fo-rat-row ft'><span>Strength of the XI</span>" +
+        strs.map(function (v) { return cell(v, lead(strs), function (n) { return n.toLocaleString(); }); }).join("") +
+        "</div>"
+      : "";
+    var table = "<div class='fo-rat-tbl" + (sides.length === 1 ? " one" : "") + "'>" +
+      head + body + foot + "</div>";
+
     // AND THE PANEL IS NAMED AFTER WHAT IS IN IT. A card too old or too thin
     // to mark a side on left "The two sides" standing over nothing but the
     // points - a heading promising a thing the panel had not got.
     return "<div class='panel fo-rat'><h4>" + (sides.length ? "The two sides" : "The day&rsquo;s points") +
       "</h4><div class='pad'>" +
-      (sides.length ? "<div class='fo-rat-grid'>" + sides.map(side).join("") + "</div>" : "") +
+      (sides.length ? table : "") +
       (best ? (sides.length ? "<div class='fo-rat-sub'>The day&rsquo;s points</div>" : "") + best : "") +
       "</div></div>";
   };
@@ -214,23 +242,42 @@
     if (document.getElementById("fo-rat-css")) return;
     var s = document.createElement("style"); s.id = "fo-rat-css";
     s.textContent = [
-      ".fo-rat-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:14px}",
-      ".fo-rat-side{min-width:0}",
-      // what the eleven is worth, sat above the departments it is made of
-      "html body #page .fo-rat-tm{border:1px solid rgba(12,27,51,.14);border-radius:10px;padding:7px 10px;margin-bottom:8px;background:rgba(12,27,51,.03)}",
-      "html body #page .fo-rat-tm span{display:block;font:600 11px/1 Manrope,sans-serif;letter-spacing:.18em;text-transform:uppercase;color:rgba(12,27,51,.5)}",
-      "html body #page .fo-rat-tm b{font:700 22px/1.1 Manrope,sans-serif;font-variant-numeric:tabular-nums;display:block;margin-top:3px}",
-      ".fo-rat-h{display:flex;align-items:baseline;gap:8px;padding-bottom:7px;border-bottom:1px solid rgba(12,27,51,.12);margin-bottom:7px}",
-      ".fo-rat-h b{flex:1;min-width:0;font:600 13.5px/1.2 Manrope,sans-serif;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
-      ".fo-rat-r{display:flex;align-items:center;gap:8px;padding:4px 0;font:500 13px/1.3 Manrope,sans-serif}",
-      ".fo-rat-r span{flex:0 0 84px;color:rgba(12,27,51,.6)}",
-      ".fo-rat-bar{flex:1;min-width:40px;height:6px;border-radius:999px;background:rgba(12,27,51,.1);overflow:hidden;text-decoration:none}",
-      ".fo-rat-bar u{display:block;height:100%;text-decoration:none;background:#2E8B5E}",
-      ".fo-rat-r b{flex:0 0 30px;text-align:right;font:700 12.5px/1 Manrope,sans-serif;font-variant-numeric:tabular-nums}",
-      ".fo-rat .hot{color:#0E6B4C}.fo-rat .good{color:#177A57}.fo-rat .ok{color:#8a6d3b}.fo-rat .poor{color:#B23230}",
-      ".fo-rat .none{color:rgba(12,27,51,.3)}",
-      ".fo-rat-bar u.hot{background:#0E6B4C}.fo-rat-bar u.good{background:#2E8B5E}",
-      ".fo-rat-bar u.ok{background:#8F6A1C}.fo-rat-bar u.poor{background:#B23230}",
+      // THE TABLE. Three tracks - the department, then a column a side - and
+      // the number columns are fixed so the two sides line up down the page
+      // however long a club calls itself. It never becomes one column: that
+      // is the whole point of it.
+      // a ratings table is a narrow thing: given a whole desktop it would put
+      // the department at one edge and the figures at the other, which is a
+      // comparison nobody can make in one glance
+      ".fo-rat-tbl{display:block;font-variant-numeric:tabular-nums;max-width:580px}",
+      ".fo-rat-row{display:grid;grid-template-columns:minmax(0,1fr) 96px 96px;align-items:center;" +
+        "gap:6px;padding:8px 0;border-top:1px solid rgba(12,27,51,.08)}",
+      ".fo-rat-tbl.one .fo-rat-row{grid-template-columns:minmax(0,1fr) 96px}",
+      ".fo-rat-row>span{font:500 13px/1.3 Manrope,sans-serif;color:rgba(12,27,51,.62);min-width:0;" +
+        "white-space:nowrap;overflow:hidden;text-overflow:ellipsis}",
+      ".fo-rat-row>b{text-align:right;font:700 15px/1.1 Manrope,sans-serif;color:#0C1B2E}",
+      // the two club names, which are a heading and not a row of figures
+      ".fo-rat-row.hd{border-top:0;padding-top:0;padding-bottom:6px;" +
+        "border-bottom:1px solid rgba(12,27,51,.16)}",
+      // a club with a long name gets a second line rather than losing its
+      // second half - "MASHED PO" is not a heading, it is a mistake
+      ".fo-rat-row.hd>i{font-style:normal;text-align:right;min-width:0;white-space:normal;" +
+        "overflow-wrap:anywhere;font:700 10.5px/1.25 Manrope,sans-serif;align-self:end;" +
+        "letter-spacing:.07em;text-transform:uppercase;color:rgba(12,27,51,.55)}",
+      // the total, at the foot where a ratings table has always put it
+      ".fo-rat-row.ft{border-top:1.5px solid rgba(12,27,51,.22);margin-top:2px;padding-top:10px}",
+      ".fo-rat-row.ft>span{font-weight:700;color:#0C1B2E;letter-spacing:.01em}",
+      ".fo-rat-row.ft>b{font-size:16.5px}",
+      // who won the line: said in the ink, so the difference is the thing read
+      ".fo-rat .up{color:#0E6B4C}",
+      ".fo-rat .dn{color:rgba(12,27,51,.45);font-weight:600}",
+      ".fo-rat .lvl{color:rgba(12,27,51,.75)}",
+      ".fo-rat .none{color:rgba(12,27,51,.28);font-weight:600}",
+      // a narrow phone gives the numbers a little less room, never a column less
+      "@media(max-width:430px){.fo-rat-row{grid-template-columns:minmax(0,1fr) 66px 66px;gap:5px}" +
+        ".fo-rat-tbl.one .fo-rat-row{grid-template-columns:minmax(0,1fr) 66px}" +
+        ".fo-rat-row>span{font-size:12.5px}.fo-rat-row>b{font-size:14.5px}" +
+        ".fo-rat-row.ft>b{font-size:15px}.fo-rat-row.hd>i{font-size:9.5px;letter-spacing:.04em}}",
       ".fo-rat-sub{margin:15px 0 5px;font:700 11px/1 Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase;color:rgba(12,27,51,.4)}",
       ".fo-rat-p{display:flex;align-items:baseline;gap:8px;padding:5px 0;border-top:1px solid rgba(12,27,51,.07);font:500 13px/1.3 Manrope,sans-serif}",
       ".fo-rat-p i{font-style:normal;font:700 11px/1 Manrope,sans-serif;color:rgba(12,27,51,.35);width:12px}",
