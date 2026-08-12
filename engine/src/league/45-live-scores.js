@@ -152,32 +152,65 @@
   // the window's ties, and one of them drawn: both are the page's own reading
   // of the nations book and both are worth holding to
   window.foIntlWindowTies = intlTies;
+  // THE TOUR AS IT HAPPENS. An international banks its ball-by-ball beside its
+  // card now, exactly as a league round does, so it is followed the same way:
+  // the umpire's own log, revealed one delivery every eighteen seconds from the
+  // hour he played it. Nothing here re-runs a match or guesses at one - it is
+  // the afternoon itself, read out at the pace it was bowled.
+  function natLogAt(x, now, repaint) {
+    var kit = window.__foFeedKit, g = x.game;
+    if (!kit || !g || !g.id) return null;
+    var host = (x.tie.teams || [])[1] || x.tie.home;
+    var k = "nat|" + g.id;
+    if (T.scores[k] === undefined) {
+      T.scores[k] = null;
+      kit.logFetch(host, g.id).then(function (log) {
+        T.scores[k] = (log && log.length) ? { log: log } : false;
+        if (log && log.length) repaint();
+      });
+      return null;
+    }
+    var got = T.scores[k];
+    if (!got || !got.log) return null;
+    var BALL_MS = ((P().LIVE_LEN || 3) * 3600000) / 600;
+    var at = kit.seenAt(got.log, x.startMs, BALL_MS, now);
+    var inns = kit.bookState(at.seen);
+    var i = inns[1].open || (inns[1].bats && inns[1].bats.length) ? 1 : 0;
+    var I = inns[i], tp = I.top ? kit.parseTop(I.top.txt) : null;
+    var runs = tp ? tp.runs : null, wkts = tp ? tp.wkts : null;
+    if (I.close) { runs = I.close.runs; wkts = I.close.wkts; }
+    return { team: I.team, runs: runs, wkts: wkts,
+      ovs: I.lastNo || (tp ? tp.over + ".0" : null),
+      live: at.live, done: at.done, first: inns[0] };
+  }
   function intlCard(x) {
-    var t = x.tie, nm = t.names || [], g = x.game;
-    // the two sides, in the order the calendar names them: the tourists first,
-    // the hosts under. A winner is said the way a cup tie says it - in the
-    // weight of his own line - rather than by printing the word "won" where a
-    // score belongs.
-    var sc = x.score;
+    var t = x.tie, nm = t.names || [], g = x.game, s = x.now;
+    // WHILE THE BROADCAST IS RUNNING THE FINAL SCORE IS NOT THE SCORE. The
+    // tours book holds what the tie finished at from the moment it is banked,
+    // and printing that beside a reveal still in its fourth over would give the
+    // ending away on the way in. The running figures win until the last ball
+    // has been read out.
+    var sc = (s && !s.done) ? null : x.score;
     var side = function (i) {
       var id = (t.teams || [])[i], xi = (nm[i] || "") + " XI";
-      var won = !!(g && g.winner === xi);
-      var runs = sc ? (t.teams[i] === sc.aCountry ? sc.as_ : t.teams[i] === sc.bCountry ? sc.bs_ : "") : "";
-      return "<div class='fo-lv-side" + (won ? " bat" : "") + "'>" + natFlag(id) +
-        "<span class='nm'>" + E(nm[i] || id || "?") + "</span>" +
+      var won = !!(g && g.winner === xi && (!s || s.done));
+      var runs = "";
+      if (s && !s.done) { if (s.team === xi) runs = s.runs == null ? "" : s.runs + "/" + s.wkts; }
+      else if (sc) runs = t.teams[i] === sc.aCountry ? sc.as_ : t.teams[i] === sc.bCountry ? sc.bs_ : "";
+      var ov = (s && !s.done && s.team === xi && s.ovs) ? "<u>" + E(s.ovs) + " ov</u>" : "";
+      return "<div class='fo-lv-side" + (won ? " bat" : "") + ((s && !s.done && s.team === xi) ? " bat" : "") + "'>" +
+        natFlag(id) + "<span class='nm'>" + E(nm[i] || id || "?") + "</span>" +
         "<span class='sc'>" + (runs ? "<b>" + E(String(runs).split(" ")[0]) + "</b>" +
-          (/all out/.test(String(runs)) ? "<u>all out</u>" : "") : "") + "</span></div>";
+          (/all out/.test(String(runs)) ? "<u>all out</u>" : ov) : "") + "</span></div>";
     };
-    // where the tie lives: the touring nation's own room, which carries the
-    // squad, the series and every cap it has handed out
-    var href = "#/nations";
-    var foot = g ? E(g.text || "")
-      : "Out in the middle &middot; filed when the window shuts";
-    var standing = x.st && x.st.verdict ? E(x.st.verdict) : "";
+    // the door: a tour that is being read out opens its own broadcast
+    var href = (g && g.id) ? "#/feed?nat=" + encodeURIComponent(g.id) : "#/nations";
+    var foot = (s && !s.done) ? "" : (g ? E(g.text || "") : "Out in the middle &middot; filed when the window shuts");
+    var standing = x.st && x.st.verdict && (!s || s.done) ? E(x.st.verdict) : "";
     return "<a class='fo-lv-card on' href='" + href + "'>" +
       side(0) + side(1) +
       "<div class='fo-lv-when'>Game " + x.leg + " of " + x.of + (standing ? " &middot; " + standing : "") + "</div>" +
-      "<div class='fo-lv-when sm'>" + foot + "</div></a>";
+      (foot ? "<div class='fo-lv-when sm'>" + foot + "</div>" : "") + "</a>";
   }
   window.foIntlTieCardHTML = intlCard;
 
@@ -235,6 +268,10 @@
       // and the series standing says what it is worth.
       var nb = snap("nations", repaint);
       var ties3 = intlTies(nb, ph.window);
+      // each tie carries where its broadcast starts and how far it has got, so
+      // the card can read the afternoon rather than only its ending
+      var startMs = pl.EPOCH + pl.dayIx(now) * 86400000 + INTL_HOUR * 3600000;
+      ties3.forEach(function (x) { x.startMs = startMs; x.now = natLogAt(x, now, repaint); });
       out.push({ kind: "intl", id: "intl", nm: "The international game", hour: INTL_HOUR, state:
         hNow < INTL_HOUR ? "up" : (hNow < INTL_HOUR + LEN && ties3.some(function (t) { return !t.done; })) ? "live" : "fin",
         title: "International window \u00b7 round " + ph.window,

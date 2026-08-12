@@ -411,6 +411,69 @@
       }, 6000);
     });
   }
+  // ---- AND A TOUR IS WATCHED HERE (#/feed?nat=<id>) -------------------------
+  //
+  // The umpire banks an international's ball-by-ball beside its card now, the
+  // way he has banked a league round's since 045, so a tour is followed by the
+  // same reader at the same eighteen-seconds-a-delivery pace. Nothing about the
+  // broadcast is special-cased: the only things a country needs that a club
+  // does not are its own name and the hour the tours start.
+  var NATS = {};
+  function natFetch(natId, fresh) {
+    var k = "nat:" + natId;
+    if (NATS[k] && !fresh) return NATS[k];
+    var pr = fetch(SB + "/rest/v1/rpc/world_nat_match", {
+      method: "POST",
+      headers: { apikey: KEY, Authorization: "Bearer " + KEY, "content-type": "application/json" },
+      body: JSON.stringify({ p_id: String(natId) })
+    }).then(function (r) { return r.ok ? r.json() : null; })
+      .catch(function () { return null; });
+    NATS[k] = pr;
+    return pr;
+  }
+  var NAT_HOUR = 18;                       // INTL_HOUR: every tour starts at 18:00 UTC
+  function renderNat(page, natId) {
+    css();
+    document.body.classList.add("fo-fd-on");
+    var id = "nat:" + natId;
+    if (T.id !== id) { T.tab = "live"; T.filter = "all"; T.full = false; T.tabAuto = true; }
+    T.id = id;
+    if (!page.querySelector(".fo-fd")) page.innerHTML = "<div class='fo-fd'><div class='fd-in'><p class='fd-dim'>Opening the umpire's book&hellip;</p></div></div>";
+    natFetch(natId).then(function (j) {
+      if (T.id !== id || (location.hash || "").split("?")[0] !== "#/feed") return;
+      if (!j || !j.a) {
+        page.innerHTML = "<div class='fo-fd'><div class='fd-in'><p class='fd-dim'>That tour is not in the book.</p>" +
+          "<div class='fd-foot'><a href='#/live'>&#8592; Live scores</a></div></div></div>";
+        return;
+      }
+      // the HOST bats second in the umpire's own order (away, home), and the
+      // log is filed under his country - the pair the reader asks with
+      var rid = j.bCountry;
+      T.rid = rid;
+      var m = { home: { name: j.b, slot: null, city: null, __c: j.bCountry },
+                away: { name: j.a, slot: null, city: null, __c: j.aCountry } };
+      var cal = { round: j.round | 0, seasonNo: j.seasonNo | 0, __nat: true };
+      var winStart = 0;
+      try { var pl = P(); winStart = pl.EPOCH + (j.day | 0) * pl.DAY + NAT_HOUR * 3600000; } catch (eW) {}
+      logFetch(rid, natId).then(function (log) {
+        if (T.id !== id || (location.hash || "").split("?")[0] !== "#/feed") return;
+        if (!log || !log.length) {
+          page.innerHTML = shell(rid, cal, "up", m,
+            stageShell(m, null, "International &middot; the umpire is walking out"));
+          clearTimeout(T.timer);
+          T.timer = setTimeout(function () { window.foRenderFeedPage(); }, 30000);
+          return;
+        }
+        T.args = [page, log.slice().reverse(), m, rid, cal, winStart, 18000, id];
+        paint.apply(null, T.args);
+        clearTimeout(T.timer);
+        T.timer = setInterval(function () {
+          if ((location.hash || "").split("?")[0] !== "#/feed" || T.id !== id) { clearInterval(T.timer); return; }
+          paint.apply(null, T.args);
+        }, 6000);
+      });
+    });
+  }
   window.foRenderFeedPage = function () {
     var page = document.getElementById("page"); if (!page) return;
     var pl = P(), wt = window.__foWT;
@@ -420,6 +483,7 @@
     document.body.classList.remove("fo-pm-on");   // in case the friendly preview held the room
     var q = qs(), rid = q.n || "eng";
     if (q.fr) { renderFriendly(page, q.fr); return; }
+    if (q.nat) { renderNat(page, q.nat); return; }
     var sv = wt.serverFixtures(rid, Date.now());
     var fx = sv.fx || [], cal = sv.cal;
     if (!fx.length || !cal.round) {
@@ -1451,11 +1515,19 @@
     var chip = state === "live" ? "<span class='fd-live'><i></i>LIVE</span>"
       : state === "fin" ? "<span class='fd-fin'>STUMPS</span>"
       : state === "up" ? "<span class='fd-fin'>FIRST BALL SOON</span>" : "";
-    var ground = m && m.home ? "<span class='vd'></span><span class='gr'>" + E(m.home.name) + "&rsquo;s ground" + (m.home.city ? " &middot; " + E(m.home.city) : "") + "</span>" : "";
-    var fr = cal && cal.__fr;
+    var ground = (m && m.home && !(cal && cal.__nat))
+      ? "<span class='vd'></span><span class='gr'>" + E(m.home.name) + "&rsquo;s ground" + (m.home.city ? " &middot; " + E(m.home.city) : "") + "</span>"
+      : (m && m.home ? "<span class='vd'></span><span class='gr'>at home to " + E((m.away && m.away.name) || "") + "</span>" : "");
+    var fr = cal && cal.__fr, nat = cal && cal.__nat;
+    // three kinds of cricket come through this room now, and each came from
+    // somewhere different
+    var backTo = nat ? "#/live" : fr ? "#/home" : "#/league?t=fixtures";
+    var backTx = nat ? "Back to the live scores" : fr ? "Back to the club" : "Back to Fixtures";
+    var lg = nat ? " &middot; INTERNATIONAL" : fr ? " &middot; FRIENDLY"
+      : (cal && cal.round ? " &middot; ROUND " + cal.round : "");
     return "<div class='fo-fd'><div class='fd-in'>" +
-      "<div class='fd-meta'><a class='fd-back' href='" + (fr ? "#/home" : "#/league?t=fixtures") + "'>&larr; " + (fr ? "Back to the club" : "Back to Fixtures") + "</a>" + flag +
-      "<span class='fd-lg'>" + E(rid).toUpperCase() + (fr ? " &middot; FRIENDLY" : (cal && cal.round ? " &middot; ROUND " + cal.round : "")) + "</span>" + ground + chip + "</div>" +
+      "<div class='fd-meta'><a class='fd-back' href='" + backTo + "'>&larr; " + backTx + "</a>" + flag +
+      "<span class='fd-lg'>" + E(rid).toUpperCase() + lg + "</span>" + ground + chip + "</div>" +
       inner + "</div></div>";
   }
   // THE UMPIRE'S BOOK, LENT OUT. A live-scores page is this page asked about

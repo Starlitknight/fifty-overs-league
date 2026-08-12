@@ -526,6 +526,26 @@ export async function runWindows(pool, host, engineVersion, { now = Date.now(), 
          ON CONFLICT (id) DO NOTHING`,
         [id, day, A.seasonNo, A.round, aId, bId, aName, bName, seed, engineVersion,
          resultJson, resultJson, JSON.stringify(living)]);
+      // AND THE BALL-BY-BALL, so a tour can be WATCHED. A league round and a
+      // friendly have both banked their commentary beside the card since 045,
+      // and that log is the whole broadcast: the phone reveals one delivery
+      // every eighteen seconds from the hour it was played, so what a manager
+      // follows is the umpire's own afternoon and not a re-run of it. An
+      // international was the one competition in the world that banked a
+      // result and threw the afternoon away, which is why the live scores
+      // page could only ever say the sides were out in the middle.
+      //
+      // It is filed under the HOST's country, which is the pair the reader
+      // asks with, and it is pruned by the same forty-five-day sweep as
+      // everything else in the table.
+      try {
+        const natLog = host.lastMatchLog();
+        if (natLog && natLog.length) {
+          await pool.query(
+            `INSERT INTO match_logs(match_id, country_id, log) VALUES ($1,$2,$3::jsonb)
+             ON CONFLICT (match_id) DO NOTHING`, [id, bId, JSON.stringify(natLog)]);
+        }
+      } catch (eLog) { /* the card is the record; the commentary is a luxury */ }
       played.push(id);
     }
     // a cap tires the legs and moves the form, so the men who toured are

@@ -67,10 +67,12 @@ test('a game that has been filed carries its verdict; one that has not says so',
   assert.ok(!/win by/.test(hBgd), 'and claims no result');
   assert.match(hAfg, /Scotland XI win by 4 wickets/, 'the played tie carries the umpire\'s words');
   assert.match(hAfg, /Scotland lead the series 1-0/, 'and the series standing beside it');
-  [hBgd, hAfg].forEach(h => {
-    assert.match(h, /Game \d of 3/, 'which game of the three');
-    assert.match(h, /href='#\/nations'/, 'and a door to the international room');
-  });
+  [hBgd, hAfg].forEach(h => assert.match(h, /Game \d of 3/, 'which game of the three'));
+  // A TIE THE UMPIRE HAS PLAYED OPENS ITS OWN BROADCAST. He banks the
+  // ball-by-ball beside the card now, so the tour is followed the way a league
+  // round is - the same reader, the same eighteen seconds a delivery.
+  assert.match(hAfg, /href='#\/feed\?nat=nat%3Ad2%3Ag1'/, 'the played tie opens the umpire\'s book');
+  assert.match(hBgd, /href='#\/nations'/, 'a tie not yet filed has nothing to watch, so it points at the room');
   assert.ok(hAfg.indexOf('Afghanistan') >= 0 && hAfg.indexOf('Scotland') >= 0, 'both nations are named');
 });
 

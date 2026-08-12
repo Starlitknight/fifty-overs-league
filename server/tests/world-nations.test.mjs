@@ -427,6 +427,33 @@ test('the nations play each other, on the real engine, once', async () => {
   }
 });
 
+// A TOUR IS WATCHABLE. Every league round and every friendly has banked its
+// ball-by-ball beside its card since 045, and that log IS the broadcast: the
+// phone reveals one delivery every eighteen seconds from the hour it was
+// played. An international was the one competition in the world that banked a
+// result and threw the afternoon away, so the live scores page could never say
+// more than that the sides were out in the middle.
+test('the umpire keeps the afternoon, so a tour can be watched', async () => {
+  const ms = (await pool.query('SELECT id, a_country, b_country FROM nat_matches ORDER BY id')).rows;
+  assert.ok(ms.length, 'there are tours to watch');
+  for (const m of ms) {
+    const row = (await pool.query(
+      'SELECT country_id, jsonb_array_length(log) n FROM match_logs WHERE match_id=$1', [m.id])).rows[0];
+    assert.ok(row, m.id + ' has its commentary banked');
+    assert.equal(row.country_id, m.b_country, 'filed under the host, which is the pair the reader asks with');
+    assert.ok(row.n > 300, m.id + ' kept a whole afternoon of it: ' + row.n + ' lines');
+    // and the reader hands it over to anybody who asks for that pair
+    const served = (await pool.query('SELECT world_match_log($1,$2) l', [m.b_country, m.id])).rows[0].l;
+    assert.ok(served && served.log && served.log.length === row.n, 'served whole');
+    // the deliveries are there, which is what the eighteen-second clock counts
+    const balls = served.log.filter(e => e && e.no && !e._top && !e.intro);
+    assert.ok(balls.length > 200, 'and it is deliveries, not only prose: ' + balls.length);
+    // asked for under the wrong country it is not somebody else's to read
+    const wrong = (await pool.query('SELECT world_match_log($1,$2) l', [m.a_country, m.id])).rows[0].l;
+    assert.equal(wrong.log, null, 'and only under the country it was filed with');
+  }
+});
+
 test('a cap is a real cap: its own book, and it is felt at the club', async () => {
   const eng = (await pool.query(
     `SELECT * FROM nat_matches WHERE a_country=$1 OR b_country=$1 LIMIT 1`, [TC])).rows[0];
