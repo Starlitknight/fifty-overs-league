@@ -11,6 +11,9 @@
 // skill, on the very rails the report was drawn on.
 import { test } from 'node:test';
 import assert from 'node:assert';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
 import { makeEngine } from './engine-vm.mjs';
 
 const eng = makeEngine();
@@ -76,4 +79,20 @@ test('his talents are named, and the two doors are there', () => {
   if (!(man.talents || []).length) assert.match(html, /No talent has shown itself yet/);
   assert.match(html, /href='#\/player\?n=/, 'a door to his page');
   assert.match(html, /data-fo-rvback/, 'and one back to the academy');
+});
+
+test('the card is dealt in the room, and wears the room', () => {
+  // the rarity frame is the CALLER's to put on: without it the card had no
+  // frame at all and the page showed through where the rim belongs
+  assert.match(html, /class='fo-ac-rvcard fo-phw lt ph-(club|star|legend)'/,
+    'the wrapper carries the daylight class and the tier');
+  // and the daylight weights exist for all three rarities, so no reveal ever
+  // drops the dossier's navy slab into a paper room
+  const src = readFileSync(join(dirname(fileURLToPath(import.meta.url)), '..',
+    'engine', 'src', 'league', '42-academy.js'), 'utf8');
+  ['club', 'star', 'legend'].forEach(t => assert.ok(
+    src.indexOf('.fo-ac-rvcard.ph-' + t + ' .phc{background:linear-gradient') >= 0,
+    t + ' has a paper frame'));
+  assert.ok(src.indexOf('.fo-ac-rvcard .phc-in{background:linear-gradient(178deg,#FFFDF9') >= 0,
+    'and the face of the card is paper, not navy');
 });

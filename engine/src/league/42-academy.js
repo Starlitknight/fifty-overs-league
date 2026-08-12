@@ -285,8 +285,11 @@
       Math.round(+rb.hi) + "</b>. He is a <b>" + o + "</b> &mdash; " + word + ".</div>";
   }
   function revealHTML(man, rep, club) {
-    var card = "";
-    try { card = ((window.foHoloCardHTML && window.foHoloCardHTML(man, club || "")) || {}).html || ""; } catch (e) {}
+    var card = "", tier = "";
+    try {
+      var built = (window.foHoloCardHTML && window.foHoloCardHTML(man, club || "")) || null;
+      if (built) { card = built.html || ""; tier = built.tier || ""; }
+    } catch (e) {}
     var tals = (man.talents || []).map(function (t) {
       return "<span class='fo-ac-tal'>" + E((typeof TALN !== "undefined" && TALN[t]) || t) + "</span>";
     }).join("");
@@ -294,7 +297,10 @@
       "<div class='fo-ac-rvk'>Signed &middot; the file is open</div>" +
       // fo-phw is the club page's own "this card, dropped anywhere else"
       // wrapper - the perspective the tilt needs comes with it
-      "<div class='fo-ac-rvcard fo-phw'>" + card + "</div>" +
+      // THE RARITY FRAME IS THE CALLER'S TO PUT ON, and without it the card had
+      // no frame at all - the page showed through where the rim should be. It
+      // rides here, in the daylight weights below.
+      "<div class='fo-ac-rvcard fo-phw lt" + (tier ? " ph-" + tier : "") + "'>" + card + "</div>" +
       verdictOf(rep, man) +
       (tals ? "<div class='fo-ac-rvtal'><h5>What he can do</h5>" + tals + "</div>"
             : "<div class='fo-ac-rvtal none'>No talent has shown itself yet. They are earned.</div>") +
@@ -686,6 +692,52 @@
       "html body #page .fo-ac-rvk{font:700 11px/1 Manrope,sans-serif;letter-spacing:.22em;text-transform:uppercase;" +
         "color:#C9571F;text-align:center;margin:2px 0 12px}",
       "html body #page .fo-ac-rvcard{margin:0 0 14px}",
+      // ---- THE CARD IN DAYLIGHT ---------------------------------------------
+      // The holo card was drawn for the dossier, which goes dark around it on
+      // purpose. The academy is a paper room like every other room in the game,
+      // and a navy slab dropped into it read as a piece of another website. So
+      // the reveal deals the SAME card - same shape, same rarity frame, same
+      // stars, same numbers - in the room's own light. Only the colours move;
+      // nothing about what it says does, and nowhere else that draws the card
+      // is touched.
+      "html body #page .fo-ac-rvcard .phc{box-shadow:0 12px 30px rgba(20,28,40,.13),0 2px 6px rgba(20,28,40,.08)}",
+      // the three rarities, in paper weights: warm board, brushed silver, woven
+      // gold - the same three the dark card wears, lit rather than recoloured
+      "html body #page .fo-ac-rvcard.ph-club .phc{background:linear-gradient(160deg,#F4EEE2,#E6DCC9 55%,#F4EEE2)}",
+      "html body #page .fo-ac-rvcard.ph-star .phc{background:linear-gradient(135deg,#F2F4F7,#DBE1EA 30%,#FAFBFD 52%,#D5DDE8 76%,#EEF1F6)}",
+      "html body #page .fo-ac-rvcard.ph-legend .phc{background:linear-gradient(135deg,#FBF0C4,#E6C56A 28%,#FFFBEA 52%,#DAB14E 76%,#F6E5A6)}",
+      "html body #page .fo-ac-rvcard .phc-in{background:linear-gradient(178deg,#FFFDF9,#FBF7EF 62%,#F6F1E6);" +
+        "color:#1B2432;box-shadow:inset 0 0 0 1px rgba(20,28,40,.07)}",
+      "html body #page .fo-ac-rvcard .phc-role{color:#A8461A}",
+      "html body #page .fo-ac-rvcard .phc-nm{color:#141C28}",
+      "html body #page .fo-ac-rvcard .phc-ovr{background:rgba(201,87,31,.07);border-color:rgba(201,87,31,.42)}",
+      "html body #page .fo-ac-rvcard .phc-ovr b{color:#A8461A}",
+      "html body #page .fo-ac-rvcard .phc-ovr i{color:rgba(20,28,40,.5)}",
+      "html body #page .fo-ac-rvcard .phc-art{box-shadow:inset 0 0 0 1px rgba(20,28,40,.1),0 3px 12px rgba(20,28,40,.14)}",
+      // the prismatic sheen is a dark-card trick: on paper it only bleaches
+      "html body #page .fo-ac-rvcard .phc-holo{opacity:0 !important}",
+      "html body #page .fo-ac-rvcard .phc-glare{mix-blend-mode:multiply;" +
+        "background:radial-gradient(340px 240px at calc(var(--mx,.5)*100%) calc(var(--my,.35)*100%)," +
+        "rgba(20,28,40,.05),transparent 64%)}",
+      "html body #page .fo-ac-rvcard .phr i{color:rgba(20,28,40,.52)}",
+      "html body #page .fo-ac-rvcard .phr > em{color:#141C28}",
+      // an unlit star has to read as empty on paper, not as ink
+      "html body #page .fo-ac-rvcard .phr .st em{color:rgba(20,28,40,.16)}",
+      "html body #page .fo-ac-rvcard .phr-b .st em.f{color:#C9571F}",
+      "html body #page .fo-ac-rvcard .phr-b .st em.h{background:linear-gradient(90deg,#C9571F 50%,rgba(20,28,40,.16) 50%);" +
+        "-webkit-background-clip:text;background-clip:text;color:transparent}",
+      "html body #page .fo-ac-rvcard .phr-w .st em.f{color:#1E7F86}",
+      "html body #page .fo-ac-rvcard .phr-w .st em.h{background:linear-gradient(90deg,#1E7F86 50%,rgba(20,28,40,.16) 50%);" +
+        "-webkit-background-clip:text;background-clip:text;color:transparent}",
+      "html body #page .fo-ac-rvcard .pht{background:rgba(201,87,31,.05);border-color:rgba(201,87,31,.24)}",
+      "html body #page .fo-ac-rvcard .pht-k{background:#C9571F;color:#FFFEFC}",
+      "html body #page .fo-ac-rvcard .pht b{color:#141C28}",
+      "html body #page .fo-ac-rvcard .pht p{color:rgba(20,28,40,.58)}",
+      "html body #page .fo-ac-rvcard .phc-meta{color:rgba(20,28,40,.58)}",
+      "html body #page .fo-ac-rvcard .phc-meta.phc-m2{color:rgba(20,28,40,.46)}",
+      "html body #page .fo-ac-rvcard .phc-meta s{color:#C9571F}",
+      "html body #page .fo-ac-rvcard .phc-ft{color:rgba(20,28,40,.45);border-top-color:rgba(20,28,40,.12)}",
+      "html body #page .fo-ac-rvcard .phc-ft .rr{color:#C9571F}",
       "html body #page .fo-ac-rvcard .phc{max-width:340px;width:100%}",
       "html body #page .fo-ac-rvv{text-align:center;font:400 15px/1.5 Fraunces,Georgia,serif;color:rgba(20,28,40,.72);margin:0 0 14px}",
       "html body #page .fo-ac-rvv b{font-weight:700;color:#1B2432;font-variant-numeric:tabular-nums}",
