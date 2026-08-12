@@ -120,6 +120,67 @@
       "<u>The draw &rsaquo;</u></a>";
   }
 
+  // ---- THE INTERNATIONAL WINDOW, TIE BY TIE ---------------------------------
+  //
+  // A window used to be one line saying every full member was on tour, which
+  // is true of every window ever played and says nothing about this one. The
+  // nations book carries the season's calendar - each series, the three window
+  // rounds it is played over, and what it stands at - so the ties can be
+  // listed like any other stage: who is touring whom, which game of the three
+  // this is, and either the scoreline or the fact that they are still out
+  // there.
+  var INTL_HOUR = 18;                    // the hour the umpire plays them (INTL_HOUR, nations.mjs)
+  function intlTies(nb, round) {
+    var ser = (nb && nb.calendar && nb.calendar.series) || [];
+    var out = [];
+    ser.forEach(function (t) {
+      var rounds = t.rounds || [];
+      var leg = rounds.indexOf(round | 0);
+      if (leg < 0) return;
+      var st = t.series || {};
+      var game = ((st.games || []).filter(function (g) { return (g.round | 0) === (round | 0); }))[0] || null;
+      // the series only names the game; the tours book carries its scoreline,
+      // so the two are matched by the id they share
+      var sc = null;
+      if (game) sc = ((nb && nb.tours) || []).filter(function (q) { return q && q.id === game.id; })[0] || null;
+      out.push({ tie: t, leg: leg + 1, of: rounds.length, st: st, game: game, score: sc, done: !!game });
+    });
+    return out;
+  }
+  // the flag a nation flies, by its own id - the same door the map uses
+  function natFlag(id) { return flagOf(id); }
+  // the window's ties, and one of them drawn: both are the page's own reading
+  // of the nations book and both are worth holding to
+  window.foIntlWindowTies = intlTies;
+  function intlCard(x) {
+    var t = x.tie, nm = t.names || [], g = x.game;
+    // the two sides, in the order the calendar names them: the tourists first,
+    // the hosts under. A winner is said the way a cup tie says it - in the
+    // weight of his own line - rather than by printing the word "won" where a
+    // score belongs.
+    var sc = x.score;
+    var side = function (i) {
+      var id = (t.teams || [])[i], xi = (nm[i] || "") + " XI";
+      var won = !!(g && g.winner === xi);
+      var runs = sc ? (t.teams[i] === sc.aCountry ? sc.as_ : t.teams[i] === sc.bCountry ? sc.bs_ : "") : "";
+      return "<div class='fo-lv-side" + (won ? " bat" : "") + "'>" + natFlag(id) +
+        "<span class='nm'>" + E(nm[i] || id || "?") + "</span>" +
+        "<span class='sc'>" + (runs ? "<b>" + E(String(runs).split(" ")[0]) + "</b>" +
+          (/all out/.test(String(runs)) ? "<u>all out</u>" : "") : "") + "</span></div>";
+    };
+    // where the tie lives: the touring nation's own room, which carries the
+    // squad, the series and every cap it has handed out
+    var href = "#/nations";
+    var foot = g ? E(g.text || "")
+      : "Out in the middle &middot; filed when the window shuts";
+    var standing = x.st && x.st.verdict ? E(x.st.verdict) : "";
+    return "<a class='fo-lv-card on' href='" + href + "'>" +
+      side(0) + side(1) +
+      "<div class='fo-lv-when'>Game " + x.leg + " of " + x.of + (standing ? " &middot; " + standing : "") + "</div>" +
+      "<div class='fo-lv-when sm'>" + foot + "</div></a>";
+  }
+  window.foIntlTieCardHTML = intlCard;
+
   // the world's own cup day, and each nation's - returned as blocks in the same
   // shape a league block has, so the page renders them without knowing which
   function cupBlocks(now, repaint) {
@@ -166,10 +227,19 @@
       });
     }
     if (ph.kind === "rest" && ph.window) {
-      out.push({ kind: "intl", id: "intl", nm: "The international game", hour: 12, state:
-        hNow < 12 ? "up" : hNow < 12 + LEN ? "live" : "fin",
+      // THE TOURS THEMSELVES, not a note that some are happening. The nations
+      // book publishes the season's whole calendar - who tours whom, over
+      // which three window rounds, and how the series stands - so the window
+      // can be listed tie by tie the way a cup stage is. Where a game has been
+      // filed its scoreline rides with it; where it has not, the tie says so
+      // and the series standing says what it is worth.
+      var nb = snap("nations", repaint);
+      var ties3 = intlTies(nb, ph.window);
+      out.push({ kind: "intl", id: "intl", nm: "The international game", hour: INTL_HOUR, state:
+        hNow < INTL_HOUR ? "up" : (hNow < INTL_HOUR + LEN && ties3.some(function (t) { return !t.done; })) ? "live" : "fin",
         title: "International window \u00b7 round " + ph.window,
-        html: stageNotice("Every full member is on tour", "#/nations") });
+        html: ties3.length ? ties3.map(intlCard).join("")
+          : stageNotice("Every full member is on tour", "#/nations") });
     }
     return out;
   }
@@ -445,6 +515,11 @@
       ".fo-lv-need b{font-weight:800}",
       ".fo-lv-need em{font-style:normal;color:var(--mut);font-weight:500;margin-left:auto}",
       ".fo-lv-when{color:var(--mut);font-weight:600}",
+      // a tour carries two lines: which game of the series it is, and either
+      // its verdict or the fact that it is still out there. The second is the
+      // quieter of the two and does not want a rule of its own above it.
+      ".fo-lv-when.sm{border-top:0;padding-top:0;margin-top:-4px;font-weight:500;font-size:11.5px;" +
+        "color:var(--mut);opacity:.85}",
       ".fo-lv-note{display:grid;gap:5px;text-decoration:none;color:inherit;background:var(--paper);border:1px solid var(--brd);border-left:3px solid var(--brand);border-radius:12px;padding:15px 17px}",
       ".fo-lv-note b{font:800 15px/1.25 Manrope,sans-serif;color:var(--ink)}",
       ".fo-lv-note span{font:500 12.5px/1.45 Manrope,sans-serif;color:var(--mut)}",
