@@ -14,6 +14,7 @@ import assert from 'node:assert';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import vm from 'node:vm';
 import { makeEngine } from './engine-vm.mjs';
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..');
@@ -22,6 +23,8 @@ const core = readFileSync(join(ROOT, 'engine', 'src', '00-core.js'), 'utf8');
 const eng = makeEngine();
 const strength = (innings, nm) => eng.ctx.foXIStrength(innings, nm);
 const ROWS = ['top', 'middle', 'tail', 'seam', 'spin', 'field'];
+// GD is a script-scoped binding inside the bundle, not a property of window
+const setTeams = vm.runInContext('(function (t) { var was = GD.teams; if (t) GD.teams = t; return was; })', eng.ctx);
 
 // one real match, played through the shipped engine
 const A = { name: 'Ashgrove', ground: 'The Meadow', players: eng.genSquad(4711, 'England', 'balanced').players };
@@ -107,4 +110,59 @@ test('the panel prints the strength and never the day', () => {
   const missing = [A.name, B.name].some(nm => ROWS.some(k => strength(CARD.innings, nm)[k] == null));
   if (missing) assert.match(html, /class='none'>&ndash;/,
     'a department nobody fills shows a dash rather than vanishing');
+});
+
+// ---------------------------------------------------------------------------
+// THE ARCHIVE. A save slims every result past the last two down to the basics
+// of each man, and the fifteen skills the marking is built from were the first
+// thing to go - so a match a fortnight old came back with no sides on it at
+// all, only the day's points, under a heading promising two.
+// ---------------------------------------------------------------------------
+test('a slimmed card still knows what the two sides were worth', () => {
+  const slim = JSON.parse(JSON.stringify(CARD.innings)).map(inn => {
+    inn.bat = inn.bat.map(b => Object.assign({}, b, { p: eng.ctx.foSlimPlayer(b.p) }));
+    return inn;
+  });
+  // the save really has taken the skills away
+  assert.ok(!slim[0].bat[0].p.skills, 'the slimmed man carries no skill block');
+  const was = strength(CARD.innings, A.name), now = strength(slim, A.name);
+  assert.ok(now, 'the slimmed card still marks the side');
+  assert.equal(now.rating, was.rating, 'the same strength');
+  ROWS.forEach(k => assert.equal(now[k], was[k],
+    k + ' was lost in the archive: ' + was[k] + ' -> ' + now[k]));
+});
+
+test('a save slimmed before the aggregates were kept reads the men off the roster', () => {
+  // the old archive shape: a name and a rating, no skills and no aggregates
+  const older = JSON.parse(JSON.stringify(CARD.innings)).map(inn => {
+    inn.bat = inn.bat.map(b => Object.assign({}, b, {
+      p: { name: b.p.name, keeper: !!b.p.keeper, bowlType: b.p.bowlType, role: b.p.role, rating: b.p.rating }
+    }));
+    return inn;
+  });
+  const was = strength(CARD.innings, A.name);
+  const bare = strength(older, A.name);
+  assert.ok(bare, 'the ratings the archive did keep still say what the side was worth');
+  assert.equal(bare.rating, was.rating);
+  ROWS.forEach(k => assert.equal(bare[k], null, k + ' cannot be had from a name and a rating'));
+  // put the eleven on a roster the way a saved game carries them, and the
+  // departments come back off the men themselves
+  const prev = setTeams([{ name: A.name, players: A.players }]);
+  try {
+    const now = strength(older, A.name);
+    assert.equal(now.rating, was.rating, "the card's own rating is kept, not the roster's");
+    ROWS.forEach(k => assert.equal(now[k], was[k], k + ' read off the roster: ' + was[k] + ' -> ' + now[k]));
+  } finally { setTeams(prev); }
+});
+
+test('and a card that never carried the men says nothing rather than nothing much', () => {
+  // a card rebuilt from the commentary names the men and knows no more
+  const named = JSON.parse(JSON.stringify(CARD.innings)).map(inn => {
+    inn.bat = inn.bat.map(b => ({ p: { name: b.p.name }, r: b.r, b: b.b, f4: b.f4, f6: b.f6, out: b.out }));
+    return inn;
+  });
+  assert.equal(strength(named, A.name), null, 'no marks to be had');
+  const html = eng.ctx.foRatingsPanelHTML(named, CARD.result);
+  assert.ok(!/The two sides/.test(html), 'and the panel does not promise two sides it cannot show');
+  assert.match(html, /The day&rsquo;s points/, 'the points are still worth printing');
 });

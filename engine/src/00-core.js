@@ -3764,8 +3764,21 @@ function startLeagueFromMerge(){
 // the dominant save-size cost (a season of fixtures is several MB, past iOS
 // Safari's quota). Saved scorecards/ratings/reports only read bat[].p and
 // bowlers[].p basics, so archive innings keep exactly those.
+//
+// AND WHAT HE WAS WORTH AT EACH JOB. The report's side panel marks an eleven
+// on the men in it, and the fifteen skills that marking is built from are the
+// very thing this function throws away - so a match slimmed on the way into
+// the save came back with no sides on it at all, only the day's points. Four
+// numbers keep it: batting, bowling, fielding, the gloves, summarised by the
+// engine's own aggregates. That is about thirty bytes a man against the two
+// hundred the full skill block costs, so the quota this exists to protect is
+// not touched.
 function foSlimPlayer(p){
-  return p?{name:p.name,keeper:!!p.keeper,bowlType:p.bowlType,bowlTypeFull:p.bowlTypeFull,role:p.role,hand:p.hand,rating:p.rating}:p;
+  if(!p)return p;
+  const o={name:p.name,keeper:!!p.keeper,bowlType:p.bowlType,bowlTypeFull:p.bowlTypeFull,role:p.role,hand:p.hand,rating:p.rating};
+  if(p.sk)o.sk=p.sk;
+  else if(p.skills){try{o.sk={b:aggBat(p),w:aggBowl(p),f:aggField(p),k:aggKeep(p)}}catch(e){}}
+  return o;
 }
 function foSlimInns(inn){
   if(!inn||inn.__slim)return inn;

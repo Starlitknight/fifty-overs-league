@@ -35,11 +35,21 @@
   // aggBat/aggBowl/aggField/aggKeep the squad room, the scout report and the
   // player page all print, so a batsman cannot be worth 78 on his own page and
   // something else in the eleven he was picked in.
+  //
+  // A CARD OUT OF THE ARCHIVE CARRIES THE ANSWER, NOT THE WORKING. The save
+  // slims every result past the last two down to the basics of each man
+  // (foSlimPlayer in the core), which is why the panel found nothing to mark
+  // on an older match. Those men now carry `sk` - the same four aggregates,
+  // banked at slimming time - so the marking reads whichever it is handed.
+  var SK_KEY = { bat: "b", bowl: "w", keep: "k", field: "f" };
   function agg(p, nm) {
+    if (!p) return null;
     try {
       var v = ({ bat: aggBat, bowl: aggBowl, keep: aggKeep, field: aggField })[nm](p);
-      return (typeof v === "number" && isFinite(v)) ? Math.max(0, Math.min(99, Math.round(v))) : null;
-    } catch (e) { return null; }
+      if (typeof v === "number" && isFinite(v) && p.skills) return Math.max(0, Math.min(99, Math.round(v)));
+    } catch (e) {}
+    var s = p.sk && p.sk[SK_KEY[nm]];
+    return (typeof s === "number" && isFinite(s)) ? Math.max(0, Math.min(99, Math.round(s))) : null;
   }
   function mean(xs) {
     var v = xs.filter(function (x) { return x != null; });
@@ -67,9 +77,23 @@
     for (var i = 0; i < inns.length; i++) if (inns[i] && inns[i].batTeam === nm) { mine = inns[i]; break; }
     if (!mine) return null;
     var xi = (mine.bat || []).map(function (b) { return b && b.p; })
-      .filter(function (p) { return p && p.skills; });
-    // a card with no men on it - a hand-built fixture, an ancient record - is
-    // left unmarked rather than marked wrongly
+      .filter(function (p) { return p && p.name; })
+      // A SAVE SLIMMED BEFORE THE AGGREGATES WERE KEPT cannot be repaired -
+      // those skills are gone off the disk - but the cricketer usually is not:
+      // he is still on a roster, and his card is what "on paper" means. His
+      // rating THAT DAY stays the card's; only the departments are read off
+      // the man. A cricketer nobody has any more is simply left as he came.
+      .map(function (p) {
+        if (p.skills || p.sk) return p;
+        var f = null;
+        try { f = (typeof findPlayer === "function") ? findPlayer(p.name) : null; } catch (e) {}
+        if (!f || !f.p || !f.p.skills) return p;
+        var q = {}; for (var k in f.p) q[k] = f.p[k];
+        if (typeof p.rating === "number" && p.rating > 0) q.rating = p.rating;
+        return q;
+      });
+    // a card with no men on it - a hand-built fixture, a card rebuilt from the
+    // commentary - is left unmarked rather than marked wrongly
     if (xi.length < 5) return null;
     var cut = window.FO_BAT_CUT;
     var batOf = function (a, b) {
@@ -85,9 +109,10 @@
     var fld = mean(xi.map(function (p) { return agg(p, "field"); }));
     var kp = xi.filter(function (p) { return p.keeper; })[0];
     var kv = kp ? agg(kp, "keep") : null;
+    var rt = mean(xi.map(function (p) { return (typeof p.rating === "number" && p.rating > 0) ? p.rating : null; }));
     var s = {
       n: xi.length,
-      rating: Math.round(mean(xi.map(function (p) { return +p.rating || 0; })) || 0),
+      rating: rt == null ? null : Math.round(rt),
       top: batOf(cut.top[0], cut.top[1]),
       middle: batOf(cut.middle[0], cut.middle[1]),
       tail: batOf(cut.tail[0], cut.tail[1]),
@@ -95,6 +120,8 @@
       spin: bowlOf(bowlers.filter(isSpin)),
       field: sk99(fld == null ? null : (kv == null ? fld : 0.75 * fld + 0.25 * kv))
     };
+    // nothing to say about a side is not the same as a side worth nothing
+    if (s.rating == null && !ROWS.some(function (k) { return s[k] != null; })) return null;
     return s;
   };
 
@@ -162,16 +189,24 @@
       }).join("");
       // the side's strength, printed through foRate so the whole game reads one
       // scale: the same figure the club page, the dossiers and the world
-      // rankings put on a squad
-      var str = window.foRate ? window.foRate(s.rating) : s.rating;
-      var mark = "<div class='fo-rat-tm'><span>Strength of the XI</span><b class='" + strBand(str) + "'>" +
-        str.toLocaleString() + "</b></div>";
+      // rankings put on a squad. A card that never carried the men's ratings
+      // simply has no figure, and says so by not printing one.
+      var mark = "";
+      if (s.rating != null) {
+        var str = window.foRate ? window.foRate(s.rating) : s.rating;
+        mark = "<div class='fo-rat-tm'><span>Strength of the XI</span><b class='" + strBand(str) + "'>" +
+          str.toLocaleString() + "</b></div>";
+      }
       return "<div class='fo-rat-side'><div class='fo-rat-h'><b>" + E(x.nm) + "</b></div>" +
         mark + rows + "</div>";
     };
-    return "<div class='panel fo-rat'><h4>The two sides</h4><div class='pad'>" +
+    // AND THE PANEL IS NAMED AFTER WHAT IS IN IT. A card too old or too thin
+    // to mark a side on left "The two sides" standing over nothing but the
+    // points - a heading promising a thing the panel had not got.
+    return "<div class='panel fo-rat'><h4>" + (sides.length ? "The two sides" : "The day&rsquo;s points") +
+      "</h4><div class='pad'>" +
       (sides.length ? "<div class='fo-rat-grid'>" + sides.map(side).join("") + "</div>" : "") +
-      (best ? "<div class='fo-rat-sub'>The day&rsquo;s points</div>" + best : "") +
+      (best ? (sides.length ? "<div class='fo-rat-sub'>The day&rsquo;s points</div>" : "") + best : "") +
       "</div></div>";
   };
 
