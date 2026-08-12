@@ -633,8 +633,20 @@
     var totOut = outWage + outUp + outInt + outFees + outScout + outAcadSpend + outAcad + outSeats;
     var net = totIn - totOut;
     // and the proof: the bank the world holds is the founding money plus that
-    // net, to the pound. A drift means a line has gone missing again.
+    // net, to the pound. It is checked - a missing line has been a real bug
+    // more than once - but it is checked in the console, where the person who
+    // can do something about it will see it. A manager cannot. He was told
+    // "the bank and the ledger disagree by -$250,000 - a line has gone missing
+    // from the books" the moment he signed a colt, because the books settle on
+    // the world's clock and his decision did not wait for it; the money was
+    // exactly where he had put it. Nobody playing a game should be shown the
+    // developer's assertion, least of all one accusing the umpire of losing
+    // his money.
     var drift = bank - (founded + net);
+    try {
+      if (Math.abs(drift) >= 1) console.warn("fo: books drift", drift,
+        { bank: bank, founded: founded, net: net });
+    } catch (eDr) {}
 
     // The trend used to divide a total that INCLUDED transfer fees in by the
     // rounds played while excluding the fees out - one-off money inflating a
@@ -1052,9 +1064,6 @@
     // reads twice.
     if (shownWk) html2 += "<div class='fo-wk-note'><i>i</i><p>The week of " +
       wkTitle(shownWk) + ", on the world's calendar.</p></div>";
-
-    if (Math.abs(drift) >= 1) html2 += "<div class='fo-wk-warn'>The bank and the ledger disagree by " +
-      M(drift) + " &mdash; a line has gone missing from the books.</div>";
 
     if (f.administration) html2 += "<div class='fo-wk-warn admin'><b>The club is in administration</b><p>The bank has reached the floor of " +
       M(-(Number(f.debtLimit) || 2500000)) + ", so " + M(inWriteOff) + " of losses below the line has been written off. " +

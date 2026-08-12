@@ -270,3 +270,65 @@ test('the scout hands over a report, not the file - and the signature is the rev
   assert.ok(boy, 'he is on the books under his own name');
   assert.deepEqual(boy.skills, truth.skills, 'with his real skills, exactly as generated');
 });
+
+// ---------------------------------------------------------------------------
+// THE BOOKS SETTLE ON THE WORLD'S CLOCK; A DECISION DOES NOT WAIT FOR IT.
+//
+// A manager signed a colt for the contract fee, watched his bank fall by it,
+// opened his Finances and found no line for it anywhere - and the page, which
+// checks the bank against the books, told him a line had gone missing. Nothing
+// had. The reading functions now carry what has been paid and not yet settled,
+// so the money is on the books the moment it moves and the two agree.
+// ---------------------------------------------------------------------------
+test('money spent since the last settle is on the books at once', async () => {
+  const bank0 = Number((await pool.query(
+    `SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank);
+  // the club's own view of itself, before he does anything
+  const st0 = (await pool.query(`SELECT world_my_status() s`)).rows[0].s;
+  const acad0 = Number((st0.finance || {}).academySpend || 0);
+  // earlier tests in this file have already signed men, and nothing has settled
+  // since, so the unsettled contract line already stands at something
+  const stmt0 = (await pool.query(`SELECT world_my_statement() s`)).rows[0].s;
+  const owed0 = Number(((stmt0.lines || []).filter(l => l.kind === 'contract')[0] || {}).amount || 0);
+
+  // he signs a boy: the treasury pays at once
+  await pool.query(
+    `UPDATE clubs SET youth = $1::jsonb WHERE country_id='eng' AND slot=1`,
+    [JSON.stringify([{ name: 'Gil Rooke', age: 17, role: 'opener', wage: 1100,
+                       colt: true, skills: { vsPace: 41 } }])]);
+  await pool.query(`SELECT world_colt('Gil Rooke','promote')`);
+  const bank1 = Number((await pool.query(
+    `SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank);
+  assert.equal(bank0 - bank1, PROMOTE_FEE, 'the bank fell by the fee');
+
+  // ...and so do the books, without a settle having run
+  const st1 = (await pool.query(`SELECT world_my_status() s`)).rows[0].s;
+  assert.equal(Number((st1.finance || {}).academySpend || 0), acad0 + PROMOTE_FEE,
+    'the season total carries the contract already');
+  assert.equal(Number(st1.bank), bank1, 'and the bank on the same reading is the live one');
+
+  // and the statement has a line for it, dated now, with the balance it left
+  const stmt = (await pool.query(`SELECT world_my_statement() s`)).rows[0].s;
+  const line = (stmt.lines || []).filter(l => l.kind === 'contract')[0];
+  assert.ok(line, 'the statement names the contract');
+  assert.equal(Number(line.amount), owed0 - PROMOTE_FEE, 'grown by the fee, as money out');
+  assert.equal(Number(line.balance), bank1, 'and says what the club held after it');
+
+  // THE ONE THING IT MUST NOT DO IS COUNT IT TWICE. A settle rewrites the whole
+  // book from the record; the difference this leans on is nought the moment it
+  // has, so the same money cannot appear again beside itself.
+  const { settleMoney } = await import('../tick.mjs');
+  await settleMoney(pool, 'eng', EPOCH + (startDay + 3) * DAY);
+  const st2 = (await pool.query(`SELECT world_my_status() s`)).rows[0].s;
+  assert.equal(Number((st2.finance || {}).academySpend || 0), acad0 + PROMOTE_FEE,
+    'settled, it is counted exactly once');
+  // the settle writes one line per world day, so the count is not the test -
+  // the total is. Every contract ever paid appears exactly once between them.
+  const stmt2 = (await pool.query(`SELECT world_my_statement() s`)).rows[0].s;
+  const onBook = (stmt2.lines || []).filter(l => l.kind === 'contract')
+    .reduce((t, l) => t + Number(l.amount), 0);
+  const paid = Number((await pool.query(
+    `SELECT sum(amount) a FROM academy_spend WHERE country_id='eng' AND slot=1 AND kind='contract'`
+  )).rows[0].a);
+  assert.equal(onBook, paid, 'the statement owns every contract exactly once, and no more');
+});
