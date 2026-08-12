@@ -1319,31 +1319,63 @@
     ms.sort(function (a, b) { return (b.round | 0) - (a.round | 0); });
     return { rid: rid, names: names, ms: ms.slice(0, 24) };
   }
+  // WHETHER HE WAS THERE AT ALL, and what he did if he was.
+  //
+  // A card names both elevens whatever they did with the day: the batting card
+  // seats all eleven in their order, and xi/bxi carry the teamsheets beside
+  // them. So the card can answer the question the log actually asks - was this
+  // man in the side - rather than only "did anything happen to him".
+  //
+  // A man who was picked and never faced a ball has no figures, and that is
+  // what "no recorded involvement" means: he played and nothing came to him.
+  // It is NOT "0* (0)", which is what a blank line used to print and which
+  // reads like a dismissal for nought.
+  function ppNamed(list, pname) {
+    var a = list || [];
+    for (var i = 0; i < a.length; i++) {
+      var q = a[i], nq = (q && q.name) || q;
+      if (nq === pname) return true;
+    }
+    return false;
+  }
   function ppLineFromCard(card, names, pname) {
-    var out = { bat: "", bowl: "", ct: 0 };
+    var out = { bat: "", bowl: "", ct: 0, played: false };
     try {
       (card.innings || []).forEach(function (inn) {
-        if (names[inn.batTeam]) (inn.bat || []).forEach(function (r) {
-          if (r && r.p && r.p.name === pname) out.bat = r.r + (r.out ? "" : "*") + " (" + r.b + ")";
-        });
+        if (names[inn.batTeam]) {
+          if (ppNamed(inn.xi, pname)) out.played = true;
+          (inn.bat || []).forEach(function (r) {
+            if (!r || !r.p || r.p.name !== pname) return;
+            out.played = true;
+            if ((r.b | 0) > 0 || r.out) out.bat = r.r + (r.out ? "" : "*") + " (" + r.b + ")";
+          });
+        }
         if (names[inn.bowlTeam]) {
+          if (ppNamed(inn.bxi, pname)) out.played = true;
           var bw = inn.bowlers && inn.bowlers[pname];
-          if (bw) out.bowl = bw.w + "-" + bw.r + " (" + ppOvers(bw.b) + ")";
+          if (bw) { out.played = true; out.bowl = bw.w + "-" + bw.r + " (" + ppOvers(bw.b) + ")"; }
           var f = inn.fielding && inn.fielding[pname];
-          if (f) out.ct += (f.ct | 0) + (f.st | 0);
+          if (f) { out.played = true; out.ct += (f.ct | 0) + (f.st | 0); }
         }
       });
     } catch (e) {}
     return out;
   }
-  // THE CLUB'S EXHIBITIONS, NOT THE MAN'S. The umpire's friendlies book is
-  // folded per player, and it only opens for someone who batted, bowled or
-  // fielded - so a squad man could watch his club play six friendlies and see
-  // none of them in his log, while the league round he sat out was listed in
-  // full. The league half was never per-player: it reads the club's fixtures
-  // and says "no recorded involvement" where he has no line. This is the same
-  // list for the exhibitions - every tie this club actually played - and his
-  // figures are laid over it from the book where he has any.
+  // one match, one man: was he in the side, and what did he do. The log is
+  // built on it and so is anything else that wants to ask.
+  window.foPlayerMatchLine = ppLineFromCard;
+  // THE MAN'S MATCHES, NOT THE CLUB'S.
+  //
+  // Both halves of this log used to list the CLUB's fixtures and lay the man's
+  // figures over them, so a cricketer signed this morning opened his page and
+  // found five matches his new club had played before he existed to it, each
+  // one saying "no recorded involvement" - which was true and told him nothing,
+  // because he had not been there to be involved.
+  //
+  // A log is a record of what a man played. A league tie is his if the card
+  // names him in one of the elevens; an exhibition is his if the umpire's
+  // friendlies book - which is folded per player - has a line for him. Nothing
+  // else is his, however recently his club played it.
   var PP_FR = {};
   function ppJwt() { try { return (window.__foJWT && window.__foJWT()) || ""; } catch (e) { return ""; } }
   function ppFriendlies(rid, slot) {
@@ -1419,12 +1451,15 @@
         var mineHome = !!got.names[m.home];
         var opp = mineHome ? m.away : m.home;
         var res = !m.winner ? "&mdash;" : got.names[m.winner] ? "Won" : "Lost";
+        // no card is no evidence he was in the side, and a log that guesses is
+        // the thing being fixed
         var line = cards[i] ? ppLineFromCard(cards[i], got.names, p.name) : null;
+        if (!line || !line.played) return;
         var bits = [];
         if (line && line.bat) bits.push(line.bat);
         if (line && line.bowl) bits.push(line.bowl);
         if (line && line.ct) bits.push(line.ct + " ct");
-        var his = bits.length ? bits.join(" &middot; ") : (cards[i] ? "no recorded involvement" : "card on its way");
+        var his = bits.length ? bits.join(" &middot; ") : "no recorded involvement";
         // EVERY LINE IS A DOOR. A man's match log named the fixture and then
         // left the reader to go and find it; the report is one address away
         // and the log has always known it - nation plus the World Service's
@@ -1451,7 +1486,9 @@
           if (!f || f.status !== "played" || !f.text) return;
           var mineC = f.cCountry === rid && (f.cSlot | 0) === (mySlot | 0);
           var myName = mineC ? f.home : f.away, opp2 = mineC ? f.away : f.home;
+          // his book is the only word on whether he was in this eleven
           var l = byId[String(f.id)] || null;
+          if (!l) return;
           var bits2 = [];
           if (l && ((l.b | 0) > 0 || (l.r | 0) > 0)) bits2.push(l.r + (l.out ? "" : "*") + " (" + l.b + ")");
           if (l && (l.ovb | 0) > 0) bits2.push(l.w + "-" + l.conc + " (" + ppOvers(l.ovb) + ")");
