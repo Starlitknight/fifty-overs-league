@@ -953,6 +953,26 @@
   // every talent the commentary announces by name, for a book banked before
   // the umpire stamped the delivery itself
   var FO_TAL_SAID = /SIX MACHINE|PARTNERSHIP BREAKER|New Ball Specialist|Golden Arm|Mystery Ball|Bouncer talent|Finisher\u2019s instinct|Lightning Hands|Rocket Arm|Safe Hands|Spin Killer|Pace Hunter|Fast Starter|Anchor|Busy Runner/;
+  // A TALENT IS A NAMED THING, so it is set like one. The commentary says it in
+  // the middle of an ordinary sentence - "Rocket Arm! Great fielding by ..." -
+  // and it read as ordinary prose, which is the one thing it is not: it is the
+  // reason the ball went the way it did, and the only place in the game a
+  // manager sees a talent he paid for actually doing something.
+  //
+  // CASE-SENSITIVE AND WHOLE-WORD, deliberately. Half these names are ordinary
+  // English - Anchor, Bouncer, Finisher, Miser - and an umpire who says a
+  // batsman "anchors the innings" has not named a talent. The capital is the
+  // signal, and it is the engine's own: every line that fires one writes it
+  // capitalised (00-core, the talent block in stepBall).
+  var FO_TAL_NAMES = ["SIX MACHINE", "PARTNERSHIP BREAKER", "New Ball Specialist",
+    "Death Specialist", "Golden Arm", "Mystery Ball", "Lightning Hands", "Rocket Arm",
+    "Safe Hands", "Spin Killer", "Pace Hunter", "Fast Starter", "Busy Runner",
+    "Bouncer", "Finisher", "Miser", "Anchor"];
+  var FO_TAL_RE = new RegExp("\\b(" + FO_TAL_NAMES.join("|") + ")\\b", "g");
+  // escaped FIRST, then marked: the mark is ours and the text is the umpire's
+  function talTx(t) {
+    return E(String(t == null ? "" : t)).replace(FO_TAL_RE, "<em class='fd-tal'>$1</em>");
+  }
   // ---- BALL-BY-BALL, a timeline of the umpire's book -----------------------
   function livePanel(seen, done, I, tp) {
     var f = T.filter;
@@ -1011,7 +1031,7 @@
         return "<div class='fd-ev wkt'><span class='dot'>" + ring(r4.out) + "</span>" +
           "<div class='w'><span class='no'>" + E(r4.no) + "</span><b class='hl'>" + hl + "</b>" +
           (wtg && wtg.k !== "ct" ? "<span class='fdtag g'>" + wtg.lbl + "</span>" : "") +
-          "<p>" + E(body9) + "</p>" +
+          "<p>" + talTx(body9) + "</p>" +
           (it.fow ? "<span class='fowchip'>&#10007; " + E(it.fow) + "</span>" : "") + "</div></div>";
       }
       var dtg = fldTag(r4);
@@ -1021,7 +1041,7 @@
       return "<div class='fd-ev'><span class='dot'>" + ring(r4.out) + "</span>" +
         "<div class='w'><span class='no'>" + E(r4.no) + "</span><b>" + headHtml + "</b>" +
         (dtg ? "<span class='fdtag " + (dtg.good ? "g" : "b") + "'>" + dtg.lbl + "</span>" : "") +
-        "<p>" + E(body9) + "</p></div></div>";
+        "<p>" + talTx(body9) + "</p></div></div>";
     }).join("");
     // the header's right hand: the over in progress and the last over's line
     var curOv = I && I.lastNo ? Math.ceil(parseFloat(I.lastNo)) : (tp ? tp.over : null);
@@ -1573,6 +1593,8 @@
     logFetch: logFetch,
     bookState: bookState,
     parseTop: parseTop,
+    // the umpire's words with the talents marked in them
+    talTx: talTx,
     // the balls a viewer has been shown by now, off the same wall clock the
     // broadcast runs on: deliveries reveal one at a time, and the umpire's
     // notes travel with the delivery they precede
@@ -1748,6 +1770,13 @@
       ".fo-fd .fd-ev .no{font:700 13px Manrope,sans-serif;color:var(--fomut);font-variant-numeric:tabular-nums;margin-right:8px}",
       ".fo-fd .fd-ev b{font:600 13.5px Manrope,sans-serif;color:var(--foink)}",
       ".fo-fd .fd-ev p{margin:3px 0 0;font:400 13px/1.55 Manrope,sans-serif;color:#4a4436}",
+      // A TALENT, NAMED IN THE MIDDLE OF A SENTENCE. It sat in the prose as
+      // ordinary words, and it is not ordinary: it is the reason the ball went
+      // the way it did. Gold, because gold is what this game calls quality
+      // everywhere else - the star strip, the standout, the honours - and a
+      // rule under the words rather than a box around them, so a sentence with
+      // two of them in it still reads as a sentence.
+      ".fo-fd .fd-ev p .fd-tal{font-style:normal;font-weight:700;color:#7A5A12;background:linear-gradient(180deg,rgba(201,162,39,.13),rgba(201,162,39,.20));box-shadow:inset 0 -1.5px 0 rgba(143,106,28,.55);border-radius:2px;padding:0 3px;letter-spacing:.01em;white-space:nowrap}",
       // wickets: restrained fire
       ".fo-fd .fd-ev.wkt{background:var(--fosoftred);border-radius:10px;border-bottom:none;padding:13px 12px;margin:4px 0}",
       ".fo-fd .fd-ev.wkt .hl{font:700 13px Manrope,sans-serif;letter-spacing:.08em;color:var(--fowkt)}",

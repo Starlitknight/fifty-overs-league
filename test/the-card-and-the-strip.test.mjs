@@ -147,3 +147,39 @@ test('form and fatigue do not move a single star', () => {
   assert.equal(S.stars(S.bat(onSong)), S.stars(S.bat(spent)), 'the batting strip does not move');
   assert.equal(S.stars(S.bowl(onSong), true), S.stars(S.bowl(spent), true), 'nor the bowling');
 });
+
+// ---- a talent is set like a named thing -------------------------------------
+// The commentary names a talent in the middle of an ordinary sentence - "Rocket
+// Arm! Great fielding by ..." - and it read as ordinary prose, which is the one
+// thing it is not: it is the reason the ball went the way it did, and the only
+// place a manager sees a talent he paid for actually doing something.
+test('a talent is marked where the umpire names it', () => {
+  const K = W.__foFeedKit;
+  const out = K.talTx('Lowe tucks it with soft hands. Rocket Arm! Great fielding by Sebastian Lowe.');
+  assert.match(out, /<em class='fd-tal'>Rocket Arm<\/em>/, 'the talent is marked');
+  assert.ok(out.indexOf('Sebastian Lowe') >= 0, 'and the rest of the sentence is untouched');
+  assert.equal((out.match(/fd-tal/g) || []).length, 1, 'once, not once per word');
+});
+
+// HALF THESE NAMES ARE ORDINARY ENGLISH. An umpire who says a batsman "anchors
+// the innings" has not named a talent, and a bowler who bowls "a bouncer" has
+// not either. The capital is the signal, and it is the engine's own.
+test('ordinary English is not mistaken for a talent', () => {
+  const K = W.__foFeedKit;
+  [
+    'He anchors the innings and refuses to be moved.',
+    'That is a fine bouncer, and the batter had no answer to it.',
+    'A miserly spell from the seamer.',
+    'He is the finisher this side has been waiting for, in lower case.'
+  ].forEach(line => {
+    assert.equal(K.talTx(line).indexOf('fd-tal'), -1, 'not a talent: ' + line);
+  });
+});
+
+test('the umpire\'s words are escaped before they are marked', () => {
+  const K = W.__foFeedKit;
+  const out = K.talTx('<script>bad()</script> and the Busy Runner steals two.');
+  assert.equal(out.indexOf('<script>'), -1, 'nothing the umpire wrote becomes markup');
+  assert.match(out, /&lt;script&gt;/, 'it is shown as the text it is');
+  assert.match(out, /<em class='fd-tal'>Busy Runner<\/em>/, 'and the mark is still ours');
+});
