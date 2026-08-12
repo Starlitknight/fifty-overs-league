@@ -595,8 +595,7 @@
                            { name: row.away, players: sqA }, "balanced", "Sunny", seed,
                            (state && state.orders) || null);
       if (!out || !out.innings || !out.result) return null;
-      // the agreement check: the same verdict, to the word
-      if (String(out.result.text || "") !== String(row.text || "")) return null;
+      if (!foMrAgrees(out, row)) return null;
       return { ix: -1, date: "", home: row.home, away: row.away, ground: ground,
         pitch: "balanced", weather: "Sunny", seed: seed, result: out.result,
         innings: out.innings, worm: out.worm, log: out.log,
@@ -684,6 +683,47 @@
     } catch (e) {}
     return byName;
   }
+  // ---- THE AGREEMENT CHECK -------------------------------------------------
+  // A REPLAY IS ONLY THE SAME MATCH IF IT ENDED ON THE SAME NUMBERS.
+  //
+  // This used to compare the umpire's SENTENCE and nothing else - and a
+  // sentence is a margin, not a match. "Derbyshire win by 62 runs" is true of
+  // 279 v 217 and equally true of 246 v 184, so a replay that had drifted
+  // (men bought since, a sheet filed differently, an engine moved) could land
+  // on the same margin by coincidence and be waved through as the record. It
+  // happened: a manager read a report of Derbyshire 279 for 7 and his own club
+  // 217 all out, when what the World Service has banked for that fixture is
+  // 246 all out and 184 all out. Both are 62-run wins. Only one was played.
+  //
+  // The snapshot publishes each side's runs, wickets and overs beside the
+  // verdict, so the check has the real thing to hold the replay against. All
+  // three must match, on both sides, or the replay is a different afternoon
+  // and the canonical card - which is exact - is what the reader gets.
+  //
+  // An old snapshot that carries no scorelines falls back to the verdict
+  // alone: it is all there is, and it is what the check has always done.
+  window.foMrAgrees = function (out, row) {
+    try {
+      if (!out || !out.result || !row) return false;
+      if (String(out.result.text || "") !== String(row.text || "")) return false;
+      var scoreOf = function (nm) {
+        var inn = (out.innings || []).filter(function (x) { return x && x.batTeam === nm; })[0];
+        if (!inn) return null;
+        return { r: inn.runs | 0, w: inn.wkts | 0,
+                 ov: Math.floor((inn.legal | 0) / 6) + "." + ((inn.legal | 0) % 6) };
+      };
+      var pair = [[row.home, row.hs], [row.away, row.as]];
+      for (var i = 0; i < pair.length; i++) {
+        var want = pair[i][1];
+        if (!want || want.r == null) continue;          // nothing published to hold it to
+        var got = scoreOf(pair[i][0]);
+        if (!got) return false;
+        if (got.r !== (want.r | 0) || got.w !== (want.w | 0)) return false;
+        if (want.ov && got.ov !== String(want.ov)) return false;
+      }
+      return true;
+    } catch (e) { return false; }
+  };
   // the banked card, dressed as the record every view already knows how to
   // read. The log rides along only if the replay earned it.
   function foMrRecFromCard(nat, hit, got, rep) {
