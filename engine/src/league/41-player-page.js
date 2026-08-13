@@ -284,7 +284,14 @@
     var prov = p._prov, born = "";
     try { born = window.foHometown ? (" &middot; born in " + E(window.foHometown(p))) : ""; } catch (eH) {}
     var est = ""; try { est = window.foClubEst ? window.foClubEst(team) : ""; } catch (eE) {}
-    var how = !prov ? "Founding squad"
+    // A PUBLIC CARD DOES NOT CARRY HOW HE GOT THERE. world_squads publishes
+    // what a scout can see over the fence, and a man's papers are not part of
+    // it - so "Founding squad", the assumption a missing note falls to, would
+    // be a flat guess about a rival's man and wrong for every one of them the
+    // world made after the founding. Say what is actually true of him: he is
+    // being read from outside the club.
+    var how = (p.__card && !isMine(p.name)) ? "Scouted from the boundary"
+      : !prov ? "Founding squad"
       : prov.how === "market" ? "Signed from the transfer market"
       : prov.how === "youth" ? "An academy find" + (prov.nat ? " from " + E(prov.nat) : "")
       : "Draft-day original";
@@ -312,6 +319,7 @@
   // world serves his card exactly as it would from a club page. Deep-linking
   // #/player?n=X into a cold tab still cannot know, which is what the ?c=/?s=
   // form is for - so this is a rescue, not a replacement.
+  var THEATRE = null;
   function fromTheatre(name) {
     var ctx = null; try { ctx = window.__foWtCtx; } catch (e) {}
     if (!ctx || !ctx.sides || !ctx.sides.length) return false;
@@ -319,7 +327,10 @@
       var s = ctx.sides[i];
       var row = servedSquad(s.country, s.slot, function () { if (onPage()) build(); });
       if (row && (row.players || []).some(function (x) { return x && x.name === name; })) {
-        buildCard(s.country, s.slot, name);
+        // found him: put his club in the address and let the one builder run,
+        // so a name off a broadcast opens the page a name off a club page does
+        THEATRE = { rid: s.country, slot: s.slot | 0, name: name };
+        build();
         return true;
       }
     }
@@ -369,27 +380,57 @@
     if (!onPage()) return;
     var page = document.getElementById("page"); if (!page) return;
     var name = qName(); if (!name) return;
-    // A CRICKETER THIS DEVICE EMPLOYS, or - when the link names his club -
-    // anybody in the world, derived from the seed the umpire built him with.
-    // A national squad is fifteen men from ten clubs, and a manager reading
-    // Pakistan's side wants those men to open like any other.
-    var ridQ = qp("r"), slotQ = qp("s");
+    // ONE CARD FOR EVERY CRICKETER IN THE WORLD.
+    //
+    // There used to be two, and which one a man opened in was decided by the
+    // LINK he was tapped from rather than by who he was. The game writes a
+    // player's address in two dialects - ?c=&s=&n= from the feed, the market,
+    // a club page, the stats centre; a bare ?n= from a scorecard, the orders,
+    // the gazette - and this page forked on which one it got. So one Essex
+    // batsman opened in the full card and the next in a thinner one, and the
+    // same man could do both depending on which room you came from. The bare
+    // ?n= form was worse than inconsistent: it resolved through the LOCAL
+    // index only, so every cricketer on earth who was not yours dead-ended on
+    // "No club on the books carries that name."
+    //
+    // The club is now a hint about WHERE TO LOOK, never a different page. Both
+    // dialects name the same country, so both are read.
+    var ridQ = qp("r") || qp("c"), slotQ = qp("s");
+    var slotN = (slotQ == null || slotQ === "") ? null : (parseInt(slotQ, 10) | 0);
+    // and a name that arrived off a broadcast carries no club at all, so the
+    // theatre's answer stands in for one (see fromTheatre below)
+    if (!ridQ && THEATRE && THEATRE.name === name) { ridQ = THEATRE.rid; slotN = THEATRE.slot; }
     var hit = null;
-    try {
-      hit = (typeof window.foFindAnyPlayer === "function")
-        ? window.foFindAnyPlayer(name, ridQ || null, slotQ == null || slotQ === "" ? null : (parseInt(slotQ, 10) | 0))
-        : findPlayer(name);
-    } catch (e) { try { hit = findPlayer(name); } catch (e2) {} }
-    var cidQ = qp("c");
-    // a man from another club: the world serves his card, and only his card
-    if (cidQ && !isMine(name)) { buildCard(cidQ, parseInt(qp("s"), 10) || 0, name); return; }
+    try { hit = (typeof findPlayer === "function") ? findPlayer(name) : null; } catch (e) {}
+    // NOT ON THIS DEVICE'S BOOKS: send for his card. A world club's men are
+    // derivable here from the seed they were dealt with, but that man is the
+    // one the world FOUNDED - his record, his form and his wage have moved on
+    // since. The served card is the current one, so it is asked for first and
+    // the seed is what answers when the world cannot be reached.
+    if ((!hit || !hit.p) && ridQ && slotN != null) {
+      hit = servedHit(ridQ, slotN, name);
+      if (hit === WAITING) {
+        page.innerHTML = "<div class='fo-pp'><div class='fo-pp-card'><h3>" + E(name) +
+          "</h3><p class='fo-pp-dim'>Sending for his card&hellip;</p></div></div>";
+        return;
+      }
+      if (!hit) {
+        try {
+          hit = (typeof window.foFindAnyPlayer === "function")
+            ? window.foFindAnyPlayer(name, ridQ, slotN) : null;
+        } catch (e3) {}
+      }
+    }
     // A NAME OFF A BROADCAST. Every name on a scorecard is a link, but the
     // engine's own playerLink can only write the name - so a South African or
     // an Indian watched from the world theatre arrived here as a bare ?n=,
     // matched nobody in the local league, and the engine printed "Player not
     // found." at a cricketer who plays every week. The theatre leaves the
     // match's two clubs behind it; ask them who he is.
-    if (!hit || !hit.p) { if (fromTheatre(name)) return; }
+    // the theatre answers ONCE per cricketer: it hands back a club and calls
+    // this builder again, and a second ask would be the same question in a loop
+    if ((!hit || !hit.p) && !(THEATRE && THEATRE.name === name)) { if (fromTheatre(name)) return; }
+    if (!hit || !hit.p) hit = cachedHit(name);
     if (!hit || !hit.p) { notInRecord(name); return; }
     var p = hit.p, team = hit.team || {}, mine = isMine(p.name);
     // MINE DOES NOT FLAP. Between two served snapshots the local mirror can
@@ -703,7 +744,11 @@
     wrap.className = "fo-pp";
     wrap.setAttribute("data-n", name);
     wrap.innerHTML =
-      "<a class='fo-pp-back' href='#/squad'>&lsaquo; The squad</a>" + hero + tabBar +
+      // BACK IS WHERE HE CAME FROM. "The squad" is only the way out for a man
+      // in yours; a rival's cricketer belongs to a club page, and sending a
+      // reader to his own dressing room from somebody else's man is a dead end.
+      "<a class='fo-pp-back' href='" + (mine || !clubHref ? "#/squad" : clubHref) + "'>&lsaquo; " +
+      E(mine || !clubHref ? "The squad" : (team.name || "The club")) + "</a>" + hero + tabBar +
       "<div class='fo-pp-body'>" + room + "</div>";
     page.innerHTML = "";
     page.appendChild(wrap);
@@ -872,11 +917,72 @@
     });
   }
 
-  // ---- THE SCOUT'S CARD: a rival's player page -------------------------------
-  // Another manager's cricketer is not yours to read. What the world serves is
-  // what a scout sees over the fence: who he is, what he is worth with bat,
-  // ball and in the field, and the record he has actually put together. No raw
-  // skills, no coaching book, no training ground.
+  // ---- A RIVAL'S CRICKETER, ON THE SAME PAGE AS YOUR OWN ---------------------
+  // Another manager's man is not yours to READ - no raw facets, no coaching
+  // book, no training ground - but that is a question of what the page shows
+  // him, not of which page he gets. What the world serves is what a scout sees
+  // over the fence: who he is, what he is worth with bat, ball and in the
+  // field, and the record he has actually put together.
+  //
+  // __foCardToPlayer is the one door a served card comes through, and it is
+  // the same door this device's own adopted squad arrives by - so a man from
+  // Essex reaches the rooms below in exactly the shape a man from your own
+  // club is in, and not one of them has to know where he came from. The rooms
+  // that would be a trespass are already gated on `mine`.
+  var WAITING = {};
+  function servedHit(rid, slot, name) {
+    var again = function () { if (onPage()) build(); };
+    var row = servedSquad(rid, slot, again);
+    // no row yet: still in the air, unless the world has already refused
+    if (!row) return servedSquadFailed(rid, slot) ? null : WAITING;
+    var card = (row.players || []).filter(function (x) { return x && x.name === name; })[0];
+    if (!card) return null;
+    var p = null;
+    try { p = window.__foCardToPlayer ? window.__foCardToPlayer(card) : null; } catch (e) {}
+    if (!p) return null;
+    // A CAP KEEPS ITS OWN BOOK, and it is a ROW of his record rather than a
+    // room of its own. The card this replaces gave internationals a whole tab
+    // to hold four numbers; the full record already prints three classes in
+    // one table, and this is the third of them.
+    try {
+      if (!p.intl) {
+        var ir = servedIntl(rid, name, again);
+        // only the figures the nations fold actually keeps. Innings and
+        // not-outs are not among them, so the average prints a dash rather
+        // than an average of a number nobody counted.
+        if (ir && (ir.caps | 0) > 0) p.intl = {
+          m: ir.caps | 0, inns: ir.inns | 0, no: ir.no | 0, runs: ir.runs | 0,
+          hs: ir.hs | 0, balls: ir.balls | 0, wkts: ir.wkts | 0, bb: ir.bb || null,
+          conc: ir.conc | 0, ovb: ir.ovb | 0
+        };
+      }
+    } catch (e2) {}
+    return { p: p, team: { name: row.name || "" }, world: { rid: rid, slot: slot | 0 } };
+  }
+
+  // A NAME AND NOTHING ELSE. Some rooms write only ?n= - a scorecard, the
+  // orders, the gazette - because the engine's own playerLink has never known
+  // which country it was printing. A bare name cannot be looked up across
+  // nineteen leagues; but the squads this device has ALREADY sent for are a
+  // small, real place to look, and a man off the scorecard you are reading is
+  // nearly always in one of them.
+  //
+  // ONLY AN UNAMBIGUOUS ANSWER COUNTS. There are two Eddie Ingrams in the
+  // England league alone. Showing whichever was fetched first is worse than
+  // saying nothing, because nothing on the page would admit the guess.
+  function cachedHit(name) {
+    var at = null, n = 0;
+    for (var k in SQ_CACHE) {
+      var row = SQ_CACHE[k];
+      if (!row || !(row.players || []).some(function (x) { return x && x.name === name; })) continue;
+      if (++n > 1) return null;
+      at = k.split(":");
+    }
+    if (n !== 1) return null;
+    var h = servedHit(at[0], at[1] | 0, name);
+    return (h && h !== WAITING) ? h : null;
+  }
+
   var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
   var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
   var SQ_CACHE = {}, SQ_BUSY = {}, SQ_DEAD = {};
@@ -921,168 +1027,6 @@
     if (!NAT_SNAP || !NAT_SNAP.nations) return null;
     var n = NAT_SNAP.nations[cid];
     return (n && n.record && n.record[name]) || null;
-  }
-  // ---- THE COUNTRY ROOM ------------------------------------------------------
-  // What a cap is worth, on its own page: the caps, the runs, the wickets, and
-  // whether the selectors have him in the fifteen as it stands.
-  function countryRoom(cid, pl, again) {
-    var kv = function (k, v) { return "<div><b>" + v + "</b><i>" + k + "</i></div>"; };
-    var nm = (pl && pl.name) || "";
-    var rec = cid ? servedIntl(cid, nm, again) : null;
-    var inSquad = "";
-    try { inSquad = window.foNatStar ? window.foNatStar(nm, null, { rid: cid || undefined, pid: pl && pl.pid }) : ""; } catch (e) {}
-    var natNm = "";
-    try {
-      var r0 = (window.__foCxAPI.regions() || []).filter(function (x) { return x.id === cid; })[0];
-      natNm = (r0 && r0.nm) || "";
-    } catch (e2) {}
-    var flag = ""; try { flag = window.foFlag ? window.foFlag(pl && pl.nat) : ""; } catch (e3) {}
-    var head = "<h3>" + (natNm ? E(natNm) : "For his country") +
-      "<span>" + (inSquad ? "in the current fifteen" : "not in the current fifteen") + "</span></h3>";
-    if (!rec || !rec.caps) {
-      return "<div class='fo-pp-col'><div class='fo-pp-card'>" + head +
-        "<p class='fo-pp-dim'>" + (cid ? "Uncapped." : "The world has not answered for this club yet.") + "</p>" +
-        "</div></div>" +
-        "<div class='fo-pp-rail'><div class='fo-pp-card'><h3>The windows</h3>" +
-        "<p class='fo-pp-dim'>Selectors name a fifteen at rounds 5, 9 and 13.</p>" +
-        "<a class='fo-pp-more' href='#/nations'>The international game &rsaquo;</a></div></div>";
-    }
-    var sr = rec.balls ? Math.round(1000 * (rec.runs || 0) / rec.balls) / 10 : null;
-    return "<div class='fo-pp-col'><div class='fo-pp-card'>" + head +
-      "<div class='fo-pp-mini wide'>" +
-      kv("Caps", rec.caps) + kv("Runs", rec.runs || 0) + kv("Best", rec.hs || 0) +
-      (sr == null ? "" : kv("Strike rate", sr)) +
-      kv("Wickets", rec.wkts || 0) +
-      kv("Best bowling", rec.bb ? rec.bb.w + "/" + rec.bb.r : "&mdash;") +
-      "</div></div></div>" +
-      "<div class='fo-pp-rail'><div class='fo-pp-card'><h3>" + (flag || "") + " The cap</h3>" +
-      "<p class='fo-pp-dim'>A cap keeps its own book.</p>" +
-      "<a class='fo-pp-more' href='#/nations'>The international game &rsaquo;</a></div></div>";
-  }
-
-  function servedFace(sp) {
-    try {
-      if (window.foPkArt) return ART() + window.foPkArt({
-        name: sp.name, nat: sp.nat, role: sp.role, keeper: sp.keeper,
-        bowlTypeFull: sp.type, bowlType: (sp.type && sp.type !== "none") ? sp.type : null });
-    } catch (e) {}
-    return "";
-  }
-  var CARD_TAB = "overview";
-  function buildCard(cid, slot, name) {
-    try {
-      var page = document.getElementById("page"); if (!page) return;
-      try { document.body.classList.remove("fo-pl-on"); var bg0 = document.getElementById("fo-pl-bg"); if (bg0) bg0.remove(); } catch (eB) {}
-      var row = servedSquad(cid, slot, function () { if (onPage()) buildCard(cid, slot, name); });
-      var sp = row && (row.players || []).filter(function (x) { return x && x.name === name; })[0];
-      if (!sp) {
-        page.innerHTML = "<div class='fo-pp'><a class='fo-pp-back' href='#/team?c=" + E(cid) + "&s=" + slot + "'>&lsaquo; The club</a>" +
-          "<div class='fo-pp-card'><h3>" + E(name) + "</h3><p class='fo-pp-dim'>" +
-          (row ? "He is not on that club's teamsheet any more." : "Reaching the world for his card&hellip;") + "</p></div></div>";
-        return;
-      }
-      var clubNm = (row && row.name) || "";
-      try { var nmO = window.__foWorldNames && window.__foWorldNames.get(cid); if (nmO && nmO[slot]) clubNm = nmO[slot]; } catch (eN) {}
-      var no = ("00" + (h32("cardno|" + sp.name) % 199 + 1)).slice(-3);
-      var flag = ""; try { flag = window.foFlag ? window.foFlag(sp.nat) : ""; } catch (eF) {}
-      var fat = fatOf(sp.fatigue);
-      var bowls = !!(sp.bowl && !/does not bowl/i.test(sp.bowl));
-      var kind = (sp.keeper || sp.role === "wicketkeeper") ? "Wicketkeeper"
-        : (sp.role === "allRounder" || sp.role === "allrounder") ? "All-rounder" : bowls ? "Bowler" : "Batsman";
-      var sc = [["Batting", +sp.batting || 0], ["Bowling", bowls ? (+sp.bowling || 0) : 0], ["Fielding", +sp.fielding || 0]];
-      var tals = (sp.talents || []).slice(0, 3).map(function (t) {
-        var nm2 = t, tip = "";
-        try { nm2 = (typeof TALN !== "undefined" && TALN[t]) || t; } catch (e1) {}
-        try { tip = (typeof TALTIPS !== "undefined" && TALTIPS[t]) || ""; } catch (e2) {}
-        return "<div class='fo-pp-tal'><span class='fo-pp-talk'>Talent</span><div><b>" + E(nm2) + "</b>" +
-          (tip ? "<p>" + E(tip) + "</p>" : "") + "</div></div>";
-      }).join("");
-      var art = servedFace(sp);
-      var plate =
-        "<div class='fo-pp-plate'>" +
-        "<div class='fo-pp-cardart'>" + (art ? "<img src='" + E(art) + "' alt='' onerror=\"this.style.display='none'\">" : "") +
-        "<span class='fo-pp-no'>No. " + no + "/199</span></div>" +
-        "<div class='fo-pp-id'>" +
-        "<div class='fo-pp-k'>" + E(kind.toUpperCase()) + " &middot; " + (sp.hand === "L" ? "LHB" : "RHB") + " &middot; " + E(String(sp.nat || "").toUpperCase()) + "</div>" +
-        "<h1>" + E(sp.name) + natStar(sp, cid, slot, true) +
-        (flag ? " <span class='fo-pp-fl'>" + flag + "</span>" : "") + "</h1>" +
-        "<p class='fo-pp-prov'>Scouted from the boundary &middot; " + E(clubNm || "a world club") + "</p>" +
-        "<div class='fo-pp-strip'>" +
-        "<div title='" + ageTitle(sp) + "'><b>" + ageHTML(sp) + "</b><i>Age</i></div>" +
-        "<div><b>" + E(cap(sp.form || "steady")) + "</b><i>Form</i></div>" +
-        "<div><b>" + E(cap(sp.exp || "")) + "</b><i>Experience</i></div>" +
-        "<div><a class='fo-pp-clubl' href='#/team?c=" + E(cid) + "&s=" + slot + "'><b>" + E(clubNm) + "</b><i>Club &rsaquo;</i></a></div>" +
-        "</div>" +
-        "<div class='fo-pp-strip three'>" +
-        "<div><b>" + money(sp.wage) + "</b><i>Wage</i></div>" +
-        "<div><b>" + money(sp.value) + "</b><i>Value</i></div>" +
-        "<div><b class='fo-pp-fat " + fat.tone + "'><s></s>" + E(cap(fat.word)) + "</b><i>Fatigue</i></div>" +
-        "</div>" +
-        "<div class='fo-pp-sc'>" + sc.map(function (x) {
-          return "<div class='fo-pp-scv'><i>" + E(x[0].toUpperCase()) + "</i><em>" + x[1] + "</em><u><b style='width:" + num(x[1]) + "%'></b></u></div>";
-        }).join("") + "</div>" +
-        (tals ? "<div class='fo-pp-tals'>" + tals + "</div>" : "") +
-        "</div>" +
-        "<div class='fo-pp-ovr'><b>" + (sp.ovr || "&mdash;") + "</b><i>OVR</i></div>" +
-        "</div>";
-
-      var c = sp.career || {};
-      var caps = +c.m || 0;
-      var sr = c.balls ? (100 * (c.runs || 0) / c.balls).toFixed(1) : "&mdash;";
-      var econ = c.ovb ? ((c.conc || 0) / (c.ovb / 6)).toFixed(2) : "&mdash;";
-      var kv = function (k, v) { return "<div><b>" + v + "</b><i>" + k + "</i></div>"; };
-      var intl = servedIntl(cid, sp.name, function () { if (onPage()) buildCard(cid, slot, name); });
-      var intlCard = !intl ? "" :
-        "<div class='fo-pp-card'><h3>For his country<span>" + intl.caps + " cap" + (intl.caps === 1 ? "" : "s") + "</span></h3>" +
-        "<div class='fo-pp-mini'>" + kv("Caps", intl.caps) + kv("Runs", intl.runs || 0) +
-        kv("Best", intl.hs || 0) + kv("Wickets", intl.wkts || 0) + "</div>" +
-        "</div>";
-      var room;
-      if (CARD_TAB === "country") {
-        room = countryRoom(cid, sp, function () { if (onPage()) buildCard(cid, slot, name); });
-      } else if (CARD_TAB === "career") {
-        room = "<div class='fo-pp-col'><div class='fo-pp-card'><h3>Career record<span>All league cricket</span></h3>" +
-          (caps ? "<div class='fo-pp-mini wide'>" + kv("Matches", caps) + kv("Runs", c.runs || 0) +
-            kv("Best", c.hs || 0) + kv("Strike rate", sr) +
-            kv("Wickets", c.wkts || 0) + kv("Best bowling", c.bb ? c.bb.w + "/" + c.bb.r : "&mdash;") +
-            kv("Economy", econ) + kv("Overs", c.ovb ? Math.floor(c.ovb / 6) : 0) + "</div>"
-            : "<p class='fo-pp-dim'>He has not played a league match yet. The record starts the day he is picked.</p>") +
-          "</div>" + intlCard + "</div>" +
-          "<div class='fo-pp-rail'><div class='fo-pp-card dark'><h3>The book is public</h3>" +
-          "</div></div>";
-      } else {
-        room = "<div class='fo-pp-col'>" +
-          "<div class='fo-pp-card'><h3>The scout's read</h3>" + bars(sc) +
-          "</div>" +
-          "<div class='fo-pp-card'><h3>Career record</h3><div class='fo-pp-mini'>" +
-          kv("Matches", caps) + kv("Runs", c.runs || 0) + kv("Best", c.hs || 0) + kv("Wickets", c.wkts || 0) +
-          (caps ? "" : "<p class='fo-pp-dim'>The record starts the day he is picked.</p>") + "</div></div>" +
-          "</div>" +
-          "<div class='fo-pp-rail'>" +
-          "<div class='fo-pp-card'><h3>Role</h3>" +
-          "<div class='fo-pp-role'><img src='" + ART() + iconOf({ role: sp.role, keeper: sp.keeper, bowlType: sp.type, btLabel: sp.bowl }) + "' alt='' onerror=\"this.style.display='none'\">" +
-          "<div><b>" + E(kind) + "</b><i>" + (sp.hand === "L" ? "Left-hand bat" : "Right-hand bat") + "</i>" +
-          "<i>" + E(bowls ? sp.bowl : "Does not bowl") + "</i></div></div></div>" +
-          "<div class='fo-pp-card'><h3>His club</h3><p>He plays for " + E(clubNm || "a world club") + ".</p>" +
-          "<a class='fo-pp-more' href='#/team?c=" + E(cid) + "&s=" + slot + "'>The club dossier &rsaquo;</a></div>" +
-          "</div>";
-      }
-
-      var wrap = document.createElement("div");
-      wrap.className = "fo-pp fo-pp-scout";
-      wrap.innerHTML = "<a class='fo-pp-back' href='#/team?c=" + E(cid) + "&s=" + slot + "'>&lsaquo; " + E(clubNm || "The club") + "</a>" +
-        plate +
-        "<div class='fo-pp-tabs'>" +
-        [["overview", "Overview"], ["career", "Career"], ["country", "Country"]].map(function (t) {
-          return "<a class='" + (CARD_TAB === t[0] ? "on" : "") + "' data-t='" + t[0] + "' href='javascript:void 0'>" + t[1] + "</a>";
-        }).join("") + "</div>" +
-        "<div class='fo-pp-body'>" + room + "</div>";
-      page.innerHTML = "";
-      page.appendChild(wrap);
-      wrap.querySelectorAll(".fo-pp-tabs a").forEach(function (a) {
-        a.addEventListener("click", function (ev) { ev.preventDefault(); CARD_TAB = a.getAttribute("data-t"); buildCard(cid, slot, name); });
-      });
-    } catch (e) { try { console.warn("foPlayerCard", e); } catch (e2) {} }
   }
 
   // ---- what the engine keeps: the career in four numbers ---------------------

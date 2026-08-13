@@ -502,6 +502,11 @@
     var p = {
       name: c.name, nat: c.nat, age: c.age | 0, role: c.role || "batter", hand: c.hand || "R",
       keeper: !!c.keeper, talents: Array.isArray(c.talents) ? c.talents.slice() : [],
+      // WHO HE IS, AND WHAT HE HAS DONE. The id is how every other surface
+      // tells two men of one name apart, and the milestones are the whole of
+      // his story - both were dropped on the way through, so a card player
+      // arrived anonymous with nothing to say for himself.
+      pid: c.pid || null, mile: Array.isArray(c.mile) ? c.mile.slice() : null,
       rating: +c.rating || 0, wage: +c.wage || 0, fee: +c.value || 0, value: +c.value || 0,
       career: c.career || {}, fatigue: c.fatigue || "rested",
       bowlTypeFull: full, bowlType: full === "none" ? null : (ENGT_CARD[full] || "medium"),
