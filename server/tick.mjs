@@ -437,19 +437,49 @@ export async function computeLeague(pool, country, seasonNo, now) {
 // So it can never drift, and a club rename never costs a point - histories key
 // by country:slot.
 export async function computeRankings(pool, now) {
+  // THE RANKING READS A NUMBER, NOT A WORLD.
+  //
+  // This used to select `squad` for every club on earth - 256 rows of whole
+  // cricketers, each carrying every skill, every career figure and every
+  // milestone - and reduce all of it to one integer per club. Measured in
+  // production: 1.5 million club rows and something close to half the
+  // world's egress, to compute 256 averages that had not moved.
+  //
+  // best_xi_strength (migration 092) is that integer, written beside the
+  // squad by whoever last changed the squad. It is squadStrength() and
+  // nothing else, so the ladder is computed from the same function it always
+  // was - only earlier, and once per change instead of once per tick.
   const clubs = (await pool.query(
-    'SELECT country_id, slot, name, is_boss, squad FROM clubs ORDER BY country_id, slot')).rows;
+    'SELECT country_id, slot, name, is_boss, best_xi_strength FROM clubs ORDER BY country_id, slot')).rows;
+  // A ROW DEALT BEFORE THE COLUMN EXISTED still has to rank. It is fetched by
+  // NAME, one club at a time, so a handful of un-backfilled clubs costs a
+  // handful of small reads - never the whole-world squad fetch this change
+  // exists to end. After server/backfill-strength.mjs has run this list is
+  // empty and stays empty, and the count is reported so a deploy can prove it.
+  const stale = clubs.filter(c => c.best_xi_strength == null);
+  if (stale.length) {
+    for (const c of stale) {
+      const r = (await pool.query(
+        'SELECT squad FROM clubs WHERE country_id=$1 AND slot=$2', [c.country_id, c.slot])).rows[0];
+      c.best_xi_strength = squadStrength((r && r.squad) || []);
+    }
+    console.log('rankings: computed strength from squad for ' + stale.length +
+      ' club(s) with no stored value - run backfill-strength.mjs');
+  }
   const key = (c, s) => c + ':' + s;
   // HOW GOOD THE SIDE IS, as against how it has been going - the eleven a club
   // can actually field, by the engine's own pick (squadStrength in
   // ratings.mjs). It answers a different question from the form ladder below,
   // and it answers it on day one, before a ball is bowled, which the form
   // ladder cannot.
-  const xiStrength = squadStrength;
+  // ...and it is now READ rather than recomputed: best_xi_strength is exactly
+  // squadStrength(squad), written when the squad was. The stale sweep above
+  // has already filled in anything dealt before the column existed, so by here
+  // every club has a number.
   const R = {};
   clubs.forEach(c => R[key(c.country_id, c.slot)] = {
     country: c.country_id, slot: c.slot, name: c.name, boss: c.is_boss,
-    strength: xiStrength(c.squad), hist: [], p: 0, w: 0, l: 0, t: 0
+    strength: c.best_xi_strength | 0, hist: [], p: 0, w: 0, l: 0, t: 0
   });
   // ONE CLOCK FOR THE WHOLE WORLD. A season is a thousand ticks wide: league
   // round r sits at r, and the cup ties that close that season sit above 500,
@@ -850,8 +880,9 @@ async function levelNewClaims(pool, host, country) {
   for (const r of rows) {
     const target = BASE_XI * ((cfg && NAT_STR[cfg.id]) || 1) * HUMAN_STR;
     const men = calibrate(host, r.squad, target);
-    await pool.query('UPDATE clubs SET squad=$3 WHERE country_id=$1 AND slot=$2',
-      [country, r.slot, JSON.stringify(men)]);
+    await pool.query(
+      'UPDATE clubs SET squad=$3, best_xi_strength=$4 WHERE country_id=$1 AND slot=$2',
+      [country, r.slot, JSON.stringify(men), squadStrength(men)]);
     await pool.query('UPDATE claims SET levelled=true WHERE country_id=$1 AND slot=$2',
       [country, r.slot]);
   }

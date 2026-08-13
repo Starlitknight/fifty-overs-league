@@ -26,6 +26,7 @@ import { countryConfigs } from './init-world.mjs';
 // the same derivation the seniors use - one rule about when a man has crossed,
 // so a boy and the man he becomes are never judged by two different tables
 import { talentsEarned, expOfYears, expWordOf } from './living.mjs';
+import { squadStrength } from './ratings.mjs';
 
 // a boy is sixteen to twenty when he is found, and he is gone at twenty-one
 export const RECRUIT_MIN_AGE = 16;
@@ -408,8 +409,11 @@ export async function ageYouth(pool, country, seasonNo) {
     const stay = youth.filter(y => y.age < LEAVE_AT);
     released += youth.length - stay.length;
 
-    await pool.query('UPDATE clubs SET youth=$3::jsonb, squad=$4::jsonb WHERE country_id=$1 AND slot=$2',
-      [country, c.slot, JSON.stringify(stay), JSON.stringify(squad)]);
+    // a year older, some retired: the eleven has changed, so its worth is
+    // rewritten in the same statement (migration 092)
+    await pool.query(
+      'UPDATE clubs SET youth=$3::jsonb, squad=$4::jsonb, best_xi_strength=$5 WHERE country_id=$1 AND slot=$2',
+      [country, c.slot, JSON.stringify(stay), JSON.stringify(squad), squadStrength(squad)]);
   }
   await pool.query(`UPDATE ticks SET status='done', finished_at=now() WHERE key=$1`, [key]);
   return { skipped: false, promoted: 0, retired, released, madeWay: 0 };

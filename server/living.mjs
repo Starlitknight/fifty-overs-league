@@ -22,7 +22,7 @@
 // re-derive the generated squad, lay the patch over it, and replay the
 // identical match forever after.
 import { dayIx, dayOfRound } from './clock.mjs';
-import { fantasyPoints, ratePoints } from './ratings.mjs';
+import { fantasyPoints, ratePoints, squadStrength } from './ratings.mjs';
 import { youthPot } from './youth.mjs';
 
 const FORMW = ['abysmal', 'poor', 'shaky', 'steady', 'good', 'strong', 'excellent'];
@@ -1164,8 +1164,12 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     // he carries nothing the fold above adds to a senior. What the academy
     // changes about him is the nets, and that is what is written here.
     await pool.query(
-      'UPDATE clubs SET squad=$3::jsonb, youth=$4::jsonb WHERE country_id=$1 AND slot=$2',
-      [country, club.slot, JSON.stringify(squad), JSON.stringify(worked.youth || [])]);
+      // the eleven's worth goes down with the squad, in the one statement, so
+      // a ranking can never read a strength that belongs to a squad that has
+      // moved on (see migration 092)
+      'UPDATE clubs SET squad=$3::jsonb, youth=$4::jsonb, best_xi_strength=$5 WHERE country_id=$1 AND slot=$2',
+      [country, club.slot, JSON.stringify(squad), JSON.stringify(worked.youth || []),
+       squadStrength(squad)]);
     touched++;
   }
   return touched;

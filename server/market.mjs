@@ -25,6 +25,10 @@
 // in a table, never a number quietly written onto a club.
 import { dayIx, seedOf, nextRoundAfterDay, ROUNDS, EPOCH, DAY } from './clock.mjs';
 import { countryConfigs } from './init-world.mjs';
+// the ONE definition of what a club's eleven is worth (migration 092): a
+// transfer moves a man, so it moves both clubs' strength, and it is written
+// in the same statement as the squad rather than left for a later pass
+import { squadStrength } from './ratings.mjs';
 
 export const WINDOW_DAYS = 3;              // a listing stands this many world days
 export const MIN_BID_PCT = 0.55;           // an offer below this is not an offer
@@ -481,12 +485,14 @@ async function moveMan(pool, L, win, today) {
 
   if (!freeAgent) {
     const left = squad.slice(0, ix).concat(squad.slice(ix + 1));
-    await pool.query('UPDATE clubs SET squad=$3::jsonb WHERE country_id=$1 AND slot=$2',
-      [L.country_id, L.slot, JSON.stringify(left)]);
+    await pool.query(
+      'UPDATE clubs SET squad=$3::jsonb, best_xi_strength=$4 WHERE country_id=$1 AND slot=$2',
+      [L.country_id, L.slot, JSON.stringify(left), squadStrength(left)]);
   }
   const bs = (buyer.squad || []).filter(p => p && p.name !== man.name).concat([man]);
-  await pool.query('UPDATE clubs SET squad=$3::jsonb WHERE country_id=$1 AND slot=$2',
-    [win.country_id, win.slot, JSON.stringify(bs)]);
+  await pool.query(
+    'UPDATE clubs SET squad=$3::jsonb, best_xi_strength=$4 WHERE country_id=$1 AND slot=$2',
+    [win.country_id, win.slot, JSON.stringify(bs), squadStrength(bs)]);
   return true;
 }
 function addCarry(a, b) {

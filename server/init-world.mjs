@@ -10,6 +10,7 @@ import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
 import { EPOCH, CYCLE, ROUNDS, dayIx, scheduleOf, seasonSchedules, natHour } from './clock.mjs';
 import { foundingSeats, foundingBank } from './economy.mjs';
 import { expOfYears, expWordOf } from './living.mjs';
+import { squadStrength } from './ratings.mjs';
 
 // EVERY LEAGUE IS ANCHORED BY A REAL CLUB. Slot 0 is the country's most
 // storied side - the name a supporter there would give you first - with its
@@ -371,14 +372,17 @@ async function foundCountry(c, cfg, host, startDay, gen = 1) {
     const boys = [];
     // default_name is the club's birth name - a human rename never loses it
     await c.query(
-      'INSERT INTO clubs(country_id, slot, name, default_name, ground, is_boss, squad, youth, seats, bank)'
-      + ' VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9)',
+      'INSERT INTO clubs(country_id, slot, name, default_name, ground, is_boss, squad, youth, seats, bank, best_xi_strength)'
+      + ' VALUES ($1,$2,$3,$3,$4,$5,$6,$7,$8,$9,$10)',
       [cfg.id, club.slot, club.name, club.ground, !!club.boss,
        JSON.stringify(players), JSON.stringify(boys),
        // a club is founded with the ground and the capital its standing is
        // worth. Both are derived from the slot, so the books rebuild them; the
        // row carries them so a world reads right before its first settlement.
-       foundingSeats(club.slot, !!club.boss), foundingBank(club.slot, !!club.boss)]);
+       foundingSeats(club.slot, !!club.boss), foundingBank(club.slot, !!club.boss),
+       // a club is born knowing what its eleven is worth, so a world founded
+       // this morning never needs the backfill (migration 092)
+       squadStrength(players)]);
   }
   // the seasons row carries the season's OWN division map and both divisions'
   // schedules - membership is seasonal, so the record of who played where
