@@ -522,9 +522,28 @@ export function talentsEarned(q, prog, talT) {
 //      dealt the day he was made
 export const LIVING_VERSION = 3;
 
+// THE SAME CRICKETER, WRITTEN THE SAME WAY TWICE.
+//
+// jsonb does not keep the key order it was given - it stores its own - so a
+// squad read back and a squad rebuilt in JavaScript serialise to different
+// bytes while being the same squad in every respect. A plain string compare
+// therefore called every club changed on every settle and saved nothing,
+// which is exactly what the first cut of this did.
+//
+// So the comparison sorts keys at every level before it looks. It is used for
+// NOTHING but the comparison: what gets written is still ordinary
+// JSON.stringify, so the stored shape is untouched.
+function canon(v) {
+  return JSON.stringify(v, (k, val) =>
+    (val && typeof val === 'object' && !Array.isArray(val))
+      ? Object.keys(val).sort().reduce((o, kk) => { o[kk] = val[kk]; return o; }, {})
+      : val);
+}
+
 export async function evolveCountry(pool, country, now = Date.now(), host = null) {
   const clubs = (await pool.query(
-    'SELECT slot, name, squad, youth, training FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
+    'SELECT slot, name, squad, youth, training, best_xi_strength FROM clubs WHERE country_id=$1 ORDER BY slot',
+    [country])).rows;
   if (!clubs.length) return 0;
   // whose clubs are managed - the nets report is written for them alone
   let claimedSlots = new Set();
@@ -1163,13 +1182,35 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     // legs - he plays one competition a season and it keeps its own book - so
     // he carries nothing the fold above adds to a senior. What the academy
     // changes about him is the nets, and that is what is written here.
+    // A FOLD THAT CHANGED NOTHING WRITES NOTHING.
+    //
+    // The fold runs on every settle - three an hour - and rewrote every club's
+    // squad and youth every time, whether or not a ball had been bowled since
+    // the last one. That is 256 whole-squad blobs an hour going back over the
+    // wire to be stored on top of what was already there, and most of them are
+    // the same bytes: a man's form, legs and career only move when he plays,
+    // and the world plays once a day.
+    //
+    // The old blob is already in hand - the SELECT above fetched it - so this
+    // costs one string comparison and not one extra read. What it saves is the
+    // write, the WAL behind it and the bloat that follows.
+    //
+    // It compares the SERIALISED value, which is the same thing the database
+    // would store, so it can never call two different squads equal. It can
+    // call two equal squads different (if a key ever came back in another
+    // order) - which costs a write nobody needed, exactly what happened before
+    // this, and never a wrong answer.
+    const sqJson = JSON.stringify(squad), yhJson = JSON.stringify(worked.youth || []);
+    const str = squadStrength(squad);
+    if (canon(squad) === canon(club.squad || []) &&
+        canon(worked.youth || []) === canon(club.youth || []) &&
+        club.best_xi_strength === str) continue;
     await pool.query(
       // the eleven's worth goes down with the squad, in the one statement, so
       // a ranking can never read a strength that belongs to a squad that has
       // moved on (see migration 092)
       'UPDATE clubs SET squad=$3::jsonb, youth=$4::jsonb, best_xi_strength=$5 WHERE country_id=$1 AND slot=$2',
-      [country, club.slot, JSON.stringify(squad), JSON.stringify(worked.youth || []),
-       squadStrength(squad)]);
+      [country, club.slot, sqJson, yhJson, str]);
     touched++;
   }
   return touched;
