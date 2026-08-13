@@ -51,8 +51,19 @@ test('a bigger gap is a bigger favourite, always', () => {
     assert.ok(p > last, 'a gap of ' + d + ' is worth more than the one below it');
     last = p;
   });
-  // and it never runs away to certainty inside the range the world spans
-  assert.ok(odds(48000 + 16000, 48000).home < 0.93, 'even a huge gap leaves a chance');
+  // and it never runs away to certainty inside the range the world spans.
+  //
+  // THE CEILING MOVED WITH THE ENGINE (v3). This read 0.93, which was true of
+  // an engine that had no mismatch term: a sixteen-thousand-point gap really
+  // did leave the weaker side a chance, because its tail survived the better
+  // attack. It does not any more, and the bar must not pretend otherwise -
+  // measured over 140 matches a pairing, the engine returns 94% to 100% at
+  // gaps of nineteen to twenty-two thousand. So the contract kept here is the
+  // one that was always meant: the bar never reaches certainty. What a huge
+  // gap is actually worth is the fitted curve's business, and the test below
+  // holds that curve to the engine's own answer.
+  assert.ok(odds(48000 + 16000, 48000).home < 0.96, 'even a huge gap leaves a chance');
+  assert.ok(odds(48000 + 60000, 48000).home < 1, 'and nothing is ever certain');
 });
 
 test('the curve reproduces what the engine actually does', () => {
