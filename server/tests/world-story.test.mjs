@@ -154,14 +154,19 @@ test('a fold that has moved is redone on the next tick, not the next world day',
 
 // AND IT HAS TO REACH THE PAGE. world_my_status serves the club's squad blob
 // whole, so a manager's own men carried their moments from the first settle.
-// world_squads - the public dossier, and the only way a page reads a
-// cricketer who is not yours - is a curated projection that names each field
-// it publishes, so the story was empty on every other man in the world.
+// The public side is the only way a page reads a cricketer who is not yours,
+// and it is a curated projection that names each field it publishes - so the
+// story was empty on every other man in the world until it was named.
+//
+// It is no longer named on the ROSTER. A squad page draws a table with no
+// milestones in it, and was fetching fifteen lives to do it; the story moved
+// to world_player_profile, which one screen reads about one man when somebody
+// opens him. The contract this test holds is unchanged - a man's moments are
+// public, whole, and empty rather than absent - and only the door has moved.
 test('the public dossier publishes a man moments, not just his own manager', async () => {
-  const rows = (await pool.query(
-    `SELECT players FROM world_squads WHERE country_id='eng' AND slot=0`)).rows;
-  assert.equal(rows.length, 1, 'the club has a dossier');
-  const men = rows[0].players;
+  const men = (await pool.query(
+    `SELECT name, mile FROM world_player_profile WHERE country_id='eng' AND slot=0`)).rows;
+  assert.ok(men.length >= 11, 'the club has a dossier: ' + men.length);
   const storied9 = men.filter(p => (p.mile || []).length);
   assert.ok(storied9.length >= 8, 'his moments come through the view (' + storied9.length + ')');
   assert.ok(storied9.every(p => p.mile.every(m => m.txt && Number.isFinite(m.d))),

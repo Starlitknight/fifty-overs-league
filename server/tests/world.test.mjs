@@ -6,7 +6,7 @@ import { execSync } from 'node:child_process';
 import { makePool } from '../db.mjs';
 import { migrate } from '../migrate.mjs';
 import { initWorld } from '../init-world.mjs';
-import { makeHost } from '../enginehost.mjs';
+import { makeHost, ENGINE_VERSION } from '../enginehost.mjs';
 import { runTick, runDue, rebuildSnapshots, matchId } from '../tick.mjs';
 import { applyLiving } from '../living.mjs';
 import { EPOCH, DAY, dayIx, seedOf, CYCLE, ROUNDS, roundOfDay, dayOfRound,
@@ -119,7 +119,13 @@ test('GOLDEN MASTER: server-persisted result is byte-identical to a re-sim from 
   };
   assert.equal(facts(resim), facts(m.result_canonical), 'every ball of the replay is the banked match');
   assert.equal(Number(m.seed), seedOf(m.id), 'seed derives from match id');
-  assert.equal(m.engine_version, 'v2', 'engine version stamped');
+  // THE STAMP IS WHATEVER THE UMPIRE IS, not a literal that has to be chased
+  // every time the engine moves. What matters is that the row carries the
+  // version the match was actually played by, so a card can never be replayed
+  // through a ball loop that would answer differently; pinning the letter here
+  // only meant this test failed the morning after a bump, which says nothing
+  // about the world.
+  assert.equal(m.engine_version, ENGINE_VERSION, 'engine version stamped');
   // and the almanack HAS slimmed: rounds behind the current keep the
   // scorecard, not the blob
   const old = (await pool.query(
