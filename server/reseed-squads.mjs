@@ -90,6 +90,12 @@ const PLAY_TABLES = [
   // cards beside them anyway. Losing it costs one settle, which is the whole
   // bargain of a derived table.
   'player_history',
+  // and where the living fold got to. It describes a record this script is
+  // about to delete, held by cricketers it is about to replace - so keeping it
+  // would have the first settle after a redeal continue from a country that no
+  // longer exists. Dropped, the next settle folds from genesis and marks the
+  // new world, which is the whole repair.
+  'living_checkpoint',
   // the pitch a manager called for a HOME FIXTURE (083). This is where it
   // parts company with ticket_prices below: a price is a standing policy that
   // outlives any one match, while a call names a season, a round and a slot,

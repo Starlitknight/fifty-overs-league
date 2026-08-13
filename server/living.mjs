@@ -324,11 +324,41 @@ const HIST_STEPS = 4000;                       // a hard ceiling, oldest dropped
 // boy's academy years and a man's senior years are the same nets by the same
 // arithmetic - and the boys, being sixteen to twenty, sit on the steepest part
 // of the age curve, which is the whole reason to own an academy.
-async function trainedSquad(pool, host, country, slot, squad, hist = null, youth = null) {
+async function trainedSquad(pool, host, country, slot, squad, hist = null, youth = null, ck = null) {
   if (!host || !host.trainRound) return { squad: squad, youth: youth || [] };
+  // ---- THE NETS CONTINUE TOO ---------------------------------------------
+  //
+  // The nets are the fold's other genesis replay: a squad's skills are its
+  // baseline plus every session it has ever worked, run through the engine one
+  // round at a time. At a thousand days that is six thousand engine calls a
+  // country a settle, and it grows for exactly the same reason the career fold
+  // does.
+  //
+  // A club continues from the skills it had at the watermark - but only if the
+  // checkpoint can account for EVERY man now on its books. A cricketer the
+  // checkpoint has never heard of is normally a new signing, and a new signing
+  // did not train here before he arrived (wasHere says so, and the market
+  // rebaselines him on the way in), so starting him at his baseline is right.
+  // A squad that was REPLACED wholesale, though - a newcomer levelled up, a
+  // redeal, a world refounded - puts men on the books with no joining round at
+  // all, and wasHere calls those present since the beginning. Continuing those
+  // from a baseline would quietly hand them a career of nets they never did,
+  // so the club falls back to genesis for the settle and re-marks itself
+  // afterwards. Rare, self-healing, and one slow club rather than a wrong one.
+  let seed = null;
+  if (ck && ck.wm && ck.nets) {   // ck here is this club's slice, not the country's
+    const known = new Set((ck.nets.men || []).map(m => m.name));
+    const stranger = (squad || []).some(p => p && p.name && !known.has(p.name)
+      && wasHere(p, { season_no: ck.wm.s, round: ck.wm.r }));
+    if (!stranger) seed = ck.nets;
+  }
+  const rArgs = [country, slot];
+  let rWhere = '';
+  if (seed) rWhere += ` AND (season_no, round) > ($${rArgs.push(ck.wm.s)}, $${rArgs.push(ck.wm.r)})`;
+  if (ck && ck.cap) rWhere += ` AND (season_no, round) <= ($${rArgs.push(ck.cap.s)}, $${rArgs.push(ck.cap.r)})`;
   const rounds = (await pool.query(
-    `SELECT season_no, round, plan, academy, coach, xi FROM training_rounds WHERE country_id=$1 AND slot=$2
-      ORDER BY season_no, round`, [country, slot])).rows;
+    `SELECT season_no, round, plan, academy, coach, xi FROM training_rounds WHERE country_id=$1 AND slot=$2` +
+    rWhere + ` ORDER BY season_no, round`, rArgs)).rows;
   // A MAN WORKS EACH ROUND AT THE AGE HE WAS THAT ROUND. The nets rate is
   // steeply age-dependent, and a cricketer ages a year at every rollover - so
   // replaying his whole history at today's age would quietly re-rate every
@@ -345,8 +375,38 @@ async function trainedSquad(pool, host, country, slot, squad, hist = null, youth
       `SELECT season_no, round, player FROM callups WHERE country_id=$1 AND slot=$2`, [country, slot]))
       .rows.map(r => r.season_no + '|' + r.round + '|' + r.player));
   } catch (eC) { away = new Set(); }             // pre-023 database: nobody has been called up
-  let men = (squad || []).map(baseline);
-  let boys = (youth || []).map(baseline);
+  // WHERE THE MEN START: at the skills the checkpoint froze for them, or at
+  // their generated baseline where it has nothing to say. baseSkills rides
+  // along either way - it is what a later genesis fold rebuilds from.
+  const skillsOf = (list) => {
+    const by = new Map((list || []).map(m => [m.name, m]));
+    return (p) => {
+      const was = p && p.name && by.get(p.name);
+      if (!was) return baseline(p);
+      const q = { ...p };
+      q.baseSkills = q.baseSkills || JSON.parse(JSON.stringify(q.skills || {}));
+      q.skills = JSON.parse(JSON.stringify(was.skills));
+      // AND THE PART OF A POINT HE HAS WORKED TOWARD. The engine banks whole
+      // skill points and carries the remainder in trainProgress, so a man is
+      // his skills PLUS how close he is to the next one - and a mark that kept
+      // only the skills would round every cricketer in the world down to the
+      // last whole point he had reached, every time it was cut. The genesis
+      // fold threads it from round to round; so does this.
+      if (was.prog) q.trainProgress = JSON.parse(JSON.stringify(was.prog));
+      else delete q.trainProgress;
+      return q;
+    };
+  };
+  const startMen = seed ? skillsOf(seed.men) : baseline;
+  const startBoys = seed ? skillsOf(seed.boys) : baseline;
+  let men = (squad || []).map(startMen);
+  let boys = (youth || []).map(startBoys);
+  // and the chart continues from what it had, so a manager's nets page does
+  // not lose its past the day this shipped
+  if (seed && hist && seed.hist) {
+    hist.steps = (seed.hist.steps || []).slice();
+    hist.rounds = (seed.hist.rounds || []).slice();
+  }
   for (const r of rounds) {
     const back = Math.max(0, latest - r.season_no);
     // THE NETS REPLAY IS TIMELESS. The engine's nets rate reads a man's
@@ -410,7 +470,7 @@ async function trainedSquad(pool, host, country, slot, squad, hist = null, youth
     }
   }
   if (hist && hist.steps.length > HIST_STEPS) hist.steps = hist.steps.slice(-HIST_STEPS);
-  return { squad: men, youth: boys };
+  return { squad: men, youth: boys, netsSeeded: !!seed };
 }
 // WHAT THE ACADEMY BUYS IN THE NETS. Level two is the rate the world was
 // founded at, so it is the unit; every level either side is eight per cent.
@@ -552,7 +612,75 @@ function canon(v) {
       : val);
 }
 
-export async function evolveCountry(pool, country, now = Date.now(), host = null) {
+// ---------------------------------------------------------------------------
+// WHERE THE COUNTRY GOT TO.
+//
+// The fold's accumulator, and nothing else. Not a snapshot of the world - the
+// clubs table is the world - just the running totals the next settle would
+// otherwise have to rebuild by replaying every ball ever bowled.
+//
+// THE ONE THING THAT NEEDED THOUGHT is `apps`, the list of a man's afternoons.
+// The career totals are sums and the story is a list, so both continue
+// trivially; apps is a list the fold walks to price two things, and keeping
+// all of it would grow without bound and defeat the exercise.
+//
+//   FORM reads the last five appearances and nothing else (formIxOf).
+//   FATIGUE is a decay: each day off multiplies what is left by 0.65, and the
+//     total is clamped to 80 and finally ROUNDED TO AN INTEGER. So an
+//     afternoon d days back can still move the answer only while
+//     80 * 0.65^d >= 0.5, which is d <= 12.
+//
+// The tail kept below is forty days - three times the bound, and at forty days
+// a full day's cricket is worth 0.0000019 of a fatigue point. Everything older
+// is dropped, and the last eight are always kept however old they are, so a
+// man who played five games two seasons ago still reads at the form those five
+// games gave him. Both rules are asserted in the tests rather than trusted.
+const CKPT_APP_DAYS = 40;                      // 3x the provable fatigue bound
+const CKPT_APP_MIN = 8;                        // and never fewer than form reads
+
+function trimApps(apps, throughDay) {
+  const a = apps || [];
+  if (a.length <= CKPT_APP_MIN) return a;
+  const cut = a.filter(x => (throughDay - (x.day | 0)) <= CKPT_APP_DAYS);
+  return cut.length >= CKPT_APP_MIN ? cut : a.slice(-CKPT_APP_MIN);
+}
+
+// the accumulator, flattened for storage: one entry a cricketer, per club
+function packCheckpoint(book, talBook, nets, throughDay) {
+  const men = [];
+  for (const [slot, byName] of book) {
+    for (const [name, e] of byName) {
+      men.push({ slot, name, caps: e.caps, car: e.car, intl: e.intl,
+        mile: e.mile, apps: trimApps(e.apps, throughDay) });
+    }
+  }
+  const tal = [];
+  for (const [slot, byName] of talBook)
+    for (const [name, t] of byName) tal.push({ slot, name, t });
+  return { men, tal, nets };
+}
+
+function unpackCheckpoint(state) {
+  if (!state || typeof state !== 'object' || !Array.isArray(state.men) || !Array.isArray(state.tal))
+    throw new Error('the mark is not the shape a mark has');
+  const book = new Map(), talBook = new Map();
+  for (const m of state.men) {
+    if (!m || typeof m.name !== 'string' || m.slot == null || !m.car || !m.intl)
+      throw new Error('a man in the mark is missing his book');
+  }
+  for (const m of state.men) {
+    if (!book.has(m.slot)) book.set(m.slot, new Map());
+    book.get(m.slot).set(m.name, { caps: m.caps | 0, apps: m.apps || [], mile: m.mile || [],
+      car: m.car, intl: m.intl });
+  }
+  for (const t of state.tal) {
+    if (!talBook.has(t.slot)) talBook.set(t.slot, new Map());
+    talBook.get(t.slot).set(t.name, t.t || {});
+  }
+  return { book, talBook, nets: (state && state.nets) || null };
+}
+
+export async function evolveCountry(pool, country, now = Date.now(), host = null, opts = {}) {
   const clubs = (await pool.query(
     'SELECT slot, name, squad, youth, training, best_xi_strength FROM clubs WHERE country_id=$1 ORDER BY slot',
     [country])).rows;
@@ -570,6 +698,60 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
   // tens of megabytes (each carries whole player objects); the scorecard
   // lines we need are a few hundred kilobytes. Postgres unpacks them.
   const args = [country];
+  // ---- WHERE DID WE GET TO, AND CAN WE STILL TRUST IT? --------------------
+  //
+  // Four things must all hold before a country continues rather than starts
+  // again: there is a checkpoint, it was written by THIS fold (living_version),
+  // the caller has not asked for genesis, and the record below the watermark is
+  // still exactly the record it was built from. The last is the one that
+  // matters: everything above is a flag somebody sets, and that is a counted
+  // fact about the database. A healed day, a repaired card or a hand-edited
+  // blob all move a count, and a moved count costs one slow settle instead of
+  // a wrong world.
+  const counts = async (wm) => {
+    const a = wm ? [country, wm.s, wm.r] : [country];
+    const w = wm ? ' AND (season_no, round) <= ($2, $3)' : '';
+    const one = async (sql) => +(await pool.query(sql, a)).rows[0].c || 0;
+    return {
+      matches: await one(`SELECT count(*)::int c FROM matches WHERE country_id=$1 AND result IS NOT NULL${w}`),
+      nat: await one(`SELECT count(*)::int c FROM nat_matches WHERE (a_country=$1 OR b_country=$1) AND result IS NOT NULL${w}`),
+      training: await one(`SELECT count(*)::int c FROM training_rounds WHERE country_id=$1${w}`)
+    };
+  };
+  let ck = null, ckWhy = 'genesis';
+  if (!opts.fromGenesis) {
+    try {
+      const row = (await pool.query(
+        `SELECT living_version, through_season, through_round, seen_matches, seen_nat, seen_training, state
+           FROM living_checkpoint WHERE country_id=$1`, [country])).rows[0];
+      if (!row) ckWhy = 'no checkpoint';
+      else if (row.living_version !== LIVING_VERSION) ckWhy = 'version ' + row.living_version + ' != ' + LIVING_VERSION;
+      else {
+        const wm = { s: row.through_season, r: row.through_round };
+        const c = await counts(wm);
+        if (c.matches !== row.seen_matches || c.nat !== row.seen_nat || c.training !== row.seen_training)
+          ckWhy = 'the record beneath the mark has moved (' +
+            [['matches', c.matches, row.seen_matches], ['tours', c.nat, row.seen_nat],
+             ['nets', c.training, row.seen_training]]
+              .filter(x => x[1] !== x[2]).map(x => x[0] + ' ' + x[2] + '->' + x[1]).join(', ') + ')';
+        else { ck = { wm, ...unpackCheckpoint(row.state) }; ckWhy = 'hit'; }
+      }
+    } catch (eCk) { ck = null; ckWhy = 'unreadable (' + eCk.message + ')'; }
+  }
+  // the SQL fragment every replayed source is bounded by, and the parameters
+  // behind it. With no checkpoint it is empty and every query reads the lot,
+  // which is exactly the fold this has always been.
+  const since = ck ? ` AND (m.season_no, m.round) > ($${args.push(ck.wm.s)}, $${args.push(ck.wm.r)})` : '';
+  // AND A CEILING, which only a test or a hand-run repair ever asks for: fold
+  // the record only as far as this round and mark the country there. It is how
+  // the differential tests cut the boundary in every place it can be cut -
+  // rounds are PREBANKED, so a whole season can be on the books by the second
+  // world day and cutting by day would leave most of the boundary untested.
+  const cap = opts.markAt || null;
+  const upto = cap ? ` AND (m.season_no, m.round) <= ($${args.push(cap.s)}, $${args.push(cap.r)})` : '';
+  const window = since + upto;
+  // the same two bounds for a table whose columns are not prefixed m.
+  const bare = w => w.replace(/\(m\.season_no, m\.round\)/g, '(season_no, round)');
   const teamSlot = which => `CASE WHEN inn->>'${which}' = coalesce(m.home_name, h.name) THEN m.home_slot
                                   WHEN inn->>'${which}' = coalesce(m.away_name, a.name) THEN m.away_slot END`;
   // the same resolution for a key that is already a side's name rather than a
@@ -590,7 +772,7 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
             -- been readable on every match ever played.
             coalesce((b->'p'->>'keeper')::boolean, b->'p'->>'role' = 'wicketkeeper', false) AS wk
        ${from}, LATERAL jsonb_array_elements(inn->'bat') b
-      WHERE m.country_id = $1 AND m.result IS NOT NULL AND b->'p'->>'name' IS NOT NULL`, args)).rows;
+      WHERE m.country_id = $1 AND m.result IS NOT NULL AND b->'p'->>'name' IS NOT NULL${window}`, args)).rows;
   const bowls = (await pool.query(
     `SELECT m.season_no, m.round, ${teamSlot('bowlTeam')} AS slot, bw.key AS name,
             coalesce((bw.value->>'w')::int, 0) AS wkts,
@@ -598,14 +780,14 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
             coalesce((bw.value->>'b')::int, 0) AS ovb,
             coalesce((bw.value->>'mdn')::int, 0) AS mdn
        ${from}, LATERAL jsonb_each(inn->'bowlers') bw
-      WHERE m.country_id = $1 AND m.result IS NOT NULL`, args)).rows;
+      WHERE m.country_id = $1 AND m.result IS NOT NULL${window}`, args)).rows;
   const fields = (await pool.query(
     `SELECT m.season_no, m.round, ${teamSlot('bowlTeam')} AS slot, fd.key AS name,
             coalesce((fd.value->>'ct')::int, 0) AS ct,
             coalesce((fd.value->>'st')::int, 0) AS st,
             coalesce((fd.value->>'ro')::int, 0) AS ro
        ${from}, LATERAL jsonb_each(coalesce(inn->'fielding', '{}'::jsonb)) fd
-      WHERE m.country_id = $1 AND m.result IS NOT NULL`, args)).rows;
+      WHERE m.country_id = $1 AND m.result IS NOT NULL${window}`, args)).rows;
   // WHAT THE MEN LEARNED, match by match. The card carries a tally keyed by
   // side and then by man - the same side key the innings use, so a slot
   // resolves the same way and a transfer between the match and this settle
@@ -618,7 +800,7 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
        JOIN clubs a ON a.country_id = m.country_id AND a.slot = m.away_slot,
        LATERAL jsonb_each(coalesce(m.result->'tal', '{}'::jsonb)) side,
        LATERAL jsonb_each(side.value) man
-      WHERE m.country_id = $1 AND m.result IS NOT NULL`, args)).rows;
+      WHERE m.country_id = $1 AND m.result IS NOT NULL${window}`, args)).rows;
 
   // WHO WORE THE ARMBAND, match by match: the captain the banked orders name,
   // where a manager filed one. Clubs that filed nothing fall back below to
@@ -631,7 +813,7 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
          FROM matches m
          JOIN clubs h ON h.country_id = m.country_id AND h.slot = m.home_slot
          JOIN clubs a ON a.country_id = m.country_id AND a.slot = m.away_slot
-        WHERE m.country_id = $1 AND m.result IS NOT NULL AND m.orders IS NOT NULL`, args)).rows;
+        WHERE m.country_id = $1 AND m.result IS NOT NULL AND m.orders IS NOT NULL${window}`, args)).rows;
     for (const r of caps) {
       const o = r.orders || {};
       const ho = o[r.hn], ao = o[r.an];
@@ -645,7 +827,13 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
   const talT = host && host.talThresholds ? host.talThresholds() : {};
 
   // slot -> name -> { caps, career, apps[] }
-  const book = new Map();
+  //
+  // SEEDED WITH WHERE THE COUNTRY GOT TO, when there is a checkpoint to seed
+  // it with. Everything below then behaves exactly as it always has: rec()
+  // finds a man's running totals already part-built instead of at nought, and
+  // the rounds fetched above are only the ones played since. With no
+  // checkpoint the map starts empty and this is the genesis fold, unchanged.
+  const book = ck ? ck.book : new Map();
   const rec = (slot, name) => {
     if (!book.has(slot)) book.set(slot, new Map());
     const m = book.get(slot);
@@ -697,7 +885,7 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
   // whole of "he is learning it": no state is carried forward, the record is
   // added up again from scratch on every settle, and a re-settle lands on the
   // identical number.
-  const talBook = new Map();          // slot -> name -> {talent: triggers}
+  const talBook = ck ? ck.talBook : new Map();   // slot -> name -> {talent: triggers}
   for (const r of tals) {
     if (r.slot == null || !r.name || !r.tal) continue;
     if (!talBook.has(r.slot)) talBook.set(r.slot, new Map());
@@ -712,20 +900,34 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
   // "everything except a friendly" - and a cup tie names its two sides with a
   // country and a slot, so the credit lands on the right club without going
   // near a name.
+  // A CUP TIE IS COUNTED WHOLE, EVERY TIME, AND SO IT KEEPS ITS OWN MAP.
+  // Knockouts are keyed by stage and tie, not by round, so they have no place
+  // on the (season, round) line the checkpoint is cut along - and there are a
+  // handful a season against hundreds of league rounds, so replaying them all
+  // costs nothing. What it must not do is land in the checkpoint: a total that
+  // is both saved AND recounted on the next settle is a total that doubles.
+  // NOTE THE PARAMETERS: this source is replayed WHOLE, so it takes the country
+  // alone and never `args`, which carries the watermark bounds for the sources
+  // that are not. Handing it args binds three parameters to a one-parameter
+  // statement, Postgres refuses the statement, and the catch below - which is
+  // there for databases older than cups - swallows it into "no cup ever
+  // happened". Silent, and it cost every cricketer in the world his knockout
+  // talent progress until a test caught it.
+  const talCups = new Map();
   let cupRows = [];
   try {
     cupRows = (await pool.query(
       `SELECT a, b, result->'tal' AS tal FROM cup_matches
         WHERE result IS NOT NULL AND comp NOT LIKE 'colts:%'
-          AND (a->>'country' = $1 OR b->>'country' = $1)`, args)).rows;
+          AND (a->>'country' = $1 OR b->>'country' = $1)`, [country])).rows;
   } catch (eCu) { cupRows = []; }   // pre-cup database
   for (const r of cupRows) {
     if (!r.tal) continue;
     for (const side of [r.a, r.b]) {
       if (!side || side.country !== country || side.slot == null) continue;
       const men = r.tal[side.name]; if (!men) continue;
-      if (!talBook.has(side.slot)) talBook.set(side.slot, new Map());
-      const bk = talBook.get(side.slot);
+      if (!talCups.has(side.slot)) talCups.set(side.slot, new Map());
+      const bk = talCups.get(side.slot);
       for (const nm of Object.keys(men)) {
         const cur = bk.get(nm) || {};
         for (const t of Object.keys(men[nm])) cur[t] = (cur[t] | 0) + (men[nm][t] | 0);
@@ -748,7 +950,8 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
   try {
     natRows = (await pool.query(
       `SELECT season_no, round, a_country, b_country, a_name, b_name, result
-         FROM nat_matches WHERE a_country=$1 OR b_country=$1 ORDER BY season_no, round, id`, [country])).rows;
+         FROM nat_matches WHERE (a_country=$1 OR b_country=$1)` + bare(window) +
+      ` ORDER BY season_no, round, id`, args)).rows;
     (await pool.query(
       `SELECT season_no, round, slot, player FROM callups WHERE country_id=$1`, [country])).rows
       .forEach(r => fromSlot.set(r.season_no + '|' + r.round + '|' + r.player, r.slot));
@@ -808,6 +1011,19 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     }
     for (const [k, L] of seen) lines.set(k + '|i', L);
   }
+
+  // WHAT A MAN HAS BEEN CREDITED WITH, from both books at once: the league and
+  // tour tally the checkpoint carries, plus the cups it deliberately does not.
+  // Talent progress is a sum, so adding the two is the whole of it.
+  const talTally = (slot, name) => {
+    const a9 = (talBook.get(slot) || new Map()).get(name);
+    const b9 = (talCups.get(slot) || new Map()).get(name);
+    if (!a9) return b9;
+    if (!b9) return a9;
+    const o = Object.assign({}, a9);
+    for (const t of Object.keys(b9)) o[t] = (o[t] | 0) + (b9[t] | 0);
+    return o;
+  };
 
   const ordered = Array.from(lines.values()).sort((x, y) =>
     x.season - y.season || x.round - y.round || x.slot - y.slot ||
@@ -877,7 +1093,7 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     const frRows = (await pool.query(
       `SELECT id, play_at_ms, c_country, c_slot, c_name, o_country, o_slot, o_name, result
          FROM friendlies WHERE status='played' AND result IS NOT NULL
-          AND (c_country=$1 OR o_country=$1) ORDER BY id`, args)).rows;
+          AND (c_country=$1 OR o_country=$1) ORDER BY id`, [country])).rows;
     const frAt = (slot, nm) => {
       if (!frBook.has(slot)) frBook.set(slot, new Map());
       const m = frBook.get(slot);
@@ -973,6 +1189,8 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
 
   let touched = 0;
   const cold = [];                  // every man's book and story, for one write below
+  const netsNext = {};              // slot -> the skills to continue from next time
+  let netsHits = 0, netsMiss = 0;
   for (const club of clubs) {
     const men = book.get(club.slot) || new Map();
     const deals = dealsBySlot.get(club.slot) || new Map();
@@ -1013,8 +1231,21 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     // a managed club's replay collects its book of the nets on the way past;
     // an unmanaged one has nobody to read a chart, so it costs nothing
     const hist = claimedSlots.has(club.slot) ? { steps: [], rounds: [] } : null;
+    // a club whose chart is wanted but whose mark carries none folds from
+    // genesis: the nets page would otherwise open on a history that starts the
+    // day its manager claimed it
+    const ckNets = (ck && ck.nets && ck.nets[club.slot]) || null;
     const worked = await trainedSquad(pool, host, country, club.slot, club.squad, hist,
-      Array.isArray(club.youth) ? club.youth : []);
+      Array.isArray(club.youth) ? club.youth : [],
+      (ck && ckNets && (!hist || ckNets.hist)) ? { wm: ck.wm, nets: ckNets, cap }
+        : (cap ? { cap } : null));
+    const netMan = p => ({ name: p.name, skills: p.skills, prog: p.trainProgress || null });
+    netsNext[club.slot] = {
+      men: (worked.squad || []).filter(p => p && p.name).map(netMan),
+      boys: (worked.youth || []).filter(p => p && p.name).map(netMan),
+      hist: hist ? { steps: hist.steps, rounds: hist.rounds } : null
+    };
+    if (worked.netsSeeded) netsHits++; else netsMiss++;
     const trained = worked.squad;
     // the engine's default skipper where no orders named one (00-core picks
     // the best captaincy score the same way)
@@ -1071,7 +1302,7 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
       if (iBook.m) q.intl = iBook; else delete q.intl;
       story(q, e.mile);
       return q;
-    }).map(q => talentsEarned(q, (talBook.get(club.slot) || new Map()).get(q.name), talT));
+    }).map(q => talentsEarned(q, talTally(club.slot, q.name), talT));
     // THE STANDING LOAD OF THE NETS (training v2). A unit training light
     // freshens; high and intensive bank more work but carry load into the
     // next morning. Recomputed from the CURRENT plan on every settle, so it
@@ -1242,5 +1473,85 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
   // moved, so a quiet day writes nothing here either.
   try { await writeHistory(pool, cold); }
   catch (eH) { console.error('history write failed for ' + country + ':', eH.message); }
+
+  // ---- AND THE COUNTRY WRITES DOWN WHERE IT GOT TO -------------------------
+  //
+  // LAST, deliberately. The ordering is the whole of the crash story: the mark
+  // is only ever written after the world it describes, so a settle killed
+  // halfway leaves a mark BEHIND the record and never ahead of it. Behind costs
+  // a few rounds read twice, and the fold folds them to the same figures - it
+  // has always been able to, that is what made it safe to run three times an
+  // hour. Ahead would cost history nobody ever folds. No crash produces ahead.
+  //
+  // The mark is cut at the highest round the record now holds, which is the
+  // point every source above has just been folded through.
+  try {
+    // THE HIGHEST ROUND ANY FOLDED SOURCE REACHES, not the highest one the
+    // MATCHES reach. A club's nets are planned round by round and the plan for
+    // a round is banked before the round is played, so training_rounds runs
+    // AHEAD of the banked cards - and a mark cut at the last match would leave
+    // those sessions above the line, already folded into the state and about
+    // to be folded into it again. Every man in a managed club drifted upward
+    // one settle at a time, and the nets chart grew a duplicate of its own
+    // tail. world-focus-academy caught it: the same evening settled twice
+    // wrote two different books.
+    //
+    // Cutting too HIGH is the safe direction: a record that arrives later at a
+    // round below the mark moves one of the counts below, and a moved count
+    // means the whole country folds from genesis. Cutting too LOW is silent.
+    const hi = (await pool.query(
+      `SELECT max(s) AS s FROM (
+         SELECT max(season_no) s FROM matches WHERE country_id=$1 AND result IS NOT NULL
+         UNION ALL SELECT max(season_no) FROM nat_matches WHERE (a_country=$1 OR b_country=$1) AND result IS NOT NULL
+         UNION ALL SELECT max(season_no) FROM training_rounds WHERE country_id=$1) x`,
+      [country])).rows[0];
+    const hs = (hi && hi.s) | 0;
+    const hr = hs ? (+(await pool.query(
+      `SELECT max(r) AS r FROM (
+         SELECT max(round) r FROM matches WHERE country_id=$1 AND season_no=$2 AND result IS NOT NULL
+         UNION ALL SELECT max(round) FROM nat_matches WHERE (a_country=$1 OR b_country=$1) AND season_no=$2 AND result IS NOT NULL
+         UNION ALL SELECT max(round) FROM training_rounds WHERE country_id=$1 AND season_no=$2) x`,
+      [country, hs])).rows[0].r || 0) : 0;
+    const wm = cap || { s: hs, r: hr };
+    const seen = await counts(wm);
+    const before = ck ? await counts(ck.wm) : { matches: 0, nat: 0, training: 0 };
+    await pool.query(
+      `INSERT INTO living_checkpoint
+         (country_id, living_version, through_season, through_round,
+          seen_matches, seen_nat, seen_training, state, updated_at)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8::jsonb, now())
+       ON CONFLICT (country_id) DO UPDATE SET
+         living_version=EXCLUDED.living_version, through_season=EXCLUDED.through_season,
+         through_round=EXCLUDED.through_round, seen_matches=EXCLUDED.seen_matches,
+         seen_nat=EXCLUDED.seen_nat, seen_training=EXCLUDED.seen_training,
+         state=EXCLUDED.state, updated_at=now()`,
+      [country, LIVING_VERSION, wm.s, wm.r, seen.matches, seen.nat, seen.training,
+       JSON.stringify(packCheckpoint(book, talBook, netsNext, today))]);
+    lastFold = { country, checkpoint: ckWhy, from: ck ? ck.wm : null, through: wm,
+      replayedMatches: seen.matches - before.matches,
+      nets: { continued: netsHits, rebuilt: netsMiss }, touched };
+  } catch (eW) {
+    console.error('checkpoint write failed for ' + country + ':', eW.message);
+    lastFold = { country, checkpoint: ckWhy + ' (mark not written: ' + eW.message + ')', touched };
+  }
   return touched;
+}
+
+// WHAT THE LAST SETTLE ACTUALLY DID - one small object, overwritten each time,
+// for a tick to print and a test to read. Not a log and not a table: the
+// question "did that country continue or start again, and how much did it
+// read" gets asked while something looks wrong, and answering it should not
+// cost a row of storage forever.
+let lastFold = null;
+export function lastFoldReport() { return lastFold; }
+// England: continued from season 1 round 12, read 8 new matches, through 1/14
+export function foldLine(r) {
+  if (!r) return '';
+  const hit = r.checkpoint === 'hit';
+  return r.country + ': ' + (hit
+    ? 'continued from ' + r.from.s + '/' + r.from.r + ', read ' + r.replayedMatches + ' new match' +
+      (r.replayedMatches === 1 ? '' : 'es')
+    : 'full replay (' + r.checkpoint + '), read ' + r.replayedMatches + ' matches') +
+    ', through ' + r.through.s + '/' + r.through.r +
+    (r.nets.rebuilt ? ', nets rebuilt for ' + r.nets.rebuilt + ' club(s)' : '');
 }

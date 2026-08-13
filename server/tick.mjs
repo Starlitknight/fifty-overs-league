@@ -18,7 +18,7 @@ import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
 import { EPOCH, dayIx, daySettled, seedOf, cupDraw, natHour, scheduleOf, seasonSchedules, ROUNDS, isWindowRound,
          CYCLE, LEAGUE_DAYS, roundOfDay, dayOfRound, CUP_DAYS, PLAYOFF_DAYS, FA_DAYS, TRANSITION_DAY,
          WINDOW_DAYS, isWorldCupSeason, REST_DAYS, COLTS_DAYS } from './clock.mjs';
-import { livingPatch, evolveCountry, LIVING_VERSION } from './living.mjs';
+import { livingPatch, evolveCountry, LIVING_VERSION, lastFoldReport, foldLine } from './living.mjs';
 import { calibrate, countryConfigs, BASE_XI, NAT_STR, HUMAN_STR,
          nationTeamStr, isFullMember } from './init-world.mjs';
 import { layCandidates, ageYouth, playColtsStage, computeColts, coltRecords,
@@ -831,6 +831,11 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
   // legs, and the work they did in the nets. A pure function of the record,
   // so re-running settles the same.
   await evolveCountry(pool, country, now, host);
+  // ONE LINE ABOUT HOW IT GOT THERE. Whether a country continued from its mark
+  // or started again, and how much cricket it had to read - the question every
+  // "why is the settle slow" or "why did that career change" starts with. One
+  // line a country a settle, and nothing stored.
+  console.log(foldLine(lastFoldReport()));
   // AND THE SELECTORS MEET AGAIN, now that they have seen it. "Between
   // matches" is meant literally: the side for the NEXT round is named here,
   // the moment this round's cricket has been read into the players, rather
@@ -980,6 +985,7 @@ export async function runDue(pool, host, country, { now = Date.now(), failAfter 
        ON CONFLICT (key) DO UPDATE SET key=EXCLUDED.key RETURNING status`, [foldKey]);
     if (claimed.rows[0].status !== 'done') {
       await evolveCountry(pool, country, now, host);
+      console.log(foldLine(lastFoldReport()));
       await pool.query(`UPDATE ticks SET status='done', finished_at=now() WHERE key=$1`, [foldKey]);
       await rebuildSnapshots(pool, country, now, { world: world });
       out.push({ day: null, refolded: LIVING_VERSION });
