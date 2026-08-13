@@ -468,6 +468,17 @@ export function withCarry(book, carry) {
 // After that the engine stops counting for him entirely, so the second is
 // never in reach: what is rare has to stay rare to be worth anything.
 export function talentsEarned(q, prog, talT) {
+  // AND A FOLD THAT CANNOT READ THE THRESHOLDS DOES NOT GET TO SAY NOBODY HAS
+  // CROSSED ONE. The thresholds come off the shipped engine, so a settle run
+  // without it has an empty table - and every ratio below is then measured
+  // against nothing, which silently answers "not yet" for every man in the
+  // country. It is a half-fold: the progress is written, the award is
+  // withheld, and the next settle that DOES hold the engine hands a man a
+  // talent the one before it already had the record for. Two folds of one
+  // record, two different worlds. trainedSquad declines the same way when it
+  // is handed no engine, and for the same reason: an answer nobody can compute
+  // is worse than no answer, because it gets written down.
+  if (!talT || !Object.keys(talT).length) return q;
   // WHAT HE BROUGHT WITH HIM. A club's fold only sees the matches THIS club
   // has played, so a man who was bought, or a boy who was handed a senior
   // shirt, would arrive with his progress wiped - exactly the reason a career

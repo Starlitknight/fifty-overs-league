@@ -800,7 +800,13 @@ test('014: the living player - careers, form, tired legs, all from the record', 
   const before = await sq();
   assert.ok(before.length >= 11);
   // rounds have been played above, so the men have lives by now
-  await evolveCountry(pool, 'eng', EPOCH + 165 * DAY);
+  // WITH THE ENGINE, because the settle below is compared against this one and
+  // has to be the SAME settle. This call used to omit the host, which is not a
+  // smaller fold but a different one: no engine means no talent thresholds, so
+  // the first fold quietly withheld every award the record justified and the
+  // second granted them. The drift was invisible for as long as no cricketer
+  // in this fixture happened to reach a threshold.
+  await evolveCountry(pool, 'eng', EPOCH + 165 * DAY, host);
   const after = await sq();
   const capped = after.filter(p => p.career && p.career.m > 0);
   assert.ok(capped.length >= 11, 'at least an XI have caps: ' + capped.length);
