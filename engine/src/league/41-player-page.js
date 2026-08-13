@@ -251,9 +251,15 @@
       if (!txt) return;
       out.push({ ord: (day == null ? -1 : day) * 10 + tie, when: when || "", kind: kind || "", txt: txt });
     };
-    // the served record, as the fold wrote it
+    // the served record, as the fold wrote it - carried on the card for a man
+    // read out of a local save, fetched for a man read off the world
+    var mile = p.mile;
+    if (!mile && p.pid) {
+      var pf = servedProfile(p.pid, function () { if (onPage()) build(); });
+      mile = pf && pf.mile;
+    }
     try {
-      (p.mile || []).forEach(function (m) {
+      (mile || []).forEach(function (m) {
         if (!m) return;
         add(m.d, 0, mileDate(mileDayMs(m.d)) || roundWhen(m.s, m.r), MILE_KIND[m.k] || "", m.txt);
       });
@@ -1002,6 +1008,35 @@
         .then(function (r) { return r.ok ? r.json() : null; })
         .then(function (rows) {
           if (rows && rows[0]) { SQ_CACHE[k] = rows[0]; done(true); } else done(false);
+        }, function () { done(false); });
+    } catch (e) { done(false); }
+    return null;
+  }
+  // HIS STORY IS FETCHED WHEN SOMEBODY OPENS HIM, AND NOT BEFORE.
+  //
+  // The milestones used to ride on the club card, so a roster of fifteen men
+  // downloaded fifteen biographies to draw a table that shows none of them -
+  // 448 bytes a cricketer, forty three per cent of the card, on every squad
+  // page in the game. They live on world_player_profile now (migration 093),
+  // one cricketer a row, and this is the only screen that asks.
+  //
+  // Keyed by pid rather than name, because two men at one club can share a
+  // name and this page must never show one man another's life. A man with no
+  // id - nothing in the live world, but a card rebuilt from an old save might
+  // be - simply has no served story, which is what he had before.
+  var PF_CACHE = {}, PF_BUSY = {}, PF_DEAD = {};
+  function servedProfile(pid, cb) {
+    if (!pid) return null;
+    if (PF_CACHE[pid]) return PF_CACHE[pid];
+    if (PF_BUSY[pid] || PF_DEAD[pid]) return null;
+    PF_BUSY[pid] = 1;
+    var done = function (ok) { PF_BUSY[pid] = 0; if (!ok) PF_DEAD[pid] = 1; try { if (cb) cb(); } catch (e) {} };
+    try {
+      fetch(SB_URL + "/rest/v1/world_player_profile?pid=eq." + encodeURIComponent(pid) +
+        "&select=mile,career", { headers: { apikey: SB_ANON } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (rows) {
+          if (rows && rows[0]) { PF_CACHE[pid] = rows[0]; done(true); } else done(false);
         }, function () { done(false); });
     } catch (e) { done(false); }
     return null;
