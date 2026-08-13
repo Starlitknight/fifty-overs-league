@@ -155,6 +155,14 @@ jobs:
       - name: Give any club sharing a name its own back
         working-directory: server
         run: node rename-twins.mjs --write
+      # A club dealt before migration 092 has no best_xi_strength, and the
+      # ranking then works it out from the squad one club at a time. This
+      # settles them for good. Idempotent - the value is a pure function of the
+      # squad - and once every row is filled it reads nothing and writes
+      # nothing, so it costs a single indexed count per tick forever after.
+      - name: Give any club without one the worth of its eleven
+        working-directory: server
+        run: node backfill-strength.mjs --write
       - name: Settle everything due, every nation
         working-directory: server
         run: node tick.mjs
