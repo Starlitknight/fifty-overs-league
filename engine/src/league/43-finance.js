@@ -270,18 +270,19 @@
       // the gate board
       // ---- THE GROUND ROOM: one plate, one curve, one board ----------------
       ".fo-gr-band{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,1fr);gap:15px;align-items:stretch}",
-      ".fo-gr-plate{position:relative;border-radius:16px;overflow:hidden;background:var(--navy);display:flex;min-height:300px;border:1px solid #17324F}",
-      ".fo-gr-plate .fo-me-ground{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 40%;border-radius:0;filter:none}",
-      ".fo-gr-plate .v{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,20,36,.20) 0,rgba(8,20,36,.26) 34%,rgba(8,20,36,.92) 82%)}",
-      ".fo-gr-plate .in{position:relative;z-index:2;display:flex;flex-direction:column;width:100%;padding:20px 22px 18px}",
-      ".fo-gr-plate .nm{color:rgba(255,255,255,.76);font:700 10px/1 Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase}",
-      ".fo-gr-plate h2{margin:11px 0 0;color:#FFFEFA;font:600 34px/1 Fraunces,Georgia,serif;letter-spacing:-.03em;text-shadow:0 2px 18px rgba(0,0,0,.5)}",
-      ".fo-gr-plate .st{margin-top:auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding-top:18px}",
-      ".fo-gr-plate .st>div{padding-right:14px;border-right:1px solid rgba(255,255,255,.17)}",
-      ".fo-gr-plate .st>div:last-child{border-right:0;padding-right:0}",
-      ".fo-gr-plate .st span{display:block;color:rgba(255,255,255,.68);font:700 9px/1.2 Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase}",
-      ".fo-gr-plate .st b{display:block;margin-top:8px;color:#FFFEFA;font:750 21px/1 Manrope,sans-serif;letter-spacing:-.04em;font-variant-numeric:tabular-nums}",
-      ".fo-gr-plate .st .g b{color:#59E0AA}",
+      ".fo-gr-plate{display:flex;flex-direction:column;padding:0}",
+      ".fo-gr-plate .ttl{padding:16px 18px 15px;border-bottom:1px solid #EFE9DC}",
+      ".fo-gr-plate .ttl span{display:flex;align-items:center;gap:11px;color:var(--mut);font:700 10px/1 Manrope,sans-serif;letter-spacing:.18em;text-transform:uppercase}",
+      ".fo-gr-plate .ttl span:before{content:'';height:1px;width:26px;background:var(--gold)}",
+      ".fo-gr-plate .ttl b{display:block;margin-top:9px;color:var(--ink);font:600 30px/1 Fraunces,Georgia,serif;letter-spacing:-.03em}",
+      ".fo-gr-plate .art{display:block;line-height:0;background:var(--navy)}",
+      ".fo-gr-plate .art .fo-me-ground{display:block;width:100%;height:auto;aspect-ratio:16/9;object-fit:cover;border-radius:0;filter:none}",
+      ".fo-gr-plate .st{margin-top:auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;border-top:1px solid #EFE9DC}",
+      ".fo-gr-plate .st>div{padding:15px 16px;border-right:1px solid #EFE9DC}",
+      ".fo-gr-plate .st>div:last-child{border-right:0}",
+      ".fo-gr-plate .st span{display:block;color:var(--mut);font:700 9px/1.2 Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase}",
+      ".fo-gr-plate .st b{display:block;margin-top:9px;color:var(--ink);font:750 21px/1 Manrope,sans-serif;letter-spacing:-.04em;font-variant-numeric:tabular-nums}",
+      ".fo-gr-plate .st .g b{color:var(--green)}",
       ".fo-gr-price{display:flex;flex-direction:column}",
       ".fo-gr-now{display:flex;align-items:flex-end;gap:18px;padding:16px 18px 6px}",
       ".fo-gr-now .v b{display:flex;align-items:baseline;gap:9px;font:750 46px/1 Manrope,sans-serif;letter-spacing:-.055em;color:var(--orange)}",
@@ -293,8 +294,10 @@
       "html body #page .fo-gr-now .dial button{appearance:none;height:40px;min-width:40px;padding:0 !important;border:1px solid #CFC6B6 !important;border-radius:11px !important;background:#FFFEFA !important;color:var(--ink) !important;font:700 17px/1 Manrope,sans-serif !important;cursor:pointer}",
       "html body #page .fo-gr-now .dial #fo-tk-set{min-width:0;padding:0 15px !important;border-color:var(--orange) !important;background:linear-gradient(180deg,#E85720,#D94313) !important;color:#fff !important;font:700 10.5px/1 Manrope,sans-serif !important;letter-spacing:.1em;text-transform:uppercase}",
       "html body #page .fo-gr-now .dial #fo-tk-set[disabled]{background:#E7E2D8 !important;border-color:#E7E2D8 !important;color:#A29B8E !important;cursor:not-allowed}",
-      ".fo-gr-plot{position:relative;padding:4px 18px 0}",
-      ".fo-gr-svg{display:block;width:100%;height:168px}",
+      // the plot takes the slack the plate leaves, so the card ends where the
+      // plate does and the three figures sit on its floor rather than mid-air
+      ".fo-gr-plot{position:relative;padding:4px 18px 0;flex:1;display:flex;flex-direction:column;justify-content:center}",
+      ".fo-gr-svg{display:block;width:100%;flex:1;min-height:168px;max-height:250px}",
       ".fo-gr-svg .cw{fill:none;stroke:#0E9C6B;stroke-width:2.4;stroke-linejoin:round}",
       ".fo-gr-svg .tk{fill:none;stroke:#DB4A16;stroke-width:2.4;stroke-dasharray:5 4;stroke-linejoin:round}",
       ".fo-gr-svg .pk{stroke:#D2A53A;stroke-width:1.4;stroke-dasharray:2 4}",
@@ -306,7 +309,7 @@
       ".fo-gr-keys span:before{content:\'\';width:13px;height:3px;border-radius:2px;background:currentColor}",
       ".fo-gr-keys .cw{color:#0E845E}.fo-gr-keys .tk{color:#C24A19}.fo-gr-keys .pk{color:#A87F1B}",
       ".fo-gr-ends{display:flex;justify-content:space-between;margin-top:6px;color:#9E978A;font:700 9.5px/1 Manrope,sans-serif;letter-spacing:.1em}",
-      ".fo-gr-tri{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#E7E1D4;margin-top:16px;border-top:1px solid #E7E1D4}",
+      ".fo-gr-tri{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#E7E1D4;margin-top:16px;border-top:1px solid #E7E1D4;flex:none}",
       ".fo-gr-tri>div{background:var(--paper);padding:14px 18px}",
       ".fo-gr-tri span{display:block;color:var(--mut);font:700 9px/1.2 Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase}",
       ".fo-gr-tri b{display:block;margin-top:9px;font:750 21px/1 Manrope,sans-serif;letter-spacing:-.04em;font-variant-numeric:tabular-nums}",
@@ -352,15 +355,14 @@
       // and the two clocks along the foot.
       "@media(max-width:820px){",
       ".fo-gr-band{gap:12px}",
-      ".fo-gr-plate{min-height:0;border-radius:15px}",
-      ".fo-gr-plate .in{padding:15px 15px 14px}",
-      ".fo-gr-plate .fo-me-ground{position:relative;height:auto;aspect-ratio:16/9;object-position:50% 42%}",
-      ".fo-gr-plate .v{background:linear-gradient(180deg,rgba(8,20,36,.16) 0,rgba(8,20,36,.30) 40%,rgba(8,20,36,.93) 86%)}",
-      ".fo-gr-plate .in{position:absolute;inset:0}",
-      "html body #page .fo-gr-plate h2{font-size:26px !important;margin-top:8px}",
-      ".fo-gr-plate .st{grid-template-columns:1fr 1fr;gap:11px 0;padding-top:12px}",
-      ".fo-gr-plate .st>div:nth-child(2n){border-right:0;padding-right:0}",
-      ".fo-gr-plate .st b{font-size:17px;margin-top:6px}",
+      ".fo-gr-plate{border-radius:15px}",
+      ".fo-gr-plate .ttl{padding:14px 15px 13px}",
+      "html body #page .fo-gr-plate .ttl b{font-size:25px !important;margin-top:8px}",
+      ".fo-gr-plate .st{grid-template-columns:1fr 1fr}",
+      ".fo-gr-plate .st>div{padding:13px 15px;border-bottom:1px solid #EFE9DC}",
+      ".fo-gr-plate .st>div:nth-child(2n){border-right:0}",
+      ".fo-gr-plate .st>div:nth-last-child(-n+2){border-bottom:0}",
+      ".fo-gr-plate .st b{font-size:18px;margin-top:7px}",
       ".fo-gr-now{flex-wrap:wrap;gap:12px;padding:14px 14px 4px}",
       ".fo-gr-now .v b{font-size:38px}",
       ".fo-gr-now .dial{margin-left:0;width:100%;padding-bottom:0}",
@@ -1043,15 +1045,23 @@
 
         // ---- THE BAND: the ground, and what a seat costs -------------------
         var head = rows[0] || null;
+        // THE ART IS LEFT ALONE. The ground was a photograph with the club's
+        // name and four figures printed over it - a veil dark enough to read
+        // white type through is a veil dark enough to lose the evening light
+        // the picture was painted for, and a number set on a photograph is
+        // harder to read than the same number set on paper. So the card is
+        // three plain bands: who this is, the ground itself, and the figures
+        // underneath. Nothing crosses the picture.
         html += "<div class='fo-gr-band'>" +
-          "<section class='fo-gr-plate'>" + foMeGroundArt(groundNm) + "<i class='v'></i>" +
-          "<div class='in'><div><div class='nm'>Home of " + E(clubNm) + "</div><h2>" + E(groundNm) + "</h2></div>" +
+          "<section class='fo-me-card fo-gr-plate'>" +
+          "<div class='ttl'><span>Home of " + E(clubNm) + "</span><b>" + E(groundNm) + "</b></div>" +
+          "<div class='art'>" + foMeGroundArt(groundNm) + "</div>" +
           "<div class='st'>" +
           "<div><span>Capacity</span><b>" + seats.toLocaleString() + "</b></div>" +
           "<div class='g'><span>Occupancy</span><b>" + full + "%</b></div>" +
           "<div><span>Avg attendance</span><b>" + (avgAtt || lastAtt || 0).toLocaleString() + "</b></div>" +
           "<div class='g'><span>Supporter mood</span><b>" + E(cap(moodWord)) + "</b></div>" +
-          "</div></div></section>" +
+          "</div></section>" +
           foGrPrice(head, ticket, homeCut, seats, projectedCrowd, projectedGate, full) +
           "</div>";
 
