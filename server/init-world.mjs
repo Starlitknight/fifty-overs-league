@@ -9,6 +9,7 @@ import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
 import { EPOCH, CYCLE, ROUNDS, dayIx, scheduleOf, seasonSchedules, natHour } from './clock.mjs';
 import { foundingSeats, foundingBank } from './economy.mjs';
+import { expOfYears, expWordOf } from './living.mjs';
 
 // EVERY LEAGUE IS ANCHORED BY A REAL CLUB. Slot 0 is the country's most
 // storied side - the name a supporter there would give you first - with its
@@ -298,12 +299,23 @@ export function calibrate(host, squad, target) {
 // the old pro teaches, the lads get replaced one honest signing at a time.
 // Deterministic - same seed, same cast - and calibration still owns the
 // club's net strength, so the AGES are the story, not a hidden buff.
+//
+// AND EXPERIENCE GOES WITH THE AGE. It used to not: the men were sorted
+// oldest-first and handed new ages, and every man kept the experience the
+// generator dealt him for the age he no longer had. The sixth-oldest, dealt
+// at twenty-six, walked out nineteen years old with a twenty-six-year-old's
+// experience; the youngest walked out twenty-three with an eighteen-year-old's.
+// Not merely uncorrelated with age - reversed. So the cast asks living.mjs
+// for the number a man of that age reads at, which is the same number it
+// would derive for him on the next fold anyway.
 function foundingCast(squad) {
   const men = squad.slice().sort((a, b) => (b.age || 27) - (a.age || 27));
   men.forEach((p, i) => {
     if (i === 0) p.age = 36;                                  // the Old Pro
     else if (i <= 4) p.age = 27 + (i % 4);                    // the local lads
     else p.age = 19 + (i % 5);                                // the raw kids
+    p.exp = expOfYears(p);
+    p.expWord = expWordOf(p.exp);
   });
   return squad;
 }

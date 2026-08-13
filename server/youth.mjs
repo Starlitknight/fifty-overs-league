@@ -25,7 +25,7 @@
 import { countryConfigs } from './init-world.mjs';
 // the same derivation the seniors use - one rule about when a man has crossed,
 // so a boy and the man he becomes are never judged by two different tables
-import { talentsEarned } from './living.mjs';
+import { talentsEarned, expOfYears, expWordOf } from './living.mjs';
 
 // a boy is sixteen to twenty when he is found, and he is gone at twenty-one
 export const RECRUIT_MIN_AGE = 16;
@@ -139,7 +139,12 @@ export function makeRecruit(host, nat, arch, tier, seed) {
   p.colt = true;
   p.nat = nat;
   p.from = nat;                                   // where he was found, for his card
-  if (typeof p.exp === 'number') p.exp = Math.max(1, Math.round(p.exp * share));
+  // and his experience is his own age's, not the age of the man he was cut
+  // from: a boy of sixteen has seen sixteen years of cricket whoever the pool
+  // handed up, and scaling a twenty-eight-year-old's experience down by a
+  // skill share was never the same thing
+  p.exp = expOfYears(p);
+  p.expWord = expWordOf(p.exp);
   // the fifteen skills are the man; his batting, his threat, his rating and
   // his WAGE are the engine's function of them, so let the engine work them
   // out rather than scaling the answers by hand. A boy is cheap because a boy
@@ -383,14 +388,23 @@ export async function ageYouth(pool, country, seasonNo) {
     'SELECT slot, squad, youth FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
   let retired = 0, released = 0;
   for (const c of clubs) {
+    // A YEAR OLDER IS A YEAR WISER. The rollover used to add a year to the age
+    // and leave experience where it was, so the two drifted a season further
+    // apart every season; a man's stored experience is the years he has been
+    // at it, so it turns over with them.
+    const older = (p, floor) => {
+      const q = Object.assign({}, p, { age: (p.age || floor) + 1 });
+      q.exp = expOfYears(q);
+      q.expWord = expWordOf(q.exp);
+      return q;
+    };
     // 1. a year on the professionals, and the oldest hang them up
-    const aged = (c.squad || []).map(p => Object.assign({}, p, { age: (p.age || 27) + 1 }));
+    const aged = (c.squad || []).map(p => older(p, 27));
     const squad = aged.filter(p => (p.age || 0) < RETIRE_AT);
     retired += aged.length - squad.length;
 
     // 2. a year on the boys, and the twenty-one-year-olds walk out of the world
-    const youth = (Array.isArray(c.youth) ? c.youth : [])
-      .map(y => Object.assign({}, y, { age: (y.age || 18) + 1 }));
+    const youth = (Array.isArray(c.youth) ? c.youth : []).map(y => older(y, 18));
     const stay = youth.filter(y => y.age < LEAVE_AT);
     released += youth.length - stay.length;
 

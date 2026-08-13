@@ -199,9 +199,73 @@ function formIxOf(apps) {
   return avg < 0.12 ? 0 : avg < 0.35 ? 1 : avg < 0.7 ? 2 : avg < 1.3 ? 3
     : avg < 2.1 ? 4 : avg < 3.0 ? 5 : 6;   // the scale ratePoints maps onto
 }
+// ---- EXPERIENCE IS THE YEARS, NOT THE DEAL --------------------------------
+//
+// A cricketer's experience used to be whatever number he was handed the
+// instant he was made, and nothing ever reconciled it with his age again.
+// Two things pulled the two apart:
+//
+//   - the founding cast (init-world.foundingCast) re-deals a new club's AGES
+//     into a shape - one old pro, four local lads, a bench of raw kids - and
+//     left every man's dealt experience where it was. It sorts oldest-first
+//     before re-assigning, so the sixth-oldest man, dealt at twenty-six, came
+//     out nineteen years old still carrying a twenty-six-year-old's
+//     experience, and the youngest came out twenty-three carrying an
+//     eighteen-year-old's. Anti-correlated, not merely uncorrelated.
+//   - every rollover adds a year to every man (youth.ageYouth) and touches
+//     nothing else, so the gap widened by a season every season.
+//
+// The generator was never wrong about it: foGenExp is (age-17) * 6.5 plus a
+// little for quality and a little noise. A ladder rung is 9 points, so that
+// is about three quarters of a rung a year with under two rungs of scatter -
+// exactly the shape experience should have. Nothing downstream honoured it.
+//
+// So experience is derived here now, from the same slope, at the age the man
+// IS today. It is the years he has been at it, plus a small fixed share of
+// his own, plus what he has actually done. Because this module recomputes
+// every squad on earth from genesis on every tick, the whole world comes
+// right on the next fold without a migration touching a single row.
+const EXP_START_AGE = 17;                  // a boy's first season in the game
+const EXP_PER_YEAR = 6.5;                  // the generator's own slope: 0.72 of a rung
+const EXP_PRIME_AGE = 30;                  // the oldest man the generator deals
+const EXP_LATE = 1 / 3;                    // and the slope past him
+const EXP_OWN = 7;                         // his own character, held inside a rung
+const EXP_EARNED = 12;                     // and what the caps are worth: 1.3 rungs
+// THE YEARS ALONE, on the 0-99 ladder. Straight at the generator's slope to
+// thirty, which is the oldest man it deals, and a third of it after: cricket
+// stops being new to a man long before he stops playing it, so the tail
+// climbs without flattening into a wall of nine-nines from thirty-two on -
+// and a veteran only reaches the top of the ladder by having played, which
+// is what the caps below are for.
+function expOfAge(age) {
+  const a = clamp(+age || 27, EXP_START_AGE, 38);
+  const yrs = a - EXP_START_AGE, prime = EXP_PRIME_AGE - EXP_START_AGE;
+  return (Math.min(yrs, prime) + Math.max(0, yrs - prime) * EXP_LATE) * EXP_PER_YEAR;
+}
+// TWO MEN OF AN AGE ARE NOT IDENTICAL, but they are within a rung of each
+// other. Seeded on the man's NAME, which is what this whole module keys a
+// cricketer by and the one thing about him that never moves: a pid can be
+// absent and backfilled later (backfill-pids runs every tick), and seeding on
+// one would step a man's experience the morning his id arrived.
+function expOwn(p) {
+  let h = 2166136261 >>> 0;
+  const s = String((p && (p.name || p.pid)) || '');
+  for (let i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; }
+  return ((h >>> 0) % 2001) / 1000 * EXP_OWN - EXP_OWN;      // -7 .. +7
+}
+// what a man reads at before he has played a ball for anybody: his years and
+// his own share of it. The founding cast deals ages of its own choosing, so
+// it asks this the moment it does, and a squad is never stored disagreeing
+// with the number this module would derive for it anyway.
+export function expOfYears(p) {
+  return Math.round(clamp(expOfAge(p && p.age) + expOwn(p), 2, 99));
+}
+// AND WHAT HE HAS ACTUALLY DONE. Young men learn faster, but no number of
+// caps can carry a boy past the men: a season of first-team cricket is worth
+// a rung and a bit, never the four rungs it used to be able to reach.
 function expGain(age, caps) {
   const per = age < 24 ? 0.5 : age < 30 ? 0.35 : 0.2;
-  return Math.min(25, caps * per);
+  return Math.min(EXP_EARNED, caps * per);
 }
 
 // THE NETS, RUN FROM THE RECORD OF PLANS ACTUALLY WORKED.
@@ -454,7 +518,9 @@ export function talentsEarned(q, prog, talT) {
 // a change that cannot alter what a squad row says.
 //   1  the fold as it stood
 //   2  a man's milestones (his story so far) ride with his record
-export const LIVING_VERSION = 2;
+//   3  experience is the years a man has been at it, not the number he was
+//      dealt the day he was made
+export const LIVING_VERSION = 3;
 
 export async function evolveCountry(pool, country, now = Date.now(), host = null) {
   const clubs = (await pool.query(
@@ -923,7 +989,9 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     const defCapt = (trained.slice().sort((x, y) => (y.capt || 0) - (x.capt || 0))[0] || {}).name || null;
     const squad = trained.map(p => {
       const q = { ...p };
-      const base = q.baseExp == null ? (q.exp ?? 55) : q.baseExp;
+      // what his years alone have given him: the floor his caps build on, and
+      // the number a man who has never played a game reads at
+      const base = expOfYears(q);
       q.baseExp = base;
       // the friendlies book rides beside the career on every man who has one
       const fb = (frBook.get(club.slot) || new Map()).get(q.name);
