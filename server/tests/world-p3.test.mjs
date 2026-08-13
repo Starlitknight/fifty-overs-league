@@ -808,15 +808,23 @@ test('014: the living player - careers, form, tired legs, all from the record', 
   // in this fixture happened to reach a threshold.
   await evolveCountry(pool, 'eng', EPOCH + 165 * DAY, host);
   const after = await sq();
-  const capped = after.filter(p => p.career && p.career.m > 0);
+  // HIS BOOK IS ON HIS OWN CARD NOW (094), not on the hot row the umpire reads
+  // to bowl him a ball. Everything asserted below is unchanged - the fold still
+  // writes a man's whole career out of the record on every settle - and only
+  // the place it is kept has moved.
+  const books = new Map((await pool.query(
+    'SELECT pid, career FROM player_history WHERE pid = ANY($1::text[])',
+    [after.map(p => p.pid).filter(Boolean)])).rows.map(r => [r.pid, r.career]));
+  const book = p => books.get(p.pid) || {};
+  const capped = after.filter(p => book(p).m > 0);
   assert.ok(capped.length >= 11, 'at least an XI have caps: ' + capped.length);
-  const scorer = capped.filter(p => p.career.runs > 0).sort((a, b) => b.career.runs - a.career.runs)[0];
+  const scorer = capped.filter(p => book(p).runs > 0).sort((a, b) => book(b).runs - book(a).runs)[0];
   assert.ok(scorer, 'somebody has scored runs');
-  assert.ok(scorer.career.hs > 0 && scorer.career.hs <= scorer.career.runs, 'a best score inside the total');
-  const taker = capped.filter(p => p.career.wkts > 0)[0];
-  assert.ok(taker && taker.career.bb, 'a wicket-taker carries best figures');
+  assert.ok(book(scorer).hs > 0 && book(scorer).hs <= book(scorer).runs, 'a best score inside the total');
+  const taker = capped.filter(p => book(p).wkts > 0)[0];
+  assert.ok(taker && book(taker).bb, 'a wicket-taker carries best figures');
   // experience is earned, never lost, and the baseline is remembered
-  const grew = after.filter(p => p.career && p.exp > p.baseExp);
+  const grew = after.filter(p => book(p).m > 0 && p.exp > p.baseExp);
   assert.ok(grew.length > 0, 'playing made somebody wiser');
   after.forEach(p => { assert.ok(p.exp <= 99 && p.exp >= 0, 'exp in range'); });
   // form and fatigue words agree with their numbers, and the whole squad
@@ -1955,7 +1963,12 @@ test('022: a card marks itself, and those marks are what move form', async () =>
   // had a good run is in better nick than one who has had a bad one.
   await evolveCountry(pool, 'eng', EPOCH + 165 * DAY, host);
   const squad = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
-  const capped = squad.filter(p => p.career && p.career.m > 0);
+  // who has played is a question for his card (094); what nick he is in is
+  // still on the hot row, because that is a thing the ball engine reads
+  const capsOf = new Map((await pool.query(
+    `SELECT pid, (career->>'m')::int AS m FROM player_history WHERE pid = ANY($1::text[])`,
+    [squad.map(p => p.pid).filter(Boolean)])).rows.map(r => [r.pid, r.m]));
+  const capped = squad.filter(p => (capsOf.get(p.pid) | 0) > 0);
   assert.ok(capped.length >= 11);
   capped.forEach(p => assert.ok(p.formIx >= 0 && p.formIx <= 6, p.name + ' has a form reading'));
   assert.ok(new Set(capped.map(p => p.formIx)).size > 1,

@@ -24,6 +24,7 @@
 import { dayIx, dayOfRound } from './clock.mjs';
 import { fantasyPoints, ratePoints, squadStrength } from './ratings.mjs';
 import { youthPot } from './youth.mjs';
+import { stripCold, writeHistory } from './player-history.mjs';
 
 const FORMW = ['abysmal', 'poor', 'shaky', 'steady', 'good', 'strong', 'excellent'];
 const EXPLAD = ['atrocious', 'dreadful', 'poor', 'ordinary', 'average', 'reasonable',
@@ -971,6 +972,7 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
   } catch (eDl) { dealsBySlot.clear(); }   // a database without a board simply has no deals
 
   let touched = 0;
+  const cold = [];                  // every man's book and story, for one write below
   for (const club of clubs) {
     const men = book.get(club.slot) || new Map();
     const deals = dealsBySlot.get(club.slot) || new Map();
@@ -1211,9 +1213,19 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     // call two equal squads different (if a key ever came back in another
     // order) - which costs a write nobody needed, exactly what happened before
     // this, and never a wrong answer.
-    const sqJson = JSON.stringify(squad), yhJson = JSON.stringify(worked.youth || []);
+    //
+    // AND WHAT GOES BACK IS WHAT THE ENGINE NEEDS, not what the man has done.
+    // His book and his story are collected for the one write at the end of the
+    // country and taken off the row that is about to be stored: a squad blob is
+    // read and rewritten on every tick of every day, and thirty per cent of a
+    // played club's was a past that no ball of cricket consults. The objects
+    // above keep both fields - callers downstream in this same settle still
+    // hold them - because stripCold copies rather than deletes.
+    cold.push(...squad);
+    const hot = stripCold(squad);
+    const sqJson = JSON.stringify(hot), yhJson = JSON.stringify(worked.youth || []);
     const str = squadStrength(squad);
-    if (canon(squad) === canon(club.squad || []) &&
+    if (canon(hot) === canon(club.squad || []) &&
         canon(worked.youth || []) === canon(club.youth || []) &&
         club.best_xi_strength === str) continue;
     await pool.query(
@@ -1224,5 +1236,11 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
       [country, club.slot, sqJson, yhJson, str]);
     touched++;
   }
+  // ONE WRITE FOR THE WHOLE COUNTRY'S HISTORY, after the clubs and not inside
+  // the loop: sixteen statements a settle would be the same N+1 the market
+  // paid in Phase 1. The upsert only touches rows whose history has actually
+  // moved, so a quiet day writes nothing here either.
+  try { await writeHistory(pool, cold); }
+  catch (eH) { console.error('history write failed for ' + country + ':', eH.message); }
   return touched;
 }

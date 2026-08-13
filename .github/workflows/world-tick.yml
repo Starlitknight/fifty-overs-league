@@ -163,6 +163,18 @@ jobs:
       - name: Give any club without one the worth of its eleven
         working-directory: server
         run: node backfill-strength.mjs --write
+      # AND EVERY MAN A CARD FOR WHAT HE HAS DONE (094). Two jobs, both cheap
+      # and both idempotent: lift any history still embedded in a squad blob
+      # onto its own row, and open an empty card for a cricketer who has none -
+      # so a page never has to tell "he has played nothing" from "there is no
+      # row for him". Once a country has settled there is nothing left to lift
+      # and nothing left to open, and this is two statements that change no
+      # rows. It can never overwrite a real card with an empty one: the lift
+      # only touches men who still carry something on the hot row, and the open
+      # does nothing on conflict.
+      - name: Give any cricketer without one a card for what he has done
+        working-directory: server
+        run: node backfill-history.mjs --write
       - name: Settle everything due, every nation
         working-directory: server
         run: node tick.mjs

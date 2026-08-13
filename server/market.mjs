@@ -29,6 +29,7 @@ import { countryConfigs } from './init-world.mjs';
 // transfer moves a man, so it moves both clubs' strength, and it is written
 // in the same statement as the squad rather than left for a later pass
 import { squadStrength } from './ratings.mjs';
+import { historyOf, stripCold } from './player-history.mjs';
 
 export const WINDOW_DAYS = 3;              // a listing stands this many world days
 export const MIN_BID_PCT = 0.55;           // an offer below this is not an offer
@@ -461,7 +462,17 @@ async function moveMan(pool, L, win, today) {
     'SELECT season_no, start_day FROM seasons WHERE country_id=$1 ORDER BY season_no DESC LIMIT 1',
     [win.country_id])).rows[0];
   const round = season ? nextRoundAfterDay(today - season.start_day) : 1;   // he is available from the NEXT round
-  const prior = man.career || null, priorI = man.intl || null;
+  // HIS RECORD, FETCHED IF IT IS NOT ON HIM. The carry below is the whole
+  // reason a bought man does not arrive with a blank page, and what it freezes
+  // is his career - which since 094 lives on its own card rather than in the
+  // squad blob. So it is read by the id he carries, and only then does the
+  // freeze happen. The fallbacks matter in both directions: a listing banked
+  // before the split still has the book embedded in player_json, and a man
+  // whose id has not been dealt yet (backfill-pids names him tonight) has no
+  // card to read - in both cases the field on the man is still the truth.
+  const hist = man.pid ? await historyOf(pool, man.pid) : null;
+  const prior = man.career || (hist && hist.career && hist.career.m ? hist.career : null);
+  const priorI = man.intl || (hist && hist.intl && hist.intl.m ? hist.intl : null);
   man.carry = addCarry(man.carry, prior);
   if (priorI) man.carryIntl = addCarry(man.carryIntl, priorI);
   // AND WHAT HE WAS PART OF THE WAY TO. Talent progress is folded from the
@@ -489,7 +500,13 @@ async function moveMan(pool, L, win, today) {
       'UPDATE clubs SET squad=$3::jsonb, best_xi_strength=$4 WHERE country_id=$1 AND slot=$2',
       [L.country_id, L.slot, JSON.stringify(left), squadStrength(left)]);
   }
-  const bs = (buyer.squad || []).filter(p => p && p.name !== man.name).concat([man]);
+  // HE WALKS IN CARRYING A CARRY, NOT A CAREER. His book is already frozen
+  // above and his new club's fold will write him a fresh one tonight from the
+  // matches THIS club has played; the story goes with the man on his own card,
+  // keyed by his id, so nothing of it is lost by leaving it off the blob. A
+  // listing banked before 094 can still have the old fields inside it, which is
+  // the only way one could reach a squad row from here.
+  const bs = stripCold((buyer.squad || []).filter(p => p && p.name !== man.name).concat([man]));
   await pool.query(
     'UPDATE clubs SET squad=$3::jsonb, best_xi_strength=$4 WHERE country_id=$1 AND slot=$2',
     [win.country_id, win.slot, JSON.stringify(bs), squadStrength(bs)]);

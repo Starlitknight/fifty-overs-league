@@ -37,10 +37,23 @@ const PREBANK = PLAY - 3600000 + 4 * 60000;
 async function squads() {
   return (await pool.query('SELECT slot, squad FROM clubs WHERE country_id=$1 ORDER BY slot', ['eng'])).rows;
 }
-// every man in England who carries a story, with his club
+// EVERY MAN IN ENGLAND WHO CARRIES A STORY, with his club and his book.
+//
+// A cricketer's past lives on his own card since 094 - it is not on the row the
+// umpire reads to bowl him a ball - so this reads the two together and hands
+// back the whole man, which is what every assertion below is about. What moved
+// is where the fold puts a story, not whether it writes one.
+async function cards() {
+  return new Map((await pool.query(
+    'SELECT pid, career, intl, mile FROM player_history')).rows.map(r => [r.pid, r]));
+}
 async function storied() {
-  const out = [];
-  for (const c of await squads()) for (const p of c.squad) if (p.mile) out.push({ slot: c.slot, p });
+  const out = [], by = await cards();
+  for (const c of await squads()) for (const p of c.squad) {
+    const h = by.get(p.pid);
+    if (h && Array.isArray(h.mile) && h.mile.length)
+      out.push({ slot: c.slot, p: { ...p, mile: h.mile, career: h.career, intl: h.intl } });
+  }
   return out;
 }
 
@@ -101,10 +114,18 @@ test('a moment is only written where the record supports it', async () => {
 test('nothing is invented: a man with no moments has no story at all', async () => {
   const all = [];
   for (const c of await squads()) for (const p of c.squad) all.push(p);
-  const idle = all.filter(p => !p.mile);
+  const by = await cards();
+  const idle = all.filter(p => !((by.get(p.pid) || {}).mile || []).length);
   assert.ok(idle.length > 0, 'a squad of sixteen cannot all have played (' + idle.length + ')');
-  // and the ones with nothing to say say nothing, rather than an empty list
-  idle.forEach(p => assert.equal(p.mile, undefined, p.name + ' carries an empty story'));
+  // and the ones with nothing to say have an EMPTY story rather than none: a
+  // card is opened for every cricketer, so a page never has to tell "he has
+  // done nothing" from "there is no row for him"
+  idle.forEach(p => {
+    const h = by.get(p.pid);
+    if (h) assert.deepEqual(h.mile, [], p.name + ' has something to say after all');
+  });
+  // and nothing of it is on the hot row
+  all.forEach(p => assert.equal(p.mile, undefined, p.name + ' carries a story on the row the engine reads'));
   // a story is never a stub either: every line has words and a place in time
   for (const { p } of await storied()) {
     p.mile.forEach(m => {
@@ -134,12 +155,10 @@ test('a fold that has moved is redone on the next tick, not the next world day',
   const { LIVING_VERSION } = await import('../living.mjs');
   const key = 'eng:fold:' + LIVING_VERSION;
   // the day is settled and locked; strip the fold's own guard and its output,
-  // which is exactly the state a club is in the moment the fold's code changes
+  // which is exactly the state a club is in the moment the fold's code changes.
+  // The output is the men's cards now (094), so that is what is emptied.
   await pool.query('DELETE FROM ticks WHERE key = $1', [key]);
-  await pool.query(
-    `UPDATE clubs SET squad = (
-       SELECT jsonb_agg(p - 'mile') FROM jsonb_array_elements(squad) p)
-     WHERE country_id = 'eng'`);
+  await pool.query('DELETE FROM player_history');
   assert.equal((await storied()).length, 0, 'nobody has a story to start with');
 
   const out = await runDue(pool, host, 'eng', { now: EPOCH + START * DAY + 22 * 3600000, world: false });

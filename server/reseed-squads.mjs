@@ -83,6 +83,13 @@ const PLAY_TABLES = [
   // and the spending belong to the season that was played, so all three go
   // with it - a redealt world has never scouted anybody.
   'academy_candidates', 'academy_scouts', 'academy_spend',
+  // WHAT THE MEN DID, which is play twice over: it is a derivation of the
+  // matches this script is about to delete, and it is keyed by the ids of
+  // cricketers a redeal replaces. Kept, it would be a table of lives belonging
+  // to nobody, and the first settle after the redeal would write the new men's
+  // cards beside them anyway. Losing it costs one settle, which is the whole
+  // bargain of a derived table.
+  'player_history',
   // the pitch a manager called for a HOME FIXTURE (083). This is where it
   // parts company with ticket_prices below: a price is a standing policy that
   // outlives any one match, while a call names a season, a round and a slot,

@@ -561,15 +561,24 @@ test('a cap is a real cap: its own book, and it is felt at the club', async () =
   assert.ok(scorers.size, 'somebody scored for their country');
   const squads = (await pool.query(`SELECT slot, squad FROM clubs WHERE country_id=$1`, [TC])).rows;
   const men = squads.flatMap(c => c.squad || []);
-  const capped = men.filter(p => p.intl && p.intl.m);
+  // A MAN'S BOOKS LIVE ON HIS OWN CARD (094) - both of them, the one his club
+  // keeps and the one his country does - so this reads them where they are.
+  // What is being asserted has not moved: a cap is written back onto the man,
+  // onto nobody who was not there, and it does not swell his club career.
+  const books = new Map((await pool.query(
+    'SELECT pid, career, intl FROM player_history WHERE pid = ANY($1::text[])',
+    [men.map(p => p.pid).filter(Boolean)])).rows.map(r => [r.pid, r]));
+  const bookOf = p => books.get(p.pid) || { career: {}, intl: {} };
+  const capped = men.filter(p => bookOf(p).intl && bookOf(p).intl.m);
   assert.ok(capped.length >= 10, 'the caps are written back onto the men');
   assert.ok(capped.length <= SQUAD_SIZE, 'and onto nobody who was not there');
   for (const p of capped) {
-    assert.equal(p.intl.m, 1, 'one tour, one cap');
-    assert.ok(!p.career || p.career.m <= 5, 'and it did not swell his club career');
+    const b = bookOf(p);
+    assert.equal(b.intl.m, 1, 'one tour, one cap');
+    assert.ok(!b.career || !b.career.m || b.career.m <= 5, 'and it did not swell his club career');
   }
   const scorer = capped.find(p => scorers.has(p.name));
-  assert.ok(scorer && scorer.intl.runs > 0, 'his runs for his country are on his own book');
+  assert.ok(scorer && bookOf(scorer).intl.runs > 0, 'his runs for his country are on his own book');
 });
 
 test('the ladder and the room read the international game', async () => {
