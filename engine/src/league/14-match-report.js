@@ -340,7 +340,9 @@
     inn = inn.filter(Boolean);
     if (!inn.length) return foMrNone("No scorecard for this match", "Its innings were not recorded.");
     var html = "";
-    try { if (typeof window.foScorecardCards === "function") html = window.foScorecardCards(inn); } catch (e) {}
+    // and who the two sides are, so every name on the card is a door to the
+    // right man rather than to a name (foScorecardCards, 12-scorecard)
+    try { if (typeof window.foScorecardCards === "function") html = window.foScorecardCards(inn, rec && rec.sides); } catch (e) {}
     return html || foMrNone("No scorecard for this match", "Its innings were not recorded.");
   }
 
@@ -732,6 +734,19 @@
   };
   // the banked card, dressed as the record every view already knows how to
   // read. The log rides along only if the replay earned it.
+  // THE TWO SIDES, EXACTLY. A result's id spells both slots - eng:s1:r1:h10a8
+  // is home slot 10 against away slot 8 - so the card's two team names can be
+  // tied to two real clubs without asking a name-keyed index which club it
+  // means. That matters: ten club names in this world are held by two clubs in
+  // the SAME country, so name-to-slot is a coin toss for twenty of them.
+  function foMrSidesFromId(nat, row) {
+    try {
+      var m = /h(\d+)a(\d+)\s*$/.exec(String((row && row.id) || ""));
+      if (!m || !nat || !row) return null;
+      return [{ rid: nat, slot: m[1] | 0, name: row.home },
+              { rid: nat, slot: m[2] | 0, name: row.away }];
+    } catch (e) { return null; }
+  }
   function foMrRecFromCard(nat, hit, got, rep) {
     try {
       if (!got || !got.card || !got.card.innings) return null;
@@ -746,6 +761,7 @@
         innings: c.innings, worm: c.worm || [[], []],
         log: (rep && rep.log) || [],
         comp: "league", round: (row.round | 0) - 1, seasonNo: hit.season | 0,
+        sides: foMrSidesFromId(nat, row),
         __servedCard: 1
       };
     } catch (e) { return null; }
@@ -1577,7 +1593,11 @@
       // World Service serves a league card. Handing over the oldest-first copy
       // the walk above needed made the moments read the second innings as the
       // first, and put Somerset's score beside a Mashed Potatoes wicket.
-      log: (j.log || []).slice(), friendly: true
+      log: (j.log || []).slice(), friendly: true,
+      // the friendly RPC already names both clubs by country and slot, so a
+      // name on this card opens the right man's page without being looked for
+      sides: [j.home, j.away].filter(function (s) { return s && s.country && s.slot != null; })
+        .map(function (s) { return { rid: s.country, slot: s.slot | 0, name: s.name }; })
     };
   }
 

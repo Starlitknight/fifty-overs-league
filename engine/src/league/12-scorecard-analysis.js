@@ -182,7 +182,40 @@
       var best = null, bv = 0; for (var k in counts) if (counts[k] > bv) { bv = counts[k]; best = k; }
       return best;
     }
-    window.foScorecardCards = function (innings) {
+    // WHICH CLUB A MAN PLAYS FOR, WRITTEN INTO HIS LINK.
+    //
+    // The engine's own playerLink can only write a name, because it has never
+    // known which country it was printing - so every cricketer on a world
+    // scorecard who was not yours opened on "No club on the books carries that
+    // name". A bare name genuinely cannot be looked up across nineteen
+    // leagues, and two Eddie Ingrams in the England league alone say why
+    // guessing is not an answer.
+    //
+    // But a scorecard is the one place it is never in doubt. There are two
+    // sides; the card says which one each man batted or bowled for; and the
+    // caller knows exactly where those two sides play - a league result's id
+    // spells both slots (eng:s1:r1:h10a8), and the friendly RPC hands back
+    // country and slot for each. Two clubs, two names, nothing to guess.
+    //
+    // `sides` is optional and its absence is not a failure: a match played on
+    // this device is a match between clubs the local index holds, and a bare
+    // name finds those men exactly as it always has.
+    window.foScorecardCards = function (innings, sides) {
+      var SIDE = {};
+      (sides || []).forEach(function (s) {
+        if (s && s.name && s.rid && s.slot != null) SIDE[s.name] = s;
+      });
+      // the engine's own link, with the club put into its address - built by
+      // rewriting rather than re-rendering, so the tooltip, the flag and
+      // whatever the next patch layer adds all come along unchanged, and a
+      // link it cannot place stays exactly what it was
+      var plOf = function (p, teamNm) {
+        var html = playerLink(p);
+        var s = SIDE[teamNm];
+        if (!s) return html;
+        return html.replace(/href="#\/player\?n=/,
+          'href="#/player?c=' + encodeURIComponent(s.rid) + "&s=" + (s.slot | 0) + "&n=");
+      };
       var norm = function (inn) {
         if (!inn || !inn.batting) return inn;   // engine innings pass through
         var bl = {};
@@ -230,7 +263,7 @@
           played[b.p.name] = 1;
           var sr = b.b ? (100 * b.r / b.b).toFixed(1) : "-";
           var dis = E(b.out || "not out");
-          return "<tr class='" + (b.out ? "" : "fo-sci-no") + "'><td class='fo-sci-nm'>" + playerLink(b.p) + mark(b.p) + stars(b.p, false) +
+          return "<tr class='" + (b.out ? "" : "fo-sci-no") + "'><td class='fo-sci-nm'>" + plOf(b.p, inn.batTeam) + mark(b.p) + stars(b.p, false) +
             "<span class='fo-sci-dis'>" + dis + "</span></td>" +
             "<td class='fo-sci-disc'>" + dis + "</td>" +
             "<td class='n'><b>" + b.r + (b.out ? "" : "*") + "</b></td><td class='n'>" + b.b + "</td><td class='n'>" + (b.f4 || 0) + "</td><td class='n'>" + (b.f6 || 0) + "</td><td class='n'>" + sr + "</td></tr>";
@@ -252,14 +285,14 @@
         // for all eleven and printed the word eleven times.
         var xiNm = function (x) { return (x && typeof x === "object") ? (x.name || "") : (typeof x === "string" ? x : ""); };
         var dnb = (inn.xi || []).map(xiNm).filter(function (n) { return n && !played[n]; })
-          .map(function (n) { return playerLink({ name: n }); }).join(", ");
+          .map(function (n) { return plOf({ name: n }, inn.batTeam); }).join(", ");
         var fow = (inn.fow || []).map(function (f2) { return "<b>" + f2.w + "-" + f2.sc + "</b> (" + E(f2.who) + ", " + (f2.ov != null ? (+f2.ov).toFixed(1) : "-") + " ov)"; }).join(" &nbsp; ");
         var bowl = Object.values(inn.bowlers || {}).sort(function (a, b) { return b.w - a.w || a.r - b.r; }).map(function (rr2) {
           // bowler type baked into the row (not left to the async decorator,
           // which flickered off every ball as the live table was rebuilt)
           var bt2 = "";
           try { if (typeof foBowlCode === "function") { var cd2 = foBowlCode(rr2.p); if (cd2) bt2 = " <span class='fo-bt-tag' title='" + E((typeof foOrdBType === "function" ? foOrdBType(rr2.p) : "") || "") + "'>" + cd2 + "</span>"; } } catch (eBt2) {}
-          return "<tr><td class='fo-sci-nm'>" + playerLink(rr2.p) + bt2 + stars(rr2.p, true) + "</td><td class='n'>" + Math.floor(rr2.b / 6) + (rr2.b % 6 ? "." + rr2.b % 6 : "") + "</td><td class='n'>" + (rr2.mdn != null ? rr2.mdn : "&ndash;") + "</td><td class='n'>" + rr2.r + "</td><td class='n'><b>" + rr2.w + "</b></td><td class='n'>" + (rr2.b ? (rr2.r / (rr2.b / 6)).toFixed(2) : "-") + "</td></tr>";
+          return "<tr><td class='fo-sci-nm'>" + plOf(rr2.p, inn.bowlTeam) + bt2 + stars(rr2.p, true) + "</td><td class='n'>" + Math.floor(rr2.b / 6) + (rr2.b % 6 ? "." + rr2.b % 6 : "") + "</td><td class='n'>" + (rr2.mdn != null ? rr2.mdn : "&ndash;") + "</td><td class='n'>" + rr2.r + "</td><td class='n'><b>" + rr2.w + "</b></td><td class='n'>" + (rr2.b ? (rr2.r / (rr2.b / 6)).toFixed(2) : "-") + "</td></tr>";
         }).join("");
         var ovTxt = Math.floor(inn.legal / 6) + (inn.legal % 6 ? "." + inn.legal % 6 : "");
         var tgt = "";

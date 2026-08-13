@@ -111,3 +111,62 @@ test('the shipped game has one player card and one only', () => {
   assert.match(src, /qp\("r"\)\s*\|\|\s*qp\("c"\)/,
     'both dialects name the same country, so both are read');
 });
+
+// ---- and the scorecard says which club each man played for -------------------
+// A bare "?n=" is not wrong everywhere: a match played on this device is a
+// match between clubs the local index holds, and a name finds those men
+// exactly as it always has. It is wrong for the WORLD's cricketers, and a
+// scorecard is the one place the answer is never in doubt - there are two
+// sides, the card says which one each man batted or bowled for, and the caller
+// knows where those two sides play.
+//
+// This is a real banked card off the live world: eng:s1:r1:h1a0, whose id
+// spells the two slots it was played between. Essex bat first at slot 0;
+// Yorkshire bowl at slot 1.
+const INN = [
+  { batTeam: 'Essex', bowlTeam: 'Yorkshire', runs: 266, wkts: 8, legal: 300,
+    xi: [{ name: 'Louis Gibbs' }, { name: 'Ollie Radcliffe' }, { name: 'Joe Jarvis' }],
+    bat: [{ p: { name: 'Louis Gibbs' }, r: 40, b: 44, out: 'b Bennett' },
+          { p: { name: 'Ollie Radcliffe' }, r: 12, b: 18, out: 'c Hale b Bennett' }],
+    bowlers: { 'Henry Bennett': { p: { name: 'Henry Bennett' }, r: 41, w: 5, b: 60 } },
+    fow: [], extras: { wd: 5, nb: 0, b: 1, lb: 2 } }
+];
+const SIDES = [{ rid: 'eng', slot: 1, name: 'Yorkshire' }, { rid: 'eng', slot: 0, name: 'Essex' }];
+const hrefs = (h) => (h || '').match(/#\/player\?[^"']+/g) || [];
+
+test('a world scorecard names the club beside every cricketer', () => {
+  const H = hrefs(W.foScorecardCards(INN, SIDES));
+  assert.equal(H.length, 4, 'two batters, the man who did not bat, and the bowler');
+  assert.deepEqual(H.filter(h => !/[?&]c=/.test(h)), [], 'and every one of them names a club');
+});
+
+// THE RIGHT CLUB, NOT A CLUB. The batting rows belong to the side batting and
+// the bowling rows to the side in the field, which is the whole reason this is
+// read off the card rather than looked up by name.
+test('the batters get their side and the bowlers get theirs', () => {
+  const H = hrefs(W.foScorecardCards(INN, SIDES));
+  const of = (n) => H.filter(h => h.indexOf('n=' + encodeURIComponent(n)) >= 0)[0];
+  assert.match(of('Louis Gibbs'), /c=eng&s=0&/, 'Gibbs batted for Essex');
+  assert.match(of('Ollie Radcliffe'), /c=eng&s=0&/, 'and so did Radcliffe');
+  assert.match(of('Joe Jarvis'), /c=eng&s=0&/, 'and the man who did not bat is Essex too');
+  assert.match(of('Henry Bennett'), /c=eng&s=1&/, 'Bennett took his five for Yorkshire');
+});
+
+// A CARD WITH NO SIDES IS NOT A BROKEN CARD. Every caller that does not know
+// where the two clubs play - a match this device played itself - keeps exactly
+// the link it has always written, and the men it names are local men the local
+// index finds.
+test('without the two sides the card reads as it always did', () => {
+  const H = hrefs(W.foScorecardCards(INN));
+  assert.equal(H.length, 4, 'the names are still doors');
+  assert.deepEqual(H.filter(h => /[?&]c=/.test(h)), [], 'and none of them invents a club');
+  assert.equal(W.foScorecardCards(INN, []).indexOf('c=eng'), -1, 'nor does an empty list');
+});
+
+// A side the card does not mention cannot rename anybody: the map is keyed on
+// the team name the umpire wrote, so a stale or wrong sides list is inert
+// rather than mislabelling a whole innings.
+test('a sides list that names neither team changes nothing', () => {
+  const H = hrefs(W.foScorecardCards(INN, [{ rid: 'aus', slot: 4, name: 'Somewhere Else' }]));
+  assert.deepEqual(H.filter(h => /[?&]c=/.test(h)), [], 'no club is put on a man it does not cover');
+});
