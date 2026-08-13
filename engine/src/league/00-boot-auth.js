@@ -927,8 +927,8 @@
     }
   } catch (eHr) {}
   try { setInterval(function () { foHdrRight(null); }, 1200); } catch (eHr2) {}
-  // phones: the topbar's Next chip gives way to a red Live button whenever
-  // something is actually on air (own live match, or the broadcast hour)
+  // the topbar's Next chip gives way to a red LIVE button whenever MY OWN
+  // club is playing - and only then
   function foMliveTick() {
     try {
       var ml = document.getElementById("fo-mlive"); if (!ml) return;
@@ -1009,34 +1009,29 @@
           });
         } catch (eW3) {}
       }
-      // "Live" alone does not tell a manager whose match is on; if it is his,
-      // say so, because that is the difference between a badge and a summons
+      // AND NOTHING ELSE LIGHTS IT.
+      //
+      // The pill used to fall back to "there is cricket happening somewhere",
+      // pointing at #/live whenever ANY of the sixteen nations was inside its
+      // broadcast hour. Sixteen nations at three hours apiece is most of the
+      // day, so the masthead wore a red LIVE badge almost permanently and it
+      // stopped meaning anything - a light that is always on is not a signal,
+      // and a manager who tapped it got somebody else's match.
+      //
+      // A summons summons. Every branch above is my own club - the match on
+      // this device, my embargo window, my league fixture, my friendly - so
+      // the pill is on when I have cricket to watch and dark when I do not.
+      // The world's other matches are not hidden by this: they announce
+      // themselves beside their own rows, on the fixture list and in the feed,
+      // where a reader is already looking for them.
+      //
+      // mineNow is therefore true whenever the pill is on at all, and the
+      // quieter lower-case "Live" it used to wear for other people's cricket
+      // has no case left that can reach it.
       var lbl = ml.querySelector(".live-txt");
       if (!lbl) { lbl = document.createElement("span"); lbl.className = "live-txt"; ml.appendChild(lbl); }
-      var want = mineNow ? "LIVE" : "Live";
-      if (lbl.textContent !== want) lbl.textContent = want;
+      if (lbl.textContent !== "LIVE") lbl.textContent = "LIVE";
       ml.classList.toggle("mine", !!mineNow);
-      // AND WHEN NOTHING OF MINE IS ON AIR, THE PILL IS STILL A DOOR - just a
-      // quieter one. It used to go dark whenever the cricket in progress
-      // belonged to somebody else, which is most of the time: the summons is
-      // reserved for my own match (that is what .mine is for), but "there is
-      // cricket happening somewhere" now has a page to open, so the pill points
-      // at it rather than doing nothing.
-      if (!go) {
-        try {
-          var pl8 = window.__foPlanet, wt8 = window.__foWT;
-          if (pl8 && wt8 && wt8.serverFixtures && pl8.nations) {
-            var nw8 = Date.now();
-            var hN8 = (nw8 - (pl8.EPOCH + pl8.dayIx(nw8) * 86400000)) / 3600000;
-            (pl8.nations() || []).forEach(function (r8) {
-              if (go) return;
-              var h8 = pl8.natHour(r8.id);
-              if (hN8 < h8 || hN8 >= h8 + (pl8.LIVE_LEN || 3)) return;
-              try { if ((wt8.serverFixtures(r8.id, nw8).fx || []).length) go = "#/live"; } catch (e8) {}
-            });
-          }
-        } catch (eAny) {}
-      }
       if (go) { ml.setAttribute("data-go", go); ml.classList.add("on"); } else ml.classList.remove("on");
       // the world clock is pinned to the right of the topbar and out of flow,
       // so on a phone the pill lands underneath it and the two print on top of
