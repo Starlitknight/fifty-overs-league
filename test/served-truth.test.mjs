@@ -22,6 +22,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { makeEngine } from './engine-vm.mjs';
 import vm from 'node:vm';
+import { readFileSync } from 'node:fs';
 
 const { ctx } = makeEngine();
 const run = (src) => vm.runInContext(src, ctx);
@@ -462,4 +463,46 @@ test('a card never displaces the real thing, and the real thing always displaces
   apply(cards);
   assert.ok(!held().some(p => p.__card), 'the card cannot take it back');
   assert.equal(held()[0].skills.vsPace, 71, 'not one facet is lost to it');
+});
+
+// ---- ONE MARK, ONE COLOUR ---------------------------------------------------
+// A screenshot of a live scorecard carried three of the same star: slate grey
+// beside two batters, warm grey in the XI card, and the proper red under Did
+// not bat. Measured in a browser against the shipped stylesheet:
+//
+//   batting row   rgb(121,128,142)  10.5px
+//   XI card       rgb(179,171,153)  11px, squashed to a 13px column
+//   everywhere    rgb(200,16,46)    13.1px
+//
+// Nothing was wrong with the star. It is a single <i>, and the surfaces it is
+// dropped into style their own bare <i> - a dismissal line, a shirt number -
+// with selectors three classes deep. A badge is one class and loses all of
+// them. This is not one careless rule either: the build ships hundreds that
+// end on a bare i, and the next surface will add another.
+//
+// So the mark cannot win on specificity and must not try. It holds what it is
+// instead, and these two assertions are the whole guarantee: the hazard is
+// real, and every declaration the star makes is one it keeps.
+test('the international star cannot be repainted by the room it stands in', () => {
+  const built = readFileSync(new URL('../index.html', import.meta.url), 'utf8');
+  const asset = built.match(/<script[^>]+src=["']([^"']*fo-[^"']+\.js)["']/);
+  const css = asset
+    ? built + readFileSync(new URL('../' + asset[1], import.meta.url), 'utf8')
+    : built;
+
+  // the rule as it actually ships, source concatenation and all
+  const rule = /\.fo-nat\{((?:[^{}]|"\s*\+\s*"|\n|\s)*?)\}/.exec(css.replace(/"\s*\+\s*\n?\s*"/g, ''));
+  assert.ok(rule, 'the star ships a rule of its own');
+  const decls = rule[1].split(';').map(d => d.trim()).filter(Boolean);
+  assert.ok(decls.length >= 8, 'and it says what the star is: ' + decls.length + ' declarations');
+  const naked = decls.filter(d => !/!\s*important$/.test(d));
+  assert.deepEqual(naked, [], 'every one of them is held against the room');
+
+  // and the room really does reach for the element - a guard nobody can break
+  // is a guard nobody needed
+  const bareI = [...css.matchAll(/([^{}"';\n]+)\{([^{}"'\n]*)\}/g)]
+    .filter(m => m[1].split(',').some(s => /(^|[\s>+~])i$/.test(s.trim())));
+  const repaint = bareI.filter(m => /(^|;)\s*(color|font|font-size)\s*:/.test(m[2]));
+  assert.ok(repaint.length > 5,
+    'the build styles the bare element all over: ' + repaint.length + ' rules recolour or resize an <i>');
 });

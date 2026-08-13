@@ -284,11 +284,28 @@
     if (document.getElementById("fo-nat-star-css")) return;
     var s = document.createElement("style");
     s.id = "fo-nat-star-css";
+    // THE MARK HAS TO DEFEND ITSELF, and this is the one place it can.
+    //
+    // It is a single <i> dropped into a dozen surfaces it has never met, and
+    // those surfaces style their own bare <i> - a dismissal line, a shirt
+    // number - with selectors three classes deep. A badge is one class and
+    // loses every one of those, so the same star came out slate grey and
+    // 10.5px in a live scorecard row, warm grey and squashed to thirteen
+    // pixels in an XI card, and red where nothing happened to claim the
+    // element. One mark, one meaning is the whole point of it.
+    //
+    // A global cannot out-specify hosts that do not exist yet; it can only
+    // refuse to be repainted. Everything the star IS is therefore held, and
+    // nothing else - the family is inherited, so it still sits in whatever
+    // face the surface around it is set in.
     s.textContent =
-      ".fo-nat{display:inline-block;color:#C8102E;font-size:.82em;line-height:1;" +
-      "margin-left:.34em;vertical-align:.06em;text-shadow:0 1px 0 rgba(0,0,0,.18);" +
-      "font-style:normal;font-weight:400;cursor:help}" +
-      ".fo-nat-lg{font-size:.9em;margin-left:.42em}";
+      ".fo-nat{display:inline-block!important;color:#C8102E!important;" +
+      "font-size:.82em!important;line-height:1!important;font-weight:400!important;" +
+      "font-style:normal!important;font-family:inherit!important;" +
+      "width:auto!important;flex:none!important;text-align:center!important;" +
+      "margin-left:.34em!important;vertical-align:.06em!important;" +
+      "text-shadow:0 1px 0 rgba(0,0,0,.18)!important;cursor:help!important}" +
+      ".fo-nat-lg{font-size:.9em!important;margin-left:.42em!important}";
     (document.head || document.documentElement).appendChild(s);
   }
   function star(name, slot, opts) {
