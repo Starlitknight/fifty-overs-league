@@ -301,6 +301,39 @@ export async function placeBotBids(pool, now = Date.now()) {
        FROM clubs cl LEFT JOIN claims c ON c.country_id=cl.country_id AND c.slot=cl.slot
       WHERE c.user_id IS NULL
       ORDER BY cl.bank DESC, cl.country_id, cl.slot LIMIT 8`)).rows;
+  // ONE READ OF A COUNTRY'S CLUBS, NOT ONE PER LISTING.
+  //
+  // The query below used to sit inside the listing loop, so a country with
+  // twenty men on the board had its sixteen squads - the whole JSONB blob of
+  // every cricketer at every club - pulled off the server twenty times over.
+  // In production that was 119,897 executions and 1.9 million club rows, and
+  // the rows are squads: it was the larger half of the world's egress.
+  //
+  // WHY REUSING THE ROWS IS SAFE, AND WHY ONLY HERE. For the length of ONE
+  // placeBotBids call the club rows cannot move: nothing in this function
+  // writes clubs - it only inserts into bids - and settlement, which does move
+  // banks and squads, is closeListings, which runs afterwards. Everything that
+  // does change as the loop turns is listing-local: `board` is re-read per
+  // listing and `high` is re-derived from it.
+  //
+  // That invariant is a fact about this function TODAY, not a promise about
+  // the future. If a bot is ever made to pay as it bids, or to sign mid-pass,
+  // the cache goes stale and the later listings of a country bid off a bank
+  // that has already been spent. So the map lives and dies with the call: it
+  // is not module-level, not memoised, and has no expiry to reason about.
+  const clubsByCountry = new Map();
+  let fetches = 0;                    // how many country club-sets were read
+  const clubsOf = async (countryId) => {
+    if (!clubsByCountry.has(countryId)) {
+      clubsByCountry.set(countryId, (await pool.query(
+        `SELECT cl.country_id, cl.slot, cl.squad, cl.bank, (c.user_id IS NOT NULL) AS managed
+           FROM clubs cl LEFT JOIN claims c ON c.country_id=cl.country_id AND c.slot=cl.slot
+          WHERE cl.country_id=$1
+          ORDER BY cl.slot`, [countryId])).rows);
+      fetches++;
+    }
+    return clubsByCountry.get(countryId);
+  };
   for (const L of open) {
     // OPEN OUTCRY. botBid() is the club's CAP, seeded once and forever. On
     // the board it opens low - the floor, or one step over the standing high
@@ -310,12 +343,12 @@ export async function placeBotBids(pool, now = Date.now()) {
     const board = (await pool.query(
       'SELECT country_id, slot, amount FROM bids WHERE listing_id=$1', [L.id])).rows;
     let high = 0; board.forEach(b => { if (+b.amount > high) high = +b.amount; });
-    const clubs = (await pool.query(
-      `SELECT cl.country_id, cl.slot, cl.squad, cl.bank, (c.user_id IS NOT NULL) AS managed
-         FROM clubs cl LEFT JOIN claims c ON c.country_id=cl.country_id AND c.slot=cl.slot
-        WHERE cl.country_id=$1 AND NOT (cl.country_id=$1 AND cl.slot=$2)
-        ORDER BY cl.slot`,
-      [L.country_id, L.slot])).rows;
+    // THE SELLER IS DROPPED HERE RATHER THAN IN THE WHERE CLAUSE. The query
+    // used to exclude him, which is what made it per-listing; the whole
+    // country is read once now and the one club that cannot bid for its own
+    // man is filtered out per listing. Same set, same order, same bids.
+    const clubs = (await clubsOf(L.country_id))
+      .filter(c => !(c.country_id === L.country_id && c.slot === L.slot));
     const seen = new Set(clubs.map(c => c.country_id + ':' + c.slot));
     const field = clubs.concat(rich.filter(r =>
       !seen.has(r.country_id + ':' + r.slot) &&
@@ -341,6 +374,11 @@ export async function placeBotBids(pool, now = Date.now()) {
       placed.push({ id: L.id, by: cl.country_id + ':' + cl.slot, amount: offer });
     }
   }
+  // the count rides on the array rather than changing the signature, so every
+  // existing caller (and every test) still gets the list of bids it expects.
+  // It is what proves the cache is working after a deploy: one number per
+  // country with men on the board, not one per listing.
+  Object.defineProperty(placed, 'clubFetches', { value: fetches, enumerable: false });
   return placed;
 }
 
@@ -627,5 +665,5 @@ export async function settleMarket(pool, { now = Date.now() } = {}) {
   const bids = await placeBotBids(pool, now);
   const settled = await closeListings(pool, { now });
   if (bids.length || settled.length) await rebuildMarket(pool, now);
-  return { bids: bids.length, settled };
+  return { bids: bids.length, settled, clubFetches: bids.clubFetches | 0 };
 }
