@@ -154,7 +154,16 @@ export function pt(points) { return PT4 * Math.pow(PT, points - 4); }
 // side - competitive at once among its own kind, with the whole pyramid still
 // to climb. The seating chart decides a bot's class; it never again decides
 // a person's.
-export const HUMAN_STR = pt(3);                // 0.869: a club founded this morning
+//
+// IT DROPPED A RUNG WHEN THE LADDER WAS STRETCHED. The club world used to
+// span 1.24x from floor to summit, and a flagship beat a newcomer only 72
+// times in 100 - the summit of the pyramid a three-in-four favourite over its
+// floor. The rungs in 27-living-planet.js now fill the band the engine really
+// answers in, and the newcomer sits at the foot of them where he always did:
+// a point below the second division's last rung, with the whole climb ahead.
+// He is not weaker against the clubs he actually plays - his own division
+// came down with him - he is further from the top, which is the point.
+export const HUMAN_STR = pt(2);                // 0.795: a club founded this morning
 export const BASE_XI = 36000;                 // the old world's median XI rating
 
 // A LEAGUE IS AS STRONG AS ITS CRICKET CULTURE. Every nation's ten clubs used

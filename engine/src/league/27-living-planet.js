@@ -290,8 +290,8 @@
   // ==========================================================================
   // THE TEN-POINT LADDER. Every side in the world now sits on one scale a
   // person can read off: a national team of a full member is a 9, an
-  // associate's is an 8, a country's flagship club is a 7, first division 4-5,
-  // second division 2-4, and a club founded this morning a 3.
+  // associate's is an 8, a country's flagship club is a 6, first division 4-5,
+  // second division 2.5-4, and a club founded this morning a 2.
   //
   // THE LADDER LIVES WHERE THE ENGINE STILL ANSWERS. Measured on the shipped
   // engine: the same rating gap is worth far less the higher up you apply it.
@@ -310,7 +310,7 @@
   // moves with it rather than being re-tuned by hand.
   var FO_PT = 1.093;                               // one rung, in XI rating
   function foStr(pt) { return Math.pow(FO_PT, pt - 4); }
-  var FO_BOSS_STR = 1.083;                         // 7: the flagship
+  var FO_BOSS_STR = 1.135;                         // 6: the flagship
   // DIVISION ONE: seven established clubs, evenly spread over 5.0 down to 4.0.
   // DIVISION TWO: the founding seats, 4.0 down to 2.0, overlapping the first
   // division's floor at the seam the way real second flights do. Both shuffled
@@ -329,8 +329,42 @@
   // associate club at 18,200 with its skills on the floor, which is why an
   // associate's flagship could finish bottom two of its own league.
   // Every club in the world now sits at 28,000 or above.
-  var FO_STR_LADDER = [1.020, 1.008, 0.997, 0.985, 0.973, 0.962, 0.950];
-  var FO_D2_LADDER = [0.950, 0.941, 0.933, 0.924, 0.916, 0.907, 0.899, 0.890];
+  // ---- AND THE LADDER WAS TOO SHORT ----------------------------------------
+  // The whole club world used to live between 31,300 and 39,000 - top to
+  // bottom a ratio of 1.24 - and at that spacing a flagship beat a club
+  // founded this morning only 72 times in 100. A pyramid whose summit is a
+  // three-in-four favourite over its floor is not a pyramid; it is a flat
+  // field with a slope drawn on it.
+  //
+  // So the ladder is stretched to fill the band the engine actually answers
+  // in. Measured on the shipped engine, four independent pairs of real
+  // squads, each side hosting half the matches so the ground nets out:
+  //
+  //   flagship v newcomer   39,000 v 31,300 (1.24x)  72.3%   <- was
+  //                         40,900 v 28,600 (1.43x)  84.3%   <- is
+  //   flagship v div1 best  39,000 v 36,900 (1.06x)  54.5% -> 59.8%
+  //   its own country       44,000 v 39,000          flagship takes 32.5%
+  //                         44,000 v 40,900          flagship takes 42.0%
+  //
+  // WHY NOT FURTHER. The national sides sit at 44,000-47,500 and cannot climb
+  // (run-scoring saturates above that), so a flagship pushed to 42,000 becomes
+  // a coin toss with Zimbabwe's country - 45.5% - and the shirt stops meaning
+  // anything. Point 6 keeps a real gap in both directions.
+  //
+  // AND THE FLOOR HOLDS. An associate's clubs hang 1.25 rungs under a full
+  // member's, so the world's weakest side is now an associate newcomer at
+  // 25,300 - under the 26,000 the old note here feared. Measured rather than
+  // assumed: an associate flagship still beats it 68.8 times in 100. The band
+  // converts less efficiently down there than at the top (the same 1.41x is
+  // worth 84% in England and 69% in Nepal), which is the right shape for a
+  // less-developed league. The inversion the note warns of is real but sits
+  // far lower - at 22,000, where the better side wins 36%.
+  //
+  // The rungs come out clean, and closer to what this file has always claimed
+  // than what it held: a newcomer is a 2, the second division 2.5 to 4, the
+  // first 4 to 5, a flagship a 6.
+  var FO_STR_LADDER = [1.0383, 1.0236, 1.0089, 0.9942, 0.9794, 0.9647, 0.9500];
+  var FO_D2_LADDER = [0.9500, 0.9331, 0.9161, 0.8992, 0.8822, 0.8653, 0.8483, 0.8314];
 
   // England is named for its counties, not its cities (and three of them play
   // in London), so its identities are seated by slot - all sixteen of them.
