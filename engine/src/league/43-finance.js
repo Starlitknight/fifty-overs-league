@@ -268,6 +268,124 @@
       "html body #page .fo-tk-dial button{margin:0;width:38px;min-height:34px;flex:0 0 auto;border:1px solid #CFC6B6 !important;border-radius:9px !important;background:#FFFEFA !important;color:#1B2432 !important;font:700 16px/1 Manrope,sans-serif !important;text-align:center;padding:0 !important;letter-spacing:0;text-transform:none}",
       "html body #page .fo-tk-dial button:active{background:#F4EFE3 !important}",
       // the gate board
+      // ---- THE GROUND ROOM: one plate, one curve, one board ----------------
+      ".fo-gr-band{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(0,1fr);gap:15px;align-items:stretch}",
+      ".fo-gr-plate{position:relative;border-radius:16px;overflow:hidden;background:var(--navy);display:flex;min-height:300px;border:1px solid #17324F}",
+      ".fo-gr-plate .fo-me-ground{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;object-position:50% 40%;border-radius:0;filter:none}",
+      ".fo-gr-plate .v{position:absolute;inset:0;background:linear-gradient(180deg,rgba(8,20,36,.20) 0,rgba(8,20,36,.26) 34%,rgba(8,20,36,.92) 82%)}",
+      ".fo-gr-plate .in{position:relative;z-index:2;display:flex;flex-direction:column;width:100%;padding:20px 22px 18px}",
+      ".fo-gr-plate .nm{color:rgba(255,255,255,.76);font:700 10px/1 Manrope,sans-serif;letter-spacing:.2em;text-transform:uppercase}",
+      ".fo-gr-plate h2{margin:11px 0 0;color:#FFFEFA;font:600 34px/1 Fraunces,Georgia,serif;letter-spacing:-.03em;text-shadow:0 2px 18px rgba(0,0,0,.5)}",
+      ".fo-gr-plate .st{margin-top:auto;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:0;padding-top:18px}",
+      ".fo-gr-plate .st>div{padding-right:14px;border-right:1px solid rgba(255,255,255,.17)}",
+      ".fo-gr-plate .st>div:last-child{border-right:0;padding-right:0}",
+      ".fo-gr-plate .st span{display:block;color:rgba(255,255,255,.68);font:700 9px/1.2 Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase}",
+      ".fo-gr-plate .st b{display:block;margin-top:8px;color:#FFFEFA;font:750 21px/1 Manrope,sans-serif;letter-spacing:-.04em;font-variant-numeric:tabular-nums}",
+      ".fo-gr-plate .st .g b{color:#59E0AA}",
+      ".fo-gr-price{display:flex;flex-direction:column}",
+      ".fo-gr-now{display:flex;align-items:flex-end;gap:18px;padding:16px 18px 6px}",
+      ".fo-gr-now .v b{display:flex;align-items:baseline;gap:9px;font:750 46px/1 Manrope,sans-serif;letter-spacing:-.055em;color:var(--orange)}",
+      ".fo-gr-now .v b s{text-decoration:none}",
+      ".fo-gr-now .v b s:before{content:\'$\'}",
+      ".fo-gr-now .v b i{font:600 11.5px/1 Manrope,sans-serif;font-style:normal;letter-spacing:0;color:var(--mut)}",
+      ".fo-gr-now .v span{display:block;margin-top:8px;color:var(--mut);font:700 10px/1 Manrope,sans-serif;letter-spacing:.15em;text-transform:uppercase}",
+      ".fo-gr-now .dial{margin-left:auto;display:flex;align-items:center;gap:8px;padding-bottom:5px}",
+      "html body #page .fo-gr-now .dial button{appearance:none;height:40px;min-width:40px;padding:0 !important;border:1px solid #CFC6B6 !important;border-radius:11px !important;background:#FFFEFA !important;color:var(--ink) !important;font:700 17px/1 Manrope,sans-serif !important;cursor:pointer}",
+      "html body #page .fo-gr-now .dial #fo-tk-set{min-width:0;padding:0 15px !important;border-color:var(--orange) !important;background:linear-gradient(180deg,#E85720,#D94313) !important;color:#fff !important;font:700 10.5px/1 Manrope,sans-serif !important;letter-spacing:.1em;text-transform:uppercase}",
+      "html body #page .fo-gr-now .dial #fo-tk-set[disabled]{background:#E7E2D8 !important;border-color:#E7E2D8 !important;color:#A29B8E !important;cursor:not-allowed}",
+      ".fo-gr-plot{position:relative;padding:4px 18px 0}",
+      ".fo-gr-svg{display:block;width:100%;height:168px}",
+      ".fo-gr-svg .cw{fill:none;stroke:#0E9C6B;stroke-width:2.4;stroke-linejoin:round}",
+      ".fo-gr-svg .tk{fill:none;stroke:#DB4A16;stroke-width:2.4;stroke-dasharray:5 4;stroke-linejoin:round}",
+      ".fo-gr-svg .pk{stroke:#D2A53A;stroke-width:1.4;stroke-dasharray:2 4}",
+      ".fo-gr-svg #fo-gr-mk line{stroke:#9AA5B4;stroke-width:1.3;stroke-dasharray:3 3}",
+      ".fo-gr-svg #fo-gr-mk circle{stroke:#FFFEFA;stroke-width:2.4}",
+      ".fo-gr-svg #fo-gr-mk .c{fill:#0E9C6B}.fo-gr-svg #fo-gr-mk .t{fill:#DB4A16}",
+      ".fo-gr-keys{display:flex;flex-wrap:wrap;gap:16px;margin-top:9px}",
+      ".fo-gr-keys span{display:inline-flex;align-items:center;gap:7px;color:var(--mut);font:600 10.5px/1 Manrope,sans-serif}",
+      ".fo-gr-keys span:before{content:\'\';width:13px;height:3px;border-radius:2px;background:currentColor}",
+      ".fo-gr-keys .cw{color:#0E845E}.fo-gr-keys .tk{color:#C24A19}.fo-gr-keys .pk{color:#A87F1B}",
+      ".fo-gr-ends{display:flex;justify-content:space-between;margin-top:6px;color:#9E978A;font:700 9.5px/1 Manrope,sans-serif;letter-spacing:.1em}",
+      ".fo-gr-tri{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:1px;background:#E7E1D4;margin-top:16px;border-top:1px solid #E7E1D4}",
+      ".fo-gr-tri>div{background:var(--paper);padding:14px 18px}",
+      ".fo-gr-tri span{display:block;color:var(--mut);font:700 9px/1.2 Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase}",
+      ".fo-gr-tri b{display:block;margin-top:9px;font:750 21px/1 Manrope,sans-serif;letter-spacing:-.04em;font-variant-numeric:tabular-nums}",
+      ".fo-gr-tri .g b{color:var(--green)}",
+      ".fo-gr-board{margin-top:15px;padding:0 0 4px}",
+      ".fo-gr-hd,.fo-gr-row{display:grid;grid-template-columns:74px minmax(0,.92fr) minmax(0,1.5fr) 112px minmax(0,1.24fr) 74px;gap:15px;align-items:center;padding:13px 18px}",
+      ".fo-gr-hd{padding:11px 18px 9px;border-bottom:1px solid #E7E1D4}",
+      ".fo-gr-hd u{text-decoration:none;font:700 9px/1 Manrope,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#9E978A}",
+      ".fo-gr-hd u.r{text-align:right}",
+      ".fo-gr-row{border-bottom:1px solid #F1ECE0}.fo-gr-row:last-child{border-bottom:0}",
+      ".fo-gr-row.now{background:linear-gradient(90deg,rgba(219,74,22,.055),rgba(219,74,22,0) 62%);box-shadow:inset 3px 0 0 var(--orange)}",
+      ".fo-gr-row .rd b{display:block;font:700 12.5px/1 Manrope,sans-serif}",
+      ".fo-gr-row .rd u{display:block;margin-top:5px;text-decoration:none;font:500 10.5px/1 Manrope,sans-serif;color:#8a8272;white-space:nowrap}",
+      ".fo-gr-row .op b{display:block;font:650 14px/1.2 Manrope,sans-serif;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}",
+      ".fo-gr-row .op u{display:block;margin-top:4px;text-decoration:none;font:700 8.5px/1 Manrope,sans-serif;letter-spacing:.14em;text-transform:uppercase;color:var(--orange)}",
+      ".fo-gr-row .sl{min-width:0}",
+      ".fo-gr-row .trk{display:block;height:7px;border-radius:999px;background:#EBE6DA;overflow:hidden}",
+      ".fo-gr-row .trk i{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#136A4B,#177A57)}",
+      ".fo-gr-row .sl s{display:block;margin-top:6px;text-decoration:none;font:500 11px/1.2 Manrope,sans-serif;color:#6A6354;font-variant-numeric:tabular-nums}",
+      ".fo-gr-row .sl em{display:flex;align-items:center;gap:7px;margin-top:7px;font-style:normal}",
+      ".fo-gr-row .sl em.lk{font:600 11px/1 Manrope,sans-serif;color:#8a8272}",
+      "html body #page .fo-gr-row .sl em.pr button{appearance:none;height:28px;min-width:28px;padding:0 !important;border:1px solid #CFC6B6 !important;border-radius:8px !important;background:#FFFEFA !important;color:var(--ink) !important;font:700 13px/1 Manrope,sans-serif !important;cursor:pointer}",
+      "html body #page .fo-gr-row .sl em.pr button.ok{min-width:0;padding:0 10px !important;font-size:9.5px !important;letter-spacing:.1em;text-transform:uppercase}",
+      ".fo-gr-row .sl em.pr b{font:700 12.5px/1 Manrope,sans-serif;min-width:34px;text-align:center;font-variant-numeric:tabular-nums}",
+      ".fo-gr-row .mn{text-align:right}",
+      ".fo-gr-row .mn b{display:block;font:700 13.5px/1.2 Manrope,sans-serif;font-variant-numeric:tabular-nums}",
+      ".fo-gr-row .mn u{display:block;margin-top:4px;text-decoration:none;font:600 9px/1 Manrope,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#9E978A}",
+      ".fo-gr-row .sq{display:flex;align-items:center;gap:8px;min-width:0}",
+      "html body #page .fo-gr-row .sq select{flex:1;min-width:0;height:36px;border:1px solid #CFC6B6;border-radius:9px;background:#FFFEFA;color:var(--ink);font:600 12px/1 Manrope,sans-serif;padding:0 9px}",
+      "html body #page .fo-gr-row .sq button{appearance:none;height:36px;padding:0 12px !important;border:1px solid var(--orange) !important;border-radius:9px !important;background:linear-gradient(180deg,#E85720,#D94313) !important;color:#fff !important;font:700 9.5px/1 Manrope,sans-serif !important;letter-spacing:.1em;text-transform:uppercase;cursor:pointer;white-space:nowrap}",
+      ".fo-gr-row .sq .ok{display:inline-flex;align-items:center;gap:6px;font:650 12px/1.3 Manrope,sans-serif;color:var(--green)}",
+      ".fo-gr-row .sq .was{font:650 12.5px/1.3 Manrope,sans-serif;color:var(--ink)}",
+      ".fo-gr-row .sq .was u{display:block;margin-top:3px;text-decoration:none;font:500 10.5px/1.2 Manrope,sans-serif;color:#8a8272}",
+      ".fo-gr-row .cl{display:flex;flex-direction:column;gap:7px;text-align:right}",
+      ".fo-gr-row .cl span{display:block}",
+      ".fo-gr-row .cl u{display:block;text-decoration:none;font:600 8px/1 Manrope,sans-serif;letter-spacing:.13em;text-transform:uppercase;color:#B3AB9B}",
+      ".fo-gr-row .cl b{display:block;margin-top:3px;font:700 11.5px/1 Manrope,sans-serif;color:#C08A2E;font-variant-numeric:tabular-nums}",
+      ".fo-gr-row .cl b.lk{color:var(--green)}",
+      "@media(max-width:1180px){.fo-gr-band{grid-template-columns:minmax(0,1fr)}.fo-gr-plate{min-height:240px}}",
+      // A PHONE HAS NO COLUMNS. Six of them at 390px is a row nobody can read
+      // and controls nobody can hit, so each Sunday becomes its own small card:
+      // who and when at the top, the sales and the price under it, the square
+      // and the two clocks along the foot.
+      "@media(max-width:820px){",
+      ".fo-gr-band{gap:12px}",
+      ".fo-gr-plate{min-height:0;border-radius:15px}",
+      ".fo-gr-plate .in{padding:15px 15px 14px}",
+      ".fo-gr-plate .fo-me-ground{position:relative;height:auto;aspect-ratio:16/9;object-position:50% 42%}",
+      ".fo-gr-plate .v{background:linear-gradient(180deg,rgba(8,20,36,.16) 0,rgba(8,20,36,.30) 40%,rgba(8,20,36,.93) 86%)}",
+      ".fo-gr-plate .in{position:absolute;inset:0}",
+      "html body #page .fo-gr-plate h2{font-size:26px !important;margin-top:8px}",
+      ".fo-gr-plate .st{grid-template-columns:1fr 1fr;gap:11px 0;padding-top:12px}",
+      ".fo-gr-plate .st>div:nth-child(2n){border-right:0;padding-right:0}",
+      ".fo-gr-plate .st b{font-size:17px;margin-top:6px}",
+      ".fo-gr-now{flex-wrap:wrap;gap:12px;padding:14px 14px 4px}",
+      ".fo-gr-now .v b{font-size:38px}",
+      ".fo-gr-now .dial{margin-left:0;width:100%;padding-bottom:0}",
+      "html body #page .fo-gr-now .dial #fo-tk-set{flex:1}",
+      ".fo-gr-plot{padding:4px 14px 0}.fo-gr-svg{height:132px}",
+      ".fo-gr-keys{gap:11px}.fo-gr-keys span{font-size:10px}",
+      ".fo-gr-tri{grid-template-columns:1fr 1fr;margin-top:13px}",
+      ".fo-gr-tri>div:last-child{grid-column:1/-1}",
+      ".fo-gr-tri>div{padding:12px 14px}.fo-gr-tri b{font-size:18px;margin-top:7px}",
+      ".fo-gr-board{margin-top:12px}",
+      ".fo-gr-hd{display:none}",
+      ".fo-gr-row,.fo-gr-row.now{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:9px 12px;padding:14px}",
+      ".fo-gr-row .rd{order:1}.fo-gr-row .rd b{display:inline;font-size:12px}",
+      ".fo-gr-row .rd u{display:inline;margin:0 0 0 7px}",
+      ".fo-gr-row .op{order:0;grid-column:1/-1}",
+      ".fo-gr-row .mn{order:2;text-align:right}",
+      ".fo-gr-row .mn b{font-size:14px}",
+      ".fo-gr-row .sl{order:3;grid-column:1/-1;margin-top:2px}",
+      ".fo-gr-row .sq{order:4;grid-column:1/-1;margin-top:2px}",
+      "html body #page .fo-gr-row .sq select{height:44px}",
+      "html body #page .fo-gr-row .sq button{height:44px}",
+      ".fo-gr-row .cl{order:5;grid-column:1/-1;flex-direction:row;gap:20px;text-align:left;padding-top:3px;border-top:1px solid #F1ECE0}",
+      "html body #page .fo-gr-row .sl em.pr button{height:36px;min-width:36px !important;font-size:15px !important}",
+      "html body #page .fo-gr-row .sl em.pr button.ok{padding:0 14px !important}",
+      "}",
       ".fo-gb{margin-top:15px;padding:0 15px 6px}",
       ".fo-gb .fo-me-panelhead em{font:450 11.5px/1.3 Manrope,sans-serif;color:var(--mut);font-style:normal;letter-spacing:0;text-transform:none}",
       ".fo-gb-row{display:grid;grid-template-columns:56px minmax(0,1fr) auto;gap:12px;align-items:center;padding:11px 0;border-bottom:1px solid #EFE9DC}",
@@ -606,6 +724,114 @@
   // Matchday Economy gets a purpose-built editorial ground painting rather
   // than a diagram. Keep the venue name as real UI text above it so the same
   // artwork can frame every club without baking a fictional label into it.
+  // ---- THE PRICE CURVE ------------------------------------------------------
+  // Every point is tkSale() at that price for the next home fixture: the same
+  // call, the same demand, the same sales window that fills the board below.
+  // Nothing here is drawn to look like demand - it IS the demand, swept.
+  //
+  // Two lines, because they do not agree. The crowd falls away steadily as the
+  // price climbs; the club's own take rises to a peak and then falls off, and
+  // past the knee at $62 it falls hard because supporters start staying home
+  // altogether. A manager who could only see one number could not see that.
+  //
+  // The sweep's answers ride on the plot as data so the dial can move the
+  // marker and the three figures without asking the server anything: pick up
+  // a price, read off the crowd and the take it would bring.
+  function foGrSweep(head, homeCut) {
+    var out = { p: [], sold: [], take: [] };
+    if (!head) return out;
+    for (var p = TK.MIN; p <= TK.MAX; p++) {
+      var s = tkSale(head.demand, (Number(head.seats) || 0) || 0, head.x.t0,
+        (function (v) { return function () { return v; }; })(p), null, head.heat);
+      out.p.push(p);
+      out.sold.push(s.sold);
+      out.take.push(Math.round(s.take * homeCut + s.sold * TK.BCAST));
+    }
+    return out;
+  }
+  function foGrPrice(head, ticket, homeCut, seats, projCrowd, projGate, full) {
+    var W = 520, H = 168, PAD = 15;
+    var sw = null;
+    try { sw = foGrSweep(head ? { demand: head.demand, heat: head.heat, x: head.x, seats: seats } : null, homeCut); } catch (eSw) { sw = null; }
+    var have = !!(sw && sw.p.length);
+    var mSold = 1, mTake = 1, i;
+    if (have) {
+      for (i = 0; i < sw.p.length; i++) {
+        if (sw.sold[i] > mSold) mSold = sw.sold[i];
+        if (sw.take[i] > mTake) mTake = sw.take[i];
+      }
+    }
+    var xOf = function (ix) { return PAD + (ix / Math.max(1, sw.p.length - 1)) * (W - 2 * PAD); };
+    var yOf = function (v, mx) { return H - PAD - (v / mx) * (H - 2 * PAD - 5); };
+    var pathOf = function (arr, mx) {
+      var d = "";
+      for (var k = 0; k < arr.length; k++) d += (k ? "L" : "M") + xOf(k).toFixed(1) + " " + yOf(arr[k], mx).toFixed(1);
+      return d;
+    };
+    var ix0 = have ? Math.max(0, Math.min(sw.p.length - 1, (ticket | 0) - TK.MIN)) : 0;
+    // where the take is highest - the one fact the curve exists to tell him
+    var best = 0; if (have) for (i = 0; i < sw.take.length; i++) if (sw.take[i] > sw.take[best]) best = i;
+    var grid = "";
+    for (i = 0; i < 5; i++) {
+      var gy = (PAD + i * (H - 2 * PAD) / 4).toFixed(0);
+      grid += "<line x1='" + PAD + "' y1='" + gy + "' x2='" + (W - PAD) + "' y2='" + gy + "' stroke='#EEF1F6'/>";
+    }
+    var plot = !have ? "" :
+      "<svg class='fo-gr-svg' viewBox='0 0 " + W + " " + H + "' preserveAspectRatio='none' role='img'" +
+      " aria-label='Crowd and your matchday take against ticket price'>" +
+      "<defs><linearGradient id='foGrFill' x1='0' y1='0' x2='0' y2='1'>" +
+      "<stop offset='0' stop-color='#0E9C6B' stop-opacity='.18'/>" +
+      "<stop offset='1' stop-color='#0E9C6B' stop-opacity='0'/></linearGradient></defs>" + grid +
+      "<path d='" + pathOf(sw.sold, mSold) + " L" + xOf(sw.p.length - 1).toFixed(1) + " " + (H - PAD) +
+      " L" + PAD + " " + (H - PAD) + " Z' fill='url(#foGrFill)'/>" +
+      "<line class='pk' x1='" + xOf(best).toFixed(1) + "' y1='" + PAD + "' x2='" + xOf(best).toFixed(1) +
+      "' y2='" + (H - PAD) + "'/>" +
+      "<path class='cw' d='" + pathOf(sw.sold, mSold) + "'/>" +
+      "<path class='tk' d='" + pathOf(sw.take, mTake) + "'/>" +
+      "<g id='fo-gr-mk' data-min='" + TK.MIN + "'" +
+      " data-x='" + sw.p.map(function (p, k) { return xOf(k).toFixed(1); }).join(",") + "'" +
+      " data-yc='" + sw.sold.map(function (v) { return yOf(v, mSold).toFixed(1); }).join(",") + "'" +
+      " data-yt='" + sw.take.map(function (v) { return yOf(v, mTake).toFixed(1); }).join(",") + "'" +
+      " data-sold='" + sw.sold.join(",") + "' data-take='" + sw.take.join(",") + "'>" +
+      "<line x1='" + xOf(ix0).toFixed(1) + "' y1='6' x2='" + xOf(ix0).toFixed(1) + "' y2='" + (H - PAD) + "'/>" +
+      "<circle class='c' cx='" + xOf(ix0).toFixed(1) + "' cy='" + yOf(sw.sold[ix0], mSold).toFixed(1) + "' r='4.6'/>" +
+      "<circle class='t' cx='" + xOf(ix0).toFixed(1) + "' cy='" + yOf(sw.take[ix0], mTake).toFixed(1) + "' r='4.6'/>" +
+      "</g></svg>";
+    var peak = have ? ("Your take is highest around $" + sw.p[best]) : "";
+    // THE THREE FIGURES ARE THE CURVE'S OWN, at the price standing today.
+    // They used to be the page's historical projection - last home crowd, or
+    // the season average - which reads sensibly until the dial is touched and
+    // the numbers jump to the sweep's answer instead. Two different arithmetics
+    // behind one row of numbers is worse than either: the tiles agree with the
+    // plot above them and with the board below at every price, or the manager
+    // is being shown a trade-off he cannot trust. Only a room with no home
+    // fixture left to sell falls back to the record.
+    var crowd9 = have ? sw.sold[ix0] : projCrowd;
+    var take9 = have ? sw.take[ix0] : projGate;
+    var occ = seats ? Math.min(100, Math.round(100 * crowd9 / seats)) : full;
+    return "<section class='fo-me-card fo-gr-price'>" +
+      "<div class='fo-me-panelhead'><span>What a seat costs</span>" +
+      "<em>" + (head ? "the crowd against your take, v " + E(head.x.opp.name) : "the standing price") + "</em></div>" +
+      "<div class='fo-gr-now'>" +
+      "<div class='v'><b class='num'><s id='fo-tk-val'>" + (TK_PEND != null ? TK_PEND : ticket) + "</s>" +
+      "<i id='fo-tk-now'>" + (TK_PEND != null && TK_PEND !== ticket ? "now $" + ticket : "") + "</i></b>" +
+      "<span>Ticket price</span></div>" +
+      "<div class='dial'><button type='button' id='fo-tk-dn' aria-label='Cheaper'>&minus;</button>" +
+      "<button type='button' id='fo-tk-up' aria-label='Dearer'>+</button>" +
+      "<button type='button' id='fo-tk-set'" +
+      (TK_PEND == null || TK_PEND === ticket ? " disabled" : "") + ">Set the price</button></div>" +
+      "</div>" +
+      (have ? "<div class='fo-gr-plot'>" + plot +
+        "<div class='fo-gr-keys'><span class='cw'>Crowd</span><span class='tk'>Your matchday</span>" +
+        "<span class='pk'>" + E(peak) + "</span></div>" +
+        "<div class='fo-gr-ends'><span>$" + TK.MIN + "</span><span>$" + TK.MAX + "</span></div></div>"
+        : "<div class='fo-me-empty'>The curve draws itself once a home fixture is on the fixture list.</div>") +
+      "<div class='fo-gr-tri'>" +
+      "<div><span>Projected crowd</span><b id='fo-gr-crowd'>" + crowd9.toLocaleString() + "</b></div>" +
+      "<div class='g'><span>Your matchday</span><b id='fo-gr-take'>" + M(take9) + "</b></div>" +
+      "<div><span>Occupancy</span><b id='fo-gr-occ'>" + occ + "%</b></div>" +
+      "</div></section>";
+  }
   function foMeGroundArt(name) {
     var base = (typeof FO_ART !== "undefined") ? FO_ART :
       ((location.pathname.indexOf("/client/") !== -1) ? "art/" : "client/art/");
@@ -744,170 +970,147 @@
         "<button type='button' class='fo-me-btn primary' id='fo-fin-seats'" + (canSeats ? "" : " disabled") + ">" +
         (atCap ? "Ground at capacity" : "Expand the ground") + "</button></div></header>";
 
-      html += "<div class='fo-me-top'><section class='fo-me-card fo-me-stadium'><div class='fo-me-cardtitle'>" + E(groundNm) + "</div>" +
-        "<div class='fo-me-groundwrap'>" + foMeGroundArt(groundNm) + "</div><div class='fo-me-stadfoot'>" +
-        "<div class='fo-me-occ'><div class='fo-me-ring' style='--fill:" + full + "%'><b>" + full + "%</b></div><span>Occupancy</span></div>" +
-        "<div class='fo-me-cap'><b>" + (lastAtt || avgAtt || 0).toLocaleString() + " / " + seats.toLocaleString() + "</b>" +
-        "<span>Next fixture: <em>" + E(oppNm) + "</em></span></div></div></section>" +
-        "<div class='fo-me-right'><div class='fo-me-kpis'>" +
-        "<div class='fo-me-card fo-me-kpi'><div class='ico'>" + foMeIcon("crowd") + "</div><div><span>Avg attendance</span><b>" + (avgAtt || lastAtt || 0).toLocaleString() + "</b></div></div>" +
-        "<div class='fo-me-card fo-me-kpi green'><div class='ico'>" + foMeIcon("mood") + "</div><div><span>Supporter mood</span><b>" + E(moodWord.toUpperCase()) + "</b></div></div>" +
-        "</div></div></div>";
-
-      html += "<div class='fo-me-bottom'><section class='fo-me-levers flat'><div class='fo-me-panelhead'>Ground decisions</div>" +
-        "<div class='fo-me-levergrid'>" +
-        "<div class='fo-me-lever fo-tk'><div class='top'><div class='ic'>" + foMeIcon("price") + "</div><span>Ticket price</span></div>" +
-        "<b class='num'><s id='fo-tk-val'>" + (TK_PEND != null ? TK_PEND : ticket) + "</s><i id='fo-tk-now'>" + (TK_PEND != null && TK_PEND !== ticket ? "now $" + ticket : "") + "</i></b>" +
-        "<div class='fo-tk-dial'><button type='button' id='fo-tk-dn'>&minus;</button><button type='button' id='fo-tk-up'>+</button></div>" +
-        "<em>Your gate, your price. Dearer thins the crowd; cheaper fills the ground early. Each match locks 24 hours before the first ball.</em>" +
-        "<button type='button' id='fo-tk-set'" + (TK_PEND == null || TK_PEND === ticket ? " disabled" : "") + ">Set the price</button></div>" +
-        "<div class='fo-me-lever'><div class='top'><div class='ic'>" + foMeIcon("ground") + "</div><span>Stadium capacity</span></div><b>" + seats.toLocaleString() + " &middot; " + full + "% full</b><em>" +
-        (atCap ? "The ground is at the " + (Number(f.maxSeats) || 45000).toLocaleString() + "-seat ceiling."
-               : "+" + seatStep.toLocaleString() + " seats costs " + M(nextSeatsCost) + ".") +
-        "</em><button type='button' id='fo-fin-seats2'" + (canSeats ? "" : " disabled") + ">Explore expansion</button></div>" +
-        "</div><div class='fo-fin-msg' id='fo-fin-msg'></div></section>" +
-        "<section class='fo-me-card fo-me-forecast'><div class='fo-me-panelhead'><span>Next match</span><em>" + E(basis.toLowerCase()) + "</em></div><div class='fo-me-forecastbody'>" +
-        "<div class='fo-me-opp'>" + (function () {
-          // the visitor wears his own crest, not a monogram: the flagship its
-          // painted arms, everybody else the drawn coat the whole game uses
-          var oS = nf && nf.opp && nf.opp.slot != null ? (nf.opp.slot | 0) : null;
-          var nat9 = (st.claim && st.claim.country) || "";
-          if (oS === 0 && nat9) {
-            try { var c9 = window.__foCxAPI.crest(nat9);
-              if (c9) return "<img class='fo-me-shield crest' src='" + c9 + "' alt='' onerror=\"this.style.display='none'\">"; } catch (e9) {}
-          }
-          if (nf && nf.opp && nf.opp.name && window.foClubCrest) {
-            try { return "<span class='fo-me-shield arms'>" + foClubCrest(oppNm, 52) + "</span>"; } catch (e8) {}
-          }
-          return "<div class='fo-me-shield'>" + E(oppNm.slice(0, 2).toUpperCase()) + "</div>";
-        })() + "<b>" + E(oppNm) + "</b><span>" + (atHome ? "At home" : "Away fixture") + "</span></div>" +
-        "<div class='fo-me-fgrid'>" +
-        (atHome
-          ? "<div class='fo-me-fstat'><span>Projected crowd</span><b>" + projectedCrowd.toLocaleString() + "</b></div>" +
-            "<div class='fo-me-fstat'><span>Your share of the gate</span><b>" + M(projectedGate) + "</b></div>" +
-            "<div class='fo-me-fstat'><span>Ticket</span><b>" + M(ticket) + "</b></div>" +
-            "<div class='fo-me-fstat green'><span>Occupancy</span><b>" + pct(projectedCrowd, seats) + "%</b></div>"
-          : "<div class='fo-me-fstat'><span>Gate at your ground</span><b>None</b></div>" +
-            "<div class='fo-me-fstat'><span>You take</span><b>A third of theirs</b></div>" +
-            "<div class='fo-me-fstat'><span>Away share so far</span><b>" + M(inAway) + "</b></div>" +
-            "<div class='fo-me-fstat'><span>Crowd last time out</span><b>" + (lastAtt || avgAtt || 0).toLocaleString() + "</b></div>") +
-        "</div></div></section></div>";
-
-      // ---- THE GATE BOARD: every home Sunday still selling ------------------
+      // ---- THE GROUND, ON ONE PAGE ------------------------------------------
+      //
+      // This room used to be five boxes and a great deal of nothing. On a wide
+      // screen the right-hand column was a grid declared `auto 1fr` with only
+      // ONE child, so the 1fr row was a void as tall as the stadium card; the
+      // KPI strip was a four-column grid rendering two tiles, each stretched to
+      // double width with its content pinned left; and both boards were laid
+      // out `56px | 1fr | auto`, which on a 1200px page draws a progress bar
+      // the width of a football pitch and strands every dropdown from its
+      // button. Underneath all of it, the same six home fixtures were printed
+      // twice - once for the gate, once for the square.
+      //
+      // So: the ground is one plate with its numbers over the foot, the price
+      // is a CURVE rather than a number with buttons, and the summer is ONE
+      // board on which each Sunday appears once and carries both decisions.
+      //
+      // THE CURVE IS THE BOARD'S OWN ARITHMETIC. It is not a drawn shape that
+      // resembles demand: every point on it is tkSale() run at that price for
+      // the next home fixture - the same call, the same demand, the same
+      // window that fills the rows below - so the curve and the rows can never
+      // disagree. What it shows is the thing a manager cannot otherwise see:
+      // the crowd falls away steadily as the price climbs, but his own take
+      // rises to a peak and then falls, and where that peak sits depends on
+      // who is visiting and how the ground feels about them this week.
       (function () {
         var cl = st.claim || null;
         try { cl = cl || window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eC0) {}
-        var fxs = [];
-        try { fxs = (window.foMyLeagueFixtures ? window.foMyLeagueFixtures(20) : []).filter(function (x) { return x.home; }).slice(0, 5); } catch (eFx) {}
-        if (!cl || !fxs.length) return;
         var hist = tkHist();
         var now = Date.now();
         var mm = 0.55 + Math.max(0, Math.min(8, mood)) * (0.39 / 8);
-        // division two plays to thinner stands - the same rule the walk banks
         var dv = 1;
         try {
-          var lg9 = window.__foWorldLg && window.__foWorldLg.get(cl.country);
+          var lg9 = cl && window.__foWorldLg && window.__foWorldLg.get(cl.country);
           if (lg9 && lg9.divisions && (lg9.divisions["2"] || []).indexOf(cl.slot | 0) >= 0) dv = 0.8;
         } catch (eDv) {}
-        var rows9 = fxs.map(function (x) {
-          var dr = tkDraw(cl, x.opp.slot);
-          var demand = sup * mm * dv * dr.mult;
-          var heat = tkHeat(dr.big, mood, x.round);
-          var pf = tkFnFor(hist, x.season, x.round);
-          var pNow = pf(now);
-          var cur = tkSale(demand, seats, x.t0, pf, now, heat);
-          var fin = tkSale(demand, seats, x.t0, pf, null, heat);
-          var locked = now >= x.t0 - TK.LOCK;
-          var pctS = seats ? Math.min(100, Math.round(100 * (locked ? fin.sold : cur.sold) / seats)) : 0;
-          var dt9 = "";
-          try { dt9 = new Date(x.t0).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); } catch (eD9) {}
-          var left = x.t0 - TK.LOCK - now;
-          var lockTxt = locked ? "Locked" : left < 86400000 ? "locks in " + Math.max(1, Math.round(left / 3600000)) + "h" : "locks in " + Math.round(left / 86400000) + "d";
-          return "<div class='fo-gb-row num'>" +
-            "<span class='rd'>R" + x.round + "<u>" + E(dt9) + "</u></span>" +
-            "<span class='op'><b>v " + E(x.opp.name) + "</b>" +
-            "<u><i style='width:" + pctS + "%'></i></u>" +
-            "<s>" + (!locked && now < cur.opensAt
-              ? "sales open in " + Math.max(1, Math.round((cur.opensAt - now) / 86400000)) + "d"
-              : (locked ? fin.sold : cur.sold).toLocaleString() + " / " + seats.toLocaleString() + " sold" + (locked ? "" : " so far")) +
-            (heat >= 0.6 && !locked ? " &middot; <b class='hot'>big draw</b>" : "") + "</s>" +
-            (locked
-              ? "<span class='pr lk num'>at $" + pNow + "</span>"
-              : "<span class='pr num' data-sr='" + x.season + ":" + x.round + "' data-p='" + pNow + "'>" +
-                "<button type='button' class='d'>&minus;</button><b>$" + pNow + "</b>" +
-                "<button type='button' class='u'>+</button><button type='button' class='ok'>Set</button></span>") +
-            "</span>" +
-            "<span class='tk'><b>~" + M(Math.round(fin.take * (Number(f.homeCut) || 2 / 3) + fin.sold * TK.BCAST)) + "</b><u>your matchday</u>" +
-            "<em class='" + (locked ? "lk" : "") + "'>" + lockTxt + "</em></span></div>";
-        }).join("");
-        html += "<section class='fo-me-card fo-gb'><div class='fo-me-panelhead'><span>The gate board</span>" +
-          "<em>advance sales at today's mood &middot; the crowd locks 24h out</em></div>" + rows9 + "</section>";
-      })();
 
-      // ---- THE SQUARE: a pitch for every home fixture ----------------------
-      //
-      // The soil used to be the weather's business. A fixture's pitch is dealt
-      // by the nation's climate and the home groundsman's own leaning, and the
-      // umpire bowls on exactly what the fixtures page promised - which left
-      // the one lever every home captain in cricket actually pulls out of the
-      // manager's hands. It is his now, under three rules the board prints on
-      // its face: his own ground, two days' notice, and said once.
-      //
-      // A row is a decision, so it shows what the square does today, what he
-      // may make of it, and what each choice would mean - the field guide's
-      // own words, so a manager is never picking a surface blind.
-      (function () {
-        var cl = st.claim || null;
-        try { cl = cl || window.__foWorldClaim || JSON.parse(localStorage.getItem("fo_world_claim") || "null"); } catch (eS0) {}
+        // THIS SEASON'S HOME FIXTURES, ONCE. The gate and the square used to
+        // fetch them separately and print them separately; they are one list
+        // and one row each now. The schedule reaches into next summer, but the
+        // world has no season row for it - so a picker there would be a call
+        // the umpire must refuse, and the board only offers what can be made.
         var PL = window.__foPlanet;
-        if (!cl || !PL || !PL.condOf || !PL.phaseOf) return;
-        // THIS SEASON'S HOME FIXTURES, and no further. The schedule reaches
-        // into next summer so a manager can see what is coming, but the world
-        // has no season row for it yet and no first ball to count back from -
-        // so a picker there would be a decision the umpire must refuse. The
-        // board offers what can actually be called.
-        var sNow = 0; try { sNow = (PL.phaseOf(Date.now()) || {}).season | 0; } catch (eP0) {}
+        var sNow = 0; try { sNow = (PL && PL.phaseOf ? (PL.phaseOf(now) || {}) : {}).season | 0; } catch (eP0) {}
         var fxs = [];
         try {
           fxs = (window.foMyLeagueFixtures ? window.foMyLeagueFixtures(20) : [])
             .filter(function (x) { return x.home && (!sNow || x.season === sNow); }).slice(0, 8);
-        } catch (eSf) {}
-        var heard = sqCalls(cl) != null;
-        var K = sqKit(), now = Date.now();
-        var nm = function (k) { return K.nm[k] || String(k || ""); };
-        var rowsS = fxs.map(function (x) {
-          var c = null; try { c = PL.condOf(cl.country, cl.slot | 0, x.season, x.round); } catch (eC) {}
-          var pitch = (c && c.pitch) || "balanced", said = !!(c && c.called);
-          var shut = x.t0 - SQ_NOTICE, locked = now >= shut, left = shut - now;
-          var dt = ""; try { dt = new Date(x.t0).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); } catch (eD) {}
-          // the SHORT advice on the row; the full field guide belongs in the
-          // question that spends the call, not in a paragraph per fixture
-          var gd = K.note[pitch] || [], guide = gd[1] || gd[0] || "";
-          // the state, in the words that name what a manager may still do
-          var st9 = said ? "<em class='said'>Prepared</em>"
-                  : locked ? "<em class='lk'>Shut</em>"
-                  : left < 86400000 ? "<em>shuts in " + Math.max(1, Math.round(left / 3600000)) + "h</em>"
-                  : "<em>shuts in " + Math.round(left / 86400000) + "d</em>";
-          var pick = "";
-          if (!said && !locked && heard) {
-            pick = "<div class='fo-sq-pk'><select data-sq='" + x.season + ":" + x.round + "'>" +
+        } catch (eFx) {}
+
+        var heard = cl ? (sqCalls(cl) != null) : false;
+        var K = sqKit();
+        var pnm = function (k) { return K.nm[k] || String(k || ""); };
+
+        // every number a row prints, worked out once
+        var rows = (cl ? fxs : []).map(function (x) {
+          var dr = tkDraw(cl, x.opp.slot);
+          var demand = sup * mm * dv * dr.mult;
+          var heat = tkHeat(dr.big, mood, x.round);
+          var pf = tkFnFor(hist, x.season, x.round);
+          var cur = tkSale(demand, seats, x.t0, pf, now, heat);
+          var fin = tkSale(demand, seats, x.t0, pf, null, heat);
+          var gLock = now >= x.t0 - TK.LOCK;
+          var c9 = null;
+          try { c9 = PL && PL.condOf ? PL.condOf(cl.country, cl.slot | 0, x.season, x.round) : null; } catch (eC9) {}
+          var sShut = x.t0 - SQ_NOTICE, sLeft = sShut - now;
+          return { x: x, demand: demand, heat: heat, price: pf(now), cur: cur, fin: fin,
+                   gLock: gLock, gLeft: x.t0 - TK.LOCK - now,
+                   pitch: (c9 && c9.pitch) || "balanced", said: !!(c9 && c9.called),
+                   sLock: now >= sShut, sLeft: sLeft };
+        });
+
+        // ---- THE BAND: the ground, and what a seat costs -------------------
+        var head = rows[0] || null;
+        html += "<div class='fo-gr-band'>" +
+          "<section class='fo-gr-plate'>" + foMeGroundArt(groundNm) + "<i class='v'></i>" +
+          "<div class='in'><div><div class='nm'>Home of " + E(clubNm) + "</div><h2>" + E(groundNm) + "</h2></div>" +
+          "<div class='st'>" +
+          "<div><span>Capacity</span><b>" + seats.toLocaleString() + "</b></div>" +
+          "<div class='g'><span>Occupancy</span><b>" + full + "%</b></div>" +
+          "<div><span>Avg attendance</span><b>" + (avgAtt || lastAtt || 0).toLocaleString() + "</b></div>" +
+          "<div class='g'><span>Supporter mood</span><b>" + E(cap(moodWord)) + "</b></div>" +
+          "</div></div></section>" +
+          foGrPrice(head, ticket, homeCut, seats, projectedCrowd, projectedGate, full) +
+          "</div>";
+
+        // ---- THE BOARD: one row per home Sunday ----------------------------
+        if (!rows.length) {
+          html += "<section class='fo-me-card fo-gr-board'><div class='fo-me-panelhead'><span>The home summer</span></div>" +
+            "<div class='fo-me-empty'>Every home fixture of the summer has been played. Next season's " +
+            "gate and square are yours once the fixtures are drawn.</div></section>";
+          return;
+        }
+        var body = rows.map(function (r, i) {
+          var x = r.x;
+          var dt9 = "";
+          try { dt9 = new Date(x.t0).toLocaleDateString("en-GB", { weekday: "short", day: "numeric", month: "short" }); } catch (eD9) {}
+          var shown = r.gLock ? r.fin : r.cur;
+          var pctS = seats ? Math.min(100, Math.round(100 * shown.sold / seats)) : 0;
+          var sold9 = (!r.gLock && now < r.cur.opensAt)
+            ? "sales open in " + Math.max(1, Math.round((r.cur.opensAt - now) / 86400000)) + "d"
+            : shown.sold.toLocaleString() + " / " + seats.toLocaleString() + " sold" + (r.gLock ? "" : " so far");
+          var gTxt = r.gLock ? "Locked"
+            : r.gLeft < 86400000 ? Math.max(1, Math.round(r.gLeft / 3600000)) + "h"
+            : Math.round(r.gLeft / 86400000) + "d";
+          // the square: what it is today, and what he may still make of it
+          var sq = r.said
+            ? "<span class='ok'>&#10003; " + E(pnm(r.pitch)) + "</span>"
+            : r.sLock ? "<span class='was'>" + E(pnm(r.pitch)) + "<u>as it lies</u></span>"
+            : !heard ? "<span class='was'>" + E(pnm(r.pitch)) + "<u>reading the orders&hellip;</u></span>"
+            : "<select data-sq='" + x.season + ":" + x.round + "'>" +
               K.order.map(function (p) {
-                return "<option value='" + p + "'" + (p === pitch ? " selected" : "") + ">" + E(nm(p)) + "</option>";
-              }).join("") + "</select><button type='button' class='fo-sq-go'>Prepare</button></div>";
-          }
-          return "<div class='fo-sq-row'>" +
-            "<span class='rd'>R" + x.round + "<u>" + E(dt) + "</u></span>" +
-            "<span class='op'><b>v " + E(x.opp.name) + "</b>" +
-            "<s>" + (said ? "Your groundsman is preparing it." : locked ? "The square is already being prepared."
-                     : !heard ? "Reading the groundsman&rsquo;s orders&hellip;" : E(guide)) + "</s>" +
-            pick + "</span>" +
-            "<span class='st'><b>" + E(nm(pitch)) + "</b><u>" + (said ? "your call" : "as it lies") + "</u>" + st9 + "</span></div>";
+                return "<option value='" + p + "'" + (p === r.pitch ? " selected" : "") + ">" + E(pnm(p)) + "</option>";
+              }).join("") + "</select><button type='button' class='fo-sq-go'>Prepare</button>";
+          var sTxt = r.said ? "prepared" : r.sLock ? "shut"
+            : r.sLeft < 86400000 ? Math.max(1, Math.round(r.sLeft / 3600000)) + "h"
+            : Math.round(r.sLeft / 86400000) + "d";
+          return "<div class='fo-gr-row" + (i === 0 ? " now" : "") + "'>" +
+            "<div class='rd'><b>R" + x.round + "</b><u>" + E(dt9) + "</u></div>" +
+            "<div class='op'><b>v " + E(x.opp.name) + "</b>" +
+            (i === 0 ? "<u>next home Sunday</u>" : (r.heat >= 0.6 && !r.gLock ? "<u>big draw</u>" : "")) + "</div>" +
+            "<div class='sl'><span class='trk'><i style='width:" + pctS + "%'></i></span>" +
+            "<s>" + sold9 + "</s>" +
+            (r.gLock
+              ? "<em class='lk'>sold at $" + r.price + "</em>"
+              : "<em class='pr num' data-sr='" + x.season + ":" + x.round + "' data-p='" + r.price + "'>" +
+                "<button type='button' class='d'>&minus;</button><b>$" + r.price + "</b>" +
+                "<button type='button' class='u'>+</button><button type='button' class='ok'>Set</button></em>") +
+            "</div>" +
+            "<div class='mn'><b>~" + M(Math.round(r.fin.take * homeCut + r.fin.sold * TK.BCAST)) + "</b><u>matchday</u></div>" +
+            "<div class='sq'>" + sq + "</div>" +
+            "<div class='cl'><span><u>Gate</u><b class='" + (r.gLock ? "lk" : "") + "'>" + gTxt + "</b></span>" +
+            "<span><u>Square</u><b class='" + (r.said || r.sLock ? "lk" : "") + "'>" + sTxt + "</b></span></div>" +
+            "</div>";
         }).join("");
-        html += "<section class='fo-me-card fo-sq'><div class='fo-me-panelhead'><span>The square</span>" +
-          "<em>your ground, your pitch &middot; a call shuts 48h out and is made once</em></div>" +
-          (rowsS || "<div class='fo-me-empty'>Every home fixture of the summer has been played. " +
-                    "Next season's square is yours to prepare once the fixtures are drawn.</div>") +
-          "</section>";
+        html += "<section class='fo-me-card fo-gr-board'>" +
+          "<div class='fo-me-panelhead'><span>The home summer</span>" +
+          "<em>advance sales at today&rsquo;s mood &middot; the gate locks 24h out &middot; the square shuts 48h out</em></div>" +
+          "<div class='fo-gr-hd'><u>Round</u><u>Opponent</u><u>Advance sales &amp; price</u>" +
+          "<u class='r'>Your matchday</u><u>The square</u><u class='r'>Closes</u></div>" +
+          body + "</section>" +
+          "<div class='fo-fin-msg' id='fo-fin-msg'></div>";
       })();
 
       html += "<div class='fo-fin-foot'><a href='#/finance'>&lsaquo; Finances</a><a href='#/home'>The club &rsaquo;</a></div></div>";
@@ -1210,11 +1413,38 @@
       var vEl = page.querySelector("#fo-tk-val"), nowEl = page.querySelector("#fo-tk-now");
       var setB = page.querySelector("#fo-tk-set");
       var cur = Number(f.ticket) || 26;
+      // THE CURVE ANSWERS THE DIAL. The sweep is already on the plot as data -
+      // one crowd and one take for every price on the ladder - so moving the
+      // dial reads its answer off the same arithmetic the board below used,
+      // with nothing fetched and nothing guessed. A manager can walk the price
+      // up and watch the crowd fall and his own take turn over.
+      var mk = page.querySelector("#fo-gr-mk");
+      var num = function (el, k) { try { return (el.getAttribute(k) || "").split(","); } catch (e) { return []; } };
+      var MX = mk ? num(mk, "data-x") : [], MYC = mk ? num(mk, "data-yc") : [],
+          MYT = mk ? num(mk, "data-yt") : [], MSD = mk ? num(mk, "data-sold") : [],
+          MTK = mk ? num(mk, "data-take") : [];
+      var MMIN = mk ? (parseInt(mk.getAttribute("data-min"), 10) || TK.MIN) : TK.MIN;
+      var cEl = page.querySelector("#fo-gr-crowd"), tEl = page.querySelector("#fo-gr-take"),
+          oEl = page.querySelector("#fo-gr-occ");
+      var seats9 = Number(f.seats) || 0;
+      var mark = function (v) {
+        if (!mk || !MX.length) return;
+        var i = Math.max(0, Math.min(MX.length - 1, (v | 0) - MMIN));
+        var ln = mk.querySelector("line"), c1 = mk.querySelector(".c"), t1 = mk.querySelector(".t");
+        if (ln) { ln.setAttribute("x1", MX[i]); ln.setAttribute("x2", MX[i]); }
+        if (c1) { c1.setAttribute("cx", MX[i]); c1.setAttribute("cy", MYC[i]); }
+        if (t1) { t1.setAttribute("cx", MX[i]); t1.setAttribute("cy", MYT[i]); }
+        var sold = +MSD[i] || 0, take = +MTK[i] || 0;
+        if (cEl) cEl.textContent = sold.toLocaleString();
+        if (tEl) tEl.textContent = M(take);
+        if (oEl) oEl.textContent = (seats9 ? Math.min(100, Math.round(100 * sold / seats9)) : 0) + "%";
+      };
       var show = function () {
         var v = TK_PEND != null ? TK_PEND : cur;
         if (vEl) vEl.textContent = v;
         if (nowEl) nowEl.textContent = TK_PEND != null && TK_PEND !== cur ? "now $" + cur : "";
         if (setB) setB.disabled = TK_PEND == null || TK_PEND === cur;
+        mark(v);
       };
       var nudge = function (d) {
         var v = (TK_PEND != null ? TK_PEND : cur) + d;
@@ -1471,6 +1701,14 @@
   }
   window.foRenderFinancePage = function () { financeRoom("finance"); };
   window.foRenderGroundPage = function () { financeRoom("ground"); };
+  // paint either room from a given status, without a session. The rooms are
+  // behind a sign-in, so this is the only way to LOOK at them - which is how
+  // the ground came to ship with a void down its right-hand side. Harmless:
+  // it renders, it writes nothing, and the server is never asked anything.
+  window.__foFinTest = function (st, room) {
+    FST.st = st; FST.at = Date.now();
+    financeRoom(room || "ground");
+  };
   // ---- A DOOR IN THE MASTHEAD ------------------------------------------------
   // The books were reachable only from the hamburger index and the phone dock,
   // which on a desktop meant they were reachable only by someone who already

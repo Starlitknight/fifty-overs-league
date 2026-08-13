@@ -68,12 +68,23 @@ test('the world fills the register once per ground, for anyone', () => {
 
 test('the ground board offers a call only where one can still be made', () => {
   assert.match(fin, /var SQ_NOTICE = 48 \* 3600000;/, 'two days, the same two the RPC keeps');
-  assert.match(fin, /var shut = x\.t0 - SQ_NOTICE, locked = now >= shut, left = shut - now;/);
-  assert.match(fin, /if \(!said && !locked && heard\) \{/,
-    'no picker for a match already called, already shut, or not yet heard about');
+  assert.match(fin, /var sShut = x\.t0 - SQ_NOTICE, sLeft = sShut - now;/);
+  assert.match(fin, /sLock: now >= sShut/, 'shut is measured from the notice, not from the first ball');
+  // THE PICKER APPEARS IN EXACTLY ONE ARM. A match already called, already
+  // shut, or not yet heard about each takes an earlier branch and prints what
+  // the square is rather than a control - so there is one path to a <select>
+  // and three ways of never reaching it.
+  assert.match(fin, /var sq = r\.said\s*\n\s*\? "<span class='ok'>/,
+    'already prepared: what he chose, not a chooser');
+  assert.match(fin, /: r\.sLock \? "<span class='was'>/, 'shut: what it lies as');
+  assert.match(fin, /: !heard \? "<span class='was'>/, 'not heard: what it lies as, and says so');
+  assert.match(fin, /: "<select data-sq='" \+ x\.season \+ ":" \+ x\.round \+ "'>/,
+    'and only then a call to make');
+  assert.equal((fin.match(/<select data-sq=/g) || []).length, 1,
+    'one picker in the room, on one branch');
   // "heard" is the difference between no call and no answer - a board that
   // confused them would offer a manager a decision he has already spent
-  assert.match(fin, /var heard = sqCalls\(cl\) != null;/);
+  assert.match(fin, /var heard = cl \? \(sqCalls\(cl\) != null\) : false;/);
   assert.match(fin, /PCH\.rows = Array\.isArray\(rows\) \? rows : \[\];/, 'and null until the world answers');
   assert.match(fin, /var PCH = \{ rows: null, at: 0, busy: false \};/);
 });
@@ -82,10 +93,14 @@ test('the board draws the home fixtures and reads the pitch off the planet', () 
   assert.match(fin, /\.filter\(function \(x\) \{ return x\.home && \(!sNow \|\| x\.season === sNow\); \}\)\.slice\(0, 8\)/,
     'his own ground, and only this season - the schedule reaches into next ' +
     'summer, which the world has no first ball for and the RPC must refuse');
-  assert.match(fin, /var sNow = 0; try \{ sNow = \(PL\.phaseOf\(Date\.now\(\)\) \|\| \{\}\)\.season \| 0; \} catch/);
-  assert.match(fin, /c = PL\.condOf\(cl\.country, cl\.slot \| 0, x\.season, x\.round\)/,
+  assert.match(fin, /sNow = \(PL && PL\.phaseOf \? \(PL\.phaseOf\(now\) \|\| \{\}\) : \{\}\)\.season \| 0;/);
+  assert.match(fin, /c9 = PL && PL\.condOf \? PL\.condOf\(cl\.country, cl\.slot \| 0, x\.season, x\.round\) : null;/,
     'the surface printed is the one condOf answers with, call or forecast');
-  assert.match(fin, /var pitch = \(c && c\.pitch\) \|\| "balanced", said = !!\(c && c\.called\);/);
+  assert.match(fin, /pitch: \(c9 && c9\.pitch\) \|\| "balanced", said: !!\(c9 && c9\.called\),/);
+  // ONE ROW PER HOME SUNDAY. The gate and the square used to be two boards
+  // over the same six fixtures; a manager reading one had to find the other.
+  assert.equal((fin.match(/foMyLeagueFixtures\(/g) || []).length, 1,
+    'the fixtures are fetched once, not once per board');
   // the field guide is borrowed, so two rooms cannot name one surface twice
   assert.match(CLUB, /window\.__foPitchKit = \{ nm: PITCH_NM, note: PITCH_NOTE, order: PITCH_ORDER, name: pitchNm \};/,
     'the club page lends its own table');
