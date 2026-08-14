@@ -39,185 +39,131 @@
   }
 
   // ---- the lead story -------------------------------------------------------
-  function foGzLead(me, day) {
-    var last = null, lastIx = -1;
-    for (var i = (App.results || []).length - 1; i >= 0; i--) {
-      var r = App.results[i];
-      if (r && (!r.comp || r.comp === "league") && (r.home === me.name || r.away === me.name)) { last = r; lastIx = i; break; }
-    }
-    if (!last) return foGzPreview(me, day);
-    var txt = (last.result && last.result.text) || "";
-    var won = txt.indexOf(me.name + " won") === 0;
-    var tie = /tie/i.test(txt);
-    var opp = last.home === me.name ? last.away : last.home;
-    var innLine = (last.innings || []).map(function (inn) {
-      return inn ? E(inn.batTeam) + " " + inn.runs + "/" + inn.wkts : "";
-    }).filter(Boolean).join(" &middot; ");
-    // the star performers, read back off the match's own history entries
-    var bestBat = null, bestBowl = null;
+  // ---- WHERE THE PAPER COMES FROM -------------------------------------------
+  //
+  // world_gazette. One row, composed by the umpire once a world day from the
+  // record it actually played, and read identically by every device.
+  //
+  // It used to be built here, out of App.results and App.playerHist - THIS
+  // DEVICE'S SAVE - so the lead was the reader's own last match and the paper
+  // was a different paper on every phone. The wire beside it came from module
+  // 27's client-derived planet, a world that is a pure function of the UTC date
+  // and has no connection to the one the umpire plays; nothing in the client
+  // read world_nat_matches at all, so the internationals this world stages
+  // every window appeared on no page in the game.
+  //
+  // The page now fetches and renders. It composes nothing, and it still writes
+  // nothing, which is the property worth keeping: a newspaper a reader can edit
+  // is not a newspaper.
+  var GZ = { issue: null, busy: false, dead: false };
+  function gzFetch(cb) {
+    if (GZ.issue || GZ.busy || GZ.dead) return GZ.issue;
+    GZ.busy = true;
     try {
-      var teams = last.home + " v " + last.away;
-      for (var nm in (App.playerHist || {})) {
-        (App.playerHist[nm] || []).forEach(function (e) {
-          if (!e || e.fr || e.date !== last.date || e.teams !== teams) return;
-          if ((e.rr || 0) > 0 && (!bestBat || e.rr > bestBat.rr)) bestBat = { nm: nm, rr: e.rr, bb: e.bb, o: e.o };
-          if ((e.w || 0) > 0 && (!bestBowl || e.w > bestBowl.w || (e.w === bestBowl.w && e.cr < bestBowl.cr))) bestBowl = { nm: nm, w: e.w, cr: e.cr };
-        });
-      }
-    } catch (e) {}
-    var HEAD_W = ["A DAY THAT BELONGED TO US", "THE GROUND ROARS AGAIN", "POINTS IN THE BAG, HEADS HELD HIGH", "A WIN WORTH THE WALK HOME"];
-    var HEAD_L = ["A HARD LESSON, TAKEN STANDING", "NOT OUR DAY, NOT OUR LUCK", "BEATEN, BUT NOT BOWED", "A LONG LOOK IN THE MIRROR"];
-    var HEAD_T = ["NOTHING BETWEEN THEM", "A TIE FOR THE AGES"];
-    var head = tie ? pick(HEAD_T, "gzh|" + day) : pick(won ? HEAD_W : HEAD_L, "gzh|" + day + "|" + lastIx);
-    var PUNDITS = ["Aggie Trueman", "H. R. Fothergill", "Marcus Bell", "The Colonel"];
-    var QUOTE_W = ["“That is what the badge is supposed to look like,”", "“You win matches like that in the field, and they did,”", "“The table does not lie, and today it smiled,”"];
-    var QUOTE_L = ["“Good sides lose; poor sides learn nothing. This side will learn,”", "“The margin flatters nobody. Back to the nets,”", "“You could see the plan; you could not see the execution,”"];
-    var quote = pick(tie ? QUOTE_W : (won ? QUOTE_W : QUOTE_L), "gzq|" + day + "|" + lastIx) + " said " + pick(PUNDITS, "gzp|" + day) + ".";
-    var body =
-      "<p><span class='fo-gz-drop'>" + E(txt.charAt(0) || "T") + "</span>" + E(txt.slice(1) || "he match was played") +
-      ". The scorers made it " + innLine + ", and nobody at the ground argued.</p>" +
-      "<p>" +
-      (bestBat ? "The innings of the day belonged to <b>" + E(bestBat.nm) + "</b> &mdash; " + bestBat.rr + (bestBat.o ? "" : " not out") + " from " + (bestBat.bb || "?") + " balls. " : "") +
-      (bestBowl ? "With the ball it was <b>" + E(bestBowl.nm) + "</b>, " + bestBowl.w + " for " + bestBowl.cr + ", who set the tone. " : "") +
-      quote + "</p>";
-    return {
-      kicker: "The lead &middot; v " + E(opp),
-      head: head,
-      body: body,
-      cta: "<a class='fo-gz-btn' href='#/scorecard?i=" + lastIx + "'>The full scorecard &rsaquo;</a>"
-    };
+      fetch(SB_URL + "/rest/v1/world_gazette?select=world_day,issue&limit=1",
+            { headers: { apikey: SB_ANON } })
+        .then(function (r) { return r.ok ? r.json() : null; })
+        .then(function (rows) {
+          GZ.busy = false;
+          var r = rows && rows[0];
+          if (r && r.issue) { GZ.issue = r.issue; GZ.issue.__day = r.world_day; }
+          else GZ.dead = true;
+          if (cb) cb();
+        })
+        .catch(function () { GZ.busy = false; GZ.dead = true; if (cb) cb(); });
+    } catch (e) { GZ.busy = false; GZ.dead = true; }
+    return null;
   }
-  function foGzPreview(me, day) {
-    var S = App.season, opp = null, rd = S ? S.round : 0;
-    try {
-      var fx = (S.schedule[rd] || []).find(function (f) { return f[0] === App.teamIx || f[1] === App.teamIx; });
-      if (fx) opp = GD.teams[fx[0] === App.teamIx ? fx[1] : fx[0]];
-    } catch (e) {}
-    var HEADS = ["THE SEASON HOLDS ITS BREATH", "ALL EYES ON THE FIRST BALL", "TALK IS CHEAP; THE TOSS IS NOT"];
-    return {
-      kicker: "The lead &middot; preview",
-      head: pick(HEADS, "gzpv|" + day),
-      body: "<p><span class='fo-gz-drop'>E</span>verything at " + E(me.name) + " points to the next fixture" +
-        (opp ? " &mdash; " + E(opp.name) + " await, and the town has already picked its heroes" : "") +
-        ". The nets have been busy, the orders are being argued over, and this paper, as ever, reserves judgement until the first wicket falls.</p>",
-      cta: "<a class='fo-gz-btn' href='#/matchday?r=" + rd + "'>The matchday page &rsaquo;</a>"
-    };
+  // a column with a rule over it, which is all a newspaper section is
+  function sec(title, body, cls) {
+    if (!body) return "";
+    return "<div class='fo-gz-sec " + (cls || "") + "'><div class='fo-gz-sh'>" +
+      title + "</div>" + body + "</div>";
   }
 
-  // ---- render ---------------------------------------------------------------
+  // a story's own words, already chosen by the press. The page never picks a
+  // phrase: two readers must see the same sentence, and the only way to be sure
+  // is that the sentence was written once.
+  function gzStory(st, big) {
+    if (!st) return "";
+    return "<div class='fo-gz-" + (big ? "lead" : "sec") + "'>" +
+      (big ? "<div class='fo-gz-k'>" + E(gzKicker(st)) + "</div><h2>" + E(st.headline || "") + "</h2>" +
+             "<div class='fo-gz-by'>By our cricket correspondent</div>" +
+             "<div class='fo-gz-body'>" + E(st.body || st.brief || "") + "</div>"
+           : "<h3>" + E(st.headline || "") + "</h3><p>" + E(st.body || st.brief || "") + "</p>") +
+      "</div>";
+  }
+  // WHAT KIND OF STORY THIS IS, said plainly above the headline. The reader
+  // should be able to tell an international from a county game without reading
+  // the names, which is what a kicker is for.
+  function gzKicker(st) {
+    var k = st && st.kind;
+    return k === "cupFinal" ? "The final"
+      : k === "cupTie" ? "The cup"
+      : k === "intlResult" ? "International"
+      : k === "intlFeat" ? "International · the men"
+      : k === "titleDecided" ? "The championship"
+      : k === "worldRecord" ? "A record"
+      : k === "oddity" ? "Out of the ordinary"
+      : k === "milestone" ? "Milestone"
+      : "From the leagues";
+  }
+
   window.foRenderPaperPage = function () {
-    var page = document.getElementById("page"); if (!page || !ready()) return;
-    foGzCss();
+    var page = document.getElementById("page"); if (!page) return;
     document.body.classList.add("fo-gz-on");
-    var me = userTeam(), sN = window.foSeasonN ? foSeasonN(App.seasonNo || 1) : (App.seasonNo || 1), day = worldDay();
+    foGzCss();
+    var iss = GZ.issue || gzFetch(function () { window.foRenderPaperPage(); });
+    if (!iss) {
+      page.innerHTML = "<div class='fo-gz'><div class='fo-gz-in'>" +
+        "<div class='fo-gz-mast'><div class='fo-gz-ears'><span class='ear'>&nbsp;</span>" +
+        "<h1>The Fifty Overs Gazette</h1><span class='ear r'>&nbsp;</span></div>" +
+        "<div class='fo-gz-mrule'></div></div>" +
+        "<p class='fo-gz-quiet'>" + (GZ.dead
+          ? "The presses are quiet. Today&rsquo;s edition has not reached us."
+          : "The paper is being set&hellip;") + "</p></div></div>";
+      return;
+    }
+    var day = iss.__day | 0;
+    // THE FRONT PAGE CHANGES FOR A FINAL. Two days a season the whole world
+    // watches one match, and a paper that prints them in a Tuesday's shape
+    // wastes the occasion - so the press flags it and the page obeys.
+    var big = !!iss.tournament;
+    var briefs = (iss.briefs || []).map(function (b) {
+      return "<div class='fo-gz-wln'>" + E(b.brief || b.headline || "") + "</div>";
+    }).join("") || "<div class='fo-gz-wln quiet'>Nothing else to report.</div>";
+    var board = (iss.scoreboard || []).map(function (r) {
+      return "<div class='fo-gz-mrow'><i>&bull;</i><span>" + E(r.text || (r.home + " v " + r.away)) + "</span></div>";
+    }).join("") || "<div class='fo-gz-wln quiet'>No cricket was played.</div>";
+    var back = (iss.back || []).map(function (b) {
+      return "<div class='fo-gz-nln'>" + E(b.brief || b.headline || "") + "</div>";
+    }).join("") || "<div class='fo-gz-wln quiet'>&mdash;</div>";
 
-    var lead = foGzLead(me, day);
-
-    // around the world: the living planet's wire
-    var wireRows = "";
-    try {
-      if (window.__foPlanet) wireRows = __foPlanet.genWire(Date.now()).slice(0, 8).map(function (w) {
-        return "<div class='fo-gz-wln'>" + E(w.headline) + "</div>";
-      }).join("");
-    } catch (e) {}
-    if (!wireRows) wireRows = "<div class='fo-gz-wln quiet'>The foreign desks are quiet tonight.</div>";
-
-    // table talk
-    var tableTalk = "";
-    try {
-      var rows = leagueRows(), pos = rows.findIndex(function (r) { return r.nm === me.name; }) + 1;
-      var top = rows[0], gap = top ? (top.pts - (rows[pos - 1] ? rows[pos - 1].pts : 0)) : 0;
-      tableTalk = "<p><b>" + E(top ? top.nm : "") + "</b> lead the league" +
-        (pos === 1 ? " &mdash; and that means us. The town may enjoy it quietly; this column intends to enjoy it loudly."
-          : ". " + E(me.name) + " sit " + ord(pos) + ", " + (gap > 0 ? gap + " point" + (gap === 1 ? "" : "s") + " off the top" : "level on points") + ", and the run-in will decide what kind of season this was.") + "</p>" +
-        "<div class='fo-gz-mini'>" + rows.slice(0, 3).map(function (r, i) {
-          return "<div class='fo-gz-mrow" + (r.nm === me.name ? " mine" : "") + "'><i>" + (i + 1) + "</i><span>" + E(r.nm) + "</span><b>" + r.pts + "</b></div>";
-        }).join("") + "</div>";
-    } catch (e) { tableTalk = "<p>The table is being typeset.</p>"; }
-
-    // the week's best: finest innings + figures of the latest settled round
-    var weekBest = "";
-    try {
-      var maxR = -1;
-      for (var nm in (App.playerHist || {})) (App.playerHist[nm] || []).forEach(function (e) { if (e && !e.fr && e.s === sN && (e.r || 0) > maxR) maxR = e.r; });
-      var bi = null, bs = null;
-      if (maxR >= 0) for (var nm2 in (App.playerHist || {})) (App.playerHist[nm2] || []).forEach(function (e) {
-        if (!e || e.fr || e.s !== sN || e.r !== maxR) return;
-        if ((e.rr || 0) > 0 && (!bi || e.rr > bi.rr)) bi = { nm: nm2, rr: e.rr, bb: e.bb, o: e.o };
-        if ((e.w || 0) > 0 && (!bs || e.w > bs.w || (e.w === bs.w && e.cr < bs.cr))) bs = { nm: nm2, w: e.w, cr: e.cr };
-      });
-      weekBest = (bi ? "<div class='fo-gz-best'><b>" + bi.rr + (bi.o ? "" : "*") + "</b><span>" + E(bi.nm) + " &middot; bat</span></div>" : "") +
-        (bs ? "<div class='fo-gz-best'><b>" + bs.w + "/" + bs.cr + "</b><span>" + E(bs.nm) + " &middot; ball</span></div>" : "");
-    } catch (e) {}
-
-    // notes from the nets: training pops as club gossip
-    var netsNotes = "";
-    try {
-      if (window.__foPops) netsNotes = __foPops.recent().slice(0, 5).map(function (l) {
-        return "<div class='fo-gz-nln'><b>" + E(l.n) + "</b> is said to be sharper than ever &mdash; the " + E(String(l.why || "nets").toLowerCase()) + " have done their work.</div>";
-      }).join("");
-    } catch (e) {}
-
-    // letters to the editor: seeded lore, flavoured by the club's standing
-    var LETTERS = [
-      { s: "Disgusted of the Long Room", t: "Sir &mdash; The tea at the ground remains an affront to the county. The cricket, I concede, has improved." },
-      { s: "A Loyal Member since Founding Day", t: "Sir &mdash; I have watched every home fixture from the same seat, and I say the captain's field placings are either genius or luck. I no longer care which." },
-      { s: "The Groundsman's Wife", t: "Sir &mdash; My husband rolls that pitch by moonlight. If the batters cannot cash in on it, they may roll it themselves." },
-      { s: "Anonymous, care of the Pavilion", t: "Sir &mdash; I hear the nets have arrows going up all over the board. About time the noticeboard had good news on it." },
-      { s: "An Old Fast Bowler", t: "Sir &mdash; In my day we bowled uphill both ways and liked it. Still &mdash; the young quick has something. Keep him fresh." }
-    ];
-    var li1 = h32("gzl1|" + day + "|" + sN) % LETTERS.length;
-    var li2 = (li1 + 1 + (h32("gzl2|" + day) % (LETTERS.length - 1))) % LETTERS.length;
-    var letters = [LETTERS[li1], LETTERS[li2]].map(function (L) {
-      return "<div class='fo-gz-let'><p>" + L.t + "</p><i>&mdash; " + L.s + "</i></div>";
-    }).join("");
-
-    // small advertisements: the back page gags
-    var ADS = [
-      "<b>LINSEED OIL</b>, by the barrel or the thimble. Bats fed while you wait.",
-      "<b>LOST:</b> one match ball, mid-six. Reward for its safe return; questions will not be asked.",
-      "<b>PEMBERLEY'S POMADE</b> &mdash; the choice of gentlemen bowlers. Hold your line, hold your hair.",
-      "<b>SCOREBOOK LESSONS.</b> Neat wagon wheels a specialty. Enquire at the print shop.",
-      "<b>ROOM TO LET</b> overlooking the ground. Wicket views. No fast bowlers before eight.",
-      "<b>UMPIRE'S COATS</b> laundered white as a nightwatchman's nerves. Same-day service.",
-      "<b>TRIALS SATURDAY.</b> Bring your own bat, your own boots, and no excuses."
-    ];
-    var adIx = h32("gzad|" + day) % ADS.length;
-    var ads = [0, 1, 2].map(function (k) { return "<div class='fo-gz-ad'>" + ADS[(adIx + k * 2) % ADS.length] + "</div>"; }).join("");
-
-    // A REAL PAPER NEVER PRINTS AN EMPTY COLUMN. A section with nothing to
-    // say is not set at all - the reader learns more from its absence than
-    // from a line apologising for it.
-    var sec = function (title, body, cls) {
-      if (!body) return "";
-      return "<div class='fo-gz-sec" + (cls ? " " + cls : "") + "'><h3>" + title + "</h3>" + body + "</div>";
-    };
     page.innerHTML = "<div class='fo-gz'><div class='fo-gz-in'>" +
       "<div class='fo-gz-mast'>" +
-      "<div class='fo-gz-ears'><span class='ear'>Season " + sN + "<br>Day " + day + "</span>" +
+      "<div class='fo-gz-ears'><span class='ear'>" + (big ? "Final<br>day" : "Day<br>" + day) + "</span>" +
       "<h1>The Fifty Overs Gazette</h1>" +
       "<span class='ear r'>Price<br>tuppence</span></div>" +
       "<div class='fo-gz-mrule'></div>" +
-      "<div class='fo-gz-folio'>" + dateline() + " &nbsp;&bull;&nbsp; No. " + (day | 0) + " &nbsp;&bull;&nbsp; Printed for the members of " + E(me.name) + "</div>" +
+      "<div class='fo-gz-folio'>" + E(iss.dateline || dateline()) +
+        " &nbsp;&bull;&nbsp; No. " + day + " &nbsp;&bull;&nbsp; One edition, the whole world over</div>" +
       "<div class='fo-gz-mrule thin'></div>" +
       "</div>" +
-      "<div class='fo-gz-lead'>" +
-      "<div class='fo-gz-k'>" + lead.kicker + "</div>" +
-      "<h2>" + lead.head + "</h2>" +
-      "<div class='fo-gz-by'>By our cricket correspondent</div>" +
-      "<div class='fo-gz-body'>" + lead.body + "</div>" + lead.cta +
-      "</div>" +
-      "<div class='fo-gz-cols'>" +
-      sec("Around the world", wireRows) +
-      sec("Table talk", tableTalk) +
-      sec("The week&rsquo;s best", "<div class='fo-gz-bestrow'>" + weekBest + "</div>") +
-      sec("Notes from the nets", netsNotes) +
-      sec("Letters to the editor", letters) +
-      sec("Small advertisements", ads, "ads") +
-      "</div>" +
-      "<div class='fo-gz-foot'>Printed nightly for the members of " + E(me.name) + " &middot; <a href='#/league'>My league</a> &middot; <a href='#/planet'>World cricket</a> &middot; <a href='#/almanack'>The world almanack</a></div>" +
+      (iss.thin
+        ? "<p class='fo-gz-quiet'>A quiet day. No cricket of consequence reached us before we went to press.</p>"
+        : gzStory(iss.lead, true) +
+          "<div class='fo-gz-cols'>" +
+          (iss.second ? sec("Also today", gzStory(iss.second, false)) : "") +
+          sec("In brief", briefs) +
+          sec("The scoreboard", "<div class='fo-gz-mini'>" + board + "</div>") +
+          sec("From around the world", back) +
+          (iss.comment ? sec("Comment", "<p>" + E(iss.comment) + "</p>") : "") +
+          "</div>") +
+      "<div class='fo-gz-foot'>One paper, printed for every club in the world &middot; " +
+      "<a href='#/league'>My league</a> &middot; <a href='#/rankings'>The rankings</a></div>" +
       "</div></div>";
   };
+
   window.addEventListener("hashchange", function () { if ((location.hash || "").split("?")[0] !== "#/paper") document.body.classList.remove("fo-gz-on"); });
 
   // the desk gets the paperboy card

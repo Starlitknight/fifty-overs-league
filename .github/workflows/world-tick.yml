@@ -178,3 +178,10 @@ jobs:
       - name: Settle everything due, every nation
         working-directory: server
         run: node tick.mjs
+      # AND THE MORNING PAPER, after every nation has settled - which is why it
+      # is a step here and not a hook inside the tick: the settle takes the
+      # countries one at a time, and the paper reports all of them. Idempotent,
+      # so the two ticks an hour that are not a new day write nothing.
+      - name: Print the morning paper
+        working-directory: server
+        run: node print-gazette.mjs

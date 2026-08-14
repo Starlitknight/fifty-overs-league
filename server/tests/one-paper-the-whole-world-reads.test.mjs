@@ -171,3 +171,50 @@ test('nothing in the editor can tell one reader from another', () => {
   for (const forbidden of ['user', 'userId', 'mine', 'myClub', 'reader', 'claim'])
     assert.ok(!keys.has(forbidden), 'a story carries "' + forbidden + '" - the paper is personal again');
 });
+
+// ---- AND A FRONT PAGE IS NOT A LEADERBOARD --------------------------------
+//
+// Ranking alone is not editing, and reading a real issue proved it: in a
+// low-scoring week five-fors score well and there are a dozen of them, so the
+// paper came out with a lead, a second lead and all six briefs given to
+// individual bowling analyses, and not one result on the front page. Nobody
+// would open that twice.
+test('one kind of story cannot eat the front page', () => {
+  const feats = Array.from({ length: 12 }, (_, i) =>
+    s('milestone', { headline: 'feat' + String(i).padStart(2, '0') }));
+  const results = Array.from({ length: 6 }, (_, i) =>
+    s('leagueResult', { headline: 'res' + i, stakes: 0.9 }));
+  const iss = makeIssue(feats.concat(results), TODAY);
+  const front = [iss.lead, iss.second].concat(iss.briefs).filter(Boolean);
+  const milestones = front.filter(x => x.kind === 'milestone').length;
+  // HALF, not two. The quota starts at two a kind and rises only as far as the
+  // day's supply forces it, so with just two kinds on offer it settles at four
+  // and four. Insisting on two here would be insisting the page print gaps, or
+  // that twelve five-fors somehow yield six different sorts of story. What the
+  // rule has to stop is the eight-out-of-eight the real issue printed.
+  assert.ok(milestones <= front.length / 2,
+    'the front page is ' + milestones + '/' + front.length + ' one kind: ' +
+    front.map(x => x.kind).join(', '));
+  assert.ok(front.some(x => x.kind === 'leagueResult'), 'and a result got on it');
+});
+
+// BUT THE QUOTA NEVER LEAVES A HOLE. If a day genuinely has only one kind of
+// story, the page fills with it rather than printing gaps - the rule is there
+// to spread a rich day, not to punish a thin one.
+test('but on a day of only one kind, the page still fills', () => {
+  const only = Array.from({ length: 10 }, (_, i) =>
+    s('milestone', { headline: 'm' + String(i).padStart(2, '0') }));
+  const iss = makeIssue(only, TODAY);
+  assert.ok(iss.lead && iss.second, 'a lead and a second');
+  assert.equal(iss.briefs.length, 6, 'and a full set of briefs, quota or no quota');
+});
+
+// AND THE BEST OF A KIND IS NEVER THE ONE DROPPED. The quota applies after
+// ranking, so what it removes is a story's imitators and never the story.
+test('the quota drops the imitators, not the best of them', () => {
+  const feats = [s('milestone', { headline: 'the best', stakes: 1 }),
+                 s('milestone', { headline: 'the second', stakes: 0.9 }),
+                 s('milestone', { headline: 'the third', stakes: 0.8 })];
+  const iss = makeIssue(feats.concat([s('leagueResult', { headline: 'a result' })]), TODAY);
+  assert.equal(iss.lead.headline, 'the best', 'the best of the kind still leads');
+});

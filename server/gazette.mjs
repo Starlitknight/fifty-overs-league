@@ -149,11 +149,49 @@ export function runningOrder(stories, today) {
 export const FRONT_BRIEFS = 6;
 export const BACK_STORIES = 6;
 
+// AND A FRONT PAGE IS NOT A LEADERBOARD.
+//
+// Ranking alone is not editing. Read against a real world it gave a lead, a
+// second lead and all six briefs to individual feats, because in a low-scoring
+// week five-fors score well and there are a dozen of them - a paper reporting
+// the twelfth-best bowling figures of the afternoon and no results at all.
+//
+// So a kind gets a quota. The best two of anything reach the front page and the
+// rest queue for the back, which is how a real desk stops one sort of story
+// eating the paper. It is applied AFTER ranking, so the best story of a kind is
+// never the one dropped - only its imitators.
+const MAX_PER_KIND_FRONT = 2;
+
+// The quota is a CEILING THAT RISES ONLY AS FAR AS IT MUST. The first cut of
+// this took two of each kind and then filled the rest of the page from whatever
+// was left over - which put the ten rejected five-fors straight back on the
+// front page, quota and all, and the test caught it. So instead the cap is
+// raised a notch at a time until the page is full: on a rich day it never
+// leaves two, and on a day with only one kind of story it climbs until the page
+// is filled rather than printing gaps.
+function spread(ranked, take, cap) {
+  let kept = [];
+  for (let c = cap; kept.length < take && c <= take; c++) {
+    const seen = new Map();
+    kept = [];
+    for (const s of ranked) {
+      const n = (seen.get(s.kind) || 0) + 1;
+      seen.set(s.kind, n);
+      if (n <= c) kept.push(s);
+      if (kept.length >= take) break;
+    }
+  }
+  const inFront = new Set(kept);
+  return { kept, rest: ranked.filter(s => !inFront.has(s)) };
+}
+
 export function makeIssue(stories, today, extras = {}) {
   const ranked = runningOrder(stories, today);
   const final = ranked.find(s => s.kind === 'cupFinal') || null;
   // a final leads whatever else the arithmetic said; nothing else jumps
-  const ordered = final ? [final, ...ranked.filter(s => s !== final)] : ranked;
+  const straight = final ? [final, ...ranked.filter(s => s !== final)] : ranked;
+  const front = spread(straight, 2 + FRONT_BRIEFS, MAX_PER_KIND_FRONT);
+  const ordered = front.kept.concat(front.rest);
   return {
     day: today | 0,
     tournament: !!final,                       // the client's cue for the other layout
@@ -161,6 +199,11 @@ export function makeIssue(stories, today, extras = {}) {
     second: ordered[1] || null,
     briefs: ordered.slice(2, 2 + FRONT_BRIEFS),
     back: ordered.slice(2 + FRONT_BRIEFS, 2 + FRONT_BRIEFS + BACK_STORIES),
+    // THE FOLIO LINE, which the press writes and this used to drop on the floor:
+    // makeIssue was handed a dateline and did not carry it, so every issue came
+    // out with a blank masthead. Caught by reading an actual paper rather than
+    // by a test - the tests all passed, because none of them read the words.
+    dateline: extras.dateline || null,
     scoreboard: extras.scoreboard || [],       // yesterday's results in full
     table: extras.table || null,               // the league most worth printing
     numbers: extras.numbers || [],             // records and milestones
@@ -170,4 +213,98 @@ export function makeIssue(stories, today, extras = {}) {
     // it, never a blank page pretending the world stood still.
     thin: !ordered.length
   };
+}
+
+// ---------------------------------------------------------------------------
+// AND THE PRESS RUN. Read the served world, choose the paper, store it.
+//
+// Called once a world day by the tick. Everything it reads is the record the
+// umpire wrote; nothing it reads is a device's local save, which is the whole
+// difference between this paper and the one it replaces.
+//
+// IDEMPOTENT. Printing twice on one record prints the same issue over itself.
+// The tick runs three times an hour and only one of those is a new day, so
+// this must cost nothing on the other two - it writes only when the issue has
+// actually moved.
+// ---------------------------------------------------------------------------
+export async function printGazette(pool, now, opts = {}) {
+  const { dayIx, roundOfDay, CYCLE } = await import('./clock.mjs');
+  const desk = await import('./gazette-desk.mjs');
+  const prose = await import('./gazette-prose.mjs');
+  const today = dayIx(now);
+
+  // WHO IS WHO. The rankings give a nation its rung and a club its best
+  // eleven's worth, which is what the upset and standing modifiers weigh.
+  let rk = opts.rankings;
+  if (!rk) { const t = await import('./tick.mjs'); rk = await t.computeRankings(pool, now); }
+  const byCountry = new Map((rk.countries || []).map(c => [c.id, c]));
+  const nations = (rk.countries || []).length || 1;
+  const rankOf = (id) => byCountry.get(id) || { rank: nations, natRating: 0 };
+  rankOf.count = nations;
+  const clubsByKey = new Map((rk.clubs || []).map(c => [c.country + ':' + c.slot, c]));
+
+  const seasons = (await pool.query(
+    `SELECT country_id, season_no, start_day FROM seasons`)).rows;
+  const topSeason = seasons.reduce((a, s) => Math.max(a, s.season_no | 0), 1);
+
+  // the three desks
+  const [intl, league, cups] = await Promise.all([
+    desk.intlStories(pool, today, rankOf),
+    desk.leagueStories(pool, today, clubsByKey, rankOf, seasons),
+    desk.cupStories(pool, today, topSeason)
+  ]);
+  const stories = [...intl, ...league.stories, ...cups];
+
+  // RARITY IS COUNTED, NOT GUESSED. How many of this kind have run lately is
+  // exactly what makes the first hundred of the season worth more than the
+  // ninth, and the desks cannot know it because each sees only its own rows.
+  const seen = new Map();
+  for (const s of stories) {
+    const k = s.kind + '|' + ((s.facts && s.facts.why) || (s.facts && s.facts.feat) || '');
+    seen.set(k, (seen.get(k) || 0) + 1);
+  }
+  for (const s of stories) {
+    if (s.seenLately == null) {
+      const k = s.kind + '|' + ((s.facts && s.facts.why) || (s.facts && s.facts.feat) || '');
+      s.seenLately = Math.max(0, (seen.get(k) || 1) - 1);
+    }
+  }
+
+  // and the words, written onto the stories the editor is about to rank
+  for (const s of stories) {
+    s.headline = prose.headline(s);
+    s.brief = prose.brief(s);
+  }
+  const issue = makeIssue(stories, today, {
+    scoreboard: league.scoreboard.slice(0, 40),
+    comment: prose.comment(today),
+    dateline: prose.dateline(today, topSeason, (today % CYCLE) + 1)
+  });
+  if (issue.lead) issue.lead.body = prose.lead(issue.lead);
+  if (issue.second) issue.second.body = prose.lead(issue.second);
+
+  const through = { day: today, stories: stories.length,
+                    intl: intl.length, league: league.stories.length, cups: cups.length };
+  // ONLY WHEN IT HAS MOVED. Same record, same paper, no write - the discipline
+  // every other write in this server learned in Phase 3.
+  // CANONICAL, NOT SERIALISED. jsonb hands a document back with its keys in
+  // Postgres's order, not the order it went in, so a plain stringify compare
+  // calls two identical papers different and reprints every tick - which is the
+  // trap server/CLAUDE.md warns about, walked into within the hour.
+  const canon = v => JSON.stringify(v, (k, val) =>
+    (val && typeof val === 'object' && !Array.isArray(val))
+      ? Object.keys(val).sort().reduce((o, kk) => { o[kk] = val[kk]; return o; }, {})
+      : val);
+  const was = (await pool.query('SELECT world_day, issue FROM gazette WHERE id=1')).rows[0];
+  const same = was && was.world_day === today && canon(was.issue) === canon(issue);
+  if (!same) {
+    await pool.query(
+      `INSERT INTO gazette(id, world_day, issue, through, printed_at)
+       VALUES (1,$1,$2::jsonb,$3::jsonb, now())
+       ON CONFLICT (id) DO UPDATE SET world_day=EXCLUDED.world_day,
+         issue=EXCLUDED.issue, through=EXCLUDED.through, printed_at=now()`,
+      [today, JSON.stringify(issue), JSON.stringify(through)]);
+  }
+  return { day: today, printed: !same, stories: stories.length,
+           lead: issue.lead && issue.lead.headline, thin: issue.thin };
 }
