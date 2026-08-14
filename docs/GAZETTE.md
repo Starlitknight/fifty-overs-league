@@ -44,7 +44,9 @@ in the game. That is the hole this fills.
 6. **The reader's own club is absent — unless it IS the story.** No club
    section. If his side wins the title or his man breaks a world record it
    leads, exactly as it would for any reader. The paper stays byte-identical
-   for everyone, which is what lets it be one cached row.
+   for everyone, which is what lets it be one cached row. (The results column
+   is filtered to the reader's nation — see **Whose results** below. That is a
+   rendering rule on one stored document and does not touch this one.)
 7. **Front page plus back pages.** Lead, second lead, in brief; then
    scoreboard, a table, records, comment. Roughly ten to fourteen stories,
    about three phone screens.
@@ -97,14 +99,62 @@ folio line back apart.
 
 ## The page
 
-    masthead + dateline
-    THE LEAD          headline, drop cap, the numbers, star performers, a pundit
-    SECOND LEAD       adjacent column
-    IN BRIEF          five or six one-liners
-    THE SCOREBOARD    yesterday's results in full, small type
-    THE TABLE         whichever league is most contested now, not always England
-    NUMBERS OF THE DAY  records and milestones
-    COMMENT
+It is an **almanack, not a broadsheet**. The first build was a two-column grid
+of bordered boxes, each full of one-line wire rows, and the verdict on it was
+that it read like printed scorecards rather than a paper. That was structural
+and not decorative:
+
+- only one story on the page had prose, and twenty had a single line each;
+- a bordered box in a grid is a **dashboard** shape, and a column of dotted
+  rows is a **list**; neither becomes journalism by being repainted;
+- there was no middle tier — a story was either the lead or one line, never
+  three sentences and a heading;
+- the forty results printed at the same size as the journalism, so the page
+  had no quiet register for data.
+
+So: one book face, ivory and ink, **no accent colour and no boxes anywhere**.
+The hierarchy is entirely type — size, italic, small caps, and space.
+
+    THE MASTHEAD       letterspaced caps over a double rule; the folio is the
+                       season's own day and the season's public name
+    THE LEAD           rubric, head, an italic DECK carrying the numbers, then
+                       the report set as book paragraphs in one 38-em measure
+    * * *              an asterism, where a newspaper would put a rule
+    OF NOTE            the day's individual cricket, as entries
+    FROM ABROAD        everything that happened somewhere else, as entries
+    THE DAY'S CRICKET  the results, RUN ON as semicolon-separated prose
+    COMMENT            one pundit line, centred under a hairline
+
+**The deck is the numbers and the body is the words.** `Khulna CC 270/8, Dhaka
+CC 265/10.` dropped into the second sentence of a report is the single line
+that made this read like a printout. It goes in the deck, where a paper puts
+it, and the report says what happened instead of what the numbers were.
+
+## Whose results
+
+The day's cricket is filtered to the **reader's own nation**, which is what
+keeps that section short enough to read.
+
+This is a **rendering** rule and never an editorial one, and the distinction is
+load-bearing. The press composes ONE paper: same lead, same briefs, same
+sentences, and there is nowhere in a story to say whose club it is — a test
+holds that and must keep holding it. What differs is which section of the same
+document a page prints, the way two people reading one newspaper turn to
+different pages of the results. A reader who has not claimed a club has no
+nation to turn to and gets the whole world.
+
+Two consequences worth knowing before touching it:
+
+- **The scoreboard must carry the whole day.** It was capped at forty rows,
+  which was invisible while the page printed one undifferentiated list. Nineteen
+  leagues bowl about a hundred and fifty matches on a league day and the rows
+  arrive ordered by country, so forty of them covered four countries — fifteen
+  nations' readers would have opened to an empty column indistinguishable from a
+  rest day.
+- **The desk writes the result sentence, not the page.** The engine's `text`
+  names only the winner ("Essex win by 38 runs"), which run on as prose is a
+  results column with no losers in it. `gazette-desk.resultLine` makes "Essex
+  beat Kent by 38 runs" and prints anything it does not recognise verbatim.
 
 ## Open, and owned elsewhere
 
