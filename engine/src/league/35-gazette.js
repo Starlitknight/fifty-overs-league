@@ -55,6 +55,14 @@
   // The page now fetches and renders. It composes nothing, and it still writes
   // nothing, which is the property worth keeping: a newspaper a reader can edit
   // is not a newspaper.
+  // THE DOOR TO THE SERVED WORLD. Every module that reads it declares these for
+  // itself - they are `var` inside each IIFE, not globals - and this one used
+  // them without declaring them, which threw a ReferenceError on the first
+  // fetch. The catch below turned that into GZ.dead and the page printed "the
+  // presses are quiet" over a database with a perfectly good paper in it.
+  // A silent catch over a missing name is how a typo becomes a blank page.
+  var SB_URL = "https://egaipdksvztqqgouriyc.supabase.co";
+  var SB_ANON = "sb_publishable_x4d37g01BstZDMUiKrGeGA_meQ_Phgc";
   var GZ = { issue: null, busy: false, dead: false };
   function gzFetch(cb) {
     if (GZ.issue || GZ.busy || GZ.dead) return GZ.issue;
@@ -71,7 +79,13 @@
           if (cb) cb();
         })
         .catch(function () { GZ.busy = false; GZ.dead = true; if (cb) cb(); });
-    } catch (e) { GZ.busy = false; GZ.dead = true; }
+    } catch (e) {
+      // say it out loud. This exact catch hid a ReferenceError for a whole
+      // deploy, and "the presses are quiet" is indistinguishable from a real
+      // quiet day unless somebody is told which one it is.
+      try { console.warn("gazette: could not reach the press -", e && e.message); } catch (e2) {}
+      GZ.busy = false; GZ.dead = true;
+    }
     return null;
   }
   // a column with a rule over it, which is all a newspaper section is
