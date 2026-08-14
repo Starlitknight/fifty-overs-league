@@ -291,7 +291,40 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   // term would punish good batsmen and never once reward a good bowler.
   const mmRaw=(bowl.threat-CAL.mean_thr)-(bat.bat-CAL.mean_bat)-CAL.mismatch_pivot;
   const mmOver=Math.max(0,Math.abs(mmRaw)-CAL.mismatch_free);
-  const mm=(mmRaw<0?-1:1)*mmOver*mmOver/CAL.mismatch_scale;
+  // ---- AND IT IS BOUNDED, BECAUSE A QUADRATIC WITH NOTHING TO OPPOSE IT IS
+  // ---- NOT A MISMATCH TERM, IT IS A CLIFF ----------------------------------
+  // Measured (docs/b1-evidence): with mismatch disabled entirely, a side of
+  // mean skill 25 facing one of 70 scores 234.8 and loses 7.77 wickets. With
+  // the shipped term it scores 65.6 and loses 9.95 - every match, all out,
+  // for about a third of a competitive total. Disabling it is the ONLY thing
+  // that moved that number: tripling skill_soft made it worse (54.5) and
+  // zeroing the standard terms made it worse still (31.1). One term owns the
+  // whole low-end collapse and this is it.
+  //
+  // WHY IT RUNS AWAY. mmOver is a raw skill gap in points and this squares it
+  // against a constant. At an ordinary contest the gap is inside mismatch_free
+  // and the term is exactly zero, which is what keeps a calibrated league
+  // calibrated. But an international attack against an amateur batsman reaches
+  // mmOver around 43, so mm reaches 6.3 and CAL.mismatch_wkt puts +2.9 onto a
+  // wicket logit whose base is about -2.7. That is a coin-toss wicket EVERY
+  // BALL. No skill term opposes it, because every skill term is softened and
+  // has died by then - which is exactly why the cliff appears at the bottom of
+  // the scale and nowhere else.
+  //
+  // So it is softened, in the engine's own idiom rather than a new one: the
+  // same tanh that SOFT uses, applied to the finished term. Below the cap the
+  // curve is virtually unchanged - at mmOver 15 it moves 0.75 to 0.72 - so
+  // every mismatch an ordinary league actually produces passes through as it
+  // always did and the golden's middle is preserved. Beyond it the term
+  // approaches mismatch_cap instead of climbing without limit, which leaves an
+  // outclassed side outclassed rather than annihilated.
+  //
+  // It is a CAP ON THE TERM, not a cap on the gap: two cricketers ten points
+  // further apart still produce a bigger mm than two who are not, everywhere.
+  // Monotonicity is preserved by construction, because tanh is monotone.
+  const MMCAP=CAL.mismatch_cap>0?CAL.mismatch_cap:2.0;
+  const mmRawT=mmOver*mmOver/CAL.mismatch_scale;
+  const mm=(mmRaw<0?-1:1)*MMCAP*Math.tanh(mmRawT/MMCAP);
   // ---- AND WHAT STANDARD OF CRICKET THIS IS -------------------------------
   // Two cricketers' skills carry TWO independent signals and the engine read
   // only one. Their DIFFERENCE says who wins this particular contest - that
@@ -314,7 +347,37 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   // bowled out LESS often, not more. So the sum gets a term of its own,
   // measured in rungs above ordinary club cricket, and it lifts the scoring
   // and eases the wicket rate as the standard climbs.
-  const std=(((bat.bat-CAL.mean_bat)+(bowl.threat-CAL.mean_thr))/2-CAL.standard_pivot)/10;
+  // ---- AND THE STANDARD IS BOUNDED TOO, WHICH IS WHERE THE HEADROOM WENT ---
+  // This term is right and it is load-bearing: zeroed, every standard of
+  // cricket collapses to about 180 all out with an all-out rate over half, the
+  // best cricket in the world included (docs/b1-evidence/bisect-nostd.txt). It
+  // is what makes better cricket score more, and nothing else does.
+  //
+  // But it is LINEAR AND UNBOUNDED in the SUM of the two men's quality, and
+  // that is what killed the top of the scale. At 85 against 85 it reaches 3.07,
+  // which takes 0.77 off the wicket logit and adds to every boundary bucket -
+  // so the innings arrives at roughly 3.7 wickets and 318 runs before anybody's
+  // relative advantage has been considered at all. There is no headroom left:
+  // an innings cannot lose much under three wickets, so a better batsman has
+  // nowhere to put his extra quality. Measured, that is precisely the dead
+  // zone - 85 v 95 came out at 52.3% and NOTHING moved it, across six
+  // configurations, because the ceiling was never a coefficient. It was the
+  // absolute-quality term consuming the whole outcome budget.
+  //
+  // Softening it is the smallest change that gives the top back its room, and
+  // it is the architecture the brief asks for in one line: EQUAL RISES IN
+  // BATTING AND BOWLING LARGELY CANCEL, while relative differences keep their
+  // signal. std reads the SUM of the two men and so is exactly the absolute
+  // half; mm reads their DIFFERENCE and is exactly the relative half. Bounding
+  // the first and leaving the second is what separates "this is high-class
+  // cricket" from "this man is better than that one".
+  //
+  // Ordinary cricket is untouched: at an ordinary contest std is around 0.5 and
+  // comes out 0.49. The cap only bites where the sum has run away, which is
+  // above anything the shipped world contains.
+  const STDCAP=CAL.standard_cap>0?CAL.standard_cap:1.5;
+  const stdRaw=(((bat.bat-CAL.mean_bat)+(bowl.threat-CAL.mean_thr))/2-CAL.standard_pivot)/10;
+  const std=STDCAP*Math.tanh(stdRaw/STDCAP);
   const batExp=foExperienceFactor(bat), bowlExp=foExperienceFactor(bowl);
   const pressureBase=(ph==='death'?1.00:(ph==='pp'?0.35:0.55))+(ctx&&ctx.chase?0.35:0)+(ctx&&ctx.wkts>=4?0.25:0)+(rrDef>0?Math.min(0.45,rrDef*0.55):0);
   // v11.2: experience now matters under pressure. Experienced batters panic less; experienced bowlers hold line/length.
