@@ -322,9 +322,36 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   // It is a CAP ON THE TERM, not a cap on the gap: two cricketers ten points
   // further apart still produce a bigger mm than two who are not, everywhere.
   // Monotonicity is preserved by construction, because tanh is monotone.
+  // ---- AND THE DEAD BAND IS GONE, WHICH IS THE WHOLE POINT ------------------
+  // The term above computed mmOver = max(0, |gap| - mismatch_free), and with
+  // mismatch_free at 15 that meant TWO CRICKETERS WITHIN FIFTEEN POINTS OF EACH
+  // OTHER PRODUCED NO RELATIVE SIGNAL AT ALL. Since every other skill term is
+  // softened and saturates about twenty-five points from its mean, that left
+  // whole regions of the scale where the engine could not tell who was better.
+  //
+  // Measured on the shipped build, three deliveries with uniform skills:
+  //     85 bat v 85 bowl   dot 37.73  four 7.52  wicket 1.33
+  //     95 bat v 85 bowl   dot 37.65  four 7.54  wicket 1.33
+  //     85 bat v 95 bowl   dot 37.72  four 7.54  wicket 1.33
+  // The same ball three times. A generational batsman against a good bowler was
+  // arithmetically identical to a good batsman against a great one, because the
+  // gap sat inside the dead band and the softened terms had already saturated.
+  //
+  // So the gap is now CENTRED and CONTINUOUS. Centred: an ordinary contest is
+  // gap zero, which it was not before - mean_thr (68.1) sits above mean_bat
+  // (56.6), so the raw difference reads about -11.5 for two average men and the
+  // old mismatch_pivot of -10 existed to shove that back toward zero. Reading
+  // each man against his OWN mean says the same thing without a magic constant.
+  // Continuous: tanh from the origin, so ten points of advantage are worth
+  // something everywhere on the scale and nothing is ever exactly nothing.
+  //
+  // It is still bounded, still monotone, and still signed in both directions -
+  // the same term that has an international quick running through a tail has a
+  // great batsman helping himself against a weak one.
   const MMCAP=CAL.mismatch_cap>0?CAL.mismatch_cap:2.0;
-  const mmRawT=mmOver*mmOver/CAL.mismatch_scale;
-  const mm=(mmRaw<0?-1:1)*MMCAP*Math.tanh(mmRawT/MMCAP);
+  const MMSCALE=CAL.mismatch_span>0?CAL.mismatch_span:25;
+  const mmGap=(bowl.threat-CAL.mean_thr)-(bat.bat-CAL.mean_bat);
+  const mm=MMCAP*Math.tanh(mmGap/MMSCALE);
   // ---- AND WHAT STANDARD OF CRICKET THIS IS -------------------------------
   // Two cricketers' skills carry TWO independent signals and the engine read
   // only one. Their DIFFERENCE says who wins this particular contest - that
@@ -500,6 +527,52 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   if(ageBowlLate>0){W-=0.115*ageBowlLate;L.dot-=0.055*ageBowlLate;L['1']+=0.020*ageBowlLate;L['4']+=0.055*ageBowlLate;L['6']+=0.025*ageBowlLate;}
   L.dot+=((ctx.captBowl||50)-50)*0.00075;
   W-=((ctx.captBat||50)-50)*0.00045;
+  // ---- THE THREE SKILLS THAT DID NOTHING AT ALL -----------------------------
+  //
+  // discipline, moveTurn and variation are on every bowler's card and were read
+  // by NOTHING. jsDerive maps wicket->threat and economy->control and stops;
+  // grep finds one or two occurrences of each in this file and they are the
+  // data definition and the editor's key list. Measured by sweeping each skill
+  // from 40 to 90 with everything else held: the ball distribution moved by
+  // exactly 0.000 on every bucket. A card promising "Variation 92" described
+  // nothing.
+  //
+  // Each now has its own job, chosen so the three cannot collapse into one
+  // another. They are deliberately CONDITIONAL rather than flat: a skill that
+  // adds the same thing to every delivery is just a slower way of raising
+  // threat, and the point is to create bowlers who are different rather than
+  // bowlers who are better.
+  const bDisc=(bowl.skills&&bowl.skills.discipline)||50;
+  const bMove=(bowl.skills&&bowl.skills.moveTurn)||50;
+  const bVary=(bowl.skills&&bowl.skills.variation)||50;
+  // MOVEMENT IS WORTH WHAT THE CONDITIONS PAY FOR IT. Seam needs a new ball and
+  // help in the air or off the deck; turn needs a surface that grips and an old
+  // ball. On a flat deck in the sunshine both are nearly worthless, which is
+  // exactly the cricket - a big mover who cannot bowl elsewhere is a specialist
+  // and should read like one.
+  const mvHelp=tc0==='pace'
+    ? nb*((pitch==='green'?1.0:0)+(wx==='overcast'||wx==='humid'||wx==='misty'?0.8:0)+0.25)
+    : grip*((pitch==='dry'?1.0:0)+(pitch==='slow'||pitch==='twoPaced'?0.55:0)+(pitch==='cracked'?0.7:0)+0.25);
+  const mvE=(bMove-50)/50;
+  W+=0.42*mvE*mvHelp; L.dot+=0.10*mvE*mvHelp; L['4']-=0.09*mvE*mvHelp;
+  // VARIATION IS DECEPTION, AND DECEPTION IS WORTH MOST AGAINST A MAN WHO HAS
+  // WORKED YOU OUT. It does almost nothing to a batsman who has just walked in -
+  // he has nothing to be deceived out of - and grows as he settles, which is
+  // the opposite shape to setness itself and the reason a variation bowler is
+  // the one a captain throws the ball to when a partnership is building. It
+  // also pays at the death, where the change-up lives.
+  const varE=(bVary-50)/50;
+  const settledNow=Math.max(0,Math.min(1,(faced-18)/45));
+  const varUse=settledNow+(ph==='death'?0.45:0)+(ctx.pship>=50?0.3:0);
+  W+=0.30*varE*varUse; L.dot+=0.09*varE*varUse; L['6']-=0.07*varE*varUse;
+  // DISCIPLINE IS EXECUTION. It is the only one of the three that is NOT about
+  // taking wickets: it decides how often the intended ball is the ball that
+  // actually arrives. A poor one sprays it - the extras below read it - and
+  // gives up the loose ball that releases pressure; a good one repeats. It is
+  // scaled by fatigue further down, because a tired bowler's discipline is the
+  // first thing to go.
+  const discE=(bDisc-50)/50;
+  L['4']-=0.085*discE; L.dot+=0.055*discE; L['1']-=0.02*discE;
   const nbAmp=(pitch==='green'?1.55:1)*CAL.nb_amp, gripAmp=(pitch==='dry'?1.75:(pitch==='slow'?1.35:(pitch==='twoPaced'?1.25:1)))*CAL.grip_amp;
   if(tc==='pace'){W+=nbAmp*nb; L.dot+=0.5*nbAmp*nb}
   else{W+=gripAmp*grip-CAL.spin_nb_pen*nb; L.dot+=0.5*gripAmp*grip-0.3*CAL.spin_nb_pen*nb}
@@ -537,7 +610,16 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   // offset below is positive now rather than -0.4: a ball off the pad is a
   // COMMONER way to concede a run than a bye off the keeper, not a rarer one.
   // The calibration lands at wd 10.4, nb 1.4, b 1.9, lb 6.0 an innings.
-  lo.wide=CAL.wide-wc*0.01;lo.noball=CAL.noball;lo.bye=CAL.bye;lo.legbye=CAL.bye+1.16;
+  // AND THE WIDES AND NO-BALLS ARE WHERE DISCIPLINE REALLY LIVES. They were a
+  // constant plus a whisper of control: the no-ball rate was IDENTICAL for every
+  // bowler in the world, which is not cricket - spraying it is the defining
+  // trait of the fast, wild, dangerous quick, and the game had no way to express
+  // him. Discipline drives both now, and fatigue eats into it, because a tired
+  // bowler oversteps and drifts down leg before he loses his pace.
+  const discTired=discE-0.55*Math.max(0,Math.min(1,ctx.bowlFat||0));
+  lo.wide=CAL.wide-wc*0.01-0.55*discTired;
+  lo.noball=CAL.noball-0.70*discTired;
+  lo.bye=CAL.bye;lo.legbye=CAL.bye+1.16;
   // AN AVERAGE KEEPER IS NEUTRAL, and the world says who that is. This read
   // from 55, a number nothing in the game could reach: keepers averaged 41,
   // so every gloveman on earth was treated as fourteen points below par and
