@@ -166,8 +166,16 @@ export async function leagueStories(pool, today, clubsByKey, rankOf, seasons) {
     const aR = ratingOfClub(clubsByKey, m.country_id, m.away_slot);
     const homeWon = m.winner === m.home_name;
     const nat = rankOf(m.country_id);
+    // THE PRESS WRITES THE SENTENCE, INCLUDING THIS ONE. `text` off the result
+    // names only the winner - "Essex win by 38 runs" - which was fine while the
+    // scoreboard was a two-column list with the fixture beside it, and became a
+    // hole the moment the page ran the results on as prose: eight lines of who
+    // won and not one of whom they beat. The page must not have to work the
+    // loser out from home/away, because then the page is writing prose, and two
+    // readers on two builds get two different sentences.
     scoreboard.push({ country: m.country_id, round: m.round, text: m.text,
-                      home: m.home_name, away: m.away_name });
+                      home: m.home_name, away: m.away_name,
+                      line: resultLine(m.text, m.winner, m.home_name, m.away_name) });
     const tense = tension({ text: m.text });
     const shock = homeWon ? { winner: hR, loser: aR } : { winner: aR, loser: hR };
     // ONLY WHAT A PAPER WOULD PRINT. A comfortable win between two mid-table
@@ -195,6 +203,22 @@ export async function leagueStories(pool, today, clubsByKey, rankOf, seasons) {
   return { stories, scoreboard };
 }
 
+// "Essex beat Durham by 38 runs" out of "Essex win by 38 runs" plus the two
+// sides. The engine writes the result text in one shape - "<winner> win by
+// <margin>" - so the margin is everything after the first " win ", and anything
+// that does not match that shape (a tie, an abandonment, a shape a future engine
+// invents) falls back to naming the fixture and quoting the text verbatim. It
+// never guesses: an unrecognised result prints as itself rather than as a
+// confidently wrong sentence.
+export function resultLine(text, winner, home, away) {
+  const t = String(text || '');
+  if (!winner || !home || !away) return t || (home + ' v ' + away);
+  const cut = t.indexOf(' win ');
+  const loser = winner === home ? away : home;
+  if (cut <= 0 || t.slice(0, cut) !== winner) return home + ' v ' + away + ', ' + t;
+  return winner + ' beat ' + loser + ' ' + t.slice(cut + 5);
+}
+
 // A TIE, A TEN-WICKET WIN, A SIDE BOWLED OUT FOR NOTHING. Rare by construction,
 // so the rarity modifier does most of the work; all this has to do is notice.
 function oddities(m, day, nat, of) {
@@ -213,8 +237,13 @@ function oddities(m, day, nat, of) {
     if (i && (i.runs | 0) < 90 && (i.wkts | 0) >= 10) out.push({
       kind: 'oddity', day, headline: i.batTeam + ' all out ' + i.runs,
       standing: st,
+      // the collapse is the only oddity with no `text` of its own, so it says
+      // what the match was: a headline reading "Derbyshire all out 79" with no
+      // opponent under it is half a story, and the almanack sets that line as
+      // the caption under every entry.
       facts: { sort: 'oddity', why: 'collapse', country: m.country_id,
-               team: i.batTeam, runs: i.runs }
+               team: i.batTeam, runs: i.runs,
+               text: m.home_name + ' v ' + m.away_name + (m.text ? '; ' + m.text : '') }
     });
     if (i && (i.runs | 0) >= 380) out.push({
       kind: 'worldRecord', day, headline: i.batTeam + ' ' + i.runs + '/' + i.wkts,

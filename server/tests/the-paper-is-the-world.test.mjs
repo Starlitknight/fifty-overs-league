@@ -75,6 +75,57 @@ test('the masthead dates itself by the season, not by the epoch', async () => {
     'which is what the folio line says: ' + row.issue.dateline);
 });
 
+// AND THE RESULTS COLUMN IS NOT TRUNCATED. The page prints the reader's OWN
+// nation's results and nothing else, which is what makes that column short
+// enough to read. `.slice(0, 40)` was invisible while the page printed one
+// undifferentiated list; the moment it filtered by nation, a cap of forty rows
+// arriving ordered by country meant four countries got results and fifteen got
+// an empty column indistinguishable from a rest day. Whatever the world played,
+// every country that played it is in the document.
+test('every country that played is in the paper, not the first forty rows', async () => {
+  await printGazette(pool, at);
+  const row = await issue();
+  const played = (await pool.query(
+    `SELECT DISTINCT country_id FROM matches WHERE result IS NOT NULL`)).rows
+    .map(r => r.country_id).sort();
+  const printed = [...new Set((row.issue.scoreboard || []).map(r => r.country))].sort();
+  for (const c of played)
+    assert.ok(printed.includes(c) || !row.issue.scoreboard.length,
+      c + ' played and is not in the scoreboard: ' + printed.join(','));
+  // and every one of them can be given a name, or the section head is an id
+  for (const c of printed)
+    assert.ok(row.issue.nations[c], 'no name for ' + c);
+});
+
+// A RESULT NAMES BOTH SIDES. Run on as prose, "Essex win by 38 runs" is a line
+// about a winner with no opponent in it, and eight of those in a row is not a
+// results column. The sentence is written by the desk and never by the page,
+// so two readers on two builds cannot be reading two different sentences.
+test('a scoreboard line says who was beaten', async () => {
+  await printGazette(pool, at);
+  const row = await issue();
+  const rows = row.issue.scoreboard || [];
+  assert.ok(rows.length, 'there is cricket to report');
+  for (const r of rows) {
+    assert.ok(r.line, 'every row carries its own sentence');
+    assert.ok(r.line.includes(r.home) && r.line.includes(r.away),
+      'both sides are named: ' + r.line + ' (' + r.home + ' v ' + r.away + ')');
+  }
+});
+
+// THE DECK IS THE NUMBERS. The front-page stories get one; the arithmetic is
+// held in one-paper-the-whole-world-reads, and this is that it survives the
+// trip through the press and into the row.
+test('the front-page stories reach the row with their scoreline', async () => {
+  await printGazette(pool, at);
+  const row = await issue();
+  for (const st of [row.issue.lead, row.issue.second]) {
+    if (!st) continue;
+    assert.ok(st.deck, 'a deck: ' + st.headline);
+    assert.ok(st.body, 'and a report under it');
+  }
+});
+
 // NOTHING IS INVENTED. Every headline the paper carries has to be a thing that
 // happened, and the honest way to hold that is to check the stories against the
 // record rather than to trust the prose.

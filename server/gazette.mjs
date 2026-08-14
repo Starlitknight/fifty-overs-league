@@ -212,6 +212,13 @@ export function makeIssue(stories, today, extras = {}) {
     season: extras.season == null ? null : extras.season | 0,
     dayInSeason: extras.dayInSeason == null ? null : extras.dayInSeason | 0,
     scoreboard: extras.scoreboard || [],       // yesterday's results in full
+    // AND THE NAMES OF THE COUNTRIES THEY WERE PLAYED IN. Every scoreboard row
+    // carries a country ID and the page has to head its section with a name. It
+    // could ask module 27's planet, which knows all nineteen - but the whole
+    // point of the served paper is that the page reads ONE document and needs
+    // nothing else in the build to render it. Nineteen short strings is a
+    // cheaper price than that coupling.
+    nations: extras.nations || {},
     table: extras.table || null,               // the league most worth printing
     numbers: extras.numbers || [],             // records and milestones
     comment: extras.comment || null,
@@ -292,15 +299,36 @@ export async function printGazette(pool, now, opts = {}) {
   const anch = worldAnchor(seasons, today);
   const folioSeason = anch ? anch.name : seasonName(topSeason);
   const folioDay = anch ? anch.di + 1 : (today % CYCLE) + 1;
+  // THE WHOLE DAY, NOT THE FIRST FORTY. `.slice(0, 40)` was harmless while the
+  // page printed one undifferentiated list - forty lines is already more than
+  // anybody reads. It stopped being harmless the moment the page began printing
+  // only the READER'S OWN nation: nineteen leagues bowl about a hundred and
+  // fifty matches on a league day, the rows arrive ordered by country, and forty
+  // of them covered four countries. Fifteen nations' readers would have opened
+  // the paper to an empty results column with no way to tell that from a rest
+  // day. It is one jsonb document either way; the extra is about twelve
+  // kilobytes and it is the difference between the section working and not.
+  // `natNames`, not `nations` - which is already the country COUNT twenty lines
+  // above, and redeclaring a const in the same scope is a SyntaxError at module
+  // load, so the press would not have started at all. Caught by a test file that
+  // does nothing but import the module.
+  const natNames = Object.fromEntries((rk.countries || []).map(c => [c.id, c.name]));
   const issue = makeIssue(stories, today, {
-    scoreboard: league.scoreboard.slice(0, 40),
+    scoreboard: league.scoreboard,
+    nations: natNames,
     comment: prose.comment(today),
     season: folioSeason,
     dayInSeason: folioDay,
     dateline: prose.dateline(today, folioSeason, folioDay)
   });
-  if (issue.lead) issue.lead.body = prose.lead(issue.lead);
-  if (issue.second) issue.second.body = prose.lead(issue.second);
+  // THE DECK IS THE NUMBERS AND THE BODY IS THE WORDS - see gazette-prose. Both
+  // front-page stories get both; a brief gets neither, because a brief IS a
+  // deck.
+  for (const st of [issue.lead, issue.second]) {
+    if (!st) continue;
+    st.body = prose.lead(st);
+    st.deck = prose.deck(st);
+  }
 
   const through = { day: today, stories: stories.length,
                     intl: intl.length, league: league.stories.length, cups: cups.length };

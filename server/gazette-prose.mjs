@@ -103,6 +103,83 @@ const OPEN_RECORD = [
   'It stopped being a contest some way out and became an exhibition.'
 ];
 
+// ---- THE DECK --------------------------------------------------------------
+//
+// One line of italic under the headline, and it is THE NUMBERS - never a
+// second, smaller headline. That division is the whole reason it exists: with
+// the scoreline sitting in the deck, the report underneath no longer has to
+// recite "Khulna CC 270/8, Dhaka CC 265/10" mid-paragraph, which was the
+// sentence that made the front page read like a printout rather than a paper.
+//
+// Purely factual by construction. There is no phrase pool here and there must
+// never be one: a deck that editorialises is competing with the headline above
+// it and the lead below it, and all three lose.
+const scoreOf = (i) => i.team + ' ' + i.runs + (i.wkts >= 10 ? ' all out' : ' for ' + i.wkts);
+export function deck(st) {
+  const f = st.facts || {};
+  if (f.sort === 'intlFeat' || f.sort === 'clubFeat')
+    return f.feat === 'fiveFor'
+      ? f.wkts + ' for ' + f.conc + '.'
+      : f.runs + (f.balls ? ' from ' + f.balls + ' balls' : '') + '.';
+  if (f.sort === 'record') return f.team + ' ' + f.runs + ' for ' + f.wkts + '.';
+  if (f.sort === 'oddity') return (f.text || st.headline || '') + '.';
+  const inns = (f.innings || []).filter(i => i && i.team).map(scoreOf).join('; ');
+  return inns ? inns + '.' : (f.text ? f.text + '.' : '');
+}
+
+// ---- WHAT TURNED IT --------------------------------------------------------
+//
+// The middle sentence of a three-act report, and the one the paper did not have.
+// Every line here has to be true of its whole branch without knowing a single
+// further fact - no overs, no names, no partnerships - because the desk does not
+// pass any, and a report that guesses at detail is worse than one that is short.
+//
+// AND IT SAYS WHAT THE RESULT COST, never what kind of game it was. That is
+// the opener's job two sentences earlier, and the first draft of these pools
+// did it a second time: "Nobody had this one down" was followed by "this is the
+// result nobody would have written down", and "Paper does not bat" by "none of
+// them bats". Two pools picked independently WILL collide eventually, so the
+// fix is not better wording - it is giving the two sentences different jobs.
+const TURN_TIGHT = [
+  'Two points changed hands on a margin that would not have survived one dropped catch.',
+  'The losing side will spend far longer on this one than the winners will.',
+  'A game this close is worth exactly what a comfortable one is worth, which is the cruelty of a league.'
+];
+const TURN_FLAT = [
+  'The table is the only place a win like this looks the same as a hard-earned one.',
+  'There will be a selection meeting somewhere this evening, and it will not be a short one.',
+  'Nobody learns a great deal from an afternoon like this except the side that lost it.'
+];
+const TURN_SHOCK = [
+  'Whatever the ratings make of it overnight, the two points have already been paid out.',
+  'Leagues are decided by afternoons like this one, and not by the ones everybody calls correctly.',
+  'Both sets of supporters will read the table twice this evening and get the same answer.'
+];
+
+// ---- HOW IT WAS WON --------------------------------------------------------
+//
+// One more true sentence, and it is derived rather than chosen: whether the
+// winners batted first tells you whether this was a total defended or a target
+// chased, and those are different games to watch and different games to win.
+// The innings arrive in batting order, so the first team named IS the side that
+// batted first - no extra fact needed from the desk.
+//
+// It exists because the almanack treatment sets the lead in one book measure,
+// and three sentences in a 38-em measure is a paragraph with a hole in it. The
+// honest way to fill a measure is another true sentence; the dishonest way is
+// an invented detail, and a report that guesses at overs or partnerships will
+// eventually guess wrong in a way a reader can check.
+const DEFENDED = [
+  'It was a total defended rather than a target chased, which is the harder of the two and the less admired.',
+  'The runs went on the board first and then had to be protected, which is a longer afternoon than the scorecard suggests.',
+  'Batting first and winning is the version of this that requires the bowlers to finish the argument.'
+];
+const CHASED = [
+  'The chase was the whole of it: a target set, and then the slow business of finding out whether it was enough.',
+  'They batted second knowing the number, which helps until the moment it stops helping.',
+  'A target is a different pressure from a total, and this one was carried rather than set.'
+];
+
 // A STORY IS NOT ALWAYS A MATCH. This wrote match prose for everything, so a
 // side bowled out for 62 was reported as "a comfortable afternoon, of the kind
 // that says more about the winner than the margin does" - a sentence about a
@@ -132,10 +209,19 @@ export function lead(st) {
   const open = shock ? pick(OPEN_SHOCK, seed)
     : st.kind === 'intlResult' ? pick(OPEN_INTL, seed)
     : tight ? pick(OPEN_TIGHT, seed) : pick(OPEN_FLAT, seed);
-  const inns = (f.innings || []).map(i => i.team + ' ' + i.runs + '/' + i.wkts).join(', ');
+  // THE SCORELINE IS NOT IN HERE ANY MORE. It used to be the second sentence -
+  // "Khulna CC 270/8, Dhaka CC 265/10." dropped into the middle of a report -
+  // and it is the single line that made the page read like a printout. It lives
+  // in the deck now, where a newspaper puts it, and this says what happened
+  // instead of what the numbers were.
   const body = [open];
-  if (inns) body.push(inns + '.');
   if (f.text) body.push(f.text + '.');
+  // only when the innings are there AND they name a winner among them; a story
+  // with one innings, or none, has nothing to say about how it was won
+  const first = (f.innings || [])[0];
+  if (first && first.team && f.winner)
+    body.push(pick(first.team === f.winner ? DEFENDED : CHASED, seed + '|how'));
+  body.push(pick(shock ? TURN_SHOCK : tight ? TURN_TIGHT : TURN_FLAT, seed + '|turn'));
   body.push(pick(CLOSE, seed + '|close'));
   return body.join(' ');
 }
@@ -149,7 +235,13 @@ export function brief(st) {
     return f.feat === 'fiveFor'
       ? f.man + ' ' + f.wkts + '-' + f.conc
       : f.man + ' ' + f.runs + (f.balls ? ' off ' + f.balls : '');
-  if (f.sort === 'oddity' || f.sort === 'record') return st.headline;
+  // AN ODDITY'S HEADLINE DOES NOT EXPLAIN ITSELF. "Ten wickets" and "Tied" say
+  // what happened and not to whom, and the almanack sets a brief UNDER its
+  // headline as the line that explains it - so returning the headline again
+  // left the page repeating itself and then falling back to the kicker, which
+  // is how two entries both came out captioned "Out of the ordinary".
+  if (f.sort === 'oddity') return f.text && f.text !== st.headline ? f.text : st.headline;
+  if (f.sort === 'record') return st.headline;
   return f.text || st.headline;
 }
 

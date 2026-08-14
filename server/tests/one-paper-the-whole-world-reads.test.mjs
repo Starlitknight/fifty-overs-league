@@ -218,3 +218,110 @@ test('the quota drops the imitators, not the best of them', () => {
   const iss = makeIssue(feats.concat([s('leagueResult', { headline: 'a result' })]), TODAY);
   assert.equal(iss.lead.headline, 'the best', 'the best of the kind still leads');
 });
+
+// ---- THE DECK IS THE NUMBERS AND THE BODY IS THE WORDS ---------------------
+//
+// The single division that stopped the front page reading like a printout. A
+// report that says "Khulna CC 270/8, Dhaka CC 265/10." in its second sentence
+// is a scorecard with sentences around it; the same facts in an italic deck
+// under the headline is a newspaper. Both tests below are about that line, from
+// each side of it.
+import { deck, lead, brief } from '../gazette-prose.mjs';
+import { resultLine } from '../gazette-desk.mjs';
+
+const MATCH = {
+  kind: 'leagueResult', day: 100, stakes: 1,
+  headline: 'Khulna CC squeeze past Dhaka CC',
+  upset: { winner: 32442, loser: 40790 },
+  facts: { sort: 'league', winner: 'Khulna CC', home: 'Dhaka CC', away: 'Khulna CC',
+           text: 'Khulna CC win by 5 runs',
+           innings: [{ team: 'Khulna CC', runs: 270, wkts: 8 },
+                     { team: 'Dhaka CC', runs: 265, wkts: 10 }] }
+};
+
+test('the deck carries the scoreline, in cricket\'s own words', () => {
+  assert.equal(deck(MATCH), 'Khulna CC 270 for 8; Dhaka CC 265 all out.');
+});
+
+test('and the report never recites it', () => {
+  const body = lead(MATCH);
+  assert.ok(body.indexOf('270') < 0 && body.indexOf('265') < 0,
+    'the totals are in the report: ' + body);
+  assert.ok(body.indexOf('Khulna CC win by 5 runs') >= 0, 'but the RESULT still is');
+});
+
+// A REPORT IS THREE ACTS, and the middle one was missing. What it must not do
+// is repeat the opener - the first draft answered "Nobody had this one down"
+// with "this is the result nobody would have written down", because both pools
+// were written about the same thing.
+test('the report says how it was won, and says it once', () => {
+  const body = lead(MATCH);
+  const sentences = body.split('. ');
+  assert.ok(sentences.length >= 4, 'four sentences at least: ' + sentences.length);
+  const lower = sentences.map(s => s.toLowerCase());
+  assert.equal(new Set(lower).size, lower.length, 'no sentence is used twice');
+  // Khulna batted first and won, so it was a total defended
+  assert.ok(/defend|board first|batting first/i.test(body),
+    'it names which way round the win was: ' + body);
+});
+
+test('a chase is not reported as a defence', () => {
+  const chased = { ...MATCH, facts: { ...MATCH.facts,
+    innings: [{ team: 'Dhaka CC', runs: 265, wkts: 10 },
+              { team: 'Khulna CC', runs: 270, wkts: 8 }] } };
+  assert.ok(/chase|batted second|target/i.test(lead(chased)), lead(chased));
+});
+
+// AND A STORY WITH NO INNINGS SAYS NOTHING ABOUT HOW IT WAS WON. The desks do
+// not all supply them - a milestone is a man, not a match - and a report that
+// invents a chase for a story that has no second innings is the exact failure
+// this whole file is meant to catch.
+test('a story with nothing to say about the innings does not say anything', () => {
+  const bare = { kind: 'leagueResult', day: 100, headline: 'x',
+                 facts: { sort: 'league', text: 'Kent win by 9 runs' } };
+  assert.doesNotThrow(() => lead(bare));
+  assert.equal(deck(bare), 'Kent win by 9 runs.');
+});
+
+// ---- AND THE RESULT LINE NAMES BOTH SIDES ---------------------------------
+//
+// The engine writes "Essex win by 38 runs" - the winner and the margin, and no
+// opponent. That was survivable while the results were a two-column list with
+// the fixture printed beside them. Run on as prose it became eight lines of who
+// won and not one line of whom they beat.
+
+test('a result names the side that lost it', () => {
+  assert.equal(resultLine('Essex win by 38 runs', 'Essex', 'Essex', 'Kent'),
+    'Essex beat Kent by 38 runs');
+  assert.equal(resultLine('Kent win by 3 wickets (2 balls left)', 'Kent', 'Essex', 'Kent'),
+    'Kent beat Essex by 3 wickets (2 balls left)');
+});
+
+// IT NEVER GUESSES. A tie, an abandonment, a shape a later engine invents: the
+// honest answer is the fixture and the text verbatim, because a confidently
+// wrong sentence about a real match is worse than a clumsy true one.
+test('and a result it does not recognise prints as itself', () => {
+  assert.equal(resultLine('Match tied', null, 'Essex', 'Kent'), 'Match tied');
+  assert.equal(resultLine('Match tied', 'Essex', 'Essex', 'Kent'),
+    'Essex v Kent, Match tied');
+  assert.equal(resultLine('Rain stopped play', 'Essex', 'Essex', 'Kent'),
+    'Essex v Kent, Rain stopped play');
+});
+
+// ---- AN ODDITY EXPLAINS ITSELF --------------------------------------------
+//
+// "Ten wickets" and "Derbyshire all out for 79" say what happened and not to
+// whom. The page sets a brief UNDER the headline as the line that explains it,
+// so a brief that returns the headline again leaves the entry captioned with
+// its own kicker - which is how two entries both came out saying "Out of the
+// ordinary".
+test('an oddity says what match it happened in', () => {
+  const collapse = { kind: 'oddity', day: 100, headline: 'Derbyshire all out 79',
+    facts: { sort: 'oddity', why: 'collapse', team: 'Derbyshire', runs: 79,
+             text: 'Derbyshire v Notts; Notts win by 9 wickets' } };
+  assert.equal(brief(collapse), 'Derbyshire v Notts; Notts win by 9 wickets');
+  // and one with nothing to add still says something rather than nothing
+  const bare = { kind: 'oddity', day: 100, headline: 'Tied',
+                 facts: { sort: 'oddity', why: 'tie' } };
+  assert.equal(brief(bare), 'Tied');
+});
