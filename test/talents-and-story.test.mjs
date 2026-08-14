@@ -141,7 +141,16 @@ test('the page no longer promises a fixture it was not asked for', () => {
 });
 
 test('a man story is read off his record, not off this device', () => {
-  assert.match(PP, /\(p\.mile \|\| \[\]\)\.forEach/, 'the served moments are the first book it reads');
+  // THE SERVED MOMENTS ARE STILL THE FIRST BOOK, but they no longer ride on
+  // the roster: 093 moved a man's story off world_squads and onto a card of his
+  // own, and the page fetches it by id for a cricketer read off the world while
+  // still reading it straight off p.mile for one read out of a local save. So
+  // the list is bound to `mile` first and walked after, and this matches the
+  // binding rather than the walk. The contract is unchanged - his own record,
+  // ahead of anything this device watched.
+  assert.match(PP, /var mile = p\.mile;/, 'the served moments are the first book it reads');
+  assert.match(PP, /servedProfile\(p\.pid/, 'and are fetched by id for a man read off the world');
+  assert.match(PP, /\(mile \|\| \[\]\)\.forEach/, 'then walked, oldest first');
   assert.match(PP, /\(p\._career \|\| \[\]\)\.forEach/, 'a match watched here still writes its own');
   assert.match(PP, /__foPops\.forPlayer\(p\.name\)/, 'and the nets log is the third');
   // one clock, so the three interleave rather than stacking

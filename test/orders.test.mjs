@@ -82,9 +82,20 @@ test("a batter's own instruction reaches his deliveries", () => {
     const told = eng.sim(A, B, 'balanced', 'Sunny', seed,
       { Ashfield: { tossDecision: 'bat', phaseIntent: plan.phaseIntent, manBat: { [faced.name]: 2 } } });
     assert.ok(told);
-    if (base.innings[0].runs !== told.innings[0].runs) diffs++;
+    // HIS LINE, NOT THE TEAM TOTAL. The total is a weak proxy and it lied: two
+    // different innings can land on the same score, and twice in six seeds they
+    // did - 284 against 284, 129 against 129 - while the instructed man had in
+    // fact gone from 97 off 110 to 46 off 43, and from 37 off 44 to nought
+    // first ball. The order reached him perfectly; the assertion could not see
+    // it, because the rest of the innings made the difference back. So the test
+    // now reads the man it instructed, which is what it always claimed to.
+    const lineOf = r => {
+      const b = (r.innings[0].bat || []).find(x => ((x.p || x).name) === faced.name);
+      return b ? (b.r | 0) + '/' + (b.b | 0) + '/' + (b.out || '') : 'absent';
+    };
+    if (lineOf(base) !== lineOf(told)) diffs++;
   }
-  assert.ok(diffs >= SEEDS.length - 1, 'telling the man at the crease to launch changed almost nothing');
+  assert.equal(diffs, SEEDS.length, 'a launch order did not reach the man it named');
 });
 
 test("a bowler's own field reaches his overs", () => {

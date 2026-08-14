@@ -25,7 +25,13 @@ const Q = eng.genSquad(7788, 'England', 'balanced').players;
 
 // N is a compromise: big enough that the band below is meaningful (the
 // standard error here is about 2.2 points), small enough to stay a test
-const N = 260;
+// AND BIG ENOUGH TO SEE WHAT IT CLAIMS TO SEE. At 260 the standard error is
+// over three points on an effect worth about two, so the gate was a coin toss
+// wearing a measurement's clothes - it read 51.9% on one engine and 46.3% on
+// another whose true edge, over a thousand matches, was 51.2%. A test that
+// cannot tell 51 from 46 cannot hold a 52% contract. A thousand puts the error
+// near 1.6 points, which can.
+const N = 1000;
 const play = (homeName, homeMen, awayName, awayMen, salt) => {
   let h = 0, a = 0, t = 0;
   for (let i = 0; i < N; i++) {
