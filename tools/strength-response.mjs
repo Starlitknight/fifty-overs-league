@@ -66,6 +66,34 @@ const eng = makeEngine();
 eng.setTuning(true);
 
 // ---------------------------------------------------------------------------
+// THE BISECT HANDLE. `--cal=skill_soft:30,mismatch_scale:1e9` overrides tuning
+// constants inside the VM before a single ball is bowled.
+//
+// This is the repo's own method for proving a term responsible, and CLAUDE.md
+// is explicit about why it is the ONLY one that counts: a term's shape can be
+// read off the source and reasoned about confidently and wrongly. Zeroing it
+// and re-measuring cannot be wrong. Nothing is written to disk and no build
+// changes - the override lives in this VM for this run.
+//
+// `--cells=reduced` runs the smaller, high-sample grid used for bisecting,
+// where the question is which term moved rather than what the whole curve is.
+// ---------------------------------------------------------------------------
+const CALSET = arg('cal', '');
+if (CALSET) {
+  const patch = {};
+  for (const kv of CALSET.split(',')) {
+    const [k, v] = kv.split(':');
+    if (k && v != null) patch[k.trim()] = Number(v);
+  }
+  vm.runInContext('(' + function (p) {
+    for (const k in p) GD.cal[k] = p[k];
+  }.toString() + ')(' + JSON.stringify(patch) + ')', eng.ctx);
+  const back = vm.runInContext('JSON.stringify(GD.cal)', eng.ctx);
+  const got = JSON.parse(back);
+  for (const k in patch) if (got[k] !== patch[k]) throw new Error('cal override did not take: ' + k);
+}
+
+// ---------------------------------------------------------------------------
 // BUILDING AN XI AT A LEVEL
 //
 // The reference squads are the two baked into the build (GD.teams[0] and [1]).
@@ -253,7 +281,13 @@ function pairing(la, lb, n, seed0) {
 }
 
 const LEVELS = [20, 25, 30, 35, 40, 45, 50, 55, 60, 65, 70, 75, 80, 85, 90, 95];
-const MATRIX = [
+const REDUCED = [
+  [25, 25], [25, 35], [25, 50], [25, 70],
+  [50, 50], [50, 60], [50, 70],
+  [70, 70], [70, 80], [70, 90],
+  [85, 85], [85, 95], [90, 95]
+];
+const FULLMATRIX = [
   [25, 25], [25, 35], [25, 50], [25, 70], [25, 90],
   [35, 35], [35, 45], [35, 60],
   [40, 50], [40, 60],
@@ -263,7 +297,7 @@ const MATRIX = [
   [80, 90], [80, 95], [90, 95], [95, 95]
 ];
 
-const out = { mode: MODE, n: N, generatedFrom: 'shipped index.html', levels: {}, matrix: [], players: [], shapes: [] };
+const out = { mode: MODE, n: N, cal: CALSET || 'shipped', generatedFrom: 'shipped index.html', levels: {}, matrix: [], players: [], shapes: [] };
 
 // ---- 1. THE SWEEP: what one level of cricket looks like against itself -----
 if (ALL || has('sweep') || (!has('matrix') && !has('players') && !has('shapes'))) {
@@ -274,7 +308,8 @@ if (ALL || has('sweep') || (!has('matrix') && !has('players') && !has('shapes'))
 }
 // ---- 2. THE MATRIX --------------------------------------------------------
 if (ALL || has('matrix')) {
-  for (const [a, b] of MATRIX) out.matrix.push(pairing(a, b, N, 500000 + a * 1009 + b * 17));
+  const grid = arg('cells', 'full') === 'reduced' ? REDUCED : FULLMATRIX;
+  for (const [a, b] of grid) out.matrix.push(pairing(a, b, N, 500000 + a * 1009 + b * 17));
 }
 // ---- 3. ASYMMETRIC SIDES --------------------------------------------------
 // A uniformly-scaled XI is the easy case. Real squads are lopsided, and a fix
@@ -367,7 +402,7 @@ globalThis.__srOneSided = function (batL, bowlL) {
 if (JSONOUT) { console.log(JSON.stringify(out, null, 1)); process.exit(0); }
 
 const pad = (s, n) => String(s).padEnd(n), num = (s, n) => String(s).padStart(n);
-console.log('\n# strength-response  mode=' + MODE + '  n=' + N + ' matches per cell\n');
+console.log('\n# strength-response  mode=' + MODE + '  n=' + N + '  cal=' + (CALSET || 'shipped') + '\n');
 if (Object.keys(out.levels).length) {
   console.log('== LEVEL AGAINST ITSELF (is the cricket still cricket at every level?) ==');
   console.log('  ' + pad('L', 4) + num('meanSk', 7) + num('sdSk', 6) + num('floor%', 7) + num('ceil%', 6) +
