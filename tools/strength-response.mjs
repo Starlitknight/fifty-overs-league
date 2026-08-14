@@ -262,8 +262,25 @@ function pairing(la, lb, n, seed0) {
   const margin = rows.filter(r => !r.tie).map(r => Math.abs((r.aRuns || 0) - (r.bRuns || 0)));
   const balls = rows.reduce((a, r) => a + (r.aBalls || 0) + (r.bBalls || 0), 0);
   const wkts = rows.reduce((a, r) => a + (r.aWk || 0) + (r.bWk || 0), 0);
+  // ---- THE SHAPE OF THE INNINGS, NOT ONLY ITS MIDDLE ---------------------
+  // Two engines that both average 250 are not the same engine. One that puts
+  // every innings between 220 and 280 has no cricket in it; one that usually
+  // produces sensible totals and occasionally a collapse or a mountain does.
+  // A cap on a skill term can quietly flatten the tails while leaving the mean
+  // exactly where it was, so the mean is the one statistic that cannot detect
+  // the damage - these can.
+  const all1 = rows.map(r => r.s1).sort((x, y) => x - y);
+  const pc = f => all1.length ? all1[Math.min(all1.length - 1, Math.floor(f * all1.length))] : 0;
+  const share = f => r2(all1.filter(f).length / (all1.length || 1) * 100);
+  const dist = {
+    min: all1[0] || 0, p01: pc(0.01), p05: pc(0.05), p25: pc(0.25), p50: pc(0.50),
+    p75: pc(0.75), p95: pc(0.95), p99: pc(0.99), max: all1[all1.length - 1] || 0,
+    under50: share(v => v < 50), under75: share(v => v < 75), under100: share(v => v < 100),
+    under150: share(v => v < 150), over300: share(v => v > 300), over350: share(v => v > 350),
+    over400: share(v => v > 400)
+  };
   return {
-    a: la, b: lb, n: rows.length,
+    a: la, b: lb, n: rows.length, dist,
     aWinPct: r2(rows.filter(r => r.aWon).length / n0 * 100),
     tiePct: r2(rows.filter(r => r.tie).length / n0 * 100),
     aRunsMean: r2(mean(aRuns)), bRunsMean: r2(mean(bRuns)),
@@ -415,6 +432,19 @@ if (Object.keys(out.levels).length) {
       num(s.ceiledPct, 6) + num(s.xiRating, 7) + num(s.meanBat, 6) + num(s.meanThreat, 6) + ' |' +
       num(p.firstInnMean, 8) + num(p.firstInnSd, 6) + num(p.aWktsMean, 6) + num(p.allOutPct, 8) +
       num(p.runRate, 6) + num(p.boundaryPct, 6) + num(p.ballsPerWkt, 6) + num(p.extras, 7));
+  }
+}
+if (out.matrix.length && has('dist')) {
+  console.log('\n== THE SHAPE OF THE FIRST INNINGS ==');
+  console.log('  ' + pad('matchup', 11) + ['min','p01','p05','p25','p50','p75','p95','p99','max']
+    .map(h => num(h, 6)).join('') + '  |' + ['<50','<75','<100','<150','>300','>350','>400']
+    .map(h => num(h, 7)).join(''));
+  for (const m of out.matrix) {
+    const d = m.dist;
+    console.log('  ' + pad(m.a + ' v ' + m.b, 11) +
+      [d.min,d.p01,d.p05,d.p25,d.p50,d.p75,d.p95,d.p99,d.max].map(v => num(v, 6)).join('') + '  |' +
+      [d.under50,d.under75,d.under100,d.under150,d.over300,d.over350,d.over400]
+        .map(v => num(v, 7)).join(''));
   }
 }
 if (out.matrix.length) {
