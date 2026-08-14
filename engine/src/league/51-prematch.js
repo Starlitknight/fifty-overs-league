@@ -338,8 +338,23 @@
   // now matters more than how big it is - a side whose deficit is all in its
   // tail is punished far harder than one whose deficit is spread - which is
   // the caveat the note below the bar already makes, only louder.
-  var FO_PM_ODDS_S = 13175;         // rating points worth 10:1
-  var FO_PM_ODDS_H = 525;           // and what being at home is worth
+  // AND RE-FITTED AGAIN WHEN THE STANDARD TERM WENT IN. The 13,175 above was
+  // measured against the mismatch term alone, before the sum-signal existed -
+  // so the bar was quoting a curve the ball loop had already moved off. Re-run
+  // the same way (tools/winrate.mjs, eight gap bands, 240 matches a band, home
+  // and away): the engine's own curve now fits 11,900, and the average miss
+  // falls from 3.3 points to 2.7. Not a large move - the bar was never badly
+  // wrong - but a published number that nobody has checked against the engine
+  // it describes is a number waiting to drift.
+  var FO_PM_ODDS_S = 11900;         // rating points worth 10:1
+  // WHAT THE GROUND IS WORTH, in the same currency and off the same engine:
+  // two identical sides over 1,000 matches give the host 51.2%, which on the
+  // scale above is 250 points. It was 525 against the old scale and an older
+  // measurement. TREAT THIS ONE LOOSELY: at a thousand matches the standard
+  // error on 51.2% is about 1.6 points, which is nearly 200 points of scale
+  // either side. It is the right order and the right sign; it is not precise,
+  // and it is quoted on a bar that already tells the reader it is a projection.
+  var FO_PM_ODDS_H = 250;           // and what being at home is worth
   var FO_PM_ODDS_TIE = 0.02;        // the engine ties about one match in fifty
 
   // THE ELEVEN A SIDE CAN ACTUALLY FIELD, and what it averages. pickXI is the

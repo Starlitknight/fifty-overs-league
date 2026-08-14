@@ -141,14 +141,13 @@ test('the bar is offered, and it says who is stronger the same way every time', 
   // fixture came out anywhere from 32% to 65% depending on the seeds drawn,
   // so the odds are read off the squads and never move
   assert.ok(!/simWorld/.test(src51), 'the preview no longer plays the fixture out at all');
-  // PINNED SO IT CANNOT DRIFT BY ACCIDENT, which is all this line is for. The
-  // value moved from 16250 when the curve was re-fitted against the engine's
-  // measured win rate. NOTE: that fit was taken BEFORE the standard term went
-  // in, so the published bar and the ball loop are not yet known to agree -
-  // re-measuring the curve against v3 is outstanding work, and this pin will
-  // have to move again when it is done.
-  assert.match(src51, /var FO_PM_ODDS_S = 13175;/, 'the curve is the engine\'s own, measured');
-  assert.match(src51, /var FO_PM_ODDS_H = 525;/, 'and so is what the ground is worth');
+  // PINNED SO IT CANNOT DRIFT BY ACCIDENT, which is all these two lines are
+  // for. Both were re-measured against the shipped engine after the standard
+  // term went in: 16250 -> 13175 -> 11900 as the ball loop moved under them.
+  // A published curve nobody re-checks is a curve that quietly stops being
+  // true, so when the engine moves, these move with it.
+  assert.match(src51, /var FO_PM_ODDS_S = 11900;/, 'the curve is the engine\'s own, measured');
+  assert.match(src51, /var FO_PM_ODDS_H = 250;/, 'and so is what the ground is worth');
   assert.match(src51, /window\.foPmStrength = function/, 'strength is the eleven that will take the field');
   assert.match(src51, /world_squads\?country_id=eq\./, 'read off the world\'s published cards');
 });
