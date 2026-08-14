@@ -96,6 +96,10 @@ const PLAY_TABLES = [
   // longer exists. Dropped, the next settle folds from genesis and marks the
   // new world, which is the whole repair.
   'living_checkpoint',
+  // and the morning's paper, which reports cricket this script is about to
+  // delete. Kept, the first reader after a redeal would open a front page
+  // about matches that never happened in the world he is looking at.
+  'gazette',
   // the pitch a manager called for a HOME FIXTURE (083). This is where it
   // parts company with ticket_prices below: a price is a standing policy that
   // outlives any one match, while a call names a season, a round and a slot,
