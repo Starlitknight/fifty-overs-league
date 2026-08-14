@@ -42,6 +42,52 @@ for (const cell of Object.keys(golden.cells)) {
   near(f.runRateByPhase.death_41_50, g.runRateByPhase.death_41_50, 0.5, cell + ' rr.death');
   near(f.wicketsHistogram[10], g.wicketsHistogram[10], 0.10, cell + ' allOutShare');
 }
+// ---- AND THE ONE CONTRACT THAT IS NOT MERELY "DON'T DRIFT" ----------------
+//
+// Everything above asks only that the engine still does what it did. This
+// asks something harder and it asks it of ONE cell: that our INTERNATIONAL
+// cricket resembles the real men's ODI cricket the model was fitted to.
+//
+// It is deliberately not asked of the domestic cells. The engine was
+// calibrated on international data, so international matches are the only
+// ones that data describes - a second division club has no business posting
+// a World Cup total, and for a long time this gate quietly insisted that it
+// did: the golden it produced had weak-versus-weak scoring 265.8 and
+// elite-versus-elite 251.1, the worst cricket in the world outscoring the
+// best, and nothing here objected because nothing here was looking.
+//
+// Bands, not points. These are what men's ODI cricket actually does, and the
+// engine is allowed to sit anywhere sensible inside them.
+const ODI_PAR = {
+  'firstInnings.mean': [225, 285],      // a par first-innings total
+  'boundaryPctPerBall': [6.5, 12.0],    // fours and sixes as a share of deliveries
+  'extrasPerInnings': [8, 26],
+  'allOutShare': [0.20, 0.55],          // how often a side batting first is bowled out
+};
+const intl = fresh.cells.international;
+if (!intl) fail.push('no international cell: the ODI contract cannot be checked');
+else {
+  const band = (v, key) => {
+    const [lo, hi] = ODI_PAR[key];
+    if (!(v >= lo && v <= hi))
+      fail.push('international ' + key + ' = ' + v + ' is outside real-ODI ' + lo + '..' + hi);
+  };
+  band(intl.firstInnings.mean, 'firstInnings.mean');
+  band(intl.boundaryPctPerBall, 'boundaryPctPerBall');
+  band(intl.extrasPerInnings, 'extrasPerInnings');
+  band(intl.wicketsHistogram[10], 'allOutShare');
+  // AND THE PYRAMID POINTS THE RIGHT WAY UP. The reason this file exists in
+  // its present form: international cricket must outscore club cricket, not
+  // trail it. A tolerance, not a hair - the point is the SIGN.
+  const d2 = fresh.cells.division_two;
+  if (d2 && !(intl.firstInnings.mean > d2.firstInnings.mean + 15))
+    fail.push('the pyramid is upside down: internationals average ' + intl.firstInnings.mean +
+      ' and division two ' + d2.firstInnings.mean);
+  if (d2 && !(d2.wicketsHistogram[10] > intl.wicketsHistogram[10]))
+    fail.push('weaker sides are bowled out LESS often than internationals: ' +
+      d2.wicketsHistogram[10] + ' vs ' + intl.wicketsHistogram[10]);
+}
+
 if (!fresh.determinism.identical) fail.push('engine is not seed-deterministic');
 if (golden.determinism.fingerprint !== fresh.determinism.fingerprint)
   fail.push('pinned-match fingerprint changed: ' + fresh.determinism.fingerprint + ' vs golden ' + golden.determinism.fingerprint);

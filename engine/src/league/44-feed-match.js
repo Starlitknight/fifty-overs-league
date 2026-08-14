@@ -1160,8 +1160,17 @@
     var bowl = "";
     if (I.who && I.who.bowl) {
       bowl = "<div class='sh'>BOWLING</div><div class='cb bw'><span class='nm'>" + plink(I.who.bowl.nm) + pstar(I.who.bowl.nm, T.rid) + "<span class='ss'>" + sStars(I.who.bowl.nm, "bowl") + "</span></span>" +
-        "<span class='rv'>" + I.who.bowl.o + "&ndash;" + I.who.bowl.r + "</span><span class='wv'>" + I.who.bowl.w + "</span></div>" +
-        "<div class='lbl'><span></span><span>O&ndash;R</span><span>W</span></div>";
+        // A BOWLER'S FIGURES LEAD WITH THE WICKETS. This printed the overs and
+        // the runs together and hung the wickets off the end - "9-28  2" - which
+        // is a reading order no scorecard uses and no commentator speaks. A
+        // bowling card is overs-maidens-runs-wickets; a bowler's figures quoted
+        // anywhere else are wickets for runs, "two for twenty-eight". The
+        // strip has no maidens to print, so it quotes him the spoken way and
+        // puts his spell in brackets after - which is also how the batter
+        // beside him reads, his runs first and his balls in brackets.
+        "<span class='wv'>" + I.who.bowl.w + "&ndash;" + I.who.bowl.r + "</span>" +
+        "<span class='bv'>(" + I.who.bowl.o + ")</span></div>" +
+        "<div class='lbl'><span></span><span>W&ndash;R</span><span>OV</span></div>";
     } else if (I.bowler) {
       bowl = "<div class='sh'>BOWLING</div><div class='cb bw'><span class='nm'>" + E(I.bowler) + pstar(I.bowler, T.rid) + "</span><span class='rv new'>opening spell</span></div>";
     }

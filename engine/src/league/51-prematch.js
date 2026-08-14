@@ -330,15 +330,15 @@
   // outclassing attack, so the same rating gap converts harder. Re-measured the
   // way the original was - scaled squads from 0.70x to 1.30x, every pairing
   // played both ways round, the scale fitted by maximum likelihood over 2,940
-  // matches - the answer moved from 16,250 to 12,800, and the curve's average
-  // miss fell from 7.5 points to 5.7.
+  // matches - the answer moved from 16,250 to 13,175, and the curve's average
+  // miss fell from 8.1 points to 6.6.
   //
   // The SCATTER is wider than it was, and honestly so: at a gap near 9,000 the
   // engine returned 65% for one pairing and 92% for another. Where a gap sits
   // now matters more than how big it is - a side whose deficit is all in its
   // tail is punished far harder than one whose deficit is spread - which is
   // the caveat the note below the bar already makes, only louder.
-  var FO_PM_ODDS_S = 12800;         // rating points worth 10:1
+  var FO_PM_ODDS_S = 13175;         // rating points worth 10:1
   var FO_PM_ODDS_H = 525;           // and what being at home is worth
   var FO_PM_ODDS_TIE = 0.02;        // the engine ties about one match in fifty
 
