@@ -52,10 +52,82 @@ export const DAY = 86400000;
 // ---------------------------------------------------------------------------
 export const CYCLE = 42;                      // days in a season = one year
 export const ROUNDS = 14;                     // eight clubs, double round robin
+// ---------------------------------------------------------------------------
+//  A SEASON HAS TWO NAMES, AND ONLY ONE OF THEM GOES ON A PAGE.
+//
+//  `seasons.season_no` counts from 1 because the umpire founded this world on
+//  3 August 2026 and that was the first season IT played. The game does not
+//  say that anywhere: the record behind the live world runs from 1890 to 2025,
+//  a hundred and thirty-six seasons of it, and every surface in the client
+//  names the live season by carrying straight on from the record - so the
+//  header reads SEASON 137 while the row underneath it says 1.
+//
+//  This is not two worlds. It is one world with an internal index and a public
+//  name, and anything the reader sees must use the name. The Gazette printed
+//  the index for one day and it read as a second, contradictory calendar sat
+//  under the app's own header.
+//
+//  136 is `__foPlanet.histSeasons()` in the shipped build - the number of
+//  seasons in the baked record, which is a property of the DATA and would move
+//  if the record ever grew. It is a constant here rather than a read of the
+//  engine because the press must be able to date an issue without booting a VM;
+//  tests/the-world-has-one-calendar.test.mjs holds it against the real build,
+//  so if the record grows this fails loudly instead of quietly misdating the
+//  paper by a season.
+// ---------------------------------------------------------------------------
+export const HERITAGE_SEASONS = 136;
+export function seasonName(n) { return HERITAGE_SEASONS + Math.max(1, n | 0); }
 export const WEEK_ROUNDS = 12;                // rounds 1-12 fall on the weekly pattern
 export const LATE_DAYS = [28, 29];            // rounds 13 and 14, after the quiet week
 export const LEAGUE_DAYS = 30;                // last league round settles di 29
 export const LIVE_HOURS = 3;
+// ---------------------------------------------------------------------------
+//  AND THE WORLD'S OWN DAY-IN-SEASON IS NOT `day % 42`.
+//
+//  A season opens on its `start_day`, and this world's did not open on world
+//  day 0: `init-world.mjs` founds it on the day AFTER the tick that ran, so a
+//  world founded on day 6 has its season 1 begin on day 7. Every page in the
+//  client anchors to that (`__foPlanet.anchorWorld`, from the served
+//  snapshot); the press did not, and dated an issue Day 12 on the morning the
+//  app's own header said Day 5.
+//
+//  Nations founded later carry their own start_day and are permanently off
+//  phase with the rest - joining mid-world is a real thing that happens to a
+//  real nation, not a bug. But the paper is ONE paper for the whole world, so
+//  it dates itself by the calendar most of the world is on: the largest cohort
+//  sharing a phase, and within it the newest season already under way.
+//
+//  Pure function of the rows, so it can be held exactly in a test.
+// ---------------------------------------------------------------------------
+export function worldAnchor(seasonRows, today) {
+  const open = (seasonRows || []).filter(s => (s.start_day | 0) <= today);
+  if (!open.length) return null;
+  const cohort = new Map();
+  for (const s of open) {
+    const ph = (((s.start_day | 0) % CYCLE) + CYCLE) % CYCLE;
+    if (!cohort.has(ph)) cohort.set(ph, []);
+    cohort.get(ph).push(s);
+  }
+  // the biggest cohort wins; ties break on the lower phase so the answer never
+  // depends on which row Postgres handed back first
+  let best = null;
+  for (const [ph, rows] of [...cohort.entries()].sort((a, b) => a[0] - b[0]))
+    if (!best || rows.length > best.rows.length) best = { ph, rows };
+  // within it, the season already under way - the newest start_day that is not
+  // in the future, which the filter above has already guaranteed
+  const row = best.rows.reduce((a, s) => (s.start_day | 0) > (a.start_day | 0) ? s : a);
+  const startDay = row.start_day | 0;
+  // AND THEN ROLL FORWARD A WHOLE CYCLE AT A TIME, which is exactly what the
+  // client's phaseOf does from its own anchor. It matters when the umpire is
+  // behind: the seasons row for next season is not written until the turn of
+  // the year settles, so on a day the tick has not reached, `today - start_day`
+  // can run past 41. Counting it raw would print "Day 43 of season 137" while
+  // every phone printed "Day 1 of season 138" - the same disagreement this
+  // whole file exists to end, in a rarer costume.
+  const rel = today - startDay;
+  const seasonNo = (row.season_no | 0) + Math.floor(rel / CYCLE);
+  return { startDay, seasonNo, di: ((rel % CYCLE) + CYCLE) % CYCLE, name: seasonName(seasonNo) };
+}
 // the league week: Mon Tue . Thu Fri . . — rounds at di%7 in {0,1,3,4}
 const WEEK_POS = { 0: 1, 1: 2, 3: 3, 4: 4 };  // di%7 -> round-in-week
 // day-in-season -> league round number, or null if no league cricket that day.

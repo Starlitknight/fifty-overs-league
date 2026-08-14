@@ -14,7 +14,7 @@ import { initWorld } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { runDue } from '../tick.mjs';
 import { printGazette } from '../gazette.mjs';
-import { EPOCH, DAY } from '../clock.mjs';
+import { EPOCH, DAY, seasonName } from '../clock.mjs';
 
 const DB = 'fopaper_test';
 const T0 = EPOCH + 100 * DAY + 12 * 3600000;
@@ -54,6 +54,25 @@ test('printing twice from one record prints one paper', async () => {
   assert.equal(r.printed, false, 'the second run wrote nothing');
   assert.deepEqual(b.issue, a.issue, 'and the paper is the same paper');
   assert.deepEqual(b.printed_at, a.printed_at, 'right down to when it was printed');
+});
+
+// AND IT IS DATED THE WAY THE GAME IS DATED. The press ran for a day printing
+// "Day 12 of season 1" onto a masthead sitting under an app header that read
+// DAY 5 · SEASON 137 - same world, same cricket, two names for the morning. The
+// arithmetic behind both names is held in the-world-has-one-calendar; this is
+// the end of the wire, that what actually reaches the row says the same thing
+// the served season row does.
+test('the masthead dates itself by the season, not by the epoch', async () => {
+  await printGazette(pool, at);
+  const row = await issue();
+  const s = (await pool.query(
+    `SELECT season_no, start_day FROM seasons WHERE country_id='eng' ORDER BY season_no`)).rows[0];
+  const di = row.world_day - (s.start_day | 0);
+  assert.equal(row.issue.dayInSeason, di + 1, 'the day is counted from the season opening');
+  assert.equal(row.issue.season, seasonName(s.season_no),
+    'and the season carries its public name, never the row index');
+  assert.ok(row.issue.dateline.indexOf('Day ' + (di + 1) + ' of season ' + seasonName(s.season_no)) === 0,
+    'which is what the folio line says: ' + row.issue.dateline);
 });
 
 // NOTHING IS INVENTED. Every headline the paper carries has to be a thing that

@@ -155,12 +155,20 @@
 
     page.innerHTML = "<div class='fo-gz'><div class='fo-gz-in'>" +
       "<div class='fo-gz-mast'>" +
-      "<div class='fo-gz-ears'><span class='ear'>" + (big ? "Final<br>day" : "Day<br>" + day) + "</span>" +
+      // THE EAR SAYS THE DAY THE REST OF THE GAME SAYS. It printed the WORLD
+      // day - the count since 3 August 2026 - directly beneath an app header
+      // reading DAY 5 · SEASON 137, so the paper looked like it was reporting
+      // some other planet. It is the same planet; the press now sends the
+      // season's own day and the season's public name, and this prints them.
+      // An issue set before it did carries neither, and falls back to the
+      // world day rather than to a blank ear.
+      "<div class='fo-gz-ears'><span class='ear'>" +
+        (big ? "Final<br>day" : "Day<br>" + (iss.dayInSeason > 0 ? iss.dayInSeason : day)) + "</span>" +
       "<h1>The Fifty Overs Gazette</h1>" +
-      "<span class='ear r'>Price<br>tuppence</span></div>" +
+      "<span class='ear r'>" + (iss.season > 0 ? "Season<br>" + (iss.season | 0) : "Price<br>tuppence") + "</span></div>" +
       "<div class='fo-gz-mrule'></div>" +
       "<div class='fo-gz-folio'>" + E(iss.dateline || dateline()) +
-        " &nbsp;&bull;&nbsp; No. " + day + " &nbsp;&bull;&nbsp; One edition, the whole world over</div>" +
+        " &nbsp;&bull;&nbsp; One edition, the whole world over</div>" +
       "<div class='fo-gz-mrule thin'></div>" +
       "</div>" +
       (iss.thin

@@ -204,6 +204,13 @@ export function makeIssue(stories, today, extras = {}) {
     // out with a blank masthead. Caught by reading an actual paper rather than
     // by a test - the tests all passed, because none of them read the words.
     dateline: extras.dateline || null,
+    // AND THE FOLIO'S OWN NUMBERS, not only the sentence it made from them.
+    // The masthead has ears as well as a folio line, and a page that has to
+    // parse "Day 5 of season 137" back out of a string to fill them is a page
+    // one comma away from printing nothing. `season` is the season's PUBLIC
+    // NAME (137), never the seasons row's index (1) - see clock.seasonName.
+    season: extras.season == null ? null : extras.season | 0,
+    dayInSeason: extras.dayInSeason == null ? null : extras.dayInSeason | 0,
     scoreboard: extras.scoreboard || [],       // yesterday's results in full
     table: extras.table || null,               // the league most worth printing
     numbers: extras.numbers || [],             // records and milestones
@@ -228,7 +235,7 @@ export function makeIssue(stories, today, extras = {}) {
 // actually moved.
 // ---------------------------------------------------------------------------
 export async function printGazette(pool, now, opts = {}) {
-  const { dayIx, roundOfDay, CYCLE } = await import('./clock.mjs');
+  const { dayIx, roundOfDay, CYCLE, worldAnchor, seasonName } = await import('./clock.mjs');
   const desk = await import('./gazette-desk.mjs');
   const prose = await import('./gazette-prose.mjs');
   const today = dayIx(now);
@@ -275,10 +282,22 @@ export async function printGazette(pool, now, opts = {}) {
     s.headline = prose.headline(s);
     s.brief = prose.brief(s);
   }
+  // THE DATE THE WHOLE GAME AGREES ON. Two things were wrong with dating an
+  // issue `topSeason` and `today % CYCLE`: the season number was the seasons
+  // row's internal index rather than the name every page in the client prints,
+  // and the day-in-season ignored that a season opens on its own start_day.
+  // Together they put "Day 12 of season 1" on a masthead sitting directly under
+  // an app header reading DAY 5 · SEASON 137, which reads as two worlds. There
+  // is one world; worldAnchor and seasonName are how the press says so.
+  const anch = worldAnchor(seasons, today);
+  const folioSeason = anch ? anch.name : seasonName(topSeason);
+  const folioDay = anch ? anch.di + 1 : (today % CYCLE) + 1;
   const issue = makeIssue(stories, today, {
     scoreboard: league.scoreboard.slice(0, 40),
     comment: prose.comment(today),
-    dateline: prose.dateline(today, topSeason, (today % CYCLE) + 1)
+    season: folioSeason,
+    dayInSeason: folioDay,
+    dateline: prose.dateline(today, folioSeason, folioDay)
   });
   if (issue.lead) issue.lead.body = prose.lead(issue.lead);
   if (issue.second) issue.second.body = prose.lead(issue.second);

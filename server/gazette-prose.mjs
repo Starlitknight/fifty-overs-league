@@ -167,6 +167,11 @@ export function comment(day) { return pick(COMMENT, 'comment|' + day); }
 
 // ---- THE MASTHEAD ----------------------------------------------------------
 
+// `seasonNo` here is the season's PUBLIC NAME (clock.seasonName), not the
+// seasons row's index. The paper printed the index once - "Day 12 of season 1"
+// under an app header reading SEASON 137 - and it read like a second world
+// running alongside the first. There is only one world; this is what it calls
+// today.
 export function dateline(worldDay, seasonNo, dayInSeason) {
   return 'Day ' + dayInSeason + ' of season ' + seasonNo + ' · world day ' + worldDay;
 }

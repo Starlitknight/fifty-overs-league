@@ -81,6 +81,20 @@ leaderboard:
     STANDING   a top-four nation, a flagship club
     UPSET      the tie-break, and deliberately heavy
 
+## The date on it
+
+There is one world and it has one date, but a season has two names: the
+`seasons` row's `season_no`, which counts from 1 because the umpire founded
+this world in August 2026, and the name every page in the client prints, which
+carries straight on from the baked record and so calls that same season 137.
+The masthead uses the **name**, always — and counts the day from the season's
+own `start_day`, not from the epoch. Printing the index and the raw world day
+put "Day 12 of season 1" two inches under a header reading DAY 5 · SEASON 137,
+and a reader has no way to tell that those are the same morning.
+`clock.seasonName` and `clock.worldAnchor` are the two functions; the paper
+carries `season` and `dayInSeason` as numbers so the page never parses the
+folio line back apart.
+
 ## The page
 
     masthead + dateline
