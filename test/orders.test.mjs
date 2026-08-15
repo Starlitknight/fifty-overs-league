@@ -99,15 +99,33 @@ test("a batter's own instruction reaches his deliveries", () => {
 });
 
 test("a bowler's own field reaches his overs", () => {
-  const seed = 6060;
+  // THE TEAM TOTAL IS A WEAK PROXY, and this test was the last place still
+  // trusting it - the same mistake the launch-order test above documents at
+  // length. Two genuinely different innings can land on the same score, and on
+  // one seed that is a coin flip; it duly came up heads once the engine's
+  // wicket rate moved. The full scorecard cannot coincide, so read that, and
+  // read several seeds so the assertion is about the order reaching the field
+  // rather than about one afternoon.
   const att = {}, def = {};
   B.players.forEach(p => { if (p.bowlType) { att[p.name] = 'att'; def[p.name] = 'def'; } });
   assert.ok(Object.keys(att).length >= 4, 'test squad has no bowlers');
-  const a = eng.sim(A, B, 'balanced', 'Sunny', seed, { Brackenby: { manBowl: att } });
-  const d = eng.sim(A, B, 'balanced', 'Sunny', seed, { Brackenby: { manBowl: def } });
-  assert.ok(a && d);
-  assert.notEqual(runsOf(a, 'Ashfield'), runsOf(d, 'Ashfield'),
-    'attacking and defensive fields produced the same innings');
+  // AND IT IS ASHFIELD'S INNINGS, whichever of the two it is. innings[0] is
+  // whoever batted first and the toss moves with the seed, so on a seed where
+  // Brackenby batted first this was comparing Brackenby's own batting against
+  // itself - an innings the Brackenby field order cannot touch - and calling the
+  // identical result a failure.
+  const card = r => {
+    const inn = (r.innings || []).find(i => i && i.batTeam === 'Ashfield') || r.innings[0];
+    return (inn.bat || []).map(x => ((x.p || x).name) + ':' + (x.r | 0) + '/' + (x.b | 0)).join('|');
+  };
+  let diffs = 0;
+  for (const seed of [6060, 6061, 6062]) {
+    const a = eng.sim(A, B, 'balanced', 'Sunny', seed, { Brackenby: { manBowl: att } });
+    const d = eng.sim(A, B, 'balanced', 'Sunny', seed, { Brackenby: { manBowl: def } });
+    assert.ok(a && d);
+    if (card(a) !== card(d)) diffs++;
+  }
+  assert.equal(diffs, 3, 'attacking and defensive fields produced the same innings');
 });
 
 test('the toss decision on the sheet is the decision taken', () => {
