@@ -143,11 +143,18 @@ test('the bar is offered, and it says who is stronger the same way every time', 
   assert.ok(!/simWorld/.test(src51), 'the preview no longer plays the fixture out at all');
   // PINNED SO IT CANNOT DRIFT BY ACCIDENT, which is all these two lines are
   // for. Both were re-measured against the shipped engine after the standard
-  // term went in: 16250 -> 13175 -> 11900 as the ball loop moved under them.
-  // A published curve nobody re-checks is a curve that quietly stops being
+  // term went in: 16250 -> 13175 -> 11900 -> 7400 as the ball loop moved under
+  // them. A published curve nobody re-checks is a curve that quietly stops being
   // true, so when the engine moves, these move with it.
-  assert.match(src51, /var FO_PM_ODDS_S = 11900;/, 'the curve is the engine\'s own, measured');
-  assert.match(src51, /var FO_PM_ODDS_H = 250;/, 'and so is what the ground is worth');
+  //
+  // 7400 is the B1 refit: the ball model stopped saturating ten points from the
+  // mean, so a rating gap buys far more cricket than it did and the old curve
+  // was out by 13.3 points. Re-measured over 6,300 matches by maximum
+  // likelihood. The ground is fitted SEPARATELY - 600 identical fixtures, home
+  // 51.26% - because the likelihood is dominated by lopsided pairings where
+  // hosting is invisible and fitting it alongside the slope under-reads it.
+  assert.match(src51, /var FO_PM_ODDS_S = 7400;/, 'the curve is the engine\'s own, measured');
+  assert.match(src51, /var FO_PM_ODDS_H = 163;/, 'and so is what the ground is worth');
   assert.match(src51, /window\.foPmStrength = function/, 'strength is the eleven that will take the field');
   assert.match(src51, /world_squads\?country_id=eq\./, 'read off the world\'s published cards');
 });
