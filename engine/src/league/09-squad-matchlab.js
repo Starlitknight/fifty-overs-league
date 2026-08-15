@@ -530,6 +530,15 @@
       v: function (p) { return p.name; } },
     { k: "role", l: "Role", s: "Role", tip: "How the club uses him",
       v: function (p) { return foSqClass(p); } },
+    // WHAT he bowls, beside HOW the club uses him. The role column says BOWL
+    // and stops; picking an attack off this grid still meant opening every
+    // card to learn who turns it and who swings it. The code is the one the
+    // whole game speaks - shortBT, so LFM here is LFM on the scorecard and in
+    // the orders room - and sorting on it gathers the seamers, the spinners
+    // and the part-timers into their families ('-' first, so the men who do
+    // not bowl at all sit together too).
+    { k: "bt", l: "Bowls", s: "BT", tip: "Bowling type - pace or spin, and which arm. Sort to group the attack by family",
+      v: function (p) { return (typeof shortBT === "function" ? shortBT(p) : "") || "-"; } },
     { k: "nat", l: "Nat", s: "Nat", tip: "Where he is from - and who can pick him for a country",
       v: function (p) { return String(p.nat || "zzz"); } },
     { k: "age", l: "Age", s: "Age", tip: "Years and days - a year here is 30 days, and a day passes every real day", num: 1,
@@ -600,6 +609,16 @@
         var cls = foSqClass(p);
         var lbl = cls === "wk" ? "WK" : cls === "ar" ? "AR" : cls === "bowl" ? "BOWL" : "BAT";
         return "<td class='c-role'><span class='fo-sqg-role " + cls + "'>" + lbl + "</span></td>";
+      }
+      // the code in the ink the roster already uses for it, the full words in
+      // the tooltip (p.btLabel is the derived card's own sentence - "Right arm
+      // fast" - so the hover teaches what the code compresses). A man who does
+      // not bowl reads as absence, like a WK cell on a non-keeper, never as a
+      // judgement on bowling he does not do.
+      if (c.k === "bt") {
+        if (!p.bowlType || v === "-") return "<td class='c-bt'><span class='fo-sqg-nil' title='Does not bowl'>&ndash;</span></td>";
+        var btT = (p.btLabel && !/does not bowl/i.test(p.btLabel)) ? p.btLabel : "Bowler";
+        return "<td class='c-bt' title='" + E(btT) + "'><span class='fo-sqg-bt'>" + E(v) + "</span></td>";
       }
       // the flag says it: a three-letter code beside it is the same fact twice
       if (c.k === "nat") {
@@ -844,6 +863,10 @@
       ".fo-sqg-role.bat{color:#8F6A1C}.fo-sqg-role.ar{color:#177A57}.fo-sqg-role.bowl{color:#22635F}.fo-sqg-role.wk{color:#A63D14}",
       ".fo-sqg-bt{font-family:Manrope,sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(20,28,40,.6)}",
       ".fo-sqg td.c-nat,html body #page th.fo-sqg-h.c-nat{min-width:32px;text-align:center}",
+      // part-timers wear their lowercase pt- prefix as-is: the uppercase
+      // transform on .fo-sqg-bt would forge them into full bowlers
+      ".fo-sqg td.c-bt,html body #page th.fo-sqg-h.c-bt{min-width:44px;text-align:center}",
+      ".fo-sqg td.c-bt .fo-sqg-bt{text-transform:none;white-space:nowrap}",
       ".fo-sqg-fl{display:inline-block;width:20px;height:14px;border-radius:2px;overflow:hidden;vertical-align:-2px;box-shadow:0 0 0 1px rgba(20,28,40,.12)}",
       ".fo-sqg-fl img{width:100%;height:100%;object-fit:cover;display:block}",
       ".fo-sqg-nat{font-family:Manrope,sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(20,28,40,.55)}",
