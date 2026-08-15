@@ -197,11 +197,23 @@
     var q = Math.max(0.05, Math.min(0.99, spec.q));
     var exp = foGenExp(age, q, rnd);
     var g = function (m, s) { return Math.max(5, Math.min(96, Math.round(m + s * (rnd() + rnd() + rnd() - 1.5)))); };
+    // WHAT KIND OF CRICKETER HE IS, WRITTEN DOWN. foGenSkills has always picked
+    // an archetype - power hitter, controller, glove-first - and offered it back
+    // through its fifth argument, and not one caller in the game had ever taken
+    // it. So the fact that decides a man's whole shape was computed and dropped
+    // on the floor, and could not be recovered afterwards because by then the
+    // offsets are buried in the fifteen numbers.
+    //
+    // It matters now. The question the latent/effective change turns on is
+    // whether the world's 95s are still DIFFERENT cricketers, and nothing could
+    // ask it without knowing which of them was meant to be which.
+    var arche = {};
+    var sk = foGenSkills(role, q, age, rnd, arche);
     return { name: foQsUniqueName(country, rnd, firsts, lasts), age: age, nat: country,
       hand: rnd() < 0.72 ? "R" : "L", role: role,
       bowlTypeFull: isB ? role : (isAR ? (rnd() < 0.5 ? "seamMedium" : "fingerSpin") : "none"),
       keeper: isWK, exp: exp, expWord: foExpWordOf(exp), capt: g(45, 16), formIx: 3, fatigue: "rested",
-      skills: foGenSkills(role, q, age, rnd), talents: [] };
+      skills: sk, arche: arche.id || null, talents: [] };
   }
   // SIM-AWARE squad strength: counts only numbers the ball engine actually
   // reads (bat/power/rotation, threat/control/stamina, fielding/catching,

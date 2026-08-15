@@ -46,7 +46,15 @@ const q = p => FIELD[Math.floor(p * (FIELD.length - 1))];
 test('the world fields on a real scale, with real tails', () => {
   assert.ok(FIELD.length > 400, 'a world to measure (' + FIELD.length + ')');
   assert.ok(q(0.5) >= 44 && q(0.5) <= 56, 'the median cricketer is an average fielder: ' + q(0.5));
-  assert.ok(q(0.05) <= 30, 'and there are genuinely poor ones: p5 ' + q(0.05));
+  // THE POOR TAIL, AND WHY THIS READS 32 RATHER THAN 30. The deal gained a
+  // career phase when ageing arrived - a man is placed at his tier's mark
+  // adjusted for how far through his career he is - and the hands take half of
+  // any move, so the fielding distribution tightened by about a point at the
+  // bottom. The failure this line exists for is the old world's p5 of 45, where
+  // there was no such thing as a bad fielder anywhere in the game; measured
+  // now, the worst is 26 and the tenth percentile is 37, so the tail is
+  // thoroughly intact.
+  assert.ok(q(0.05) <= 32, 'and there are genuinely poor ones: p5 ' + q(0.05));
   assert.ok(q(0.95) >= 70, 'and genuinely brilliant ones: p95 ' + q(0.95));
   assert.ok(FIELD[0] >= 1 && FIELD[FIELD.length - 1] <= 99, 'nobody is a 0 or a 100');
   // the old world could not produce a man good enough to dive

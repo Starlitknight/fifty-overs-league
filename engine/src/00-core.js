@@ -260,6 +260,183 @@ function foSkE(p, k) {
   const v = s && s[k];
   return (typeof v === 'number' && isFinite(v)) ? foEff(k, v) : null;
 }
+// ===========================================================================
+// BRINGING A SAVE ACROSS, WITHOUT INVENTING ANYBODY
+// ===========================================================================
+//
+// Every cricketer written before this change was written by a generator that
+// clamped at 99, and the clamp was not neutral: it DELETED information. A man
+// whose archetype and level wanted power 112 was stored as power 99, and the
+// thirteen points are not recoverable from the number that survived. So a save
+// cannot simply be read - the men in it are damaged in a specific, known way,
+// and the migration's job is to repair that damage and nothing else.
+//
+// WHAT IT WILL NOT DO. It will not decide that every 99 secretly meant 120.
+// Most men in any save have no attribute at 99 at all, and for them this
+// function is exactly the identity - not approximately, exactly. It touches
+// only cricketers who actually hit the ceiling, which in a dealt world is about
+// one in forty.
+//
+// THE EVIDENCE IT USES, in the order the brief lists it:
+//
+//   WHICH ATTRIBUTES ARE PINNED. An attribute at exactly 99 is one the ceiling
+//   may have cut; one at 94 is simply a 94 and is never touched.
+//
+//   HIS OLD CANONICAL OVERALL. Computed from his stored skills through the OLD
+//   ladder, which is frozen below for this purpose alone. That is the card the
+//   save was written believing in, and it is the target to restore him to.
+//
+//   HIS ARCHETYPE, inferred from the attributes the ceiling did NOT reach. The
+//   offsets are a known table, so the archetype whose shape best explains his
+//   surviving skills is a deterministic reading rather than a guess - and it is
+//   the only way to give a pinned power hitter his power back rather than
+//   handing every pinned man the same flat lift. Where the evidence does not
+//   distinguish an archetype the headroom is spread evenly, which is the honest
+//   answer to a question the save cannot answer.
+//
+// DETERMINISTIC: no randomness, one bisection on one scalar.
+// IDEMPOTENT: a second pass finds no attribute at exactly 99 with a card below
+//   its old ladder, so it changes nothing. This is asserted by a test.
+// IDENTITY-PRESERVING: names, ages, roles, careers, contracts and talents are
+//   not read and not written. Only the fifteen numbers move, and only upward.
+const FO_SAVE_SKILL_MODEL = 2;      // 1 = clamped at 99, 2 = latent
+// THE OLD LADDER, frozen. It exists so a save can be asked what card it thought
+// a man had; nothing else may call it and nothing new is ever placed on it.
+const FO_OVR_ANCHORS_V1 = [
+  [0, 0], [15, 4], [25, 17], [35, 31], [45, 43], [55, 55], [65, 66],
+  [75, 76], [82, 83], [88, 89], [93, 94], [97, 98], [100, 100]
+];
+function foOvrCurveV1(L) {
+  if (!(L > 0)) return 0;
+  const A = FO_OVR_ANCHORS_V1;
+  if (L >= 100) return 100;
+  for (let i = 1; i < A.length; i++) {
+    if (L <= A[i][0]) {
+      const f = (L - A[i - 1][0]) / (A[i][0] - A[i - 1][0]);
+      return A[i - 1][1] + f * (A[i][1] - A[i - 1][1]);
+    }
+  }
+  return 100;
+}
+const FO_MIGRATE_PIN = 99;
+// which archetype best explains the skills the ceiling did not touch. Scored on
+// the UNPINNED attributes only, because a pinned one carries no information
+// about shape - that is precisely what was lost.
+function foInferArche(p) {
+  const sk = (p && p.skills) || {};
+  const bowls = !!(p && p.bowlType && p.bowlType !== 'none');
+  const keeps = !!(p && (p.keeper || p.role === 'wicketkeeper'));
+  const kind = keeps ? 'wk' : (p && p.role === 'allRounder') ? 'ar' : bowls ? 'bowl' : 'bat';
+  const list = FO_ARCHE[kind] || FO_ARCHE.bat;
+  // ONLY THE ATTRIBUTES THE ARCHETYPES ACTUALLY SPEAK ABOUT. A batsman's
+  // wicket-taking is 10 whichever kind of batsman he is, and letting the six
+  // bowling keys into the comparison drowned the five that carry the signal -
+  // measured, it read a pinned power hitter as an accumulator, which is the
+  // exact opposite cricketer and would have handed his power back last.
+  const keys = [];
+  for (const A of list) for (const k in A.off) if (keys.indexOf(k) < 0) keys.push(k);
+  const have = keys.filter(k => typeof sk[k] === 'number');
+  if (have.length < 3) return null;
+  // HIS OWN MIDDLE, taken over ALL of them including the pinned ones. A pinned
+  // attribute cannot say how far above the middle it was, but it is still
+  // evidence about where the middle IS - and without it a man whose top three
+  // are all on the ceiling appears to have no shape at all.
+  const mean = have.reduce((a, k) => a + sk[k], 0) / have.length;
+  const free = have.filter(k => sk[k] < FO_MIGRATE_PIN);
+  if (free.length < 2) return null;
+  const obs = free.map(k => sk[k] - mean);
+  const oo = obs.reduce((a, b) => a + b * b, 0);
+  if (!(oo > 0)) return null;
+  // LEAST SQUARES WITH ONE NON-NEGATIVE SCALE. An archetype's offsets are on the
+  // deal's scale and his deviations are on his own, so the fit is
+  // obs ~ s * off with s >= 0, and the archetype kept is the one whose residual
+  // is smallest. It has to be magnitude-aware rather than merely a direction:
+  // a power hitter (rotation -10, temperament -8) and a pace specialist
+  // (-0.4, -0.4) point exactly the same way and mean very different things, and
+  // only the size of the offsets tells them apart. s >= 0 is what refuses an
+  // archetype that would have to be worn INSIDE OUT to fit.
+  let best = null, bestErr = Infinity;
+  for (const A of list) {
+    const offs = free.map(k => A.off[k] || 0);
+    const om = have.reduce((a, k) => a + (A.off[k] || 0), 0) / have.length;
+    const d = offs.map(o => o - om);
+    const dd = d.reduce((a, b) => a + b * b, 0);
+    const od = obs.reduce((a, b, i) => a + b * d[i], 0);
+    // s = od/dd, clamped at nought; residual = |obs|^2 - 2s(obs.d) + s^2|d|^2
+    const sc = dd > 0 ? Math.max(0, od / dd) : 0;
+    const err = oo - 2 * sc * od + sc * sc * dd;
+    if (err < bestErr - 1e-9) { bestErr = err; best = A; }
+  }
+  return best;
+}
+function foMigratePlayer(p) {
+  const sk = p && p.skills;
+  if (!sk) return false;
+  // ALREADY ACROSS. Any attribute above the old ceiling means this man has been
+  // repaired, and it is what makes the migration a FIXED POINT rather than
+  // merely something the stamp refuses to run twice.
+  for (const k of FO_FIT_KEYS) if (typeof sk[k] === 'number' && sk[k] > FO_MIGRATE_PIN) return false;
+  const pinned = FO_FIT_KEYS.filter(k => typeof sk[k] === 'number' && sk[k] >= FO_MIGRATE_PIN);
+  if (!pinned.length) return false;               // the ceiling never reached him
+
+  // THE CARD HE IS TO KEEP. Read off the OLD ladder from the skills as stored,
+  // because that is the number the save was written believing in and the number
+  // his club, his wage and his place in the world were all settled against.
+  const wantOvr = foOvrCurveV1(foPlayerValue(p).level);
+
+  // WHAT WAS ACTUALLY LOST, WHICH IS SHAPE AND NOT STANDARD. This is the part
+  // that took two attempts to see. The old fit bisected a factor to land a man
+  // on his mark and clamped each attribute at 99 on the way, so a man whose
+  // archetype wanted power 112 got 99 - and the fit then pushed his OTHER
+  // skills up to make the level back. He arrived at the right level wearing the
+  // wrong shape. So his overall was never wrong and does not need restoring;
+  // what needs restoring is the distance between his best attribute and his
+  // ordinary ones, which the ceiling closed.
+  //
+  // The archetype is inferred from the attributes the ceiling did NOT reach -
+  // the only ones still carrying shape - and the pinned ones are pushed back
+  // out in proportion to what that archetype wanted of them. Then the whole man
+  // is re-fitted to the card he already had, which scales everything back down
+  // and pays for the headroom out of the skills that were standing in for it.
+  // Nothing is created: the level is exactly what it was, and only its
+  // distribution has been put back.
+  const A = foInferArche(p);
+  const offs = pinned.map(k => (A && A.off[k]) || 0);
+  const lo = Math.min.apply(null, offs);
+  // HOW FAR OUT. Enough to be a shape again and nowhere near enough to invent a
+  // giant: a strongly-archetyped pinned attribute comes back about ten points
+  // clear of a flat one, which is the size of the offsets that were lost.
+  const own = FO_FIT_KEYS.filter(k => typeof sk[k] === 'number')
+    .reduce((a, k) => a + sk[k], 0) / FO_FIT_KEYS.length;
+  const scale = Math.max(0.6, Math.min(1.6, own / 55));
+  pinned.forEach((k, i) => {
+    sk[k] = Math.round(sk[k] + scale * (4 + (offs[i] - lo) * 0.55));
+  });
+  // and back onto his own card, exactly
+  foFitToLevel(p, foLevelForOvr(wantOvr));
+  if (A && !p.arche) p.arche = A.id;              // he gets his name back too
+  try { jsDerive(p); } catch (eMg) {}
+  return true;
+}
+// A WHOLE SAVE. Returns what it did, because a migration that says nothing is a
+// migration nobody can check.
+function foMigrateSave(d) {
+  const from = (d && +d.skillModel) || 1;
+  const out = { from: from, to: FO_SAVE_SKILL_MODEL, players: 0, moved: 0 };
+  if (!d || from >= FO_SAVE_SKILL_MODEL) { out.skipped = true; return out; }
+  const walk = arr => {
+    if (!Array.isArray(arr)) return;
+    for (const p of arr) { if (!p || !p.skills) continue; out.players++; if (foMigratePlayer(p)) out.moved++; }
+  };
+  for (const t of (d.teams || [])) { walk(t.players); walk(t.youth); }
+  walk(d.market && d.market.list);
+  walk(d.market && d.market.free);
+  d.skillModel = FO_SAVE_SKILL_MODEL;
+  return out;
+}
+try { window.foMigrateSave = foMigrateSave; window.foMigratePlayer = foMigratePlayer;
+      window.foInferArche = foInferArche; window.foOvrCurveV1 = foOvrCurveV1;
+      window.FO_SAVE_SKILL_MODEL = FO_SAVE_SKILL_MODEL; } catch (eMs) {}
 // ---- AND HOW A BAR DRAWS A NUMBER THAT NO LONGER STOPS AT A HUNDRED --------
 //
 // Every skill bar in the product is `width: min(100, v)%`, which was exact
@@ -903,6 +1080,29 @@ const FO_TIERS = {
 // dropping them straight past it. Above one it falls slowest at the top
 // instead, so the good players at a good club look like each other, and the
 // half-squad mark moves out to an even split.
+// THE TOP OF THE MARK SCALE, AS AN APPROACH RATHER THAN A CAP.
+//
+// While the ladder was linear to [100,100] a cap here cost nothing: a mark of 99
+// asked for level 98.7. The ladder is asymptotic now, so the last fraction of a
+// card is enormously expensive in level - 99 wants 103.8 and 99.95 wants 121.7 -
+// and leaving the old 99.95 in told the fit to build cricketers out of latent
+// attributes near 190. Measured, it put 22 attributes past 120 and two men on a
+// card of 100 in a world that should almost never have one.
+//
+// A HARD CAP FIXED THAT AND LEFT AN ATOM: everything the tier curve, the drift
+// and the star lift pushed past the cap landed on exactly it, so the very top of
+// the world was a pile rather than a tail. A distribution with a spike on its
+// last value is the same flatness this whole change is about, one band wide.
+//
+// So the last two points are approached: identity to 96, asymptotic to 98.
+// Generation never DEALS a hundred, and barely deals a ninety-nine. A hundred
+// remains reachable only by a cricketer who develops past level 107.9, which is
+// the right way round for a number the ladder calls theoretical - earned across
+// a career, never handed out at a founding.
+function foMarkTop(x) {
+  const m = Math.max(1, x);
+  return m <= 96 ? m : 96 + 2.0 * (1 - Math.exp(-(m - 96) / 2.0));
+}
 function foTierOvrAt(tier, rank, n) {
   const T = FO_TIERS[tier] || FO_TIERS.d1b;
   const t = n <= 1 ? 0 : rank / (n - 1);              // 0 = best, 1 = worst
@@ -970,11 +1170,31 @@ function foLayOnTier(players, tier, rnd, after) {
     // can be him, and the lift fades across the next two so the squad does not
     // develop a cliff behind its star.
     if (hasStar && i < 3) want += lift * (i === 0 ? 1 : i === 1 ? 0.28 : 0.10);
-    // 99.95 rather than 99, because a mark is an OVERALL and the overall scale
-    // now runs to an asymptote at 100 instead of stopping at 99. The cap is
-    // still needed, and only just: foLevelForOvr(100) has no finite answer, so
-    // a mark of exactly 100 would ask the fit for an infinite level.
-    return Math.max(1, Math.min(99.95, want));
+    // AND THE TOP OF THE MARK SCALE IS AN APPROACH, NOT A CAP.
+    //
+    // While the ladder was linear to [100,100] this line cost nothing: a mark of
+    // 99 asked for level 98.7 and a mark of 100 for 100. The ladder is
+    // asymptotic now, so the last fraction of a card is enormously expensive in
+    // level - 99 wants 103.8 and 99.95 wants 121.7 - and a cap of 99.95 quietly
+    // told the fit to build cricketers out of latent attributes near 190.
+    // Measured, it put 22 attributes past 120 and two men on a card of 100 in a
+    // world that should almost never have one.
+    //
+    // A HARD CAP AT 99 FIXED THAT AND LEFT AN ATOM. Every mark the tier curve,
+    // the drift and the star lift pushed past 99 landed on exactly 99, so the
+    // very top of the world was a pile rather than a tail: 98-99 came out with
+    // four men where the brief wants nought to two, and 95-97 with two where it
+    // wants three to eight. A distribution with a spike on its last value is the
+    // same flatness this change is about, one band wide.
+    //
+    // So the last three points are approached instead. Identity to 96, then
+    // asymptotic to 98.0, which spreads everything the club curve throws above
+    // 96 across the band rather than stacking it on the end. Generation still
+    // never DEALS a hundred; a hundred remains reachable only by a cricketer who
+    // develops past level 107.9, which is the right way round for a number the
+    // ladder calls theoretical - earned across a career, never handed out at a
+    // founding.
+    return Math.max(1, want);
   });
   // THE BEST MAN GETS THE BEST MARK, and that is what makes a second pass
   // harmless.
@@ -1006,7 +1226,11 @@ function foLayOnTier(players, tier, rnd, after) {
   order.forEach(function (p, i) {
     // his club's mark is his PEAK; where he actually stands today is that peak
     // moved by how far through his career he is.
-    var want = Math.max(1, Math.min(99.95, marks[i] + foAgePhase(p && p.age)));
+    // THE APPROACH IS APPLIED ONCE, HERE, AND AFTER THE PHASE. Capping the
+    // mark and then adding the career phase to it puts the phase back outside
+    // the cap - a peak-age star carries +1.2 - which is how a scale that stopped
+    // at 98 went on producing 99s.
+    var want = foMarkTop(marks[i] + foAgePhase(p && p.age));
     foFitToLevel(p, foLevelForOvr(want));
     if (typeof after === 'function') after(p);
   });
@@ -4125,9 +4349,11 @@ function jsGenYouth(quality,seedN){
   const age=16+Math.floor(rnd()*3);
   const q=Math.max(0.05,Math.min(0.99,quality*0.85+(rnd()-0.5)*0.14));
   const exp=foGenExp(age,q,rnd);
+  const _yArche={};
   const p={name:nm,age,nat:'NED',hand:rnd()<0.75?'R':'L',role,
     bowlTypeFull:isB?role:'none',exp,expWord:foExpWordOf(exp),capt:g(20,8),wage:900,formIx:3,fatigue:'rested',
-    skills:foGenSkills(role,q,age,rnd),
+    skills:foGenSkills(role,q,age,rnd,_yArche),
+    arche:_yArche.id||null,
     talents:[]};
   const elig=Object.keys(TALN).filter(t=>{
     if(t==='lightningHands')return role==='wicketkeeper';
@@ -5678,7 +5904,7 @@ function snapshot(full){
     ls:App.ls||null};
 }
 function saveGame(tell){
-  try{const s=JSON.stringify(snapshot(false));localStorage.setItem('fo_save_v11_3_pace_tuned',s);
+  try{const _s0=snapshot(false);_s0.skillModel=FO_SAVE_SKILL_MODEL;const s=JSON.stringify(_s0);localStorage.setItem('fo_save_v11_3_pace_tuned',s);
     if(tell)alert('Saved ('+Math.round(s.length/1024)+' KB).');window.__foSaveBroken=0;return true;
   }catch(e){
     if(tell)alert('Browser storage unavailable or full - use Export file instead.');
@@ -5713,6 +5939,16 @@ function foIsPracticeWorld(teams, pinned){
 }
 function restoreFrom(d){
   if(!d||!d.teams)return false;
+  // A SAVE FROM BEFORE THE CEILING CAME OFF IS REPAIRED ON THE WAY IN, once,
+  // and the stamp it leaves is what stops it ever running twice. See
+  // foMigrateSave: for the great majority of cricketers it is exactly the
+  // identity, and it only moves men the old clamp actually cut.
+  try {
+    const mg = foMigrateSave(d);
+    if (mg && mg.moved)
+      console.info('Fifty Overs: save skill model ' + mg.from + ' -> ' + mg.to +
+                   ', ' + mg.moved + ' of ' + mg.players + ' cricketers given back what the old ceiling cut.');
+  } catch (eMig) { try { console.warn('Fifty Overs: save migration failed:', eMig && eMig.message); } catch (e2) {} }
   if(foIsPracticeWorld(d.teams,foMyClub())){
     try{console.warn('Fifty Overs: discarded a stale practice world from the save; loading the served one.')}catch(e){}
     return false;                                          // no save: the served world loads instead
@@ -5736,7 +5972,8 @@ function loadGame(){
     return restoreFrom(JSON.parse(s));}catch(e){return false}
 }
 function exportGame(){
-  const blob=new Blob([JSON.stringify(snapshot(true))],{type:'application/json'});
+  const _e0=snapshot(true);_e0.skillModel=FO_SAVE_SKILL_MODEL;
+  const blob=new Blob([JSON.stringify(_e0)],{type:'application/json'});
   const a=document.createElement('a');a.href=URL.createObjectURL(blob);
   a.download='fifty_overs_s'+App.seasonNo+'.json';a.click();
 }
@@ -5852,13 +6089,23 @@ function genDraftPool(seedStr){
     const q=Math.max(0.05,Math.min(0.99,(tierMult-0.45)/1.25+(rnd()-0.5)*0.16));
     // Age: 18 (floor) .. 30 (oldest), weighted toward mid-20s so peak-age players exist.
     const age=Math.max(18,Math.min(30,18+Math.floor((rnd()+rnd())*6.5)));
-    const skills=foGenSkills(role,q,age,rnd);
+    // AND THE ARCHETYPE IS WRITTEN DOWN. foGenSkills has always picked one -
+    // power hitter, controller, glove-first - and offered it back through
+    // archeOut, and no caller had ever taken it, so the one fact that says what
+    // KIND of cricketer a man is was computed and thrown away every time. It
+    // could not be recovered afterwards either: the offsets are buried in the
+    // skills by the time anybody sees them. Nothing could ask "are the world's
+    // 95s still different cricketers", which is the question the whole
+    // latent/effective change turns on.
+    const arche={};
+    const skills=foGenSkills(role,q,age,rnd,arche);
     const exp=foGenExp(age,q,rnd);
     const nat=NAT[Math.floor(rnd()*NAT.length)];
     const nm=natName(nat,rnd,used);used.add(nm);
     const p={name:nm,age,nat,hand:rnd()<0.72?'R':'L',role,
       bowlTypeFull:(isB?role:(isAR?(rnd()<0.5?'seamMedium':'fingerSpin'):'none')),keeper:isWK,
-      exp,expWord:foExpWordOf(exp),capt:g(45,16),formIx:3,fatigue:'rested',skills,talents:[]};
+      exp,expWord:foExpWordOf(exp),capt:g(45,16),formIx:3,fatigue:'rested',skills,talents:[],
+      arche:arche.id||null};
     // talents: specialists get specialty-fitting ones; capped so they read as flavor not noise
     const elig=Object.keys(TALN).filter(t=>{
       if(t==='lightningHands')return isWK;

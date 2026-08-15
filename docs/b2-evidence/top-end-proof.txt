@@ -1,0 +1,11 @@
+
+=== SEPARATION: THE SAME CRICKETER, WALKED UP THE CARD (400 matches a row) ===
+The archetype is held; only the mark moves. Diminishing returns near the top
+are wanted; a dead top is the failure this whole change was made against.
+
+  BATSMAN (technician), batting four
+  ovr  actual  latent>99      avg      SR   bdry%    dis%    50s%   100s%
+  85      85          0  105.80   121.2   13.10    59.5    54.2    24.9
+  90      90          2  106.17   122.8   13.35    59.8    54.7    24.9
+  92      92          2  106.84   124.5   13.69    59.4    54.3    25.1
+  95      95          2  114.86   127.9   14.18    57.4    55.1    26.5

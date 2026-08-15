@@ -497,7 +497,16 @@
     // side-by-side table must not have. Solved instead of approximated: with
     // catching at F, the gloves sit at (3K - F) / 2 and both aggregates give
     // back the published figure to the number.
-    var KG = Math.max(0, Math.min(100, Math.round((3 * K - F) / 2)));
+    // AND THE SOLVE IS NOT TRUNCATED, which it was, and which silently undid it.
+    // The identity below only holds if KG is the number the algebra asks for:
+    // clamp it at 100 and aggKeep gives back (2*100 + F)/3, which is less than
+    // K and puts a served keeper a point under the same man read off a full
+    // scorecard - the exact disagreement the algebra was introduced to end. A
+    // gloveman good enough to need a KG above 100 is now an ordinary cricketer
+    // rather than an impossible one, so the bound here is the corruption guard
+    // and not a scale.
+    var KGMAX = (window.FO_LATENT_MAX || 250);
+    var KG = Math.max(0, Math.min(KGMAX, Math.round((3 * K - F) / 2)));
     var full = c.type && c.type !== "none" ? c.type : "none";
     var p = {
       name: c.name, nat: c.nat, age: c.age | 0, role: c.role || "batter", hand: c.hand || "R",

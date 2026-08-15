@@ -105,6 +105,23 @@ function snapshot(season, churn) {
     n90: ovr.filter(v => v >= 90).length, n95: ovr.filter(v => v >= 95).length,
     peakMean: +(peak.reduce((s, v) => s + v, 0) / peak.length).toFixed(2),
     peak80: peak.filter(v => v >= 80).length, peak90: peak.filter(v => v >= 90).length,
+    // THE LATENT TAIL, SEASON BY SEASON. The overalls above cannot see the one
+    // failure the removal of the 99 ceiling could uniquely cause: attributes
+    // climbing for ever behind a card that is held in place by its own curve.
+    // A world whose OVR distribution is perfectly stationary while its stored
+    // skills drift from 126 to 300 is a world about to hand the ball model
+    // inputs nobody measured.
+    tail: (() => {
+      const t = { n99: 0, n105: 0, n110: 0, n120: 0, max: 0 };
+      for (const p of all) for (const k in (p.skills || {})) {
+        const v = p.skills[k];
+        if (typeof v !== 'number') continue;
+        if (v > t.max) t.max = v;
+        if (v > 99) t.n99++; if (v > 105) t.n105++;
+        if (v > 110) t.n110++; if (v > 120) t.n120++;
+      }
+      return t;
+    })(),
     retired: churn.retired, joined: churn.joined
   };
 }
@@ -188,6 +205,14 @@ else {
   for (const s of snaps)
     console.log('  ' + String(s.season).padStart(6) + s.peakMean.toFixed(1).padStart(11) +
       String(s.peak80).padStart(10) + String(s.peak90).padStart(10));
+  console.log('\n  THE LATENT TAIL: stored attributes past each threshold, and the tallest');
+  console.log('  in the world. This is where runaway inflation would show first.');
+  console.log('  season      >99    >105    >110    >120     max');
+  for (const s of snaps)
+    console.log('  ' + String(s.season).padStart(6) + String(s.tail.n99).padStart(9) +
+      String(s.tail.n105).padStart(8) + String(s.tail.n110).padStart(8) +
+      String(s.tail.n120).padStart(8) + String(s.tail.max).padStart(8));
+
   console.log('\n  BANDS');
   console.log('  season  ' + BANDS.map(b => b[0].padStart(7)).join(''));
   for (const s of snaps)

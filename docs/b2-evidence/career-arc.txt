@@ -1,0 +1,57 @@
+A CAREER, FROM ENTRY TO RETIREMENT
+the shipped nets (14 rounds a season, no plan filed, level-two academy)
+and the shipped ageing curve, on one cricketer at a time.
+
+  Joe Ogden — batsman, d1a (dealt 62)
+    age   19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35  36  37  38
+    ovr   62  64  66  68  69  70  70  71  72  72  71  70  69  67  66  64  62  59  57  54
+    entry 62 at 19, peak 72 at 27, retires at 54, career mean 66.2
+
+  Niall O'Donnell — bowler, d2a (dealt 62)
+    age   19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35  36  37  38
+    ovr   62  63  66  67  69  70  71  71  72  72  72  71  70  69  68  66  64  61  59  57
+    entry 62 at 19, peak 72 at 27, retires at 57, career mean 67.0
+
+  Javon Bonner — all-rounder, d1b (dealt 62)
+    age   19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35  36  37  38
+    ovr   62  63  64  65  66  66  67  67  68  68  67  67  66  64  62  61  58  56  54  51
+    entry 62 at 19, peak 68 at 27, retires at 51, career mean 63.1
+
+  Ricardo Hinds — keeper, d1b (dealt 62)
+    age   19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35  36  37  38
+    ovr   62  64  65  65  66  66  67  67  67  67  67  66  65  64  63  61  59  57  56  53
+    entry 62 at 19, peak 67 at 25, retires at 53, career mean 63.4
+
+  Innocent Moyo — batsman, flagship (dealt 86)
+    age   19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35  36  37  38
+    ovr   86  87  88  89  90  90  91  91  91  91  91  90  89  87  85  83  81  79  76  74
+    entry 86 at 19, peak 91 at 25, retires at 74, career mean 86.5
+
+  Henry Clarke — bowler, d1b (dealt 86)
+    age   19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35  36  37  38
+    ovr   86  87  89  90  91  92  92  92  93  93  92  91  90  89  87  85  84  82  79  77
+    entry 86 at 19, peak 93 at 27, retires at 77, career mean 88.0
+
+  Kevin Quigley — batsman, d1b (dealt 92)
+    age   19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35  36  37  38
+    ovr   92  93  93  94  94  94  94  95  95  94  94  93  92  90  89  87  85  83  81  78
+    entry 92 at 19, peak 95 at 26, retires at 78, career mean 90.5
+
+  Reuben Pickering — bowler, flagship (dealt 91)
+    age   19  20  21  22  23  24  25  26  27  28  29  30  31  32  33  34  35  36  37  38
+    ovr   91  92  94  94  95  96  96  96  96  97  96  95  94  93  92  90  88  86  84  81
+    entry 91 at 19, peak 97 at 28, retires at 81, career mean 92.3
+
+THE BALANCE
+  trade          entry   peak  (age)   retires   career mean   rise   fall
+  batsman          62     72   (27)        54          66.2    +10    -18
+  bowler           62     72   (27)        57          67.0    +10    -15
+  all-rounder      62     68   (27)        51          63.1     +6    -17
+  keeper           62     67   (25)        53          63.4     +5    -14
+  batsman          86     91   (25)        74          86.5     +5    -17
+  bowler           86     93   (27)        77          88.0     +7    -16
+  batsman          92     95   (26)        78          90.5     +3    -17
+  bowler           91     97   (28)        81          92.3     +6    -16
+
+  A career mean near the entry mark is what keeps the world stationary:
+  the rise before the peak has to pay for the fall after it.

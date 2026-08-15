@@ -1,32 +1,32 @@
 NATIONAL SIDES, PICKED OFF THE DEALT WORLD (no badge, no boost)
 
   country          member  squad15    XI   best  11th   80+  85+  90+  95+  clubs  wk  bowl
-  West Indies      full       87.3  89.0     95    84    15   10    4    1      8   2     6
-  England          full       87.1  88.5     97    85    15   12    3    2      6   1     9
-  Australia        full       86.5  88.1     95    84    14    9    3    1      7   1     9
-  New Zealand      full       86.8  87.9     95    85    15   11    4    1      8   1     8
-  India            full       86.0  87.8     95    84    14    9    3    1      6   2     9
-  Pakistan         full       86.1  87.5     93    84    14    9    3    0      8   1     9
-  Sri Lanka        full       86.1  87.5     97    85    15   11    1    1      7   1     9
-  Zimbabwe         full       86.1  87.5     96    84    15    7    3    1      7   2     8
-  South Africa     full       85.9  86.8     94    84    15    9    1    0      8   2     8
-  Bangladesh       full       85.1  85.8     88    84    15    9    0    0      9   4     9
-  Ireland          assoc      81.7  83.8     90    79     9    4    2    0      7   2     9
-  Nepal            assoc      81.0  83.8     90    79     8    5    1    0      7   1     9
-  Netherlands      assoc      80.7  83.3     92    77     8    4    1    0      6   1     9
-  Afghanistan      assoc      79.9  83.2     94    73     8    4    2    0      7   1     9
-  United States    assoc      80.9  82.5     89    79    10    4    0    0      7   1     7
-  Scotland         assoc      78.6  81.1     86    77     8    2    0    0      7   1     9
+  Australia        full       87.5  89.0     98    85    15   12    4    2      7   1     9
+  Pakistan         full       87.0  88.6     94    86    14   11    3    0      7   1     9
+  India            full       86.8  88.3     97    84    15    9    3    1      7   2     9
+  West Indies      full       86.7  88.2     92    85    15   11    4    0      8   1     6
+  New Zealand      full       86.6  87.8     97    85    15   11    2    1      8   1     9
+  Zimbabwe         full       86.3  87.8     95    83    15   10    4    1      7   1     6
+  England          full       85.5  87.0     98    83    15    8    3    1      8   1     9
+  South Africa     full       86.1  87.0     93    84    15   10    2    0      8   2     8
+  Bangladesh       full       85.5  86.7     93    84    15    8    1    0      8   3     9
+  Sri Lanka        full       85.5  86.4     89    84    15   10    0    0      7   1     9
+  Ireland          assoc      82.7  84.6     94    78     8    5    2    0      7   2     8
+  United States    assoc      80.3  83.0     90    77     9    5    1    0      6   1     7
+  Netherlands      assoc      80.6  82.9     87    78     9    3    0    0      7   1     9
+  Scotland         assoc      81.0  82.8     89    79    10    3    0    0      7   1     9
+  Afghanistan      assoc      79.1  81.5     87    76     7    4    0    0      6   1     9
+  Nepal            assoc      79.5  81.2     88    76     7    2    0    0      6   1     9
 
 THE HIERARCHY, EARNED RATHER THAN DECLARED
-  weakest full member XI  85.8   strongest associate XI  83.8
-  full members 85.8 - 89.0   associates 81.1 - 83.8
+  weakest full member XI  86.4   strongest associate XI  84.6
+  full members 86.4 - 89.0   associates 81.2 - 84.6
 
 FEASIBILITY AGAINST GLOBAL RARITY (3840 cricketers)
-  the world holds  80+ 274   85+ 121   90+ 31   95+ 8
-  sixteen countries fielding 11 men of 80+ would need 176; the world has 274
-  sixteen countries fielding 11 men of 85+ would need 176; the world has 121
-  so a full XI of 80+ is possible for 10 of 16 countries, and of 85+ for 3.
+  the world holds  80+ 297   85+ 131   90+ 29   95+ 6
+  sixteen countries fielding 11 men of 80+ would need 176; the world has 297
+  sixteen countries fielding 11 men of 85+ would need 176; the world has 131
+  so a full XI of 80+ is possible for 10 of 16 countries, and of 85+ for 4.
   (the selected fifteen is not the best fifteen: the keeper and the attack are taken first, so a country spends some of its depth on shape)
 
 CONSTRAINTS

@@ -38,6 +38,31 @@ frozen engine and B2 must not change any of them. `rating` and `wage` are also
 computed in `jsDerive` and are NOT part of the contract — they are B2's to
 redefine, precisely because the ball model never reads them.
 
+## The latent/effective split, and why it does not touch any of this
+
+Stored attributes no longer stop at 99. `jsDerive` now reads each of them
+through `foEff` before the ten mappings, and so does every other path on which a
+raw attribute reaches the ball model (the keeper's `wC` and `wST` terms, the
+spatial fielding contest, per-ball fatigue). **Not one of the ten formulas
+changed** — `.32 vsPace + .32 vsSpin + .16 rotation + .20 temperament` is still
+exactly what `p.bat` is. What changed is the representation of the man being
+mapped, which this file does not freeze and could not: the transform happens
+*before* the engine receives him, which is what the contract's own diagram says
+should happen.
+
+**And it cannot move either golden, by construction rather than by measurement.**
+`foEff` is the identity for every value at or below 99. The baked reference
+squads top out at **97**, and the calibration harness's elite cell scales them by
+1.30 and clamps at **98**. So every input either harness can produce takes the
+identity path, and both goldens are bit-for-bit what they were. That is checked
+on every run — `test/replay.test.mjs` and `tools/calibration-check.mjs` are both
+green — but it is worth knowing it is a theorem and not a result.
+
+`tools/engine-domain.mjs` records what the frozen model actually does above 99,
+which B1 never asked: it is monotone, non-inverted and sane to 140 in every
+contest measured, and the batting family is still moving at 200. B1's "useful
+range 20–95" was the top of the range B1 swept, not a measured failure point.
+
 If a B2 commit moves the golden, that is a regression unless the reason is
 written down and extremely clear.
 

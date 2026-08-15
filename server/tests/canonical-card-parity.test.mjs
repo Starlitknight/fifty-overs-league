@@ -148,10 +148,23 @@ test('a latent skill above 99 survives the round trip and still prices the same'
     'aiming at 99 must produce latent attributes above the old ceiling - got none, ' +
     'which would mean the ceiling is still there somewhere');
 
-  await pool.query(
-    `UPDATE clubs SET squad=$1::jsonb WHERE country_id='eng' AND slot=1`, [JSON.stringify(men)]);
-  const back = (await pool.query(
+  // BORROWED AND PUT BACK. This writes through the ordinary squad column
+  // because that is the path being tested - a column that truncates is exactly
+  // the failure - and the world is shared with every test after it, so the
+  // club's real fifteen are restored before this one returns. The first draft
+  // did not, and the roster test three cases later found a club of six.
+  const kept = (await pool.query(
     `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  let back;
+  try {
+    await pool.query(
+      `UPDATE clubs SET squad=$1::jsonb WHERE country_id='eng' AND slot=1`, [JSON.stringify(men)]);
+    back = (await pool.query(
+      `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+  } finally {
+    await pool.query(
+      `UPDATE clubs SET squad=$1::jsonb WHERE country_id='eng' AND slot=1`, [JSON.stringify(kept)]);
+  }
 
   // every attribute, exactly as written
   men.forEach((p, i) => {
