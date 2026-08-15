@@ -50,7 +50,10 @@ globalThis.__skDist = function (bat, bowl, o) {
       weather: o.weather || 'sunny', pship: o.pship || 0, chase: !!o.chase,
       bballs: 12, ballsThisSpell: 0, wkts: o.wkts || 0,
       ballsLeft: o.ballsLeft == null ? 150 : o.ballsLeft, reqRate: o.reqRate || 0,
-      fieldAvg: 0, keeperQuality: 0, rocketArms: 0, lightningKeeper: false,
+      fieldAvg: 0, keeperQuality: o.keeperQuality || 0,
+      keeperStump: o.keeperStump == null ? null : o.keeperStump,
+      keeperCatch: o.keeperCatch == null ? null : o.keeperCatch,
+      rocketArms: 0, lightningKeeper: false,
       mixed: false, batFat: o.batFat || 0, bowlFat: o.bowlFat || 0,
       captBowl: o.captBowl == null ? 50 : o.captBowl,
       captBat: o.captBat == null ? 50 : o.captBat, freeHit: false, homeSide: null });
@@ -66,7 +69,7 @@ function d(batSpec, bowlSpec, opts) {
   const g = k => e[k] || 0;
   return {
     dot: g('dot'), one: g('1'), two: g('2'), four: g('4'), six: g('6'),
-    wkt: WK.reduce((a, k) => a + g(k), 0), st: g('wST'),
+    wkt: WK.reduce((a, k) => a + g(k), 0), st: g('wST'), ct: g('wC'), lb: g('legbye'),
     wide: g('wide'), noball: g('noball'), bye: g('bye'),
     extras: g('wide') + g('noball') + g('bye') + g('legbye'),
     rpo: 6 * (g('1') + 2 * g('2') + 3 * g('3') + 4 * g('4') + 6 * g('6') +
@@ -312,4 +315,48 @@ test('no delivery anywhere in the domain produces a number that is not a number'
       }
     }
   }
+});
+
+// ---- THE GLOVES ARE THREE SKILLS, NOT ONE -------------------------------
+
+test('a stumping is decided by stumping, and a keeper catch by catching', () => {
+  // THE BUG THIS EXISTS FOR: both adjustments used to be written ABOVE the loop
+  // that rebuilds every dismissal bucket from scratch, so they were computed on
+  // every delivery in the history of this engine and thrown away on every
+  // delivery in the history of this engine. The world's finest gloveman
+  // converted exactly as many stumpings as its worst. The talents that sit on
+  // the same buckets were written below the loop and did work, which is why the
+  // glovework looked alive: the talents spoke and the skills did not.
+  const st = v => d({}, { bowlTypeFull: 'fingerSpin' },
+    { over: 30, pitch: 'dry', keeperQuality: 74, keeperStump: v, keeperCatch: 74 }).st;
+  const ct = v => d({}, { bowlTypeFull: 'seamFastMedium' },
+    { over: 30, keeperQuality: 74, keeperStump: 74, keeperCatch: v }).ct;
+  let last = -1;
+  for (const v of [30, 50, 74, 85, 95]) {
+    const x = st(v);
+    assert.ok(x > last, 'stumping ' + v + ' converts no better than the man below him');
+    last = x;
+  }
+  assert.ok(st(95) > st(30) * 3, 'the whole stumping scale is worth almost nothing');
+  last = -1;
+  for (const v of [30, 50, 74, 85, 95]) {
+    const x = ct(v);
+    assert.ok(x > last, 'keeper catching ' + v + ' holds no more than the man below him');
+    last = x;
+  }
+  assert.ok(ct(95) > ct(30) * 1.4, 'the whole keeper-catching scale is worth almost nothing');
+});
+
+test('and byes are the blended glovework, which is a different question', () => {
+  const by = v => d({}, { bowlTypeFull: 'seamFastMedium' },
+    { over: 30, keeperQuality: v, keeperStump: 74, keeperCatch: 74 });
+  let last = 1e9;
+  for (const v of [30, 50, 74, 85, 95]) {
+    const x = by(v).bye;
+    assert.ok(x < last, 'a better keeper at ' + v + ' leaks more byes than a worse one');
+    last = x;
+  }
+  // and a keeper's all-round work is not allowed to be a wicket-taking skill
+  assert.ok(Math.abs(by(95).wkt - by(30).wkt) < by(30).wkt * 0.35,
+    'the blended keeper number is taking wickets on its own');
 });

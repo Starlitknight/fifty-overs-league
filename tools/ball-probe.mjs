@@ -100,6 +100,8 @@ globalThis.__bpDist = function (bat, bowl, o) {
     ballsLeft: o.ballsLeft == null ? Math.max(0, 300 - over * 6) : o.ballsLeft,
     reqRate: o.reqRate || 0,
     fieldAvg: o.fieldAvg || 0, keeperQuality: o.keeperQuality || 0,
+    keeperStump: o.keeperStump == null ? null : o.keeperStump,
+    keeperCatch: o.keeperCatch == null ? null : o.keeperCatch,
     rocketArms: 0, lightningKeeper: false, mixed: !!o.mixed,
     batFat: o.batFat || 0, bowlFat: o.bowlFat || 0,
     captBowl: o.captBowl == null ? 50 : o.captBowl,

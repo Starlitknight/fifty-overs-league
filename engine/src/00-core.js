@@ -738,8 +738,35 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   // dealt on its own bell the world's median keeper is FO_KQ_PAR, and the
   // terms hang off that - so a good keeper saves byes and a poor one leaks
   // them, which is the whole point of the number.
-  if(ctx.keeperQuality){const kq=(ctx.keeperQuality-FO_KQ_PAR);lo.bye-=0.020*kq;lo.legbye-=0.008*kq;lo.wide-=0.004*kq;lo.wC+=0.0055*kq;lo.wST+=0.017*kq;}
+  // AND THE THREE GLOVE SKILLS ARE THREE SKILLS. The blend above is the right
+  // number for a GENERIC glove event - the byes and leg byes that leak past a
+  // keeper are about his all-round work behind the stumps - but where the event
+  // has a name, the skill with that name is what decides it. A keeper with
+  // stumping 95 and keeping 60 is a specific kind of cricketer and the engine
+  // should be able to tell him from his opposite.
+  //
+  // Blended, stumping reached the stumping rate only through a 0.26 weight, so
+  // the whole 30-to-95 span moved it by a third of a rare event - about six
+  // hundredths of a wicket an innings, which no sample this side of ten thousand
+  // matches could see. Read directly it is worth what it says it is worth.
+  if(ctx.keeperQuality){const kq=(ctx.keeperQuality-FO_KQ_PAR);lo.bye-=0.020*kq;lo.legbye-=0.008*kq;lo.wide-=0.004*kq;}
+
   for(const k in DIS)lo[k]=W+Math.log(DIS[k]);
+  // ---- AND THE KEEPER'S TWO NAMED SKILLS, WHICH HAD NEVER ONCE BEEN READ -----
+  //
+  // These two lines used to sit ABOVE this loop, and the loop overwrites every
+  // dismissal bucket from scratch. So `lo.wC += 0.0055*kq` and
+  // `lo.wST += 0.017*kq` were computed on every delivery in the history of this
+  // engine and thrown away on every delivery in the history of this engine: the
+  // world's finest gloveman converted exactly as many stumpings as its worst.
+  // Found by sweeping stumping from 30 to 95 and watching the rate not move by
+  // a single digit in the fourth decimal place.
+  //
+  // The two talents below - lightningHands, safeHands - were unaffected, because
+  // they were already written after the loop. That is why the glovework looked
+  // like it worked: the talents spoke and the skills did not.
+  if(ctx.keeperStump!=null)lo.wST+=0.030*(ctx.keeperStump-FO_KQ_PAR);
+  if(ctx.keeperCatch!=null)lo.wC+=0.0090*(ctx.keeperCatch-FO_KQ_PAR);
   // FREE HIT (real ODI rule): after a no-ball the next legal delivery can
   // only fall to a run out - and batters swing at it
   if(ctx&&ctx.freeHit){
@@ -1574,6 +1601,10 @@ function stepBall(){
   const keeperObj=inn.bxi.find(p=>p.keeper)||{};
   const keeperTalent=keeperObj.talents||[];
   const keeperQuality=foKeeperQuality(keeperObj);
+  // his two named skills, carried alongside the blend - see ballDist for why a
+  // stumping is decided by stumping rather than by a weighted average of it
+  const keeperStump=keeperObj?((keeperObj.skills&&keeperObj.skills.stumping)||keeperObj.stumping||50):null;
+  const keeperCatch=keeperObj?((keeperObj.skills&&keeperObj.skills.catching)||keeperObj.catching||50):null;
   const remBalls=Math.max(0,foBallCap()-inn.legal),reqRate=(M.target?(M.target-inn.runs)/Math.max(0.5,remBalls/6):0);
   // THIS BALL, FOR THE TWO MEN IN THE CONTEST. The context the counter reads is
   // the same context the gate reads, so what a man is credited for is exactly
@@ -1588,7 +1619,7 @@ function stepBall(){
   // whichever of the two is currently batting or bowling carries the edge
   const _homeNm=(M.meta&&M.meta.neutral)?'':((M.meta&&M.meta.home)||'');
   const _homeSide=!_homeNm?null:(inn.batTeam===_homeNm?'bat':(inn.bowlTeam===_homeNm?'bowl':null));
-  const d=ballDist(batP,bowler,phaseOf(over),faced,intent,rrDef,M.pitch,field,over,{freeHit:!!inn.freeHit,homeSide:_homeSide,weather:((M.meta&&M.meta.weather)||'sunny').toLowerCase(),pship:inn.pshipR,chase:M.inns===1,bballs:brec?brec.b:0,ballsThisSpell:brec?brec.spellB||0:0,wkts:inn.wkts,since:inn.since,std:(M._stdLvl||0),ballsLeft:remBalls,reqRate,fieldAvg,keeperQuality,rocketArms:inn.bxi.filter(p=>(p.talents||[]).includes('rocketArm')).length,lightningKeeper:keeperTalent.includes('lightningHands'),mixed:!!(inn.bat[inn.nonstriker]&&!inn.bat[inn.nonstriker].out&&batP.hand!==inn.bat[inn.nonstriker].p.hand),batFat:M.fat[batP.name]||0,bowlFat:M.fat[bowler.name]||0,captBowl:inn.captBowl,captBat:inn.captBat,key:_talKey});
+  const d=ballDist(batP,bowler,phaseOf(over),faced,intent,rrDef,M.pitch,field,over,{freeHit:!!inn.freeHit,homeSide:_homeSide,weather:((M.meta&&M.meta.weather)||'sunny').toLowerCase(),pship:inn.pshipR,chase:M.inns===1,bballs:brec?brec.b:0,ballsThisSpell:brec?brec.spellB||0:0,wkts:inn.wkts,since:inn.since,std:(M._stdLvl||0),ballsLeft:remBalls,reqRate,fieldAvg,keeperQuality,keeperStump,keeperCatch,rocketArms:inn.bxi.filter(p=>(p.talents||[]).includes('rocketArm')).length,lightningKeeper:keeperTalent.includes('lightningHands'),mixed:!!(inn.bat[inn.nonstriker]&&!inn.bat[inn.nonstriker].out&&batP.hand!==inn.bat[inn.nonstriker].p.hand),batFat:M.fat[batP.name]||0,bowlFat:M.fat[bowler.name]||0,captBowl:inn.captBowl,captBat:inn.captBat,key:_talKey});
   const r=M.rand();let c=0,out='dot';
   for(const k in d){c+=d[k];if(r<=c){out=k;break}}
   M._fielder=null;M._dropped=false;M._fieldingEvent=null;M._fieldPos=null;M._fldEv=null;M._talEv=null;
