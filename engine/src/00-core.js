@@ -120,16 +120,46 @@ const FO_VAL_W = {
   glove: { catching: 0.226, keeping: 0.045, stumping: 0.030 }
 };
 // how much of each family a role actually uses. A specialist batsman does not
-// bowl; a front-line bowler bats a bit; a keeper's ground fielding is somebody
-// else's job. FIELD_SHARE is the one deliberate cap in here: fielding measures
-// as the most valuable single point a batsman owns, which is true and is also
-// not what a cricketer's OVR should be MADE of, so an outfielder's hands are
-// held to about a sixth of his card. A specialist fielder is not a
-// professional cricketer, and the outlier audit looks for anybody who became
-// one by accident.
+// bowl; a keeper's ground fielding is somebody else's job. FIELD_SHARE is the
+// one deliberate cap in here: fielding measures as the most valuable single
+// point a batsman owns, which is true and is also not what a cricketer's OVR
+// should be MADE of, so an outfielder's hands are held to about a sixth of his
+// card. A specialist fielder is not a professional cricketer, and the outlier
+// audit looks for anybody who became one by accident.
+//
+// A ROLE IS VALUED ON WHAT THAT ROLE IS FOR, AND ONLY THAT.
+//
+// The bowler's row used to read `bat: 0.22` - "a front-line bowler bats a bit",
+// which is a true sentence about cricket and was the wrong place to say it. It
+// made the specialists ASYMMETRIC: a batsman was never charged for the bowling
+// he does not do, and a bowler was charged for the batting he does not do. So
+// the two ends of the scale were not the same distance away. Measured on a
+// cricketer maxed at his own trade and left ordinary at everything else:
+//
+//     maxed batsman who cannot bowl at all      OVR 99
+//     maxed bowler who bats 20                  OVR 90   <- could not get there
+//     maxed bowler who bats 40                  OVR 93
+//
+// A world's elite tail is dealt against that ceiling, which is why the first B2
+// deal put 51% of its 85+ men in one role and could not produce a great fast
+// bowler at all. The cap was not scarcity, it was arithmetic.
+//
+// Two-sidedness has a home already, and this is not it: every man who bowls is
+// ALSO evaluated as an all-rounder and keeps the better reading, so a bowler
+// who genuinely bats collects the premium there, bounded and tapered, where it
+// can be seen and argued about. Taking the 0.22 out does not stop paying for a
+// bowler's batting - it moves the payment to the one place that prices it
+// honestly, and stops charging every other bowler for not having it.
+//
+// The keeper's `bat: 1.00` STAYS, and is not the same case. It is not a charge
+// for a second trade, it is what a wicketkeeper is for: the measured weights
+// say keeping is worth about nothing in this engine (-0.010 runs a point) and
+// stumping almost nothing (0.010), so a gloveman's cricket value really is his
+// batting and his catching. A keeper who cannot bat reading 47 is the engine
+// telling the truth about itself, not the model losing him.
 const FO_VAL_MIX = {
   bat:   { bat: 1.00, bowl: 0.00, field: 0.45, glove: 0.00 },
-  bowl:  { bat: 0.22, bowl: 1.00, field: 0.45, glove: 0.00 },
+  bowl:  { bat: 0.00, bowl: 1.00, field: 0.45, glove: 0.00 },
   ar:    { bat: 0.80, bowl: 0.80, field: 0.45, glove: 0.00 },
   wk:    { bat: 1.00, bowl: 0.00, field: 0.00, glove: 1.20 }
 };

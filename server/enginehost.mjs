@@ -175,6 +175,19 @@ globalThis.__svcDerive = function (playersJson) {
   ps.forEach(function (p) { try { jsDerive(p); } catch (e) {} });
   return JSON.stringify(ps);
 };
+// PLACE A REAL CRICKETER AT A CHOSEN OVERALL, keeping his shape. The canonical
+// level is linear in a man's skills, so foFitToLevel is a similarity transform:
+// it moves him up or down the ladder and leaves every ratio between his
+// attributes where the archetype put it. This is how a parity suite gets a
+// power hitter at 20 and the same power hitter at 95 without hand-writing a
+// skill row, which would only ever prove that ONE invented cricketer agrees.
+globalThis.__svcFitOvr = function (playersJson, ovr) {
+  var ps = JSON.parse(playersJson);
+  ps.forEach(function (p) {
+    try { window.foFitToLevel(p, window.foLevelForOvr(ovr)); } catch (e) {}
+  });
+  return JSON.stringify(ps);
+};
 // the card's overall rating, straight from the shipped engine - the served
 // club pages compute this in SQL (migration 016) and the tests hold the two
 // to the same answer
@@ -339,6 +352,7 @@ globalThis.__svcWorldCfg = function () {
   const ovr = vm.runInContext('__svcOvr', eng.ctx);
   const scomp = vm.runInContext('__svcStarComp', eng.ctx);
   const pval = vm.runInContext('(function(j){return JSON.stringify(window.foPlayerValue(JSON.parse(j)))})', eng.ctx);
+  const fit = vm.runInContext('__svcFitOvr', eng.ctx);
   const lbl = vm.runInContext('window.foOvrLabel', eng.ctx);
   const sts = vm.runInContext('window.foStars', eng.ctx);
   const fan = vm.runInContext('__svcFantasy', eng.ctx);
@@ -371,6 +385,9 @@ globalThis.__svcWorldCfg = function () {
     // phones run. Nothing on this side of the wire holds a second opinion about
     // how good a cricketer is.
     playerValue(p) { return JSON.parse(pval(JSON.stringify(p))); },
+    // real cricketers moved to a chosen overall with their shape intact, which
+    // is what lets a parity suite walk the whole length of the scale
+    fitToOvr(players, ovr) { return JSON.parse(fit(JSON.stringify(players), ovr)); },
     ovrLabel(v) { return lbl(v); },
     stars(v) { return sts(v); },
     // the client's own fantasy points for a set of innings

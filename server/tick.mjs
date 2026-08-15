@@ -20,13 +20,13 @@ import { EPOCH, dayIx, daySettled, seedOf, cupDraw, natHour, scheduleOf, seasonS
          WINDOW_DAYS, isWorldCupSeason, REST_DAYS, COLTS_DAYS } from './clock.mjs';
 import { livingPatch, evolveCountry, LIVING_VERSION, lastFoldReport, foldLine } from './living.mjs';
 import { calibrate, countryConfigs, BASE_XI, NAT_STR, HUMAN_STR,
-         nationTeamStr, isFullMember } from './init-world.mjs';
+         isFullMember } from './init-world.mjs';
 import { layCandidates, ageYouth, playColtsStage, computeColts, coltRecords,
          COLTS_STAGES } from './youth.mjs';
 import { settleMoney } from './economy.mjs';
 import { runComps } from './comps.mjs';
 import { ensureCallups, absentBySlot, coverSheet, runWindows, rebuildNations, seasonSquad,
-         ensureNatSquad, natSquadNow } from './nations.mjs';
+         ensureNatSquad, natSquadNow, CLUB_LIMIT } from './nations.mjs';
 import { runMarket, settleMarket, rebuildMarket, stockMarket } from './market.mjs';
 import { matchRating, ladderRating, strengthRating, squadStrength, ratingsOf, RANK_WINDOW, RANK_BASE } from './ratings.mjs';
 
@@ -597,13 +597,42 @@ export async function computeRankings(pool, now) {
   // associate, whose clubs carry the 0.885 multiplier and whose XI is pegged
   // at 41,000 - stood first in the world and England eleventh.
   //
-  // The rungs the world is actually built on were sitting unread. A nation's
-  // XI is calibrated to nationTeamStr() when the selectors pick it, so THAT
-  // is what the shirt is worth - 47,500 for the strongest full member down to
-  // 41,000 for an associate. A league is worth the mean of its clubs' best
-  // elevens, the same figure the club ladder seats a club by. Both are true on
-  // day one, before a ball is bowled, which is exactly what a ranking has to
-  // be. The match marks stay, as FORM, in a column of their own.
+  // The rungs the world is actually built on were sitting unread. A league is
+  // worth the mean of its clubs' best elevens, the same figure the club ladder
+  // seats a club by; a nation is worth the XI it can actually put out. Both are
+  // true on day one, before a ball is bowled, which is exactly what a ranking
+  // has to be. The match marks stay, as FORM, in a column of their own.
+  //
+  // WHAT THE SHIRT IS WORTH IS NOW MEASURED, NOT DECLARED (B2).
+  //
+  // natRating used to be BASE_XI x nationTeamStr(c.id): a constant per country,
+  // 47,500 for the strongest full member down to 41,000 for an associate. That
+  // was honest only for as long as badgeUp() existed to scale a selected side's
+  // skills until its XI hit exactly that number - the ranking was reporting a
+  // figure the world was being forced to match, so the ladder measured the
+  // ladder and a nation that had produced nobody still read 47,500.
+  //
+  // The badge is gone (see nations.mjs): a national side is now made of the men
+  // a country actually has, and nothing lifts them for pulling the shirt on. So
+  // the ranking has to go and look. This is the best eleven a country could put
+  // on the field today - its cricketers' canonical cards, three to a club as the
+  // selectors cap them, top eleven averaged - which is the same question
+  // squadStrength answers for a club, asked of a country.
+  const natXi = Object.fromEntries((await pool.query(
+    `WITH men AS (
+       SELECT cl.country_id, cl.slot, (p->>'rating')::numeric AS rating,
+              row_number() OVER (PARTITION BY cl.country_id, cl.slot
+                                 ORDER BY (p->>'rating')::numeric DESC, p->>'name') AS in_club
+         FROM clubs cl, jsonb_array_elements(cl.squad) p
+        WHERE p->>'name' IS NOT NULL AND (p->>'rating') IS NOT NULL
+     ), capped AS (
+       SELECT country_id, rating,
+              row_number() OVER (PARTITION BY country_id ORDER BY rating DESC) AS rn
+         FROM men WHERE in_club <= $1
+     )
+     SELECT country_id, round(avg(rating)) AS nat
+       FROM capped WHERE rn <= 11 GROUP BY country_id`, [CLUB_LIMIT]
+  )).rows.map(r => [r.country_id, Number(r.nat) | 0]));
   const countries = countryRows.map(c => {
     const mine = Object.values(R).filter(x => x.country === c.id);
     const marks = mine.reduce((a, x) => a.concat(x.hist), []);
@@ -612,8 +641,8 @@ export async function computeRankings(pool, now) {
       ? Math.round(strengths.reduce((a, s) => a + s, 0) / strengths.length) : 0;
     return {
       id: c.id, name: c.name, full: isFullMember(c.id),
-      // what the shirt is worth: the rung the selectors' XI is calibrated to
-      natRating: Math.round(BASE_XI * nationTeamStr(c.id)),
+      // what the shirt is worth: the best eleven this country can field
+      natRating: natXi[c.id] || 0,
       // what the league is worth: its clubs' best elevens, averaged
       clubRating: clubStrength,
       // and how everybody has actually been going, which is a different question

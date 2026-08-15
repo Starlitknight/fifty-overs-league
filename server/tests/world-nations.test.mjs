@@ -595,17 +595,46 @@ test('the ladder and the room read the international game', async () => {
   // neutral base beside its name, and one round of CLUB results was enough to
   // put an associate first in the world and England eleventh.
   //
-  // natRating is what the shirt is worth now: the rung the selectors' XI is
-  // calibrated to, true on day one and on the same scale as a club's best
-  // eleven. natForm is how a nation has actually been going, and that is the
-  // figure the match-mark scale and the presumption belong to.
-  const rung = id => Math.round(BASE_XI * nationTeamStr(id));
+  // natRating is what the shirt is worth now, and after B2 it is MEASURED
+  // rather than declared: the best eleven the country can actually field, three
+  // to a club as the selectors cap them, on the same scale as a club's best
+  // eleven because it is the same arithmetic. natForm is how a nation has
+  // actually been going, and that is the figure the match-mark scale and the
+  // presumption belong to.
+  //
+  // IT USED TO BE A CONSTANT - BASE_XI x nationTeamStr(id), 47,500 down to
+  // 41,000 - and that was honest only for as long as badgeUp() scaled a
+  // selected side's skills until its XI hit exactly that number. The ranking
+  // was reporting a figure the world was being forced to match. B2 retired the
+  // badge, because a player must become an international by being good rather
+  // than become good by being picked, so the ladder now has to go and look.
+  //
+  // Which turns the full-member claim below from a tautology into a real
+  // result: nothing decrees that England outranks Scotland any more. It comes
+  // out of the cricketers the two countries were dealt.
+  const squads = (await pool.query(
+    `SELECT country_id, slot, squad FROM clubs`)).rows;
+  const byCountry = {};
+  for (const r of squads) {
+    const men = (r.squad || []).filter(p => p && p.rating)
+      .sort((a, b) => b.rating - a.rating || (a.name < b.name ? -1 : 1)).slice(0, 3);
+    (byCountry[r.country_id] = byCountry[r.country_id] || []).push(...men);
+  }
+  const bestXi = id => {
+    const men = (byCountry[id] || []).sort((a, b) => b.rating - a.rating).slice(0, 11);
+    return men.length ? Math.round(men.reduce((t, p) => t + p.rating, 0) / men.length) : 0;
+  };
   rk.countries.forEach(c => {
-    assert.equal(c.natRating, rung(c.id), c.id + ' is seated at the rung its XI is built to');
-    assert.ok(c.natRating >= 40000 && c.natRating <= 48000,
-      c.id + ' rates on the club rating scale, not the match one: ' + c.natRating);
+    assert.equal(c.natRating, bestXi(c.id),
+      c.id + ' is seated at the eleven it can actually field');
+    // rating is the canonical card x 1000, so a national XI lives where a very
+    // good club XI lives and above it - never on the match-mark scale
+    assert.ok(c.natRating > c.clubRating,
+      c.id + ' picks from every club, so its XI beats the mean club: ' +
+      c.natRating + ' vs ' + c.clubRating);
   });
-  // a full member's shirt outranks an associate's, before anybody plays
+  // a full member's shirt outranks an associate's, because a full member's
+  // clubs hold better cricketers - not because a table said so
   const fullMin = Math.min(...rk.countries.filter(c => c.full).map(c => c.natRating));
   const assocMax = Math.max(...rk.countries.filter(c => !c.full).map(c => c.natRating));
   assert.ok(fullMin > assocMax, 'the full members sit above the associates: ' + fullMin + ' vs ' + assocMax);

@@ -33,8 +33,8 @@
 import { dayIx, seedOf, isWindowRound, WINDOWS, WINDOW_DAYS, windowRoundOfDay,
          INTL_HOUR, hourSettled, ROUNDS, isWorldCupSeason, cupDraw, EPOCH, DAY } from './clock.mjs';
 import { livingPatch, evolveCountry } from './living.mjs';
-import { makeHost } from './enginehost.mjs';
-import { calibrate, nationTeamStr, BASE_XI } from './init-world.mjs';
+// nothing here reaches for the engine host or the founding calibration any
+// more: retiring the badge (see below) removed the only call site of both
 
 export const SQUAD_SIZE = 15;
 // THE BOARD WILL NOT GUT A CLUB. However many of a nation's best play for one
@@ -80,8 +80,25 @@ export const isBowler = p => !!(p && p.bowlType && p.bowlType !== 'none');
 // men from any one club is the limit, so a strong league sends its whole
 // depth rather than one club twice over.
 // ---------------------------------------------------------------------------
+// ABILITY IS THE SIGNAL; FORM ONLY DECIDES THE MARGINS (B2).
+//
+// `rating` is not a second opinion about a cricketer any more - it is the
+// canonical card at a thousand times the resolution (jsDerive: rating = OVR x
+// 1000), so selecting on it IS selecting on canonical role value. That was true
+// by accident the moment B2 redefined rating; it is written down here because a
+// reader looking at `p.rating` has no other way to know, and because the next
+// person to "improve" this line needs to know what it already is.
+//
+// FORM IS BOUNDED ON PURPOSE. The nick a man is in moves him by at most 13.5%
+// either way, which is enough to settle a choice between two cricketers of the
+// same class and not enough to invent one. At the extremes a man in the form of
+// his life reads 1.135 x his card and one who cannot buy a run reads 0.865 x
+// his - so the best a 60 can ever do is 68, and the worst a 90 can do is 78. A
+// purple patch cannot put a club pro ahead of a great player, which is the
+// property that makes an international side mean something.
+const FORM_SWING = 0.045;              // per step of form, 3 steps either way
 export function selectionScore(p) {
-  const form = ((p.formIx == null ? 3 : p.formIx) - 3) * 0.045;
+  const form = ((p.formIx == null ? 3 : p.formIx) - 3) * FORM_SWING;
   return (+p.rating || 0) * (1 + form);
 }
 export function selectSquad(men, { size = SQUAD_SIZE, clubLimit = CLUB_LIMIT, minLeft = MIN_LEFT } = {}) {
@@ -376,33 +393,42 @@ export function tiesOnDay(plan, inWindow) {
 
 // a banked list of {slot, player} as MEN, looked up in the squads they came
 // from. A man who has since left cricket simply is not there.
-// THE BADGE.
+// THE BADGE, AND WHY THERE ISN'T ONE ANY MORE (B2).
 //
-// A national side used to have no strength of its own: these fifteen are
-// looked up in the club squads they were picked from, so an XI could never be
-// better than the clubs it came out of. That is the whole reason a second
-// division side from a small nation read as the near-equal of a great one -
-// the great one WAS its clubs. Pulling on the shirt is now worth something,
-// and what it is worth is the nation's own rung on the ten-point ladder: a 9
-// for a full member, an 8 for an associate, against a flagship club's 7.
+// What stood here scaled a selected national side's SKILLS until its XI hit the
+// nation's rung on the ten-point ladder - a 9 for a full member, an 8 for an
+// associate. It ran the same four-pass calibrate() the world used to found
+// clubs with, on copies of the club's own players, every time an international
+// XI was assembled.
 //
-// It is applied here because this is the one place an international XI is ever
-// assembled - the tours, the World Cup and every page that shows a squad all
-// come through it, so what a phone displays is what the umpire plays.
-let BADGE_HOST = null;
-function badgeHost() { return (BADGE_HOST = BADGE_HOST || makeHost()); }
-export function badgeUp(country, men) {
-  if (!men || men.length < 11) return men;
-  try {
-    const best = men.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 11);
-    const have = best.reduce((s, p) => s + (p.rating || 0), 0) / Math.max(1, best.length);
-    const want = BASE_XI * nationTeamStr(country);
-    if (!(have > 0) || Math.abs(want / have - 1) < 0.01) return men;
-    // the men are copied first: these objects are the club's own players, and
-    // a country lifting them must not lift the club they go back to
-    return calibrate(badgeHost(), men.map(p => ({ ...p, skills: { ...(p.skills || {}) } })), want);
-  } catch (e) { return men; }
-}
+// It broke the one law an international game has to keep:
+//
+//     A player becomes an international because he is good.
+//     Becoming an international must not make him good.
+//
+// Under the badge it was the other way about. A cricketer's wicket-taking, his
+// technique and his hands all moved the moment he was picked, and moved back
+// when he was dropped, so the same man was two different cricketers depending
+// on which fixture list you read him from. Nothing a manager could see
+// explained it: his club card said one thing and the country he was playing for
+// played a different player. And it was self-justifying - a nation whose rung
+// said 9 got a 9 whether or not it had produced anybody, so the ladder measured
+// the ladder.
+//
+// The problem it was written for was real and is now solved somewhere else. It
+// existed because every club in the world was one baked squad times a constant,
+// so a small nation's clubs held the same cricketers as a great one's and an XI
+// drawn from them could not be worse. B2 deals the world from tier
+// DISTRIBUTIONS with a real elite tail, so a strong nation's clubs genuinely
+// contain better men and a weak nation's genuinely do not. The hierarchy comes
+// out of the population now, which is where it was always supposed to come
+// from.
+//
+// So the fifteen are the fifteen. This function is the identity, kept as a
+// named seam because the tours, the World Cup and every page that shows a squad
+// come through it, and a future reader deserves to find the reasoning here
+// rather than an unexplained absence.
+export function badgeUp(country, men) { return men; }
 
 async function menFor(pool, country, named) {
   if (!named || !named.length) return [];
