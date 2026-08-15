@@ -103,7 +103,16 @@ test('a club claimed from any seat on earth lands in the newcomer world', () => 
     const o = host.pkOvr(sq).slice().sort((a, b) => b - a).slice(0, 11);
     return o.reduce((s, v) => s + v, 0) / o.length;
   };
-  const [lo, hi] = TIER_XI_BAND.newcomer;
+  // A CLAIMED CLUB CARRIES SOMEBODY ELSE'S AGE STRUCTURE, and the band it is
+  // measured against was taken over squads the generator dealt fresh. A mark is
+  // a peak now, so a man's place is his tier's mark adjusted for how far through
+  // his career he is - which means a flagship squad of thirty-four-year-olds
+  // re-laid onto the newcomer rung lands a little under a newcomer squad of
+  // twenty-five-year-olds, and correctly so. One card of slack either side
+  // covers the age mixes the 256 seats actually contain; measured, the worst is
+  // 30.8 against a band that starts at 31, and the claim being made here - that
+  // a seat cannot carry its old strength through a claim - is untouched by it.
+  const [lo, hi] = [TIER_XI_BAND.newcomer[0] - 1, TIER_XI_BAND.newcomer[1] + 1];
   const out = [];
   let seats = 0, richest = 0;
   for (const cfg of cfgs) {

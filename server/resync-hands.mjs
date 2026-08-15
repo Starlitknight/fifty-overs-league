@@ -61,6 +61,8 @@ const HANDS = ['fielding', 'catching', 'keeping', 'stumping'];
 // is shifted up onto it and keeps every point he has trained above it. A man
 // already at or above the bell is not touched at all - and after one pass his
 // baseline IS the bell, so the step is nought and it never fires again.
+// the corruption guard, the same number the shipped engine defines it as
+const LATENT_MAX = 250;
 export function resyncMan(p, clean) {
   if (!p || !p.skills || !clean || !clean.skills) return 0;
   let moved = 0;
@@ -71,12 +73,13 @@ export function resyncMan(p, clean) {
     const step = want - base;
     if (!(step > 0)) continue;                 // he is on the bell, or above it
     if (p.baseSkills) p.baseSkills[k] = want;
-    if (p.skills[k] != null) p.skills[k] = Math.max(1, Math.min(99, p.skills[k] + step));
+    // BOUNDED BY THE CORRUPTION GUARD, not by the old ceiling. A gloveman whose
+    // baseline lift would carry him past 99 is an ordinary cricketer now, and
+    // clamping him here would put back the exact ceiling the latent model was
+    // built to remove - one module at a time, where nobody would look for it.
+    if (p.skills[k] != null) p.skills[k] = Math.max(1, Math.min(LATENT_MAX, p.skills[k] + step));
     moved++;
   }
-  // and the derived numbers the ball engine actually fields with (091)
-  if (p.skills.fielding != null && p.field !== p.skills.fielding) { p.field = p.skills.fielding; moved++; }
-  if (p.skills.keeping != null && p.keeping !== p.skills.keeping) { p.keeping = p.skills.keeping; moved++; }
   return moved;
 }
 
@@ -109,6 +112,30 @@ export async function resyncWorld(pool, host, { write = false, quiet = false } =
         if (!clean1) { tot.skipped++; if (p.skills.fielding != null) tot.after += p.skills.fielding; continue; }
         moved += resyncMan(p, clean1);
         if (p.skills.fielding != null) tot.after += p.skills.fielding;
+      }
+      // AND THE ENGINE'S OWN NUMBERS ARE RE-DERIVED, BY THE ENGINE.
+      //
+      // resyncMan used to finish by copying p.skills.fielding onto p.field and
+      // p.skills.keeping onto p.keeping, which was exactly right while the two
+      // were the same number. They are not any more: p.field is the EFFECTIVE
+      // fielding the ball model reads and p.skills.fielding is the latent one
+      // stored on him, and above 99 they differ by design. So the copy declared
+      // a man out of step with himself on every pass, and a resync with nothing
+      // to do reported fifty-nine clubs moved and wrote them all back - an
+      // idempotence failure that would have run on every tick for ever.
+      //
+      // jsDerive is the only thing that may compute those numbers, so it does.
+      if (moved) {
+        try {
+          const all = squad.concat(youth);
+          const d = host.derive(all);
+          all.forEach((q, i) => {
+            if (!d[i]) return;
+            q.field = d[i].field; q.keeping = d[i].keeping;
+            q.bat = d[i].bat; q.threat = d[i].threat; q.control = d[i].control;
+            q.rating = d[i].rating; q.wage = d[i].wage;
+          });
+        } catch (eD) { /* an older host without derive leaves them as they were */ }
       }
       if (moved) {
         tot.moved += moved; tot.clubs++;

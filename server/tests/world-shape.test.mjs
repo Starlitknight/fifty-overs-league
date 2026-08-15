@@ -141,11 +141,24 @@ test('a style-only change is free: shape moves, canonical value does not', () =>
 // worth more than an economy point. This is the assertion the old "free to the
 // pound" identity would fail, and it is here so that nobody can restore the
 // identity by flattening the measured weights: doing so would break this.
+// AND IT IS ASKED BELOW THE KNEE, WHICH IS WHERE THE CLAIM LIVES. The lean has
+// to stay inside the range where the latent transform is the identity, or this
+// stops being a test of the WEIGHTS and becomes a test of the transform's
+// diminishing returns - and those really can outweigh the 0.185-against-0.145
+// asymmetry. Measured on a man already at vsPace 99, +22 buys only fourteen
+// effective points while -22 costs a full twenty-two, and his card falls. That
+// is the engine telling the truth about itself; it is not what this file is
+// about, so the batsman chosen is one with room to lean.
 test('and an un-recentred lean is not free, because the engine is not symmetric', () => {
-  const p = world[0].clubs[0].men.filter(bats)[0];
+  const KNEE = 99, STEP = 22;
+  const p = world[0].clubs[0].men.filter(bats)
+    .find(x => x.skills.vsPace + STEP <= KNEE && x.skills.vsSpin - STEP >= 10)
+    || world.flatMap(w => w.clubs).flatMap(c => c.men).filter(bats)
+        .find(x => x.skills.vsPace + STEP <= KNEE && x.skills.vsSpin - STEP >= 10);
+  assert.ok(p, 'a batsman with room to lean either way');
   const was = host.playerValue(p);
   const q = JSON.parse(JSON.stringify(p));
-  q.skills.vsPace += 22; q.skills.vsSpin -= 22;
+  q.skills.vsPace += STEP; q.skills.vsSpin -= STEP;
   const now = host.playerValue(q);
   assert.ok(now.level > was.level,
     'facing pace is worth more than facing spin, and the card says so (' +

@@ -597,6 +597,22 @@ function foAgeLoss(k, v, age) {
 // A YEAR ON ONE CRICKETER. Mutates his skills and re-derives him; his card is
 // whatever the new profile is worth, which is the rule - nothing anywhere
 // subtracts from an overall directly.
+// AND IT MOVES HIS BASELINE, NOT ONLY HIS SKILLS.
+//
+// A living cricketer carries his numbers twice: `baseSkills`, which is what he
+// IS, and `skills`, which is that plus whatever he has trained on top. The
+// living fold rebuilds the second from the first every time it runs -
+// server/living.mjs, `if (p.skills[k] !== p.baseSkills[k]) p.skills[k] =
+// p.baseSkills[k]` - because anything not written into the baseline is by
+// definition not part of the man.
+//
+// So a decline that touched only `skills` was undone by the next fold. It did
+// not fail loudly: the world's own audits, which read `skills` directly, showed
+// careers declining beautifully, while the served world quietly put every point
+// back. What caught it was a banked match refusing to replay - the squads that
+// played it and the squads in the table had stopped being the same men.
+//
+// Ageing is a change to what a man IS, so it is written where that lives.
 function foAgeDecline(p) {
   if (!p || !p.skills) return p;
   const age = +p.age || 0;
@@ -604,10 +620,13 @@ function foAgeDecline(p) {
     const v = p.skills[k];
     if (typeof v !== 'number' || !isFinite(v)) continue;
     const loss = foAgeLoss(k, v, age);
-    if (loss > 0) {
-      const fl = FO_SKILL_FLOOR[k] != null ? FO_SKILL_FLOOR[k] : 4;
-      p.skills[k] = Math.max(fl, Math.round(v - loss));
-    }
+    if (!(loss > 0)) continue;
+    const fl = FO_SKILL_FLOOR[k] != null ? FO_SKILL_FLOOR[k] : 4;
+    p.skills[k] = Math.max(fl, Math.round(v - loss));
+    // the baseline falls by what the year actually took off him, so the points
+    // he has trained above it ride down with him rather than being erased
+    if (p.baseSkills && typeof p.baseSkills[k] === 'number')
+      p.baseSkills[k] = Math.max(fl, Math.round(p.baseSkills[k] - loss));
   }
   try { jsDerive(p); } catch (eAge) {}
   return p;

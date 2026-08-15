@@ -193,14 +193,24 @@ export const xiOf = sq => {
 // TIER_XI_BAND is MEASURED, over all 256 clubs of generation 1:
 //
 //     tier      best-XI  min - max     squad mean
-//     flagship     77.2  76.1 - 79.1   71.3
-//     d1a          72.2  70.2 - 73.5   65.7
-//     d1b          66.4  64.3 - 69.1   59.3
-//     d2a          56.3  54.7 - 58.1   49.3
-//     d2b          44.3  42.4 - 45.7   37.6
-//     newcomer     36.3  34.9 - 38.1   29.8
+//     flagship     77.5  76.5 - 78.7   70.9
+//     d1a          71.9  69.9 - 73.3   65.0
+//     d1b          66.3  61.7 - 68.4   58.7
+//     d2a          56.4  53.7 - 58.8   48.8
+//     d2b          44.3  41.4 - 46.1   37.0
+//     newcomer     36.4  34.6 - 38.2   29.4
 //
-// and the bands below are those means with four cards of tolerance either side -
+// AND THE SPREAD WIDENED WHEN AGEING ARRIVED, which is why the tolerance below
+// is five cards rather than four. The means have not moved - every one of them
+// is within half a card of the figures this table first recorded - but a club's
+// CURRENT XI now carries its age structure: men are dealt at their tier's mark
+// adjusted for how far through their careers they are, so a club that happens
+// to hold three thirty-four-year-olds really is weaker this season than the same
+// club holding three twenty-seven-year-olds. Measured, that took d1b's weakest
+// XI from 64.3 to 61.7. It is a fact about the world rather than a tier missing
+// its mark, and the band has to be able to say so.
+//
+// and the bands below are those means with five cards of tolerance either side -
 // wide enough that a redeal or a tuning change does not fail them for being a
 // different draw, narrow enough that a club in the wrong tier's world cannot
 // hide. Adjacent bands overlap, which is deliberate and is the whole design:
@@ -210,8 +220,8 @@ export const TIER_SQUAD_BAND = {
   d2a: [44, 50], d2b: [32, 38], newcomer: [22, 30]
 };
 export const TIER_XI_BAND = {
-  flagship: [73, 81], d1a: [68, 76], d1b: [62, 70],
-  d2a: [52, 60], d2b: [40, 48], newcomer: [32, 40]
+  flagship: [72, 83], d1a: [67, 77], d1b: [61, 71],
+  d2a: [51, 61], d2b: [39, 49], newcomer: [31, 41]
 };
 
 // THE FOUNDING CAST. A Division Two club is not a weaker copy of a county -

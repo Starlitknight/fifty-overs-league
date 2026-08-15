@@ -426,7 +426,27 @@ export async function ageYouth(pool, country, seasonNo, host) {
     // than relying on that, because it is a fact about the table and not about
     // the intention.
     if (host && typeof host.ageDecline === 'function' && squad.length) {
-      try { squad = host.ageDecline(squad); }
+      try {
+        // MERGED BACK, NOT SWAPPED IN. host.ageDecline hands the squad through a
+        // vm and therefore through JSON, and a JSON round trip is not the
+        // identity on a living cricketer: an undefined field vanishes and a NaN
+        // becomes null. Replacing the array wholesale meant a man came back
+        // subtly reshaped in ways that had nothing to do with ageing, and the
+        // things that read those fields - the XI the captain picks, the order he
+        // bats in - could pick differently. What ageing is allowed to change is
+        // his numbers, so only his numbers are taken.
+        const aged2 = host.ageDecline(squad);
+        squad.forEach((p, i) => {
+          const q = aged2[i]; if (!q || !q.skills) return;
+          for (const k in q.skills) if (typeof q.skills[k] === 'number') p.skills[k] = q.skills[k];
+          if (p.baseSkills && q.baseSkills)
+            for (const k in q.baseSkills) if (typeof q.baseSkills[k] === 'number') p.baseSkills[k] = q.baseSkills[k];
+          // and the engine's own derived numbers, which jsDerive recomputed
+          ['bat', 'power', 'rotation', 'temperament', 'vsPace', 'vsSpin',
+           'threat', 'control', 'bowl', 'field', 'keeping', 'rating', 'wage'
+          ].forEach(k => { if (typeof q[k] === 'number') p[k] = q[k]; });
+        });
+      }
       catch (eDec) { console.error('ageing decline failed for ' + country + '/' + c.slot + ':', eDec.message); }
     }
 
