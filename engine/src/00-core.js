@@ -349,20 +349,63 @@ const FO_SKILL_FLOOR = {
   fielding: 26, catching: 24, keeping: 4, stumping: 4
 };
 const FO_SKILL_CEIL = 99;
-// A man's level scales with his skills, so the factor is the ratio of levels -
-// solved in one step rather than searched for in four. The return value is what
-// the ends of the scale refused to give him, in levels, so a caller can report
-// a clamp rather than hide one.
+// THE HANDS MOVE WITH THE MAN, BUT ONLY HALF AS FAR.
+//
+// The fit used to scale every skill by one factor, which is a clean similarity
+// transform and put the world's fielding back where B1 found it. Measured over
+// 1,440 dealt cricketers: median fielding 41, fifth percentile on the floor.
+// B1's finding is exact about that number - at a median fielder of 41 a whole
+// innings produces under one good stop and about eleven misfields - so the
+// spatial contest was quietly dying again, by a different route from the one
+// that killed it the first time.
+//
+// The cause is that a club's rung and a man's HANDS are not the same question.
+// Scaling both by the same factor says a newcomer club's fielders are as far
+// below average as its batsmen, and the engine cannot read a fielder that far
+// down: the contest compares an absolute skill against an absolute difficulty
+// roll, so unlike batting and bowling it has a floor below which it stops being
+// cricket rather than merely being bad cricket.
+//
+// So the hands take HALF the factor, which is the same trade init-world's
+// calibrate already makes for the same reason and in the same words: a stronger
+// league genuinely does field better, it just must not be the whole of the
+// club's edge or the absolute scale goes flat. A weak club still fields worse
+// than a good one - it simply does not field somewhere the engine goes silent.
+//
+// WHICH COSTS THE ONE-STEP SOLVE. With two factors the level is still LINEAR in
+// the fit but no longer proportional to it, so the ratio of levels is no longer
+// the answer. It is bisected instead - twenty halvings on a monotone function,
+// which is exact to about a thousandth of a level and still nothing like
+// calibrate()'s four passes. What made calibrate expensive was never the
+// iteration; it was clamping every skill at 2 and 99 on every pass and feeding
+// a RATING target back into skills that the rating was computed from. Neither
+// happens here: one clamp, at the end, against each attribute's own floor.
+const FO_HAND_KEYS = { fielding: 1, catching: 1, keeping: 1, stumping: 1 };
+const FO_HAND_SCALE = 0.5;
 function foFitToLevel(p, target) {
   const now = foPlayerValue(p).level;
   if (!(now > 0) || !(target > 0)) return 0;
-  const f = target / now;
   const sk = p.skills || {};
-  for (const k of FO_FIT_KEYS) {
-    if (typeof sk[k] !== 'number') continue;
-    const floor = FO_SKILL_FLOOR[k] != null ? FO_SKILL_FLOOR[k] : 5;
-    sk[k] = Math.max(floor, Math.min(FO_SKILL_CEIL, Math.round(sk[k] * f)));
+  const base = {};
+  for (const k of FO_FIT_KEYS) if (typeof sk[k] === 'number') base[k] = sk[k];
+  // put the man at a trial factor and read what level it actually bought
+  const at = f => {
+    const fh = 1 + (f - 1) * FO_HAND_SCALE;
+    for (const k in base) {
+      const floor = FO_SKILL_FLOOR[k] != null ? FO_SKILL_FLOOR[k] : 5;
+      sk[k] = Math.max(floor, Math.min(FO_SKILL_CEIL,
+        Math.round(base[k] * (FO_HAND_KEYS[k] ? fh : f))));
+    }
+    return foPlayerValue(p).level;
+  };
+  // the level is monotone in the factor, so a bracket and twenty halvings put
+  // him on his mark or prove the ends of the scale would not give it to him
+  let lo = 0.02, hi = 8;
+  for (let i = 0; i < 20; i++) {
+    const mid = (lo + hi) / 2;
+    if (at(mid) < target) lo = mid; else hi = mid;
   }
+  at((lo + hi) / 2);
   jsDerive(p);
   return foPlayerValue(p).level - target;
 }
@@ -408,8 +451,8 @@ function foFitToLevel(p, target) {
 // point, and letting the point drift up as well would have put a dozen men over
 // 98 - which is a thing this world should almost never have.
 const FO_TIERS = {
-  flagship:  { top: 91, med: 71, floor: 49, spread: 5.3, star: 0.58, starLift: 7 },
-  d1a:       { top: 87, med: 65, floor: 42, spread: 5.3, star: 0.32, starLift: 7 },
+  flagship:  { top: 89, med: 71, floor: 49, spread: 5.0, star: 0.58, starLift: 6 },
+  d1a:       { top: 86, med: 65, floor: 42, spread: 5.0, star: 0.32, starLift: 6 },
   d1b:       { top: 84, med: 57, floor: 34, spread: 5.3, star: 0.14, starLift: 6 },
   d2a:       { top: 74, med: 47, floor: 24, spread: 5.4, star: 0.08, starLift: 6 },
   d2b:       { top: 62, med: 35, floor: 14, spread: 5.6, star: 0.05, starLift: 6 },
