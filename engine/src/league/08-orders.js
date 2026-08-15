@@ -425,12 +425,31 @@
   var FO_ST_A_BAT = 1.328, FO_ST_B_BAT = -1.9;
   var FO_ST_A_BWL = 1.394, FO_ST_B_BWL = -0.3;
   // a composite on the card's own 0-99 scale
+  // THE STRIP IS THE CARD, OVER TEN - and after B2 that is literally true
+  // rather than approximately true.
+  //
+  // What was here fitted two straight lines, one for batting composites and one
+  // for bowling, so that a composite could be put "back on the card scale". Both
+  // were regressions against a live world that has since been redistributed, and
+  // they were the last surviving path by which a man's stars could disagree with
+  // his overall. There was also a SECOND star system - a five-star ladder in the
+  // onboarding pages - reading a third universe again, so one cricketer wore
+  // different stars on different pages.
+  //
+  // One number now. foStars() in the engine core turns the canonical card into
+  // ten stars in halves, and every star anywhere in the product comes from it.
+  // The composites survive only as what they always honestly were: a reading of
+  // one TRADE, for the strip that ranks a batting order or an attack.
   function foOrdCard(comp, bowl) {
-    var v = bowl ? (FO_ST_A_BWL * comp + FO_ST_B_BWL) : (FO_ST_A_BAT * comp + FO_ST_B_BAT);
-    return Math.max(0, Math.min(99, v));
+    return Math.max(0, Math.min(100, comp));
   }
   function foOrdStars(comp, bowl) {
-    return Math.max(0, Math.min(10, Math.round((foOrdCard(comp, bowl) / 10) * 2) / 2));
+    try { return window.foStars(foOrdCard(comp, bowl)); } catch (e) { return 0; }
+  }
+  // A MAN'S OWN STARS, which is what a card shows: his canonical overall out of
+  // ten, not his batting out of ten. The trade strips keep using the composites.
+  function foOrdStarsOf(p) {
+    try { return window.foStars(window.foOvr(p)); } catch (e) { return 0; }
   }
   // FTP-style role glyphs beside each name: bat / ball / bat+ball / stumps.
   // Keeper wins (the gloves define his job), then the declared all-rounder,
@@ -775,7 +794,7 @@
     try { if (/^#\/(scorecard|reports|match|friendly|matchday)/.test(location.hash || "")) foScStars(); } catch (e) {}
   }, 800);
   // the oval's who-cards borrow the star language
-  try { window.foStarsFor = { bat: foOrdBatComp, bowl: foOrdBowlComp, stars: foOrdStars, card: foOrdCard, html: foOrdStarHTML, btype: foOrdBType }; } catch (eSF) {}
+  try { window.foStarsFor = { bat: foOrdBatComp, bowl: foOrdBowlComp, stars: foOrdStars, card: foOrdCard, html: foOrdStarHTML, btype: foOrdBType, of: foOrdStarsOf }; } catch (eSF) {}
   function foOrdersUI() {
     var page = document.getElementById("page"); if (!page) return;
     var t = userTeam(), xi = foOrdXI();

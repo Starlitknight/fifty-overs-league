@@ -1,0 +1,25 @@
+
+=== WHAT ONE POINT OF EACH SKILL IS WORTH ===
+   one man moved +/-20 points in an otherwise fixed XI, 260 matches a cell
+   baseline: net 3.24 runs, 53.5% wins
+
+attribute        on              -20      +20    runs/pt   index
+vsPace         top-order bat      -1.8     5.6    0.186    44.7
+vsSpin         top-order bat       0.7     6.1    0.134    32.4
+power          top-order bat      -0.8     6.3    0.175    42.2
+rotation       top-order bat      -2.1     4.5    0.165    39.7
+temperament    top-order bat       4.0     3.6   -0.010    -2.4
+fielding       top-order bat      -3.1     6.7    0.244    58.7
+catching       top-order bat       2.1     5.2    0.077    18.5
+wicket         opening bowler     -2.5    14.1    0.415   100.0
+economy        opening bowler      0.4    10.1    0.241    58.1
+discipline     opening bowler     -0.8     4.9    0.142    34.3
+moveTurn       opening bowler      2.5     5.3    0.070    16.9
+variation      opening bowler      0.5     2.4    0.047    11.3
+stamina        opening bowler      1.8     2.3    0.013     3.1
+fielding       opening bowler     -2.1     5.6    0.192    46.1
+keeping        keeper              1.5     1.1   -0.010    -2.4
+stumping       keeper              2.0     2.4    0.010     2.4
+catching       keeper             -0.2     8.9    0.226    54.4
+vsPace         keeper             -1.5     6.0    0.188    45.2
+DONE

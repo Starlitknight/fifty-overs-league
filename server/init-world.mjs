@@ -330,13 +330,53 @@ function foundingCast(squad) {
   return squad;
 }
 
+// ---- B2: WHICH TIER OF THE WORLD A CLUB IS ---------------------------------
+//
+// A club's quality used to be a MULTIPLIER on a rating target, and the squad was
+// scaled at it four times over until its XI landed. That is gone. A club now
+// names a tier - a distribution of overalls with a stated best player, median
+// and floor - and the generator deals its men onto it.
+//
+// The tier is read off the two things that already describe a club: which
+// division it plays in and where it sits in that division. A flagship is the
+// boss seat; the rest of Division One splits into a stronger and a weaker half;
+// Division Two does the same; and the bottom of Division Two in an associate
+// nation is where a genuinely new club lives.
+//
+// THE NATION STILL MATTERS, and it matters the way it always did - a full
+// member's cricket is better than an associate's - but it now moves a club by a
+// TIER rather than by a factor on every skill of every man. That is the
+// difference between "an Australian club is a Dutch club times 1.3" and "an
+// Australian club is one rung of the world's ladder above a Dutch one", and B1
+// measured why it has to be the second: a uniform squad-wide edge of five raw
+// points wins more than nine matches in ten, so a world built on multipliers
+// has no upsets in it anywhere.
+const TIER_LADDER = ['newcomer', 'd2b', 'd2a', 'd1b', 'd1a', 'flagship'];
+export function tierOfClub(cfg, club) {
+  const div = club.div || (club.slot < 8 ? 1 : 2);
+  let ix;
+  if (club.boss) ix = 5;                                   // flagship
+  else if (div === 1) ix = club.slot <= 3 ? 4 : 3;         // D1 tier A / tier B
+  else ix = club.slot <= 11 ? 2 : 1;                       // D2 tier A / tier B
+  // an associate's cricket sits a rung below a full member's, and the bottom of
+  // an associate's second division is where the newly founded clubs are
+  if (!isFullMember(cfg.id)) ix -= 1;
+  return TIER_LADDER[Math.max(0, Math.min(5, ix))];
+}
 // strOverride: the reseed passes HUMAN_STR for a claimed club, so every
 // human's fresh deal lands on the newcomer rung instead of the seat's
 export function squadFor(host, cfg, club, gen = 1, strOverride = null) {
-  const raw = host.genSquad('world' + ((gen | 0) || 1) + '|' + cfg.id + '|' + club.slot, cfg.nat,
-    club.arch || cfg.arch, club.boss ? cfg.capt : 'general');
-  const str = strOverride || club.str || STR_FALLBACK;
-  const men = calibrate(host, raw, BASE_XI * (NAT_STR[cfg.id] || 1) * str);
+  // A HUMAN'S FRESH CLAIM IS A NEW CLUB, whatever seat it inherited. It used to
+  // be expressed as a strength multiplier; it is a tier now, like everything
+  // else, and it is the same tier a newly founded club is dealt.
+  const tier = strOverride ? 'newcomer' : tierOfClub(cfg, club);
+  const men = host.genSquad('world' + ((gen | 0) || 1) + '|' + cfg.id + '|' + club.slot, cfg.nat,
+    club.arch || cfg.arch, club.boss ? cfg.capt : 'general', 1, tier);
+  // NO CALIBRATION PASS. The generator placed every man on the tier's curve by
+  // a single scaling of his own skills, which is a similarity transform and
+  // preserves his shape exactly. There is nothing left to correct, and the four
+  // clamping iterations that used to run here were what flattened the world's
+  // fielding into a band from 20 to 56.
   return (club.div === 2 || club.slot >= 8) ? foundingCast(men) : men;
 }
 

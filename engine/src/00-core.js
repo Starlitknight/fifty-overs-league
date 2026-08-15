@@ -60,6 +60,336 @@ function foHomeEdge(ctx,which){
   if(!ctx||!ctx.homeSide)return 0;
   return ctx.homeSide===which?FO_HOME_EDGE:0;
 }
+// ===========================================================================
+// THE CANONICAL PLAYER MODEL (B2)
+// ===========================================================================
+//
+// ONE chain, and only one:
+//
+//     raw cricket attributes -> role value -> canonical level -> OVR 0-100
+//
+// and, entirely separately and never touching it:
+//
+//     raw cricket attributes -> ball engine -> actual performance
+//
+// OVR is a SUMMARY of a cricketer's ability. It does not cause the ability, it
+// is never read by ballDist, and nothing below it may feed back into a match.
+// Every strength number the game shows or sorts by - the card, the stars, the
+// wage, the transfer price, the AI's opinion of a squad - is derived from here.
+//
+// ---------------------------------------------------------------------------
+// WHY THESE WEIGHTS AND NOT SOME OTHERS
+//
+// Every previous version of this calculation chose its weights because they
+// looked reasonable: .25 vsPace, .25 vsSpin, .2 rotation, and six bowling
+// skills averaged as though a bowler's stamina mattered as much as his ability
+// to take a wicket. Nothing was ever checked against the engine that plays the
+// cricket, which is how a card came to promise "Variation 92" while the ball
+// model read the number not at all, and how an all-rounder came to carry the
+// highest rating in the world and the lowest card.
+//
+// These are MEASURED. tools/attribute-value.mjs moves one attribute of one man
+// in an otherwise fixed XI and plays 260 matches a cell, and reports the NET
+// RUN DIFFERENTIAL per point - runs his side scores minus runs it concedes,
+// which is the only currency in which a batting skill and a bowling skill can
+// be compared at all. Read off the accepted engine (docs/b2-evidence):
+//
+//     wicket      0.415 runs/point      fielding (bat) 0.244
+//     economy     0.241                 fielding (bowl) 0.192
+//     vsPace      0.186                 catching (keeper) 0.226
+//     power       0.175                 catching (outfield) 0.077
+//     rotation    0.165                 stumping        0.010
+//     discipline  0.142                 keeping        -0.010
+//     vsSpin      0.134                 temperament    -0.010
+//     moveTurn    0.070                 stamina         0.013
+//     variation   0.047
+//
+// The sampling error on one of those cells is about 0.13 runs a point, so the
+// big weights are resolved and the small ones are not. Where the measurement
+// cannot separate a skill from zero the weight is set from B1's EXACT
+// ball-level evidence instead - ballDist is a pure function, so a sweep of it
+// is arithmetic rather than a sample - and the two disagree about magnitude
+// nowhere, only about resolution. Specifically: temperament, moveTurn,
+// variation, stamina, keeping and stumping are all real in the ball model and
+// all worth little in aggregate, and they are weighted small rather than nought
+// so that a card cannot promise something worth exactly nothing.
+const FO_VAL_W = {
+  bat:   { vsPace: 0.185, vsSpin: 0.145, power: 0.150, rotation: 0.150, temperament: 0.060 },
+  bowl:  { wicket: 0.415, economy: 0.240, discipline: 0.140, moveTurn: 0.090, variation: 0.060, stamina: 0.030 },
+  field: { fielding: 0.200, catching: 0.110 },
+  glove: { catching: 0.226, keeping: 0.045, stumping: 0.030 }
+};
+// how much of each family a role actually uses. A specialist batsman does not
+// bowl; a front-line bowler bats a bit; a keeper's ground fielding is somebody
+// else's job. FIELD_SHARE is the one deliberate cap in here: fielding measures
+// as the most valuable single point a batsman owns, which is true and is also
+// not what a cricketer's OVR should be MADE of, so an outfielder's hands are
+// held to about a sixth of his card. A specialist fielder is not a
+// professional cricketer, and the outlier audit looks for anybody who became
+// one by accident.
+const FO_VAL_MIX = {
+  bat:   { bat: 1.00, bowl: 0.00, field: 0.45, glove: 0.00 },
+  bowl:  { bat: 0.22, bowl: 1.00, field: 0.45, glove: 0.00 },
+  ar:    { bat: 0.80, bowl: 0.80, field: 0.45, glove: 0.00 },
+  wk:    { bat: 1.00, bowl: 0.00, field: 0.00, glove: 1.20 }
+};
+function foValSum(w, sk, s) {
+  let v = 0; for (const k in w) v += w[k] * ((sk[k] != null ? sk[k] : (s && s[k]) || 0));
+  return v;
+}
+function foValFamilies(p) {
+  const sk = (p && p.skills) || {};
+  return {
+    bat:   foValSum(FO_VAL_W.bat, sk),
+    bowl:  foValSum(FO_VAL_W.bowl, sk),
+    field: foValSum(FO_VAL_W.field, sk),
+    glove: foValSum(FO_VAL_W.glove, sk)
+  };
+}
+// the weight a role's mixture puts on a FLAT cricketer, which is what turns a
+// value in runs into a LEVEL. Dividing by it is what makes the scale
+// role-fair: a reference cricketer whose every relevant skill is L comes out at
+// level L in every role he could fill, so a 70 bowler and a 70 batsman are the
+// same class of player BY CONSTRUCTION rather than by a fitted scale-and-shift
+// that went stale the moment the engine moved.
+const FO_VAL_C = (function () {
+  const sum = w => { let t = 0; for (const k in w) t += w[k]; return t; };
+  const S = { bat: sum(FO_VAL_W.bat), bowl: sum(FO_VAL_W.bowl), field: sum(FO_VAL_W.field), glove: sum(FO_VAL_W.glove) };
+  const c = {};
+  for (const r in FO_VAL_MIX) {
+    const m = FO_VAL_MIX[r];
+    c[r] = m.bat * S.bat + m.bowl * S.bowl + m.field * S.field + m.glove * S.glove;
+  }
+  return c;
+})();
+function foValLevel(fam, role) {
+  const m = FO_VAL_MIX[role];
+  const v = m.bat * fam.bat + m.bowl * fam.bowl + m.field * fam.field + m.glove * fam.glove;
+  return v / FO_VAL_C[role];
+}
+// AN ALL-ROUNDER FILLS TWO SLOTS, and that is worth something the arithmetic
+// above cannot see: normalised by his own mixture, a genuine 60-and-60 comes
+// out at exactly 60, the same as a man who only bats at 60 - which is not what
+// a captain thinks when he picks a side. The premium is bounded and it grows
+// with how genuinely two-sided he is, so a batsman who bowls a bit collects
+// almost none of it and cannot manufacture an elite card out of a second trade
+// he does not really have.
+const FO_AR_MAX = 5, FO_AR_REF = 55;
+// THE SEMANTIC SCALE. A level is an internal engine coordinate; OVR is what a
+// manager reads, and the two are not the same number. The anchors below are the
+// cricket meaning of the ladder:
+//
+//     0-20   part-time, hobby, amateur          61-80  strong to elite domestic
+//    21-40   weakest full-time professionals    81-90  champions, internationals
+//    41-60   ordinary established professionals 91-100 generational
+//
+// 50 means a legitimate career professional. It does not mean bad.
+//
+// It is deliberately NOT a straight line. The bottom is compressed because the
+// difference between a level-15 and a level-25 cricketer is not a professional
+// distinction at all, and the top is compressed because the engine's own
+// response saturates there - so equal steps of OVR buy less and less actual
+// cricket the higher you climb, which is what makes the top of the scale worth
+// climbing slowly. RARITY IS NOT DONE HERE: 95+ is exceptional because the
+// world generates almost nobody that good, not because the curve hides them.
+const FO_OVR_ANCHORS = [
+  [0, 0], [15, 4], [25, 17], [35, 31], [45, 43], [55, 55], [65, 66],
+  [75, 76], [82, 83], [88, 89], [93, 94], [97, 98], [100, 100]
+];
+// and back again, because generation states a TARGET OVR and has to know what
+// level buys it. Piecewise-linear both ways, so the pair are exact inverses.
+function foLevelForOvr(o) {
+  const A = FO_OVR_ANCHORS;
+  if (!(o > 0)) return 0;
+  if (o >= 100) return 100;
+  for (let i = 1; i < A.length; i++) {
+    if (o <= A[i][1]) {
+      const f = (o - A[i - 1][1]) / (A[i][1] - A[i - 1][1]);
+      return A[i - 1][0] + f * (A[i][0] - A[i - 1][0]);
+    }
+  }
+  return 100;
+}
+function foOvrCurve(L) {
+  if (!(L > 0)) return 0;
+  const A = FO_OVR_ANCHORS;
+  if (L >= 100) return 100;
+  for (let i = 1; i < A.length; i++) {
+    if (L <= A[i][0]) {
+      const f = (L - A[i - 1][0]) / (A[i][0] - A[i - 1][0]);
+      return A[i - 1][1] + f * (A[i][1] - A[i - 1][1]);
+    }
+  }
+  return 100;
+}
+// WHAT A MAN IS WORTH AT HIS BEST JOB. Every role he could actually fill is
+// evaluated and the best one wins, which is the only honest reading of "how
+// good is this cricketer": a man listed as an all-rounder who bats at 90 and
+// bowls at 30 is not a poor all-rounder, he is a good batsman, and a captain
+// picks him as one.
+function foPlayerValue(p) {
+  const fam = foValFamilies(p);
+  const bowls = !!(p && p.bowlType && p.bowlType !== 'none');
+  const keeps = !!(p && (p.keeper || p.role === 'wicketkeeper'));
+  const L = { bat: foValLevel(fam, 'bat') };
+  if (bowls) L.bowl = foValLevel(fam, 'bowl');
+  if (keeps) L.wk = foValLevel(fam, 'wk');
+  if (bowls) {
+    const two = Math.min(L.bat, L.bowl), base = foValLevel(fam, 'ar');
+    // AND IT TAPERS WHERE THERE IS NO ROOM LEFT. Untapered, a cricketer who
+    // does everything at 95 collected the full premium and came out at level
+    // 104 - off the end of the scale, and asking the clamp to hide it. The
+    // premium is slot scarcity, and slot scarcity is worth less the closer a
+    // man already is to the top of the game, because there is less of the
+    // ladder left for it to buy.
+    L.ar = base + FO_AR_MAX * Math.min(1, Math.max(0, two) / FO_AR_REF)
+                * Math.max(0, Math.min(1, (100 - base) / 25));
+  }
+  let best = 'bat', lv = L.bat;
+  for (const r in L) if (L[r] > lv) { lv = L[r]; best = r; }
+  const level = Math.max(0, Math.min(100, lv));
+  return { fam: fam, levels: L, role: best, level: level, ovr: foOvrCurve(level) };
+}
+// THE NUMBER ON THE CARD. Integer 0-100, and the single authority - every
+// other strength figure in this game is derived from it or from the value
+// object above, and nothing computes a competing opinion.
+function foOvr(p) {
+  if (!p) return 0;
+  // a man known only from a public card carries the world's own overall; there
+  // are no skills to re-derive from and the served figure is canonical
+  if (p.__card && p.__ovr > 0) return Math.max(0, Math.min(100, p.__ovr | 0));
+  return Math.max(0, Math.min(100, Math.round(foPlayerValue(p).ovr)));
+}
+// THE VISIBLE LADDER. Twelve rungs, and the only vocabulary the canonical
+// player scale speaks anywhere in the product.
+const FO_OVR_LADDER = [
+  [0, 'Awful'], [10, 'Weak'], [20, 'Limited'], [30, 'Decent'], [40, 'Solid'],
+  [50, 'Good'], [60, 'Strong'], [70, 'Great'], [80, 'Brilliant'],
+  [85, 'Masterful'], [90, 'Iconic'], [95, 'Immortal']
+];
+function foOvrLabel(v) {
+  v = Math.max(0, Math.min(100, Math.round(v || 0)));
+  let lbl = FO_OVR_LADDER[0][1];
+  for (const [floor, name] of FO_OVR_LADDER) if (v >= floor) lbl = name;
+  return lbl;
+}
+// TEN STARS, IN HALVES, OFF THE SAME NUMBER. There were two star systems - a
+// legacy five-star ladder and a ten-star strip - reading two different
+// universes, so the same cricketer wore different stars on different pages.
+// There is one now and it is a pure function of the card.
+function foStars(v) {
+  return Math.max(0, Math.min(10, Math.round((Math.max(0, Math.min(100, v || 0)) / 10) * 2) / 2));
+}
+try { window.foLevelForOvr = foLevelForOvr;
+      window.foOvr = foOvr; window.foPlayerValue = foPlayerValue;
+      window.foOvrLabel = foOvrLabel; window.foStars = foStars;
+      window.FO_OVR_LADDER = FO_OVR_LADDER; } catch (eCanon) {}
+// ===========================================================================
+// B2: PUTTING A CRICKETER ON A LEVEL, WITHOUT FLATTENING HIM
+// ===========================================================================
+//
+// The world used to reach a club's strength with calibrate(): multiply every
+// skill of every man by a factor, re-derive, measure, repeat, up to four times,
+// until the XI's RATING hit a target. B1 measured what that costs. It clamps -
+// a squad aimed low piles skills onto the floor and one aimed high onto the
+// ceiling - and because fielding feeds rating, widening the fielding bell made
+// calibration scale harder, which narrowed the bell again. The world's fielding
+// lived between 20 and 56 as a direct result.
+//
+// The canonical level is LINEAR in a man's skills. So scaling all of them by
+// one factor is a similarity transform: it moves him up or down the ladder and
+// leaves every ratio between his attributes exactly where it was. A power
+// hitter stays a power hitter; a wild quick stays wild. That is the whole
+// mechanism, and it is why B2 needs no iterative calibration at all.
+const FO_FIT_KEYS = ['vsPace','vsSpin','power','rotation','temperament',
+  'wicket','economy','discipline','moveTurn','variation','stamina',
+  'fielding','catching','keeping','stumping'];
+// EVERY ATTRIBUTE HAS ITS OWN SAFE FLOOR, and they are not the same number.
+// B1 measured the engine's useful domain at roughly 20-95 overall, but the
+// spatial fielding contest compares an absolute skill against an absolute
+// difficulty roll, so below about 45 it degenerates: at a median fielder of 41
+// a whole innings produced under one good stop and about eleven misfields. A
+// weak club SHOULD field badly - that is what being weak means - but the
+// contest must still resolve, so the hands keep a floor well above where they
+// stop working as cricket. The batting and bowling families have no such
+// problem and take the engine's own floor.
+const FO_SKILL_FLOOR = {
+  vsPace: 6, vsSpin: 6, power: 6, rotation: 6, temperament: 8,
+  wicket: 5, economy: 5, discipline: 5, moveTurn: 5, variation: 5, stamina: 12,
+  fielding: 26, catching: 24, keeping: 4, stumping: 4
+};
+const FO_SKILL_CEIL = 99;
+// A man's level scales with his skills, so the factor is the ratio of levels -
+// solved in one step rather than searched for in four. The return value is what
+// the ends of the scale refused to give him, in levels, so a caller can report
+// a clamp rather than hide one.
+function foFitToLevel(p, target) {
+  const now = foPlayerValue(p).level;
+  if (!(now > 0) || !(target > 0)) return 0;
+  const f = target / now;
+  const sk = p.skills || {};
+  for (const k of FO_FIT_KEYS) {
+    if (typeof sk[k] !== 'number') continue;
+    const floor = FO_SKILL_FLOOR[k] != null ? FO_SKILL_FLOOR[k] : 5;
+    sk[k] = Math.max(floor, Math.min(FO_SKILL_CEIL, Math.round(sk[k] * f)));
+  }
+  jsDerive(p);
+  return foPlayerValue(p).level - target;
+}
+// THE SHAPE OF A TIER, AS OVERALLS RATHER THAN AS A STRENGTH MULTIPLIER.
+//
+// A club's quality is now a DISTRIBUTION its men are dealt from, not a number
+// its men are scaled toward. Each tier names the overall of its best player,
+// its median and its weakest, and the squad is laid on the curve between them.
+// Two things follow that the old ladder could not give:
+//
+//   the tiers OVERLAP, because each is a spread rather than a rectangle - a 78
+//   veteran on a weak second-division club and a 52 squad man at a flagship are
+//   both ordinary draws rather than impossibilities; and
+//
+//   a stronger club is stronger by DEPTH and by its best men, not by every one
+//   of its cricketers being ten points better than every one of theirs. B1
+//   measured a uniform five-point squad-wide edge at a 90%+ win rate, so a
+//   hierarchy built that way would have no upsets in it at all.
+const FO_TIERS = {
+  flagship:  { top: 94, med: 73, floor: 55, spread: 3.8, star: 0.58, starLift: 9 },
+  d1a:       { top: 88, med: 67, floor: 48, spread: 3.8, star: 0.32, starLift: 7 },
+  d1b:       { top: 81, med: 59, floor: 40, spread: 3.8, star: 0.14, starLift: 6 },
+  d2a:       { top: 71, med: 49, floor: 30, spread: 3.9, star: 0.08, starLift: 6 },
+  d2b:       { top: 59, med: 37, floor: 18, spread: 4.1, star: 0.05, starLift: 6 },
+  newcomer:  { top: 52, med: 28, floor: 8,  spread: 4.2, star: 0.04, starLift: 6 }
+};
+// AND SOMEBODY HAS TO BE THE BEST PLAYER IN THE WORLD.
+//
+// Laid on its tier's curve and nothing else, the world tops out at whatever the
+// best tier's best rung says and stops dead: measured on the first deal, 53
+// cricketers above 80 in a world of 3,840 and not one above 90. A pyramid whose
+// summit is a straight edge has no Tendulkar in it.
+//
+// `star` is the chance that a club's FIRST-choice man is a genuine one - lifted
+// clear of his own tier by `starLift` and a bit - and it is a chance rather than
+// a quota so that which clubs have one is a fact about this world rather than a
+// rule about all of them. It is rarest where it should be: a second-division
+// club produces a player the world wants about once in twenty-five, which is
+// exactly the story of a small club and its one great player.
+//
+// Rarity at the very top is NOT done by squashing the OVR curve. It is done
+// here, by there being almost nobody that good - which is the only way 95 can
+// mean what the ladder says it means.
+// WHERE ON THE CURVE THE nth MAN SITS. A squad is not a straight line from its
+// best player to its worst: the top few are close together, the middle is a
+// long plateau of professionals, and it falls away at the end. The exponents
+// are what make the tail a tail.
+function foTierOvrAt(tier, rank, n) {
+  const T = FO_TIERS[tier] || FO_TIERS.d1b;
+  const t = n <= 1 ? 0 : rank / (n - 1);              // 0 = best, 1 = worst
+  const mid = 0.45;                                   // half a squad in its band
+  return t <= mid
+    ? T.top + (T.med - T.top) * Math.pow(t / mid, 0.85)
+    : T.med + (T.floor - T.med) * Math.pow((t - mid) / (1 - mid), 1.25);
+}
+try { window.foFitToLevel = foFitToLevel; window.FO_TIERS = FO_TIERS;
+      window.foTierOvrAt = foTierOvrAt; window.FO_SKILL_FLOOR = FO_SKILL_FLOOR; } catch (eFit) {}
 function foFatigueLoad(p){
   const ix=foFatigueIndex(p), st=(p&&p.skills&&p.skills.stamina)||p.stamina||50;
   const ageExtra=Math.max(0,foAgeTireFactor(p)-1)*0.055;
@@ -4111,34 +4441,106 @@ function foSkillLevel(q,age){                 // returns a (possibly fractional)
 // does with the bat, because a brilliant fielder who cannot bat is one of the
 // most familiar cricketers there is. Calibration still scales it with the
 // rest, which is correct: a stronger league genuinely fields better.
-function foGenSkills(role,q,age,rnd){
+// PLAYER IDENTITY IS DEALT, NOT AVERAGED (B2).
+//
+// The shapes below used to be role shapes and nothing else: every batsman in
+// the world was drawn from one template and differed from every other only by
+// dice. So a 75 read 75/75/75/75/75, which is not a cricketer - it is a
+// rounding of one.
+//
+// Each role now deals an ARCHETYPE first, and the archetype is a set of offsets
+// in raw skill points applied before the level fit. Because the fit is a
+// similarity transform (see foFitToLevel) the shape survives whatever level the
+// man is finally placed at: a power hitter at 40 and a power hitter at 90 are
+// recognisably the same kind of cricketer, one of them much better at it.
+const FO_ARCHE = {
+  bat: [
+    { id: 'accumulator', w: 22, off: { rotation: +14, temperament: +8, power: -14, vsPace: +2 } },
+    { id: 'powerHitter', w: 18, off: { power: +22, rotation: -10, temperament: -8, vsSpin: -4 } },
+    { id: 'paceSpecialist', w: 14, off: { vsPace: +13, vsSpin: -13, power: +2 } },
+    { id: 'spinSpecialist', w: 12, off: { vsSpin: +14, vsPace: -12 } },
+    { id: 'technician', w: 20, off: { vsPace: +7, vsSpin: +7, temperament: +10, power: -12 } },
+    { id: 'allCourt', w: 14, off: {} }
+  ],
+  bowl: [
+    { id: 'strikeQuick', w: 20, off: { wicket: +14, moveTurn: +10, economy: -12, discipline: -6 } },
+    { id: 'controller', w: 20, off: { economy: +14, discipline: +12, wicket: -11, variation: -4 } },
+    { id: 'wildQuick', w: 12, off: { wicket: +12, moveTurn: +12, discipline: -22, economy: -8 } },
+    { id: 'mystery', w: 12, off: { variation: +20, wicket: +4, economy: -6, moveTurn: -4 } },
+    { id: 'bigTurner', w: 14, off: { moveTurn: +18, variation: +4, economy: -6 } },
+    { id: 'workhorse', w: 14, off: { stamina: +18, economy: +9, discipline: +6, wicket: -9 } },
+    { id: 'complete', w: 8, off: {} }
+  ],
+  wk: [
+    { id: 'gloveFirst', w: 40, off: { keeping: +12, stumping: +12, catching: +8, vsPace: -11, vsSpin: -11, power: -8 } },
+    { id: 'battingKeeper', w: 40, off: { vsPace: +9, vsSpin: +9, rotation: +7, keeping: -9, stumping: -9 } },
+    { id: 'balancedKeeper', w: 20, off: {} }
+  ],
+  ar: [
+    { id: 'batAllRounder', w: 34, off: { vsPace: +8, vsSpin: +8, rotation: +6, wicket: -8, economy: -6 } },
+    { id: 'bowlAllRounder', w: 34, off: { wicket: +9, economy: +7, moveTurn: +6, vsPace: -8, vsSpin: -8 } },
+    { id: 'genuineAllRounder', w: 32, off: {} }
+  ]
+};
+function foPickArche(kind, rnd) {
+  const L = FO_ARCHE[kind] || FO_ARCHE.bat;
+  let tot = 0; for (const a of L) tot += a.w;
+  let r = rnd() * tot;
+  for (const a of L) { r -= a.w; if (r <= 0) return a; }
+  return L[L.length - 1];
+}
+function foGenSkills(role,q,age,rnd,archeOut){
   const gg=(m,s)=>Math.max(4,Math.min(99,Math.round(m+s*(rnd()+rnd()+rnd()-1.5))));
   const l2s=L=>Math.max(4,Math.min(99,Math.round(L*6.25+3.1+(rnd()-0.5)*3)));
   const lvl=foSkillLevel(q,age), tgt=l2s(lvl);
   const isBowl=['seamFast','seamFastMedium','seamMedium','wristSpin','fingerSpin'].includes(role);
   const isWK=role==='wicketkeeper', isAR=role==='allRounder';
+  // THE HANDS KEEP THEIR OWN BELL AND THEIR OWN FLOOR. Fielding is drawn
+  // independently of what a man does with the bat - a brilliant fielder who
+  // cannot bat is one of the most familiar cricketers there is - and it is
+  // centred where the spatial contest still resolves. B1 measured that below a
+  // median of about 45 the field goes silent: under one good stop an innings
+  // and eleven misfields. A weak club still fields worse than a strong one,
+  // because the level fit moves the hands with the man; it simply does not
+  // start them somewhere the engine cannot read.
+  const hands = () => gg(58, 15);
+  const kind = isBowl ? 'bowl' : isWK ? 'wk' : isAR ? 'ar' : 'bat';
+  const A = foPickArche(kind, rnd);
+  if (archeOut) archeOut.id = A.id;
+  const O = k => (A.off[k] || 0);
+  let sk;
   if(isBowl){        // headline = bowling; batting low (specialist identity)
-    return {wicket:gg(tgt,4),economy:gg(tgt-2,4),discipline:gg(tgt-4,6),moveTurn:gg(tgt-3,6),
-      variation:gg(tgt-5,6),stamina:gg(tgt-2,6),
+    sk={wicket:gg(tgt+O('wicket'),4),economy:gg(tgt-2+O('economy'),4),discipline:gg(tgt-4+O('discipline'),6),
+      moveTurn:gg(tgt-3+O('moveTurn'),6),variation:gg(tgt-5+O('variation'),6),stamina:gg(tgt-2+O('stamina'),6),
       vsPace:gg(20,7),vsSpin:gg(18,7),rotation:gg(20,7),temperament:gg(30,8),power:gg(16,6),
-      fielding:gg(50,26),catching:gg(50,26),keeping:gg(8,3),stumping:gg(7,3)};
+      fielding:hands(),catching:hands(),keeping:gg(8,3),stumping:gg(7,3)};
   }else if(isWK){    // headline = keeping; batting within ~1-2 levels below (keepers bat)
     const bt=l2s(Math.max(4,lvl-1.3));
-    return {keeping:gg(50+(tgt-40)*0.9,9),stumping:gg(46+(tgt-40)*0.9,11),catching:gg(60,22),
-      vsPace:gg(bt,5),vsSpin:gg(bt,5),rotation:gg(bt,6),temperament:gg(bt,6),power:gg(bt-8,7),
+    sk={keeping:gg(50+(tgt-40)*0.9+O('keeping'),9),stumping:gg(46+(tgt-40)*0.9+O('stumping'),11),
+      catching:gg(66+O('catching'),14),
+      vsPace:gg(bt+O('vsPace'),5),vsSpin:gg(bt+O('vsSpin'),5),rotation:gg(bt-2+O('rotation'),6),
+      temperament:gg(bt+O('temperament'),6),power:gg(bt-8+O('power'),7),
       wicket:gg(8,3),economy:gg(9,3),discipline:gg(12,4),moveTurn:gg(7,3),variation:gg(7,3),
-      stamina:gg(bt-10,7),fielding:gg(50,26)};
-  }else if(isAR){    // genuine two-way: bat & bowl both near lvl-1 (bat/bowl/tech all within 1-2 levels)
+      stamina:gg(bt-10,7),fielding:hands()};
+  }else if(isAR){    // genuine two-way: bat & bowl both near lvl-1
     const two=l2s(Math.max(4,lvl-1));
-    return {vsPace:gg(two,5),vsSpin:gg(two,5),rotation:gg(two-2,6),temperament:gg(two,6),power:gg(two-4,7),
-      wicket:gg(two,5),economy:gg(two-2,5),discipline:gg(two-4,6),moveTurn:gg(two-3,6),variation:gg(two-4,6),
-      stamina:gg(two,6),fielding:gg(50,26),catching:gg(50,26),keeping:gg(10,3),stumping:gg(8,3)};
-  }else{             // batsman: tight batting cluster so aggBat & technique land within ~1 level
-    return {vsPace:gg(tgt,4),vsSpin:gg(tgt,4),rotation:gg(tgt-2,5),temperament:gg(tgt,5),
-      power:gg(role==='opener'?tgt-12:tgt-4,7),
+    sk={vsPace:gg(two+O('vsPace'),5),vsSpin:gg(two+O('vsSpin'),5),rotation:gg(two-2+O('rotation'),6),
+      temperament:gg(two+O('temperament'),6),power:gg(two-4+O('power'),7),
+      wicket:gg(two+O('wicket'),5),economy:gg(two-2+O('economy'),5),discipline:gg(two-4+O('discipline'),6),
+      moveTurn:gg(two-3+O('moveTurn'),6),variation:gg(two-4+O('variation'),6),
+      stamina:gg(two+O('stamina'),6),fielding:hands(),catching:hands(),keeping:gg(10,3),stumping:gg(8,3)};
+  }else{             // batsman
+    sk={vsPace:gg(tgt+O('vsPace'),4),vsSpin:gg(tgt+O('vsSpin'),4),rotation:gg(tgt-2+O('rotation'),5),
+      temperament:gg(tgt+O('temperament'),5),
+      power:gg((role==='opener'?tgt-12:tgt-4)+O('power'),7),
       wicket:gg(10,4),economy:gg(11,4),discipline:gg(12,4),moveTurn:gg(9,4),variation:gg(8,4),
-      stamina:gg(tgt-14,7),fielding:gg(50,26),catching:gg(50,26),keeping:gg(8,3),stumping:gg(6,3)};
+      stamina:gg(tgt-14,7),fielding:hands(),catching:hands(),keeping:gg(8,3),stumping:gg(6,3)};
   }
+  for (const k in sk) {
+    const fl = FO_SKILL_FLOOR[k] != null ? FO_SKILL_FLOOR[k] : 4;
+    sk[k] = Math.max(fl, Math.min(99, sk[k]));
+  }
+  return sk;
 }
 function foGenExp(age,q,rnd){                  // experience correlates with age (0-100 scale)
   const base=(age-17)*6.5+q*8;
@@ -4239,8 +4641,30 @@ function jsDerive(p){ // mirror of world-gen engine mapping
   const arm=p.hand==='R'?'Right arm':'Left arm';
   const lbl={'seamFast':'fast','seamFastMedium':'fast medium','seamMedium':'medium','wristSpin':'wrist spin','fingerSpin':'finger spin','partTimeSeam':'part-time seam','partTimeSpin':'part-time spin'};
   p.btLabel=p.bowlTypeFull==='none'?'Does not bowl':arm+' '+lbl[p.bowlTypeFull];
-  // v11.6: FTP-scaled rating (~15x the old bracket sum) so drafted/edited players match the baked FTP squads.
-  p.rating=Math.round(420*(p.bat+sk.power*0.4+(p.threat+p.control)*0.5+sk.fielding*0.3+(p.role==='wicketkeeper'?sk.keeping*0.3:0)));
+  // ---- RATING IS THE CANONICAL CARD, TIMES A THOUSAND (B2) -----------------
+  //
+  // It used to be its own opinion: 420 x (bat + 0.4 power + 0.5(threat+control)
+  // + 0.3 fielding + a keeper's gloves). Nothing reconciled it with the card,
+  // so the two disagreed constantly and in a patterned way - measured over
+  // 1,440 cricketers, all-rounders carried the HIGHEST mean rating in the world
+  // and the LOWEST cards. A manager could hold two numbers about one man and
+  // both were the game's own.
+  //
+  // It is now DERIVED, exactly: rating = OVR x 1000. That is deliberate on two
+  // counts. It cannot contradict the card, because it is the card. And it makes
+  // every legacy `rating / 1000` fallback scattered through the client TRUE by
+  // construction rather than merely wrong - those call sites are being replaced
+  // with the canonical function anyway, but any that survive in a corner of the
+  // product nobody has walked through in a year now agree with everything else.
+  //
+  // WHAT IT IS FOR, AFTER B2: sorting, persistence and the wire. It is a
+  // technical field carrying the canonical figure at a thousand times the
+  // resolution, and it is never a second opinion about a cricketer.
+  //
+  // The ball model has never read it and still does not. See
+  // docs/b1-evidence/ENGINE-CONTRACT.md: the ten mappings above this line are
+  // frozen engine, these two are not.
+  p.rating=Math.round(foOvr(p)*1000);
   p.wage=foWageOf(p.rating,(p.talents||[]).length,1);
 }
 function pgEditor(){

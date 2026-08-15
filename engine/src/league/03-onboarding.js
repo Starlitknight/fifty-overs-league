@@ -271,8 +271,12 @@
   // and no calibration may scale them (server/init-world.mjs holds the same
   // line for the world's own squads)
   var FO_QS_UNBOUGHT = { fielding: 1, catching: 1, keeping: 1, stumping: 1 };
-  function foGenArchetypeSquad(seed, country, archId, comp, strength) {
+  function foGenArchetypeSquad(seed, country, archId, comp, strength, tier) {
     var A = foArchById(archId);
+    // B2: the club's standing, named as a tier of the world rather than as a
+    // multiplier on a strength metric. When present it replaces the budget pass
+    // entirely; when absent (a solo career's draft) nothing changes.
+    var TIER = (typeof tier === 'string' && tier) ? tier : null;
     var STR = (typeof strength === "number" && isFinite(strength) && strength > 0)
       ? Math.max(0.7, Math.min(1.4, strength)) : 1;
     var rnd = window.rng(foHash32(String(seed) + "|" + archId));
@@ -672,7 +676,50 @@
     // also decide how good a world club is, or an all-rounder side on the fourth
     // rung would out-rate its own flagship. It still shapes the squad; it no
     // longer sets its level.
-    var target = FO_QS_T * (STR === 1 ? (A.budgetMult || 1) : STR);
+    // ---- B2: A CLUB'S QUALITY IS A DISTRIBUTION, NOT A MULTIPLIER ---------
+    //
+    // When the caller names a TIER, the squad is laid on that tier's own curve
+    // of overalls - a stated best player, median and floor - and each man is
+    // moved onto his place by a single scaling of his skills.
+    //
+    // That single scaling is the whole point. The canonical level is linear in
+    // a man's attributes, so one factor is a similarity transform: it changes
+    // how good he is and leaves every ratio between his skills exactly where
+    // the archetype put it. A power hitter stays a power hitter at any level.
+    // The old pass below it did the opposite - six iterations of multiply,
+    // re-derive and measure against a squad METRIC, clamping at 96 and 4 each
+    // time, which is how the world's fielding ended up living between 20 and 56.
+    //
+    // Nothing here targets a rating and nothing iterates. The tier is reached
+    // because each man was placed on it, not because the squad was pushed at it.
+    if (TIER && window.foTierOvrAt) {
+      var order = players.slice().sort(function (a, b) {
+        return window.foPlayerValue(b).level - window.foPlayerValue(a).level;
+      });
+      var TT = (window.FO_TIERS || {})[TIER] || {};
+      var spread = TT.spread || 3.5;
+      // does this club have a genuinely special cricketer? Drawn once, before
+      // the men are placed, so it is a fact about the club rather than about
+      // any particular player in it.
+      var starRoll = rnd(), hasStar = starRoll < (TT.star || 0);
+      var lift = (TT.starLift || 6) * (0.6 + rnd() * 0.8);
+      order.forEach(function (p, iT) {
+        // his place on the tier's curve, plus a drift so that no two clubs of
+        // one tier are the same club - and so that the tiers OVERLAP, which is
+        // what makes a 78 on a weak side and a 52 on a strong one both ordinary
+        var want = window.foTierOvrAt(TIER, iT, order.length)
+                 + (rnd() + rnd() + rnd() - 1.5) * spread;
+        // and the club's one great player, if it has one. Only the first-choice
+        // man can be him, and the lift fades across the next two so the squad
+        // does not develop a cliff behind its star.
+        if (hasStar && iT < 3) want += lift * (iT === 0 ? 1 : iT === 1 ? 0.28 : 0.10);
+        want = Math.max(1, Math.min(99, want));
+        window.foFitToLevel(p, window.foLevelForOvr(want));
+        if (foPureBowler(p)) foApplyBowlerBat(p);
+        jsDerive(p);
+      });
+    }
+    var target = (TIER ? 0 : FO_QS_T * (STR === 1 ? (A.budgetMult || 1) : STR));
     for (var itn = 0; target > 0 && itn < 6; itn++) {
       var S = foQsSquadStrength(players);
       var f = target / Math.max(1, S);   // metric is linear in skills
@@ -2112,7 +2159,12 @@
     var bowlStr = avg(topN(F.picked.filter(function (p) { return p.bowlTypeFull && p.bowlTypeFull !== "none"; }).map(function (p) { return foAgg(p, "bowl"); }), 6));
     var fieldStr = avg(F.picked.map(function (p) { return foAgg(p, "field"); }));
     var keepStr = avg(topN(F.picked.filter(function (p) { return p.keeper; }).map(function (p) { return foAgg(p, "keep"); }), 1));
-    var starsOf = function (v) { return v >= 78 ? 5 : v >= 66 ? 4 : v >= 54 ? 3 : v >= 40 ? 2 : 1; };
+    // THE LEGACY FIVE-STAR LADDER IS RETIRED (B2). It read its own thresholds
+    // off its own idea of quality, so a cricketer who was four stars here was
+    // seven and a half on his own card. One system now: the canonical ten, in
+    // halves, from window.foStars - drawn here as five glyphs so the layout of
+    // this page is unchanged, each worth two of the ten.
+    var starsOf = function (v) { try { return window.foStars(v) / 2; } catch (e) { return 0; } };
     var starRow = function (l, v) {
       var n = starsOf(v), tone = foSkTone(v), s = "";
       for (var i = 0; i < 5; i++) s += "<i class='fo-seg fo-segt-" + tone + (i < n ? " on" : "") + "'></i>";
@@ -2882,49 +2934,22 @@
     v = Math.round(v || 0);
     return "<div class=\'pk-st\' data-tip=\"" + E(FO_PK_TIPS[lbl] || "") + "\"><span class=\'pk-en\'>" + foPkIco(icoK) + "</span><b>" + lbl + "</b><span class=\'pk-bar\'><i style=\'width:" + Math.max(2, Math.min(100, v)) + "%\'></i></span><em>" + v + "</em></div>";
   }
-  // A FIFA-style 0-100 overall from the same 0-100 aggregates the card shows -
-  // p.rating is the engine's internal ranking value (x420 scaled), not an OVR.
+  // THE CARD READS THE CANONICAL MODEL, AND ONLY THAT (B2).
+  //
+  // What used to be here was a second opinion about how good a cricketer is: a
+  // FIFA-style blend of the display aggregates, with a different scale and
+  // shift per role (x1.5 - 14 for a bowler, x1.269 + 9.57 for an all-rounder,
+  // x1.07 - 1 for a keeper) and then a x1.32 stretch on top of all of it. Every
+  // one of those constants was fitted against a world and an engine that have
+  // both since been replaced, and none of them was ever checked against what
+  // the ball model actually pays for a skill.
+  //
+  // foOvr() in the engine core is now the single authority - measured weights,
+  // role-fair normalisation, one semantic curve - and this is a thin call to
+  // it, kept under its old name because a dozen pages reach for it.
   function foPkOvr(p) {
-    // a man known only from his public card carries the world's own overall,
-    // and that figure beats anything re-derived from a flattened skills block
-    if (p && p.__card && p.__ovr > 0) return p.__ovr | 0;
-    var bat = aggBat(p) || 0, tech = aggTech(p) || 0, pow = (p.power != null ? p.power : ((p.skills && p.skills.power) || 0));
-    var batScore = 0.58 * bat + 0.24 * tech + 0.18 * pow;
-    var bowl = p.bowlType ? (aggBowl(p) || 0) : 0;
-    var fld = aggField(p) || 0;
-    var ovr;
-    // each branch is normalised onto the batter's scale (measured over the
-    // generator's whole quality range), so a 70 bowler and a 70 batter are
-    // genuinely the same class of player
-    if (p.keeper || p.role === "wicketkeeper") ovr = 1.07 * (0.46 * (aggKeep(p) || 0) + 0.40 * batScore + 0.14 * fld) - 1;
-    // THE ALL-ROUNDER WAS READING 65% OF WHAT HE IS. A man who bats and bowls
-    // splits his skills across two trades, so neither aggregate is a
-    // specialist's - and this branch then blended the two and scaled the
-    // result by only 1.04, where the bowler's branch stretches by 1.5 and
-    // shifts by -14. He was penalised twice: once in the skills, once in the
-    // arithmetic. Measured over 1,440 cricketers, all-rounders carried the
-    // HIGHEST mean rating in the world (36,014) and the LOWEST cards (42.8),
-    // while seamers and spinners sat at 105% of a specialist batter and
-    // keepers at 93%. The scale and shift below are fitted so an all-rounder
-    // lands on the same card-against-rating line as everybody else, in spread
-    // as well as in mean.
-    else if (p.role === "allRounder") { var hi = Math.max(batScore, bowl), lo = Math.min(batScore, bowl); ovr = 1.269 * (0.60 * hi + 0.28 * lo + 0.12 * fld) + 9.57; }
-    else if (bowl > batScore) ovr = 1.5 * (0.74 * bowl + 0.12 * tech + 0.14 * fld) - 14;
-    else ovr = 0.60 * batScore + 0.12 * bat + 0.14 * pow + 0.14 * fld;
-    // THE CARD IS A LABEL, NOT THE ENGINE'S NUMBER, and it should use the
-    // range it is drawn on. The cricket has to live between about 18,000 and
-    // 47,000 because that is the band where the engine still answers a rating
-    // gap - past it, run-scoring saturates near 290 and extra rating buys
-    // nothing. Left alone that band prints as 16 to 74, so the top quarter of
-    // the scale went unused and an international read like a good club player.
-    // Stretched, the same cricket reads 23 to 99 across the whole world: a
-    // full member's national XI averages 77 with a 99 among them, its flagship
-    // 67, a bottom second-division associate 28 - and nothing about what
-    // happens on the field has changed. A public card already carries a
-    // stretched figure and returns above, so this is applied exactly once.
-    return Math.max(1, Math.min(99, Math.round(FO_CARD_A * ovr + FO_CARD_B)));
+    try { return window.foOvr ? window.foOvr(p) : 0; } catch (e) { return 0; }
   }
-  var FO_CARD_A = 1.32, FO_CARD_B = -1;
   // test-harness hook: lets the Playwright probes generate players and read
   // OVRs without reaching into the closure (never used by the game itself)
   try { window.__foTest = { gen: foQsPlayer, ovr: foPkOvr, hash: foHash32 }; } catch (eT) {}

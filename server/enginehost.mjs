@@ -19,7 +19,7 @@ export function makeHost() {
 // playing a solo career never sets this and keeps its own flat wages, which
 // its $9 ticket and $25,000 sponsor are calibrated to.
 globalThis.__foServedEcon = true;
-globalThis.__svcGenSquad = function (seed, country, arch, capt, strength) {
+globalThis.__svcGenSquad = function (seed, country, arch, capt, strength, tier) {
   // strength is the club's standing in its league: the flagship's is the highest
   // in the nation, and the rest spread below it. Omitted means the one shared
   // budget every human manager founds on.
@@ -27,7 +27,7 @@ globalThis.__svcGenSquad = function (seed, country, arch, capt, strength) {
   // longer takes one. It stays in THIS wrapper's signature only because
   // callers pass strength positionally after it; nothing reads it.
   var g = __foGenArchetypeSquad(seed, country, arch, null,
-    (typeof strength === 'number' && strength > 0) ? strength : 1);
+    (typeof strength === 'number' && strength > 0) ? strength : 1, tier || null);
   return JSON.stringify((g && g.players) || []);
 };
 // ONE ROUND IN THE NETS, run by the SHIPPED engine's own numbers.
@@ -338,10 +338,13 @@ globalThis.__svcWorldCfg = function () {
   const der = vm.runInContext('__svcDerive', eng.ctx);
   const ovr = vm.runInContext('__svcOvr', eng.ctx);
   const scomp = vm.runInContext('__svcStarComp', eng.ctx);
+  const pval = vm.runInContext('(function(j){return JSON.stringify(window.foPlayerValue(JSON.parse(j)))})', eng.ctx);
+  const lbl = vm.runInContext('window.foOvrLabel', eng.ctx);
+  const sts = vm.runInContext('window.foStars', eng.ctx);
   const fan = vm.runInContext('__svcFantasy', eng.ctx);
   const tmr = vm.runInContext('__svcTeamRatings', eng.ctx);
   return {
-    genSquad(seed, country, arch, capt, strength) { return JSON.parse(gen(seed, country, arch, capt, strength)); },
+    genSquad(seed, country, arch, capt, strength, tier) { return JSON.parse(gen(seed, country, arch, capt, strength, tier)); },
     // one round in the nets for a whole squad, by the shipped engine's numbers,
     // at the rate the club's academy buys (1 = a level-two academy)
     trainRound(players, plan, rate, xi) {
@@ -363,6 +366,13 @@ globalThis.__svcWorldCfg = function () {
     pkOvr(players) { return JSON.parse(ovr(JSON.stringify(players))); },
     // the batting and bowling composites the ten-star strip is drawn from
     starComp(players) { return JSON.parse(scomp(JSON.stringify(players))); },
+    // ---- B2 canonical player model, straight off the shipped engine --------
+    // The umpire, the audits and the tests all read the SAME functions the
+    // phones run. Nothing on this side of the wire holds a second opinion about
+    // how good a cricketer is.
+    playerValue(p) { return JSON.parse(pval(JSON.stringify(p))); },
+    ovrLabel(v) { return lbl(v); },
+    stars(v) { return sts(v); },
     // the client's own fantasy points for a set of innings
     fantasy(innings) { return JSON.parse(fan(JSON.stringify(innings))); },
     // the client's own match rating for one side of a banked card
