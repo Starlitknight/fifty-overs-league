@@ -300,12 +300,23 @@ test('a result names the side that lost it', () => {
 // IT NEVER GUESSES. A tie, an abandonment, a shape a later engine invents: the
 // honest answer is the fixture and the text verbatim, because a confidently
 // wrong sentence about a real match is worse than a clumsy true one.
-test('and a result it does not recognise prints as itself', () => {
-  assert.equal(resultLine('Match tied', null, 'Essex', 'Kent'), 'Match tied');
+// A TIE HAS NO WINNER, AND THAT IS NOT A REASON TO FORGET WHO PLAYED. This
+// file's own rule above is "the fixture and the text verbatim", and the
+// no-winner case was the one that did not follow it: it printed "Match tied"
+// alone, naming neither side. Nothing failed for as long as the world's dealt
+// fixtures produced no ties in the rounds the paper printed; B2 redistributed
+// the world, a league match was tied, and the scoreboard carried a line that
+// could not be read - which is precisely the half-sentence the "beat" rewrite
+// exists to abolish. Both branches now say the same thing.
+test('and a result it does not recognise prints as itself, under the fixture', () => {
+  assert.equal(resultLine('Match tied', null, 'Essex', 'Kent'),
+    'Essex v Kent, Match tied');
   assert.equal(resultLine('Match tied', 'Essex', 'Essex', 'Kent'),
     'Essex v Kent, Match tied');
   assert.equal(resultLine('Rain stopped play', 'Essex', 'Essex', 'Kent'),
     'Essex v Kent, Rain stopped play');
+  // and a result with no text at all is still a fixture between two clubs
+  assert.equal(resultLine('', null, 'Essex', 'Kent'), 'Essex v Kent');
 });
 
 // ---- AN ODDITY EXPLAINS ITSELF --------------------------------------------

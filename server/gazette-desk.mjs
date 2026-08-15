@@ -210,12 +210,27 @@ export async function leagueStories(pool, today, clubsByKey, rankOf, seasons) {
 // invents) falls back to naming the fixture and quoting the text verbatim. It
 // never guesses: an unrecognised result prints as itself rather than as a
 // confidently wrong sentence.
+// AND A MATCH WITH NO WINNER IS STILL A MATCH BETWEEN TWO CLUBS.
+//
+// A tie banks with winner NULL, and this used to hand back the engine's text on
+// its own for that case - "Match tied", a results-column line that names neither
+// side and tells a reader nothing he can use. It was invisible for as long as
+// the world produced no ties in the fixtures the paper happened to print;
+// redistributing the world produced one, and the line it printed was the same
+// half-sentence the "beat" rewrite was written to abolish.
+//
+// So the no-winner case falls into the same shape as every other result this
+// function does not recognise: name the fixture, then quote the text verbatim.
+// It still never guesses - an unrecognised result prints as itself rather than
+// as a confidently wrong sentence - it simply says who was playing first.
 export function resultLine(text, winner, home, away) {
   const t = String(text || '');
-  if (!winner || !home || !away) return t || (home + ' v ' + away);
+  if (!home || !away) return t;
+  const fixture = home + ' v ' + away;
+  if (!winner) return t ? fixture + ', ' + t : fixture;
   const cut = t.indexOf(' win ');
   const loser = winner === home ? away : home;
-  if (cut <= 0 || t.slice(0, cut) !== winner) return home + ' v ' + away + ', ' + t;
+  if (cut <= 0 || t.slice(0, cut) !== winner) return fixture + ', ' + t;
   return winner + ' beat ' + loser + ' ' + t.slice(cut + 5);
 }
 
