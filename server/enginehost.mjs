@@ -66,6 +66,18 @@ globalThis.__svcTrain = function (playersJson, planJson, rate, xiJson) {
   };
   var potFactor = function (p) {
     var v = ((p.talent === 'gifted' || (p.talents || []).length >= 2) ? 2 : 0)
+          // THE RATING TERM IS A NEAR-UNIVERSAL +1, AND IS LEFT THAT WAY ON
+          // PURPOSE. 3,600 was never a discriminating threshold - the old
+          // scale's floor was above 15,000 - and under B2 it is a card of 3.6,
+          // so every professional and all but the very worst colt clears it. It
+          // is a legacy constant that does nothing, and the reason it stays is
+          // that the nets are REPLAYED from the record on every settle: moving
+          // this threshold to somewhere it discriminates would re-rate every
+          // training session every cricketer has ever had, which is a rewrite of
+          // the world's history to fix a term that has never once changed an
+          // outcome. If potential is ever to be a real input to training it
+          // needs its own design and its own migration, not a quietly edited
+          // number here.
           + (p.age <= 20 ? 2 : p.age <= 24 ? 1 : 0) + ((p.rating > 3600) ? 1 : 0);
     return v >= 4 ? 1.30 : v >= 3 ? 1.15 : v >= 1 ? 1 : 0.80;
   };

@@ -19,7 +19,7 @@ import assert from 'node:assert';
 import { execSync } from 'node:child_process';
 import { makePool } from '../db.mjs';
 import { migrate } from '../migrate.mjs';
-import { initWorld, BASE_XI, nationTeamStr } from '../init-world.mjs';
+import { initWorld } from '../init-world.mjs';
 import { makeHost, ENGINE_VERSION } from '../enginehost.mjs';
 import { runDue, computeRankings } from '../tick.mjs';
 import { computeFinance } from '../economy.mjs';

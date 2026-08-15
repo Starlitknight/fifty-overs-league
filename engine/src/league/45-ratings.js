@@ -262,9 +262,15 @@
   var band = function (v) { return v >= 75 ? "hot" : v >= 50 ? "good" : v >= 30 ? "ok" : "poor"; };
   // AND THE SIDE'S OWN FIGURE, banded on the printed scale rather than on an
   // average of the six - a top order and a tail are not the same quantity and
-  // must not be averaged into one. foRate's own anchors: a club founded this
-  // morning reads 10k, an England flagship 60k, a national side 100k.
-  var strBand = function (v) { return v >= 60000 ? "hot" : v >= 45000 ? "good" : v >= 25000 ? "ok" : "poor"; };
+  // must not be averaged into one.
+  //
+  // B2 REANCHORED THESE. The old thresholds were foRate's old anchors - a club
+  // founded this morning read 10k and an England flagship 60k - and foRate is
+  // the identity now, so the figure is a club's mean XI CARD times a thousand.
+  // Measured over all 256 clubs: 32.1 at the weakest to 78.4 at the strongest,
+  // median 55.9. Left alone, every club from the middle of the second division
+  // upward would have painted "hot".
+  var strBand = function (v) { return v >= 70000 ? "hot" : v >= 55000 ? "good" : v >= 38000 ? "ok" : "poor"; };
 
   // The `result` argument is not needed - a side's strength is a function of
   // the men in it - but it is kept so callers that have the record to hand can

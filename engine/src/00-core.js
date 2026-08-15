@@ -6054,7 +6054,35 @@ function money(n){return '$'+Math.round(n||0).toLocaleString()}
 // same 0.9697 and the offset left alone, so every club prints the number it
 // printed yesterday and the weakest side in the world still clears the floor
 // instead of piling up on it.
-function foRate(r){return Math.max(1000,Math.min(100000,Math.round(4.8365*(+r||0)-122700)))}
+// AND B2 MADE THE STRETCH AN IDENTITY, because the thing it was stretching had
+// become the thing it was stretching TO.
+//
+// The line above was a scale-and-shift fitted to the OLD rating universe: it
+// took a club's mean XI rating - which lived between about 26,000 and 39,000 -
+// and threw it across a 1,000 to 100,000 reading scale, so a club founded this
+// morning read 10k and an England flagship 60k. Every constant in it is a
+// statement about a range that no longer exists.
+//
+// Under B2 a man's rating IS his canonical card times a thousand, so a club's
+// mean XI rating is already a number from 1,000 to 100,000 with a meaning: the
+// average card of the eleven it can field. Running the old stretch over it
+// multiplies by 4.84 and clamps:
+//
+//     newcomer XI 36.3 cards -> 36,300 -> 52,865
+//     d1b      XI 66.4       -> 66,400 -> 198,438 -> clamped to 100,000
+//     flagship XI 77.2       -> 77,200 -> 250,678 -> clamped to 100,000
+//
+// which is to say every club in the world above about 46 cards printed the same
+// maxed figure, and the four strongest tiers were indistinguishable on the squad
+// strength KPI, the club page and the world rankings. Nothing failed, because
+// nothing tests a number that is only ever displayed.
+//
+// So it is the identity now, clamped to the scale's own ends. A newcomer reads
+// 36k, a flagship 77k, a national side about 87k, and the figure a manager sees
+// is the same quantity the card, the wage and the transfer price are made of.
+// (The day's mark below is a DIFFERENT quantity - the engine marks a day's play
+// around 3,500 - and keeps its own stretch.)
+function foRate(r){return Math.max(1000,Math.min(100000,Math.round(+r||0)))}
 function foRateTxt(r){return foRate(r).toLocaleString()}
 // THE DAY'S MARK, on the same reading scale. The engine marks a day's play
 // around 3,500 (=real-ODI par); this puts it on the 1k-100k scale foRate

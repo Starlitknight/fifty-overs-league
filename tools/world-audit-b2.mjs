@@ -16,6 +16,7 @@
 import vm from 'node:vm';
 import { makeHost } from '../server/enginehost.mjs';
 import { countryConfigs, tierOfClub, squadFor } from '../server/init-world.mjs';
+import { valueOf } from '../server/market.mjs';
 
 const has = k => process.argv.includes('--' + k);
 // THE UMPIRE'S OWN HOST, not a second copy of the engine. This audit has to
@@ -164,11 +165,20 @@ if (has('cards')) {
   say('\n=== EXAMPLE CARDS ACROSS THE SCALE ===');
   const SK = ['vsPace', 'vsSpin', 'power', 'rotation', 'temperament', 'wicket', 'economy',
     'discipline', 'moveTurn', 'variation', 'stamina', 'fielding', 'catching', 'keeping', 'stumping'];
-  for (const want of [10, 25, 40, 50, 65, 75, 85, 92, 96]) {
-    const p = all.slice().sort((a, b) => Math.abs(a.__ovr2 - want) - Math.abs(b.__ovr2 - want))[0];
+  // AND WHAT HE COSTS, because a card that reads right and prices wrong is half
+  // an answer. The money is the umpire's own arithmetic (server/market.mjs),
+  // not a second opinion restated here.
+  const money = n => '$' + Math.round(n).toLocaleString('en-US');
+  const seen = new Set();
+  for (const want of [15, 25, 35, 50, 65, 75, 82, 88, 92, 96]) {
+    const p = all.slice()
+      .filter(x => !seen.has(x.name))
+      .sort((a, b) => Math.abs(a.__ovr2 - want) - Math.abs(b.__ovr2 - want))[0];
     if (!p) continue;
+    seen.add(p.name);
     const v = valOf(p);
-    say(`\n  OVR ${p.__ovr2} (${labelOf(p.__ovr2)}, ${starsOf(p.__ovr2)}*)  ${p.name}  ${p.__country}  age ${p.age}  ${p.role}${p.archetype ? ' / ' + p.archetype : ''}  best-role=${v.role}`);
+    say(`\n  OVR ${p.__ovr2} (${labelOf(p.__ovr2)}, ${starsOf(p.__ovr2)}*)  ${p.name}  ${p.__country}  age ${p.age}  ${p.role}${p.archetype ? ' / ' + p.archetype : ''}  best-role=${v.role}  ${p.__tier}`);
+    say(`    wage ${money(p.wage || 0)} a round   transfer value ${money(valueOf(p))}`);
     say('    ' + SK.map(k => k.slice(0, 4) + ' ' + String((p.skills || {})[k]).padStart(2)).join('  '));
   }
 }

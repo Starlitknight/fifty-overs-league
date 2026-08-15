@@ -57,17 +57,33 @@ test('the hands are dealt, not bought - by either pass that scales a squad', () 
   assert.match(ONB, /var FO_QS_UNBOUGHT = \{ fielding: 1, catching: 1, keeping: 1, stumping: 1 \};/,
     'the generator holds them out of its budget pass');
   assert.match(ONB, /if \(FO_QS_UNBOUGHT\[k2\]\) continue;/);
-  assert.match(INIT, /const NOT_SCALED = \{ fielding: 1, catching: 1, keeping: 1, stumping: 1 \};/,
-    'and the world knows which skills they are');
-  // HALF, NOT NONE. Holding them out of calibration altogether was the first
-  // answer and it went too far: a flagship's cordon became no better than a
-  // bottom club's, and p3 caught it as flagships going down in three nations
-  // of sixteen. A stronger league does field better - it just must not be the
-  // whole of the club's edge, or the absolute scale goes flat again.
-  assert.match(INIT, /const HAND_SCALE = 0\.5;/);
-  assert.match(INIT, /const fh = 1 \+ \(f - 1\) \* HAND_SCALE;/);
-  assert.match(INIT, /const g = NOT_SCALED\[k\] \? fh : f;/);
-  assert.ok(!/if \(NOT_SCALED\[k\]\) continue;/.test(INIT), 'they are no longer skipped outright');
+  // AND THE OTHER PASS MOVED. The second thing that scales a squad used to be
+  // init-world's calibrate(), which held the four hand skills at HALF the club's
+  // factor. calibrate() is retired: a club is laid on a tier's curve now, and
+  // the scaling that puts a man on his mark is foFitToLevel in the engine. So
+  // the same law is asserted where the law now lives, and init-world is checked
+  // for the ABSENCE of the old pass rather than the presence of it - if
+  // calibrate() ever comes back it will come back scaling hands at full rate,
+  // because that is what it did before somebody noticed.
+  assert.ok(!/NOT_SCALED/.test(INIT), 'the calibration pass that used to scale them is gone');
+  assert.ok(!/function calibrate/.test(INIT), 'and so is calibrate itself');
+  // HALF, NOT NONE. Holding them out altogether was the first answer and it went
+  // too far: a flagship's cordon became no better than a bottom club's, and p3
+  // caught it as flagships going down in three nations of sixteen. A stronger
+  // league does field better - it just must not be the whole of the club's edge,
+  // or the absolute scale goes flat again. B1 is exact about the other end: at a
+  // median fielder of 41 a whole innings produces under one good stop and about
+  // eleven misfields, which is where scaling the hands at the FULL factor put
+  // the world when the fit first shipped.
+  assert.match(CODE, /const FO_HAND_KEYS = \{ fielding: 1, catching: 1, keeping: 1, stumping: 1 \};/,
+    'the fit knows which skills are hands');
+  assert.match(CODE, /const FO_HAND_SCALE = 0\.5;/);
+  assert.match(CODE, /const fh = 1 \+ \(f - 1\) \* FO_HAND_SCALE;/);
+  assert.match(CODE, /FO_HAND_KEYS\[k\] \? fh : f/);
+  // and they keep a floor of their own, well above where the spatial contest
+  // stops resolving - the batting and bowling families have no such problem
+  assert.match(CODE, /fielding: 26, catching: 24/,
+    'and the hands keep a floor the fielding contest can still be played at');
   // fielding is drawn on its own, not off what a man does with the bat
   assert.ok(!/fielding:gg\(tgt/.test(CODE), 'no role takes its fielding off its batting level');
   assert.ok(!/fielding:gg\(two/.test(CODE));

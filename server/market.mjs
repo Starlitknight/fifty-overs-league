@@ -146,8 +146,21 @@ export function surplusRank(squad) {
     line.forEach((p, i) => {
       const over = Math.max(0, (i + 1) - want);
       const wageWeight = (+p.wage || 0) / 1000;
-      // deeper than the shape wants, older, and dearer: that is the man
-      const score = over * 40 + Math.max(0, (+p.age || 27) - 29) * 9 + wageWeight * 1.5 - (+p.rating || 0) / 6000;
+      // deeper than the shape wants, older, and dearer: that is the man.
+      //
+      // THE QUALITY TERM IS A CARD (B2). It used to be `rating / 6000`, which on
+      // the old scale ran from about 3 for the world's worst professional to 10
+      // for its best - a seven-point spread, against forty for one place too
+      // deep and nine a year past thirty. Rating is the canonical card times a
+      // thousand now, so the same expression runs 0 to 16.7 and quietly became
+      // the loudest term in the sum: a club would keep a surplus 70 ahead of a
+      // needed 45 in another trade. So it is restated as a card times 0.072,
+      // which puts the spread back at the seven points the other three weights
+      // were balanced against. That is deliberately CONSERVATIVE - the point of
+      // this change is to stop the redefinition of rating from silently
+      // reweighting a scorer nobody re-tuned, not to re-tune it.
+      const quality = ((+p.rating || 0) / 1000) * 0.072;
+      const score = over * 40 + Math.max(0, (+p.age || 27) - 29) * 9 + wageWeight * 1.5 - quality;
       out.push({ p, role: r, depth: i + 1, over, score });
     });
   }
@@ -536,9 +549,33 @@ function addCarry(a, b) {
 // so the same money always buys the same report.
 // ---------------------------------------------------------------------------
 const CLASS = ['club standard', 'useful', 'a good player', 'very good', 'outstanding', 'the best in the land'];
+// THE FREE IMPRESSION, ON THE CANONICAL LADDER (B2).
+//
+// This was `floor((rating - 26000) / 4500)`: six bands of 4,500 starting at
+// 26,000, which is the old rating scale written out - 26,000 was where that
+// ladder bottomed and 53,000 was about the best cricketer alive. Rating is the
+// canonical card times a thousand now, so those bands became six steps of 4.5
+// CARDS starting at 26, and everybody above OVR 48.5 read "the best in the
+// land". The scout's whole vocabulary collapsed onto its last word: a squad man
+// and a generational cricketer got the same impression, which is the one thing a
+// scouting report may not do.
+//
+// The bands are the semantic ladder's own, stated in 00-core.js beside the OVR
+// anchors, so the vaguest thing the game says about a cricketer and the most
+// precise agree about what he is:
+//
+//     0-20   part-time, hobby, amateur          club standard
+//    21-40   weakest full-time professionals    useful
+//    41-60   ordinary established professionals a good player
+//    61-80   strong to elite domestic           very good
+//    81-90   champions, internationals          outstanding
+//   91-100   generational                       the best in the land
+const CLASS_FLOOR = [0, 21, 41, 61, 81, 91];        // in cards
 export function classOf(rating) {
-  const r = +rating || 0;
-  return CLASS[clamp(Math.floor((r - 26000) / 4500), 0, CLASS.length - 1)];
+  const ovr = (+rating || 0) / 1000;
+  let ix = 0;
+  for (let i = 0; i < CLASS_FLOOR.length; i++) if (ovr >= CLASS_FLOOR[i]) ix = i;
+  return CLASS[clamp(ix, 0, CLASS.length - 1)];
 }
 const FORMW = ['abysmal', 'poor', 'shaky', 'steady', 'good', 'strong', 'excellent'];
 function band(v, width) {
