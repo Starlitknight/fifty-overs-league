@@ -235,6 +235,75 @@ export async function openBotListings(pool, country, seasonNo, round, now = Date
 // and the day: the same world offers the same men however often the day is
 // settled, and a manager reading the calendar knows when new names arrive.
 // ---------------------------------------------------------------------------
+// A MAN OF NO CLUB, DEALT FROM THE WORLD HE COMES FROM (B2).
+//
+// This used to call genSquad with no tier, which drops into the generator's
+// pre-B2 budget pass - the one thing in the game still aiming at FO_QS_T, a
+// squad METRIC from the old rating universe. It produced a narrow band: measured
+// over 600 men, p10 36, median 50, p90 60, and a ceiling of 69. Nothing failed,
+// because a free agent at 50 is a perfectly sensible free agent.
+//
+// What it did instead was erode the world, slowly and invisibly. A cricketer
+// retires at 38 and something has to walk in behind him, and this is the only
+// generator that ever runs after day one. So every man the world loses -
+// including its 90s - was replaced by a man from a distribution that cannot
+// produce one. Measured over ten seasons of ageing, nets and replacement
+// (tools/lifecycle-audit-b2.mjs), with the population held at 3,840:
+//
+//     season    80+   85+   90+   95+    0-20    41-60
+//          0    274   121    31     8     275     1366
+//          5    288   127    31     8     195     1469
+//         10    178    68    13     2     133     2022
+//
+// Both tails draining into the middle, which is the third way a living world can
+// die and the hardest to see: nothing breaks, the mean holds at 50, and the game
+// quietly becomes one in which every cricketer is the same cricketer.
+//
+// So a free agent is dealt from the world's OWN distribution now. A tier is
+// drawn from the mix the world's 256 clubs actually hold, and a rank within that
+// tier's squad, skewed toward the back of it - because a man without a club is
+// usually somebody's squad player and occasionally somebody's best, which is
+// exactly what a free-agent board should hold. The elite tail is reachable but
+// rare, by the same arithmetic that makes it rare on day one.
+//
+// It is exported so the lifecycle audit can measure the real thing rather than
+// its own idea of it.
+export const FA_TIER_MIX = [
+  // the world's own shape: 10 flagships, 36 d1a, 58 d1b, 64 d2a, 64 d2b, 24 newcomer
+  ['flagship', 10], ['d1a', 36], ['d1b', 58], ['d2a', 64], ['d2b', 64], ['newcomer', 24]
+];
+const FA_TIER_TOTAL = FA_TIER_MIX.reduce((s, t) => s + t[1], 0);
+export function makeFreeAgent(host, cfg, seed) {
+  let r = seedOf(seed + '|tier') % FA_TIER_TOTAL, tier = 'd2a';
+  for (const [t, n] of FA_TIER_MIX) { if (r < n) { tier = t; break; } r -= n; }
+  let men = [];
+  try { men = host.genSquad(seed, cfg.nat, cfg.arch || 'balanced', 'general', 1, tier) || []; }
+  catch (e) { return null; }
+  if (!men.length) return null;
+  men.sort((a, b) => (+b.rating || 0) - (+a.rating || 0) || (a.name < b.name ? -1 : 1));
+  // WHERE IN THE SQUAD HE STOOD, drawn FLAT - and the flatness is the whole
+  // point, because this generator is the only one that runs after day one.
+  //
+  // A free-agent board tilted toward squad players is the intuitive design and
+  // it is what the old code did by accident. It is also a slow leak: every man
+  // the world loses is replaced by a draw from the tilted distribution, so the
+  // world converges on the tilt. Measured with a cubed skew toward the back of a
+  // squad, ten seasons took the mean from 50.0 to 46.8 and 90+ from 31 to 14 -
+  // better than the pre-B2 generator's collapse, and still a world quietly
+  // draining away.
+  //
+  // Flat over a tier's fifteen, with the tier drawn from the world's own mix, is
+  // a draw from the world's own distribution: replacement is then STATIONARY by
+  // construction, and no amount of churn moves the shape. The board does not
+  // become a cheap route to a great side, because a better free agent costs more
+  // - valueOf prices him off the same curve as everybody else, and a 90 on the
+  // board asks over two million.
+  const u = (seedOf(seed + '|rank') % 100000) / 100000;
+  const ix = Math.min(men.length - 1, Math.floor(men.length * u));
+  const man = JSON.parse(JSON.stringify(men[ix]));
+  man.nat = man.nat || cfg.nat;
+  return man;
+}
 export async function openFreeAgents(pool, host, country, seasonNo, day) {
   if (!host || !host.genSquad) return [];
   const cfg = countryConfigs(host).find(c => c.id === country);
@@ -254,13 +323,8 @@ export async function openFreeAgents(pool, host, country, seasonNo, day) {
   // seeds cover the gap so the floor is met regardless
   for (let i = 0; i < n + 8 && opened.length < n; i++) {
     const seed = key + '|' + i;
-    let men = [];
-    try { men = host.genSquad(seed, cfg.nat, cfg.arch || 'balanced', 'general') || []; } catch (e) { continue; }
-    if (!men.length) continue;
-    men.sort((a, b) => (+b.rating || 0) - (+a.rating || 0) || (a.name < b.name ? -1 : 1));
-    // a free agent is a useful cricketer, not a star: mid-order of the sample
-    const man = JSON.parse(JSON.stringify(men[Math.min(men.length - 1, 3 + seedOf(seed + '|pick') % 6)]));
-    man.nat = man.nat || cfg.nat;
+    const man = makeFreeAgent(host, cfg, seed);
+    if (!man) continue;
     // NO DOUBLES. The world keys a cricketer by his name, so a free agent who
     // shares one with a man already contracted in this league would replace
     // him on arrival. Such a man simply never walks on; a spare seed does.
