@@ -1603,7 +1603,7 @@ export async function rollSeasons(pool, { now = Date.now() } = {}) {
       [r.country_id, r.season_no + 1, r.start_day + CYCLE,
        JSON.stringify(seasonSchedules(r.country_id, r.season_no + 1, divs)), JSON.stringify(divs)]);
     // a year on every colt, and a senior shirt for anyone who has reached 21
-    try { await ageYouth(pool, r.country_id, r.season_no); }
+    try { await ageYouth(pool, r.country_id, r.season_no, makeHost()); }
     catch (eA) { console.error('academy rollover failed for ' + r.country_id + ':', eA.message); }
     // the old season's ball-by-ball goes with the season (066): every log in
     // this country - league rounds and friendlies both bank under the

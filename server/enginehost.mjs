@@ -81,13 +81,27 @@ globalThis.__svcTrain = function (playersJson, planJson, rate, xiJson) {
           + (p.age <= 20 ? 2 : p.age <= 24 ? 1 : 0) + ((p.rating > 3600) ? 1 : 0);
     return v >= 4 ? 1.30 : v >= 3 ? 1.15 : v >= 1 ? 1 : 0.80;
   };
-  var ageFactor = function (a) { return a <= 20 ? 1.35 : a <= 24 ? 1.15 : a <= 29 ? 0.90 : a <= 32 ? 0.55 : 0.25; };
+  // THE SHIPPED CURVE IF THE BUILD WILL EXPORT IT, for the same reason
+  // skillThreshold is read rather than restated: the umpire develops every
+  // unmanaged club in the world, and a second copy of this is a world that
+  // grows at one rate and reports another. The literal is the pre-ageing curve,
+  // kept only for a build too old to have the export.
+  var ageFactor = (typeof window !== 'undefined' && window.foTrainAgeFactor)
+    || function (a) { return a <= 20 ? 1.35 : a <= 24 ? 1.15 : a <= 29 ? 0.90 : a <= 32 ? 0.55 : 0.25; };
   var fresh = function (p) {
     var w = String((p.fatWord || p.fatigue || 'rested')).toLowerCase();
     var ix = LADDER.indexOf(w); if (ix < 0) ix = 0;
     return FATF[Math.max(0, Math.min(10, 10 - ix))];
   };
-  var thresh = function (v) { return 80 + (+v || 0) * 1.5; };
+  // THE COST OF A POINT, and it is the SHIPPED engine's if the shipped engine
+  // will tell us. skillThreshold grew a geometric tail above the latent knee
+  // when the 99 ceiling came off (see 00-core.js), and a server that kept the
+  // old straight line would develop the world at a different price from the
+  // phone that shows it. The local formula is the pre-tail one, kept only for
+  // a build too old to export the function.
+  var engThresh = (typeof window !== 'undefined' && window.foSkillThreshold) || null;
+  var thresh = engThresh || function (v) { return 80 + (+v || 0) * 1.5; };
+  var LATMAX = (typeof window !== 'undefined' && window.FO_LATENT_MAX) || 250;
   // TRAINING v2 RIDES UNDER "__v2" - a key no player is named. Its unit
   // intensities scale the session: light banks less, intensive banks more.
   // Plans banked before v2 carry no __v2 and replay exactly as they always
@@ -152,7 +166,7 @@ globalThis.__svcTrain = function (playersJson, planJson, rate, xiJson) {
       if (!p.skills || p.skills[sk] === undefined) continue;
       p.trainProgress[sk] = (p.trainProgress[sk] || 0) + pts * w[sk] / total;
       var th = thresh(p.skills[sk]);
-      while (p.trainProgress[sk] >= th && p.skills[sk] < 96) {
+      while (p.trainProgress[sk] >= th && p.skills[sk] < LATMAX) {
         p.trainProgress[sk] -= th;
         p.skills[sk]++;
         jsDerive(p);
@@ -185,6 +199,20 @@ globalThis.__svcTeamRatings = function (resultJson, teamName) {
 globalThis.__svcDerive = function (playersJson) {
   var ps = JSON.parse(playersJson);
   ps.forEach(function (p) { try { jsDerive(p); } catch (e) {} });
+  return JSON.stringify(ps);
+};
+// A YEAR ON A SQUAD. The ageing curve lives in the shipped engine beside the
+// latent model it operates on (foAgeDecline, 00-core.js), because a career's
+// shape is a fact about cricketers rather than a fact about the umpire - and
+// because a second implementation on this side would be a second opinion about
+// when a fast bowler loses his pace.
+//
+// The AGE ITSELF is not touched here. youth.mjs owns the rollover: it decides
+// who has had a birthday, who retires and who walks out of the academy, and it
+// hands the survivors here to find out what the year cost them.
+globalThis.__svcAgeDecline = function (playersJson) {
+  var ps = JSON.parse(playersJson);
+  ps.forEach(function (p) { try { foAgeDecline(p); } catch (e) {} });
   return JSON.stringify(ps);
 };
 // PLACE A REAL CRICKETER AT A CHOSEN OVERALL, keeping his shape. The canonical
@@ -392,6 +420,7 @@ globalThis.__svcWorldCfg = function () {
   const doct = vm.runInContext('__svcDoctrine', eng.ctx);
   const train = vm.runInContext('__svcTrain', eng.ctx);
   const der = vm.runInContext('__svcDerive', eng.ctx);
+  const aged = vm.runInContext('__svcAgeDecline', eng.ctx);
   const ovr = vm.runInContext('__svcOvr', eng.ctx);
   const scomp = vm.runInContext('__svcStarComp', eng.ctx);
   const pval = vm.runInContext('(function(j){return JSON.stringify(window.foPlayerValue(JSON.parse(j)))})', eng.ctx);
@@ -421,6 +450,15 @@ globalThis.__svcWorldCfg = function () {
     },
     // recompute bat/threat/control/rating/wage from skills, engine's own map
     derive(players) { return JSON.parse(der(JSON.stringify(players))); },
+    // a year's decline on a squad, by the engine's per-attribute ageing curve.
+    // The caller has already put the year on them; this says what it cost.
+    ageDecline(players) { return JSON.parse(aged(JSON.stringify(players))); },
+    // a measurement handle, not a setting: scales every ageing rate inside this
+    // VM so an audit can bisect the decline against the world's stationarity.
+    // Nothing in the product calls it.
+    tuneAgeing(f) {
+      vm.runInContext('(function(f){var C=window.foAgeDecay;for(var k in C)C[k].rate*=f;})(' + (+f) + ')', eng.ctx);
+    },
     // the 0-99 card rating the club pages show, per player
     pkOvr(players) { return JSON.parse(ovr(JSON.stringify(players))); },
     // the batting and bowling composites the ten-star strip is drawn from
@@ -440,6 +478,10 @@ globalThis.__svcWorldCfg = function () {
     // change of shape is kept from becoming a change of quality
     fitToLevel(players, level) { return JSON.parse(fitL(JSON.stringify(players), level)); },
     ovrLabel(v) { return lbl(v); },
+    // where a man of this age stands relative to his own peak, off the engine's
+    // own career phase table - the audits need it to tell an older world from a
+    // poorer one
+    agePhase(age) { return vm.runInContext('window.foAgePhase', eng.ctx)(age); },
     stars(v) { return sts(v); },
     // the client's own fantasy points for a set of innings
     fantasy(innings) { return JSON.parse(fan(JSON.stringify(innings))); },

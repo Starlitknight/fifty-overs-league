@@ -377,7 +377,11 @@ export async function dealYouthToAll(pool, host, country, { count = 16 } = {}) {
 //
 // Keyed by season, so a re-run never ages anybody twice.
 // ---------------------------------------------------------------------------
-export async function ageYouth(pool, country, seasonNo) {
+// A YEAR ON A COUNTRY. `host` is optional only so that a caller written before
+// ageing had any consequences still works; without it the rollover does what it
+// always did - adds a year and retires the oldest - and a world ticked that way
+// would never see a career decline, which is why tick.mjs passes one.
+export async function ageYouth(pool, country, seasonNo, host) {
   const key = country + ':youth:s' + seasonNo;
   const claim = await pool.query(
     `INSERT INTO ticks(key, status) VALUES ($1,'running')
@@ -401,8 +405,30 @@ export async function ageYouth(pool, country, seasonNo) {
     };
     // 1. a year on the professionals, and the oldest hang them up
     const aged = (c.squad || []).map(p => older(p, 27));
-    const squad = aged.filter(p => (p.age || 0) < RETIRE_AT);
+    let squad = aged.filter(p => (p.age || 0) < RETIRE_AT);
     retired += aged.length - squad.length;
+
+    // AND THE YEAR COSTS THEM SOMETHING, which for a long time it did not.
+    // Before this the rollover moved a number called `age` and touched nothing
+    // else: a thirty-seven-year-old batted exactly as he had at twenty-two and
+    // was then thrown out for being old. Careers had no peak and no decline in
+    // them, and the only thing that ever pushed a cricketer down the ladder was
+    // retirement.
+    //
+    // The curve is the engine's (foAgeDecline) and it works on LATENT
+    // attributes, one at a time, so a career reshapes instead of shrinking - a
+    // quick loses his pace and keeps his craft. Nothing here subtracts from an
+    // overall; the card is recomputed from whatever the profile has become,
+    // which is the rule the whole canonical model is built on.
+    //
+    // THE BOYS DO NOT DECLINE. Every curve's peak is 27 and no colt is over 21,
+    // so passing them through would be a no-op - they are left alone rather
+    // than relying on that, because it is a fact about the table and not about
+    // the intention.
+    if (host && typeof host.ageDecline === 'function' && squad.length) {
+      try { squad = host.ageDecline(squad); }
+      catch (eDec) { console.error('ageing decline failed for ' + country + '/' + c.slot + ':', eDec.message); }
+    }
 
     // 2. a year on the boys, and the twenty-one-year-olds walk out of the world
     const youth = (Array.isArray(c.youth) ? c.youth : []).map(y => older(y, 18));

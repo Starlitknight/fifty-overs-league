@@ -160,6 +160,88 @@ else {
   }
 }
 
+// ---- 5b. THE LATENT TAIL --------------------------------------------------
+//
+// The 99 ceiling is gone, so the question the OVR histogram cannot answer is
+// whether the world paid for that by growing a forest of 120s. Every attribute
+// of every cricketer, counted past each threshold and split by the family whose
+// latent->effective transform governs it.
+//
+// WHAT WOULD BE WRONG HERE. Hundreds of 110s, or any 120s outside the handful
+// of men the world calls generational, or a family that has no tail at all -
+// the last of which would mean the ceiling is still there under another name.
+const FAM_KEYS = {
+  core: ['vsPace', 'vsSpin', 'power', 'rotation', 'temperament',
+         'wicket', 'economy', 'discipline', 'moveTurn', 'variation', 'stamina'],
+  field: ['fielding'],
+  glove: ['catching', 'keeping', 'stumping']
+};
+const CUTS = [99, 105, 110, 120];
+const tail = {};
+let attrTotal = 0;
+for (const fam in FAM_KEYS) {
+  tail[fam] = { n: 0, over: CUTS.map(() => 0), max: 0 };
+  for (const p of all) for (const k of FAM_KEYS[fam]) {
+    const v = (p.skills || {})[k];
+    if (typeof v !== 'number') continue;
+    tail[fam].n++; attrTotal++;
+    if (v > tail[fam].max) tail[fam].max = v;
+    CUTS.forEach((c, i) => { if (v > c) tail[fam].over[i]++; });
+  }
+}
+say(`\n=== LATENT SKILL TAIL (${attrTotal} stored attributes) ===`);
+say('family   attributes' + CUTS.map(c => ('>' + c).padStart(8)).join('') + '     max');
+for (const fam in tail) {
+  const t = tail[fam];
+  say('  ' + fam.padEnd(7) + String(t.n).padStart(9) +
+      t.over.map(n => String(n).padStart(8)).join('') + String(t.max).padStart(8));
+}
+const menOver = all.filter(p => Object.values(p.skills || {}).some(v => v > 99)).length;
+say(`  cricketers holding at least one latent above 99: ${menOver} of ${all.length}` +
+    ` (${(100 * menOver / all.length).toFixed(2)}%)`);
+
+// ---- 5c. ARCHETYPE PRESERVATION AT THE TOP ---------------------------------
+//
+// The failure this whole change was written against: above about OVR 88 the
+// elite converged, because being elite meant having more attributes on the same
+// ceiling. So the test is not "are they good" but "are they still DIFFERENT".
+//
+// SPREAD is the standard deviation of a man's five batting or six bowling
+// attributes about his own mean, which is exactly the quantity a ceiling
+// destroys - clamping the top of a vector pulls its spread toward zero. PINNED
+// counts attributes sitting on any single value shared with the rest of his
+// band, which is what "collapsing to identical skill vectors" looks like when
+// you count it.
+say('\n=== ARCHETYPE PRESERVATION BY OVR BAND ===');
+say('band       men   meanSpread   p10Spread   identicalVectors   archetypes');
+const sd = xs => {
+  if (xs.length < 2) return 0;
+  const m = xs.reduce((a, b) => a + b, 0) / xs.length;
+  return Math.sqrt(xs.reduce((a, b) => a + (b - m) * (b - m), 0) / xs.length);
+};
+const shapeOf = p => {
+  const s = p.skills || {};
+  const bowls = p.bowlType && p.bowlType !== 'none';
+  const keys = bowls ? ['wicket', 'economy', 'discipline', 'moveTurn', 'variation', 'stamina']
+                     : ['vsPace', 'vsSpin', 'power', 'rotation', 'temperament'];
+  return keys.map(k => s[k]).filter(v => typeof v === 'number');
+};
+for (const [lo, hi] of [[70, 79], [80, 84], [85, 89], [90, 94], [95, 100]]) {
+  const men = all.filter(p => p.__ovr2 >= lo && p.__ovr2 <= hi);
+  if (!men.length) continue;
+  const spreads = men.map(p => sd(shapeOf(p))).sort((a, b) => a - b);
+  // two cricketers are "identical" if every attribute of the shape matches
+  const vecs = new Map();
+  for (const p of men) { const k = shapeOf(p).join(','); vecs.set(k, (vecs.get(k) || 0) + 1); }
+  const dup = [...vecs.values()].filter(n => n > 1).reduce((a, n) => a + n, 0);
+  const arch = new Set(men.map(p => p.archetype).filter(Boolean)).size;
+  say('  ' + (lo + '-' + hi).padEnd(9) + String(men.length).padStart(4) +
+      (spreads.reduce((a, b) => a + b, 0) / men.length).toFixed(2).padStart(13) +
+      spreads[Math.floor(0.1 * spreads.length)].toFixed(2).padStart(12) +
+      (dup + ' (' + (100 * dup / men.length).toFixed(1) + '%)').padStart(19) +
+      String(arch).padStart(13));
+}
+
 // ---- 6. example cards -----------------------------------------------------
 if (has('cards')) {
   say('\n=== EXAMPLE CARDS ACROSS THE SCALE ===');

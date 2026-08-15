@@ -49,6 +49,17 @@ const REPORT_AT = new Set([0, 5, 10, SEASONS]);
 const wantJson = process.argv.includes('--json');
 
 const host = makeHost();
+// THE AGEING HANDLE, in the same spirit as calibration.mjs's CAL_SET and for
+// the same reason CLAUDE.md gives: the only way to prove a term responsible for
+// a drift is to turn it up and down and re-measure. AGE_SCALE=0.5 halves every
+// decline rate inside this VM before a season is played; nothing is written and
+// no build changes. FO_AGE_DECAY is a const object, but its rates are ordinary
+// properties and window.foAgeDecay is the same object the engine reads.
+if (process.env.AGE_SCALE) {
+  const f = Number(process.env.AGE_SCALE);
+  host.tuneAgeing(f);
+  console.log('AGE_SCALE ' + f + ' applied to every decline rate\n');
+}
 const cfgs = countryConfigs(host);
 
 // ---- the world as dealt ----------------------------------------------------
@@ -67,9 +78,18 @@ const roleOf = p => (p.keeper || p.role === 'wicketkeeper') ? 'wk'
   : p.role === 'allRounder' ? 'ar'
   : (p.bowlType && p.bowlType !== 'none') ? 'bowl' : 'bat';
 
+// WHAT HE WOULD BE AT HIS PEAK, which is the only way to tell the two failures
+// apart. A world whose overalls have fallen has either LOST VALUE - the
+// mechanisms are lossy and the population is draining - or merely GOT OLDER,
+// which is not a failure at all and needs no fixing. Today's overall cannot
+// distinguish them; today's overall minus the career phase can, because that is
+// invariant along a career that is tracking the phase table.
+const peakEq = (o, p) => o - host.agePhase(p.age || 27);
+
 function snapshot(season, churn) {
   const all = clubs.flatMap(c => c.men);
   const ovr = host.pkOvr(all);
+  const peak = ovr.map((o, i) => peakEq(o, all[i]));
   const sorted = ovr.slice().sort((a, b) => a - b);
   const at = t => sorted[Math.floor(t * (sorted.length - 1))];
   const bands = {}; for (const [n, lo, hi] of BANDS) bands[n] = ovr.filter(v => v >= lo && v < hi).length;
@@ -83,6 +103,8 @@ function snapshot(season, churn) {
     bands, roles,
     n80: ovr.filter(v => v >= 80).length, n85: ovr.filter(v => v >= 85).length,
     n90: ovr.filter(v => v >= 90).length, n95: ovr.filter(v => v >= 95).length,
+    peakMean: +(peak.reduce((s, v) => s + v, 0) / peak.length).toFixed(2),
+    peak80: peak.filter(v => v >= 80).length, peak90: peak.filter(v => v >= 90).length,
     retired: churn.retired, joined: churn.joined
   };
 }
@@ -106,14 +128,36 @@ function playSeason(s) {
     c.men.forEach(p => { p.age = (p.age || 27) + 1; });
     const stay = c.men.filter(p => (p.age || 0) < RETIRE_AT);
     retired += c.men.length - stay.length;
-    c.men = stay;
+    // AND THE YEAR COSTS THEM, by the engine's own per-attribute curve and
+    // through the same host method the umpire's rollover calls (youth.ageYouth).
+    // This audit exists to catch a world that inflates, collapses or flattens,
+    // and until decline existed it was measuring a world in which the only
+    // downward force was retirement.
+    c.men = stay.length ? host.ageDecline(stay) : stay;
     // REPLACEMENT, at the rate the market's own generator produces men. This is
     // the optimistic reading - it assumes every retirement is made good - and it
     // is deliberately so: if the world still drifts when replacement is perfect,
     // the drift is not the market's fault.
     const short = 15 - c.men.length;
     for (let i = 0; i < short; i++) {
-      const man = makeFreeAgent(host, c.cfg, 'fa|' + c.cfg.id + '|s' + s + '|' + c.slot + '|' + (faSeed++));
+      // AT THE CLUB'S OWN LEVEL, which the first version of this audit did not
+      // do and which quietly decided the answer. makeFreeAgent's default draws
+      // a tier from the mix the world's 256 clubs hold, because that is what a
+      // national free-agent board looks like; using it HERE meant a flagship
+      // club that lost a ninety replaced him with a d2a squad player, and the
+      // top of the world drained by arithmetic that had nothing to do with
+      // ageing. Measured, it took 80+ from 303 men to 152 over twenty seasons
+      // and the cause was invisible because every individual career arc
+      // balanced perfectly.
+      //
+      // A club replaces a man at its own standard because that is what the
+      // market does: the free-agent board is national, the bidding is by
+      // valueOf, and a flagship club outbids a newcomer for the best man on it
+      // every time. This is still the OPTIMISTIC reading - it assumes the club
+      // always finds someone - and it is deliberately so, for the same reason
+      // as before: if the world drifts when replacement is perfect, the drift
+      // is not the market's fault.
+      const man = makeFreeAgent(host, c.cfg, 'fa|' + c.cfg.id + '|s' + s + '|' + c.slot + '|' + (faSeed++), c.tier);
       // a free agent walks in at the age the market deals him, which the
       // generator sets; nothing here makes him younger than the world does
       if (man) { c.men.push(man); joined++; }
@@ -138,6 +182,12 @@ else {
       String(s.p90).padStart(6) + s.meanAge.toFixed(1).padStart(9) +
       String(s.n80).padStart(6) + String(s.n85).padStart(5) + String(s.n90).padStart(5) +
       String(s.n95).padStart(5) + String(s.retired).padStart(9) + String(s.joined).padStart(8));
+  console.log('\n  AT PEAK (today\'s overall with the career phase taken out): the world\'s');
+  console.log('  stock of cricketers, as against the age it happens to be standing at.');
+  console.log('  season   peakMean   peak80+   peak90+');
+  for (const s of snaps)
+    console.log('  ' + String(s.season).padStart(6) + s.peakMean.toFixed(1).padStart(11) +
+      String(s.peak80).padStart(10) + String(s.peak90).padStart(10));
   console.log('\n  BANDS');
   console.log('  season  ' + BANDS.map(b => b[0].padStart(7)).join(''));
   for (const s of snaps)

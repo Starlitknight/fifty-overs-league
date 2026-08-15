@@ -69,7 +69,12 @@ const ROLES = {
   allrounder: p => p.role === 'allRounder',
   keeper:     p => isKeeper(p)
 };
-const BANDS = [20, 40, 50, 70, 85, 95];
+// AND THE LAST TWO ARE THE POINT OF THE LATEST REWRITE. Below 99 the
+// latent/effective transform is the identity, so a mirror that ignored it
+// entirely would pass every band up to 95 and fail only on the cricketers a
+// manager cares most about. 98 and 99 are the first marks that cannot be
+// reached without latent attributes above the old ceiling.
+const BANDS = [20, 40, 50, 70, 85, 95, 98, 99];
 
 // ---------------------------------------------------------------------------
 // THE MAIN CLAIM. Four roles x six overalls, every man's card computed by the
@@ -119,6 +124,47 @@ test('every cricketer in a founded world reads the same card on both sides', asy
   }
   assert.ok(checked > 1000, 'a real world was walked (' + checked + ' cricketers)');
   assert.deepEqual(bad.slice(0, 12), [], bad.length + ' of ' + checked + ' cards disagree');
+});
+
+// ---------------------------------------------------------------------------
+// A LATENT ATTRIBUTE ABOVE NINETY-NINE CROSSES THE WIRE INTACT.
+//
+// The card is only half of parity. The other half is that the DATABASE can hold
+// what the browser can hold: if a skill of 118 is written and read back as 99,
+// the two sides agree about the card only because both have lost the same
+// information, and the world quietly re-grows the ceiling underneath a model
+// built to remove it.
+//
+// So this stores real men with real tails through the ordinary squad column,
+// reads them back out, and demands the numbers survive - and demands the card
+// computed from the stored row still matches the engine's.
+// ---------------------------------------------------------------------------
+test('a latent skill above 99 survives the round trip and still prices the same', async () => {
+  const src = WORLD.filter(ROLES.batsman).slice(0, 6);
+  assert.ok(src.length >= 4, 'a sample to lift');
+  const men = host.fitToOvr(JSON.parse(JSON.stringify(src)), 99);
+  const tall = men.filter(p => Object.values(p.skills || {}).some(v => v > 99));
+  assert.ok(tall.length >= 1,
+    'aiming at 99 must produce latent attributes above the old ceiling - got none, ' +
+    'which would mean the ceiling is still there somewhere');
+
+  await pool.query(
+    `UPDATE clubs SET squad=$1::jsonb WHERE country_id='eng' AND slot=1`, [JSON.stringify(men)]);
+  const back = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].squad;
+
+  // every attribute, exactly as written
+  men.forEach((p, i) => {
+    for (const k of Object.keys(p.skills || {}))
+      assert.equal(back[i].skills[k], p.skills[k],
+        p.name + ' ' + k + ': stored ' + p.skills[k] + ', read back ' + back[i].skills[k]);
+  });
+  const maxStored = Math.max(...back.flatMap(p => Object.values(p.skills || {})));
+  assert.ok(maxStored > 99, 'the database kept a skill above 99 (max ' + maxStored + ')');
+
+  // and the card off the STORED row is still the engine's card
+  assert.deepEqual(await sqlOvr(back), host.pkOvr(back),
+    'a man with latent attributes above 99 must read the same card on both sides');
 });
 
 // ---------------------------------------------------------------------------

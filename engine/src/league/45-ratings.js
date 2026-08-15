@@ -49,14 +49,15 @@
   // on an older match. Those men now carry `sk` - the same four aggregates,
   // banked at slimming time - so the marking reads whichever it is handed.
   var SK_KEY = { bat: "b", bowl: "w", keep: "k", field: "f" };
+  var SKMAX = (window.FO_LATENT_MAX || 250);
   function agg(p, nm) {
     if (!p) return null;
     try {
       var v = ({ bat: aggBat, bowl: aggBowl, keep: aggKeep, field: aggField })[nm](p);
-      if (typeof v === "number" && isFinite(v) && p.skills) return Math.max(0, Math.min(99, Math.round(v)));
+      if (typeof v === "number" && isFinite(v) && p.skills) return Math.max(0, Math.min(SKMAX, Math.round(v)));
     } catch (e) {}
     var s = p.sk && p.sk[SK_KEY[nm]];
-    return (typeof s === "number" && isFinite(s)) ? Math.max(0, Math.min(99, Math.round(s))) : null;
+    return (typeof s === "number" && isFinite(s)) ? Math.max(0, Math.min(SKMAX, Math.round(s))) : null;
   }
   function mean(xs) {
     var v = xs.filter(function (x) { return x != null; });
@@ -67,7 +68,12 @@
   // skill - so a top three of three 55s reads 55, and nobody has to translate
   // between two scales to see whether that is any good. It also puts the old
   // "2.2 out of ten" beyond reach: there is no ten for it to be out of.
-  var sk99 = function (v) { return v == null ? null : Math.max(0, Math.min(99, Math.round(v))); };
+  // AND THE CAP FOLLOWS THE SKILLS. These are readings of a man's aggregates,
+  // and aggregates of attributes that no longer stop at 99 do not either; a
+  // department of three men averaging 104 reads 104. The floor of the language
+  // is unchanged - it is still the same nought-to-whatever a player page prints,
+  // which is the property the note above is about.
+  var sk99 = function (v) { return v == null ? null : Math.max(0, Math.min(SKMAX, Math.round(v))); };
   // the engine's own two families: fast, fast-medium and medium are seam, the
   // rest turn it
   function isSpin(p) {

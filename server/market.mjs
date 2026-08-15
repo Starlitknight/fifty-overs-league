@@ -273,9 +273,16 @@ export const FA_TIER_MIX = [
   ['flagship', 10], ['d1a', 36], ['d1b', 58], ['d2a', 64], ['d2b', 64], ['newcomer', 24]
 ];
 const FA_TIER_TOTAL = FA_TIER_MIX.reduce((s, t) => s + t[1], 0);
-export function makeFreeAgent(host, cfg, seed) {
+// `atTier` names the standard to deal at, and is left unset by the product: a
+// national free-agent BOARD is a world-wide board, so the tier is drawn from
+// the mix the world's clubs actually hold. It is there for the lifecycle audit,
+// which asks a different question - what a club signs to replace a man it has
+// lost - and for which the world mix is the wrong answer. See the note at the
+// audit's call site.
+export function makeFreeAgent(host, cfg, seed, atTier) {
   let r = seedOf(seed + '|tier') % FA_TIER_TOTAL, tier = 'd2a';
   for (const [t, n] of FA_TIER_MIX) { if (r < n) { tier = t; break; } r -= n; }
+  if (atTier) tier = atTier;
   let men = [];
   try { men = host.genSquad(seed, cfg.nat, cfg.arch || 'balanced', 'general', 1, tier) || []; }
   catch (e) { return null; }

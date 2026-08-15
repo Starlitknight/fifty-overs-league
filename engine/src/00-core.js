@@ -113,6 +113,331 @@ function foHomeEdge(ctx,which){
 // variation, stamina, keeping and stumping are all real in the ball model and
 // all worth little in aggregate, and they are weighted small rather than nought
 // so that a card cannot promise something worth exactly nothing.
+// ===========================================================================
+// LATENT TALENT, AND WHAT THE BALL MODEL IS ACTUALLY HANDED
+// ===========================================================================
+//
+// There are THREE numbers about a cricketer's ability and they had been one:
+//
+//   LATENT     what he can do. Stored on him, open-ended, and the only thing
+//              generation, development, ageing and training ever write.
+//   EFFECTIVE  what the frozen B1 ball model is handed. A smooth monotone
+//              function of latent, per attribute FAMILY.
+//   OVR        0-100, what a manager reads. Never touches the ball model.
+//
+// WHY. The world used to clamp every skill at 99, and above about OVR 88 that
+// clamp was doing the work: an elite man was elite by having more of his
+// fifteen numbers pinned to the same ceiling. Measured on the shipped
+// generator, a level-90 power hitter wants power 108 - his archetype's +18 on
+// top of his level - and got 99, the same 99 his vsSpin got. So the archetype
+// that made him a power hitter was ERASED exactly where it mattered most, two
+// legends of different kinds converged on the same vector, and a man at 99 had
+// nowhere left to develop. The cap was not scarcity; it was arithmetic, and it
+// was the same mistake B2 had already found once in the bowler's batting row.
+//
+// ---------------------------------------------------------------------------
+// WHAT THE FROZEN ENGINE ACTUALLY DOES ABOVE 99, WHICH NOBODY HAD ASKED
+//
+// B1 established a useful individual range of "roughly 20-95". That was the
+// top of the range B1 SWEPT, and it was quietly read ever after as the range
+// the engine can take. tools/engine-domain.mjs asks the real question, by
+// sweeping the shipped ballDist - a pure function, so these are exact numbers
+// and not a sample - well past it. What comes back:
+//
+//   batsman v bowler 85, runs/over    85: 6.75   95: 7.50   110: 8.05  140: 8.29
+//   bowler v batsman 100, runs/over   85: 7.75   95: 7.23   110: 5.95  140: 4.51
+//   keeper catching, wicket %/ball    85: 1.64   95: 1.74   110: 1.92  140: 2.36
+//
+// There is NO WALL. The engine is monotone, continuous, non-inverted and sane
+// to 140 in every contest, and the batting family is still moving at 200. What
+// the engine has instead is its own DIMINISHING RETURNS - a ten-point step
+// buys 0.76 runs an over at 85 and 0.21 at 110 - which is the property this
+// whole change wanted and which was there all along, hidden behind a clamp
+// that stopped anybody ever reaching it.
+//
+// So the transform's job is NOT to manufacture diminishing returns. The engine
+// has those. Its job is to keep the engine inside the domain where it is still
+// telling the truth, and it needs to do that in three different places because
+// the three families fail differently:
+//
+//   core (batting and bowling)  monotone to 140; the bowling wicket rate turns
+//                               over between 150 and 200 (2.320 -> 2.315 ->
+//                               2.277) as a better bowler starts conceding so
+//                               little that nobody can get out to him.
+//   field (ground fielding)     the spatial contest puts an ABSOLUTE skill
+//                               against an absolute difficulty roll bounded at
+//                               100, so a fielder at 100 wins every contest
+//                               there is; and ballDist's own fieldAvg term is
+//                               clamped inside the frozen model at 85.8. This
+//                               family is nearly spent by 100 and B1 said so.
+//   glove (the keeper's hands)  enters ballDist as a LINEAR term in LOG-ODDS
+//                               (lo.wC += 0.009*(catching-74)), which is
+//                               exponential in probability: at an effective
+//                               500 a keeper turns a third of all deliveries
+//                               into wickets, and at 1000, all of them.
+//
+// ---------------------------------------------------------------------------
+// THE TRANSFORM
+//
+//     effective(v) = v                                         v <= KNEE
+//                  = KNEE + S * ln(1 + (v - KNEE)/S)           v >  KNEE
+//
+// It is monotone (derivative S/(S + v - KNEE), strictly positive for every
+// finite v), continuous, and C-1 at the knee - the derivative there is exactly
+// 1, so nothing kinks. It has NO plateau and no asymptote: ln is unbounded, so
+// latent 130 is strictly better than latent 120 for ever, however small the
+// margin gets. What it is not is a clamp wearing a different number.
+//
+// THE KNEE IS 99 FOR EVERY FAMILY, AND THAT IS A PROOF RATHER THAN A TASTE.
+// Below 99 the transform is the identity function, so:
+//
+//   - the B1 golden replay is bit-for-bit untouched. The baked reference
+//     squads top out at 97.
+//   - the calibration golden is untouched. Its elite cell scales the baked
+//     squads by 1.30 and clamps at 98.
+//   - every cricketer in every existing save behaves exactly as he did, because
+//     every one of them was written by a generator that clamped at 99.
+//
+// Validation 4 - "no ordinary-world regression" - is therefore a THEOREM about
+// this function and not a measurement that could come out either way. Nothing
+// below 99 can move, because nothing below 99 is touched.
+//
+// S IS SET SO THAT THE CORRUPTION BOUND IS ALREADY SAFE. Read the softnesses
+// against FO_LATENT_MAX and the measured ceilings above:
+//
+//   core   S=16   effective(250) = 136.5   engine monotone to 140      ok
+//   field  S=4    effective(250) = 113.6   spent by 100, never unsafe  ok
+//   glove  S=12   effective(250) = 130.3   log-odds shift +0.50 on wC  ok
+//
+// which is the useful part: there is no input a corrupted save could contain,
+// however absurd, that this function can turn into an unhealthy input to the
+// ball model. The safety is structural rather than defended by a check.
+//
+// AND STAMINA COMES OUT SAFE WITHOUT A SPECIAL CASE, which is worth stating
+// because it was the one family with a sign error waiting in it. A bowler
+// accumulates fatigue at (1.85 - stamina/100)/74 a ball, which reaches zero at
+// stamina 185 and goes NEGATIVE - recovering by bowling - above it. Effective
+// stamina cannot exceed 136.5, where the rate is 0.0066 a ball against an
+// ordinary 0.0115: a legendary engine, tiring at 57% of the usual rate, and
+// not a tireless one. The batting side (1.75 - stamina/100)/120 is safe by the
+// same margin.
+const FO_LATENT_MAX = 250;
+// ---- A CORRUPTION BOUND, AND NOT A CRICKET CEILING -------------------------
+//
+// This is the only hard number left in the skill scale and it is deliberately
+// nowhere near the game. Nothing in generation, development, training, ageing
+// or migration approaches it - the world's tallest measured latent skill is in
+// the 120s - and it exists so that a truncated write, a bad merge or a hand-
+// edited save cannot hand the ball model an attribute of 1e9 and take a match
+// with it. If a player ever arrives near this number the answer is that his
+// row is damaged, not that he is a great cricketer.
+const FO_EFF_KNEE = 99;
+// how much dearer each point above the knee is than the one below it. See
+// skillThreshold: this is the whole brake on runaway development.
+const FO_DEV_TAIL = 1.18;
+const FO_EFF_SOFT = { core: 16, field: 4, glove: 12 };
+const FO_EFF_FAM = {
+  vsPace: 'core', vsSpin: 'core', power: 'core', rotation: 'core', temperament: 'core',
+  wicket: 'core', economy: 'core', discipline: 'core', moveTurn: 'core',
+  variation: 'core', stamina: 'core',
+  fielding: 'field', catching: 'glove', keeping: 'glove', stumping: 'glove'
+};
+function foEff(k, v) {
+  if (!(v > FO_EFF_KNEE)) return v;      // the identity path, and the whole ordinary world
+  const S = FO_EFF_SOFT[FO_EFF_FAM[k]] || FO_EFF_SOFT.core;
+  const x = Math.min(v, FO_LATENT_MAX) - FO_EFF_KNEE;
+  return FO_EFF_KNEE + S * Math.log1p(x / S);
+}
+// THE ONE WAY A STORED ATTRIBUTE REACHES THE CRICKET. Every read of
+// p.skills.<something> on a path that ends at the ball model goes through here
+// instead, so "the transform happens before the engine receives the player" is
+// enforced at the point of use rather than remembered at fifteen call sites.
+// It is deliberately NOT cached on the player: a cache is a staleness bug
+// waiting for the one mutation that forgets to invalidate it, and the identity
+// path above costs a comparison.
+function foSkE(p, k) {
+  const s = p && p.skills;
+  const v = s && s[k];
+  return (typeof v === 'number' && isFinite(v)) ? foEff(k, v) : null;
+}
+// ---- AND HOW A BAR DRAWS A NUMBER THAT NO LONGER STOPS AT A HUNDRED --------
+//
+// Every skill bar in the product is `width: min(100, v)%`, which was exact
+// while a skill was and now quietly lies: a power of 105 and a power of 122
+// both fill the track, so the one visual the card leads with is the one that
+// went flat. Nothing breaks - the layout was already clamped - but the reader
+// loses the distinction the whole change was made to create.
+//
+// The numeric value beside the bar is untouched and stays the authority; the
+// bar takes a soft maximum. It is the identity up to 92, which is where the
+// dealt world lives, so no ordinary cricketer's bar moves by a pixel, and it
+// approaches the end of the track from there without reaching it. 99 draws at
+// 95%, 110 at 98%, 130 at 99.5%.
+//
+// This is deliberately the smallest thing that could work. The card is not
+// being redesigned here.
+function foSkBar(v) {
+  v = +v || 0;
+  if (v <= 92) return Math.max(2, v);
+  return 92 + 8 * (1 - Math.exp(-(Math.min(v, FO_LATENT_MAX) - 92) / 14));
+}
+try { window.foSkBar = foSkBar; } catch (eBar) {}
+try { window.foEff = foEff; window.foSkE = foSkE;
+      window.FO_LATENT_MAX = FO_LATENT_MAX; window.FO_EFF_KNEE = FO_EFF_KNEE;
+      window.FO_EFF_SOFT = FO_EFF_SOFT; window.FO_EFF_FAM = FO_EFF_FAM;
+      window.FO_DEV_TAIL = FO_DEV_TAIL; } catch (eEff) {}
+// ===========================================================================
+// GETTING OLD, ONE ATTRIBUTE AT A TIME
+// ===========================================================================
+//
+// The rollover used to add a year to a cricketer's age and nothing else. He
+// aged in the sense that the number went up and he was thrown out at 38, and
+// in no other sense: a thirty-seven-year-old hit the ball exactly as hard as
+// he had at twenty-two. That is why careers had no SHAPE - no rise, no peak,
+// no decline anybody could watch - and it is also, quietly, half of why the
+// world stayed stationary. Development pushed everybody up and only death
+// pushed anybody down.
+//
+// A CAREER IS NOT ONE CURVE, WHICH IS THE WHOLE POINT OF DOING THIS ON LATENT
+// ATTRIBUTES INSTEAD OF ON THE CARD. Subtracting from OVR would say a man got
+// worse at cricket; it would not say WHAT he lost, and it would make every
+// thirty-four-year-old the same thirty-four-year-old. Attributes have their own
+// peaks and their own rates, so a career reshapes rather than merely shrinking:
+// a quick loses his pace and keeps his craft, a spinner's variation is still
+// improving at thirty-three while his fielding has been going for six years,
+// and a batsman's power leaves long before his temperament does.
+//
+//   peak 27-28, fastest   power, stamina, fielding, vsPace, wicket
+//   peak 29-30, middling  moveTurn, catching, rotation, stumping
+//   peak 31-33, slowest   vsSpin, economy, discipline, keeping,
+//                         temperament, variation
+//
+// AND IT ACCELERATES, because that is what ageing does. The loss in a man's
+// first year past his peak is `rate`; each year after that is 18% dearer than
+// the last, so the slope steepens all the way to retirement rather than the
+// career ending on a straight line.
+//
+// AND IT IS PROPORTIONAL TO WHAT HE HAS, which is the part that matters now
+// that latent talent is open-ended. A flat two points a year would take a
+// legend from 108 to 86 and a journeyman from 40 to 18 - the same absolute
+// loss, an utterly different career. The loss scales with the attribute, so a
+// great player has more to lose and visibly loses it, and a modest one does not
+// fall through the floor. Measured on a generational power hitter:
+//
+//     age    27    28    29    30    31    32    33    34
+//     power 108   105   102    99    95    91    86    81
+//
+// while his temperament, peak 33 and the slowest rate there is, has not moved
+// at all yet and his variation is still going up in the nets.
+const FO_AGE_DECAY = {
+  power:       { peak: 27, rate: 1.45 }, stamina:  { peak: 27, rate: 1.35 },
+  fielding:    { peak: 27, rate: 1.40 }, vsPace:   { peak: 28, rate: 1.15 },
+  wicket:      { peak: 28, rate: 1.25 }, moveTurn: { peak: 29, rate: 0.95 },
+  catching:    { peak: 29, rate: 0.90 }, rotation: { peak: 30, rate: 0.70 },
+  stumping:    { peak: 30, rate: 0.75 }, vsSpin:   { peak: 31, rate: 0.55 },
+  economy:     { peak: 31, rate: 0.50 }, discipline:{ peak: 32, rate: 0.40 },
+  keeping:     { peak: 32, rate: 0.40 }, temperament:{ peak: 33, rate: 0.25 },
+  variation:   { peak: 33, rate: 0.25 }
+};
+const FO_AGE_ACCEL = 0.18;
+// ---------------------------------------------------------------------------
+// WHERE A MAN OF THIS AGE STANDS ON HIS OWN CAREER
+//
+// This is the other half of ageing and it is the half that keeps the world
+// still. The curve above says what a year TAKES; this says what a career LOOKS
+// like, and the world has to be dealt in its shape or the two fight.
+//
+// THE FAILURE IT EXISTS FOR, measured. The generator laid every cricketer on
+// his tier's mark whatever his age, so day one had a nineteen-year-old and a
+// thirty-six-year-old both sitting exactly on 70 - a population with no age
+// structure at all. That was harmless while nothing declined. Once ageing
+// existed it meant every man in the world was standing at his peak with only
+// the downward half of his career left to play, and twenty seasons of that took
+// the world's 80+ from 273 men to 136 and its 90+ from 31 to 9. The mean barely
+// moved, which is exactly how the brief warns a population fails.
+//
+// So a mark is now a PEAK, and a man is dealt where his age puts him relative
+// to it. The numbers are read off tools/career-arc.mjs - one real cricketer run
+// from nineteen to retirement through the shipped nets and the shipped decline
+// curve - rather than invented, which is what makes the deal and the mechanisms
+// agree instead of pulling against each other: a boy dealt six points under his
+// mark climbs to it by twenty-six because that is precisely what the nets do to
+// him, and falls away after thirty because that is precisely what the decline
+// curve does. The population is then stationary BY CONSTRUCTION rather than by
+// a balance that has to be re-struck every time either curve moves.
+//
+// IT IS MEASURED FROM 25, NOT FROM THE PEAK, so that dealing a world does not
+// move it. The founding population's mean age is 24.7; anchoring the zero there
+// means the day-one distribution - every rarity band in the B2 audit - is where
+// it was, and all that has been added is the CORRELATION between a man's age
+// and where he sits inside his club.
+const FO_AGE_PHASE = [
+  [18, -8.0], [19, -6.0], [20, -5.0], [21, -3.5], [22, -2.5], [23, -1.5],
+  [24, -0.8], [25, 0], [26, 0.7], [27, 1.2], [28, 1.2], [29, 0.5], [30, -0.7],
+  [31, -2.2], [32, -4.0], [33, -6.0], [34, -7.8], [35, -9.8], [36, -11.8],
+  [37, -13.5], [38, -15.3]
+];
+function foAgePhase(age) {
+  const A = FO_AGE_PHASE;
+  const a = +age;
+  if (!(a > 0)) return 0;
+  if (a <= A[0][0]) return A[0][1];
+  for (let i = 1; i < A.length; i++) {
+    if (a <= A[i][0]) {
+      const f = (a - A[i - 1][0]) / (A[i][0] - A[i - 1][0]);
+      return A[i - 1][1] + f * (A[i][1] - A[i - 1][1]);
+    }
+  }
+  return A[A.length - 1][1];
+}
+// what ONE year past the peak costs this attribute at this value. Pure, so the
+// audits and the umpire can ask it without ageing anybody.
+function foAgeLoss(k, v, age) {
+  const C = FO_AGE_DECAY[k];
+  if (!C || !(v > 0) || !(age > C.peak)) return 0;
+  const yrs = age - C.peak;
+  // HOW MUCH OF IT SCALES WITH WHAT HE HAS, and it is deliberately less than
+  // all of it. Straight proportionality (v/60) is the obvious reading and it
+  // drained the top of the world: measured with tools/career-arc.mjs, an 86
+  // rose +2 and fell -18 where the career phase table wants +7 and -16, so
+  // every elite cricketer spent his career sliding below the mark he was dealt
+  // at and twenty seasons took the world's 90+ from 33 men to 6.
+  //
+  // The cause is an asymmetry between this curve and the one opposite it.
+  // Decline is priced in RAW skill points, where a great player has more to
+  // lose; development is priced in THRESHOLD points, which get dearer the
+  // higher he already is. So proportional decline against sub-proportional
+  // development is a ratchet pointing downward, and it points hardest exactly
+  // where the world can least afford it.
+  //
+  // Two thirds proportional and one third flat is what makes the two agree. A
+  // legend still visibly loses more than a journeyman - 1.25 times as much at
+  // the very top - and no longer loses so much that the elite band cannot
+  // sustain itself.
+  const scale = Math.max(0.60, Math.min(1.30, 0.55 + 0.45 * v / 60));
+  return C.rate * (1 + (yrs - 1) * FO_AGE_ACCEL) * scale;
+}
+// A YEAR ON ONE CRICKETER. Mutates his skills and re-derives him; his card is
+// whatever the new profile is worth, which is the rule - nothing anywhere
+// subtracts from an overall directly.
+function foAgeDecline(p) {
+  if (!p || !p.skills) return p;
+  const age = +p.age || 0;
+  for (const k in p.skills) {
+    const v = p.skills[k];
+    if (typeof v !== 'number' || !isFinite(v)) continue;
+    const loss = foAgeLoss(k, v, age);
+    if (loss > 0) {
+      const fl = FO_SKILL_FLOOR[k] != null ? FO_SKILL_FLOOR[k] : 4;
+      p.skills[k] = Math.max(fl, Math.round(v - loss));
+    }
+  }
+  try { jsDerive(p); } catch (eAge) {}
+  return p;
+}
+try { window.foAgeDecay = FO_AGE_DECAY; window.foAgeLoss = foAgeLoss;
+      window.foAgePhase = foAgePhase; window.FO_AGE_PHASE = FO_AGE_PHASE;
+      window.foAgeDecline = foAgeDecline; } catch (eAgeX) {}
 const FO_VAL_W = {
   bat:   { vsPace: 0.185, vsSpin: 0.145, power: 0.150, rotation: 0.150, temperament: 0.060 },
   bowl:  { wicket: 0.415, economy: 0.240, discipline: 0.140, moveTurn: 0.090, variation: 0.060, stamina: 0.030 },
@@ -163,8 +488,29 @@ const FO_VAL_MIX = {
   ar:    { bat: 0.80, bowl: 0.80, field: 0.45, glove: 0.00 },
   wk:    { bat: 1.00, bowl: 0.00, field: 0.00, glove: 1.20 }
 };
+// AND THE CARD IS PRICED IN EFFECTIVE POINTS, NOT LATENT ONES.
+//
+// This is the half of the latent/effective split that is easy to get wrong in
+// the other direction. The weights above are RUNS PER POINT measured off the
+// ball model, so they only mean anything about points the ball model can
+// actually spend. A latent fielding of 130 is worth 0.200 runs a point exactly
+// as far as the engine can read it - and the engine stops reading ground
+// fielding at about 100 - so paying full card price for the rest would be the
+// game promising cricket value that does not exist, which is the specific
+// thing the measured weights were introduced to stop.
+//
+// It does not recreate the flat top, and that is the point of the transform
+// being per-family rather than one curve. The two families that carry almost
+// all of a cricketer's weight - batting and bowling, whose rows sum to 0.69 and
+// 1.00 against fielding's 0.31 - keep climbing: latent 110 is effective 107.4
+// and latent 130 is effective 116.2, so an elite man's card goes on rising with
+// him. It is only the families the ENGINE has finished with that stop paying.
 function foValSum(w, sk, s) {
-  let v = 0; for (const k in w) v += w[k] * ((sk[k] != null ? sk[k] : (s && s[k]) || 0));
+  let v = 0;
+  for (const k in w) {
+    const raw = (sk[k] != null ? sk[k] : (s && s[k]) || 0);
+    v += w[k] * foEff(k, raw);
+  }
   return v;
 }
 function foValFamilies(p) {
@@ -224,33 +570,82 @@ const FO_AR_MAX = 5, FO_AR_REF = 55;
 // world generates almost nobody that good, not because the curve hides them.
 const FO_OVR_ANCHORS = [
   [0, 0], [15, 4], [25, 17], [35, 31], [45, 43], [55, 55], [65, 66],
-  [75, 76], [82, 83], [88, 89], [93, 94], [97, 98], [100, 100]
+  [75, 76], [82, 83], [88, 89], [93, 94]
 ];
+// ---- AND ABOVE 94 IT STOPS BEING A LINE AND BECOMES AN APPROACH ------------
+//
+// The anchors used to run [93,94], [97,98], [100,100] and then clamp. Two
+// things were wrong with the last three numbers, and they were the same thing
+// twice: the ladder said a level of 100 exists and is worth exactly 100, and
+// then Math.min held everything above it there. So OVR at the top was decided
+// by a clamp - the exact complaint that opened this change - and a level-104
+// cricketer and a level-140 one were the same man on the card.
+//
+// The top of the ladder is now asymptotic:
+//
+//     OVR(L) = 100 - 6 * exp(-(L - 93)/6)          L > 93
+//
+// which is 94 at level 93 (so it JOINS the anchors exactly), has slope 1 there
+// (so it joins them smoothly - the segment below it runs 89 to 94 over levels
+// 88 to 93), rises for ever, and never reaches 100. There is no clamp left in
+// the mapping and there is nothing above 100 to label, which is the whole of
+// what "OVR stays 0-100" has to mean once the skills underneath it do not.
+//
+// WHAT IT COSTS TO CLIMB, which is the semantic calibration and is deliberately
+// not evenly spaced:
+//
+//     OVR   level needed    what the ladder says he is
+//      85       84          a clear international
+//      90       89          one of the best players in the world
+//      92       91.5        --
+//      95       94.1        era-defining
+//      97       97.2        all-time
+//      98       99.6        <- the first rung that REQUIRES a latent above 99
+//      99      103.8        plausibly the best this simulation has produced
+//     100      107.9+       theoretical; asymptotic, and never actually 100
+//
+// Five levels buy five points of card at 85 and one point at 98. Nothing at or
+// below 94 moves by so much as a hundredth - the anchors there are the same
+// anchors - so the existing world, whose best men live between 80 and 91, is
+// untouched, and the hardening bites only in the band the world barely reaches.
+// That is what makes the elite tail have to be BUILT out of latent talent above
+// 99 rather than assembled out of ceilings.
+const FO_OVR_TAIL_L = 93, FO_OVR_TAIL_O = 94, FO_OVR_TAIL_S = 6;
 // and back again, because generation states a TARGET OVR and has to know what
-// level buys it. Piecewise-linear both ways, so the pair are exact inverses.
+// level buys it. Piecewise-linear below the tail and an exact log inverse
+// above it, so the pair are inverses over the whole scale.
+//
+// AN OVERALL OF 100 HAS NO LEVEL, which is what asymptotic means, so asking for
+// one has to be answered with a number rather than an infinity. 99.95 is the
+// last overall that still rounds to 100, so its level is the honest answer to
+// "what would it take" and is finite: 117.6.
 function foLevelForOvr(o) {
   const A = FO_OVR_ANCHORS;
   if (!(o > 0)) return 0;
-  if (o >= 100) return 100;
+  if (o > FO_OVR_TAIL_O) {
+    const oc = Math.min(o, 99.95);
+    return FO_OVR_TAIL_L - FO_OVR_TAIL_S * Math.log((100 - oc) / (100 - FO_OVR_TAIL_O));
+  }
   for (let i = 1; i < A.length; i++) {
     if (o <= A[i][1]) {
       const f = (o - A[i - 1][1]) / (A[i][1] - A[i - 1][1]);
       return A[i - 1][0] + f * (A[i][0] - A[i - 1][0]);
     }
   }
-  return 100;
+  return FO_OVR_TAIL_L;
 }
 function foOvrCurve(L) {
   if (!(L > 0)) return 0;
   const A = FO_OVR_ANCHORS;
-  if (L >= 100) return 100;
+  if (L > FO_OVR_TAIL_L)
+    return 100 - (100 - FO_OVR_TAIL_O) * Math.exp(-(L - FO_OVR_TAIL_L) / FO_OVR_TAIL_S);
   for (let i = 1; i < A.length; i++) {
     if (L <= A[i][0]) {
       const f = (L - A[i - 1][0]) / (A[i][0] - A[i - 1][0]);
       return A[i - 1][1] + f * (A[i][1] - A[i - 1][1]);
     }
   }
-  return 100;
+  return FO_OVR_TAIL_O;
 }
 // WHAT A MAN IS WORTH AT HIS BEST JOB. Every role he could actually fill is
 // evaluated and the best one wins, which is the only honest reading of "how
@@ -277,7 +672,13 @@ function foPlayerValue(p) {
   }
   let best = 'bat', lv = L.bat;
   for (const r in L) if (L[r] > lv) { lv = L[r]; best = r; }
-  const level = Math.max(0, Math.min(100, lv));
+  // THE LEVEL IS NOT CLAMPED AT 100 ANY MORE. It used to be, and that clamp was
+  // the last place the old ceiling was still doing the work: a cricketer good
+  // enough to reach level 104 was recorded as 100 and became indistinguishable
+  // from one at 140. The level is an internal coordinate with no maximum - it
+  // is the OVR CURVE's job to keep the card inside 0-100, and it does that by
+  // approaching 100 rather than by being stopped at it.
+  const level = Math.max(0, lv);
   return { fam: fam, levels: L, role: best, level: level, ovr: foOvrCurve(level) };
 }
 // THE NUMBER ON THE CARD. Integer 0-100, and the single authority - every
@@ -313,7 +714,9 @@ function foStars(v) {
 try { window.foLevelForOvr = foLevelForOvr; window.foOvrCurve = foOvrCurve;
       window.foOvr = foOvr; window.foPlayerValue = foPlayerValue;
       window.foOvrLabel = foOvrLabel; window.foStars = foStars;
-      window.FO_OVR_LADDER = FO_OVR_LADDER; } catch (eCanon) {}
+      window.FO_OVR_LADDER = FO_OVR_LADDER; window.FO_OVR_ANCHORS = FO_OVR_ANCHORS;
+      window.FO_OVR_TAIL_L = FO_OVR_TAIL_L; window.FO_OVR_TAIL_O = FO_OVR_TAIL_O;
+      window.FO_OVR_TAIL_S = FO_OVR_TAIL_S; } catch (eCanon) {}
 // ===========================================================================
 // B2: PUTTING A CRICKETER ON A LEVEL, WITHOUT FLATTENING HIM
 // ===========================================================================
@@ -348,7 +751,20 @@ const FO_SKILL_FLOOR = {
   wicket: 5, economy: 5, discipline: 5, moveTurn: 5, variation: 5, stamina: 12,
   fielding: 26, catching: 24, keeping: 4, stumping: 4
 };
-const FO_SKILL_CEIL = 99;
+// AND NO CEILING, which is the change this whole file was reopened for. What
+// used to sit here was `const FO_SKILL_CEIL = 99`, applied on the line below,
+// and it is why a level-90 power hitter came out with his power and his vsSpin
+// on the same number. The fit is bounded by the CORRUPTION bound now, which is
+// 250 and which no cricketer approaches; the shape of a man is whatever his
+// archetype and his level make it, all the way up.
+//
+// THE BISECT STILL WORKS, and it is worth saying why since the level is no
+// longer linear in the factor. Above the knee each attribute goes through a
+// logarithm, so a scaled cricketer's level is a sum of monotone increasing
+// functions of the factor - still strictly monotone, which is the only property
+// a bisection needs. It was already bisecting rather than solving in closed
+// form (the hands take half the factor, which cost the one-step solve), so
+// nothing here changes except what the clamp is.
 // THE HANDS MOVE WITH THE MAN, BUT ONLY HALF AS FAR.
 //
 // The fit used to scale every skill by one factor, which is a clean similarity
@@ -393,7 +809,7 @@ function foFitToLevel(p, target) {
     const fh = 1 + (f - 1) * FO_HAND_SCALE;
     for (const k in base) {
       const floor = FO_SKILL_FLOOR[k] != null ? FO_SKILL_FLOOR[k] : 5;
-      sk[k] = Math.max(floor, Math.min(FO_SKILL_CEIL,
+      sk[k] = Math.max(floor, Math.min(FO_LATENT_MAX,
         Math.round(base[k] * (FO_HAND_KEYS[k] ? fh : f))));
     }
     return foPlayerValue(p).level;
@@ -517,8 +933,26 @@ function foTierOvrAt(tier, rank, n) {
 // the same marks and fits the same men to them.
 function foLayOnTier(players, tier, rnd, after) {
   var T = FO_TIERS[tier] || FO_TIERS.d1b;
+  // SORTED BY WHAT HE IS WORTH AT HIS PEAK, not by what he is worth today.
+  //
+  // A mark is a peak (see FO_AGE_PHASE), so the man who deserves the club's best
+  // mark is the best CRICKETER, not merely the one whose birthday happens to sit
+  // nearest twenty-seven. Ranking on today's level would hand the top mark to a
+  // twenty-eight-year-old over a better nineteen-year-old and then deal the boy
+  // the lesser peak for ever.
+  //
+  // It is also what keeps a second levelling harmless, which the sort below was
+  // introduced for. Peak-equivalent overall is invariant under this function -
+  // a man laid on mark M at age A comes out at M + phase(A), so subtracting
+  // phase(A) returns M - so the second pass sees the same order and hands out
+  // the same marks. Ranking on today's level would not: the phase would reorder
+  // the squad on every pass and a world that settles three times an hour would
+  // permute its clubs for ever.
+  var peakOvr = function (p) {
+    return foOvrCurve(foPlayerValue(p).level) - foAgePhase(p && p.age);
+  };
   var order = players.slice().sort(function (a, b) {
-    return foPlayerValue(b).level - foPlayerValue(a).level;
+    return peakOvr(b) - peakOvr(a);
   });
   var spread = T.spread || 3.5;
   // does this club have a genuinely special cricketer? Drawn once, before the
@@ -536,7 +970,11 @@ function foLayOnTier(players, tier, rnd, after) {
     // can be him, and the lift fades across the next two so the squad does not
     // develop a cliff behind its star.
     if (hasStar && i < 3) want += lift * (i === 0 ? 1 : i === 1 ? 0.28 : 0.10);
-    return Math.max(1, Math.min(99, want));
+    // 99.95 rather than 99, because a mark is an OVERALL and the overall scale
+    // now runs to an asymptote at 100 instead of stopping at 99. The cap is
+    // still needed, and only just: foLevelForOvr(100) has no finite answer, so
+    // a mark of exactly 100 would ask the fit for an infinite level.
+    return Math.max(1, Math.min(99.95, want));
   });
   // THE BEST MAN GETS THE BEST MARK, and that is what makes a second pass
   // harmless.
@@ -566,7 +1004,10 @@ function foLayOnTier(players, tier, rnd, after) {
   // world does not otherwise need.
   marks.sort(function (a, b) { return b - a; });
   order.forEach(function (p, i) {
-    foFitToLevel(p, foLevelForOvr(marks[i]));
+    // his club's mark is his PEAK; where he actually stands today is that peak
+    // moved by how far through his career he is.
+    var want = Math.max(1, Math.min(99.95, marks[i] + foAgePhase(p && p.age)));
+    foFitToLevel(p, foLevelForOvr(want));
     if (typeof after === 'function') after(p);
   });
   return players;
@@ -583,12 +1024,12 @@ try { window.foFitToLevel = foFitToLevel; window.FO_TIERS = FO_TIERS;
       window.foLayOnTier = foLayOnTier;
       window.foLayOnTierSeeded = foLayOnTierSeeded; } catch (eFit) {}
 function foFatigueLoad(p){
-  const ix=foFatigueIndex(p), st=(p&&p.skills&&p.skills.stamina)||p.stamina||50;
+  const ix=foFatigueIndex(p), st=foSkE(p,'stamina')||p.stamina||50;
   const ageExtra=Math.max(0,foAgeTireFactor(p)-1)*0.055;
   return foClamp(ix*0.072*foAgeTireFactor(p) + ageExtra - Math.max(0,st-55)*0.0018, 0, 0.86);
 }
 function foFatiguePenalty(p){
-  const ix=foFatigueIndex(p), st=(p&&p.skills&&p.skills.stamina)||p.stamina||50;
+  const ix=foFatigueIndex(p), st=foSkE(p,'stamina')||p.stamina||50;
   return foClamp(ix*1.05*foAgeTireFactor(p) - Math.max(0,st-60)*0.045, 0, 13.5);
 }
 // THE WORLD'S MEDIAN KEEPER, measured over all 512 glovemen in the sixteen
@@ -597,7 +1038,7 @@ function foFatiguePenalty(p){
 const FO_KQ_PAR=74;
 function foKeeperQuality(p){
   if(!p)return 50;const s=p.skills||{};
-  return foClamp((s.keeping||p.keeping||50)*0.50+(s.stumping||p.stumping||50)*0.26+(s.catching||p.catching||50)*0.24,15,95);
+  return foClamp((foSkE(p,'keeping')||p.keeping||50)*0.50+(foSkE(p,'stumping')||p.stumping||50)*0.26+(foSkE(p,'catching')||p.catching||50)*0.24,15,95);
 }
 // ===========================================================================
 // EARNED TALENTS. A talent is rare and it is cherished, and it is also not the
@@ -1169,9 +1610,9 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   // adds the same thing to every delivery is just a slower way of raising
   // threat, and the point is to create bowlers who are different rather than
   // bowlers who are better.
-  const bDisc=(bowl.skills&&bowl.skills.discipline)||50;
-  const bMove=(bowl.skills&&bowl.skills.moveTurn)||50;
-  const bVary=(bowl.skills&&bowl.skills.variation)||50;
+  const bDisc=foSkE(bowl,'discipline')||50;
+  const bMove=foSkE(bowl,'moveTurn')||50;
+  const bVary=foSkE(bowl,'variation')||50;
   // MOVEMENT IS WORTH WHAT THE CONDITIONS PAY FOR IT. Seam needs a new ball and
   // help in the air or off the deck; turn needs a surface that grips and an old
   // ball. On a flat deck in the sunshine both are nearly worthless, which is
@@ -1725,11 +2166,11 @@ function aiPickBowler(inn,over){
     // pace, not the containing man who has just watched it grow. A bowler deep
     // into a spell has stopped being the bowler he was an hour ago. And a
     // surface that is turning wants the man who turns it.
-    if((inn.pshipR||0)>=45)v+=((p.skills&&p.skills.variation)||50)*0.16+p.threat*0.14;
+    if((inn.pshipR||0)>=45)v+=(foSkE(p,'variation')||50)*0.16+p.threat*0.14;
     const spellB=(rec&&rec.spellB)||0;
     if(spellB>=30)v-=(spellB-30)*0.55;
     if((M.fat&&M.fat[p.name]||0)>0.55)v-=((M.fat[p.name]-0.55)*70);
-    const mv=(p.skills&&p.skills.moveTurn)||50;
+    const mv=foSkE(p,'moveTurn')||50;
     if(tc==='pace'&&over<12&&(M.pitch==='green'||['overcast','humid','misty'].includes(String((M.meta&&M.meta.weather)||'').toLowerCase())))v+=(mv-50)*0.22;
     if(tc==='spin'&&over>=25&&['dry','cracked','slow'].includes(M.pitch))v+=(mv-50)*0.20;
     return v;};
@@ -2032,8 +2473,8 @@ function foFieldLevel(a,b){
   var f=0,c=0,n=0;
   [a,b].forEach(function(t){((t&&t.players)||[]).forEach(function(p){
     if(!p)return;
-    f+=(p.field||((p.skills&&p.skills.fielding)||50));
-    c+=((p.skills&&p.skills.catching)||50);
+    f+=(p.field||foSkE(p,'fielding')||50);
+    c+=(foSkE(p,'catching')||50);
     n++;
   })});
   if(!n)return{f:FO_FLD.par,c:FO_FLD.cpar};
@@ -2060,7 +2501,7 @@ function foChanceDiff(band,ang,gate){
        +FO_FLD.ang*Math.min(1,ang/(gate||FO_FLD.gate));
   return Math.max(0,Math.min(100,d));
 }
-function foFieldSkill(p){return p?(p.field||((p.skills&&p.skills.fielding)||50)):50}
+function foFieldSkill(p){return p?(p.field||foSkE(p,'fielding')||50):50}
 function groundFieldingAdjust(inn,out,bowler){
   if(['wide','noball','bye','legbye'].includes(out)||isWkt(out))return out;
   const dir=M._ballDir,FS=M._ballFS;
@@ -2126,14 +2567,14 @@ function stepBall(){
   const field=foFieldSetting(inn,inn.curBowlerName);
   const faced=inn.faced[batP.name]||0;
   if(inn.legal%6===0&&brec._spellCheckedOver!==over){if(brec.lastSpellOver!==over-2)brec.spellB=0;brec._spellCheckedOver=over;}
-  const fieldAvg=inn.bxi.reduce((a,p)=>a+((p.field||((p.skills&&p.skills.fielding)||50))),0)/Math.max(1,inn.bxi.length);
+  const fieldAvg=inn.bxi.reduce((a,p)=>a+((p.field||foSkE(p,'fielding')||50)),0)/Math.max(1,inn.bxi.length);
   const keeperObj=inn.bxi.find(p=>p.keeper)||{};
   const keeperTalent=keeperObj.talents||[];
   const keeperQuality=foKeeperQuality(keeperObj);
   // his two named skills, carried alongside the blend - see ballDist for why a
   // stumping is decided by stumping rather than by a weighted average of it
-  const keeperStump=keeperObj?((keeperObj.skills&&keeperObj.skills.stumping)||keeperObj.stumping||50):null;
-  const keeperCatch=keeperObj?((keeperObj.skills&&keeperObj.skills.catching)||keeperObj.catching||50):null;
+  const keeperStump=keeperObj?(foSkE(keeperObj,'stumping')||keeperObj.stumping||50):null;
+  const keeperCatch=keeperObj?(foSkE(keeperObj,'catching')||keeperObj.catching||50):null;
   const remBalls=Math.max(0,foBallCap()-inn.legal),reqRate=(M.target?(M.target-inn.runs)/Math.max(0.5,remBalls/6):0);
   // THIS BALL, FOR THE TWO MEN IN THE CONTEST. The context the counter reads is
   // the same context the gate reads, so what a man is credited for is exactly
@@ -2172,7 +2613,7 @@ function stepBall(){
     if(near&&near.ang<=30&&A&&A.byLbl[near.spot.label]){f=A.byLbl[near.spot.label];M._fieldPos=near.spot.label;}
     else if(_dir!=null&&foRegionOf(_dir,_FS?_FS.lhb:false)==='the sight screen')f=bowler;
     if(!f){f=inn.bxi.find(p=>p.keeper)||inn.bxi[0];M._ballDir=null;}
-    const cat=(f.keeper?foKeeperQuality(f):((f.skills&&f.skills.catching)||50))
+    const cat=(f.keeper?foKeeperQuality(f):(foSkE(f,'catching')||50))
       +(((M.meta&&M.meta.weather)||'').toLowerCase()==='chilly'?-9:0)
       +(((M.meta&&M.meta.weather)||'').toLowerCase()==='misty'?-6:0);
     // the chance came to him: that is what a fielding talent applies to, so it
@@ -2229,7 +2670,7 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
   if(sb.r>=50&&!sb.fifty){sb.fifty=true;milestones.push(`FIFTY for ${sb.p.name} - ${sb.r} off ${sb.b}.`)}
   if(sb.r>=100&&!sb.hundred){sb.hundred=true;milestones.push(`HUNDRED! ${sb.p.name} raises the bat - ${sb.r} off ${sb.b}.`)}
   if(!ext){if(inn.freeHit&&out!=='noball')inn.freeHit=false;inn.legal++;brec.b++;brec.spellB=(brec.spellB||0)+1;inn.ph_b[phaseOf(over)]++;inn.pshipB++;inn.faced[sb.p.name]=(inn.faced[sb.p.name]||0)+1;
-    const stB=(sb.p.skills&&sb.p.skills.stamina)||50,stW=(bowler.skills&&bowler.skills.stamina)||50;
+    const stB=foSkE(sb.p,'stamina')||50,stW=foSkE(bowler,'stamina')||50;
     const ageB=(sb.p._ageTire||foAgeTireFactor(sb.p)),ageW=(bowler._ageTire||foAgeTireFactor(bowler));
     const roleB=sb.p.keeper?1.04:1.0, roleW=(bowler.bowlType==='fast'?1.08:(bowler.bowlType==='fastMedium'?1.04:1.0));
     M.fat[sb.p.name]=(M.fat[sb.p.name]||0)+((1.75-stB/100)/120)*ageB*roleB;
@@ -3110,7 +3551,7 @@ const aggTech=p=>Math.round((S(p).vsPace+S(p).vsSpin+S(p).temperament)/3);
 const aggEnd=p=>p.bowlType?S(p).stamina:Math.round(S(p).temperament*0.9);
 const aggField=p=>Math.round((S(p).fielding+S(p).catching)/2);
 const isPT=p=>p.bowlTypeFull&&p.bowlTypeFull.startsWith('partTime');
-const bar=(v,lbl)=>`<span class="sklbl" title="${TIPS[lbl]||lbl}">${lbl}</span><span class="skbar"><i style="width:${Math.max(2,Math.min(100,v))}%"></i></span><span class="skword" title="${word(v)} - rank ${wIx(v)+1} of 16">${word(v)}</span>`;
+const bar=(v,lbl)=>`<span class="sklbl" title="${TIPS[lbl]||lbl}">${lbl}</span><span class="skbar"><i style="width:${foSkBar(v)}%"></i></span><span class="skword" title="${word(v)} - rank ${wIx(v)+1} of 16">${word(v)}</span>`;
 function crumb(...parts){return `<div class="crumb">${parts.map(esc).join('<span class="sep">&raquo;</span>')}</div>`}
 function playerTip(p){
   if(!p)return '';
@@ -3423,7 +3864,7 @@ function pgSquad(){
 const ROLEICON={opener:'OP',topOrderBat:'TOP',middleOrderBat:'MID',wicketkeeper:'WK',allRounder:'AR',seamFast:'FST',seamFastMedium:'FM',seamMedium:'MED',wristSpin:'WS',fingerSpin:'FS'};
 const FORMDOT=f=>{const c=['#7a1d1d','#B23230','#c07a3a','#999','#7a9a3a','#2c7a2c','#1c5537'][f??3];return `<span title="form: ${FORMW_UI[f??3]}" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c}"></span>`};
 const FORMW_UI=['abysmal','poor','shaky','steady','good','strong','excellent'];
-function miniBar(v,tip){return `<span title="${tip}: ${word(v)} (rank ${wIx(v)+1}/16)\n${SKILLTIP}"><span class="skbar" style="width:56px;height:8px"><i style="width:${Math.max(2,Math.min(100,v))}%"></i></span> <b class="sknum">${Math.round(v)}</b></span>`}
+function miniBar(v,tip){return `<span title="${tip}: ${word(v)} (rank ${wIx(v)+1}/16)\n${SKILLTIP}"><span class="skbar" style="width:56px;height:8px"><i style="width:${foSkBar(v)}%"></i></span> <b class="sknum">${Math.round(v)}</b></span>`}
 function cardsView(ps){
   const rows=ps.map((p,ix)=>{
     const openK=p.name, isOpen=!!squadView.open[openK];
@@ -3645,7 +4086,7 @@ function applyTraining(){
           else if(p.skills[foc]!==undefined)sk=foc;   // legacy raw-skill focus
           else sk='temperament';}
         else{const ks=Object.keys(p.skills);sk=ks[Math.floor(rnd()*ks.length)]}
-        if(p.skills[sk]!==undefined&&p.skills[sk]<95){p.skills[sk]++;jsDerive(p)}
+        if(p.skills[sk]!==undefined&&p.skills[sk]<FO_LATENT_MAX){p.skills[sk]++;jsDerive(p)}
       }}}
 }
 const TRAINMAP={'Batting':['vsPace','vsSpin','temperament'],'Power':['power'],'Rotation':['rotation'],'Bowling':['wicket','economy'],'Discipline':['discipline'],'Fielding':['fielding','catching'],'Keeping':['keeping','stumping'],'Endurance':['stamina'],'Rest':[]};
@@ -4547,7 +4988,7 @@ function fantasyPoints(r){
 }
 function sdot(v,lbl){
   const _L=SKILLTIP;const col=v>=76?'#1c5537':v>=64?'#2c7a2c':v>=52?'#C08A2E':v>=40?'#c07a3a':'#B23230';
-  return `<span class="sbar" title="${lbl}: ${word(v)} - rank ${wIx(v)+1} of 16\n${_L}"><i style="width:${Math.max(4,Math.min(100,v))}%;background:${col}"></i></span><span class="sknum">${Math.round(v)}</span>`;
+  return `<span class="sbar" title="${lbl}: ${word(v)} - rank ${wIx(v)+1} of 16\n${_L}"><i style="width:${Math.max(4,foSkBar(v))}%;background:${col}"></i></span><span class="sknum">${Math.round(v)}</span>`;
 }
 function pshipBars(inn){
   const ps=(inn.pships||[]).concat(inn.pshipB>0?[{w:'-',runs:inn.pshipR,balls:inn.pshipB,pair:'unbroken'}]:[]);
@@ -4682,8 +5123,18 @@ function foPickArche(kind, rnd) {
   return L[L.length - 1];
 }
 function foGenSkills(role,q,age,rnd,archeOut){
-  const gg=(m,s)=>Math.max(4,Math.min(99,Math.round(m+s*(rnd()+rnd()+rnd()-1.5))));
-  const l2s=L=>Math.max(4,Math.min(99,Math.round(L*6.25+3.1+(rnd()-0.5)*3)));
+  // BOUNDED BY THE CORRUPTION GUARD AND NOTHING ELSE.
+  //
+  // These two clamped at 99, and that is where the archetype died. The offsets
+  // below are absolute points on the deal's own scale, and the level fit that
+  // follows is a SIMILARITY transform - it multiplies the whole vector - so
+  // what survives to the finished cricketer is the RATIO between his skills. A
+  // power hitter is his archetype because his power is about 1.35 times his own
+  // mean; clamp the deal at 99 and a man dealt near the top loses the ratio
+  // before the fit ever sees it, and comes out as a flat cricketer with a
+  // rounding error where his identity was.
+  const gg=(m,s)=>Math.max(4,Math.min(FO_LATENT_MAX,Math.round(m+s*(rnd()+rnd()+rnd()-1.5))));
+  const l2s=L=>Math.max(4,Math.min(FO_LATENT_MAX,Math.round(L*6.25+3.1+(rnd()-0.5)*3)));
   const lvl=foSkillLevel(q,age), tgt=l2s(lvl);
   const isBowl=['seamFast','seamFastMedium','seamMedium','wristSpin','fingerSpin'].includes(role);
   const isWK=role==='wicketkeeper', isAR=role==='allRounder';
@@ -4744,7 +5195,7 @@ function foGenSkills(role,q,age,rnd,archeOut){
   }
   for (const k in sk) {
     const fl = FO_SKILL_FLOOR[k] != null ? FO_SKILL_FLOOR[k] : 4;
-    sk[k] = Math.max(fl, Math.min(99, sk[k]));
+    sk[k] = Math.max(fl, Math.min(FO_LATENT_MAX, sk[k]));
   }
   return sk;
 }
@@ -4873,14 +5324,28 @@ function foAcadCost(l){return FO_SOLO_ACAD[Math.max(0,Math.min(5,+(l||0)))]||0}
 function foAcadBill(t){return t?foAcadCost(t.acadY)+foAcadCost(t.acadS):0}
 try{window.foGroundCost=foGroundCost;window.foAcadCost=foAcadCost}catch(eG){}
 
+// THE ADAPTER. This is where a stored cricketer becomes a cricketer the ball
+// model can play with, and it is the ONE place the latent/effective boundary is
+// crossed for the ten frozen mappings.
+//
+// Not one of those ten formulas has changed - .32 vsPace + .32 vsSpin + .16
+// rotation + .20 temperament is still exactly what p.bat is, threat is still
+// wicket, field is still fielding. What changed is that each of them now reads
+// the EFFECTIVE attribute rather than the stored one, which is what "the
+// transform happens before the ball model receives the player" means in code.
+// docs/b1-evidence/ENGINE-CONTRACT.md freezes the mappings; it does not freeze
+// the representation of the man being mapped, and below the knee the two are
+// the same number anyway, so every fixture the contract is written against is
+// bit-for-bit unmoved.
 function jsDerive(p){ // mirror of world-gen engine mapping
   const sk=p.skills;
-  p.bat=Math.round(.32*sk.vsPace+.32*sk.vsSpin+.16*sk.rotation+.20*sk.temperament);
-  p.power=sk.power;p.rotation=sk.rotation;p.temperament=sk.temperament;p.vsPace=sk.vsPace;p.vsSpin=sk.vsSpin;
+  const se=k=>foEff(k,sk[k]);
+  p.bat=Math.round(.32*se('vsPace')+.32*se('vsSpin')+.16*se('rotation')+.20*se('temperament'));
+  p.power=se('power');p.rotation=se('rotation');p.temperament=se('temperament');p.vsPace=se('vsPace');p.vsSpin=se('vsSpin');
   const ENGT={'seamFast':'fast','seamFastMedium':'fastMedium','seamMedium':'medium','wristSpin':'wristSpin','fingerSpin':'fingerSpin','partTimeSeam':'medium','partTimeSpin':'offSpin'};
   p.bowlType=p.bowlTypeFull==='none'?null:ENGT[p.bowlTypeFull];
-  p.threat=p.bowlType?sk.wicket:0;p.control=p.bowlType?sk.economy:0;p.bowl=p.bowlType?Math.round((p.threat+p.control)/2):0;
-  p.field=sk.fielding;p.keeper=(p.role==='wicketkeeper');p.keeping=sk.keeping;
+  p.threat=p.bowlType?se('wicket'):0;p.control=p.bowlType?se('economy'):0;p.bowl=p.bowlType?Math.round((p.threat+p.control)/2):0;
+  p.field=se('fielding');p.keeper=(p.role==='wicketkeeper');p.keeping=se('keeping');
   const arm=p.hand==='R'?'Right arm':'Left arm';
   const lbl={'seamFast':'fast','seamFastMedium':'fast medium','seamMedium':'medium','wristSpin':'wrist spin','fingerSpin':'finger spin','partTimeSeam':'part-time seam','partTimeSpin':'part-time spin'};
   p.btLabel=p.bowlTypeFull==='none'?'Does not bowl':arm+' '+lbl[p.bowlTypeFull];
@@ -5781,7 +6246,14 @@ function runTour(){
   // every primary skill on these programmes gives up about a ninth of its
   // rate. That is the trade a coach actually makes with an afternoon.
   const TRAIN_PROGS={
-    'Batting':{vsPace:25,vsSpin:25,rotation:20,temperament:20,stamina:10,fielding:8,catching:5},
+    // POWER BELONGS IN A BATSMAN'S DEFAULT WORK, and its absence was a quiet
+    // leak the moment ageing existed. 'Batting' is what every unmanaged
+    // batsman in the world works, and it trained his technique, his running
+    // and his hands while leaving his hitting untouched - so from twenty-seven
+    // his power fell and nothing ever put any back. Traced over one career it
+    // took a technician from power 48 to 23, which is four and a half levels
+    // of a man whose card never mentioned it.
+    'Batting':{vsPace:25,vsSpin:25,rotation:20,temperament:20,power:12,stamina:10,fielding:8,catching:5},
     'New-ball batting':{vsPace:45,temperament:25,rotation:15,stamina:15,fielding:8,catching:5},
     'Spin batting':{vsSpin:45,rotation:20,temperament:20,power:15,fielding:8,catching:5},
     'Power hitting':{power:50,vsPace:15,vsSpin:15,temperament:10,stamina:10,fielding:8,catching:5},
@@ -5859,10 +6331,71 @@ function runTour(){
     return p.training;
   }
   function fatigueFactor(p){const r=fatigueScore(p);return [0.35,0.45,0.55,0.68,0.78,0.86,0.93,0.97,1.00,1.02,1.04][r]||1}
-  function ageFactor(age){return age<=20?1.35:age<=24?1.15:age<=29?.90:age<=32?.55:.25}
+  // HOW FAST A MAN LEARNS, BY AGE - and it used to be almost flat. It read
+  // 1.35 / 1.15 / 0.90 / 0.55 / 0.25, so a nineteen-year-old improved half
+  // again as fast as a twenty-seven-year-old and that was the whole of youth.
+  //
+  // Nothing was wrong with it while nothing declined, because then the only
+  // question it answered was how quickly the world drifted upward. Ageing
+  // changes the question. A career now has a downward half - measured, about
+  // fifteen overall points between twenty-eight and thirty-eight - and if the
+  // upward half is worth one point, the population cannot hold its shape: every
+  // man ends below the mark he entered at, and twenty seasons of that took the
+  // world's 80+ from 273 men to 126.
+  //
+  // A career has to RISE to a peak before it can fall from one. These are what
+  // it costs to make that true, measured against the decline curve rather than
+  // chosen: a boy improves several times faster than a senior, which is also
+  // simply what happens, and a man past thirty-two barely improves at all.
+  // Steepening the young end rather than raising the whole curve is what keeps
+  // this from being an inflation: the extra development is spent entirely
+  // before twenty-six and is gone by thirty.
+  function ageFactor(age){return age<=20?6.0:age<=23?4.2:age<=26?2.4:age<=29?.85:age<=32?.38:.16}
+  try { window.foTrainAgeFactor = ageFactor; } catch (eAF) {}
   function potFactor(p){return {Limited:.80,Useful:1,High:1.15,Star:1.30}[potentialFor(p)]||1}
   function intensityFactor(p){return {Light:.75,Normal:1,Intense:1.20,Rest:0}[ensureTraining(p).intensity]??1}
-  function skillThreshold(v){return 80+(+v||0)*1.5}
+  // WHAT ONE MORE POINT COSTS, AND WHY IT STOPS BEING AFFORDABLE.
+  //
+  // This was 80 + v*1.5 all the way up, and it stopped at a wall: the loop
+  // below refused to pass 96. Both halves were wrong once the ceiling went.
+  // The wall is the thing this change exists to remove - a man at 99 must be
+  // able to reach 100 - but removing it and leaving a LINEAR cost would make
+  // the tail cheap, and a world where everybody grinds to 130 is the runaway
+  // the brief warns about, arriving by the front door.
+  //
+  // So the cost is unchanged below the knee - the ordinary world's training
+  // economy is exactly the economy it was - and geometric above it. Measured
+  // against a focused skill's roughly 600 training points a season:
+  //
+  //     50 -> 51     155 points     a few rounds
+  //     95 -> 96     222 points     a few rounds
+  //     99 -> 100    271 points     a season's focus
+  //    104 -> 105    641 points     a couple of seasons
+  //    109 -> 110  1,514 points     a long project, on one skill
+  //    119 -> 120  8,788 points     not in a career
+  //
+  // which is the shape the brief asks for: 50 -> 60 is routine, 95 -> 105 is a
+  // career's work, and 120 is out of reach of training altogether. A latent
+  // skill that high has to have been BORN - dealt to a rare prospect by
+  // generation - which is what makes it mean something.
+  //
+  // THE RATE WAS 1.30 FIRST AND THAT WAS TOO STEEP, which is worth recording
+  // because it failed in the exact way this whole change was written to stop.
+  // At 1.30 a point above 105 cost more than a career could pay, so an elite
+  // cricketer could not improve at all: measured on tools/career-arc.mjs, an
+  // 86 rose two points in eight years against the seven the career phase table
+  // wants, and the top of the world drained because its men could only fall. A
+  // ceiling made of prices is still a ceiling.
+  function skillThreshold(v){
+    v=+v||0; const base=80+v*1.5;
+    return v<=FO_EFF_KNEE?base:base*Math.pow(FO_DEV_TAIL,v-FO_EFF_KNEE);
+  }
+  // AND THE UMPIRE PRICES A POINT THE SAME WAY. server/enginehost.mjs runs the
+  // nets for every unmanaged club in the world; before this export it carried
+  // its own copy of the straight line, which was harmless while the two agreed
+  // and became a world developing at one price and displaying another the
+  // moment this function grew a tail.
+  try { window.foSkillThreshold = skillThreshold; } catch (eThr) {}
   function trainProgressPct(p){ensureTraining(p);let best=0,bestSkill='';for(const sk in (p.training.progressBySkill||{})){const th=skillThreshold(p.skills[sk]||0), pc=100*(p.training.progressBySkill[sk]||0)/th;if(pc>best){best=pc;bestSkill=sk}}
     return {skill:bestSkill||Object.keys(TRAIN_PROGS[p.training.program]||{})[0]||'stamina',pct:Math.min(99,best)};
   }
@@ -5889,7 +6422,7 @@ function runTour(){
           if(isMe&&fatigueScore(p)<=2)report.slowed.push(`${p.name}: fatigue slowed training`);
           const weights=foFocusWeights(tr.program,tr.focus)||TRAIN_PROGS[defaultProgram(p)]; const total=Object.values(weights).reduce((a,b)=>a+b,0)||1;
           for(const sk in weights){if(p.skills[sk]===undefined)continue;tr.progressBySkill[sk]=(tr.progressBySkill[sk]||0)+pts*weights[sk]/total;let th=skillThreshold(p.skills[sk]);
-            while(tr.progressBySkill[sk]>=th&&p.skills[sk]<96){tr.progressBySkill[sk]-=th;const oldW=p.wage||0;p.skills[sk]++;jsDerive(p);const dw=(p.wage||0)-oldW;if(isMe)report.gains.push(`${p.name}: ${sk} +1${dw?` (wage ${dw>0?'+':''}${money(dw)})`:''}`);report.wages+=dw;th=skillThreshold(p.skills[sk]);}
+            while(tr.progressBySkill[sk]>=th&&p.skills[sk]<FO_LATENT_MAX){tr.progressBySkill[sk]-=th;const oldW=p.wage||0;p.skills[sk]++;jsDerive(p);const dw=(p.wage||0)-oldW;if(isMe)report.gains.push(`${p.name}: ${sk} +1${dw?` (wage ${dw>0?'+':''}${money(dw)})`:''}`);report.wages+=dw;th=skillThreshold(p.skills[sk]);}
           }
           if(isMe){const pr=trainProgressPct(p);if(pr.pct>=75)report.near.push(`${p.name}: ${pr.skill} ${Math.round(pr.pct)}%`)}
         }

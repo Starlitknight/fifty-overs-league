@@ -63,7 +63,11 @@
     if (window.foMoney) return window.foMoney(n);
     n = Math.round(n || 0); return "$" + (n >= 1000 ? (n / 1000).toFixed(n >= 10000 ? 0 : 1).replace(/\.0$/, "") + "K" : n);
   }
-  function num(v) { return Math.max(0, Math.min(99, Math.round(v || 0))); }
+  // A SKILL IS NOT CAPPED AT NINETY-NINE ANY MORE, so neither is the number
+  // printed beside it. The clamp was exact for as long as the generator's was;
+  // left here it would have shown a generational power hitter's 118 as 99 and
+  // put the ceiling back on the one page a manager reads it from.
+  function num(v) { var m = (window.FO_LATENT_MAX || 250); return Math.max(0, Math.min(m, Math.round(v || 0))); }
   function h32(s) { var h = 2166136261 >>> 0; s = String(s); for (var i = 0; i < s.length; i++) { h ^= s.charCodeAt(i); h = Math.imul(h, 16777619) >>> 0; } return h >>> 0; }
   function cap(s) { s = String(s || ""); return s.charAt(0).toUpperCase() + s.slice(1); }
 
