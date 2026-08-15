@@ -78,14 +78,34 @@ export function livingPatch(squad, absent) {
     if (!p || !p.name) return;
     const rec = { e: Math.round(p.exp ?? 55), f: p.formIx ?? 3, n: Math.round(p.fatN ?? 0) };
     if (away.has(p.name)) rec.a = true;
-    // the nets change what a man IS, so any skill that has moved off its
-    // generated baseline rides in the patch too - otherwise a broadcast
-    // would field the untrained version of a trained cricketer
-    if (p.baseSkills && p.skills) {
-      const s = {};
-      for (const k in p.skills) if (p.skills[k] !== p.baseSkills[k]) s[k] = p.skills[k];
-      if (Object.keys(s).length) rec.s = s;
-    }
+    // WHAT HE COULD DO THAT AFTERNOON, WRITTEN OUT IN FULL AND NOT AS A SUM.
+    //
+    // This used to be a DELTA: the skills that had moved off `baseSkills`, on
+    // the reasoning that a broadcast rebuilds the rest from the man's generated
+    // baseline and only the nets need recording. That was true for exactly as
+    // long as the baseline never moved. Ageing moves it - `foAgeDecline` takes
+    // the year off `skills` AND off `baseSkills`, deliberately, because a
+    // thirty-four-year-old's decline is what he IS and not a debuff sitting on
+    // top of the boy he was. From that day the delta referred to a number the
+    // world was still editing, so a skill he had NOT trained had no entry in
+    // the patch and the replay rebuilt it from TODAY's aged baseline. Measured
+    // on a banked round with one year's ageing laid over it: eight fixtures of
+    // eight diverged, 240 men came back a year older and ninety of them a point
+    // weaker, and the cricket went with them from the first delivery.
+    //
+    // A match belongs to its own match state, so the patch now OWNS the skills
+    // outright. Fifteen small integers a man is the minimum that cannot be
+    // undone by a later edit to anything else, and `living` is dropped from
+    // every match more than two rounds old, so the whole cost is one round of
+    // cricket per country.
+    if (p.skills) rec.sk = Object.assign({}, p.skills);
+    // AND HOW OLD HE WAS. The ball model reads age directly - `foAgeTireFactor`
+    // scales what a day in the field costs him, and the late-innings terms ask
+    // whether the man on strike is over thirty or under twenty-six. The year
+    // ticks over at the rollover for everybody at once, so without this every
+    // banked match in the world is replayed by men a year older than the ones
+    // who played it.
+    if (p.age != null) rec.g = p.age;
     // AND WHAT HE IS PART OF THE WAY TO. A half-learnt talent fires on a
     // fraction of the balls it suits, so it is part of the cricket that was
     // played: a replay without it is a different match, and the almanack's
@@ -94,6 +114,18 @@ export function livingPatch(squad, absent) {
     // broadcast can show the man who has just come by his.
     if (p.talProg && Object.keys(p.talProg).length) rec.tp = p.talProg;
     if (p.talEarned) rec.te = p.talEarned;
+    // AND WHO HE WAS, which is the half that survives him leaving. Everything
+    // above corrects a man the replay finds in the club's squad; none of it can
+    // field one who is no longer in it. A transfer takes a cricketer off the
+    // selling club's books, and measured on a banked round that is worth two
+    // fixtures of eight - the seller turns out an eleven with a hole in it and
+    // the buyer picks from a squad containing a man who was somewhere else that
+    // afternoon. These are the fields the engine reads that a squad row would
+    // otherwise have to supply: his trade, his hands, his armband and what he
+    // could already do. They do not move over a career, so they are the whole
+    // of what it costs to make the patch stand on its own.
+    rec.i = { r: p.role, h: p.hand, b: p.bowlTypeFull, c: p.capt, x: p.nat };
+    if (Array.isArray(p.talents) && p.talents.length) rec.i.t = p.talents.slice();
     o[p.name] = rec;
   });
   return o;
@@ -119,6 +151,41 @@ export function applyLiving(squad, patch, host) {
       p.talents = p.talents.filter(t => t !== p.talEarned);
     delete p.talEarned; delete p.talProg;
   });
+  // THE ROSTER IS THE RECORD'S, NOT THE CLUB'S TODAY. The patch names every man
+  // on the books that afternoon, so it is the team sheet: anybody it does not
+  // name had not signed yet, and anybody it names who is not here any more was
+  // nevertheless there. Both halves are transfers, and both change the cricket
+  // - the eleven is picked from whoever is available, so one extra body or one
+  // missing one re-picks the side and the replay diverges from ball one.
+  //
+  // Only patches that carry the identity card (`i`) can do this. An older
+  // record cannot rebuild a man it never described, and guessing would be worse
+  // than the honest gap, so those keep exactly the behaviour they have always
+  // had. They are dropped from the almanack within two rounds in any case.
+  const owned = Object.keys(patch).some(k => patch[k] && patch[k].i);
+  if (owned) {
+    squad = squad.filter(p => p && patch[p.name]);
+    const here = new Set(squad.map(p => p && p.name));
+    // by name, because jsonb does not promise key order and a squad that comes
+    // back in a different order is a squad that can be picked in a different
+    // order - the one thing this whole function exists to prevent
+    for (const name of Object.keys(patch).sort()) {
+      const L = patch[name];
+      if (!L || !L.i || here.has(name)) continue;
+      // HE PLAYED, AND HE HAS SINCE LEFT. Put him back exactly as the record
+      // has him: the identity card, the skills as played, the age as played.
+      // Everything else about him - his batting, his threat, his rating - is
+      // remade below by the engine's own mapping, which is the only opinion
+      // about a cricketer this file is allowed to hold.
+      const q = { name, age: L.g, nat: L.i.x, hand: L.i.h, role: L.i.r,
+                  bowlTypeFull: L.i.b, capt: L.i.c,
+                  talents: Array.isArray(L.i.t) ? L.i.t.slice() : [],
+                  skills: Object.assign({}, L.sk || {}) };
+      q.keeper = (q.role === 'wicketkeeper');
+      squad.push(q);
+      skilled = true;
+    }
+  }
   // anyone the patch marks as away was not available to be picked
   const away = squad.filter(p => p && patch[p.name] && patch[p.name].a);
   if (away.length) {
@@ -130,27 +197,55 @@ export function applyLiving(squad, patch, host) {
     if (L.e != null) { p.exp = L.e; p.expWord = expWordOf(L.e); }
     if (L.f != null) { p.formIx = L.f; p.formWord = FORMW[L.f] || 'steady'; }
     if (L.n != null) { p.fatN = L.n; p.fatWord = fatWordOf(L.n); p.fatigue = p.fatWord; }
-    // AND THE WHOLE TRUTH ABOUT WHAT HE COULD DO, for exactly the reason the
-    // talent state below is. The patch carries only the skills that had
-    // ALREADY moved off his generated baseline by that afternoon - so a skill
-    // he was still at baseline for THEN, and has trained up SINCE, has no
-    // entry to correct him with, and the replay quietly fields the improved
-    // cricketer. Put him back on his baseline first and lay the patch over
-    // that: it is the same shape the talent strip-and-restore uses, and the
-    // only one a later net cannot leak through. p3 said so - a whole innings
-    // apart, and two clubs batting in a different order from the one the
-    // book recorded, because a batting skill trained in September had walked
-    // backwards into a match played in June.
-    if (p.skills && (p.baseSkills || L.s)) {
-      // and never write THROUGH the object we were handed: callers pass squads
-      // built with a shallow spread, so the skills map is shared with the club
-      // the replay was laid over
+    // WHO HE WAS, for the man who is still here as much as for the man who has
+    // gone. The identity card is banked for every cricketer in the side, so
+    // there is no reason to consult the club's copy of any of it - and one good
+    // reason not to: a role change, a re-typed bowler or a talent earned since
+    // are all things the world is entitled to do to a man and none of them
+    // happened before this match. The rule is the same rule everywhere in this
+    // function: the record is the authority, the served squad supplies a name.
+    if (L.i) {
+      if (L.i.r) p.role = L.i.r;
+      if (L.i.h) p.hand = L.i.h;
+      if (L.i.b) p.bowlTypeFull = L.i.b;
+      if (L.i.c != null) p.capt = L.i.c;
+      if (L.i.x) p.nat = L.i.x;
+      p.talents = Array.isArray(L.i.t) ? L.i.t.slice() : [];
+      skilled = true;                       // his card has to be remade from it
+    }
+    // AND THE WHOLE TRUTH ABOUT WHAT HE COULD DO. `sk` is the man's whole
+    // skill map as played, so it is taken WHOLESALE and nothing about today's
+    // cricketer is consulted at all - not his skills, and above all not his
+    // baseline, which ageing is entitled to rewrite under us. This is the
+    // ownership rule the rest of the function already follows for talents: the
+    // record is the authority, and the served squad supplies only the man's
+    // identity and the things about him that genuinely never move.
+    //
+    // Never write THROUGH the object we were handed - callers pass squads
+    // built with a shallow spread, so the skills map is shared with the club
+    // the replay was laid over.
+    if (L.sk) { p.skills = Object.assign({}, L.sk); skilled = true; }
+    else if (p.skills && (p.baseSkills || L.s)) {
+      // A PATCH BANKED BEFORE THE SKILLS WERE WRITTEN OUT IN FULL. It carries
+      // only `s`, the skills that had moved off the baseline by that
+      // afternoon, so the best that can be done is what was always done: put
+      // the man back on the baseline he carries now and lay the delta over it.
+      // Ageing can still have moved that baseline underneath him - which is the
+      // defect `sk` exists to end - but these records are at most two rounds
+      // old by the time the almanack drops their patch entirely, and rebuilding
+      // them from a stale baseline is strictly better than fielding a
+      // cricketer who has been to the nets since.
       p.skills = Object.assign({}, p.skills);
       if (p.baseSkills)
         for (const k in p.baseSkills)
           if (p.skills[k] !== p.baseSkills[k]) { p.skills[k] = p.baseSkills[k]; skilled = true; }
       if (L.s) { skilled = true; for (const k in L.s) p.skills[k] = L.s[k]; }
     }
+    // AND HOW OLD HE WAS, for the same reason and out of the same authority.
+    // The ball model reads age directly, the year turns for the whole world at
+    // once, and a patch banked before `g` existed simply has nothing to say -
+    // in which case the served squad's age is the best guess there is.
+    if (L.g != null) p.age = L.g;
     // THE PATCH IS THE AUTHORITY ON WHAT HE HAD LEARNED THAT DAY, in both
     // directions. Adding a talent back is the easy half; the half that matters
     // is taking one AWAY. A replay is laid over the club's squad AS IT STANDS

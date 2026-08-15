@@ -293,6 +293,32 @@
   // would field an eleven the umpire never picked.
   function applyLiving(players, patch) {
     if (!players || !patch) return players;
+    // THE ROSTER IS THE RECORD'S, NOT THE CLUB'S TODAY - the same rule, and the
+    // same code, as the umpire's copy in server/living.mjs. The patch names
+    // every man on the books that afternoon: one who is not named had not
+    // signed, and one who is named but has since been sold still played. Either
+    // way the eleven is picked from a different set of men and the broadcast
+    // stops being the match. Only patches carrying the identity card can say
+    // so; older ones keep the behaviour they have always had.
+    var owned = false, k2;
+    for (k2 in patch) if (patch[k2] && patch[k2].i) { owned = true; break; }
+    if (owned) {
+      players = players.filter(function (p) { return p && patch[p.name]; });
+      var here = {};
+      players.forEach(function (p) { here[p.name] = 1; });
+      Object.keys(patch).sort().forEach(function (nm) {
+        var L = patch[nm];
+        if (!L || !L.i || here[nm]) return;
+        var q = { name: nm, age: L.g, nat: L.i.x, hand: L.i.h, role: L.i.r,
+                  bowlTypeFull: L.i.b, capt: L.i.c,
+                  talents: Object.prototype.toString.call(L.i.t) === "[object Array]" ? L.i.t.slice() : [],
+                  skills: {} };
+        for (var sk2 in (L.sk || {})) q.skills[sk2] = L.sk[sk2];
+        q.keeper = (q.role === "wicketkeeper");
+        try { if (typeof jsDerive === "function") jsDerive(q); } catch (e) {}
+        players.push(q);
+      });
+    }
     var away = {}, gone = 0;
     players.forEach(function (p) { if (p && patch[p.name] && patch[p.name].a) { away[p.name] = 1; gone++; } });
     if (gone) players = players.filter(function (p) { return !(p && away[p.name]); });
@@ -315,12 +341,36 @@
       if (L.e != null) { p.exp = L.e; p.expWord = EXPLAD[Math.max(0, Math.min(11, Math.floor(L.e / 9)))]; }
       if (L.f != null) { p.formIx = L.f; p.formWord = FORMW[L.f] || "steady"; }
       if (L.n != null) { p.fatN = L.n; p.fatWord = fatWordOf(L.n); p.fatigue = p.fatWord; }
-      // the nets moved him: take the skills and remake every rating built on
-      // them, by the engine's own mapping
-      if (L.s && p.skills) {
-        for (var k in L.s) p.skills[k] = L.s[k];
+      // WHO HE WAS - the same rule and the same code as the umpire's copy. A
+      // role change, a re-typed bowler or a talent earned since are all things
+      // the world may do to a man afterwards, and none of them happened before
+      // this match, so none of them is read off the club's squad.
+      if (L.i) {
+        if (L.i.r) p.role = L.i.r;
+        if (L.i.h) p.hand = L.i.h;
+        if (L.i.b) p.bowlTypeFull = L.i.b;
+        if (L.i.c != null) p.capt = L.i.c;
+        if (L.i.x) p.nat = L.i.x;
+        p.talents = Object.prototype.toString.call(L.i.t) === "[object Array]" ? L.i.t.slice() : [];
         try { if (typeof jsDerive === "function") jsDerive(p); } catch (e) {}
       }
+      // WHAT HE COULD DO THAT AFTERNOON, AND HOW OLD HE WAS. `sk` is his whole
+      // skill map as played and is taken wholesale: the served squad supplies
+      // his identity and nothing else about his craft. The umpire's copy of
+      // this (server/living.mjs) does exactly the same, and it has to - the
+      // phone and the world have to run the same men or the broadcast is not
+      // the match. `s`, the old delta against a generated baseline, is still
+      // read for patches banked before the change; it was only ever right
+      // while nothing edited that baseline, and ageing now does.
+      if (L.sk && p.skills) {
+        p.skills = {}; for (var kk in L.sk) p.skills[kk] = L.sk[kk];
+        if (L.g != null) p.age = L.g;
+        try { if (typeof jsDerive === "function") jsDerive(p); } catch (e) {}
+      } else if (L.s && p.skills) {
+        for (var k in L.s) p.skills[k] = L.s[k];
+        if (L.g != null) p.age = L.g;
+        try { if (typeof jsDerive === "function") jsDerive(p); } catch (e) {}
+      } else if (L.g != null) p.age = L.g;
       if (L.tp) p.talProg = L.tp;
       if (L.te) {
         p.talEarned = L.te;

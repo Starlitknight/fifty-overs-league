@@ -1,0 +1,67 @@
+=== EQUAL OVR, EQUAL VALUE? BOWLING ARCHETYPES (900 matches a row) ===
+One man swapped into the opening-bowler slot of an otherwise fixed XI. NET
+is his side's run differential per 50 overs - the same currency the value
+weights were fitted in, and the only one in which two different kinds of
+bowler can be compared at all. The personal figures are there to show the
+STYLE; the net is there to show the WORTH.
+
+   baseline (the ordinary bowler this slot already had): net 2.29, 52.6% wins
+
+  AT OVR 75
+  archetype                 card      NET    win%      avg    econ      SR   w/inn   3fer%
+  strike quick                75   18.03    63.1   21.38    3.61    35.6    1.68    23.6
+  controller (seam)           75   16.30    60.3   27.61    3.46    47.9    1.25    11.4
+  swing/seam specialist       75   15.20    61.6   21.93    3.41    38.5    1.56    19.0
+  finger spinner              75   17.35    61.7   45.19    3.34    81.3    0.74     5.8
+  wrist/mystery spinner       75   17.19    63.1   36.94    3.46    64.0    0.94     7.3
+  big-turning spinner         75   13.21    58.9   34.31    3.34    61.6    0.97     7.2
+  wild quick                  75   17.55    61.7   24.70    3.43    43.2    1.39    16.9
+  workhorse                   75   19.96    63.4   28.50    3.26    52.5    1.14     9.8
+  spread 6.7 runs: workhorse (20.0) over big-turning spinner (13.2)
+
+  AT OVR 85
+  archetype                 card      NET    win%      avg    econ      SR   w/inn   3fer%
+  strike quick                85   24.94    69.3   17.48    3.18    32.9    1.82    26.8
+  controller (seam)           85   24.82    67.4   21.22    3.05    41.7    1.43    15.0
+  swing/seam specialist       85   23.72    67.7   17.98    3.07    35.2    1.70    23.4
+  finger spinner              85   15.98    60.3   46.74    3.23    86.9    0.69     2.9
+  wrist/mystery spinner       85   21.34    65.6   29.07    2.96    58.9    1.02     9.0
+  big-turning spinner         85   18.73    62.7   29.60    2.95    60.2    1.00     8.4
+  wild quick                  85   24.18    67.5   22.57    3.09    43.8    1.37    13.3
+  workhorse                   85   26.12    68.6   22.76    2.84    48.0    1.25    12.8
+  spread 10.1 runs: workhorse (26.1) over finger spinner (16.0)
+
+  AT OVR 95
+  archetype                 card      NET    win%      avg    econ      SR   w/inn   3fer%
+  strike quick                95   30.11    72.4   15.69    2.90    32.5    1.84    26.1
+  controller (seam)           95   27.76    70.6   18.39    2.86    38.6    1.55    18.9
+  swing/seam specialist       95   26.60    70.1   16.85    2.89    35.0    1.71    23.3
+  finger spinner              95   21.28    65.4   39.78    2.98    80.2    0.75     4.6
+  wrist/mystery spinner       95   25.63    67.8   25.45    2.76    55.3    1.08     9.7
+  big-turning spinner         95   22.98    65.3   25.66    2.72    56.6    1.06     8.7
+  wild quick                  95   26.96    69.3   20.13    2.81    42.9    1.40    14.6
+  workhorse                   95   29.25    69.2   19.20    2.57    44.7    1.34    14.4
+  spread 8.8 runs: strike quick (30.1) over finger spinner (21.3)
+
+
+=== EQUAL OVR, EQUAL VALUE? BOWLING ARCHETYPES (900 matches a row, dry pitch) ===
+One man swapped into the opening-bowler slot of an otherwise fixed XI. NET
+is his side's run differential per 50 overs - the same currency the value
+weights were fitted in, and the only one in which two different kinds of
+bowler can be compared at all. The personal figures are there to show the
+STYLE; the net is there to show the WORTH.
+
+   baseline (the ordinary bowler this slot already had): net 0.58, 52.6% wins
+
+  AT OVR 95
+  archetype                 card      NET    win%      avg    econ      SR   w/inn   3fer%
+  strike quick                95   28.60    68.3   16.29    2.93    33.4    1.79    27.0
+  controller (seam)           95   27.24    67.1   18.98    2.81    40.5    1.48    17.6
+  swing/seam specialist       95   26.11    67.8   17.47    2.87    36.5    1.64    22.1
+  finger spinner              95   29.66    67.9   19.86    2.65    44.9    1.33    14.1
+  wrist/mystery spinner       95   34.66    72.1   13.36    2.45    32.8    1.82    26.7
+  big-turning spinner         95   32.70    69.5   12.57    2.37    31.9    1.88    27.7
+  wild quick                  95   27.17    67.6   20.42    2.78    44.1    1.36    15.3
+  workhorse                   95   31.15    68.9   19.57    2.53    46.4    1.29    13.6
+  spread 8.5 runs: wrist/mystery spinner (34.7) over swing/seam specialist (26.1)
+
