@@ -191,6 +191,37 @@ globalThis.__svcFitOvr = function (playersJson, ovr) {
 // the card's overall rating, straight from the shipped engine - the served
 // club pages compute this in SQL (migration 016) and the tests hold the two
 // to the same answer
+// A CLUB SOMEBODY HAS JUST CLAIMED, LAID ON THE NEWCOMER'S CURVE.
+//
+// The men are the club's own - same names, same ages, same careers, same
+// archetypes - and the ONLY thing that changes is how good they are. This is
+// the identical function the generator lays a founded squad with, seeded off
+// the club so a levelling is deterministic and, run twice, lands on the same
+// world. The alternative was a second implementation on this side of the wire,
+// which is how a founded newcomer and a claimed newcomer came to be dealt by
+// two different mechanisms in the first place.
+globalThis.__svcLayOnTier = function (playersJson, tier, seed) {
+  var ps = JSON.parse(playersJson);
+  if (!ps.length) return playersJson;
+  window.foLayOnTierSeeded(ps, tier, seed || 'lay', function (p) { jsDerive(p); });
+  return JSON.stringify(ps);
+};
+// A MAN PUT BACK ON THE LEVEL HE WAS ALREADY ON, after his shape has changed.
+//
+// This is what makes a STYLE change free. An archetype offset, a lean toward
+// pace, a season's development that went into power rather than rotation - all
+// of them move a cricketer's raw attributes, and the canonical weights are not
+// equal, so any of them also moves what he is worth unless something puts him
+// back. The generator has always done exactly this (it leans a man, then fits
+// him to his tier's mark), and stating it as one function is what lets
+// everything else in the game - youth, the nets, a save migration - be honest
+// about which of the two things it is doing: changing WHO he is, or changing HOW
+// GOOD he is. It must never do both by accident.
+globalThis.__svcFitLevel = function (playersJson, level) {
+  var ps = JSON.parse(playersJson);
+  ps.forEach(function (p) { try { window.foFitToLevel(p, level); } catch (e) {} });
+  return JSON.stringify(ps);
+};
 globalThis.__svcOvr = function (playersJson) {
   var ps = JSON.parse(playersJson);
   return JSON.stringify(ps.map(function (p) {
@@ -353,6 +384,8 @@ globalThis.__svcWorldCfg = function () {
   const scomp = vm.runInContext('__svcStarComp', eng.ctx);
   const pval = vm.runInContext('(function(j){return JSON.stringify(window.foPlayerValue(JSON.parse(j)))})', eng.ctx);
   const fit = vm.runInContext('__svcFitOvr', eng.ctx);
+  const lay = vm.runInContext('__svcLayOnTier', eng.ctx);
+  const fitL = vm.runInContext('__svcFitLevel', eng.ctx);
   const lbl = vm.runInContext('window.foOvrLabel', eng.ctx);
   const sts = vm.runInContext('window.foStars', eng.ctx);
   const fan = vm.runInContext('__svcFantasy', eng.ctx);
@@ -388,6 +421,12 @@ globalThis.__svcWorldCfg = function () {
     // real cricketers moved to a chosen overall with their shape intact, which
     // is what lets a parity suite walk the whole length of the scale
     fitToOvr(players, ovr) { return JSON.parse(fit(JSON.stringify(players), ovr)); },
+    // an existing squad laid on a tier's own curve of overalls - the generator's
+    // own laying, run on men who already have names and careers
+    layOnTier(players, tier, seed) { return JSON.parse(lay(JSON.stringify(players), tier, seed)); },
+    // and a man put back on a canonical LEVEL he already had, which is how a
+    // change of shape is kept from becoming a change of quality
+    fitToLevel(players, level) { return JSON.parse(fitL(JSON.stringify(players), level)); },
     ovrLabel(v) { return lbl(v); },
     stars(v) { return sts(v); },
     // the client's own fantasy points for a set of innings

@@ -19,8 +19,7 @@ import { EPOCH, dayIx, daySettled, seedOf, cupDraw, natHour, scheduleOf, seasonS
          CYCLE, LEAGUE_DAYS, roundOfDay, dayOfRound, CUP_DAYS, PLAYOFF_DAYS, FA_DAYS, TRANSITION_DAY,
          WINDOW_DAYS, isWorldCupSeason, REST_DAYS, COLTS_DAYS } from './clock.mjs';
 import { livingPatch, evolveCountry, LIVING_VERSION, lastFoldReport, foldLine } from './living.mjs';
-import { calibrate, countryConfigs, BASE_XI, NAT_STR, HUMAN_STR,
-         isFullMember } from './init-world.mjs';
+import { countryConfigs, NAT_STR, isFullMember } from './init-world.mjs';
 import { layCandidates, ageYouth, playColtsStage, computeColts, coltRecords,
          COLTS_STAGES } from './youth.mjs';
 import { settleMoney } from './economy.mjs';
@@ -897,10 +896,32 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
 // squad at whatever rung the seating chart dealt that seat - a lottery no
 // person chose. Before the next cricket is played, the club's OWN men (same
 // names, same careers - the board's new investment raises the squad, it does
-// not replace it) are scaled once onto the standard newcomer rung, and the
-// claim is marked levelled so training and trading are never overwritten
-// after that. Pre-parity claims default to levelled and are the reseed's
-// business, not a surprise rewrite here.
+// not replace it) are laid on the standard newcomer curve, and the claim is
+// marked levelled so training and trading are never overwritten after that.
+// Pre-parity claims default to levelled and are the reseed's business, not a
+// surprise rewrite here.
+//
+// B2: THE SAME CURVE THE FOUNDING DEALS, AND NOT A RATING TARGET.
+//
+// This was the last production caller of calibrate() anywhere in the game. It
+// asked for a squad whose XI rating hit BASE_XI x NAT_STR x HUMAN_STR - 28,628
+// in a full member, 25,336 in an associate - and reached it by multiplying every
+// skill of every man four times over, clamping each one at 2 and 99 on the way
+// past. Both halves of that were left behind by B2. The TARGET was a figure on
+// a rating scale that no longer exists (rating is the canonical card times a
+// thousand now, so a newcomer's XI reads about 36,000 and 28,628 would be a
+// club of amateurs), and the METHOD was the four-pass flattening the whole
+// canonical model was built to retire.
+//
+// So a claimed club is laid on the newcomer tier - the identical distribution
+// squadFor deals a newly founded club from, through the identical engine
+// function - and the seat lottery ends the way it was always meant to: not by
+// pushing a squad at a number, but by dealing every newcomer the same world.
+//
+// The seed is the club, so this is deterministic AND idempotent: run it twice
+// and the second pass reads the same marks off the same curve and fits the same
+// men to them. The `levelled` flag is still what stops it running twice, but it
+// is no longer the only thing standing between a manager and a rewrite.
 async function levelNewClaims(pool, host, country) {
   let rows = [];
   try {
@@ -910,10 +931,8 @@ async function levelNewClaims(pool, host, country) {
         WHERE c.country_id=$1 AND c.levelled=false`, [country])).rows;
   } catch (e) { return 0; }                    // pre-030 database: nothing to level
   if (!rows.length) return 0;
-  const cfg = countryConfigs(host).find(c => c.id === country);
   for (const r of rows) {
-    const target = BASE_XI * ((cfg && NAT_STR[cfg.id]) || 1) * HUMAN_STR;
-    const men = calibrate(host, r.squad, target);
+    const men = host.layOnTier(r.squad, 'newcomer', 'claim|' + country + '|' + r.slot);
     await pool.query(
       'UPDATE clubs SET squad=$3, best_xi_strength=$4 WHERE country_id=$1 AND slot=$2',
       [country, r.slot, JSON.stringify(men), squadStrength(men)]);
@@ -1339,6 +1358,13 @@ async function runCupSeason(pool, host, seasonNo, startDay, now) {
             .map(c => ({ country: c.id, name: c.name + ' XI' }));
           await buildNatSquads(pool, seasonNo);
         }
+        // A SEEDING KEY, AND NOTHING ELSE. NAT_STR is the last place a nation's
+        // standing is still written as a number rather than measured off the
+        // cricketers it produced, and this is the one job that wants it: a snake
+        // draw needs the countries in a stated order BEFORE any squad exists,
+        // and "full members are seeded above associates" is a competition rule
+        // rather than a claim about how good anybody is. It never touches a
+        // player's skills, his card or his price.
         groups = snakeGroups(entrants, e => NAT_STR[e.country] || 1);
       }
       if (comp === 'wcl') await buildNatSquads(pool, seasonNo).catch(() => {});

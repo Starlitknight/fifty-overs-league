@@ -495,8 +495,93 @@ function foTierOvrAt(tier, rank, n) {
     ? T.top + (T.med - T.top) * Math.pow(t / mid, 1.20)
     : T.med + (T.floor - T.med) * Math.pow((t - mid) / (1 - mid), 1.25);
 }
+// LAYING A SET OF REAL CRICKETERS ON A TIER'S CURVE.
+//
+// TWO CALLERS NEED THIS AND THERE MUST NOT BE TWO COPIES OF IT. The generator
+// deals fifteen strangers and lays them out; the umpire levels a club a person
+// has just claimed, whose men already exist and must keep their names, their
+// ages, their careers and their archetypes. Those are the same operation:
+// sort by canonical value, read each man's mark off the tier's curve, and move
+// him onto it with one similarity transform.
+//
+// It was not the same operation before B2, and that is the whole reason this
+// function exists. A claimed club was levelled by calibrate() - four passes of
+// multiply-every-skill-and-re-measure against a RATING target of 28,628, a
+// number from a rating formula that no longer exists. So a founded newcomer and
+// a claimed newcomer were dealt by two different mechanisms aiming at two
+// different quantities, and only one of them was B2's.
+//
+// The draws are in a fixed order - the star roll, the star's lift, then three
+// per man for his drift - so the same seed lays the same squad every time. That
+// is what makes a levelling idempotent: run it twice and the second pass reads
+// the same marks and fits the same men to them.
+function foLayOnTier(players, tier, rnd, after) {
+  var T = FO_TIERS[tier] || FO_TIERS.d1b;
+  var order = players.slice().sort(function (a, b) {
+    return foPlayerValue(b).level - foPlayerValue(a).level;
+  });
+  var spread = T.spread || 3.5;
+  // does this club have a genuinely special cricketer? Drawn once, before the
+  // men are placed, so it is a fact about the club rather than about whichever
+  // player happens to be its best.
+  var hasStar = rnd() < (T.star || 0);
+  var lift = (T.starLift || 6) * (0.6 + rnd() * 0.8);
+  var marks = order.map(function (p, i) {
+    // his place on the tier's curve, plus a drift so that no two clubs of one
+    // tier are the same club - and so that the tiers OVERLAP, which is what
+    // makes a 78 on a weak side and a 52 on a strong one both ordinary draws
+    var want = foTierOvrAt(tier, i, order.length)
+             + (rnd() + rnd() + rnd() - 1.5) * spread;
+    // and the club's one great player, if it has one. Only the first-choice man
+    // can be him, and the lift fades across the next two so the squad does not
+    // develop a cliff behind its star.
+    if (hasStar && i < 3) want += lift * (i === 0 ? 1 : i === 1 ? 0.28 : 0.10);
+    return Math.max(1, Math.min(99, want));
+  });
+  // THE BEST MAN GETS THE BEST MARK, and that is what makes a second pass
+  // harmless.
+  //
+  // The marks are drawn in rank order but the drift can put a lower rank's mark
+  // above a higher one's. Handing each man the mark drawn at HIS rank therefore
+  // permutes the squad - the club's third choice can come out its best player -
+  // and a second pass, which sorts by the levels the first pass produced, hands
+  // out the same marks in a different order and permutes it again. So levelling
+  // a club twice used to reorder it twice, which a world that settles three
+  // times an hour cannot afford.
+  //
+  // Sorting the marks costs nothing and ends it: the same man is the same rank
+  // on every pass, so he is fitted to the same mark every time. The MULTISET of
+  // levels is untouched by the sort, so every tier mean, every rarity band and
+  // every distribution in the B2 audit is exactly where it was - all that
+  // changes is which man holds which of them, and "the best cricketer dealt is
+  // the best cricketer" is the answer a reader would expect anyway.
+  //
+  // IT IS STABLE TO A CARD, NOT TO A SKILL POINT, and that is arithmetic rather
+  // than design. The fit bisects a factor and then rounds every attribute to an
+  // integer, so re-solving from already-rounded skills can land one point either
+  // side of where it landed before. Measured over a whole squad, repeated
+  // levellings move about a dozen skill points and no man's card by more than
+  // one, in either direction, for ever - it does not drift, it jitters. Making
+  // it exact would mean storing each man's target on him, which is state the
+  // world does not otherwise need.
+  marks.sort(function (a, b) { return b - a; });
+  order.forEach(function (p, i) {
+    foFitToLevel(p, foLevelForOvr(marks[i]));
+    if (typeof after === 'function') after(p);
+  });
+  return players;
+}
+// and the same thing from a NAME rather than from a stream of dice, because the
+// umpire has only a club to key off. The seeding belongs here beside the laying:
+// a caller that had to build its own generator would be choosing the one thing
+// that decides whether two levellings of one club agree.
+function foLayOnTierSeeded(players, tier, seed, after) {
+  return foLayOnTier(players, tier, rng(foHashStr(String(seed))), after);
+}
 try { window.foFitToLevel = foFitToLevel; window.FO_TIERS = FO_TIERS;
-      window.foTierOvrAt = foTierOvrAt; window.FO_SKILL_FLOOR = FO_SKILL_FLOOR; } catch (eFit) {}
+      window.foTierOvrAt = foTierOvrAt; window.FO_SKILL_FLOOR = FO_SKILL_FLOOR;
+      window.foLayOnTier = foLayOnTier;
+      window.foLayOnTierSeeded = foLayOnTierSeeded; } catch (eFit) {}
 function foFatigueLoad(p){
   const ix=foFatigueIndex(p), st=(p&&p.skills&&p.skills.stamina)||p.stamina||50;
   const ageExtra=Math.max(0,foAgeTireFactor(p)-1)*0.055;

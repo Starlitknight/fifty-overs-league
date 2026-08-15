@@ -199,27 +199,35 @@ test('a squad dealt from a new generation is still a squad that can play', async
   }
 });
 
+// THE PARITY RULE, IN CANONICAL TERMS (B2). With RESEED_CLAIMED the humans'
+// clubs are redealt too, and they are dealt the NEWCOMER TIER rather than the
+// seat's own - so two managers who joined the same day hold the same class of
+// squad. It used to be checked against BASE_XI x NAT_STR x HUMAN_STR, a rating
+// target on a scale that no longer exists; the tier band is what the deal is
+// actually aimed at now, and it is read from init-world rather than restated.
 test('a claimed club is dealt the newcomer rung, whatever seat it sits in', async () => {
-  // the parity rule: with RESEED_CLAIMED the humans' clubs are redealt too -
-  // and they land on HUMAN_STR x the nation tier, NOT the seat's ladder rung,
-  // so two managers who joined the same day hold the same class of squad
-  const { HUMAN_STR, BASE_XI, NAT_STR } = await import('../init-world.mjs');
+  const { TIER_XI_BAND } = await import('../init-world.mjs');
   process.env.CONFIRM = 'YES-RESEED';
   process.env.RESEED_CLAIMED = 'YES-INCLUDING-MINE';
   delete process.env.DRY_RUN;
   await import('../reseed-squads.mjs?parity=' + Date.now());
   delete process.env.RESEED_CLAIMED;
 
-  const xi = sq => { const b = sq.slice().sort((a, c) => (c.rating || 0) - (a.rating || 0)).slice(0, 11);
-    return b.reduce((s, p) => s + (p.rating || 0), 0) / 11; };
-  // the claim from the earlier test sits at eng slot 4 - whose SEAT rung is
-  // 1.0; the newcomer rung is 0.97, and that is what the deal must land on
+  const host2 = makeHost();
+  const xiCard = sq => {
+    const o = host2.pkOvr(sq).slice().sort((a, b) => b - a).slice(0, 11);
+    return o.reduce((s, v) => s + v, 0) / o.length;
+  };
+  // the claim from the earlier test sits at eng slot 4 - a d1b seat, whose own
+  // deal reads about 66; the newcomer's world is about 36, and that is what the
+  // deal must land in
   const mine = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=4`)).rows[0].squad;
-  const target = BASE_XI * NAT_STR.eng * HUMAN_STR;
-  assert.ok(Math.abs(xi(mine) / target - 1) < 0.02,
-    'the claimed club sits on the newcomer rung: ' + Math.round(xi(mine)) + ' vs ' + Math.round(target));
-  // and an unclaimed neighbour still carries its seat's own rung, not the human one
+  const [lo, hi] = TIER_XI_BAND.newcomer;
+  const got = xiCard(mine);
+  assert.ok(got >= lo && got <= hi,
+    'the claimed club is dealt the newcomer world: XI ' + got.toFixed(1) + ' against ' + lo + '-' + hi);
+  // and an unclaimed neighbour still carries its seat's own tier, not the human one
   const bot = (await pool.query(`SELECT squad FROM clubs WHERE country_id='eng' AND slot=5`)).rows[0].squad;
-  assert.ok(Math.abs(xi(bot) / target - 1) > 0.04,
-    'a bot keeps the ladder: ' + Math.round(xi(bot)));
+  assert.ok(xiCard(bot) > hi + 4,
+    'a bot keeps the ladder: XI ' + xiCard(bot).toFixed(1));
 });

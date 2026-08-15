@@ -102,204 +102,117 @@ export function countryConfigs(host) {
 // a country as it would have been on day one) and a redeal genuinely redeals.
 // Generation 1 spells 'world1', the seed every club alive today was dealt from.
 //
-// THE LEAGUE TABLE IS DESIGNED, NOT DEALT. The generator's raw output varies
-// hugely with the seed - the old world's strongest club sat 90% above its
-// weakest, PURE LUCK, and at that spread the "match" between them was a 99.8%
-// procession. Real one-day cricket never produces a favourite past ~88%, and
-// a league drawn from one talent pool spans nothing like 90%. So every squad
-// is CALIBRATED after it is dealt: scaled onto a deliberate ladder of club
-// strengths, anchored at the old world's median so wages and prices stay
-// where they were. WHO the men are - names, roles, archetypes, who bowls,
-// who keeps - is still entirely the deal; the ladder only says how good each
-// CLUB is, which is a design decision someone was always making (previously:
-// the dice).
+// THE LEAGUE TABLE IS DESIGNED, NOT DEALT, AND B2 CHANGED WHAT "DESIGNED"
+// MEANS. The generator's raw output varies hugely with the seed - the old
+// world's strongest club sat 90% above its weakest, PURE LUCK, and at that
+// spread the "match" between them was a 99.8% procession. Real one-day cricket
+// never produces a favourite past ~88%. So a club's standing has always been a
+// design decision somebody was making, and the only question was how.
 //
-// The ladder itself is the PLANET'S OWN (27-living-planet.js): every club's
-// standing is already designed there, boss 1.2 down to 0.8, and the client
-// shows those standings on every dossier - so the umpire calibrates to the
-// same table the phones display. The fallback below only catches a club the
-// planet forgot to grade, so a missing row degrades to "ordinary" rather
-// than to luck.
+// It used to be a MULTIPLIER: every club was dealt and then calibrate() scaled
+// every skill of every man, four passes, until the squad's XI RATING hit a
+// number on a ten-point ladder anchored at BASE_XI = 36,000, the old world's
+// median. That is gone, all of it - the ladder, the anchor, the multiplier and
+// the four passes. A club now names a TIER (tierOfClub below) and its men are
+// dealt onto that tier's own distribution of canonical overalls, which is a
+// statement about cricketers rather than about a metric.
+//
+// WHAT WENT WITH IT, and why none of it can be quietly restored:
+//
+//   BASE_XI (36,000)      the old world's median XI rating. Rating is the
+//                         canonical card times a thousand now, so the world's
+//                         median XI reads about 60,000 and this constant names
+//                         a quantity that no longer exists.
+//   PT / PT4 / pt()       the ten-point club ladder, in rating multiples.
+//   HUMAN_STR (pt(2))     the newcomer's rung on it. A claimed club is laid on
+//                         the newcomer TIER now (tick.mjs levelNewClaims).
+//   NAT_TEAM_XI,          what a national side was declared to be worth. A
+//   ASSOC_TEAM_XI,        country's rating is measured off the eleven it can
+//   nationTeamStr()       actually field now (tick.mjs natRating), so a
+//                         declared figure would only measure itself.
+//   calibrate()           the four-pass scaling itself.
+//
+// WHAT SURVIVES, and what it is for. NAT_STR is the last place a nation's
+// standing is still written down rather than measured, and it has exactly one
+// job left: SEEDING. A snake draw for a continental cup needs the countries in
+// a stated order before any squad exists, and "full members are seeded above
+// associates" is a competition rule, not a claim about how good anybody is. It
+// never touches a skill, a card or a price. Where the nation genuinely does
+// make a club stronger, it does it by moving the club a TIER (see tierOfClub),
+// which is the difference between "an Australian club is a Dutch club times
+// 1.3" and "an Australian club is one rung of the world's ladder above a Dutch
+// one" - and B1 measured why it has to be the second: a uniform squad-wide edge
+// of five raw points wins more than nine matches in ten, so a world built on
+// multipliers has no upsets anywhere in it.
 export const STR_FALLBACK = 1;
 
-// ---------------------------------------------------------------------------
-// THE TEN-POINT LADDER (see 27-living-planet.js, which holds the club rungs).
-//
-// One rung is 10.4% of an XI rating, and it is set by how a player READS on
-// his card rather than by a win rate. The world used to live between 39 and 60
-// on the nought-to-ninety-nine scale: the top half was never used, so an
-// international looked like a slightly-better club player - which is exactly
-// what he was, because a national side is picked from clubs. Seven rungs is
-// now exactly 2x, which lands a full member's XI near 78 with a genuine 99
-// among them and a bottom second-division side near 38.
-//
-// This is close to the ceiling. Skills cap at 99, and past about 60,000 the
-// cards flatten - at 72,000 an XI averages 91 with a quarter of all skills
-// pegged, and at 90,000 every card reads 99 and the top three tiers become
-// the same team. The engine also saturates at about 1.7x for RESULTS, so the
-// span above buys separation on the card, not in the scorebook.
-//
-// Point 4 is 1.00: the old world's median club, so wages, transfer prices and
-// the books stay calibrated where they were.
-export const PT = 1.093;
-// what point 4 is worth against BASE_XI. The ladder no longer hangs off 1.00
-// at the median, because the band the engine still answers in tops out near
-// 39,000 for a club - see 27-living-planet.js for the measurement.
-// Re-anchored when the ladder was lifted off the floor: point 4 is now the
-// seam between the two divisions, which is where the club ladder's own
-// FO_D2_LADDER[0] sits. pt() stays the documented points-to-strength mapping.
-export const PT4 = 0.950;
-export function pt(points) { return PT4 * Math.pow(PT, points - 4); }
-// THE NEWCOMER'S RUNG. Every human-claimed club is dealt (and, on a fresh
-// claim, levelled) to this strength x the nation tier: a solid Division Two
-// side - competitive at once among its own kind, with the whole pyramid still
-// to climb. The seating chart decides a bot's class; it never again decides
-// a person's.
-//
-// IT DROPPED A RUNG WHEN THE LADDER WAS STRETCHED. The club world used to
-// span 1.24x from floor to summit, and a flagship beat a newcomer only 72
-// times in 100 - the summit of the pyramid a three-in-four favourite over its
-// floor. The rungs in 27-living-planet.js now fill the band the engine really
-// answers in, and the newcomer sits at the foot of them where he always did:
-// a point below the second division's last rung, with the whole climb ahead.
-// He is not weaker against the clubs he actually plays - his own division
-// came down with him - he is further from the top, which is the point.
-export const HUMAN_STR = pt(2);                // 0.795: a club founded this morning
-export const BASE_XI = 36000;                 // the old world's median XI rating
-
-// A LEAGUE IS AS STRONG AS ITS CRICKET CULTURE. Every nation's ten clubs used
-// to draw from one identical talent pool, so a Dutch mid-table side was the
-// equal of an Australian one and the World Cup was a coin toss between giants
-// and minnows. Each nation now carries a tier calibrated loosely against real
-// one-day standing: the subcontinent and the big three at the top, the
-// associates below. WITHIN a league nothing changes - the same ladder rides
-// on top of the tier, so every domestic season is exactly as competitive as
-// every other. The tier shows where leagues MEET: continental cups, the World
-// Cup windows, a friendly across borders - there an Australian club really
-// does outgun a Canadian one, and national sides inherit their true pecking
-// order from the domestic talent they are picked from.
 // FULL MEMBERS AND ASSOCIATES. Two bands, not nineteen rungs: a nation is
 // either one of the ten countries that have always played the long form or it
-// is an associate. The difference is three and a half rungs of the club
-// ladder, so the best club in the Netherlands is about a mid-table Division
-// One side in England - which is what it is. The size is not a taste call: a
-// national XI is capped near 47,500 because run-scoring saturates above that,
-// so the only way an associate's own country can out-rank its own best club
-// is for the associate's clubs to sit further down. At a rung and a half the
-// Dutch national side beat the best Dutch club 53 times in 100 - a coin toss
-// between a country and a club. At three and a half it is 71, the same real
-// contest Australia's country gives Australia's best club (69).
+// is an associate. Under B2 the difference is one tier of the club ladder, so
+// the best club in the Netherlands is about a mid-table Division One side in
+// England - which is what it is.
 export const FULL_MEMBERS = ['eng', 'aus', 'sub', 'pak', 'rsa', 'nzl', 'slk', 'bgd', 'win', 'zim'];
 const FULL = new Set(FULL_MEMBERS);
 export const isFullMember = id => FULL.has(id);
-// The tier is a MULTIPLIER on the club's own rung, not a rung of its own, so
-// it is a RATIO between two points on the ladder and never the ladder's base.
-// (It was once written pt(2.5), which silently folded PT4 in and moved every
-// associate club whenever the club ladder was re-anchored.)
-// AND IT CANNOT BE BIG, because the whole world has to fit above the floor.
-// Three and a half rungs put an associate's second division at 18,200 with its
-// skills pegged at 2 - inside the band where the ladder inverts (see
-// 27-living-planet.js). One and a quarter rungs is what the band affords: it
-// keeps the weakest club in the world at 28,400, where a rung still converts.
-export const ASSOC_STR = 0.885;                // ~1.25 rungs
+// the seeding key, and nothing else - see the note above. It is a rank rather
+// than a ratio now, and the only property any caller may rely on is that a full
+// member sorts above an associate.
+export const ASSOC_STR = 0.885;
 export const NAT_STR = Object.fromEntries(
   ['eng', 'ire', 'ned', 'win', 'rsa', 'zim', 'aus', 'nzl', 'slk', 'sub', 'pak', 'afg',
    'bgd', 'nep', 'sco', 'usa'].map(id => [id, FULL.has(id) ? 1 : ASSOC_STR]));
 
-// AND WHAT A COUNTRY IS WORTH WHEN IT PLAYS AS A COUNTRY. A national side used
-// to have no strength of its own at all: nations.mjs picks the best fifteen
-// men out of that country's clubs, so an XI could never be better than the
-// clubs it came from - which is exactly why a second-division side from a
-// small nation read as the near-equal of a great one. Pulling on the shirt is
-// now worth something, and what it is worth is the nation's own rung.
-// A NATION IS NOT ON THE CLUB LADDER. The band the engine answers in is only
-// so wide, and it has to hold a second division, a first, a flagship and two
-// tiers of country. Placing the countries on the club ladder made Australia
-// and Canada a coin toss; they are placed directly instead, far enough apart
-// that a rung converts - 47,500 against 38,000, which measures 91 wins in 100
-// over 100 matches. A flagship at 39,000 still gets a real game against
-// either: it takes 31 off Australia's country and 29 off the Netherlands'.
-// EVERY COUNTRY ITS OWN RUNG, not two bands. The full members used to share
-// one number, so Australia against India was a coin toss decided by which
-// squad the generator happened to deal - a pecking order the world implied
-// and never expressed. They are placed directly, loosely against real one-day
-// standing. The spread is DELIBERATELY NARROW: a national XI is capped near
-// 47,500 (run-scoring saturates above it) and has to stay above its own best
-// club at 39,000, so the ten of them share about 44,000 to 47,500. That buys
-// roughly 55-60% for the top nation over the bottom one - a real edge, not a
-// procession, which is as much as the band allows.
-export const NAT_TEAM_XI = {
-  sub: 47500, aus: 47500, rsa: 46500, eng: 46500, nzl: 46000,
-  pak: 45500, slk: 45000, win: 44500, bgd: 44000, zim: 44000
-};
-export const ASSOC_TEAM_XI = 41000;
-export function nationTeamStr(id) {
-  return (FULL.has(id) ? (NAT_TEAM_XI[id] || 44000) : ASSOC_TEAM_XI) / BASE_XI;
-}
-
+// WHAT AN ELEVEN IS WORTH: the mean rating of a squad's best eleven, which
+// under B2 is the mean canonical OVR of its best eleven times a thousand. It is
+// a reading of the men, not a target anybody aims at. (ratings.mjs
+// squadStrength is the stricter reading - the eleven a club can actually FIELD,
+// keeper and five bowlers included - and is what the world rankings stand on.)
 export const xiOf = sq => {
   const best = sq.slice().sort((a, b) => (b.rating || 0) - (a.rating || 0)).slice(0, 11);
   return best.reduce((s, p) => s + (p.rating || 0), 0) / Math.max(1, best.length);
 };
 
-// scale every man's skills until the XI lands on target; ratings and wages are
-// re-derived by the engine's own mapping, so nothing is hand-set. Exported:
-// the reseed deals with it, and the umpire levels a fresh claim with it -
-// same men, same names, same careers, raised (or trimmed) to the rung.
-// THE GLOVES AND THE HANDS ARE NOT SCALED. Calibration exists to seat a club
-// at a league's strength, and it did that by multiplying EVERY skill a man
-// has - including the four that have nothing to do with how hard he is to bowl
-// at. That is why the world's fielding lived in a band from 20 to 56: the
-// generator dealt a bell and calibration pressed it flat, four times a club,
-// again at every levelling.
+// WHAT EACH TIER IS SUPPOSED TO LOOK LIKE, AS A BAND OF BEST-XI CARDS.
 //
-// Worse, it was a loop. Fielding feeds a man's rating, so widening the bell
-// raised the rating, so calibration scaled harder, so the bell came out
-// narrower than it went in.
+// This is B2's brief, written down where the world and the tests can both read
+// it, and it is the thing that replaced "every club calibrates onto its rung".
+// A tier is a DISTRIBUTION (engine 00-core.js FO_TIERS: a stated best player, a
+// median, a floor, a drift and a chance of a genuine star), so a club drawn from
+// one is not a club at a number - it is a club somewhere in a band, and two
+// clubs of one tier are meant to differ. Every band overlaps its neighbours,
+// which is the point: a 78 at a weak second-division side and a 52 at a flagship
+// are both ordinary draws.
 //
-// The first answer was to hold these four out of the pass entirely, on the
-// reasoning that the bell is the same for every club so its contribution is
-// the same for every club. That reasoning was wrong in one word - "same". It
-// meant a flagship's cordon was no better than a bottom club's, which is not
-// what anybody believes about cricket, and once catches began converting
-// properly it started costing giants matches: p3 caught flagships going down
-// in three nations of sixteen. They take HALF a club's factor now, which
-// breaks the loop without flattening the ladder. world-ladder measures both
-// ends of that trade in a second, so neither can drift again.
-// the hands: dealt on the world's own bell, and scaled at HAND_SCALE of a
-// club's factor rather than the full one (see calibrate below)
-const NOT_SCALED = { fielding: 1, catching: 1, keeping: 1, stumping: 1 };
-const HAND_SCALE = 0.5;
-export function calibrate(host, squad, target) {
-  let men = squad;
-  for (let i = 0; i < 4; i++) {
-    const have = xiOf(men);
-    const f = target / Math.max(1, have);
-    if (Math.abs(f - 1) < 0.004) break;
-    // THE HANDS MOVE WITH THE CLUB, BUT ONLY HALF AS FAR. Holding them out of
-    // this pass entirely was too blunt an answer to a real problem. The problem
-    // was that fielding was dealt off a man's BATTING level and then multiplied
-    // here as well, which squashed the whole world into a band of 20 to 56 and
-    // put every good-fielding branch out of reach. The generator deals it on
-    // its own bell now, so that cause is gone - and excluding it outright cost
-    // something else: a flagship's cordon became no better than a bottom club's,
-    // which p3 caught the moment catches started converting properly (flagships
-    // relegated in three nations of sixteen, against a ladder that is supposed
-    // to mean something). A stronger league genuinely does field better. It
-    // just must not be the whole of the club's edge, or the absolute scale goes
-    // flat again - so the hands take half the club's factor and keep their own
-    // spread.
-    const fh = 1 + (f - 1) * HAND_SCALE;
-    men.forEach(p => {
-      for (const k in (p.skills || {})) {
-        const g = NOT_SCALED[k] ? fh : f;
-        p.skills[k] = Math.max(2, Math.min(99, Math.round(p.skills[k] * g)));
-      }
-    });
-    men = host.derive(men);
-  }
-  return men;
-}
+// TWO READINGS, because two different questions are asked of a tier and they do
+// not have the same answer. A club's SQUAD mean is what the B2 brief states its
+// tier bands in; its BEST ELEVEN runs about six cards higher, because a squad is
+// fifteen and the bottom four of it never play. Quoting one where the other was
+// meant is how a band comes to look breached when nothing is wrong.
+//
+// TIER_SQUAD_BAND is the brief itself, unchanged.
+// TIER_XI_BAND is MEASURED, over all 256 clubs of generation 1:
+//
+//     tier      best-XI  min - max     squad mean
+//     flagship     77.2  76.1 - 79.1   71.3
+//     d1a          72.2  70.2 - 73.5   65.7
+//     d1b          66.4  64.3 - 69.1   59.3
+//     d2a          56.3  54.7 - 58.1   49.3
+//     d2b          44.3  42.4 - 45.7   37.6
+//     newcomer     36.3  34.9 - 38.1   29.8
+//
+// and the bands below are those means with four cards of tolerance either side -
+// wide enough that a redeal or a tuning change does not fail them for being a
+// different draw, narrow enough that a club in the wrong tier's world cannot
+// hide. Adjacent bands overlap, which is deliberate and is the whole design:
+// the strongest d1b club out-fields the weakest d1a one.
+export const TIER_SQUAD_BAND = {
+  flagship: [68, 74], d1a: [62, 68], d1b: [54, 60],
+  d2a: [44, 50], d2b: [32, 38], newcomer: [22, 30]
+};
+export const TIER_XI_BAND = {
+  flagship: [73, 81], d1a: [68, 76], d1b: [62, 70],
+  d2a: [52, 60], d2b: [40, 48], newcomer: [32, 40]
+};
 
 // THE FOUNDING CAST. A Division Two club is not a weaker copy of a county -
 // it is what a new club actually is: one Old Pro on his way down (the oldest
@@ -307,8 +220,8 @@ export function calibrate(host, squad, target) {
 // prime, and a bench of raw kids with everything still ahead of them. The
 // weakness has causes you can see, and every cause has a cure: the kids grow,
 // the old pro teaches, the lads get replaced one honest signing at a time.
-// Deterministic - same seed, same cast - and calibration still owns the
-// club's net strength, so the AGES are the story, not a hidden buff.
+// Deterministic - same seed, same cast - and the TIER owns the club's net
+// strength, so the AGES are the story, not a hidden buff.
 //
 // AND EXPERIENCE GOES WITH THE AGE. It used to not: the men were sorted
 // oldest-first and handed new ages, and every man kept the experience the
@@ -363,13 +276,15 @@ export function tierOfClub(cfg, club) {
   if (!isFullMember(cfg.id)) ix -= 1;
   return TIER_LADDER[Math.max(0, Math.min(5, ix))];
 }
-// strOverride: the reseed passes HUMAN_STR for a claimed club, so every
-// human's fresh deal lands on the newcomer rung instead of the seat's
-export function squadFor(host, cfg, club, gen = 1, strOverride = null) {
-  // A HUMAN'S FRESH CLAIM IS A NEW CLUB, whatever seat it inherited. It used to
-  // be expressed as a strength multiplier; it is a tier now, like everything
-  // else, and it is the same tier a newly founded club is dealt.
-  const tier = strOverride ? 'newcomer' : tierOfClub(cfg, club);
+// claimed: the reseed says so for a club a person holds, and that club is dealt
+// the newcomer's world rather than the seat's. It used to be spelled by passing
+// HUMAN_STR - a strength MULTIPLIER - which had already stopped meaning anything
+// when the tier replaced it and survived only as a truthy flag. A flag is what
+// it is, so a flag is what it says.
+export function squadFor(host, cfg, club, gen = 1, claimed = false) {
+  // A HUMAN'S FRESH CLAIM IS A NEW CLUB, whatever seat it inherited - the same
+  // tier a newly founded club is dealt, by the same curve.
+  const tier = claimed ? 'newcomer' : tierOfClub(cfg, club);
   const men = host.genSquad('world' + ((gen | 0) || 1) + '|' + cfg.id + '|' + club.slot, cfg.nat,
     club.arch || cfg.arch, club.boss ? cfg.capt : 'general', 1, tier);
   // NO CALIBRATION PASS. The generator placed every man on the tier's curve by

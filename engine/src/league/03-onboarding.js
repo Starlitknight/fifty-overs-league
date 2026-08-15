@@ -692,29 +692,14 @@
     //
     // Nothing here targets a rating and nothing iterates. The tier is reached
     // because each man was placed on it, not because the squad was pushed at it.
-    if (TIER && window.foTierOvrAt) {
-      var order = players.slice().sort(function (a, b) {
-        return window.foPlayerValue(b).level - window.foPlayerValue(a).level;
-      });
-      var TT = (window.FO_TIERS || {})[TIER] || {};
-      var spread = TT.spread || 3.5;
-      // does this club have a genuinely special cricketer? Drawn once, before
-      // the men are placed, so it is a fact about the club rather than about
-      // any particular player in it.
-      var starRoll = rnd(), hasStar = starRoll < (TT.star || 0);
-      var lift = (TT.starLift || 6) * (0.6 + rnd() * 0.8);
-      order.forEach(function (p, iT) {
-        // his place on the tier's curve, plus a drift so that no two clubs of
-        // one tier are the same club - and so that the tiers OVERLAP, which is
-        // what makes a 78 on a weak side and a 52 on a strong one both ordinary
-        var want = window.foTierOvrAt(TIER, iT, order.length)
-                 + (rnd() + rnd() + rnd() - 1.5) * spread;
-        // and the club's one great player, if it has one. Only the first-choice
-        // man can be him, and the lift fades across the next two so the squad
-        // does not develop a cliff behind its star.
-        if (hasStar && iT < 3) want += lift * (iT === 0 ? 1 : iT === 1 ? 0.28 : 0.10);
-        want = Math.max(1, Math.min(99, want));
-        window.foFitToLevel(p, window.foLevelForOvr(want));
+    // The laying itself lives in 00-core.js, because the umpire has to do the
+    // identical thing to a club somebody has just claimed and two copies of it
+    // would be two worlds. What stays here is the one thing that is the
+    // generator's own: a man dealt as a pure bowler gets his batting back by the
+    // game-wide rule after he has been moved, because the fit scales what he
+    // has and the bowler's bat is a rule about what he should have.
+    if (TIER && window.foLayOnTier) {
+      window.foLayOnTier(players, TIER, rnd, function (p) {
         if (foPureBowler(p)) foApplyBowlerBat(p);
         jsDerive(p);
       });

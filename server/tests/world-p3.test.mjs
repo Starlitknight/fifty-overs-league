@@ -423,9 +423,23 @@ test('010: the world rankings stand on squad strength, with form beside them', a
     const want = +((c.form.reduce((s, x) => s + x, 0) + (3 - c.form.length) * RANK_BASE) / 3).toFixed(1);
     assert.equal(c.formRating, want, c.name + ' form is still the mean of its last three');
   });
-  // and the strength is a real XI rating, in the band the engine ranks in
-  rk.clubs.forEach(c => assert.ok(c.strength >= 15000 && c.strength <= 60000,
-    c.name + ' strength on the XI scale: ' + c.strength));
+  // AND THE STRENGTH IS A REAL XI RATING, ON THE SCALE THE WORLD ACTUALLY USES.
+  //
+  // The band used to be 15,000-60,000: the old rating formula's own range, back
+  // when a club's XI was scaled onto a ten-point ladder anchored at BASE_XI =
+  // 36,000. B2 made rating the canonical card times a thousand, so a club's
+  // strength is now literally the mean OVR of the eleven it can field, in
+  // thousandths - and the world runs from a 32.1 newcomer side to a 78.4
+  // flagship. The old ceiling cut the top two tiers off; Mashonaland Eagles read
+  // 78,364 and failed a test whose upper bound described a scale it no longer
+  // sits on.
+  //
+  // Measured over all 256 clubs of generation 1: min 32,077 (usa:13), median
+  // 55,909, max 78,364 (zim:0). The band below is the CANONICAL one - a card is
+  // 0-100, so a strength is 0-100,000 - narrowed to the part of it a professional
+  // club world may occupy. Outside it the number is not a card at all.
+  rk.clubs.forEach(c => assert.ok(c.strength >= 20000 && c.strength <= 90000,
+    c.name + ' strength on the canonical XI scale: ' + c.strength));
   // AND IT IS AN ELEVEN SOMEBODY COULD TAKE THE FIELD WITH. The published
   // figure is squadStrength's - the engine's own pick, keeper and five bowlers
   // - and never the best eleven by rating, which no club can put out. Held

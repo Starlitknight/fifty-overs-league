@@ -19,7 +19,7 @@ import assert from 'node:assert';
 import { execSync } from 'node:child_process';
 import { makePool } from '../db.mjs';
 import { migrate } from '../migrate.mjs';
-import { initWorld, countryConfigs, squadFor, NAT_STR } from '../init-world.mjs';
+import { initWorld, countryConfigs, squadFor, TIER_XI_BAND } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { runDue } from '../tick.mjs';
 import { EPOCH, DAY, dayOfRound } from '../clock.mjs';
@@ -137,31 +137,50 @@ test('a bot plays its archetype; a manager\'s own sheet always wins', async () =
   assert.ok(checked >= 3, 'several archetype sheets were actually checked, got ' + checked);
 });
 
+// A FULL MEMBER'S LEAGUE IS HARDER THAN AN ASSOCIATE'S, AND B2 CHANGED HOW.
+//
+// It used to be a RATIO, and the assertion said so: aus.mean / ned.mean had to
+// equal NAT_STR.aus / NAT_STR.ned to within six points, because every club in
+// the world was one baked squad scaled by its nation's multiplier. There is no
+// multiplier now. An associate's clubs are dealt one TIER lower (tierOfClub),
+// which is a different and much larger statement: a Dutch flagship is dealt the
+// distribution an English d1a club is dealt, top to bottom, star chance
+// included. So the ratio the old assertion demanded is not what the world is
+// built to produce, and holding the world to it would mean putting the
+// multiplier back.
+//
+// What survives is the pair of facts the ratio was standing in for, and they are
+// asserted on the cricketers themselves: an Australian league day is genuinely
+// harder than a Dutch one, and a weak nation's own league is exactly as
+// competitive INSIDE ITSELF as a strong one's - which is the property that keeps
+// every domestic season worth playing.
 test('a strong cricket nation out-rates a weak one; every league stays as competitive inside', () => {
-  const xi = sq => { const b = sq.slice().sort((a, c) => (c.rating || 0) - (a.rating || 0)).slice(0, 11);
-    return b.reduce((s, p) => s + (p.rating || 0), 0) / 11; };
+  const xiCard = sq => {
+    const o = host.pkOvr(sq).slice().sort((a, b) => b - a).slice(0, 11);
+    return o.reduce((s, v) => s + v, 0) / o.length;
+  };
   const meanOf = id => {
     const cfg = countryConfigs(host).find(c => c.id === id);
-    const rs = cfg.clubs.map(c => xi(squadFor(host, cfg, c, 2)));
+    const rs = cfg.clubs.map(c => xiCard(squadFor(host, cfg, c, 2)));
     return { mean: rs.reduce((a, x) => a + x, 0) / rs.length,
-             spread: Math.max(...rs) / Math.min(...rs) };
+             spread: Math.max(...rs) - Math.min(...rs) };
   };
   const aus = meanOf('aus'), ned = meanOf('ned'), engL = meanOf('eng'), nep = meanOf('nep');
-  // A FULL MEMBER'S LEAGUE IS HARDER THAN AN ASSOCIATE'S, by about an eighth.
-  // It is bounded on BOTH sides because the number is load-bearing, and the
-  // FLOOR is the binding one: the engine stops ranking sides below about
-  // 26,000 (calibrate pegs skills at 2 and the ladder inverts), so an
-  // associate's second division has to stay above it. That caps the tier at
-  // roughly a rung and a quarter. See ASSOC_STR in init-world.mjs.
-  assert.ok(aus.mean > ned.mean * 1.08, 'an Australian league day is harder than a Dutch one');
-  assert.ok(engL.mean > nep.mean * 1.08, 'and an English one than a Nepali one');
-  assert.ok(aus.mean < ned.mean * 1.25, 'but only by the rung and a quarter the floor affords');
-  // the tier is the DESIGNED ratio, not an accident
-  assert.ok(Math.abs(aus.mean / ned.mean - NAT_STR.aus / NAT_STR.ned) < 0.06,
-    'the gap between leagues is the calibrated tier');
-  // and inside each league the ladder is identical - same top-to-bottom ratio
-  assert.ok(Math.abs(aus.spread - ned.spread) < 0.08,
-    'a weak nation\'s league is exactly as competitive as a strong one\'s');
+  // a tier of the world, measured in cards of best XI. Bounded on both sides:
+  // too small and the distinction stops meaning anything, too large and an
+  // associate stops being able to field a professional side at all.
+  for (const [big, small, what] of [[aus, ned, 'Australia over the Netherlands'],
+                                    [engL, nep, 'England over Nepal']]) {
+    const gap = big.mean - small.mean;
+    assert.ok(gap >= 4, what + ': the gap is only ' + gap.toFixed(1) + ' cards');
+    assert.ok(gap <= 12, what + ': the gap is ' + gap.toFixed(1) + ' cards, which is more than a tier');
+  }
+  // and inside each league the ladder is the same shape - the same spread from
+  // its best club to its worst, because both are dealt from six tiers of one
+  // ladder with only the starting rung moved
+  assert.ok(Math.abs(aus.spread - ned.spread) < 6,
+    'a weak nation\'s league is as competitive as a strong one\'s (spread ' +
+    aus.spread.toFixed(1) + ' v ' + ned.spread.toFixed(1) + ')');
 });
 
 test('the same archetype wears a different accent in a different country', () => {
@@ -182,21 +201,34 @@ test('the same archetype wears a different accent in a different country', () =>
     'Afghanistan\'s on wrist spin: ' + afghan.join(','));
 });
 
+// THE CLAIM PATH, IN CANONICAL TERMS (B2).
+//
+// This used to check that a claimed club's XI rating landed within 2% of
+// BASE_XI x NAT_STR x HUMAN_STR - 25,336 in an associate - because the levelling
+// ran calibrate() at exactly that target. Both halves are gone: the target was
+// a figure on a rating scale that no longer exists, and the method was the
+// four-pass skill scaling B2 retired. A claimed club is now laid on the NEWCOMER
+// TIER, through the identical engine function that lays a newly founded one,
+// which is the actual product promise - "whatever seat the lottery gave you, you
+// start where every newcomer starts" - rather than a number it happened to hit.
 test('a fresh claim is levelled to the newcomer rung once - and only once', async () => {
-  const { HUMAN_STR, BASE_XI, NAT_STR } = await import('../init-world.mjs');
-  const xi = sq => { const b = sq.slice().sort((a, c) => (c.rating || 0) - (a.rating || 0)).slice(0, 11);
-    return b.reduce((s, p) => s + (p.rating || 0), 0) / 11; };
+  const xiCard = sq => {
+    const o = host.pkOvr(sq).slice().sort((a, b) => b - a).slice(0, 11);
+    return o.reduce((s, v) => s + v, 0) / o.length;
+  };
   // a newcomer founds in whatever Division Two seat the lottery left open -
-  // this claims the one whose dealt squad sits FURTHEST from the newcomer
-  // rung, exactly the unfairness the levelling exists to end
+  // this claims the one whose dealt squad sits FURTHEST from the newcomer's
+  // world, exactly the unfairness the levelling exists to end
   const U = '22222222-2222-4222-8222-222222222222';
-  const target = BASE_XI * NAT_STR.sco * HUMAN_STR;
+  const mid = (TIER_XI_BAND.newcomer[0] + TIER_XI_BAND.newcomer[1]) / 2;
   const seats = (await pool.query(
     `SELECT slot, squad FROM clubs WHERE country_id='sco' AND slot >= 8 ORDER BY slot`)).rows;
   const seat = seats.slice().sort((a, b) =>
-    Math.abs(xi(b.squad) - target) - Math.abs(xi(a.squad) - target))[0];
-  const before = xi(seat.squad);
-  assert.ok(Math.abs(before / target - 1) > 0.03, 'the seat really was a lottery: ' + Math.round(before));
+    Math.abs(xiCard(b.squad) - mid) - Math.abs(xiCard(a.squad) - mid))[0];
+  const before = xiCard(seat.squad);
+  assert.ok(before > TIER_XI_BAND.newcomer[1],
+    'the seat really was a lottery: its dealt XI reads ' + before.toFixed(1) +
+    ', above the newcomer band ' + TIER_XI_BAND.newcomer.join('-'));
   await pool.query(
     `INSERT INTO claims(user_id, display_name, country_id, slot, levelled)
      VALUES ($1,'Newcomer','sco',$2,false)`, [U, seat.slot]);
@@ -204,8 +236,22 @@ test('a fresh claim is levelled to the newcomer rung once - and only once', asyn
   await runDue(pool, host, 'sco', { now: atDay(dayOf(1), 23) });
   const club = (await pool.query(
     `SELECT squad FROM clubs WHERE country_id='sco' AND slot=$1`, [seat.slot])).rows[0].squad;
-  assert.ok(Math.abs(xi(club) / target - 1) < 0.02,
-    'the same men, raised to the newcomer rung: ' + Math.round(xi(club)) + ' vs ' + Math.round(target));
+  const afterXi = xiCard(club);
+  assert.ok(afterXi >= TIER_XI_BAND.newcomer[0] && afterXi <= TIER_XI_BAND.newcomer[1],
+    'the same men, laid on the newcomer curve: XI ' + afterXi.toFixed(1) +
+    ' against ' + TIER_XI_BAND.newcomer.join('-'));
+  // THE SAME MEN. The board's investment raises the squad; it does not replace
+  // it, and a levelling that quietly redealt the club would pass every line
+  // above and be the worst possible bug in this path.
+  const wasNames = seat.squad.map(p => p.name).sort();
+  const nowNames = club.map(p => p.name).sort();
+  assert.deepEqual(nowNames, wasNames, 'every man he inherited is still his');
+  assert.equal(club.filter(p => p.keeper || p.role === 'wicketkeeper').length,
+    seat.squad.filter(p => p.keeper || p.role === 'wicketkeeper').length,
+    'and he still has his keepers');
+  assert.equal(club.filter(p => p.bowlType && p.bowlType !== 'none').length,
+    seat.squad.filter(p => p.bowlType && p.bowlType !== 'none').length,
+    'and his attack');
   assert.equal((await pool.query(
     `SELECT levelled FROM claims WHERE country_id='sco' AND slot=$1`, [seat.slot])).rows[0].levelled, true);
 

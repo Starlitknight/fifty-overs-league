@@ -50,7 +50,7 @@
 // forward from its founding bank again on the next tick.
 import { makePool } from './db.mjs';
 import { makeHost } from './enginehost.mjs';
-import { countryConfigs, squadFor, HUMAN_STR, foundingDivisions } from './init-world.mjs';
+import { countryConfigs, squadFor, foundingDivisions } from './init-world.mjs';
 import { EPOCH, dayIx, scheduleOf, seasonSchedules } from './clock.mjs';
 import { foundingSeats } from './economy.mjs';
 
@@ -168,11 +168,11 @@ for (const cfg of cfgs) {
       kept++; line.push(club.slot + ':' + row.name + ' (claimed, kept)');
       continue;
     }
-    // A CLAIMED CLUB IS A PERSON'S CLUB: dealt to the standard newcomer rung,
-    // so two managers who joined on the same day hold the same class of squad
-    // whatever seats the auto-claim gave them. Bots keep the seat's rung.
+    // A CLAIMED CLUB IS A PERSON'S CLUB: dealt the newcomer's own tier, so two
+    // managers who joined on the same day hold the same class of squad whatever
+    // seats the auto-claim gave them. Bots keep the seat's tier.
     const isClaimed = claimed.has(cfg.id + ':' + club.slot);
-    const players = squadFor(host, cfg, club, gen, isClaimed ? HUMAN_STR : null);
+    const players = squadFor(host, cfg, club, gen, isClaimed);
     // DEALT NOW, WRITTEN LATER. Generating a world's cricketers is the slow
     // part - a couple of hundred squads through the engine - and it touches
     // no database at all, so it happens out here where a long job holds no
