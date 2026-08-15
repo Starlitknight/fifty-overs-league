@@ -900,6 +900,50 @@ function foOvrLabel(v) {
   for (const [floor, name] of FO_OVR_LADDER) if (v >= floor) lbl = name;
   return lbl;
 }
+// ===========================================================================
+// WHAT ONE ABILITY IS CALLED. The manager reads a cricketer, not a spreadsheet.
+// ===========================================================================
+//
+// A skill is a LATENT number and it is open-ended - B2 took the 99 ceiling off,
+// so a great fast bowler's wicket threat genuinely runs past a hundred. The
+// engine, the nets, the ageing, the value map and the wage curve all read that
+// exact number and always will. What the product shows is this ladder.
+//
+// THIS IS NOT THE OVR LADDER, and the two must never be conflated.
+// `foOvrLabel` names a whole cricketer on a bounded 0-100 semantic scale, where
+// 95 is the top rung because 95 is nearly the top of the scale. `foSkillLabel`
+// names ONE open-ended ability, where 95 is very good and 130 is a thing almost
+// nobody has ever seen. Same words in places, different scales, different
+// meanings, separate functions.
+//
+// WHY WORDS AT ALL. A number invites the wrong game: with 81 and 83 both on the
+// screen the optimal thing a manager can do is compare them, and that is
+// spreadsheet play, not cricket. A band is honest about what a club can really
+// know about a player, and it leaves the exact figure where it belongs - in the
+// simulation. It is deliberately NOT scouting fog: there is no noise here, no
+// hidden accuracy stat, and the same man always reads the same way.
+const FO_SKILL_LADDER = [
+  [0, 'Awful'], [10, 'Weak'], [20, 'Limited'], [30, 'Decent'], [40, 'Solid'],
+  [50, 'Good'], [60, 'Strong'], [70, 'Great'], [80, 'Brilliant'],
+  [90, 'Masterful'], [100, 'Iconic'], [110, 'Immortal'], [120, 'Generational'],
+  [130, 'Unprecedented']
+];
+// the short form the chips and the narrow columns use, same rungs, same order
+const FO_SKILL_ABBR = ['awful', 'weak', 'ltd', 'decent', 'solid', 'good', 'strong',
+  'great', 'brill', 'master', 'iconic', 'immort', 'gener', 'unprec'];
+// THE INDEX, which is the only place the arithmetic lives. Open at the top: a
+// 130 and a 200 are both Unprecedented, and nothing clamps to 99 on the way.
+function foSkillIx(v) {
+  v = Math.round(+v || 0);
+  if (v < 0) v = 0;
+  let ix = 0;
+  for (let i = 0; i < FO_SKILL_LADDER.length; i++) if (v >= FO_SKILL_LADDER[i][0]) ix = i;
+  return ix;
+}
+function foSkillLabel(v) { return FO_SKILL_LADDER[foSkillIx(v)][1]; }
+function foSkillAbbr(v) { return FO_SKILL_ABBR[foSkillIx(v)]; }
+try { window.foSkillLabel = foSkillLabel; window.foSkillAbbr = foSkillAbbr;
+      window.foSkillIx = foSkillIx; window.FO_SKILL_LADDER = FO_SKILL_LADDER; } catch (eSk) {}
 // TEN STARS, IN HALVES, OFF THE SAME NUMBER. There were two star systems - a
 // legacy five-star ladder and a ten-star strip - reading two different
 // universes, so the same cricketer wore different stars on different pages.
@@ -3405,6 +3449,11 @@ const prole=r=>ROLEN[r]||r;
 const TALN={fastStarter:'Fast Starter',anchor:'Anchor',finisher:'Finisher',sixMachine:'Six Machine',spinKiller:'Spin Killer',paceHunter:'Pace Hunter',busyRunner:'Busy Runner',newBallSpecialist:'New Ball Specialist',deathSpecialist:'Death Specialist',partnershipBreaker:'Partnership Breaker',bouncer:'Bouncer',miser:'Miser',goldenArm:'Golden Arm',mysteryBall:'Mystery Ball',lightningHands:'Lightning Hands',safeHands:'Safe Hands',rocketArm:'Rocket Arm'};
 const ptal=t=>TALN[t]||t;
 const TIPS={Batting:'Overall batting: vs pace, vs spin, rotation, temperament, power',Bowling:'Overall bowling: wicket threat, economy, discipline, craft, stamina',Keeping:'Glovework: keeping, stumping, catching',Endurance:'Stamina for bowlers; composure-fitness for batters. Slows in-match fatigue',Technique:'vs pace + vs spin + temperament',Power:'Six-hitting muscle',Fielding:'Ground fielding + catching. Catching sets drop chance',vsPace:'Batting vs seam/pace bowling',vsSpin:'Batting vs spin bowling',rotation:'Finds singles and twos, avoids dots',temperament:'Composure; batting core and pressure resistance',wicket:'Bowler wicket threat (engine: threat)',economy:'Run suppression and dot pressure (engine: control)',discipline:'Avoids wides and no-balls',moveTurn:'Seam movement / spin turn',variation:'Slower balls, googlies, deception',stamina:'Slows in-match fatigue during long spells and innings',catching:'Catch conversion - sets drop chance',keeping:'Wicketkeeper reliability',stumping:'Stumping conversion',End:'Endurance',Bat:'Batting aggregate',Bowl:'Bowling aggregate',Tech:'Technique',Keep:'Keeping',Field:'Fielding',Capt:'Captaincy - small team-wide effect',Exp:'Experience',Fatg:'Fatigue state',Form:'Current form',BT:'Bowling type',Wage:'Weekly wage',Rating:'Overall rating'};
+// THE NAME OF AN ATTRIBUTE, in the words a cricket person uses rather than the
+// engine's key. One map, so the squad page, the card and the nets all call the
+// same thing by the same name.
+const SKN={vsPace:'vs Pace',vsSpin:'vs Spin',power:'Power',rotation:'Rotation',temperament:'Temperament',wicket:'Wicket threat',economy:'Economy',discipline:'Discipline',moveTurn:'Movement / turn',variation:'Variation',stamina:'Stamina',fielding:'Fielding',catching:'Catching',keeping:'Keeping',stumping:'Stumping'};
+try { window.FO_SKILL_NAMES = SKN; } catch (eSkn) {}
 const LADDER=['atrocious','dreadful','poor','ordinary','average','reasonable','capable','reliable','accomplished','expert','outstanding','spectacular','exceptional','world class','elite','legendary'];
 const FORMLAD=['abysmal','poor','shaky','steady','good','strong','excellent'];
 const FATLAD=['exhausted','tired','weary','passable','rested','fresh','energetic'];
@@ -3447,7 +3496,19 @@ function effBowl(bat,bowl,ctx){
 }
 function meter(v,lbl){const col=v>=70?'#2c7a2c':v>=45?'#C08A2E':'#B23230';
   return `<div style="margin:2px 0"><span class="sklbl">${lbl}</span><span class="skbar" style="width:130px"><i style="width:${v}%;background:${col}"></i></span><span class="skword" style="color:${col}">${word(v)}</span></div>`}
-const word=x=>WORDS[wIx(x)], abbr=x=>ABBR[wIx(x)];
+// WHAT AN ABILITY IS CALLED, EVERYWHERE, AND ONLY FROM ONE PLACE.
+//
+// `word` used to be its own sixteen-rung ladder at 6.25 points a rung, clamped
+// at index fifteen - so every ability from 94 upwards read 'legendary' and the
+// whole point of taking the ceiling off was invisible: a 96, a 114 and a 134
+// were one word. It is the canonical skill ladder now. Every call site in the
+// product is a player ability (a skill, an ability composite built out of
+// skills, or captaincy), so this one line gives the card a single vocabulary
+// instead of two, and gives it one that does not run out at the top.
+//
+// `wIx` stays where it is: it is the rank-of-16 arithmetic some tooltips quote
+// and some bars colour by, and it is not a name for anything.
+const word=x=>foSkillLabel(x), abbr=x=>foSkillAbbr(x);
 const esc=t=>String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;');
 const $=s=>document.querySelector(s);
 // ============================================================================
@@ -3794,7 +3855,7 @@ const aggTech=p=>Math.round((S(p).vsPace+S(p).vsSpin+S(p).temperament)/3);
 const aggEnd=p=>p.bowlType?S(p).stamina:Math.round(S(p).temperament*0.9);
 const aggField=p=>Math.round((S(p).fielding+S(p).catching)/2);
 const isPT=p=>p.bowlTypeFull&&p.bowlTypeFull.startsWith('partTime');
-const bar=(v,lbl)=>`<span class="sklbl" title="${TIPS[lbl]||lbl}">${lbl}</span><span class="skbar"><i style="width:${foSkBar(v)}%"></i></span><span class="skword" title="${word(v)} - rank ${wIx(v)+1} of 16">${word(v)}</span>`;
+const bar=(v,lbl)=>`<span class="sklbl" title="${TIPS[lbl]||lbl}">${lbl}</span><span class="skbar"><i style="width:${foSkBar(v)}%"></i></span><span class="skword" title="${word(v)}">${word(v)}</span>`;
 function crumb(...parts){return `<div class="crumb">${parts.map(esc).join('<span class="sep">&raquo;</span>')}</div>`}
 function playerTip(p){
   if(!p)return '';
@@ -4107,7 +4168,7 @@ function pgSquad(){
 const ROLEICON={opener:'OP',topOrderBat:'TOP',middleOrderBat:'MID',wicketkeeper:'WK',allRounder:'AR',seamFast:'FST',seamFastMedium:'FM',seamMedium:'MED',wristSpin:'WS',fingerSpin:'FS'};
 const FORMDOT=f=>{const c=['#7a1d1d','#B23230','#c07a3a','#999','#7a9a3a','#2c7a2c','#1c5537'][f??3];return `<span title="form: ${FORMW_UI[f??3]}" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c}"></span>`};
 const FORMW_UI=['abysmal','poor','shaky','steady','good','strong','excellent'];
-function miniBar(v,tip){return `<span title="${tip}: ${word(v)} (rank ${wIx(v)+1}/16)\n${SKILLTIP}"><span class="skbar" style="width:56px;height:8px"><i style="width:${foSkBar(v)}%"></i></span> <b class="sknum">${Math.round(v)}</b></span>`}
+function miniBar(v,tip){return `<span title="${tip}: ${word(v)}\n${SKILLTIP}"><span class="skbar" style="width:56px;height:8px"><i style="width:${foSkBar(v)}%"></i></span> <b class="sknum">${word(v)}</b></span>`}
 function cardsView(ps){
   const rows=ps.map((p,ix)=>{
     const openK=p.name, isOpen=!!squadView.open[openK];
@@ -4209,9 +4270,9 @@ function pgPlayer(q){
     </div></div>
     <div class="panel"><h4>Skills</h4><div class="pad">
       ${bar(aggBat(p),'Batting')}<br>${bar(aggBowl(p),'Bowling')}<br>${bar(aggKeep(p),'Keeping')}<br>${bar(aggField(p),'Fielding')}<br>${bar(aggEnd(p),'Endurance')}<br>${bar(aggTech(p),'Technique')}<br>${bar(S(p).power,'Power')}
-      <details class="adv"><summary>Advanced engine view</summary><table class="kv">
-        ${['vsPace','vsSpin','power','rotation','temperament','wicket','economy','discipline','moveTurn','variation','stamina','fielding','catching','keeping','stumping'].map(k=>`<tr><td>${k}</td><td>${S(p)[k]??0} <span class="small">(${word(S(p)[k]??0)})</span></td></tr>`).join('')}
-        <tr><td class="small">engine map</td><td class="small">bat ${p.bat} · threat ${p.threat} · control ${p.control} · type ${p.bowlType||'none'}</td></tr>
+      <details class="adv"><summary>Every attribute</summary><table class="kv">
+        ${['vsPace','vsSpin','power','rotation','temperament','wicket','economy','discipline','moveTurn','variation','stamina','fielding','catching','keeping','stumping'].map(k=>`<tr><td>${SKN[k]||k}</td><td>${word(S(p)[k]??0)}</td></tr>`).join('')}
+        <tr><td class="small">bowling</td><td class="small">${p.bowlType||'does not bowl'}</td></tr>
       </table></details>
     </div></div>
   </div></div>
@@ -5233,7 +5294,7 @@ function fantasyPoints(r){
 }
 function sdot(v,lbl){
   const _L=SKILLTIP;const col=v>=76?'#1c5537':v>=64?'#2c7a2c':v>=52?'#C08A2E':v>=40?'#c07a3a':'#B23230';
-  return `<span class="sbar" title="${lbl}: ${word(v)} - rank ${wIx(v)+1} of 16\n${_L}"><i style="width:${Math.max(4,foSkBar(v))}%;background:${col}"></i></span><span class="sknum">${Math.round(v)}</span>`;
+  return `<span class="sbar" title="${lbl}: ${word(v)}\n${_L}"><i style="width:${Math.max(4,foSkBar(v))}%;background:${col}"></i></span><span class="sknum">${word(v)}</span>`;
 }
 function pshipBars(inn){
   const ps=(inn.pships||[]).concat(inn.pshipB>0?[{w:'-',runs:inn.pshipR,balls:inn.pshipB,pair:'unbroken'}]:[]);
@@ -5629,7 +5690,7 @@ function pgEditor(){
       <div class="ctlrow"><span>Role:</span><select onchange="GD.teams[${edState.team}].players[${i}].role=this.value;jsDerive(GD.teams[${edState.team}].players[${i}]);pgEditor()">${['opener','topOrderBat','middleOrderBat','wicketkeeper','allRounder','seamFast','seamFastMedium','seamMedium','wristSpin','fingerSpin'].map(r=>`<option value="${r}" ${p.role===r?'selected':''}>${prole(r)}</option>`).join('')}</select>
       <span>Bowling type:</span><select onchange="GD.teams[${edState.team}].players[${i}].bowlTypeFull=this.value;jsDerive(GD.teams[${edState.team}].players[${i}]);pgEditor()">${['none','partTimeSeam','partTimeSpin','seamFast','seamFastMedium','seamMedium','wristSpin','fingerSpin'].map(r=>`<option ${p.bowlTypeFull===r?'selected':''}>${r}</option>`).join('')}</select>
       <span>Hand:</span><select onchange="GD.teams[${edState.team}].players[${i}].hand=this.value;jsDerive(GD.teams[${edState.team}].players[${i}]);pgEditor()"><option ${p.hand==='R'?'selected':''}>R</option><option ${p.hand==='L'?'selected':''}>L</option></select></div>
-      <div class="ctlrow" style="flex-wrap:wrap">${SKEYS.map(k=>`<label class="small">${k} <input type="number" min="1" max="99" value="${p.skills[k]}" style="width:44px" onchange="GD.teams[${edState.team}].players[${i}].skills['${k}']=+this.value;jsDerive(GD.teams[${edState.team}].players[${i}])"></label>`).join('')}</div>
+      <div class="ctlrow" style="flex-wrap:wrap">${SKEYS.map(k=>`<label class="small">${k} <input type="number" min="1" max="${FO_LATENT_MAX}" value="${p.skills[k]}" style="width:44px" onchange="GD.teams[${edState.team}].players[${i}].skills['${k}']=+this.value;jsDerive(GD.teams[${edState.team}].players[${i}])"></label>`).join('')}</div>
       <div class="ctlrow"><button onclick="jsDerive(GD.teams[${edState.team}].players[${i}]);pgEditor()">Apply</button></div>
     </div></td></tr>`;
     return `<tr class="rowlink" onclick="edState.open=edState.open===${i}?null:${i};pgEditor()"><td>${esc(p.name)}</td><td>${prole(p.role)}</td><td>${esc(p.btLabel)}</td><td class="n">${p.rating}</td><td>${open?'▲':'▼'}</td></tr>${editor}`;

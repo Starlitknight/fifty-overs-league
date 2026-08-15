@@ -229,8 +229,16 @@ test('a skill that pops twice in one round rewinds to where it started', () => {
   // and a young man's best week quietly halves itself on the chart.
   const html = draw('climb');
   const key = html.split("class='fo-t2-key'")[1].split('</div>')[0];
-  assert.ok(/playing pace <b>\+2<\/b>/.test(key),
-    'playing pace shows the two steps he really took: ' + key.replace(/<[^>]*>/g, ' ').trim());
+  // THE READING IS A BAND NOW, so the two steps are proved off the key's own
+  // data-gain rather than off the ink: fifty and fifty-two are both Good, and
+  // a band cannot tell a gain of two from a gain of one. The arithmetic this
+  // test exists for is unchanged and is still checked exactly.
+  const seg = key.split('<span').filter(x => /playing pace/.test(x))[0] || '';
+  assert.ok(/data-gain='2'/.test(seg),
+    'playing pace rewound the two steps he really took: ' + seg.replace(/<[^>]*>/g, ' ').trim());
+  // ...and the ink itself never prints the figure
+  assert.ok(!/\d/.test(key.replace(/<[^>]*>/g, ' ')),
+    'the key names bands, not numbers: ' + key.replace(/<[^>]*>/g, ' ').trim());
 });
 
 test('the climb opens on the man the book has most to say about', () => {

@@ -132,7 +132,7 @@
       var tals = (p.talents || []).slice(0, 2).map(function (t2) { return "<span class='fo-sq-talent' title='" + E((typeof TALTIPS !== "undefined" && TALTIPS[t2]) || "") + "'>" + E(typeof ptal === "function" ? ptal(t2) : t2) + "</span>"; }).join("");
       return "<div class='fo-ob-row'>" +
         "<span class='fo-ob-n" + (i < 3 ? " top" : "") + "'>" + (i + 1) + "</span>" +
-        "<div class='fo-ob-who'><b>" + E(nm) + (p.keeper ? " <s title='wicketkeeper'>&dagger;</s>" : "") + tals + "</b><span class='small'>" + E(prole(p.role || "")) + " · bat <b style='color:" + bc + "'>" + bv + "</b>" + (p.bowlType ? " · " + E(shortBT(p)) : "") + "</span></div>" +
+        "<div class='fo-ob-who'><b>" + E(nm) + (p.keeper ? " <s title='wicketkeeper'>&dagger;</s>" : "") + tals + "</b><span class='small'>" + E(prole(p.role || "")) + " · bat <b style='color:" + bc + "'>" + E(word(bv)) + "</b>" + (p.bowlType ? " · " + E(shortBT(p)) : "") + "</span></div>" +
         "<button class='fo-ob-chip fo-ob-mb " + foMbCls(nm) + "' data-fo-mb='" + E(nm) + "' title='" + E(foMbTitle(nm)) + "'>" + foMbLetter(nm) + "</button>" +
         "<button class='fo-ob-chip" + (isC ? " on" : "") + "' data-fo-capt='" + E(nm) + "' title='captain'>C</button>" +
         "<button class='fo-ob-chip" + (isW ? " on" : "") + "' data-fo-wk='" + E(nm) + "' title='wicketkeeper'>WK</button>" +
@@ -153,9 +153,9 @@
       var tal = (p.talents || [])[0];
       var talTxt = tal ? " · " + E(typeof ptal === "function" ? ptal(tal) : tal) : "";
       var titleT = (p.talents || []).map(function (t2) { return (typeof ptal === "function" ? ptal(t2) : t2); }).join(", ");
-      return "<button class='fo-og-b" + (on ? " on" : "") + "' data-fo-brush='" + E(p.name) + "' title='" + E(p.name) + " · " + E(shortBT(p)) + " · bowl " + bw + (titleT ? " · " + E(titleT) : "") + "'>" +
+      return "<button class='fo-og-b" + (on ? " on" : "") + "' data-fo-brush='" + E(p.name) + "' title='" + E(p.name) + " · " + E(shortBT(p)) + " · bowl " + E(word(bw)) + (titleT ? " · " + E(titleT) : "") + "'>" +
         "<em style='background:" + (colors[p.name] || "#888") + "'></em>" +
-        "<span class='fo-og-bt'><b>" + E(foOrdSurname(p.name)) + (isPT(p) ? " <s>pt</s>" : "") + "</b><i>" + E(shortBT(p)) + " · <n style='color:" + (on ? "#c7cfda" : bwc) + "'>" + bw + "</n>" + talTxt + "</i></span>" +
+        "<span class='fo-og-bt'><b>" + E(foOrdSurname(p.name)) + (isPT(p) ? " <s>pt</s>" : "") + "</b><i>" + E(shortBT(p)) + " · <n style='color:" + (on ? "#c7cfda" : bwc) + "'>" + E(abbr(bw)) + "</n>" + talTxt + "</i></span>" +
         "<u>" + (tot[p.name] || 0) + "</u></button>";
     }).join("") +
       "<button class='fo-og-b fo-og-clear' data-fo-clearall title='wipe the whole plan'>&#8709; Clear all</button>";
@@ -189,8 +189,8 @@
     var bench = (t.players || []).filter(function (p) { return !by[p.name]; });
     var rows = bench.map(function (p) {
       var ok = (bowlersLeft + (p.bowlType ? 1 : 0)) >= 5;
-      var bits = [E(prole(p.role || "")), "bat " + Math.round(aggBat(p) || 0)];
-      if (p.bowlType) bits.push(E(shortBT(p)) + " " + Math.round(aggBowl(p) || 0));
+      var bits = [E(prole(p.role || "")), "bat " + E(word(Math.round(aggBat(p) || 0)))];
+      if (p.bowlType) bits.push(E(shortBT(p)) + " " + E(word(Math.round(aggBowl(p) || 0))));
       if (p.keeper) bits.push("keeper");
       var tals = (p.talents || []).map(function (t2) { return (typeof ptal === "function" ? ptal(t2) : t2); }).join(", ");
       // his stars, the same language as the cards he'd be joining: gold with
@@ -249,7 +249,7 @@
       var dis = sameEndClash || after > 10;
       var why = sameEndClash ? "already bowling the other end this phase" : (after > 10 ? "would pass 10 overs (" + after + ")" : (mine ? mine + " ov planned elsewhere" : ""));
       return "<button class='fo-osh-row' data-fo-pick='" + E(p.name) + "' " + (dis ? "disabled" : "") + ">" +
-        "<div><b>" + E(p.name) + (isPT(p) ? " <span class='fo-osh-pt'>part-time</span>" : "") + "</b><span class='small'>" + E(shortBT(p)) + " · bowl " + Math.round(aggBowl(p) || 0) + "</span></div>" +
+        "<div><b>" + E(p.name) + (isPT(p) ? " <span class='fo-osh-pt'>part-time</span>" : "") + "</b><span class='small'>" + E(shortBT(p)) + " · bowl " + E(word(Math.round(aggBowl(p) || 0))) + "</span></div>" +
         "<span class='fo-osh-note" + (dis ? " bad" : "") + "'>" + E(why) + "</span></button>";
     }).join("");
     var m = document.createElement("div"); m.id = "fo-osheet";

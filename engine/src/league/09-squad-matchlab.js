@@ -277,13 +277,18 @@
     if (FO_BOWLROLES[p.role]) return "bowl";
     return "bat";
   }
+  // THE ABILITY CELL. The bar is drawn by the engine's own foSkBar, which
+  // compresses above 92 rather than clamping - a 114 has to be able to draw
+  // itself without running off the end of the track, and it must not draw
+  // itself so precisely that the reader can measure the number back off it.
   function foSqSkillCell(v, muted, label) {
     v = Math.round(v);
     var col = v >= 75 ? "#16A34A" : v >= 50 ? "#4DA6A2" : v >= 30 ? "#C08A2E" : "#B23230";
+    var w = (typeof foSkBar === "function") ? foSkBar(v) : Math.max(2, Math.min(100, v));
     if (muted || v < 12) {
-      return "<div class='fo-sq-skill fo-sq-nil'><div class='fo-sq-skbar'><i style='width:" + Math.max(2, Math.min(100, v)) + "%'></i></div><div class='fo-sq-sknum'>" + v + " · –</div></div>";
+      return "<div class='fo-sq-skill fo-sq-nil'><div class='fo-sq-skbar'><i style='width:" + Math.max(2, w) + "%'></i></div><div class='fo-sq-sknum'>–</div></div>";
     }
-    return "<div class='fo-sq-skill' title='" + label + ": " + word(v) + " · rank " + (wIx(v) + 1) + " of 16'><div class='fo-sq-skbar'><i style='width:" + Math.min(100, v) + "%;background:" + col + "'></i></div><div class='fo-sq-sknum'><b>" + v + "</b><span class='fo-sq-skw'> · " + word(v) + "</span></div></div>";
+    return "<div class='fo-sq-skill' title='" + label + ": " + word(v) + "'><div class='fo-sq-skbar'><i style='width:" + w + "%;background:" + col + "'></i></div><div class='fo-sq-sknum'><b>" + word(v) + "</b></div></div>";
   }
   function foSqDetail(p, isYouth) {
     // the standard seven-skill read-out (the draft card's own bars), not the
@@ -510,6 +515,10 @@
   // the columns, in reading order. num: right-aligned rating. agg: a headline
   // figure, tinted so the eye finds it. live: false means the number does not
   // apply to this man and the cell is struck through instead.
+  // which grid columns are ABILITIES (and so read as bands) rather than ratings,
+  // money or state. ovr, exp, age, wage, form and fit are none of this game's
+  // business here - they keep the readings they have always had.
+  var FO_SQ_ABIL = { bat: 1, bowl: 1, tech: 1, power: 1, field: 1, keep: 1 };
   var FO_SQ_COLS = [
     { k: "pos", l: "#", s: "#", tip: "Batting position in the XI", num: 1,
       v: function (p, x) { return x.xiIx(p) < 0 ? 99 : x.xiIx(p); } },
@@ -617,9 +626,20 @@
           "<span class='fo-sqg-v' style='color:" + fc9 + "'>" + en9.pct + "</span></td>";
       }
       if (v < 0) return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "'><span class='fo-sqg-nil' title='" + E(c.nil || "Does not bowl") + "'>&ndash;</span></td>";
-      // the number is the reading; the ladder word it sits on is the tooltip
-      return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "' title='" + E(c.l + ": " + foSqLad(v, c.k) + " (" + v + ")") + "'>" +
-        "<span class='fo-sqg-v' style='color:" + foSqQCol(v) + "'>" + v + "</span></td>";
+      // OVR IS STILL A NUMBER, and so is experience. The card's whole-player
+      // rating is a bounded 0-100 statement the manager is meant to read
+      // exactly; it is the ABILITIES underneath it that are bands. Keeping the
+      // two apart here is the same separation foOvrLabel and foSkillLabel keep.
+      if (!FO_SQ_ABIL[c.k]) {
+        return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "' title='" + E(c.l + ": " + foSqLad(v, c.k)) + "'>" +
+          "<span class='fo-sqg-v' style='color:" + foSqQCol(v) + "'>" + v + "</span></td>";
+      }
+      // THE WORD IS THE READING. It used to be the number, with the word as the
+      // tooltip; the tooltip also carried the figure in brackets, so hovering
+      // handed back exactly what the card had stopped saying. data-v keeps the
+      // raw figure on the node for sorting and for tests - it is never drawn.
+      return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "' data-v='" + v + "' title='" + E(c.l + ": " + foSqLad(v, c.k)) + "'>" +
+        "<span class='fo-sqg-v' style='color:" + foSqQCol(v) + "'>" + E(foSqLad(v, c.k)) + "</span></td>";
     };
 
     var body = rows.map(function (p) {
@@ -813,12 +833,12 @@
       ".fo-sqg-fl{display:inline-block;width:20px;height:14px;border-radius:2px;overflow:hidden;vertical-align:-2px;box-shadow:0 0 0 1px rgba(20,28,40,.12)}",
       ".fo-sqg-fl img{width:100%;height:100%;object-fit:cover;display:block}",
       ".fo-sqg-nat{font-family:Manrope,sans-serif;font-size:10px;letter-spacing:.1em;text-transform:uppercase;color:rgba(20,28,40,.55)}",
-      ".fo-sqg-v{font-family:Manrope,sans-serif;font-weight:600;font-size:12.5px;font-variant-numeric:tabular-nums}",
+      ".fo-sqg-v{font-family:Manrope,sans-serif;font-weight:600;font-size:11px;white-space:nowrap;letter-spacing:.01em}",
       ".fo-sqg .c-fit{white-space:nowrap}",
       ".fo-sqg-fit{display:inline-block;width:34px;height:5px;border-radius:3px;background:rgba(20,32,47,.12);margin-right:6px;vertical-align:2px;overflow:hidden}",
       ".fo-sqg-fit i{display:block;height:100%;border-radius:3px}",
       "@media(max-width:900px){.fo-sqg-fit{width:22px}}",
-      ".fo-sqg td.agg .fo-sqg-v{font-weight:700;font-size:13.5px}",
+      ".fo-sqg td.agg .fo-sqg-v{font-weight:700;font-size:11.5px}",
       ".fo-sqg td.c-ovr .fo-sqg-v{font-size:15px}",
       // the club's own line, under the men
       ".fo-sqg-none{text-align:center;font:400 13px Fraunces,Georgia,serif;color:rgba(20,28,40,.5);height:74px}",
@@ -933,7 +953,7 @@
       ".fo-sqx-attr .k{font-family:Manrope,sans-serif;text-transform:uppercase;letter-spacing:.1em;font-size:10px;color:#6B7686;min-width:56px}",
       ".fo-sqx-attr .m{height:5px;border-radius:3px;background:rgba(20,28,40,.1);overflow:hidden}",
       ".fo-sqx-attr .m i{display:block;height:100%;border-radius:3px;background:linear-gradient(90deg,#8F6A1C,var(--gold))}",
-      ".fo-sqx-attr .v{font-family:Manrope,sans-serif;font-weight:600;font-size:12px;color:#1B2432;min-width:22px;text-align:right;font-variant-numeric:tabular-nums}",
+      ".fo-sqx-attr .v{font-family:Manrope,sans-serif;font-weight:600;font-size:11.5px;color:#1B2432;min-width:82px;text-align:right;white-space:nowrap}",
       ".fo-sqx-attr.nil .v{color:#9AA3AE}.fo-sqx-attr.nil .m i{background:rgba(20,28,40,.18)}",
       // traits + stars
       ".fo-sqx-trait{display:flex;gap:8px;font-family:Fraunces,Georgia,serif;font-size:12.5px;line-height:1.45;color:#3A4453;margin-bottom:7px}",
@@ -2068,10 +2088,14 @@
   // one tab's worth of the man, all of it read off his real skills
   function foSqPane(tab, p, ovr) {
     var s = S(p);
+    // THE EXPANDED CARD'S ATTRIBUTE LINE. The reading is the band; the meter is
+    // drawn by foSkBar so a man over ninety-nine still fits on the track and so
+    // the track cannot be measured back into a number.
     var bar = function (k, v, nil) {
       v = Math.max(0, Math.round(v || 0));
+      var w = (typeof foSkBar === "function") ? foSkBar(v) : Math.min(100, v);
       return "<div class='fo-sqx-attr" + (nil ? " nil" : "") + "'><span class='k'>" + k + "</span>" +
-        "<span class='m'><i style='width:" + Math.min(100, v) + "%'></i></span><span class='v'>" + (nil ? "&ndash;" : v) + "</span></div>";
+        "<span class='m'><i style='width:" + w + "%'></i></span><span class='v'>" + (nil ? "&ndash;" : E(word(v))) + "</span></div>";
     };
     if (tab === "bat") {
       return "<div class='fo-sqx-pcols'><div><div class='fo-sqx-ph'>With the bat</div>" +

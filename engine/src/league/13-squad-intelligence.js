@@ -54,10 +54,10 @@
   }
   function foSiStat(p, k) {
     try {
-      if (k === "bat") return foSiClamp(aggBat(p), 0, 100);
-      if (k === "bowl") return p.bowlType ? foSiClamp(aggBowl(p), 0, 100) : 0;
-      if (k === "keep") return (p.keeper || p.role === "wicketkeeper") ? foSiClamp(aggKeep(p), 0, 100) : 0;
-      if (k === "field") return foSiClamp(aggField(p), 0, 100);
+      if (k === "bat") return foSiClamp(aggBat(p), 0, 999);
+      if (k === "bowl") return p.bowlType ? foSiClamp(aggBowl(p), 0, 999) : 0;
+      if (k === "keep") return (p.keeper || p.role === "wicketkeeper") ? foSiClamp(aggKeep(p), 0, 999) : 0;
+      if (k === "field") return foSiClamp(aggField(p), 0, 999);
       if (k === "exp") return foSiClamp(p.exp != null ? p.exp : (30 + (p.age || 20) * 1.5), 0, 100);
     } catch (e) {}
     return 0;
@@ -197,9 +197,9 @@
       ".fo-si-hero .big span{display:block;margin-top:9px;font:600 11px/1 Manrope,sans-serif;letter-spacing:.19em;text-transform:uppercase;color:rgba(246,239,223,.55)}",
       ".fo-si-plate{position:absolute;right:14px;bottom:0;z-index:2;width:110px;height:186px;object-fit:cover;object-position:50% 22%;border-radius:9px 9px 0 0;box-shadow:0 0 0 1px rgba(232,185,106,.34),0 -6px 26px rgba(0,0,0,.4)}",
       ".fo-si-stats{padding:15px 17px 17px}",
-      ".fo-si-st{display:grid;grid-template-columns:74px minmax(0,1fr) 30px;gap:10px;align-items:center;padding:7px 0}",
+      ".fo-si-st{display:grid;grid-template-columns:74px minmax(0,1fr) 92px;gap:10px;align-items:center;padding:7px 0}",
       ".fo-si-st span{font:600 11px/1 Manrope,sans-serif;letter-spacing:.17em;text-transform:uppercase;color:var(--mut)}",
-      ".fo-si-st b{text-align:right;font:700 13px/1 Manrope,sans-serif;color:var(--nv);font-variant-numeric:tabular-nums}",
+      ".fo-si-st b{text-align:right;font:700 11px/1 Manrope,sans-serif;color:var(--nv);white-space:nowrap}",
 
       "@media(max-width:1240px){.fo-si-work{grid-template-columns:290px minmax(0,1fr) 280px}}",
       "@media(max-width:1040px){.fo-si-work{grid-template-columns:290px minmax(0,1fr)}.fo-si-player{grid-column:1/-1;display:grid;grid-template-columns:330px minmax(0,1fr)}}",
@@ -354,12 +354,16 @@
 
     // ---- the selected man ----
     var keep = foSiStat(selected, "keep"), bowl = foSiStat(selected, "bowl");
-    var stats = [["Batting", foSiStat(selected, "bat")], keep ? ["Keeping", keep] : ["Bowling", bowl],
-      ["Fielding", foSiStat(selected, "field")], ["Experience", foSiStat(selected, "exp")],
-      ["Fitness", foSiEnergy(selected)]].map(function (x) {
+    var siBand = function (v) { try { return (typeof foSkillLabel === "function") ? foSkillLabel(v) : String(v); } catch (e) { return String(v); } };
+    var siWide = function (v) { try { return (typeof foSkBar === "function") ? foSkBar(v) : Math.min(100, v); } catch (e) { return Math.min(100, v); } };
+    var stats = [["Batting", foSiStat(selected, "bat"), 1], keep ? ["Keeping", keep, 1] : ["Bowling", bowl, 1],
+      ["Fielding", foSiStat(selected, "field"), 1], ["Experience", foSiStat(selected, "exp"), 0],
+      ["Fitness", foSiEnergy(selected), 0]].map(function (x) {
+        // an ability reads as a band; experience and fitness are states, not
+        // abilities, and stay the readings they have always been
         return "<div class='fo-si-st'><span>" + x[0] + "</span>" +
-          "<div class='fo-si-bar'><i class='" + foSiTone(x[1]) + "' style='width:" + x[1] + "%'></i></div>" +
-          "<b>" + x[1] + "</b></div>";
+          "<div class='fo-si-bar'><i class='" + foSiTone(x[1]) + "' style='width:" + (x[2] ? siWide(x[1]) : x[1]) + "%'></i></div>" +
+          "<b>" + (x[2] ? foSiE(siBand(x[1])) : x[1]) + "</b></div>";
       }).join("");
 
     var player = "<aside class='fo-si-card fo-si-player'>" +

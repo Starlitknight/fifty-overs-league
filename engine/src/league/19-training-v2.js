@@ -317,10 +317,22 @@
     if (!man || !tl.at[man.name]) return bar + emptyChart("No book for " + E(who || "") + " yet.");
     var series = tl.at[man.name];
     // only the skills that actually moved: a flat line teaches nothing
+    // WHAT THE NETS ACTUALLY DID, in the language the rest of the product
+    // speaks. A "+6" is the raw latent delta, and printing it hands back the
+    // precision every card in the game has stopped showing - two of them and a
+    // reader can subtract his way to the number. So a session that carried a
+    // man over a boundary NAMES the boundary, and one that moved him inside his
+    // band says so without inventing a promotion he did not earn.
+    var bandOf = function (v) { try { return (typeof foSkillLabel === "function") ? foSkillLabel(v) : String(v); } catch (e) { return String(v); } };
+    var movedTxt = function (lo, hi) {
+      var a = bandOf(lo), b = bandOf(hi);
+      if (a !== b) return E(a) + " &rarr; " + E(b);
+      return E(b) + " &uarr;";
+    };
     var moved = [];
     for (var k in (series[series.length - 1] || {})) {
       var lo = series[0] ? (series[0][k] || 0) : 0, hi = series[series.length - 1][k] || 0;
-      if (hi > lo) moved.push({ k: k, gain: hi - lo });
+      if (hi > lo) moved.push({ k: k, gain: hi - lo, lo: lo, hi: hi });
     }
     moved.sort(function (a, b) { return b.gain - a.gain; });
     moved = moved.slice(0, 6);
@@ -369,8 +381,13 @@
       "<text x='" + (W - R) + "' y='" + (H - 8) + "' class='ax e'>S" + tl.keys[n - 1].s + " R" + tl.keys[n - 1].r + "</text>";
 
     var key = moved.map(function (m, mi) {
-      return "<span><s style='background:" + LINE_C[mi % LINE_C.length] + "'></s>" +
-        E(SKILL_NM[m.k] || m.k) + " <b>+" + m.gain + "</b></span>";
+      // data-gain is the raw step count. It is never drawn - it exists so the
+      // regression guard in nets-page.test.mjs can still prove the rewind
+      // arithmetic (a skill that pops twice in one round has to rewind to
+      // where it started, not to halfway), which the band cannot show when
+      // both ends sit inside one rung.
+      return "<span data-gain='" + m.gain + "'><s style='background:" + LINE_C[mi % LINE_C.length] + "'></s>" +
+        E(SKILL_NM[m.k] || m.k) + " <b>" + movedTxt(m.lo, m.hi) + "</b></span>";
     }).join("");
 
     return manBar(squad, man.name, n + (n === 1 ? " round" : " rounds") + " on the record") +
@@ -416,9 +433,12 @@
       var a = -Math.PI / 2 + i * 2 * Math.PI / keys.length;
       var lx = cx + (R + 22) * Math.cos(a), ly = cy + (R + 22) * Math.sin(a) + 3.5;
       var anch = Math.abs(Math.cos(a)) < 0.3 ? "middle" : (Math.cos(a) > 0 ? "start" : "end");
+      // the shape says how far he has come; the arrow says he has come at all.
+      // The raw delta used to be printed here, which is the one number two
+      // readings apart would give the whole figure away.
       var d = (now[k7] || 0) - (then[k7] || 0);
       return "<text x='" + lx.toFixed(1) + "' y='" + ly.toFixed(1) + "' text-anchor='" + anch + "' class='rl'>" +
-        E(SKILL_SHORT[k7] || k7) + (d > 0 ? " <tspan class='up'>+" + d + "</tspan>" : "") + "</text>";
+        E(SKILL_SHORT[k7] || k7) + (d > 0 ? " <tspan class='up'>&uarr;</tspan>" : "") + "</text>";
     }).join("");
     var defs = "<radialGradient id='foRdG' cx='.5' cy='.5' r='.5'>" +
       "<stop offset='0' stop-color='#C9571F' stop-opacity='.34'/>" +

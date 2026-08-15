@@ -481,14 +481,20 @@
   function cardToPlayer(c) {
     if (!c || !c.name) return null;
     if (c.skills) return c;                      // already an engine player: untouched
-    var B = Math.max(0, Math.min(100, +c.batting || 0));
-    var W = Math.max(0, Math.min(100, +c.bowling || 0));
-    var F = Math.max(0, Math.min(100, +c.fielding || 0));
+    // NOT least(100). The world publishes these UNCAPPED - migration 099 says
+    // so in as many words ("a man with rotation 108 shows 108") - so clamping
+    // here would take a served cricketer who is past ninety-nine and quietly
+    // hand him back inside nought to a hundred, which is the one thing the
+    // latent model exists to stop.
+    var CMAX = (window.FO_LATENT_MAX || 250);
+    var B = Math.max(0, Math.min(CMAX, +c.batting || 0));
+    var W = Math.max(0, Math.min(CMAX, +c.bowling || 0));
+    var F = Math.max(0, Math.min(CMAX, +c.fielding || 0));
     // AND WHAT HE IS WITH THE GLOVES ON, which the card only started carrying
     // at migration 085. Before that a keeper's keeping had to be his ground
     // fielding - the only figure there was - and that is what a card without
     // it still folds to, so an older world reads exactly as it always did.
-    var K = c.keeping != null ? Math.max(0, Math.min(100, +c.keeping || 0)) : F;
+    var K = c.keeping != null ? Math.max(0, Math.min(CMAX, +c.keeping || 0)) : F;
     // THE TWO AGGREGATES SHARE A FACET. aggField reads fielding and catching;
     // aggKeep reads keeping, stumping and catching. Spreading K flat across the
     // gloves therefore gave back (K + K + F) / 3 rather than K, and a keeper

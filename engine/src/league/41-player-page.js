@@ -191,10 +191,15 @@
       dots + labs + "</svg>";
   }
 
+  // THE READING IS A BAND. The bar is drawn through the engine's own foSkBar,
+  // which compresses above 92 instead of clamping, so a man past ninety-nine
+  // still fits the track and the track cannot be read back into a figure.
   function bars(list) {
     return "<div class='fo-pp-bars'>" + list.map(function (b) {
       var v = num(b[1]);
-      return "<div class='fo-pp-bar'><i>" + E(b[0].toUpperCase()) + "</i><u><b style='width:" + v + "%'></b></u><em>" + v + "</em></div>";
+      var w = (typeof foSkBar === "function") ? foSkBar(v) : Math.min(100, v);
+      var lbl = (typeof foSkillLabel === "function") ? foSkillLabel(v) : String(v);
+      return "<div class='fo-pp-bar'><i>" + E(b[0].toUpperCase()) + "</i><u><b style='width:" + w + "%'></b></u><em>" + E(lbl) + "</em></div>";
     }).join("") + "</div>";
   }
 
@@ -1775,11 +1780,11 @@
     "html body #page .fo-pp-radar{width:100%;height:auto;overflow:hidden}",
     "html body #page .fo-pp-radar .fo-pp-rlab{font:700 11px Manrope,sans-serif;letter-spacing:.1em;fill:rgba(20,28,40,.45)}",
     "html body #page .fo-pp-bars{display:flex;flex-direction:column;gap:7px}",
-    "html body #page .fo-pp-bar{display:grid;grid-template-columns:74px minmax(0,1fr) 26px;align-items:center;gap:9px}",
+    "html body #page .fo-pp-bar{display:grid;grid-template-columns:74px minmax(0,1fr) 92px;align-items:center;gap:9px}",
     "html body #page .fo-pp-bar i{font:700 11px/1 Manrope,sans-serif;letter-spacing:.12em;color:rgba(20,28,40,.5);font-style:normal}",
     "html body #page .fo-pp-bar u{display:block;height:6px;border-radius:999px;background:rgba(20,28,40,.08);overflow:hidden;text-decoration:none}",
     "html body #page .fo-pp-bar u b{display:block;height:100%;border-radius:999px;background:linear-gradient(90deg,#8F6A1C,#E8C06A)}",
-    "html body #page .fo-pp-bar em{text-align:right;font:600 13px/1 Manrope,sans-serif;font-style:normal;color:#1B2432;font-variant-numeric:tabular-nums}",
+    "html body #page .fo-pp-bar em{text-align:right;font:600 11px/1 Manrope,sans-serif;font-style:normal;color:#1B2432;white-space:nowrap;min-width:88px}",
     "html body #page .fo-pp-adv{margin-top:12px}",
     "html body #page .fo-pp-adv summary{font:600 13px/1 Manrope,sans-serif;color:var(--nac);cursor:pointer}",
     // WHICH NUMBER BELONGS TO WHICH LABEL.

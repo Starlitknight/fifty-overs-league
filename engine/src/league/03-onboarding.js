@@ -1709,9 +1709,9 @@
       // movement - not his batting feel (which is deliberately poor)
       if (nm === "tech" && foPureBowler(p)) {
         var s0 = p.skills || {};
-        return Math.max(0, Math.min(100, Math.round(((s0.economy || 0) + (s0.discipline || 0) + (s0.moveTurn || 0)) / 3)));
+        return Math.max(0, Math.round(((s0.economy || 0) + (s0.discipline || 0) + (s0.moveTurn || 0)) / 3));
       }
-      return Math.max(0, Math.min(100, Math.round(({ bat: aggBat, bowl: aggBowl, keep: aggKeep, field: aggField, end: aggEnd, tech: aggTech })[nm](p))));
+      return Math.max(0, Math.round(({ bat: aggBat, bowl: aggBowl, keep: aggKeep, field: aggField, end: aggEnd, tech: aggTech })[nm](p)));
     } catch (e) { return 0; }
   }
   // The engine's skill word ("ordinary", "elite", "world class", …).
@@ -1724,11 +1724,12 @@
     var isBowler = p.bowlTypeFull ? p.bowlTypeFull !== "none" : !!p.bowlType;
     var pw = 0; try { pw = (typeof S === "function" ? S(p).power : (p.skills && p.skills.power)) || 0; } catch (e) {}
     var bars = [["Batting", foAgg(p, "bat")], ["Bowling", isBowler ? foAgg(p, "bowl") : 0], ["Keeping", foAgg(p, "keep")],
-      ["Endurance", foAgg(p, "end")], ["Technique", foAgg(p, "tech")], ["Power", Math.max(0, Math.min(100, Math.round(pw)))],
+      ["Endurance", foAgg(p, "end")], ["Technique", foAgg(p, "tech")], ["Power", Math.max(0, Math.round(pw))],
       ["Fielding", foAgg(p, "field")]];
     var tip = function (label) { try { return (typeof TIPS !== "undefined" && TIPS[label]) ? TIPS[label] : ""; } catch (e) { return ""; } };
+    var wide = function (v) { try { return (typeof foSkBar === "function") ? foSkBar(v) : Math.min(100, v); } catch (e) { return Math.min(100, v); } };
     return "<div class='fo-dc-bars'>" + bars.map(function (b) {
-      return "<span class='fo-db'><i title='" + E(tip(b[0])) + "'>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + b[1] + "%'></u></b><em title='" + E(foWord(b[1]) || "") + "'>" + b[1] + "</em></span>";
+      return "<span class='fo-db'><i title='" + E(tip(b[0])) + "'>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + wide(b[1]) + "%'></u></b><em>" + E(foWord(b[1]) || "") + "</em></span>";
     }).join("") + "</div>";
   }
   // One draft-room player card · the game's own card, in the brand theme.
@@ -1763,7 +1764,8 @@
       var pw = 0; try { pw = (typeof S === "function" ? S(p).power : (p.skills && p.skills.power)) || 0; } catch (e) {}
       var bars = [["Batting", agg("bat")], ["Bowling", isBowler ? agg("bowl") : 0], ["Keeping", agg("keep")], ["Fielding", agg("field")], ["Power", pw], ["Technique", agg("tech")], ["Endurance", agg("end")]];
       var word = function (v) { try { return typeof window.word === "function" ? window.word(v) : ""; } catch (e) { return ""; } };
-      var barHtml = bars.map(function (b) { var v = Math.max(0, Math.min(100, Math.round(b[1] || 0))); return "<div class='fo-pd-bar'><span>" + b[0] + "</span><i><b class='fo-sk-" + foSkTone(v) + "' style='width:" + v + "%'></b></i><em title='" + E(word(v) || "") + "'>" + v + "</em></div>"; }).join("");
+      var wide = function (v) { try { return (typeof foSkBar === "function") ? foSkBar(v) : Math.min(100, v); } catch (e) { return Math.min(100, v); } };
+      var barHtml = bars.map(function (b) { var v = Math.max(0, Math.round(b[1] || 0)); return "<div class='fo-pd-bar'><span>" + b[0] + "</span><i><b class='fo-sk-" + foSkTone(v) + "' style='width:" + wide(v) + "%'></b></i><em>" + E(word(v) || "") + "</em></div>"; }).join("");
       var talents = (p.talents || []).map(function (t) { var d = (typeof TALTIPS !== "undefined" && TALTIPS[t]) || ""; return "<span title='" + E(d) + "' style='text-decoration:underline dotted'>" + E(foTalentName(t)) + "</span>"; }).join(", ") || "None";
       var inSquad = F.picked.indexOf(p) >= 0;
       var host = document.getElementById("fo-onb"); if (!host) return;
@@ -2359,7 +2361,7 @@
       ".pk-st b{font-family:Manrope,sans-serif;font-weight:600;font-size:15px;letter-spacing:1.3px;flex:0 0 102px;color:var(--ink)}" +
       ".pk-bar{flex:1;height:9px;border-radius:99px;background:rgba(20,33,61,.1);overflow:hidden}" +
       ".pk-bar i{display:block;height:100%;border-radius:99px;background:var(--tc)}" +
-      ".pk-st em{font-style:normal;font-family:Manrope,sans-serif;font-weight:600;font-size:17px;flex:0 0 30px;text-align:right;color:var(--ink)}" +
+      ".pk-st em{font-style:normal;font-family:Manrope,sans-serif;font-weight:600;font-size:11.5px;flex:0 0 90px;text-align:right;color:var(--ink);white-space:nowrap}" +
       ".pk-mid{display:flex;border-top:1.3px solid rgba(20,33,61,.18);margin-top:7px;padding-top:7px}" +
       ".pk-foot{display:flex;border-top:1.3px solid rgba(20,33,61,.14);margin-top:7px;padding-top:7px}" +
       ".pk-fc{flex:1;display:flex;gap:7px;align-items:center;padding:0 4px;cursor:help;min-width:0}" +
@@ -2390,7 +2392,7 @@
       ".pk-sign .pk-en{width:19px;height:19px;flex:0 0 19px}.pk-sign .pk-en svg{width:10px;height:10px}" +
       ".pk-sign .pk-st b{font-size:12px;letter-spacing:1px;flex:0 0 78px}" +
       ".pk-sign .pk-bar{height:7px}" +
-      ".pk-sign .pk-st em{font-size:14px;flex:0 0 24px}" +
+      ".pk-sign .pk-st em{font-size:10.5px;flex:0 0 78px}" +
       ".pk-sign .pk-mid,.pk-sign .pk-foot{margin-top:5px;padding-top:5px}" +
       ".pk-sign .pk-fc{gap:5px;padding:0 2px}.pk-sign .pk-fc svg{width:15px;height:15px;flex:0 0 15px}" +
       ".pk-sign .pk-fc i{font-size:10px;letter-spacing:1px}.pk-sign .pk-fc b{font-size:11.5px}" +
@@ -2498,7 +2500,7 @@
       ".pkm-b i{font-style:normal;font-family:Manrope,sans-serif;font-size:10px;letter-spacing:.5px;color:#8a90a0;flex:0 0 24px}" +
       ".pkm-b u{flex:1;height:6px;border-radius:99px;background:rgba(20,33,61,.1);overflow:hidden;text-decoration:none}" +
       ".pkm-b u b{display:block;height:100%;border-radius:99px;background:var(--tc)}" +
-      ".pkm-b em{font-style:normal;font-family:Manrope,sans-serif;font-weight:600;font-size:12.5px;color:var(--ink);flex:0 0 20px;text-align:right}" +
+      ".pkm-b em{font-style:normal;font-family:Manrope,sans-serif;font-weight:600;font-size:10px;color:var(--ink);flex:0 0 46px;text-align:right;white-space:nowrap}" +
       ".pkm-foot{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:9px;padding-top:8px;border-top:1px solid rgba(20,33,61,.12);flex-wrap:wrap}" +
       ".pkm-fee{font-size:12.5px;color:#5b6472}.pkm-fee b{color:var(--ink);font-family:Manrope,sans-serif;font-weight:600}" +
       "html body .pkm-act,html body.ftpskin .pkm-act{font-family:Manrope,sans-serif !important;letter-spacing:1px;text-transform:uppercase;font-weight:600 !important;font-size:12.5px;background:var(--tc) !important;color:#FDFAF1 !important;border:none !important;border-radius:8px;padding:7px 14px;cursor:pointer;box-shadow:inset 0 -2px 0 rgba(0,0,0,.18)}" +
@@ -2927,9 +2929,14 @@
     };
     return "<svg viewBox=\'0 0 24 24\'>" + I[k] + "</svg>";
   }
+  // THE CARD'S ABILITY ROW. The reading is a band and the meter is drawn by the
+  // engine's own compressor, so a man past ninety-nine neither runs off the
+  // track nor has his figure measured back off it.
   function foPkStatRow(lbl, icoK, v) {
     v = Math.round(v || 0);
-    return "<div class=\'pk-st\' data-tip=\"" + E(FO_PK_TIPS[lbl] || "") + "\"><span class=\'pk-en\'>" + foPkIco(icoK) + "</span><b>" + lbl + "</b><span class=\'pk-bar\'><i style=\'width:" + Math.max(2, Math.min(100, v)) + "%\'></i></span><em>" + v + "</em></div>";
+    var w = 0; try { w = (typeof foSkBar === "function") ? foSkBar(v) : Math.min(100, v); } catch (e) { w = Math.min(100, v); }
+    var band = ""; try { band = (typeof foSkillLabel === "function") ? foSkillLabel(v) : String(v); } catch (e) { band = String(v); }
+    return "<div class=\'pk-st\' data-tip=\"" + E(FO_PK_TIPS[lbl] || "") + "\"><span class=\'pk-en\'>" + foPkIco(icoK) + "</span><b>" + lbl + "</b><span class=\'pk-bar\'><i style=\'width:" + Math.max(2, w) + "%\'></i></span><em>" + E(band) + "</em></div>";
   }
   // THE CARD READS THE CANONICAL MODEL, AND ONLY THAT (B2).
   //
@@ -3003,7 +3010,9 @@
     var secLbl = (k === "wk") ? "KEEP" : "BOWL", secV = (k === "wk") ? (aggKeep(p) || 0) : bowlV;
     var bar = function (lbl, tip, v) {
       v = Math.round(v || 0);
-      return "<span class=\'pkm-b\' data-tip=\"" + E(FO_PK_TIPS[tip] || "") + "\"><i>" + lbl + "</i><u><b style=\'width:" + Math.max(3, Math.min(100, v)) + "%\'></b></u><em>" + v + "</em></span>";
+      var w = 0; try { w = (typeof foSkBar === "function") ? foSkBar(v) : Math.min(100, v); } catch (e) { w = Math.min(100, v); }
+      var band = ""; try { band = (typeof foSkillAbbr === "function") ? foSkillAbbr(v) : String(v); } catch (e) { band = String(v); }
+      return "<span class=\'pkm-b\' data-tip=\"" + E(FO_PK_TIPS[tip] || "") + "\"><i>" + lbl + "</i><u><b style=\'width:" + Math.max(3, w) + "%\'></b></u><em>" + E(band) + "</em></span>";
     };
     var bars = bar("BAT", "BATTING", aggBat(p)) + bar(secLbl, k === "wk" ? "KEEPING" : "BOWLING", secV) + bar("FLD", "FIELDING", aggField(p));
     var tag = opts.tag ? "<span class=\'pkm-tag\'>" + opts.tag + "</span>" : "";
