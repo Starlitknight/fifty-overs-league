@@ -102,8 +102,16 @@ test('the attack is the men who bowled, with the overs they sent down', () => {
   const isSpin = p => !['fast', 'fastMedium', 'medium'].includes(String(p.bowlType));
   const grp = spin => used.map(k => theirs.bowlers[k]).filter(x => isSpin(x.p) === spin);
   const balls = xs => xs.reduce((n, x) => n + (x.b | 0), 0);
-  assert.equal(s.seamOv, Math.round(balls(grp(false)) / 6), 'the seam overs are the seam overs');
-  assert.equal(s.spinOv, Math.round(balls(grp(true)) / 6), 'and the spin overs the spin overs');
+  // A KIND NOBODY BOWLED IS NULL, NOT NOUGHT, and the two mean different
+  // things: "nothing to say about a side is not the same as a side worth
+  // nothing", so a side that used no spinner is not marked down for a spin
+  // attack of zero - the row is simply absent. This test used to assert 0 and
+  // pass only because the old generator happened to put a spinner in every
+  // eleven; B2's squads are dealt from archetypes and some attacks are all
+  // seam, which is a real thing an attack can be.
+  const overs = xs => xs.length ? Math.round(balls(xs) / 6) : null;
+  assert.equal(s.seamOv, overs(grp(false)), 'the seam overs are the seam overs');
+  assert.equal(s.spinOv, overs(grp(true)), 'and the spin overs the spin overs');
   assert.equal((s.seamOv || 0) + (s.spinOv || 0), Math.round(balls(used.map(k => theirs.bowlers[k])) / 6),
     'and together they are the innings they bowled');
 

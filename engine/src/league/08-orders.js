@@ -382,17 +382,41 @@
   // Stars are RELATIVE to this club's own squad (quintiles): a new manager
   // can't read a 0-100 skill number, but five gold stars on his best player
   // and one on his weakest needs no manual.
-  // The score behind them is a COMPOSITE: the discipline aggregate is the
-  // main ingredient (60%), technique and power season it (20% each) - so a
-  // low-technique big hitter and a low-power technician rate the same.
-  function foOrdBatComp(p) {
-    var sk = p.skills || {};
-    return 0.6 * (aggBat(p) || 0) + 0.2 * (((sk.vsPace || 0) + (sk.vsSpin || 0)) / 2) + 0.2 * (sk.power || 0);
+  // A TRADE STRIP IS A CARD FOR ONE TRADE (B2).
+  //
+  // What was here was a hand-mixed COMPOSITE - sixty per cent the discipline
+  // aggregate, twenty technique, twenty power - and it was on the RAW SKILL
+  // scale, not the card scale. That is why the ladder above it needed two
+  // fitted straight lines to put it "back on the card scale", and why both of
+  // them went stale the moment the world was redistributed.
+  //
+  // B2 clamped the composite instead of stretching it, which quietly made the
+  // disagreement worse rather than better. Measured over 900 cricketers, the
+  // median batting composite is 39.4 against a median card of 50: the median
+  // batsman's card said five stars and his strip said four, on the same row.
+  //
+  // The fix is not a third regression. A batting strip asks "how good is this
+  // man AT BATTING", and the canonical model already answers exactly that - it
+  // evaluates every role a cricketer could fill and keeps them all, so his
+  // batting level is sitting there beside the one his card was taken from. Put
+  // it through the same curve and it is a card for one trade, on the card's own
+  // scale, by construction rather than by fit.
+  //
+  // The identity that follows is the point: for a SPECIALIST, the trade strip
+  // and the card are the same number. A pure batsman's best role IS bat, so his
+  // batting stars are his card stars exactly. A bowler's bowling stars are his
+  // card stars exactly. An all-rounder's card sits a little above both of his
+  // strips, which is what the two-sidedness premium means and is now the only
+  // place a strip and a card are allowed to differ.
+  function foOrdTradeCard(p, which) {
+    try {
+      var v = window.foPlayerValue(p), L = v && v.levels;
+      if (!L || L[which] == null) return null;
+      return window.foOvrCurve(L[which]);
+    } catch (e) { return null; }
   }
-  function foOrdBowlComp(p) {
-    var sk = p.skills || {};
-    return 0.6 * (aggBowl(p) || 0) + 0.2 * (sk.wicket || 0) + 0.2 * (sk.economy || 0);
-  }
+  function foOrdBatComp(p) { var c = foOrdTradeCard(p, 'bat'); return c == null ? 0 : c; }
+  function foOrdBowlComp(p) { return foOrdTradeCard(p, 'bowl'); }
   // the batting order shows BATTING stars for everyone (a tail-ender must
   // never out-star the opener); bowling stars live on the bowler cards
   //

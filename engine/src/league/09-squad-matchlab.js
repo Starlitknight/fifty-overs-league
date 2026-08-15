@@ -653,9 +653,19 @@
       "<tbody>" + (body || "<tr><td class='fo-sqg-none' colspan='" + cols.length + "'>Nobody to show. Try another Show setting.</td></tr>") + "</tbody>" +
       "</table></div></div>";
   }
+  // THE LAST LEGACY FIVE-STAR LADDER (B2). It was Math.round(ovr / 20), which
+  // is its own opinion about how good a cricketer is: a man on 70 wore four
+  // stars here and seven on the card two rooms away, and 90 and 99 wore the same
+  // five. One system now - the canonical ten, in halves, from window.foStars -
+  // drawn as five glyphs so this page's layout is untouched, each worth two of
+  // the ten and each able to be half lit.
   function foSqStars(ovr) {
-    var n = Math.max(1, Math.min(5, Math.round(ovr / 20))), s = "";
-    for (var i = 1; i <= 5; i++) s += "<span class='" + (i <= n ? "on" : "") + "'>&#9733;</span>";
+    var n = 0; try { n = window.foStars(ovr) / 2; } catch (e) { n = 0; }
+    var s = "";
+    for (var i = 1; i <= 5; i++) {
+      var cls = i <= n ? "on" : ((n - i + 1) >= 0.5 ? "half" : "");
+      s += "<span class='" + cls + "'>&#9733;</span>";
+    }
     return s;
   }
 

@@ -71,7 +71,17 @@ test('the hands are dealt, not bought - by either pass that scales a squad', () 
   // fielding is drawn on its own, not off what a man does with the bat
   assert.ok(!/fielding:gg\(tgt/.test(CODE), 'no role takes its fielding off its batting level');
   assert.ok(!/fielding:gg\(two/.test(CODE));
-  assert.equal((CORE.match(/fielding:gg\(50,26\)/g) || []).length, 4, 'every role deals from the same bell');
+  // ONE BELL, IN ONE PLACE. This used to count four copies of the literal
+  // `fielding:gg(50,26)`, one per role - which held the right property by
+  // holding four identical numbers in step, so moving the bell meant moving it
+  // four times and any one of them could be missed. B2 gave the hands a named
+  // function and every role calls it, so "every role deals from the same bell"
+  // is now true by construction and this asserts the construction.
+  assert.match(CODE, /const hands = \(\) => gg\(\d+, ?\d+\);/,
+    'the hands have one bell, defined once');
+  assert.equal((CORE.match(/fielding:hands\(\)/g) || []).length, 4,
+    'and every role deals from it');
+  assert.ok(!/fielding:gg\(/.test(CODE), 'no role rolls its own hands any more');
 });
 
 test('a chance is a difficulty and a man, and the angle is part of it', () => {

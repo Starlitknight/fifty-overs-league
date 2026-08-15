@@ -32,13 +32,23 @@ const withWage = m => ({ ...m, wage: wageFromRating(m.rating, m.talents.length) 
 test('the engine and the service derive the same wage from a rating', () => {
   // 00-core.js foWageOf is the authority; market.mjs mirrors it for players
   // whose wage has not been stored yet
+  // THE CONSTANTS ARE READ, NOT RESTATED. This used to assert the three
+  // literals - 25704, 9290, 2.0 - which made it a guard against changing them
+  // rather than a guard against the mirrors DRIFTING, and those are different
+  // jobs. B2 had to change them (the median rating was measured against a
+  // rating formula that no longer exists, so the curve was working around a
+  // point 3.78x off) and the literal assertions could only say "no".
+  //
+  // What must never differ is the two implementations, so that is what is
+  // checked: whatever the engine says, the service must say the same.
   const core = read('engine/src/00-core.js');
-  const R50 = +/const FO_WAGE_R50=(\d+)/.exec(core)[1];
+  const OVR50 = +/const FO_WAGE_OVR50=(\d+)/.exec(core)[1];
+  const R50 = OVR50 * 1000;
   const MID = +/const FO_WAGE_MID=(\d+)/.exec(core)[1];
   const K = +/const FO_WAGE_K=([\d.]+)/.exec(core)[1];
-  assert.equal(R50, 25704, 'the median the service mirrors');
-  assert.equal(MID, 9290, 'the calibrated midpoint the service mirrors');
-  assert.equal(K, 2.0, 'the convexity the service mirrors');
+  assert.match(core, /const FO_WAGE_R50=FO_WAGE_OVR50\*1000;/,
+    'the midpoint is stated in CARD terms, which is the thing that cannot go stale');
+  assert.ok(R50 > 0 && MID > 0 && K > 0, 'a curve to mirror');
   for (const m of MEN) {
     const engine = Math.max(400, Math.round(MID * Math.pow(m.rating / R50, K) *
       (1 + 0.06 * m.talents.length) / 10) * 10);
@@ -51,7 +61,16 @@ test('a fee is a season of wages, and the page quotes what the umpire charges', 
   const client = read('engine/src/league/55-market.js');
   assert.match(client, /FEE_ROUNDS = 18/, 'the page uses a season of matchdays');
   assert.match(client, /FEE_MULT = 2\.4/, 'and the same multiple');
-  assert.match(client, /W_R50 = 25704, W_MID = 9290, W_K = 2\.0/, 'and the same wage curve');
+  // and the page's own copy of the curve is the engine's, read the same way
+  const core2 = read('engine/src/00-core.js');
+  const cOVR = +/const FO_WAGE_OVR50=(\d+)/.exec(core2)[1];
+  const cMID = +/const FO_WAGE_MID=(\d+)/.exec(core2)[1];
+  const cK = +/const FO_WAGE_K=([\d.]+)/.exec(core2)[1];
+  const seen = /W_R50 = (\d+) \* 1000, W_MID = (\d+), W_K = ([\d.]+)/.exec(client);
+  assert.ok(seen, 'the page states the wage curve where it can be read');
+  assert.equal(+seen[1], cOVR, 'the page mirrors the engine median');
+  assert.equal(+seen[2], cMID, 'and the engine midpoint');
+  assert.equal(+seen[3], cK, 'and the engine convexity');
   assert.equal(FEE_ROUNDS, 18);
   assert.equal(FEE_MULT, 2.4);
   for (const m of MEN.map(withWage)) {

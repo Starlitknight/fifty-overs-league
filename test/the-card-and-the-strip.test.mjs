@@ -60,17 +60,26 @@ test('a club XI of player objects reads exactly as it always did', () => {
 });
 
 // ---- the strip -------------------------------------------------------------
-// A STRIP IS THE CARD, OVER TEN. The composite a strip is drawn from is the
-// card before world_pk_num's own stretch, so putting it back on the card scale
-// needs no anchor anybody has to defend.
-const cardToComp = (c, bowl) => bowl ? (c + 0.3) / 1.394 : (c + 1.9) / 1.328;
-
-test('a ninety overall is nine stars, and a maxed cricketer is the ten', () => {
+// A STRIP IS A CARD FOR ONE TRADE (B2).
+//
+// This file used to convert a card into a composite through the two straight
+// lines the ladder was fitted with - x1.328 - 1.9 for batting, x1.394 - 0.3 for
+// bowling - because a composite lived on the raw skill scale and a card did not,
+// and something had to bridge them. Both regressions were fitted against a world
+// that has since been redistributed twice.
+//
+// There is nothing to bridge now. A trade strip is the canonical level for that
+// ONE role put through the canonical curve, so it is already a card, and the
+// ladder is the same foStars() the card uses. Which gives the identity these
+// tests are really about: for a specialist the strip and the card are the SAME
+// NUMBER, and the only cricketer allowed to differ is the all-rounder, whose
+// card carries a two-sidedness premium neither of his trades earns alone.
+test('a strip is the card over ten, and a maxed cricketer is the ten', () => {
   const S = W.foStarsFor;
-  [[50, 5], [70, 7], [80, 8], [90, 9], [99, 10]].forEach(function (pair) {
-    assert.equal(S.stars(cardToComp(pair[0], false), false), pair[1],
-      'a ' + pair[0] + ' overall bats at ' + pair[1] + ' stars');
-    assert.equal(S.stars(cardToComp(pair[0], true), true), pair[1],
+  [[50, 5], [70, 7], [80, 8], [90, 9], [100, 10]].forEach(function (pair) {
+    assert.equal(S.stars(pair[0], false), pair[1],
+      'a ' + pair[0] + ' trade card bats at ' + pair[1] + ' stars');
+    assert.equal(S.stars(pair[0], true), pair[1],
       'and bowls at ' + pair[1] + ' stars');
   });
 });
@@ -79,28 +88,57 @@ test('the strip reads the same ladder as the card, both ends', () => {
   const S = W.foStarsFor;
   assert.equal(S.stars(-50), 0, 'it floors at nought');
   assert.equal(S.stars(1000), 10, 'and tops out at ten');
-  // and the card it is built on never runs past the card's own ceiling
-  assert.ok(S.card(1000, false) <= 99 && S.card(1000, true) <= 99);
+  // the canonical scale runs 0-100, and the strip is on it
+  assert.ok(S.card(1000, false) <= 100 && S.card(1000, true) <= 100);
   assert.ok(S.card(-50, false) >= 0);
 });
 
-// the live world, measured off world_squads: batting composites run median
-// 35.0, p95 52.9, best 62.2; bowling median 39.0, p95 59.6, best 75.4
+// THE IDENTITY, on real cricketers rather than on numbers a test chose: a
+// specialist's trade strip IS his card. This is the claim that the two fitted
+// regressions could only ever approximate, and it is the reason they are gone.
+test('a specialist wears his own card on his own strip', () => {
+  const S = W.foStarsFor;
+  let bats = 0, bowls = 0;
+  for (let s = 1; s <= 12; s++) {
+    for (const p of eng.genSquad(6100 + s, 'England', s % 2 ? 'rock' : 'express').players || []) {
+      const card = W.foOvr(p), keeps = !!(p.keeper || p.role === 'wicketkeeper');
+      const bowler = !!(p.bowlType && p.bowlType !== 'none');
+      if (p.role === 'allRounder' || keeps) continue;
+      if (!bowler) {
+        bats++;
+        assert.equal(S.stars(S.bat(p), false), W.foStars(card),
+          p.name + ' bats at his card: strip ' + S.stars(S.bat(p), false) +
+          ' vs card ' + W.foStars(card));
+      } else {
+        bowls++;
+        assert.equal(S.stars(S.bowl(p), true), W.foStars(card),
+          p.name + ' bowls at his card: strip ' + S.stars(S.bowl(p), true) +
+          ' vs card ' + W.foStars(card));
+      }
+    }
+  }
+  assert.ok(bats > 40 && bowls > 20, 'both kinds were actually walked (' + bats + '/' + bowls + ')');
+});
+
+// and the strip spreads the world out rather than bunching it. Two ladders
+// before this failed from opposite ends - one put ten at 92, which nothing
+// alive could reach, so the best batsman in the world wore six stars; the
+// clamp that replaced it put the median batsman a whole star below his own
+// card. The world's cards run p5 33, median 50, p95 62 off the generator.
 test('an ordinary cricketer sits mid-strip and a great one near the top', () => {
   const S = W.foStarsFor;
-  assert.ok(S.stars(35.0) >= 4 && S.stars(35.0) <= 5.5,
-    'the median batsman is middling: ' + S.stars(35.0));
-  assert.ok(S.stars(39.0, true) >= 4.5 && S.stars(39.0, true) <= 6,
-    'and so is the median bowler: ' + S.stars(39.0, true));
-  assert.ok(S.stars(62.2) >= 7.5, 'the best batsman alive is up near the top: ' + S.stars(62.2));
-  assert.ok(S.stars(75.4, true) >= 9, 'and the best bowler is at it: ' + S.stars(75.4, true));
+  assert.ok(S.stars(50) >= 4.5 && S.stars(50) <= 5.5,
+    'the median cricketer is middling: ' + S.stars(50));
+  assert.ok(S.stars(33) >= 3 && S.stars(33) <= 3.5, 'a weak one is low: ' + S.stars(33));
+  assert.ok(S.stars(85) >= 8.5, 'a great one is up near the top: ' + S.stars(85));
+  assert.ok(S.stars(95, true) >= 9.5, 'and a generational one is at it: ' + S.stars(95, true));
 });
 
 test('the strip separates a country from a county', () => {
   const S = W.foStarsFor;
-  // measured on the live world: the England fifteen average a batting
-  // composite of 47.4 against Gloucestershire's 30.5
-  const country = S.stars(47.4), county = S.stars(30.5);
+  // an international batting card against a second-division one, on the
+  // canonical scale the strip now shares with the card
+  const country = S.stars(84), county = S.stars(48);
   assert.ok(country - county >= 1.5,
     'a national side must look like one: ' + country + ' against ' + county);
 });
@@ -114,10 +152,15 @@ test('the strip separates a country from a county', () => {
 // the engine works a delivery with.
 test('a craft strip rates the craft, so a bowler is no batsman', () => {
   const S = W.foStarsFor;
-  // a genuine bowler: fine with the ball, a tail-ender with the bat
+  // a genuine bowler: fine with the ball, a tail-ender with the bat. HE HAS
+  // HANDS, which he did not used to need: the canonical model gives fielding
+  // 0.45 of an outfielder's mix, so a fixture with no fielding key at all is
+  // not a weak cricketer, it is an incomplete one, and it reads three-quarters
+  // of a star low for a reason that has nothing to do with what is being tested.
   const bowler = { bowlType: 'seamFastMedium',
     skills: { vsPace: 18, vsSpin: 16, rotation: 20, temperament: 25, power: 14,
-              wicket: 82, economy: 78, discipline: 74, moveTurn: 80, variation: 70, stamina: 72 } };
+              wicket: 82, economy: 78, discipline: 74, moveTurn: 80, variation: 70, stamina: 72,
+              fielding: 70, catching: 70 } };
   const bat = S.stars(S.bat(bowler), false), ball = S.stars(S.bowl(bowler), true);
   assert.ok(ball >= 8, 'he is a fine bowler: ' + ball + ' stars');
   assert.ok(bat <= 3, 'and no batsman at all: ' + bat + ' stars');
@@ -127,8 +170,12 @@ test('a craft strip rates the craft, so a bowler is no batsman', () => {
 test('a maxed cricketer is the ten, in whichever craft he maxed', () => {
   const S = W.foStarsFor;
   const maxed = {};
+  // maxed means MAXED - the hands are part of a cricketer, and the canonical
+  // model prices them, so a man who is 99 at everything but fielding is not the
+  // ten and should not be
   ['vsPace', 'vsSpin', 'rotation', 'temperament', 'power', 'wicket', 'economy',
-   'discipline', 'moveTurn', 'variation', 'stamina'].forEach(k => { maxed[k] = 99; });
+   'discipline', 'moveTurn', 'variation', 'stamina',
+   'fielding', 'catching'].forEach(k => { maxed[k] = 99; });
   const man = { bowlType: 'seamFastMedium', skills: maxed };
   assert.equal(S.stars(S.bat(man), false), 10, 'ninety-nine with the bat is the ten');
   assert.equal(S.stars(S.bowl(man), true), 10, 'and ninety-nine with the ball is too');

@@ -310,7 +310,7 @@ function foOvrLabel(v) {
 function foStars(v) {
   return Math.max(0, Math.min(10, Math.round((Math.max(0, Math.min(100, v || 0)) / 10) * 2) / 2));
 }
-try { window.foLevelForOvr = foLevelForOvr;
+try { window.foLevelForOvr = foLevelForOvr; window.foOvrCurve = foOvrCurve;
       window.foOvr = foOvr; window.foPlayerValue = foPlayerValue;
       window.foOvrLabel = foOvrLabel; window.foStars = foStars;
       window.FO_OVR_LADDER = FO_OVR_LADDER; } catch (eCanon) {}
@@ -381,13 +381,39 @@ function foFitToLevel(p, target) {
 //   of its cricketers being ten points better than every one of theirs. B1
 //   measured a uniform five-point squad-wide edge at a 90%+ win rate, so a
 //   hierarchy built that way would have no upsets in it at all.
+// THE SHOULDER, AND WHY IT WAS THIN (B2).
+//
+// The first deal seated every tier inside its band and still produced a world
+// with 103 cricketers between 80 and 84 where the brief wants 150-220. A tier
+// mean is an average, and an average is silent about the shape that made it: a
+// squad laid on a narrow curve reaches its mean by having fifteen men near it,
+// which is a club of clones. What was missing was not strength, it was VARIANCE
+// - the standout, and the weak link that pays for him.
+//
+// So the curve is wider at both ends and the mean is held where it was. Every
+// tier's best man is a little further above his club and every tier's worst a
+// little further below, the drift is half again as wide, and the whole squad
+// sits on a flatter top (see foTierOvrAt) so a club has a GROUP of good players
+// rather than one peak and a slope. Measured over the same 3,840 men:
+//
+//                        before   after   brief
+//     80-84                 103     165   150-220
+//     85-89                  56     104    70-110
+//     90-94                  29      28     15-30
+//     95-97                   8       7       3-8
+//     tier means         all in band, unmoved to a tenth
+//
+// The flagship's own top came DOWN, from 94 to 91, at the same time: the
+// shoulder is built by widening the middle of the pyramid, not by raising its
+// point, and letting the point drift up as well would have put a dozen men over
+// 98 - which is a thing this world should almost never have.
 const FO_TIERS = {
-  flagship:  { top: 94, med: 73, floor: 55, spread: 3.8, star: 0.58, starLift: 9 },
-  d1a:       { top: 88, med: 67, floor: 48, spread: 3.8, star: 0.32, starLift: 7 },
-  d1b:       { top: 81, med: 59, floor: 40, spread: 3.8, star: 0.14, starLift: 6 },
-  d2a:       { top: 71, med: 49, floor: 30, spread: 3.9, star: 0.08, starLift: 6 },
-  d2b:       { top: 59, med: 37, floor: 18, spread: 4.1, star: 0.05, starLift: 6 },
-  newcomer:  { top: 52, med: 28, floor: 8,  spread: 4.2, star: 0.04, starLift: 6 }
+  flagship:  { top: 91, med: 71, floor: 49, spread: 5.3, star: 0.58, starLift: 7 },
+  d1a:       { top: 87, med: 65, floor: 42, spread: 5.3, star: 0.32, starLift: 7 },
+  d1b:       { top: 84, med: 57, floor: 34, spread: 5.3, star: 0.14, starLift: 6 },
+  d2a:       { top: 74, med: 47, floor: 24, spread: 5.4, star: 0.08, starLift: 6 },
+  d2b:       { top: 62, med: 35, floor: 14, spread: 5.6, star: 0.05, starLift: 6 },
+  newcomer:  { top: 55, med: 26, floor: 6,  spread: 5.7, star: 0.04, starLift: 6 }
 };
 // AND SOMEBODY HAS TO BE THE BEST PLAYER IN THE WORLD.
 //
@@ -410,12 +436,20 @@ const FO_TIERS = {
 // best player to its worst: the top few are close together, the middle is a
 // long plateau of professionals, and it falls away at the end. The exponents
 // are what make the tail a tail.
+// A CLUB HAS A GROUP OF GOOD PLAYERS, NOT A PEAK AND A SLOPE. The top exponent
+// was 0.85, which falls FASTEST at the very top - so a squad's best man stood
+// alone and his club's second-best was already most of the way to the median.
+// That is what made the world's 80-84 shoulder thin: the men who should fill it
+// are the second, third and fourth choices at good clubs, and the curve was
+// dropping them straight past it. Above one it falls slowest at the top
+// instead, so the good players at a good club look like each other, and the
+// half-squad mark moves out to an even split.
 function foTierOvrAt(tier, rank, n) {
   const T = FO_TIERS[tier] || FO_TIERS.d1b;
   const t = n <= 1 ? 0 : rank / (n - 1);              // 0 = best, 1 = worst
-  const mid = 0.45;                                   // half a squad in its band
+  const mid = 0.50;                                   // half a squad in its band
   return t <= mid
-    ? T.top + (T.med - T.top) * Math.pow(t / mid, 0.85)
+    ? T.top + (T.med - T.top) * Math.pow(t / mid, 1.20)
     : T.med + (T.floor - T.med) * Math.pow((t - mid) / (1 - mid), 1.25);
 }
 try { window.foFitToLevel = foFitToLevel; window.FO_TIERS = FO_TIERS;
@@ -4533,7 +4567,21 @@ function foGenSkills(role,q,age,rnd,archeOut){
   // and eleven misfields. A weak club still fields worse than a strong one,
   // because the level fit moves the hands with the man; it simply does not
   // start them somewhere the engine cannot read.
-  const hands = () => gg(58, 15);
+  // WIDE ENOUGH THAT THE TAILS ARE REAL PEOPLE. It was gg(58, 15), which is a
+  // standard deviation of about seven and a half: the world's fifth percentile
+  // fielder came out at 45 and its worst at 38, so there was no such thing as a
+  // bad fielder anywhere in the game. That is the same flatness B1 was written
+  // to remove, arriving from the other direction - the old world could not
+  // produce a man good enough to dive, and this one could not produce one bad
+  // enough to drop it.
+  //
+  // The bell is centred where the contest still resolves and spread twice as
+  // far: median 55, p5 about 30, p95 about 80. What B1 measured as the danger
+  // was a MEDIAN fielder of 41 - a whole innings with under one good stop and
+  // eleven misfields - and that is a statement about the middle of the
+  // distribution, not about its tail. A handful of poor fielders in a world
+  // whose median is 55 is a handful of poor fielders, which is cricket.
+  const hands = () => gg(55, 30);
   const kind = isBowl ? 'bowl' : isWK ? 'wk' : isAR ? 'ar' : 'bat';
   const A = foPickArche(kind, rnd);
   if (archeOut) archeOut.id = A.id;
@@ -4611,9 +4659,46 @@ function foGenExp(age,q,rnd){                  // experience correlates with age
    - which is what lets this change ship without re-blessing a single
    golden-master replay.
    ========================================================================== */
-const FO_WAGE_R50=25704;            // the world's median rating, measured
+/* THE MIDPOINT WENT STALE THE MOMENT RATING WAS REDEFINED (B2).
+
+   FO_WAGE_R50 is "the world's median rating, measured" and the whole curve is
+   relative to it. It was measured at 25,704 against the OLD rating formula -
+   420 x (bat + 0.4 power + 0.5(threat+control) + 0.3 fielding + gloves). B2
+   redefined rating as the canonical card times a thousand, which moved the
+   world's median rating to about 50,000 and left this constant describing a
+   quantity that no longer exists.
+
+   Nothing failed, which is why it was easy to miss: the curve went on working,
+   just around the wrong point. Every wage in the world was multiplied by
+   (50000/25704)^2 = 3.78, so the median man earned $35,150 a round out of a
+   midpoint that says $9,290, and the wage bill silently became almost four
+   times the share of income the economy was calibrated to carry. A wage system
+   that "moved automatically because rating moved" is not a wage system that was
+   rebased; it is one that was left pointing at a landmark that had been moved.
+
+   It is stated in CARD terms now, because the card is what cannot go stale: the
+   median professional is OVR 50 by the definition of the semantic ladder ("50
+   means a legitimate career professional"), and the world is dealt to put him
+   there - measured at 50 and 51 over 3,840 and 1,200 men respectively. If the
+   ladder's meaning ever changes, this changes with it deliberately.
+
+   AND QUALITY IS PRICED MORE STEEPLY, on purpose. At K=2 a generational
+   cricketer cost 3.6 median men, which is not a decision - a flagship could
+   carry two of them out of the tail. The exponent is 3, so:
+
+     a median man   (OVR 50)   $9,290 a round      1.0x
+     a good pro     (OVR 70)   $25,490             2.7x
+     an international (OVR 80) $38,050             4.1x
+     a great player (OVR 90)   $54,160             5.8x
+     a generational (OVR 95)   $63,730             6.9x
+
+   which is what makes 90+ a squad-shaping commitment rather than a line item,
+   and leaves the weak cheap: an OVR 30 man is $2,000, and the floor holds him
+   above nothing at all. */
+const FO_WAGE_OVR50=50;             // the median professional, by the ladder's own meaning
+const FO_WAGE_R50=FO_WAGE_OVR50*1000;   // ...as a rating, which is the card x 1000
 const FO_WAGE_MID=9290;             // what the median man earns a round
-const FO_WAGE_K=2.0;                // how fast the price of quality climbs
+const FO_WAGE_K=3.0;                // how fast the price of quality climbs
 // THE DRAFT IS SOLO MONEY, AND SOLO MONEY DID NOT MOVE. Scaling it by six put
 // it in step with the served market, which the draft never touches: a served
 // club is DEALT its fifteen, it does not draft them. All the six did was set a

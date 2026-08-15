@@ -180,13 +180,42 @@ BEGIN
   fld  := floor(((fielding + catching) / 2.0) + 0.5);
   pow  := coalesce((p->>'power')::double precision, power_);
 
-  -- THE STAR COMPOSITES (082). Still the orders room's own arithmetic, because
-  -- these rank a batting order and an attack rather than a cricketer: sixty per
-  -- cent the discipline aggregate, twenty technique, twenty power. What changed
-  -- in B2 is the LADDER they are drawn on - foOrdStars now puts a composite over
-  -- ten the same way the card goes over ten - not the composite itself.
-  batComp := 0.6 * bat + 0.2 * ((vsPace + vsSpin) / 2) + 0.2 * power_;
-  bowlComp := CASE WHEN hasBowl THEN 0.6 * bowl + 0.2 * wicket + 0.2 * economy END;
+  -- THE TRADE STRIPS, WHICH ARE CARDS FOR ONE TRADE (B2).
+  --
+  -- 082 published a hand-mixed composite - sixty per cent the discipline
+  -- aggregate, twenty technique, twenty power - so a rival's roster could wear
+  -- the same stars as your own without the raw skills crossing the fence. The
+  -- summary crossed and the ingredients did not, which is still the rule.
+  --
+  -- What changed is that the composite was on the RAW SKILL scale while the
+  -- card was on the card scale, so the two disagreed on the same row: a median
+  -- batting composite of 39.4 against a median card of 50. The strip is now the
+  -- canonical BATTING level put through the canonical curve - a card for one
+  -- trade - so a specialist's strip and his card are the same number and the
+  -- disagreement cannot come back. See foOrdBatComp in league/08-orders.js.
+  batComp := 100;
+  IF NOT (lBat > 0) THEN batComp := 0;
+  ELSIF lBat < 100 THEN
+    FOR i IN 2 .. array_length(aL, 1) LOOP
+      IF lBat <= aL[i] THEN
+        batComp := aO[i - 1] + ((lBat - aL[i - 1]) / (aL[i] - aL[i - 1])) * (aO[i] - aO[i - 1]);
+        EXIT;
+      END IF;
+    END LOOP;
+  END IF;
+  bowlComp := NULL;
+  IF hasBowl THEN
+    bowlComp := 100;
+    IF NOT (lBowl > 0) THEN bowlComp := 0;
+    ELSIF lBowl < 100 THEN
+      FOR i IN 2 .. array_length(aL, 1) LOOP
+        IF lBowl <= aL[i] THEN
+          bowlComp := aO[i - 1] + ((lBowl - aL[i - 1]) / (aL[i] - aL[i - 1])) * (aO[i] - aO[i - 1]);
+          EXIT;
+        END IF;
+      END LOOP;
+    END IF;
+  END IF;
 
   RETURN jsonb_build_object(
     'ovr', ovr,

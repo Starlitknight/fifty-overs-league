@@ -80,9 +80,22 @@ test('an over the umpire did not print plainly still reads as a line', () => {
 });
 
 // ---- the nations ----------------------------------------------------------
-test('a nation is ranked on the rung the world deals it', () => {
-  assert.match(tick, /natRating: Math\.round\(BASE_XI \* nationTeamStr\(c\.id\)\)/,
-    'what the shirt is worth is the rung the selectors XI is calibrated to');
+// A NATION IS RANKED ON THE ELEVEN IT CAN FIELD, NOT ON A RUNG (B2).
+//
+// This asserted `natRating: Math.round(BASE_XI * nationTeamStr(c.id))` - a
+// constant per country. That was honest only for as long as badgeUp() scaled a
+// selected side's skills until its XI hit exactly that number, so the ranking
+// reported a figure the world was being forced to match and the ladder measured
+// the ladder. B2 retired the badge, because a player must become an
+// international by being good rather than become good by being picked, so the
+// ranking has to go and look at the cricketers a country actually has.
+test('a nation is ranked on the eleven it can actually field', () => {
+  assert.match(tick, /natRating: natXi\[c\.id\] \|\| 0/,
+    'what the shirt is worth is the best eleven the country can put out');
+  assert.match(tick, /WHERE rn <= 11 GROUP BY country_id/,
+    'and that eleven is measured, three men to a club as the selectors cap them');
+  assert.ok(!/BASE_XI \* nationTeamStr/.test(tick),
+    'no declared rung survives in the ranking');
   assert.match(tick, /clubRating: clubStrength/, 'and a league is worth its clubs best elevens');
   assert.match(tick, /\.sort\(\(a, b\) => b\.natRating - a\.natRating \|\| b\.clubRating - a\.clubRating/,
     'the order is strength, then league strength');

@@ -136,7 +136,9 @@
   // A FEE IS PRICED IN WAGES NOW, so this mirrors that and not the old
   // rating/9. server/market.mjs (valueOf) and the migration below it are the
   // authorities; a quicksell is half what he is worth.
-  var FEE_ROUNDS = 18, FEE_MULT = 2.4, W_R50 = 25704, W_MID = 9290, W_K = 2.0;
+  // B2 rebased R50 and K - see foWageOf in 00-core.js for why the old midpoint
+  // described a quantity that stopped existing when rating was redefined
+  var FEE_ROUNDS = 18, FEE_MULT = 2.4, W_R50 = 50 * 1000, W_MID = 9290, W_K = 3.0;
   function wageOfMan(p) {
     if (p && +p.wage > 0) return +p.wage;
     var r = Math.max(1, (p && +p.rating) || W_R50);

@@ -85,7 +85,11 @@ export const FEE_ROUNDS = 18;              // a season of matchdays
 export const FEE_MULT = 2.4;               // seasons of him a buyer pays for
 // the engine's own curve, mirrored: 00-core.js foWageOf is the authority and
 // this must not drift from it
-const W_R50 = 25704, W_MID = 9290, W_K = 2.0;
+// B2 rebased these: R50 was measured against a rating formula that no longer
+// exists, so the whole curve was working around a point 3.78x off, and K went
+// to 3 so a generational cricketer is a squad-shaping commitment rather than a
+// line item. tests/world-fee-agrees holds this mirror to the engine's own.
+const W_R50 = 50 * 1000, W_MID = 9290, W_K = 3.0;
 export function wageFromRating(rating, talents) {
   const r = Math.max(1, +rating || W_R50);
   const base = W_MID * Math.pow(r / W_R50, W_K);
