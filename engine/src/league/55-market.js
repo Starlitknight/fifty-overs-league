@@ -275,7 +275,10 @@
     if (bt && !/bowler|pacer|spinner/i.test(r)) r += ", " + bt;
     return r;
   }
-  function skTone(v) { return v >= 75 ? "t4" : v >= 50 ? "t3" : v >= 30 ? "t2" : "t1"; }
+  // The shelf used to run a four-step tone of its own (t1..t4), which put a
+  // 75 and a 130 in the same paint and disagreed with the word printed beside
+  // it. It reads off the canonical rung now - see FO_SKILL_INK in 00-core.js.
+  function skTone(v) { try { return foSkillCls(v); } catch (e) { return ""; } }
   // the track: compressed above 92 rather than clamped, so a man over ninety-
   // nine fits it and nobody can measure his figure back off its length
   function skWide(v) { try { return (typeof foSkBar === "function") ? foSkBar(v) : Math.min(100, v); } catch (e) { return Math.min(100, v); } }
@@ -303,7 +306,7 @@
           "' title='" + READ_LBL[k] + (off ? "" : " &middot; " + E(skWord(v))) + "'>" +
           "<span class='lb'>" + READ_LBL[k] + "</span>" +
           "<span class='vl'>" + (off ? "&ndash;" : E(skWord(v))) + "</span>" +
-          "<span class='tr'><span class='fl " + skTone(Math.max(0, v)) + "' style='width:" + Math.max(3, skWide(Math.max(0, v))) + "%'></span></span>" +
+          "<span class='tr'><span class='fl skfill " + skTone(Math.max(0, v)) + "' style='width:" + Math.max(3, skWide(Math.max(0, v))) + "%'></span></span>" +
           "</span>";
       }).join("") + "</div>";
     } catch (e) { return ""; }
@@ -316,7 +319,7 @@
         var v = readOf(man, k), off = v < 0;
         return "<span class='fb" + (off ? " off" : "") + "' title='" + READ_LBL[k] + (off ? "" : " &middot; " + E(skWord(v))) + "'>" +
           "<i>" + READ_LBL[k] + "</i>" +
-          "<u>" + (off ? "" : "<s class='" + skTone(v) + "' style='width:" + Math.max(3, skWide(v)) + "%'></s>") + "</u>" +
+          "<u>" + (off ? "" : "<s class='skfill " + skTone(v) + "' style='width:" + Math.max(3, skWide(v)) + "%'></s>") + "</u>" +
           "<b>" + (off ? "&ndash;" : E(skWord(v))) + "</b>" +
           "</span>";
       }).join("") + "</div>";

@@ -283,12 +283,16 @@
   // itself so precisely that the reader can measure the number back off it.
   function foSqSkillCell(v, muted, label) {
     v = Math.round(v);
-    var col = v >= 75 ? "#16A34A" : v >= 50 ? "#4DA6A2" : v >= 30 ? "#C08A2E" : "#B23230";
+    // The tone comes off the same rung as the word - see FO_SKILL_INK in
+    // 00-core.js. This cell used to run its own four-step threshold ladder,
+    // which meant the colour and the word could and did disagree about where a
+    // man sat, and it had no rung at all above a hundred.
+    var g = (typeof foSkillCls === "function") ? foSkillCls(v) : "";
     var w = (typeof foSkBar === "function") ? foSkBar(v) : Math.max(2, Math.min(100, v));
     if (muted || v < 12) {
-      return "<div class='fo-sq-skill fo-sq-nil'><div class='fo-sq-skbar'><i style='width:" + Math.max(2, w) + "%'></i></div><div class='fo-sq-sknum'>–</div></div>";
+      return "<div class='fo-sq-skill fo-sq-nil'><div class='fo-sq-skbar'><i style='width:" + Math.max(2, w) + "%'></i></div><div class='fo-sq-sknum skg skg-nil'>–</div></div>";
     }
-    return "<div class='fo-sq-skill' title='" + label + ": " + word(v) + "'><div class='fo-sq-skbar'><i style='width:" + w + "%;background:" + col + "'></i></div><div class='fo-sq-sknum'><b>" + word(v) + "</b></div></div>";
+    return "<div class='fo-sq-skill' title='" + label + ": " + word(v) + "'><div class='fo-sq-skbar'><i class='skfill " + g + "' style='width:" + w + "%'></i></div><div class='fo-sq-sknum'><b class='skg " + g + "'>" + word(v) + "</b></div></div>";
   }
   function foSqDetail(p, isYouth) {
     // the standard seven-skill read-out (the draft card's own bars), not the
@@ -299,7 +303,7 @@
     try { if (typeof foSeasonLine === "function") { var sl = foSeasonLine(p.name); if (sl) season = "<span class='fo-sq-season'>This season: " + sl + "</span>"; } } catch (eSl) {}
     var foot = "<div class='fo-sq-dfoot'>" + season +
       "<span>Experience <b>" + E(p.expWord || p.exp || "-") + "</b></span>" +
-      "<span>Captaincy <b>" + word(p.capt || 30) + "</b></span>" +
+      "<span>Captaincy <b class='skg " + ((typeof foSkillCls === "function") ? foSkillCls(p.capt || 30) : "") + "'>" + word(p.capt || 30) + "</b></span>" +
       "<span>Energy <b>" + E((typeof foEnergyOf === "function" ? foEnergyOf(p).word : p.fatigue) || "-") + "</b></span>" +
       "<span>Nationality <b>" + E(p.nat || "-") + "</b></span>" +
       (tals ? "<span>" + tals + "</span>" : "") +
@@ -638,8 +642,18 @@
       // tooltip; the tooltip also carried the figure in brackets, so hovering
       // handed back exactly what the card had stopped saying. data-v keeps the
       // raw figure on the node for sorting and for tests - it is never drawn.
-      return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "' data-v='" + v + "' title='" + E(c.l + ": " + foSqLad(v, c.k)) + "'>" +
-        "<span class='fo-sqg-v' style='color:" + foSqQCol(v) + "'>" + E(foSqLad(v, c.k)) + "</span></td>";
+      // AND THE COLOUR IS THE SAME READING AGAIN. An ability cell is tinted and
+      // inked off its rung (foSkillCls), not off foSqQCol - which is a
+      // continuous 40-to-92 ramp built for RATINGS. Run through it, every rung
+      // B2 opened above ninety-two came out the same shade, so an Iconic and a
+      // Masterful were the same colour; and its brick-to-green sweep says "bad"
+      // in red rather than simply letting a weak rung recede. foSqQCol still
+      // paints OVR, experience and fitness just above, which are ratings and
+      // are meant to look like ratings.
+      var g = (typeof foSkillCls === "function") ? foSkillCls(v) : "";
+      return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + " skheat " + g +
+        "' data-v='" + v + "' title='" + E(c.l + ": " + foSqLad(v, c.k)) + "'>" +
+        "<span class='fo-sqg-v skg " + g + "'>" + E(foSqLad(v, c.k)) + "</span></td>";
     };
 
     var body = rows.map(function (p) {
@@ -2094,8 +2108,10 @@
     var bar = function (k, v, nil) {
       v = Math.max(0, Math.round(v || 0));
       var w = (typeof foSkBar === "function") ? foSkBar(v) : Math.min(100, v);
+      var g = (typeof foSkillCls === "function") ? foSkillCls(v) : "";
       return "<div class='fo-sqx-attr" + (nil ? " nil" : "") + "'><span class='k'>" + k + "</span>" +
-        "<span class='m'><i style='width:" + w + "%'></i></span><span class='v'>" + (nil ? "&ndash;" : E(word(v))) + "</span></div>";
+        "<span class='m'><i class='" + (nil ? "" : "skfill " + g) + "' style='width:" + w + "%'></i></span>" +
+        "<span class='v skg " + (nil ? "skg-nil" : g) + "'>" + (nil ? "&ndash;" : E(word(v))) + "</span></div>";
     };
     if (tab === "bat") {
       return "<div class='fo-sqx-pcols'><div><div class='fo-sqx-ph'>With the bat</div>" +

@@ -128,7 +128,7 @@
       var p = byName[nm] || {};
       var isC = App.orders.captain === nm, isW = App.orders.keeper === nm;
       var bv = Math.round(aggBat(p) || 0);
-      var bc = bv >= 70 ? "#16A34A" : bv >= 50 ? "#4DA6A2" : bv >= 30 ? "#c08a2b" : "#b3402a";
+      var bc = (typeof foSkillInk === "function") ? foSkillInk(bv) : "#335C55";
       var tals = (p.talents || []).slice(0, 2).map(function (t2) { return "<span class='fo-sq-talent' title='" + E((typeof TALTIPS !== "undefined" && TALTIPS[t2]) || "") + "'>" + E(typeof ptal === "function" ? ptal(t2) : t2) + "</span>"; }).join("");
       return "<div class='fo-ob-row'>" +
         "<span class='fo-ob-n" + (i < 3 ? " top" : "") + "'>" + (i + 1) + "</span>" +
@@ -149,7 +149,7 @@
     var chips = pool.map(function (p) {
       var on = window.__foOrdBrush === p.name;
       var bw = Math.round(aggBowl(p) || 0);
-      var bwc = bw >= 70 ? "#16A34A" : bw >= 50 ? "#4DA6A2" : bw >= 30 ? "#c08a2b" : "#b3402a";
+      var bwc = (typeof foSkillInk === "function") ? foSkillInk(bw) : "#335C55";
       var tal = (p.talents || [])[0];
       var talTxt = tal ? " · " + E(typeof ptal === "function" ? ptal(tal) : tal) : "";
       var titleT = (p.talents || []).map(function (t2) { return (typeof ptal === "function" ? ptal(t2) : t2); }).join(", ");
@@ -529,7 +529,10 @@
       else if (p.bowlType && p.bowlType !== "none") bits.push(/spin/i.test(p.bowlTypeFull || p.bowlType) ? "Part of the attack - the spin option." : "Part of the seam attack.");
       var bestK = null, bestV = -1;
       for (var k in (p.skills || {})) if (typeof p.skills[k] === "number" && p.skills[k] > bestV) { bestV = p.skills[k]; bestK = k; }
-      if (bestK) bits.push("Strongest suit: " + (foSkillLabel(bestK) || bestK) + ".");
+      // bestK is a skill KEY, so it wants the name map, not the band ladder -
+      // the two were briefly the same identifier in this scope and this line
+      // only ever worked by accident of which one happened to be in scope.
+      if (bestK) bits.push("Strongest suit: " + (foSkillName(bestK) || bestK) + ".");
       return bits.join(" ");
     } catch (e) { return ""; }
   }

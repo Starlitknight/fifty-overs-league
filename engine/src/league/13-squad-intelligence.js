@@ -360,10 +360,17 @@
       ["Fielding", foSiStat(selected, "field"), 1], ["Experience", foSiStat(selected, "exp"), 0],
       ["Fitness", foSiEnergy(selected), 0]].map(function (x) {
         // an ability reads as a band; experience and fitness are states, not
-        // abilities, and stay the readings they have always been
+        // abilities, and stay the readings they have always been - which goes
+        // for the colour too. An ability is painted off its rung on the shared
+        // ladder; a state keeps this panel's own four-step tone, because it is
+        // not on that ladder and pretending otherwise would be a lie about
+        // what the colour means.
+        var abil = !!x[2];
+        var g = abil && typeof foSkillCls === "function" ? foSkillCls(x[1]) : "";
         return "<div class='fo-si-st'><span>" + x[0] + "</span>" +
-          "<div class='fo-si-bar'><i class='" + foSiTone(x[1]) + "' style='width:" + (x[2] ? siWide(x[1]) : x[1]) + "%'></i></div>" +
-          "<b>" + (x[2] ? foSiE(siBand(x[1])) : x[1]) + "</b></div>";
+          "<div class='fo-si-bar'><i class='" + (abil ? "skfill " + g : foSiTone(x[1])) +
+          "' style='width:" + (abil ? siWide(x[1]) : x[1]) + "%'></i></div>" +
+          "<b" + (abil ? " class='skg " + g + "'" : "") + ">" + (abil ? foSiE(siBand(x[1])) : x[1]) + "</b></div>";
       }).join("");
 
     var player = "<aside class='fo-si-card fo-si-player'>" +

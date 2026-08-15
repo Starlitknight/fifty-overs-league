@@ -199,7 +199,9 @@
       var v = num(b[1]);
       var w = (typeof foSkBar === "function") ? foSkBar(v) : Math.min(100, v);
       var lbl = (typeof foSkillLabel === "function") ? foSkillLabel(v) : String(v);
-      return "<div class='fo-pp-bar'><i>" + E(b[0].toUpperCase()) + "</i><u><b style='width:" + w + "%'></b></u><em>" + E(lbl) + "</em></div>";
+      var g = (typeof foSkillCls === "function") ? foSkillCls(v) : "";
+      return "<div class='fo-pp-bar'><i>" + E(b[0].toUpperCase()) + "</i><u><b class='skfill " + g +
+        "' style='width:" + w + "%'></b></u><em class='skg " + g + "'>" + E(lbl) + "</em></div>";
     }).join("") + "</div>";
   }
 

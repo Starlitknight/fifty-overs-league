@@ -942,8 +942,124 @@ function foSkillIx(v) {
 }
 function foSkillLabel(v) { return FO_SKILL_LADDER[foSkillIx(v)][1]; }
 function foSkillAbbr(v) { return FO_SKILL_ABBR[foSkillIx(v)]; }
+// ---------------------------------------------------------------------------
+// WHAT ONE ABILITY LOOKS LIKE. Same fourteen rungs, in colour.
+// ---------------------------------------------------------------------------
+//
+// Reading a squad was work. Every ability wore the same ink, so finding the one
+// thing a man is good at meant reading fifteen words at the same weight and
+// holding them in your head. The words are right - they are what the manager
+// should be reasoning about - but they gave the eye nothing to land on.
+//
+// So the ladder now carries a colour, and it is THE SAME LADDER: the rung comes
+// from foSkillIx, which means the word and the colour can never disagree and a
+// hundred-and-ten is a rung the ramp actually has. Faint at the bottom, strong
+// at the top, so a squad page reads at a glance and the weaknesses recede
+// instead of shouting.
+//
+// THIS IS REDUNDANT ENCODING, NEVER THE ONLY ONE. The word is always printed
+// next to the colour. Nothing in the product is knowable only by hue - which
+// matters for colour blindness, for print, and for the plain fact that "greener
+// than that other one" is not a thing a manager should have to squint at.
+//
+// WHY THREE RAMPS AND NOT ONE. They sit on different things and the constraints
+// genuinely differ:
+//   INK  - the word itself, so every rung is body text and every rung has to
+//          clear WCAG AA on all four grounds the app puts it on AND on its own
+//          wash. The faint end is bought with chroma and hue, NOT by going grey
+//          enough to be unreadable, which is where a naive "fade it out" lands.
+//   WASH - the heat-map tint behind a cell. Deliberately light: a heat map that
+//          fights the text it is behind has traded reading for decoration.
+//   FILL - bar interiors. No text sits on a bar, so this one runs the full range
+//          and does the loudest work.
+//
+// The steps are not hand-picked. They were solved in OKLCH against a rising
+// contrast target and checked for monotonic luminance, so the ramp is honestly
+// sequential rather than merely pretty; `test/a-skill-has-a-colour.test.mjs`
+// re-derives every one of those checks and will fail if a step is nudged by
+// eye. Single hue family, blue-green to green - a sequential scale, never a
+// rainbow, because the quantity is magnitude and magnitude has one direction.
+const FO_SKILL_INK = ['#606A69', '#556665', '#49625F', '#3E5F5B', '#335C55', '#27594F',
+  '#155448', '#004E3F', '#014838', '#004231', '#013C2A', '#003623', '#002F1C', '#002815'];
+const FO_SKILL_WASH = ['#F9FCFC', '#F1F9F8', '#E9F6F4', '#E2F3F0', '#DAF0EC', '#D3EEE7',
+  '#CCEBE2', '#C4E8DC', '#BEE5D7', '#B7E2D0', '#B1DFCA', '#ABDCC3', '#A5D9BC', '#A0D5B5'];
+const FO_SKILL_FILL = ['#C0D4D3', '#B0CCC9', '#A0C4C0', '#91BCB5', '#81B4AB', '#72AC9F',
+  '#62A494', '#529C88', '#41947C', '#2F8C6F', '#198462', '#017B55', '#04714A', '#01683F'];
+// The weight rises with the rung too, so the ramp still reads where colour does
+// not arrive - greyscale, a cheap screen, a colour-blind eye.
+const FO_SKILL_WEIGHT = [400, 400, 400, 400, 400, 500, 500, 500, 600, 600, 700, 700, 700, 700];
+function foSkillInk(v) { return FO_SKILL_INK[foSkillIx(v)]; }
+function foSkillWash(v) { return FO_SKILL_WASH[foSkillIx(v)]; }
+function foSkillFill(v) { return FO_SKILL_FILL[foSkillIx(v)]; }
+// THE CLASS EVERY SURFACE HANGS OFF. One token per rung, so a render site says
+// which rung it is and the stylesheet decides what that looks like - rather than
+// fourteen copies of a hex code scattered through the app, which is exactly the
+// mess this replaced (there were six separate threshold ladders, none agreeing).
+function foSkillCls(v) { return 'sg' + foSkillIx(v); }
+// THE STYLESHEET, BUILT FROM THE ARRAYS ABOVE. Generated rather than written out
+// so the CSS cannot drift from the JS: there is one definition of the ramp and
+// both the class and the inline colour come off it.
+function foSkillGradeCss() {
+  const out = [];
+  for (let i = 0; i < FO_SKILL_LADDER.length; i++) {
+    // Two classes, not one. Several surfaces style their own word element by
+    // tag - `.fo-sq-sknum b`, `.fo-pp-bar em` - and a single-class rule loses
+    // to a class-plus-tag selector, so the rung would have been silently
+    // ignored on exactly the pages that most needed it. Every render site
+    // therefore carries `skg` alongside its rung.
+    out.push('.skg.sg' + i + '{color:' + FO_SKILL_INK[i] + ';font-weight:' + FO_SKILL_WEIGHT[i] + '}');
+    // !important, and not lightly. Three separate sheets paint a td background
+    // underneath this one - the base row hover, the roster's zebra striping and
+    // its tinted headline columns - and every one of them outranks a two-class
+    // selector. Without this the heat vanished from the roster entirely, and
+    // vanished from every other table the moment the pointer crossed the row,
+    // which is precisely when it is being read. A cell that has been given a
+    // rung IS that rung; nothing underneath gets a vote.
+    out.push('.skheat.sg' + i + '{background:' + FO_SKILL_WASH[i] + ' !important}');
+    // Bar interiors carry `skfill` as well as the rung, because the base sheet
+    // gives .skbar i and friends their own background and a bare colour class
+    // would lose to it.
+    out.push('.skfill.sg' + i + '{background:' + FO_SKILL_FILL[i] + ' !important}');
+  }
+  // BEYOND THE HUMAN CEILING. Rungs 10 and up are the ones B2 made possible at
+  // all - a hundred and over. They are marked categorically, with a gilt rule
+  // rather than a jump in hue, so the sequential ramp stays sequential and the
+  // tier is still unmistakable.
+  const gilt = [];
+  for (let i = 10; i < FO_SKILL_LADDER.length; i++) gilt.push('.skg.sg' + i);
+  out.push(gilt.join(',') + '{border-bottom:1px solid rgba(192,138,46,.55);padding-bottom:1px}');
+  // A cell that is only a tint needs an edge or it reads as a rendering bug on
+  // a striped table.
+  out.push('.skheat{border-radius:3px}');
+  // The bottom rung of a skill nobody has - "does not bowl" - is absence, not
+  // weakness, and must not be coloured as though the man were merely bad at it.
+  out.push('.skg.skg-nil{color:#9A958A;font-weight:400}');
+  return out.join('');
+}
+// Installed against the document root rather than the body, because the core
+// block is concatenated ahead of anything that builds a page and there may not
+// be a body yet. The server runs this same file inside a VM with no DOM at all,
+// which is what the catch is for.
+function foSkillGradeInstall() {
+  try {
+    if (typeof document === 'undefined' || !document.createElement) return;
+    if (document.getElementById('fo-skill-grade-css')) return;
+    const s = document.createElement('style');
+    s.id = 'fo-skill-grade-css';
+    s.textContent = foSkillGradeCss();
+    (document.head || document.documentElement).appendChild(s);
+  } catch (eGr) {}
+}
+foSkillGradeInstall();
 try { window.foSkillLabel = foSkillLabel; window.foSkillAbbr = foSkillAbbr;
-      window.foSkillIx = foSkillIx; window.FO_SKILL_LADDER = FO_SKILL_LADDER; } catch (eSk) {}
+      window.foSkillIx = foSkillIx; window.FO_SKILL_LADDER = FO_SKILL_LADDER;
+      window.foSkillInk = foSkillInk; window.foSkillWash = foSkillWash;
+      window.foSkillFill = foSkillFill; window.foSkillCls = foSkillCls;
+      window.foSkillGradeCss = foSkillGradeCss;
+      window.foSkillGradeInstall = foSkillGradeInstall;
+      window.FO_SKILL_INK = FO_SKILL_INK; window.FO_SKILL_WASH = FO_SKILL_WASH;
+      window.FO_SKILL_FILL = FO_SKILL_FILL;
+      window.FO_SKILL_WEIGHT = FO_SKILL_WEIGHT; } catch (eSk) {}
 // TEN STARS, IN HALVES, OFF THE SAME NUMBER. There were two star systems - a
 // legacy five-star ladder and a ten-star strip - reading two different
 // universes, so the same cricketer wore different stars on different pages.
@@ -3494,8 +3610,8 @@ function effBowl(bat,bowl,ctx){
   if(T.includes('partnershipBreaker')&&(ctx.pship??0)>=50)v+=5;
   return Math.max(5,Math.min(97,Math.round(v)));
 }
-function meter(v,lbl){const col=v>=70?'#2c7a2c':v>=45?'#C08A2E':'#B23230';
-  return `<div style="margin:2px 0"><span class="sklbl">${lbl}</span><span class="skbar" style="width:130px"><i style="width:${v}%;background:${col}"></i></span><span class="skword" style="color:${col}">${word(v)}</span></div>`}
+function meter(v,lbl){const g=foSkillCls(v);
+  return `<div style="margin:2px 0"><span class="sklbl">${lbl}</span><span class="skbar" style="width:130px"><i class="skfill ${g}" style="width:${foSkBar(v)}%"></i></span><span class="skword skg ${g}">${word(v)}</span></div>`}
 // WHAT AN ABILITY IS CALLED, EVERYWHERE, AND ONLY FROM ONE PLACE.
 //
 // `word` used to be its own sixteen-rung ladder at 6.25 points a rung, clamped
@@ -3739,7 +3855,7 @@ function pgMarket(){
   const rows=App.market.listed.map(l=>{
     const fp=findPlayer(l.name);if(!fp)return '';
     const p=fp.p;const mine=l.seller===me.name;
-    return `<tr><td>${playerLink(p)}${(p.talents&&p.talents.length)?' ★':''}</td><td>${prole(p.role)}</td><td class="n">${p.age|0}</td><td class="tt">${abbr(aggBat(p))}</td><td class="tt">${p.bowlType?abbr(aggBowl(p)):'-'}</td><td>${esc(l.seller)}</td><td class="n">$${l.base.toLocaleString()}</td>
+    return `<tr><td>${playerLink(p)}${(p.talents&&p.talents.length)?' ★':''}</td><td>${prole(p.role)}</td><td class="n">${p.age|0}</td><td class="tt skheat skg ${foSkillCls(aggBat(p))}">${abbr(aggBat(p))}</td>${p.bowlType?`<td class="tt skheat skg ${foSkillCls(aggBowl(p))}">${abbr(aggBowl(p))}</td>`:'<td class="tt skg skg-nil">-</td>'}<td>${esc(l.seller)}</td><td class="n">$${l.base.toLocaleString()}</td>
     <td>${mine?'<span class="small">your listing</span>':`<input type="number" style="width:86px" value="${App.market.myBids[l.name]||''}" placeholder="bid" onchange="App.market.myBids['${esc(l.name)}']=+this.value">`}</td></tr>`}).join('');
   const own=me.players.slice().sort((a,b)=>b.rating-a.rating).map(p=>`<option value="${esc(p.name)}">${esc(p.name)} (val ~$${playerValue(p).toLocaleString()})</option>`).join('');
   $('#page').innerHTML=crumb(me.name,'Transfer market')+
@@ -3855,7 +3971,7 @@ const aggTech=p=>Math.round((S(p).vsPace+S(p).vsSpin+S(p).temperament)/3);
 const aggEnd=p=>p.bowlType?S(p).stamina:Math.round(S(p).temperament*0.9);
 const aggField=p=>Math.round((S(p).fielding+S(p).catching)/2);
 const isPT=p=>p.bowlTypeFull&&p.bowlTypeFull.startsWith('partTime');
-const bar=(v,lbl)=>`<span class="sklbl" title="${TIPS[lbl]||lbl}">${lbl}</span><span class="skbar"><i style="width:${foSkBar(v)}%"></i></span><span class="skword" title="${word(v)}">${word(v)}</span>`;
+const bar=(v,lbl)=>`<span class="sklbl" title="${TIPS[lbl]||lbl}">${lbl}</span><span class="skbar"><i class="skfill ${foSkillCls(v)}" style="width:${foSkBar(v)}%"></i></span><span class="skword skg ${foSkillCls(v)}" title="${word(v)}">${word(v)}</span>`;
 function crumb(...parts){return `<div class="crumb">${parts.map(esc).join('<span class="sep">&raquo;</span>')}</div>`}
 function playerTip(p){
   if(!p)return '';
@@ -4168,7 +4284,7 @@ function pgSquad(){
 const ROLEICON={opener:'OP',topOrderBat:'TOP',middleOrderBat:'MID',wicketkeeper:'WK',allRounder:'AR',seamFast:'FST',seamFastMedium:'FM',seamMedium:'MED',wristSpin:'WS',fingerSpin:'FS'};
 const FORMDOT=f=>{const c=['#7a1d1d','#B23230','#c07a3a','#999','#7a9a3a','#2c7a2c','#1c5537'][f??3];return `<span title="form: ${FORMW_UI[f??3]}" style="display:inline-block;width:9px;height:9px;border-radius:50%;background:${c}"></span>`};
 const FORMW_UI=['abysmal','poor','shaky','steady','good','strong','excellent'];
-function miniBar(v,tip){return `<span title="${tip}: ${word(v)}\n${SKILLTIP}"><span class="skbar" style="width:56px;height:8px"><i style="width:${foSkBar(v)}%"></i></span> <b class="sknum">${word(v)}</b></span>`}
+function miniBar(v,tip){return `<span title="${tip}: ${word(v)}\n${SKILLTIP}"><span class="skbar" style="width:56px;height:8px"><i class="skfill ${foSkillCls(v)}" style="width:${foSkBar(v)}%"></i></span> <b class="sknum skg ${foSkillCls(v)}">${word(v)}</b></span>`}
 function cardsView(ps){
   const rows=ps.map((p,ix)=>{
     const openK=p.name, isOpen=!!squadView.open[openK];
@@ -4206,11 +4322,18 @@ function gridTable(ps){
   if(squadView.key&&GRIDKEYS[squadView.key]){const f=GRIDKEYS[squadView.key];
     ps=ps.slice().sort((a,b)=>{const x=f(a),y=f(b);return (x<y?-1:x>y?1:0)*squadView.dir})}
   const H=k=>`<th style="cursor:pointer" title="${TIPS[k]||k} - click to sort" onclick="gridSort('${k}')">${k}${squadView.key===k?(squadView.dir<0?' \u25BC':' \u25B2'):''}</th>`;
+  // THE HEAT MAP. Seven abilities across, a whole squad down: this is the one
+  // screen where a manager is genuinely scanning rather than reading, and where
+  // a wall of same-coloured words cost the most. Tinted by rung, worded by rung.
+  // The sort is untouched and still runs on GRIDKEYS, which are the raw numbers -
+  // colouring a cell must never turn a column into an alphabetical sort of its
+  // labels.
+  const hc=v=>`<td class="skheat skg ${foSkillCls(v)}">${abbr(v)}</td>`;
   return `<div class="panel"><h4>Overall grid <span style="font-weight:normal;font-size:9px">click a column to sort</span></h4><div class="pad"><table>
   <tr>${['Player','Age','Nat','BT','Role','End','Bat','Bowl','Tech','Power','Keep','Field'].map(H).join('')}<th>Capt</th>${['Exp','Fatg','Form','Rating'].map(H).join('')}</tr>
   ${ps.map(p=>`<tr><td>${playerLink(p)}</td><td>${p.age}</td><td>${esc(p.nat)}</td><td>${esc(shortBT(p))}</td><td>${prole(p.role)}</td>
-   <td>${abbr(aggEnd(p))}</td><td>${abbr(aggBat(p))}</td><td>${abbr(aggBowl(p))}</td><td>${abbr(aggTech(p))}</td><td>${abbr(S(p).power)}</td><td>${abbr(aggKeep(p))}</td><td>${abbr(aggField(p))}</td>
-   <td title="${TIPS.Capt}">${abbr(p.capt||30)}</td><td>${esc(p.expWord||p.exp)}</td><td>${esc(p.fatigue)}</td><td>${esc(p.formWord)}</td><td class="n">$${(p.wage||0).toLocaleString()}</td><td class="n">${p.rating}</td></tr>`).join('')}
+   ${hc(aggEnd(p))}${hc(aggBat(p))}${hc(aggBowl(p))}${hc(aggTech(p))}${hc(S(p).power)}${hc(aggKeep(p))}${hc(aggField(p))}
+   <td class="skheat skg ${foSkillCls(p.capt||30)}" title="${TIPS.Capt}">${abbr(p.capt||30)}</td><td>${esc(p.expWord||p.exp)}</td><td>${esc(p.fatigue)}</td><td>${esc(p.formWord)}</td><td class="n">$${(p.wage||0).toLocaleString()}</td><td class="n">${p.rating}</td></tr>`).join('')}
   </table></div></div>`;
 }
 function shortBT(p){const m={'none':'-','seamFast':'RF','seamFastMedium':'RFM','seamMedium':'RM','wristSpin':'WS','fingerSpin':'FS','partTimeSeam':'pt-S','partTimeSpin':'pt-Sp'};
@@ -4263,7 +4386,7 @@ function pgPlayer(q){
      <tr><td>Bowling</td><td>${esc(p.btLabel)}</td></tr><tr><td>Role</td><td>${prole(p.role)}</td></tr>
      <tr><td>Talents</td><td>${(p.talents&&p.talents.length)?p.talents.map(t=>`<span title="${TALTIPS[t]||''}">${ptal(t)}</span>`).join(', '):'-'}</td></tr><tr><td>Nationality</td><td>${esc(p.nat)}</td></tr>
      <tr><td>Form</td><td>${esc(p.formWord)}</td></tr><tr><td>Fatigue</td><td>${esc(p.fatigue)}</td></tr>
-     <tr><td>Experience</td><td>${esc(p.expWord||'')} <span class="small">(${p.exp})</span></td></tr><tr><td>Captaincy</td><td>${word(p.capt||30)}</td></tr></table></div></div>
+     <tr><td>Experience</td><td>${esc(p.expWord||'')} <span class="small">(${p.exp})</span></td></tr><tr><td>Captaincy</td><td class="skg ${foSkillCls(p.capt||30)}">${word(p.capt||30)}</td></tr></table></div></div>
   </div><div class="col">
     <div class="panel"><h4>Skills summary</h4><div class="pad">
       ${bar(aggBat(p),'Batsman')}<br>${bar(aggBowl(p),'Bowler')}<br>${bar(aggKeep(p),'Keeper')}<br>${bar(allr,'Allrounder')}
@@ -4271,7 +4394,7 @@ function pgPlayer(q){
     <div class="panel"><h4>Skills</h4><div class="pad">
       ${bar(aggBat(p),'Batting')}<br>${bar(aggBowl(p),'Bowling')}<br>${bar(aggKeep(p),'Keeping')}<br>${bar(aggField(p),'Fielding')}<br>${bar(aggEnd(p),'Endurance')}<br>${bar(aggTech(p),'Technique')}<br>${bar(S(p).power,'Power')}
       <details class="adv"><summary>Every attribute</summary><table class="kv">
-        ${['vsPace','vsSpin','power','rotation','temperament','wicket','economy','discipline','moveTurn','variation','stamina','fielding','catching','keeping','stumping'].map(k=>`<tr><td>${SKN[k]||k}</td><td>${word(S(p)[k]??0)}</td></tr>`).join('')}
+        ${['vsPace','vsSpin','power','rotation','temperament','wicket','economy','discipline','moveTurn','variation','stamina','fielding','catching','keeping','stumping'].map(k=>{const v=S(p)[k]??0;return `<tr><td>${SKN[k]||k}</td><td class="skheat skg ${foSkillCls(v)}">${word(v)}</td></tr>`}).join('')}
         <tr><td class="small">bowling</td><td class="small">${p.bowlType||'does not bowl'}</td></tr>
       </table></details>
     </div></div>
@@ -5293,8 +5416,8 @@ function fantasyPoints(r){
   return Object.entries(pts).sort((a,b)=>b[1]-a[1]).slice(0,5);
 }
 function sdot(v,lbl){
-  const _L=SKILLTIP;const col=v>=76?'#1c5537':v>=64?'#2c7a2c':v>=52?'#C08A2E':v>=40?'#c07a3a':'#B23230';
-  return `<span class="sbar" title="${lbl}: ${word(v)}\n${_L}"><i style="width:${Math.max(4,foSkBar(v))}%;background:${col}"></i></span><span class="sknum">${word(v)}</span>`;
+  const _L=SKILLTIP;const g=foSkillCls(v);
+  return `<span class="sbar" title="${lbl}: ${word(v)}\n${_L}"><i class="skfill ${g}" style="width:${Math.max(4,foSkBar(v))}%"></i></span><span class="sknum skg ${g}">${word(v)}</span>`;
 }
 function pshipBars(inn){
   const ps=(inn.pships||[]).concat(inn.pshipB>0?[{w:'-',runs:inn.pshipR,balls:inn.pshipB,pair:'unbroken'}]:[]);
@@ -6093,7 +6216,7 @@ function shapeChips(t){
   const spin=xi.filter(p=>p.bowlType&&typeClass(p.bowlType)==='spin');
   const pv=pace.length?Math.round(pace.reduce((a,p)=>a+aggBowl(p),0)/pace.length):0;
   const sv=spin.length?Math.round(spin.reduce((a,p)=>a+aggBowl(p),0)/spin.length):0;
-  const chip=(l,v)=>`<span class="phasechip" title="${l}: ${word(v)}" style="background:${v>=62?'#e2f0e2':v>=50?'#f0ecdc':'#f4e4e4'}">${l} ${abbr(v)}</span>`;
+  const chip=(l,v)=>`<span class="phasechip skheat skg ${foSkillCls(v)}" title="${l}: ${word(v)}">${l} ${abbr(v)}</span>`;
   return chip('BAT',bat)+' '+chip('PACE',pv)+' '+chip('SPIN',sv);
 }
 function myMgrName(){return store('fo_mgr')||''}

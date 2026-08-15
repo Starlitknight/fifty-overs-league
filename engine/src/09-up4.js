@@ -258,9 +258,9 @@
       var allr=Math.round((aggBat(p)+aggBowl(p))/2*(aggBat(p)>40&&aggBowl(p)>40?1:0.4));
       var tal=(p.talents&&p.talents.length)?p.talents.map(foAbil).join(' '):'None';var btl=foBT(p)||'Does not bowl';
       var LADT=(typeof SKILLTIP!=='undefined')?SKILLTIP:'Skill ladder';
-      var bigbar=function(v,lbl){return '<div class="fo-bigskill" title="'+lbl+': '+word(v)+' (rank '+(wIx(v)+1)+' of 16)\n'+LADT+'">'+
-        '<span class="fo-bigskill-l">'+lbl+'</span><span class="fo-bigskill-bar"><i style="width:'+Math.max(2,Math.min(100,v))+'%"></i></span>'+
-        '<span class="fo-bigskill-w">'+word(v)+'</span></div>';};
+      var bigbar=function(v,lbl){var g=foSkillCls(v);return '<div class="fo-bigskill" title="'+lbl+': '+word(v)+'\n'+LADT+'">'+
+        '<span class="fo-bigskill-l">'+lbl+'</span><span class="fo-bigskill-bar"><i class="skfill '+g+'" style="width:'+Math.max(2,foSkBar(v))+'%"></i></span>'+
+        '<span class="fo-bigskill-w skg '+g+'">'+word(v)+'</span></div>';};
       var hist=(App.playerHist[p.name]||[]).slice(-6).reverse();
       var histRows=hist.length?hist.map(function(h){var ix=matchIxFor(h);var cell=ix>=0?'<a href="#/scorecard?i='+ix+'">'+esc(h.teams)+'</a>':esc(h.teams);
         return '<tr class="'+(ix>=0?'rowlink':'')+'"'+(ix>=0?' onclick="location.hash=\'#/scorecard?i='+ix+'\'"':'')+'><td>'+h.date+'</td><td>One Day</td><td>'+cell+'</td><td>'+esc(h.bat)+'</td><td>'+esc(h.bowl)+'</td><td>-</td></tr>';}).join(''):'<tr><td colspan=6 class="small">No recent matches yet.</td></tr>';
@@ -287,25 +287,34 @@
         '<div class="panel fo-skills-panel"><h4>Skills</h4><div class="pad"><div class="ftp-skills-2col">'+
           '<div>'+bigbar(aggBat(p),'Batting')+bigbar(aggBowl(p),'Bowling')+bigbar(aggKeep(p),'Keeping')+bigbar(aggField(p),'Fielding')+'</div>'+
           '<div>'+bigbar(aggEnd(p),'Endurance')+bigbar(aggTech(p),'Technique')+bigbar(S(p).power,'Power')+'</div></div>'+
-          '<details class="adv"><summary>Advanced engine view</summary><table class="kv">'+['vsPace','vsSpin','power','rotation','temperament','wicket','economy','discipline','moveTurn','variation','stamina','fielding','catching','keeping','stumping'].map(function(k){return '<tr><td title="'+LADT+'">'+k+'</td><td>'+(S(p)[k]!=null?S(p)[k]:0)+' <span class="small">('+word(S(p)[k]||0)+')</span></td></tr>';}).join('')+'</table></details></div></div>'+
+          '<details class="adv"><summary>Advanced engine view</summary><table class="kv">'+['vsPace','vsSpin','power','rotation','temperament','wicket','economy','discipline','moveTurn','variation','stamina','fielding','catching','keeping','stumping'].map(function(k){var kv=S(p)[k]!=null?S(p)[k]:0;return '<tr><td title="'+LADT+'">'+k+'</td><td class="skheat skg '+foSkillCls(kv)+'">'+word(kv)+'</td></tr>';}).join('')+'</table></details></div></div>'+
         '<div class="panel"><h4>Recent matches</h4><div class="pad"><table><tr><th>Date</th><th>Class</th><th>Teams</th><th>Batting</th><th>Bowling</th><th>Fielding</th></tr>'+histRows+'</table></div></div>'+
         '<div class="panel"><h4>Batting &amp; fielding</h4><div class="pad"><table class="fo-stattbl"><colgroup><col style="width:15%"><col span="11"></colgroup><tr><th>Class</th><th class="n" title="Innings batted">Inns</th><th class="n" title="Not outs">NO</th><th class="n">Runs</th><th class="n" title="Highest score">HS</th><th class="n" title="Runs per dismissal">Ave</th><th class="n" title="Balls faced">BF</th><th class="n" title="Runs per 100 balls">SR</th><th class="n">100</th><th class="n">50</th><th class="n">4s</th><th class="n">6s</th></tr>'+batStat+'</table></div></div>'+
         '<div class="panel"><h4>Bowling</h4><div class="pad"><table class="fo-stattbl"><colgroup><col style="width:15%"><col span="7"></colgroup><tr><th>Class</th><th class="n">Balls</th><th class="n">Runs</th><th class="n">Wkts</th><th class="n" title="Best figures">Best</th><th class="n" title="Runs per wicket">Ave</th><th class="n" title="Runs per over">Econ</th><th class="n" title="Balls per wicket">SR</th></tr>'+bowlStat+'</table></div></div>';
     }catch(e){console.error('[pgPlayer v10]',e);}
   };
-  function bigbarMini(v,lbl,LADT){return '<div class="fo-bigskill fo-bigskill-sm" title="'+lbl+': '+word(v)+' (rank '+(wIx(v)+1)+' of 16)\n'+LADT+'"><span class="fo-bigskill-l">'+lbl+'</span><span class="fo-bigskill-bar"><i style="width:'+Math.max(2,Math.min(100,v))+'%"></i></span><span class="fo-bigskill-w">'+word(v)+'</span></div>';}
+  // THIS IS THE FALLBACK CARD, and it has to hold the same line as the real
+  // one. 41-player-page normally clears #page and rebuilds it, so none of this
+  // is seen - but its wrapper swallows exceptions, so if build() ever throws
+  // THIS is what the manager is left looking at. It was still printing the old
+  // "rank N of 16" tooltip, still clamping the bar at a hundred so every rung
+  // B2 opened above the ceiling drew full, and still wearing no rung colour.
+  function bigbarMini(v,lbl,LADT){var g=foSkillCls(v);return '<div class="fo-bigskill fo-bigskill-sm" title="'+lbl+': '+word(v)+'\n'+LADT+'"><span class="fo-bigskill-l">'+lbl+'</span><span class="fo-bigskill-bar"><i class="skfill '+g+'" style="width:'+Math.max(2,foSkBar(v))+'%"></i></span><span class="fo-bigskill-w skg '+g+'">'+word(v)+'</span></div>';}
 
   /* ============ #10 squad Overall Grid: add Wage header + fatigue spectrum + form fallback ============ */
   window.gridTable=function(ps){
     if(squadView.key&&GRIDKEYS[squadView.key]){var f=GRIDKEYS[squadView.key];
       ps=ps.slice().sort(function(a,b){var x=f(a),y=f(b);return (x<y?-1:x>y?1:0)*squadView.dir;});}
     var H=function(k){return '<th style="cursor:pointer" title="'+(TIPS[k]||k)+' - click to sort" onclick="gridSort(\''+k+'\')">'+k+(squadView.key===k?(squadView.dir<0?' \u25BC':' \u25B2'):'')+'</th>';};
+    // tinted by rung, worded by rung - the same heat the roster uses. The sort
+    // still runs on GRIDKEYS, which are the raw numbers.
+    var hc=function(v){return '<td class="skheat skg '+foSkillCls(v)+'">'+abbr(v)+'</td>';};
     return '<div class="panel"><h4>Overall grid <span style="font-weight:normal;font-size:9px">click a column to sort</span></h4><div class="pad"><table class="fo-gridtbl">'+
     '<tr>'+['Player','Age','Nat','BT','End','Bat','Bowl','Tech','Power','Keep','Field'].map(H).join('')+'<th>Capt</th>'+['Exp','Fatg','Form','Wage'].map(H).join('')+H('Rating')+'</tr>'+
     ps.map(function(p){fatSync(p);if(!p.formWord)p.formWord=(typeof FORMW!=='undefined'?FORMW[p.formIx==null?3:p.formIx]:'steady');
       return '<tr><td>'+foRoleImg(p)+' '+playerLink(p)+'</td><td class="n">'+p.age+'</td><td>'+foFlag(p.nat)+'</td><td>'+esc(shortBT(p))+'</td>'+
-      '<td>'+abbr(aggEnd(p))+'</td><td>'+abbr(aggBat(p))+'</td><td>'+abbr(aggBowl(p))+'</td><td>'+abbr(aggTech(p))+'</td><td>'+abbr(S(p).power)+'</td><td>'+abbr(aggKeep(p))+'</td><td>'+abbr(aggField(p))+'</td>'+
-      '<td>'+abbr(p.capt||30)+'</td><td>'+esc(p.expWord||p.exp)+'</td><td title="'+((typeof FATTIP!=='undefined')?FATTIP:'')+'">'+esc(p.fatWord||p.fatigue)+'</td><td>'+esc(p.formWord)+'</td><td class="n">$'+(p.wage||0).toLocaleString()+'</td><td class="n">'+p.rating+'</td></tr>';}).join('')+
+      hc(aggEnd(p))+hc(aggBat(p))+hc(aggBowl(p))+hc(aggTech(p))+hc(S(p).power)+hc(aggKeep(p))+hc(aggField(p))+
+      hc(p.capt||30)+'<td>'+esc(p.expWord||p.exp)+'</td><td title="'+((typeof FATTIP!=='undefined')?FATTIP:'')+'">'+esc(p.fatWord||p.fatigue)+'</td><td>'+esc(p.formWord)+'</td><td class="n">$'+(p.wage||0).toLocaleString()+'</td><td class="n">'+p.rating+'</td></tr>';}).join('')+
     '</table></div></div>';
   };
 

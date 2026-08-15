@@ -1524,9 +1524,9 @@
       return "<div class='fo-en' title='" + E(en.raw) + "'>" + (lbl ? "<span class='fo-en-k'>Energy</span>" : "") + "<div class='fo-en-bar'><u class='fo-en-" + en.word + "' style='width:" + en.pct + "%'></u></div><span class='fo-en-w fo-en-w-" + en.word + "'>" + en.word + "</span></div>";
     };
     var gainOf = function (p, tr, pr) {
-      if (pr.pct > 0) return foSkillLabel(pr.skill) + " &middot; " + pr.pct + "%";
+      if (pr.pct > 0) return foSkillName(pr.skill) + " &middot; " + pr.pct + "%";
       var w0 = FO_TR_PROGMAP[tr.program] || {};
-      var tops = Object.keys(w0).sort(function (a, b) { return (w0[b] || 0) - (w0[a] || 0); }).slice(0, 2).map(foSkillLabel);
+      var tops = Object.keys(w0).sort(function (a, b) { return (w0[b] || 0) - (w0[a] || 0); }).slice(0, 2).map(foSkillName);
       return tops.length ? "targets " + tops.join(", ") : "resting";
     };
     var rows = sorted.map(function (p) {
@@ -1544,7 +1544,7 @@
       var tr = foTrOf(p), pr = foTrProgress(p), en = foEnergyOf(p);
       var w0 = FO_TR_PROGMAP[tr.program] || {};
       var chips = Object.keys(w0).sort(function (a, b) { return (w0[b] || 0) - (w0[a] || 0); }).slice(0, 3).map(function (k) {
-        return "<span class='fo-trc-w'><u style='background:" + (FO_SK_COLOR[k] || "#6A6354") + "'></u>" + E(foSkillLabel(k)) + " <b>" + w0[k] + "%</b></span>";
+        return "<span class='fo-trc-w'><u style='background:" + (FO_SK_COLOR[k] || "#6A6354") + "'></u>" + E(foSkillName(k)) + " <b>" + w0[k] + "%</b></span>";
       }).join("");
       var warn = (en.tired && tr.program !== "Rest" && tr.intensity !== "Rest")
         ? "<div class='fo-trc-warn'>&#9888; Tired players train slowly &middot; consider <b>Rest</b>.</div>" : "";

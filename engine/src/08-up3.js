@@ -221,7 +221,10 @@
       var ca=careerAgg(p.name);var B=ca.b,W=ca.w;
       var batStat='<tr><td>One Day</td><td class="n">'+B.inns+'</td><td class="n">'+B.outs+'</td><td class="n">'+(B.inns-B.outs)+'</td><td class="n"><b>'+B.runs+'</b></td><td class="n">'+B.hs+'</td><td class="n">'+(B.outs?(B.runs/B.outs).toFixed(2):(B.runs?'—':'0'))+'</td><td class="n">'+B.bf+'</td><td class="n">'+(B.bf?(100*B.runs/B.bf).toFixed(1):'0')+'</td><td class="n">'+B.h100+'</td><td class="n">'+B.h50+'</td><td class="n">'+B.s4+'</td><td class="n">'+B.s6+'</td></tr>';
       var bowlStat='<tr><td>One Day</td><td class="n">'+W.balls+'</td><td class="n">'+W.runs+'</td><td class="n"><b>'+W.wkts+'</b></td><td class="n">'+(W.bestW>=0?W.bestW+'-'+W.bestR:'—')+'</td><td class="n">'+(W.wkts?(W.runs/W.wkts).toFixed(2):'—')+'</td><td class="n">'+(W.balls?(W.runs/(W.balls/6)).toFixed(2):'—')+'</td><td class="n">'+(W.wkts?(W.balls/W.wkts).toFixed(1):'—')+'</td></tr>';
-      var bigbar=function(v,lbl){var col=v>=70?'#2c7a2c':v>=45?'#c8a13a':'#a33328';return '<div class="fo-bigskill"><span class="fo-bigskill-l">'+lbl+'</span><span class="fo-bigskill-bar"><i style="width:'+Math.max(2,Math.min(100,v))+'%;background:'+col+'"></i></span><span class="fo-bigskill-w" style="color:'+col+'">'+word(v)+'</span></div>';};
+      // foSkBar, not min(100,v): this bar clamped at a hundred, so every rung
+      // B2 opened up above the old ceiling drew as a full bar and an Iconic
+      // looked identical to an Unprecedented.
+      var bigbar=function(v,lbl){var g=foSkillCls(v);return '<div class="fo-bigskill"><span class="fo-bigskill-l">'+lbl+'</span><span class="fo-bigskill-bar"><i class="skfill '+g+'" style="width:'+Math.max(2,foSkBar(v))+'%"></i></span><span class="fo-bigskill-w skg '+g+'">'+word(v)+'</span></div>';};
       $('#page').innerHTML=crumb(team.name,p.name,'Details')+
         '<div class="grid2"><div class="col">'+
           '<div class="panel"><h4>Player info</h4><div class="pad">'+
@@ -234,7 +237,7 @@
         '<div class="panel fo-skills-panel"><h4>★ Skills</h4><div class="pad"><div class="ftp-skills-2col">'+
           '<div>'+bigbar(aggBat(p),'Batting')+bigbar(aggBowl(p),'Bowling')+bigbar(aggKeep(p),'Keeping')+bigbar(aggField(p),'Fielding')+'</div>'+
           '<div>'+bigbar(aggEnd(p),'Endurance')+bigbar(aggTech(p),'Technique')+bigbar(S(p).power,'Power')+'</div></div>'+
-          '<details class="adv"><summary>Advanced engine view</summary><table class="kv">'+['vsPace','vsSpin','power','rotation','temperament','wicket','economy','discipline','moveTurn','variation','stamina','fielding','catching','keeping','stumping'].map(function(k){return '<tr><td>'+k+'</td><td>'+(S(p)[k]!=null?S(p)[k]:0)+' <span class="small">('+word(S(p)[k]||0)+')</span></td></tr>';}).join('')+'</table></details></div></div>'+
+          '<details class="adv"><summary>Advanced engine view</summary><table class="kv">'+['vsPace','vsSpin','power','rotation','temperament','wicket','economy','discipline','moveTurn','variation','stamina','fielding','catching','keeping','stumping'].map(function(k){var kv=S(p)[k]!=null?S(p)[k]:0;return '<tr><td>'+k+'</td><td class="skheat skg '+foSkillCls(kv)+'">'+word(kv)+'</td></tr>';}).join('')+'</table></details></div></div>'+
         '<div class="panel"><h4>Recent matches</h4><div class="pad"><table><tr><th>Date</th><th>Class</th><th>Teams</th><th>Batting</th><th>Bowling</th><th>Fielding</th></tr>'+histRows+'</table></div></div>'+
         '<div class="panel"><h4>Batting &amp; fielding</h4><div class="pad"><table><tr><th>Class</th><th class="n">Inns</th><th class="n">No</th><th class="n">Outs</th><th class="n">Runs</th><th class="n">HS</th><th class="n">Ave</th><th class="n">BF</th><th class="n">SR</th><th class="n">100</th><th class="n">50</th><th class="n">4s</th><th class="n">6s</th></tr>'+batStat+'</table></div></div>'+
         '<div class="panel"><h4>Bowling</h4><div class="pad"><table><tr><th>Class</th><th class="n">Balls</th><th class="n">Runs</th><th class="n">Wkts</th><th class="n">Best</th><th class="n">Ave</th><th class="n">Econ</th><th class="n">SR</th></tr>'+bowlStat+'</table></div></div>';

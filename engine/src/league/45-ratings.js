@@ -261,10 +261,15 @@
     tail: "Batting - Tail", seam: "Bowling - Seam", spin: "Bowling - Spin",
     field: "Fielding/Keeping" };
   var OVERS = { seam: "seamOv", spin: "spinOv" };
-  // THE SKILL TONES THE REST OF THE GAME USES, so a department that would be
-  // painted red on a player's own page is painted red here. A tail reading
-  // low is not a fault in the marking: a tail IS low, and a side whose eight
-  // and nine can bat shows it by reading higher than the next side's.
+  // THIS PANEL'S OWN TONES, and deliberately not the skill ramp. It used to
+  // claim it matched a player's page; it no longer does, because an ability is
+  // now painted on the shared fourteen-rung ladder (FO_SKILL_INK in
+  // 00-core.js) and a DEPARTMENT is a different quantity on a different scale -
+  // a club's mean XI card, which runs 32 to 78 across all 256 clubs, not an
+  // open-ended latent skill. Painting them off the same ramp would say the two
+  // numbers were comparable, and they are not. A tail reading low is not a
+  // fault in the marking: a tail IS low, and a side whose eight and nine can
+  // bat shows it by reading higher than the next side's.
   var band = function (v) { return v >= 75 ? "hot" : v >= 50 ? "good" : v >= 30 ? "ok" : "poor"; };
   // AND THE SIDE'S OWN FIGURE, banded on the printed scale rather than on an
   // average of the six - a top order and a tail are not the same quantity and

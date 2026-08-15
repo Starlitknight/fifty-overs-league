@@ -1717,7 +1717,9 @@
   // The engine's skill word ("ordinary", "elite", "world class", …).
   function foWord(v) { try { return (typeof word === "function") ? word(v) : ""; } catch (e) { return ""; } }
   // Bar tone by value: weak -> red, ordinary -> amber, good -> teal, elite -> green.
-  function foSkTone(v) { return v >= 75 ? "elite" : v >= 50 ? "good" : v >= 30 ? "mid" : "low"; }
+  // Four rungs became fourteen, and they are the ladder's own - the draft card
+  // and the squad page now agree about what a man's colour is.
+  function foSkTone(v) { try { return foSkillCls(v); } catch (e) { return ""; } }
   // The game's full 7-skill read-out (Batting/Bowling/Keeping/Endurance/
   // Technique/Power/Fielding), each a bar + the engine's word for it.
   function foSkillBars(p) {
@@ -1729,7 +1731,7 @@
     var tip = function (label) { try { return (typeof TIPS !== "undefined" && TIPS[label]) ? TIPS[label] : ""; } catch (e) { return ""; } };
     var wide = function (v) { try { return (typeof foSkBar === "function") ? foSkBar(v) : Math.min(100, v); } catch (e) { return Math.min(100, v); } };
     return "<div class='fo-dc-bars'>" + bars.map(function (b) {
-      return "<span class='fo-db'><i title='" + E(tip(b[0])) + "'>" + b[0] + "</i><b><u class='fo-sk-" + foSkTone(b[1]) + "' style='width:" + wide(b[1]) + "%'></u></b><em>" + E(foWord(b[1]) || "") + "</em></span>";
+      return "<span class='fo-db'><i title='" + E(tip(b[0])) + "'>" + b[0] + "</i><b><u class='skfill " + foSkTone(b[1]) + "' style='width:" + wide(b[1]) + "%'></u></b><em>" + E(foWord(b[1]) || "") + "</em></span>";
     }).join("") + "</div>";
   }
   // One draft-room player card · the game's own card, in the brand theme.
@@ -1765,7 +1767,7 @@
       var bars = [["Batting", agg("bat")], ["Bowling", isBowler ? agg("bowl") : 0], ["Keeping", agg("keep")], ["Fielding", agg("field")], ["Power", pw], ["Technique", agg("tech")], ["Endurance", agg("end")]];
       var word = function (v) { try { return typeof window.word === "function" ? window.word(v) : ""; } catch (e) { return ""; } };
       var wide = function (v) { try { return (typeof foSkBar === "function") ? foSkBar(v) : Math.min(100, v); } catch (e) { return Math.min(100, v); } };
-      var barHtml = bars.map(function (b) { var v = Math.max(0, Math.round(b[1] || 0)); return "<div class='fo-pd-bar'><span>" + b[0] + "</span><i><b class='fo-sk-" + foSkTone(v) + "' style='width:" + wide(v) + "%'></b></i><em>" + E(word(v) || "") + "</em></div>"; }).join("");
+      var barHtml = bars.map(function (b) { var v = Math.max(0, Math.round(b[1] || 0)); return "<div class='fo-pd-bar'><span>" + b[0] + "</span><i><b class='skfill " + foSkTone(v) + "' style='width:" + wide(v) + "%'></b></i><em>" + E(word(v) || "") + "</em></div>"; }).join("");
       var talents = (p.talents || []).map(function (t) { var d = (typeof TALTIPS !== "undefined" && TALTIPS[t]) || ""; return "<span title='" + E(d) + "' style='text-decoration:underline dotted'>" + E(foTalentName(t)) + "</span>"; }).join(", ") || "None";
       var inSquad = F.picked.indexOf(p) >= 0;
       var host = document.getElementById("fo-onb"); if (!host) return;
@@ -2166,7 +2168,7 @@
     var starsOf = function (v) { try { return window.foStars(v) / 2; } catch (e) { return 0; } };
     var starRow = function (l, v) {
       var n = starsOf(v), tone = foSkTone(v), s = "";
-      for (var i = 0; i < 5; i++) s += "<i class='fo-seg fo-segt-" + tone + (i < n ? " on" : "") + "'></i>";
+      for (var i = 0; i < 5; i++) s += "<i class='fo-seg" + (i < n ? " on skfill " + tone : "") + "'></i>";
       return "<div class='fo-str-row'><span>" + l + "</span><span class='fo-segs'>" + s + "</span></div>";
     };
     var fact = function (l, v) { return "<div class='fo-fact'><span>" + l + "</span><b>" + v + "</b></div>"; };
@@ -2936,7 +2938,8 @@
     v = Math.round(v || 0);
     var w = 0; try { w = (typeof foSkBar === "function") ? foSkBar(v) : Math.min(100, v); } catch (e) { w = Math.min(100, v); }
     var band = ""; try { band = (typeof foSkillLabel === "function") ? foSkillLabel(v) : String(v); } catch (e) { band = String(v); }
-    return "<div class=\'pk-st\' data-tip=\"" + E(FO_PK_TIPS[lbl] || "") + "\"><span class=\'pk-en\'>" + foPkIco(icoK) + "</span><b>" + lbl + "</b><span class=\'pk-bar\'><i style=\'width:" + Math.max(2, w) + "%\'></i></span><em>" + E(band) + "</em></div>";
+    var g = ""; try { g = (typeof foSkillCls === "function") ? foSkillCls(v) : ""; } catch (eG) {}
+    return "<div class=\'pk-st\' data-tip=\"" + E(FO_PK_TIPS[lbl] || "") + "\"><span class=\'pk-en\'>" + foPkIco(icoK) + "</span><b>" + lbl + "</b><span class=\'pk-bar\'><i class=\'skfill " + g + "\' style=\'width:" + Math.max(2, w) + "%\'></i></span><em class=\'skg " + g + "\'>" + E(band) + "</em></div>";
   }
   // THE CARD READS THE CANONICAL MODEL, AND ONLY THAT (B2).
   //
@@ -3012,7 +3015,8 @@
       v = Math.round(v || 0);
       var w = 0; try { w = (typeof foSkBar === "function") ? foSkBar(v) : Math.min(100, v); } catch (e) { w = Math.min(100, v); }
       var band = ""; try { band = (typeof foSkillAbbr === "function") ? foSkillAbbr(v) : String(v); } catch (e) { band = String(v); }
-      return "<span class=\'pkm-b\' data-tip=\"" + E(FO_PK_TIPS[tip] || "") + "\"><i>" + lbl + "</i><u><b style=\'width:" + Math.max(3, w) + "%\'></b></u><em>" + E(band) + "</em></span>";
+      var g = ""; try { g = (typeof foSkillCls === "function") ? foSkillCls(v) : ""; } catch (eG) {}
+      return "<span class=\'pkm-b\' data-tip=\"" + E(FO_PK_TIPS[tip] || "") + "\"><i>" + lbl + "</i><u><b class=\'skfill " + g + "\' style=\'width:" + Math.max(3, w) + "%\'></b></u><em class=\'skg " + g + "\'>" + E(band) + "</em></span>";
     };
     var bars = bar("BAT", "BATTING", aggBat(p)) + bar(secLbl, k === "wk" ? "KEEPING" : "BOWLING", secV) + bar("FLD", "FIELDING", aggField(p));
     var tag = opts.tag ? "<span class=\'pkm-tag\'>" + opts.tag + "</span>" : "";

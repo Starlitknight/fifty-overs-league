@@ -46,10 +46,10 @@
       if (prog === "Rest") return "<div class='fo-trx'><b>Rest</b><div class='fo-trx-rest'>No skill work: the week goes to recovery. Fatigue falls instead of rising.</div></div>";
       var segs = keys.map(function (k) {
         var c = FO_SK_COLOR[k] || "#6A6354";
-        return "<i style='width:" + w[k] + "%;background:" + c + "' title='" + E(foSkillLabel(k)) + " " + w[k] + "%'>" + (w[k] >= 20 ? "<em>" + w[k] + "</em>" : "") + "</i>";
+        return "<i style='width:" + w[k] + "%;background:" + c + "' title='" + E(foSkillName(k)) + " " + w[k] + "%'>" + (w[k] >= 20 ? "<em>" + w[k] + "</em>" : "") + "</i>";
       }).join("");
       var leg = keys.map(function (k) {
-        return "<span class='fo-trx-lg'><u style='background:" + (FO_SK_COLOR[k] || "#6A6354") + "'></u>" + E(foSkillLabel(k)) + " <b>" + w[k] + "%</b></span>";
+        return "<span class='fo-trx-lg'><u style='background:" + (FO_SK_COLOR[k] || "#6A6354") + "'></u>" + E(foSkillName(k)) + " <b>" + w[k] + "%</b></span>";
       }).join("");
       return "<div class='fo-trx'><b>" + E(prog) + "</b><div class='fo-trx-stack'>" + segs + "</div><div class='fo-trx-legend'>" + leg + "</div></div>";
     };
@@ -172,7 +172,16 @@
     return v >= 4 ? "Star" : v >= 3 ? "High" : v >= 1 ? "Useful" : "Limited";
   }
   var FO_SKILL_LABELS = { vsPace: "vs pace", vsSpin: "vs spin", rotation: "strike rotation", temperament: "temperament", power: "power", stamina: "stamina", wicket: "wicket threat", economy: "economy", discipline: "discipline", moveTurn: "movement/turn", variation: "variation", keeping: "keeping", catching: "catching", stumping: "stumping", fielding: "fielding" };
-  function foSkillLabel(k) { return FO_SKILL_LABELS[k] || k; }
+  // foSkillName, NOT foSkillLabel. This maps a skill KEY to its display name
+  // ("wicket" -> "wicket threat"). The engine's foSkillLabel maps a skill VALUE
+  // to its band ("85" -> "Brilliant"). They are unrelated, and while this one
+  // wore that name it shadowed the engine's for every league file from
+  // 00-boot-auth to 12-scorecard-analysis - they share one IIFE, and function
+  // declarations hoist, so file order did not save anybody. The visible cost
+  // was on the pick-a-club card, whose ability row asked for a band, got this
+  // mapper, missed on a numeric key and printed the raw figure - which is the
+  // one thing the bands exist to stop.
+  function foSkillName(k) { return FO_SKILL_LABELS[k] || k; }
   function foTrProgress(p) {
     // best progress toward the next +1 across the player's trained skills
     var tr = p.training || {}, prog = tr.progressBySkill || {}, best = 0, bestSk = "";
