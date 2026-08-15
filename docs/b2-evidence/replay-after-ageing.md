@@ -1,9 +1,10 @@
 # The replay invariant, and what ageing exposed in it
 
-**Status: closed.** The defect was in the replay path's ownership of match-time
-state, exactly where the last note guessed it would be, and not in the ageing.
-`server/tests/a-banked-match-is-not-revised.test.mjs` now holds the invariant
-directly rather than as a side effect of the spectator contract.
+**Status: closed.** THREE defects, none of them in the ageing. Two were the
+replay path reconstructing match-time state from the evolved world; the third
+was the world itself storing a cricketer's card where it no longer matched his
+skills. `server/tests/a-banked-match-is-not-revised.test.mjs` now holds the
+invariant directly rather than as a side effect of the spectator contract.
 
 ## What the contract is
 
@@ -41,7 +42,7 @@ about to investigate. The XI and the batting order were downstream symptoms:
 selection ranks on numbers derived from skills, so of course a different eleven
 came out.
 
-## The two ownership errors
+## The two ownership errors in the replay
 
 **1. Skills were a delta against a mutable reference.** The patch recorded only
 the skills that had moved off `baseSkills`, and `applyLiving` rebuilt the rest
@@ -87,6 +88,44 @@ merges it per club.
 `engine/src/league/38-world-theatre.js`, because the phone replays the same
 match the world does. Both were changed together; the client's copy had in fact
 never had the baseline reset at all, so the change closes a parity gap as well.
+
+## The third one, which was not ageing at all
+
+With the patch owning skills, age and the roster, one fixture in `world-p3`'s
+spectator contract still would not reproduce — and it had been failing before
+any of this, with byte-identical output before and after. It was a different
+defect, and finding it needed the same instrument pointed one step further back:
+a tap on `host.runMatch` that keeps **the umpire's own call**, not the test's.
+
+(The first attempt keyed that tap by seed, and test 015 replays with the SAME
+seed, so the replay quietly overwrote the umpire's arguments and the diff proved
+only that the replay equals itself. First-call-wins fixed the instrument; the
+lesson is that a tap on a function the test also calls needs to say WHICH call
+it kept.)
+
+With the umpire's real arguments in hand, no skill differed and no man differed
+— only DERIVED numbers:
+
+```
+  Reuben Pickering: bat 11->12,   threat 85->86,  bowl 95->96
+  James Trott:      power 13->14, vsPace 11->12,  threat 66->68
+  Toby Hollins:     bat 100->101, power 55->57,   rating 82000->83000
+```
+
+**A man's stored card had drifted away from his own skills.** This fold rewrites
+`skills` — the nets move them every round, the ageing every year — and it never
+once rewrote the numbers derived from them. It is not a display bug: the umpire
+picks the XI and sorts the batting order off the STORED card, while a broadcast
+rebuilds the card from skills, which is the only version that can be checked. As
+played, two Essex tailenders were level on `bat` and the name broke the tie; on
+replay derive put them a point apart and the order swapped. Everything after
+that was a different match.
+
+The fold now derives before it writes. That is the rule the rest of it already
+follows — the record decides, nothing is remembered that can be recomputed — and
+it costs one vm round trip per club on a settle that already reads and rewrites
+the whole squad. It also means the card a manager reads is the card the umpire
+plays, which had quietly stopped being true the first time anybody trained.
 
 ## Compatibility
 

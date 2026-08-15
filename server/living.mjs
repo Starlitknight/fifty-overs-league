@@ -1547,6 +1547,44 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
     // played club's was a past that no ball of cricket consults. The objects
     // above keep both fields - callers downstream in this same settle still
     // hold them - because stripCold copies rather than deletes.
+    // THE CARD IS A PURE FUNCTION OF THE SKILLS, AND THE FOLD OWES IT THE SAME
+    // HONESTY AS EVERYTHING ELSE IT WRITES.
+    //
+    // This fold rewrites a man's SKILLS - the nets move them every round, and
+    // the ageing moves them every year - and it never once rewrote the numbers
+    // DERIVED from them. So a cricketer's stored card drifted away from the
+    // cricketer: he trained, his skills went up, and the bat, threat, control,
+    // rating and wage on his row stayed where they were dealt.
+    //
+    // It is not a display bug. The umpire plays a man off his stored card - the
+    // XI is picked on it and the batting order is sorted by it - while a
+    // broadcast rebuilds the card from his skills, which is the only version
+    // that can be checked. The two disagreed by a point or two, and a point is
+    // enough: p3's spectator contract failed because two Essex tailenders were
+    // stored a point apart on `bat` and derive put them level, so the umpire
+    // batted them in one order and every replay in the world batted them in the
+    // other. Everything after that was a different match.
+    //
+    // Deriving here is the same rule the rest of the fold follows - the record
+    // decides, nothing is remembered that can be recomputed - and it costs one
+    // vm round trip per club on a settle that already reads and rewrites the
+    // whole squad. MERGED, NOT SWAPPED IN, for the reason youth.mjs gives: the
+    // trip is through JSON, which does not preserve an undefined field or a
+    // NaN, and what deriving is allowed to change is a man's numbers.
+    if (host && typeof host.derive === 'function' && squad.length) {
+      try {
+        const done = host.derive(squad);
+        squad.forEach((p, i) => {
+          const q = done[i]; if (!q) return;
+          ['bat', 'power', 'rotation', 'temperament', 'vsPace', 'vsSpin', 'threat',
+           'control', 'bowl', 'field', 'keeping', 'rating', 'wage'
+          ].forEach(k => { if (typeof q[k] === 'number' && isFinite(q[k])) p[k] = q[k]; });
+          if (typeof q.btLabel === 'string') p.btLabel = q.btLabel;
+          if (typeof q.keeper === 'boolean') p.keeper = q.keeper;
+          if (q.bowlType === null || typeof q.bowlType === 'string') p.bowlType = q.bowlType;
+        });
+      } catch (eDv) { console.error('derive failed for ' + country + '/' + club.slot + ':', eDv.message); }
+    }
     cold.push(...squad);
     const hot = stripCold(squad);
     const sqJson = JSON.stringify(hot), yhJson = JSON.stringify(worked.youth || []);
