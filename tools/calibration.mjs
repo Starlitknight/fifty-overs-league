@@ -23,6 +23,21 @@ const PER_CELL = Math.max(10, parseInt(process.env.CAL_N || '3334', 10));
 const eng = makeEngine();
 eng.setTuning(true);
 
+// THE BISECT HANDLE, the same one tools/strength-response.mjs carries and for
+// the same reason: CLAUDE.md is explicit that the only way to prove a tuning
+// term responsible is to turn it off and re-measure, and re-measuring the four
+// calibration tiers is how "does this term separate the standards of cricket"
+// gets answered. CAL_SET=std_wkt:0.02,std_four:0.014 overrides GD.cal inside
+// this VM before a ball is bowled. Nothing is written and no build changes.
+if (process.env.CAL_SET) {
+  const patch = {};
+  for (const kv of process.env.CAL_SET.split(',')) {
+    const [k, v] = kv.split(':');
+    if (k && v != null) patch[k.trim()] = Number(v);
+  }
+  eng.applyCal(patch);
+}
+
 // deep-copy a baked squad and scale every numeric skill — pure, deterministic
 vm.runInContext(`
 // AND THE SCALED MAN IS RE-DERIVED, which he was not, and that quietly broke

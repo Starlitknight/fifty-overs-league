@@ -180,6 +180,18 @@ export function makeEngine() {
       return r ? JSON.parse(JSON.stringify(r)) : r;
     },
     setTuning: on => { ctx.__foTuneOff = on ? 0 : 1; },
+    // THE BISECT HANDLE. CLAUDE.md: a tuning term is proven responsible by
+    // being turned off and re-measured, never by being reasoned about. This
+    // overrides GD.cal inside the VM before any ball is bowled, so a harness
+    // can sweep a constant without a rebuild. It throws rather than warning if
+    // the override did not land, because a silently ignored override produces
+    // a confident measurement of nothing.
+    applyCal: patch => {
+      ctx.__calPatch = patch;
+      vm.runInContext('(function(p){for(var k in p)GD.cal[k]=p[k]})(__calPatch)', ctx);
+      const got = JSON.parse(vm.runInContext('JSON.stringify(GD.cal)', ctx));
+      for (const k in patch) if (got[k] !== patch[k]) throw new Error('cal override did not take: ' + k);
+    },
     // Living World: seed -> engine-native squad {players, starter, arch}
     genSquad: (seed, country, archId) => {
       const s = worldFns.gen((seed >>> 0) || 1, country || 'England', archId || 'balanced');

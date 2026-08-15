@@ -138,26 +138,27 @@ test('the keeper is measured against a par the world can actually reach', () => 
   assert.ok(!/keeperQuality-55/.test(CODE), 'nothing counts from a number nothing reaches');
 });
 
-// AND THE OFFSETS ARE NOT ALLOWED TO BE ABSOLUTE FOR EVER.
+// AND THE WORLD-LEVEL LIFT IS GONE.
 //
-// They were solved against freshly generated cricketers who field 50. A world
-// that runs for a hundred seasons does not stay there - the live one fell to a
-// median club fielding of 36 - and because a good stop must BEAT a +37 or +44
-// offset while a misfield need only lose to a -59, the drift switched the good
-// half off and turned the bad half up. Measured per innings before the fix:
-// 5.5 good stops at 51, 1.4 at 37, 0.3 at 31.
+// It used to hand every fielder in a below-par world up to twenty-five free
+// skill points, so a population fifteen points down still took its historical
+// share of catches. That was defensible while the world was one narrow band and
+// the offsets were a frozen contract. It is not defensible across the broad
+// scale this engine now has to cover: a 30 fielder in a weak league was judged
+// as though he were a 55, which made 30, 40 and 50 the SAME fielder and stopped
+// individual skill being real - the one thing about a fielding number that has
+// to be true.
 //
-// ONE-SIDED, deliberately. A field better than the standard is judged exactly
-// as it always was, because that edge is real and it is what a manager buys -
-// and because pulling elite sides down to par broke the frozen calibration on
-// the spot (267 in the first innings against a golden 251).
-test('the chance offsets know what standard of cricket they are judging', () => {
+// What replaces it is nothing. Every fielder is judged on what he can actually
+// do, at every standard of cricket, and weak sides drop catches - which is what
+// being weak means. The contract is now individual monotonicity, held below.
+test('the chance offsets are absolute, and no world-level lift survives', () => {
   assert.match(CORE, /par:50,/, 'the fielding the offsets were solved against');
   assert.match(CORE, /cpar:51,/, 'and the catching');
   assert.match(CORE, /_fldLvl:foFieldLevel\(userTeam,aiTeam\),/,
     'read off the two squads at the toss, so both ends of a replay agree');
-  assert.match(CORE, /return Math\.max\(0,Math\.min\(FO_FLD\.lvlCap,d\)\);/,
-    'it only ever lifts a world that has fallen below the standard');
-  assert.ok(!/Math\.max\(-FO_FLD\.lvlCap/.test(CODE),
-    'and never blunts one that is above it');
+  assert.match(CORE, /function foLvlShift\(\)\{return 0;\}/,
+    'the world-level lift is back - a weak fielder is being paid par again');
+  assert.ok(!/Math\.max\(0,Math\.min\(FO_FLD\.lvlCap/.test(CODE),
+    'the one-sided lift is back in the code');
 });

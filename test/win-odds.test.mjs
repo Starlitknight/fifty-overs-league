@@ -62,7 +62,13 @@ test('a bigger gap is a bigger favourite, always', () => {
   // one that was always meant: the bar never reaches certainty. What a huge
   // gap is actually worth is the fitted curve's business, and the test below
   // holds that curve to the engine's own answer.
-  assert.ok(odds(48000 + 16000, 48000).home < 0.96, 'even a huge gap leaves a chance');
+  // THE CEILING MOVED AGAIN WITH THE ENGINE (B1). The ball model no longer
+  // saturates ten points from the mean, so a sixteen-thousand-point rating gap
+  // buys far more cricket than it used to: measured, the engine returns 97% to
+  // 100% there, and a bar that capped itself at 96 would be under-reporting a
+  // rout. What is kept is the contract that was always meant - the bar never
+  // reaches certainty, because 99-to-1 still loses one time in a hundred.
+  assert.ok(odds(48000 + 16000, 48000).home < 0.999, 'even a huge gap leaves a chance');
   assert.ok(odds(48000 + 60000, 48000).home < 1, 'and nothing is ever certain');
 });
 

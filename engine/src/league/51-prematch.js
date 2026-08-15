@@ -346,7 +346,25 @@
   // falls from 3.3 points to 2.7. Not a large move - the bar was never badly
   // wrong - but a published number that nobody has checked against the engine
   // it describes is a number waiting to drift.
-  var FO_PM_ODDS_S = 11900;         // rating points worth 10:1
+  // REFITTED AGAINST THE REBUILT ENGINE (B1). The old pair - 11900 and 250 -
+  // were fitted to a ball model that no longer exists: one whose every skill
+  // term saturated ten points from its mean, so a large rating gap bought far
+  // less cricket than it does now. Held against the engine it was out by 13.3
+  // points on average, and a win bar that is out by thirteen points is not
+  // reporting the match it sits above.
+  //
+  // Re-measured the same way it was measured the first time: squads spanning
+  // 0.70x to 1.30x of the two baked sides, all 42 orderings played both ways
+  // round, 150 matches each, and (S, H) chosen by maximum likelihood over the
+  // 6,300 results. That lands at 7400, and the curve then misses the engine by
+  // 5.4 points on average.
+  //
+  // THE GROUND IS SET SEPARATELY AND ON PURPOSE. The likelihood is dominated by
+  // the lopsided pairings, where hosting is invisible, so fitting H alongside S
+  // under-reads it. It is measured directly instead: two IDENTICAL squads, 600
+  // matches, home 51.26% of the decided ones - which is 163 rating points at
+  // this slope.
+  var FO_PM_ODDS_S = 7400;          // rating points worth 10:1
   // WHAT THE GROUND IS WORTH, in the same currency and off the same engine:
   // two identical sides over 1,000 matches give the host 51.2%, which on the
   // scale above is 250 points. It was 525 against the old scale and an older
@@ -354,7 +372,7 @@
   // error on 51.2% is about 1.6 points, which is nearly 200 points of scale
   // either side. It is the right order and the right sign; it is not precise,
   // and it is quoted on a bar that already tells the reader it is a projection.
-  var FO_PM_ODDS_H = 250;           // and what being at home is worth
+  var FO_PM_ODDS_H = 163;           // and what being at home is worth
   var FO_PM_ODDS_TIE = 0.02;        // the engine ties about one match in fifty
 
   // THE ELEVEN A SIDE CAN ACTUALLY FIELD, and what it averages. pickXI is the
