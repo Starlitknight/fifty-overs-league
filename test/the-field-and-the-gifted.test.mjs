@@ -145,7 +145,14 @@ const spoke = (() => {
   });
   const A = load(12), B = load(8);
   const by = {}, said = [];
-  for (let s = 0; s < 14; s++) {
+  // FORTY, NOT FOURTEEN. This asks whether each talent CAN speak, and the voice
+  // chain is exclusive - one line a ball, earliest match wins - so a talent
+  // whose turn needs an uncommon state (the Anchor wants a man 24 balls in with
+  // no required rate behind him) can miss fourteen seeded matches by luck of
+  // which slot it landed on. It did, once the engine's batting order started
+  // responding to resources. The question is coverage, so the sample is the
+  // thing to fix rather than the assertion.
+  for (let s = 0; s < 40; s++) {
     const log = eng.sim({ name: 'A', players: A }, { name: 'B', players: B }, 'balanced', 'Sunny', 45000 + s);
     if (!log) continue;
     for (const L of (log.log || [])) if (L.tal) { by[L.tal] = (by[L.tal] || 0) + 1; said.push(L); }
@@ -168,10 +175,10 @@ test('a passive talent speaks once a man an innings, not on every ball', () => {
     per[L.tal] = (per[L.tal] || 0) + 1;
     void m;
   });
-  // 14 matches, two innings each: nobody can have spoken more than once per
+  // 40 matches, two innings each: nobody can have spoken more than once per
   // innings per man, and one talent is on at most two men a side
   Object.entries(per).forEach(([t, n]) => {
-    assert.ok(n <= 28 * 4, t + ' spoke ' + n + ' times over 28 innings');
+    assert.ok(n <= 80 * 4, t + ' spoke ' + n + ' times over 80 innings');
   });
 });
 

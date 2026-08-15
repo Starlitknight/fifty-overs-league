@@ -152,9 +152,11 @@ test('the bar is offered, and it says who is stronger the same way every time', 
   // was out by 13.3 points. Re-measured over 6,300 matches by maximum
   // likelihood. The ground is fitted SEPARATELY - 600 identical fixtures, home
   // 51.26% - because the likelihood is dominated by lopsided pairings where
-  // hosting is invisible and fitting it alongside the slope under-reads it.
+  // hosting is invisible and fitting it alongside the slope under-reads it. It
+  // read 163 while the on-field edge was 0.55 skill points; that edge was
+  // resized to 1.05 when the relative contest was damped, and this follows it.
   assert.match(src51, /var FO_PM_ODDS_S = 7400;/, 'the curve is the engine\'s own, measured');
-  assert.match(src51, /var FO_PM_ODDS_H = 163;/, 'and so is what the ground is worth');
+  assert.match(src51, /var FO_PM_ODDS_H = 515;/, 'and so is what the ground is worth');
   assert.match(src51, /window\.foPmStrength = function/, 'strength is the eleven that will take the field');
   assert.match(src51, /world_squads\?country_id=eq\./, 'read off the world\'s published cards');
 });

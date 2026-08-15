@@ -37,8 +37,11 @@ test('the odds are a pure function of the two strengths', () => {
 test('equal sides are near even, with the ground the only thing between them', () => {
   const o = odds(48000, 48000);
   const pc = 100 * o.home / (o.home + o.away);
-  // measured directly over 1,600 fixtures played both ways: 51.6% to the host
-  assert.ok(pc > 50.5 && pc < 53,
+  // RE-MEASURED AGAINST THE REBUILT ENGINE. This read 50.5-53, which was the
+  // old ball model's answer. Measured now over 800 identical fixtures across
+  // both reference squads: 54.9% and 53.1%, about 54 pooled - which is where
+  // real one-day cricket sits and what the curve is fitted to.
+  assert.ok(pc > 52 && pc < 56,
     'the host is favoured, barely: ' + pc.toFixed(1) + '%');
   const n = odds(48000, 48000, true);
   assert.ok(Math.abs(n.home - n.away) < 1e-9, 'and on neutral ground they are dead level');

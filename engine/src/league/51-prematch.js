@@ -362,8 +362,11 @@
   // THE GROUND IS SET SEPARATELY AND ON PURPOSE. The likelihood is dominated by
   // the lopsided pairings, where hosting is invisible, so fitting H alongside S
   // under-reads it. It is measured directly instead: two IDENTICAL squads, 600
-  // matches, home 51.26% of the decided ones - which is 163 rating points at
-  // this slope.
+  // matches per reference squad, home 54.9% and 53.1% of the decided ones -
+  // about 54 pooled, which is 515 rating points at this slope. (It read 163
+  // while the on-field edge was 0.55 skill points; that edge was resized to
+  // 1.05 when the relative contest itself was damped, and the ground term
+  // follows it.)
   var FO_PM_ODDS_S = 7400;          // rating points worth 10:1
   // WHAT THE GROUND IS WORTH, in the same currency and off the same engine:
   // two identical sides over 1,000 matches give the host 51.2%, which on the
@@ -372,7 +375,7 @@
   // error on 51.2% is about 1.6 points, which is nearly 200 points of scale
   // either side. It is the right order and the right sign; it is not precise,
   // and it is quoted on a bar that already tells the reader it is a projection.
-  var FO_PM_ODDS_H = 163;           // and what being at home is worth
+  var FO_PM_ODDS_H = 515;           // and what being at home is worth
   var FO_PM_ODDS_TIE = 0.02;        // the engine ties about one match in fifty
 
   // THE ELEVEN A SIDE CAN ACTUALLY FIELD, and what it averages. pickXI is the
