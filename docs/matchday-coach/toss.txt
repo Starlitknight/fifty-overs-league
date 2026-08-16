@@ -1,0 +1,23 @@
+
+pitch     weather     pairs  matches  bat-1st %     SE  1st inns  2nd inns       z verdict            
+--------- ---------- ------ -------- ---------- ------ --------- --------- ------- -------------------
+balanced  Sunny        1500     3000      53.00   0.80     229.1     185.3    3.75 BAT                
+flat      Sunny        1500     3000      52.88   0.69     265.1     220.2    4.16 BAT                
+green     Sunny        1500     3000      47.65   0.82     193.2     153.9   -2.85 BOWL               
+dry       Sunny        1500     3000      57.05   0.85     204.9     154.8    8.34 BAT                
+slow      Sunny        1500     3000      52.90   0.79     217.4     175.7    3.69 BAT                
+cracked   Sunny        1500     3000      54.55   0.85     208.0     163.0    5.32 BAT                
+twoPaced  Sunny        1500     3000      52.18   0.79     212.4     171.8    2.77 BAT                
+green     Overcast     1500     3000      47.00   0.87     158.3     123.9   -3.44 BOWL               
+green     Humid        1500     3000      48.48   0.85     183.7     142.2   -1.79 no measurable edge 
+green     Misty        1500     3000      46.30   0.84     182.4     142.3   -4.42 BOWL               
+dry       Dew later    1500     3000      51.07   0.85     204.9     162.1    1.26 no measurable edge 
+balanced  Drizzle      1500     3000      54.88   0.78     222.8     165.1    6.25 BAT                
+--------- ---------- ------ -------- ---------- ------ --------- --------- ------- -------------------
+POOLED    all         18000    36000      51.50   0.24
+
+ties scored as half a win to each side: 185 of 36000 matches
+verdict = |bat-1st% - 50| > 2 SE. "no measurable edge" means THIS RUN could not
+see one, not that none exists; the resolvable effect is about 1.6 points per cell at this N.
+
+Command: node tools/matchday-toss.mjs --seeds 1500   (neutral ground, 4 workers)

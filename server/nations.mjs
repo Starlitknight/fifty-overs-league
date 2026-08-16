@@ -336,13 +336,31 @@ export async function absentBySlot(pool, country, seasonNo, round) {
 // overs. If the sheet cannot be made into a legal eleven the engine picks
 // the side itself, which is what an unfiled sheet gets anyway.
 // ---------------------------------------------------------------------------
-export function coverSheet(orders, present, gone) {
+export function coverSheet(orders, present, gone, ctx) {
   if (!orders || !gone || !gone.length) return orders;
   const goneNames = new Set(gone.map(p => p.name));
   const named = new Set((orders.xi || []).filter(n => !goneNames.has(n)));
   if (!(orders.xi || []).some(n => goneNames.has(n))) return orders;
-  const bench = (present || []).filter(p => !named.has(p.name))
+  // WHO COMES IN. The bench used to be ranked on raw rating alone - the same
+  // number whatever the pitch, the sky or the man's legs - so a shattered
+  // seamer covered for an absent seamer on a turning pitch because his card
+  // said 71. Where the caller can hand over the match-day context (the host
+  // and today's conditions), the bench is ranked by the coach's own cards
+  // instead: what each man is worth TODAY, measured against the real ball
+  // model. Without that context the old rating order stands, so every existing
+  // caller and every test keeps its behaviour.
+  //
+  // THE MANAGER'S OTHER TEN ARE NOT TOUCHED. This chooses a replacement; it
+  // never re-picks the side. Only if the sheet cannot be made legal at all
+  // does the engine take over, exactly as before.
+  let bench = (present || []).filter(p => !named.has(p.name))
     .sort((a, b) => (+b.rating || 0) - (+a.rating || 0) || (a.name < b.name ? -1 : 1));
+  if (ctx && ctx.host && typeof ctx.host.planMatchDay === 'function') {
+    try {
+      const rank = coverRank(ctx, present, bench);
+      if (rank) bench = rank;
+    } catch (eCv) { /* the rating order is a perfectly good fallback */ }
+  }
   const sub = {};
   for (const g of gone) {
     if (!(orders.xi || []).includes(g.name)) continue;
@@ -368,6 +386,27 @@ export function coverSheet(orders, present, gone) {
   const xi = (o.xi || []).filter(n => by[n]);
   if (xi.length !== 11 || xi.filter(n => isBowler(by[n])).length < 5) return null;
   return o;
+}
+
+// THE BENCH, RANKED FOR TODAY. The coach prices every man in the squad
+// against the real ball model under this fixture's conditions; the bench is
+// then read back in that order. Bowlers keep their own order among bowlers -
+// coverSheet still replaces a bowler with a bowler - so this changes WHICH
+// bowler comes in, not the shape of the side.
+function coverRank(ctx, present, fallback) {
+  const plan = ctx.host.planMatchDay({
+    team: { name: 'cover', players: present || [] },
+    pitch: ctx.pitch || 'balanced', weather: ctx.weather || 'sunny'
+  });
+  const cards = plan && plan.explanation && plan.explanation.cards;
+  if (!cards || !cards.length) return null;
+  // one number per man: what he is worth with the bat plus what his overs
+  // save, which is the same currency the coach's own optimiser uses
+  const worth = {};
+  cards.forEach(c => { worth[c.name] = (c.rpd || 0) + (c.bowl || 0) * 2; });
+  return fallback.slice().sort((a, b) =>
+    (worth[b.name] == null ? -1e9 : worth[b.name]) - (worth[a.name] == null ? -1e9 : worth[a.name])
+    || (a.name < b.name ? -1 : 1));
 }
 
 // the series games the calendar has dealt to a given world day: every

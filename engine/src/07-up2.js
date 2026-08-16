@@ -146,8 +146,16 @@
         '<button class="primary" onclick="App.orders.saved=true;App.defaults=JSON.parse(JSON.stringify(App.orders));if(App.pending){location.hash=\'#/match\'}else{pgOrders()}">Save orders'+(App.pending?' → match':'')+'</button>'+
         '<button onclick="suggestOrders&&suggestOrders()">Suggest all</button>'+
         '<button onclick="App.orders.batOrder=[];App.orders.spells={north:[],south:[]};App.orders.grid=null;App.orders.gridBowlers=null;pgOrders()">Clear</button>'+
-        '<b class="'+(v.covered===50?'oktxt':'warntxt')+'" style="margin-left:auto">'+v.covered+' / 50 overs</b></div>'+
-        (v.warns&&v.warns.length?('<div>'+v.warns.map(function(w){return '<div class="warntxt">⚠ '+esc(w)+'</div>';}).join('')+'</div>'):(v.covered===50?'<div class="oktxt">Bowling plan is legal.</div>':'<div class="small">Unassigned overs fall to the AI captain.</div>'))+
+        // AN OPEN OVER IS NOT A SHORTFALL, so the count is not painted in the
+        // warning colour for being under fifty. What IS a fault - a
+        // double-booked over, a man bowling eleven - still is, and still warns.
+        // The coach leaves overs open on purpose (13-matchday-coach.js), and
+        // the note that says so comes from compilePlan's `notes` channel so
+        // that this panel and the orders page cannot drift apart in wording.
+        '<b class="oktxt" style="margin-left:auto">'+v.covered+' / 50 overs</b></div>'+
+        (v.warns&&v.warns.length?('<div>'+v.warns.map(function(w){return '<div class="warntxt">⚠ '+esc(w)+'</div>';}).join('')+'</div>'):'')+
+        ((v.notes||[]).map(function(n){return '<div class="small">'+esc(n)+'</div>';}).join(''))+
+        (v.covered===50&&!(v.warns&&v.warns.length)?'<div class="oktxt">Bowling plan is legal.</div>':'')+
         (App.orders.saved?'<div class="oktxt">Orders saved.</div>':'');
 
       $('#page').innerHTML=crumb(opp.home+' v '+opp.away,'Orders')+details+

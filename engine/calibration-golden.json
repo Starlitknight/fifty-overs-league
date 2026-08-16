@@ -1,6 +1,6 @@
 {
   "engineVersion": "v3",
-  "note": "Frozen behavioural record of the shipped engine. Descriptive, not aspirational - EXCEPT the international cell, which calibration-check additionally holds to real men's-ODI bands, because international data is the only cricket the model was fitted against. The engine has NO T20 mode (newMatch is 50-over only); T20 calibration is intentionally absent, not omitted by error.",
+  "note": "Frozen behavioural record of the shipped engine. Descriptive, not aspirational - EXCEPT the international cell, which calibration-check additionally holds to real men's-ODI bands, because international data is the only cricket the model was fitted against. The engine has NO T20 mode (newMatch is 50-over only); T20 calibration is intentionally absent, not omitted by error. A CALIBRATION CELL IS A MATCH, AND A MATCH BEGINS BY CHOOSING AN ELEVEN, so this record measures the ball model AND the selector together. It was re-recorded when the match-day coach (engine/src/13-matchday-coach.js) replaced the founding pickXI; the ball model was NOT touched, and the proof is that CAL_COACH_OFF=1 reproduces the previous record exactly, fingerprint 373/6 included. What moved was the powerplay run-rate, up 0.28 to 0.51 an over in all four cells, with the death rate down and first-innings totals within 4 runs: the coach opens with men who can open, so the runs arrive earlier rather than in greater number. Bisect any future drift the same way before believing it is the engine.",
   "config": {
     "pitch": "balanced",
     "weather": "Sunny",
@@ -27,123 +27,123 @@
     "international": {
       "n": 3334,
       "firstInnings": {
-        "mean": 274.6,
-        "stddev": 53.1
+        "mean": 276.8,
+        "stddev": 54.3
       },
       "wicketsHistogram": [
-        0.0018,
-        0.0066,
-        0.0276,
-        0.0615,
-        0.1224,
-        0.1365,
-        0.0921,
-        0.0948,
-        0.0972,
-        0.0771,
-        0.2825
+        0.0021,
+        0.0132,
+        0.0321,
+        0.0666,
+        0.102,
+        0.1275,
+        0.1047,
+        0.0957,
+        0.0837,
+        0.0765,
+        0.296
       ],
-      "boundaryPctPerBall": 8.79,
-      "extrasPerInnings": 22.37,
+      "boundaryPctPerBall": 8.85,
+      "extrasPerInnings": 22.48,
       "runRateByPhase": {
-        "powerplay_1_10": 4.85,
-        "middle_11_40": 5.22,
-        "death_41_50": 6.95
+        "powerplay_1_10": 5.34,
+        "middle_11_40": 5.18,
+        "death_41_50": 6.8
       },
       "tiePct": 0.42,
-      "pctRunWinsUnder20": 5.73
+      "pctRunWinsUnder20": 4.8
     },
     "flagship_clubs": {
       "n": 3334,
       "firstInnings": {
-        "mean": 250.6,
-        "stddev": 45.6
+        "mean": 250.1,
+        "stddev": 49
       },
       "wicketsHistogram": [
-        0.0006,
-        0.0063,
-        0.0225,
-        0.0531,
-        0.087,
-        0.1359,
-        0.1029,
-        0.0957,
-        0.0969,
-        0.0927,
-        0.3065
+        0.0018,
+        0.0096,
+        0.03,
+        0.0669,
+        0.0834,
+        0.1263,
+        0.1101,
+        0.0984,
+        0.1038,
+        0.0774,
+        0.2924
       ],
-      "boundaryPctPerBall": 6.99,
-      "extrasPerInnings": 23.68,
+      "boundaryPctPerBall": 7.04,
+      "extrasPerInnings": 23.99,
       "runRateByPhase": {
-        "powerplay_1_10": 4.39,
-        "middle_11_40": 4.87,
-        "death_41_50": 6.07
+        "powerplay_1_10": 4.76,
+        "middle_11_40": 4.79,
+        "death_41_50": 5.87
       },
-      "tiePct": 0.45,
-      "pctRunWinsUnder20": 6.15
+      "tiePct": 0.42,
+      "pctRunWinsUnder20": 6.18
     },
     "division_two": {
       "n": 3334,
       "firstInnings": {
-        "mean": 235.3,
-        "stddev": 35.3
+        "mean": 235.1,
+        "stddev": 38.4
       },
       "wicketsHistogram": [
-        0.0006,
-        0.0066,
-        0.0213,
-        0.057,
-        0.0945,
-        0.1317,
-        0.1065,
-        0.1239,
-        0.1062,
-        0.0951,
-        0.2567
+        0.0012,
+        0.0111,
+        0.0315,
+        0.0591,
+        0.1029,
+        0.1035,
+        0.126,
+        0.1056,
+        0.1146,
+        0.0957,
+        0.249
       ],
-      "boundaryPctPerBall": 5.07,
-      "extrasPerInnings": 29.06,
+      "boundaryPctPerBall": 5.02,
+      "extrasPerInnings": 28.76,
       "runRateByPhase": {
-        "powerplay_1_10": 4.02,
-        "middle_11_40": 4.65,
-        "death_41_50": 5.56
+        "powerplay_1_10": 4.25,
+        "middle_11_40": 4.67,
+        "death_41_50": 5.27
       },
-      "tiePct": 0.72,
-      "pctRunWinsUnder20": 8.97
+      "tiePct": 0.66,
+      "pctRunWinsUnder20": 9
     },
     "international_vs_division_two": {
       "n": 3334,
       "firstInnings": {
-        "mean": 259.5,
-        "stddev": 89.4
+        "mean": 263.2,
+        "stddev": 93.6
       },
       "wicketsHistogram": [
-        0.0057,
-        0.0321,
-        0.0624,
-        0.1146,
-        0.1356,
-        0.1161,
-        0.0552,
-        0.0525,
-        0.0606,
-        0.0531,
-        0.3122
+        0.0051,
+        0.0342,
+        0.0816,
+        0.1119,
+        0.1095,
+        0.1131,
+        0.0687,
+        0.0579,
+        0.0645,
+        0.0576,
+        0.296
       ],
-      "boundaryPctPerBall": 6.55,
-      "extrasPerInnings": 26.95,
+      "boundaryPctPerBall": 6.68,
+      "extrasPerInnings": 26.45,
       "runRateByPhase": {
-        "powerplay_1_10": 4.59,
-        "middle_11_40": 4.94,
-        "death_41_50": 6.53
+        "powerplay_1_10": 5,
+        "middle_11_40": 5,
+        "death_41_50": 6.34
       },
       "tiePct": 0,
-      "pctRunWinsUnder20": 0.12
+      "pctRunWinsUnder20": 0.09
     }
   },
   "determinism": {
     "seed": 424242,
     "identical": true,
-    "fingerprint": "373/6"
+    "fingerprint": "352/4"
   }
 }

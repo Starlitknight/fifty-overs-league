@@ -1,0 +1,116 @@
+=== MATCH-DAY PROBE: the shipped ball model, measured ===
+every figure below is ballDist() out of the built page, averaged over an 11-point phase grid
+
+=== 1. THE BOWLER, BY PITCH ===
+wickets per over against a median batsman (delta vs the same bowler on a balanced pitch)
+
+type         balanced    green      dry     flat     slow  cracked twoPaced
+fast            0.176   +0.084   +0.001   -0.048   -0.003   +0.030   +0.009
+fastMedium      0.138   +0.074   +0.001   -0.037   +0.002   +0.023   +0.015
+medium          0.115   +0.045   +0.001   -0.031   +0.009   +0.019   +0.012
+fingerSpin      0.112   -0.008   +0.072   -0.030   +0.009   +0.026   +0.015
+offSpin         0.132   -0.009   +0.085   -0.035   +0.011   +0.031   +0.017
+wristSpin       0.165   -0.011   +0.085   -0.043   +0.013   +0.054   +0.022
+
+runs per over, same sweep
+type         balanced    green      dry     flat     slow  cracked twoPaced
+fast             6.48   -0.296   +0.000   +0.497   -0.260   -0.118   -0.266
+fastMedium       6.02   -0.258   +0.001   +0.434   -0.251   -0.111   -0.255
+medium           5.50   -0.202   +0.001   +0.376   -0.238   -0.106   -0.233
+fingerSpin       5.62   -0.127   -0.319   +0.413   -0.344   -0.116   -0.309
+offSpin          6.07   -0.138   -0.337   +0.454   -0.358   -0.120   -0.325
+wristSpin        6.10   -0.140   -0.339   +0.475   -0.365   -0.147   -0.334
+
+=== 2. THE BOWLER, BY WEATHER (balanced pitch) ===
+type            sunny  overcas    humid    misty      hot  scorchi  drizzle    windy   chilly  dew lat
+fast            0.176   +0.041   +0.008   +0.008   -0.006   -0.009   -0.002   -0.000   -0.001   +0.000
+fastMedium      0.138   +0.046   +0.008   +0.009   -0.004   -0.007   -0.002   -0.000   -0.001   +0.000
+medium          0.115   +0.033   +0.006   +0.006   -0.004   -0.006   -0.002   -0.000   -0.001   +0.000
+fingerSpin      0.112   +0.000   -0.000   +0.000   -0.004   -0.006   -0.002   -0.000   -0.001   +0.000
+offSpin         0.132   +0.001   -0.000   +0.000   -0.004   -0.007   -0.002   -0.000   -0.001   +0.000
+wristSpin       0.165   +0.001   -0.000   +0.001   -0.005   -0.009   -0.002   -0.000   -0.001   +0.000
+
+=== 3. THE COMBINATION THAT MATTERS: green + swing weather ===
+pitch/weather               fast  fastMedi    medium  fingerSp   offSpin  wristSpi   best
+balanced / sunny           0.176     0.138     0.115     0.112     0.132     0.165   fast
+green / sunny              0.259     0.212     0.160     0.105     0.123     0.154   fast
+balanced / overcast        0.217     0.185     0.147     0.113     0.133     0.166   fast
+green / overcast           0.319     0.282     0.205     0.105     0.124     0.155   fast
+green / humid              0.271     0.226     0.168     0.105     0.123     0.154   fast
+green / misty              0.272     0.227     0.169     0.105     0.124     0.155   fast
+dry / sunny                0.177     0.139     0.115     0.184     0.217     0.250   wristSpin
+dry / hot                  0.171     0.135     0.112     0.179     0.210     0.243   wristSpin
+cracked / sunny            0.205     0.162     0.134     0.138     0.163     0.219   wristSpin
+slow / sunny               0.172     0.141     0.123     0.121     0.143     0.178   wristSpin
+twoPaced / sunny           0.184     0.154     0.127     0.127     0.150     0.187   wristSpin
+flat / sunny               0.128     0.101     0.084     0.083     0.097     0.122   fast
+dry / dew later            0.180     0.142     0.117     0.159     0.187     0.242   wristSpin
+
+=== 4. THE BATSMAN: what vsPace and vsSpin are worth, by conditions ===
+runs per dismissal for a median batsman, and for one +15 on the named lean
+
+pitch/weather         vPACE base   +15   gain |  vSPIN base   +15   gain
+balanced / sunny            43.5  53.3+   9.8 |       50.0  61.3+  11.3
+green / overcast            19.9  24.3+   4.4 |       51.5  63.1+  11.6
+green / humid               25.3  31.0+   5.6 |       52.3  64.1+  11.8
+dry / sunny                 43.2  53.0+   9.8 |       28.7  35.2+   6.5
+cracked / sunny             36.5  44.8+   8.3 |       39.8  48.8+   9.0
+slow / sunny                41.0  50.2+   9.2 |       43.6  53.4+   9.8
+twoPaced / sunny            37.6  46.0+   8.4 |       41.8  51.3+   9.4
+flat / sunny                63.9  78.6+  14.7 |       72.8  89.6+  16.8
+
+=== 5. THE BATTING SKILLS, priced against each other (balanced/sunny) ===
+runs per dismissal when ONE skill is lifted 50 -> 65
+
+  bat              43.5   (+0.0 vs level)
+  power            47.8   (+4.3 vs level)
+  rotation         45.8   (+2.3 vs level)
+  temperament      50.6   (+7.1 vs level)
+  vsPace           53.3   (+9.8 vs level)
+
+=== 6. FATIGUE: what the engine actually takes off a tired man ===
+the law is foFatiguePenalty (skill points off bat/threat) and the in-match batFat/bowlFat channel
+
+  fatigue           penalty   load |  bat runs/dismissal   bowl wkts/over  runs/over
+  rested              0.00  0.000 |           43.5 ( 0.00)       0.138       6.02
+  revived             1.05  0.072 |           42.5 (-0.98)       0.136       6.07
+  energetic           2.10  0.144 |           41.5 (-1.98)       0.134       6.11
+  passable            3.15  0.216 |           40.5 (-2.98)       0.133       6.16
+  satisfactory        4.20  0.288 |           39.5 (-3.98)       0.131       6.20
+  moderate            5.25  0.360 |           38.5 (-4.98)       0.129       6.24
+  weary               6.30  0.432 |           37.5 (-5.97)       0.128       6.28
+  listless            7.35  0.504 |           36.5 (-6.94)       0.126       6.31
+  exhausted           8.40  0.576 |           35.6 (-7.89)       0.125       6.35
+  shattered           9.45  0.648 |           34.7 (-8.81)       0.124       6.38
+  clinically dead    10.50  0.720 |           33.8 (-9.69)       0.123       6.42
+
+=== 7. THE KEEPER: what the gloves are worth against what the bat is worth ===
+the keeper reaches the ball model through ctx.keeperQuality/keeperCatch/keeperStump (par 74)
+
+  keeping quality   wkts/over (spin, dry)   wkts/over (pace, green)
+  40                     0.1724 (-0.037)        0.1973 (-0.047)
+  55                     0.1874 (-0.022)        0.2162 (-0.028)
+  70                     0.2046 (-0.005)        0.2378 (-0.006)
+  74                     0.2096 (+0.000)        0.2441 (+0.000)
+  85                     0.2245 (+0.015)        0.2628 (+0.019)
+  95                     0.2397 (+0.030)        0.2818 (+0.038)
+
+  and the batting side of the same man: runs per dismissal by batting skill
+  bat 30                   43.5
+  bat 40                   43.5
+  bat 50                   43.5
+  bat 60                   43.5
+  bat 70                   43.5
+
+=== 8. TALENTS with a conditions story ===
+  talent                side  conditions            d wkts/over   d runs/over
+  newBallSpecialist     bowl  green/overcast ov3           +0.046         -0.11
+  deathSpecialist       bowl  flat/sunny ov47              +0.030         -0.59
+  partnershipBreaker    bowl  balanced/sunny ov25          +0.023         -0.05
+  bouncer               bowl  green/sunny ov8              +0.020         -0.04
+  miser                 bowl  flat/sunny ov25              -0.001         -0.10
+  spinKiller            bat   dry/sunny ov25               -0.010          0.13
+  paceHunter            bat   green/overcast ov5           -0.022          0.20
+  finisher              bat   flat/sunny ov46              -0.008          0.60
+  sixMachine            bat   flat/sunny ov46              -0.003          0.51
+  anchor                bat   green/overcast ov15          -0.016         -0.00

@@ -1080,7 +1080,14 @@ test('016: the nets, the face and the money all belong to the world', async () =
   // lawfully dip into its overdraft inside a fortnight (interest and the
   // floor are the mechanics that answer it). What a fortnight must never do
   // is drive anybody to the administration floor.
-  assert.ok(money.every(m => Number(m.bank) > -2500000 / 2), 'nobody near the floor after a fortnight of cricket');
+  // AND WHEN IT FAILS IT SAYS WHO AND BY HOW MUCH. It used to fail with the
+  // words "nobody near the floor" and no numbers at all, which is an assertion
+  // that tells the next person nothing: is a club a thousand dollars over the
+  // line or a million? That question cost a whole re-run to answer once.
+  const deep = money.filter(m => Number(m.bank) <= -2500000 / 2);
+  assert.ok(!deep.length, 'nobody near the floor after a fortnight of cricket: ' +
+    deep.map(m => 'slot ' + m.slot + ' $' + Number(m.bank).toLocaleString()).join(', ') +
+    ' (the whole table: ' + money.map(m => Number(m.bank) / 1e6).map(v => v.toFixed(2)).join(' ') + ')');
   assert.ok(money.filter(m => Number(m.bank) > 0).length >= 10, 'most treasuries still in the black');
   // SETTLING TWICE SETTLES THE SAME FIGURE - the same inputs, the same
   // books. The pure-recompute evolve above legitimately moved the squads
