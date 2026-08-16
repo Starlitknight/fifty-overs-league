@@ -922,26 +922,27 @@ function foOvrLabel(v) {
 // know about a player, and it leaves the exact figure where it belongs - in the
 // simulation. It is deliberately NOT scouting fog: there is no noise here, no
 // hidden accuracy stat, and the same man always reads the same way.
-// TWELVE RUNGS WHOSE ORDER EXPLAINS ITSELF. The first ladder used words like
-// Solid, Strong, Great and Brilliant, and a reader had to memorise which of
-// those outranked which - adjacent rungs whose order is not obvious defeat
-// the whole point of words. This vocabulary orders itself: Below Average sits
-// below Average, Above Average above it, World Class above Elite the way the
-// game's own commentary uses those words. The rungs narrow at the top - five
-// wide from 80 - because that is where the world's real distinctions live,
-// and TRANSCENDENT IS OPEN-ENDED ON PURPOSE: a 95 and a 140 read the same,
-// and the hidden number goes on distinguishing them mechanically. No new
-// words above ninety-nine; the ceiling came off the numbers, not the prose.
+// TWELVE RUNGS IN THE OWNER'S OWN VOICE. The first ladder used words like
+// Solid, Strong, Great and Brilliant as ADJACENT rungs, and a reader had to
+// memorise which outranked which - adjacent rungs whose order is not obvious
+// defeat the whole point of words. This vocabulary reads down the middle in
+// plain judgements - Mediocre below Average, Capable above it - and climbs
+// through Brilliant to World Class the way the game's own commentary speaks.
+// The rungs narrow at the top - five wide from 80 - because that is where the
+// world's real distinctions live, and TRANSCENDENT IS OPEN-ENDED ON PURPOSE:
+// a 95 and a 140 read the same, and the hidden number goes on distinguishing
+// them mechanically. No new words above ninety-nine; the ceiling came off the
+// numbers, not the prose.
 const FO_SKILL_LADDER = [
-  [0, 'Terrible'], [10, 'Poor'], [20, 'Weak'], [30, 'Below Average'],
-  [40, 'Average'], [50, 'Above Average'], [60, 'Good'], [70, 'Excellent'],
+  [0, 'Terrible'], [10, 'Poor'], [20, 'Weak'], [30, 'Mediocre'],
+  [40, 'Average'], [50, 'Capable'], [60, 'Brilliant'], [70, 'Excellent'],
   [80, 'Elite'], [85, 'World Class'], [90, 'Legendary'], [95, 'Transcendent']
 ];
 // the short form the chips and the narrow columns use, same rungs, same order.
 // Full words where they fit; where they cannot, forms no two of which can be
 // misread for each other
-const FO_SKILL_ABBR = ['terr', 'poor', 'weak', 'below', 'avg', 'above',
-  'good', 'exc', 'elite', 'wc', 'leg', 'trans'];
+const FO_SKILL_ABBR = ['terr', 'poor', 'weak', 'medio', 'avg', 'capable',
+  'brill', 'exc', 'elite', 'wc', 'leg', 'trans'];
 // THE INDEX, which is the only place the arithmetic lives. Open at the top: a
 // 95 and a 200 are both Transcendent, and nothing clamps to 99 on the way.
 function foSkillIx(v) {
