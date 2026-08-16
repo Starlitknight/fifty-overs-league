@@ -23,8 +23,14 @@
 // facts, so a re-run produces the same market; the money is walked out of the
 // deals by the books like every other line; and a settled transfer is a fact
 // in a table, never a number quietly written onto a club.
-import { dayIx, seedOf, nextRoundAfterDay, ROUNDS, EPOCH, DAY } from './clock.mjs';
+import { dayIx, seedOf, nextRoundAfterDay, roundOfDay, ROUNDS, EPOCH, DAY } from './clock.mjs';
 import { countryConfigs } from './init-world.mjs';
+// THE MONEY SENSE (see botfinance.mjs). A bot club's market behaviour now
+// answers to its own books: the posture is a pure function of the club row
+// and the season it is playing, and POSTURE_POLICY says what each posture
+// does to the dials this file already had.
+import { botPosture, botMoney, POSTURE_POLICY } from './botfinance.mjs';
+import { era2Season } from './financeconfig.mjs';
 // the ONE definition of what a club's eleven is worth (migration 092): a
 // transfer moves a man, so it moves both clubs' strength, and it is written
 // in the same statement as the squad rather than left for a later pass
@@ -189,21 +195,35 @@ export function needRank(squad) {
 // ---------------------------------------------------------------------------
 export async function openBotListings(pool, country, seasonNo, round, now = Date.now()) {
   const clubs = (await pool.query(
-    `SELECT cl.slot, cl.name, cl.squad, (c.user_id IS NOT NULL) AS managed
+    `SELECT cl.country_id, cl.slot, cl.name, cl.squad, cl.youth, cl.bank, cl.seats,
+            cl.academy, cl.is_boss, cl.finance, (c.user_id IS NOT NULL) AS managed
        FROM clubs cl LEFT JOIN claims c ON c.country_id=cl.country_id AND c.slot=cl.slot
       WHERE cl.country_id=$1 ORDER BY cl.slot`, [country])).rows;
+  // the season this round belongs to, for the money sense: which division
+  // each club is playing, and whether the world is even on the era-2 economy
+  const ctx = await seasonCtx(pool, country, seasonNo);
   const today = dayIx(now);
   const opened = [];
   for (const cl of clubs) {
     if (cl.managed) continue;                       // a manager sells his own men
     const squad = cl.squad || [];
     if (squad.length <= SQUAD_FLOOR) continue;      // never sell yourself short of a side
+    // THE POSTURE MOVES THE DIALS, NOT THE LAW. A healthy club sheds on the
+    // founding 22% coin exactly as ever; a club whose own books project
+    // trouble shops its surplus harder, holds more of the board at once and
+    // accepts a distressed reserve. The seed is unchanged, so a healthy
+    // world lists the identical men it always did.
+    const policy = POSTURE_POLICY[botPosture(cl, {
+      country, era2: ctx.era2, div: ctx.divOf[cl.slot],
+      roundsLeft: round >= 1 && round <= ctx.rounds ? ctx.rounds - round + 1 : null,
+      roundsTotal: ctx.rounds
+    })] || POSTURE_POLICY.healthy;
     const key = 'list|' + country + '|' + cl.slot + '|s' + seasonNo + '|r' + round;
-    if (rnd(key) > BOT_SELL_CHANCE) continue;
+    if (rnd(key) > policy.sell) continue;
     const live = (await pool.query(
       `SELECT count(*)::int AS n FROM listings
         WHERE country_id=$1 AND slot=$2 AND status='open'`, [country, cl.slot])).rows[0].n;
-    if (live >= 2) continue;                        // a club is not a jumble sale
+    if (live >= policy.listings) continue;          // a club is not a jumble sale
     const cand = surplusRank(squad)[0];
     if (!cand) continue;
     const dup = await pool.query(
@@ -220,10 +240,37 @@ export async function openBotListings(pool, country, seasonNo, round, now = Date
        // the umpire's own listings close on the day boundary they always did
        // - deterministic, so a healed day opens the same board - and the
        // minute hand still runs: anti-snipe extensions move closes_ms out
-       Math.round(ask * 0.8), today, today + WINDOW_DAYS, EPOCH + (today + WINDOW_DAYS) * DAY]);
+       Math.round(ask * policy.reserve), today, today + WINDOW_DAYS, EPOCH + (today + WINDOW_DAYS) * DAY]);
     if (r.rowCount) opened.push({ id: r.rows[0].id, country, slot: cl.slot, player: cand.p.name, asking: ask });
   }
   return opened;
+}
+
+// THE SEASON AS THE MONEY SENSE NEEDS IT: which division each slot plays,
+// how many league rounds the summer holds, and whether it settles under era
+// 2 at all. One small read; every caller caches it for the pass it is in.
+async function seasonCtx(pool, country, seasonNo) {
+  let row = null;
+  try {
+    row = (await pool.query(
+      seasonNo != null
+        ? 'SELECT season_no, start_day, divisions, schedule FROM seasons WHERE country_id=$1 AND season_no=$2'
+        : 'SELECT season_no, start_day, divisions, schedule FROM seasons WHERE country_id=$1 ORDER BY season_no DESC LIMIT 1',
+      seasonNo != null ? [country, seasonNo] : [country])).rows[0];
+  } catch (e) { row = null; }
+  const divOf = {};
+  if (row && row.divisions && row.divisions['2']) {
+    for (const s of row.divisions['2']) divOf[Number(s)] = 2;
+    for (const s of (row.divisions['1'] || [])) divOf[Number(s)] = 1;
+  }
+  const sch = row && row.schedule;
+  const r1 = Array.isArray(sch) ? sch : (sch && (sch['1'] || sch[1]));
+  return {
+    startDay: row ? (row.start_day | 0) : 0,
+    era2: row ? era2Season(row.start_day | 0) : false,
+    divOf,
+    rounds: Array.isArray(r1) && r1.length ? r1.length : ROUNDS
+  };
 }
 
 // ---------------------------------------------------------------------------
@@ -358,7 +405,15 @@ export async function openFreeAgents(pool, host, country, seasonNo, day) {
 // hoovering up every listing on earth unopposed. Seeded on the listing and
 // the bidder, so the same auction resolves the same way forever.
 // ---------------------------------------------------------------------------
-export function botBid(listing, buyerSquad, bank, player) {
+// `money` is the buyer's financial sense, when the caller has it: its
+// posture's policy and the recurring income its wage bill answers to. A
+// caller without it (the pure-function tests, an old integration) gets the
+// founding behaviour unchanged - which is also, by construction, exactly
+// what a HEALTHY club does.
+export function botBid(listing, buyerSquad, bank, player, money) {
+  const policy = (money && money.policy) || POSTURE_POLICY.healthy;
+  // a club in real trouble buys nobody: recovery first, luxuries never
+  if (policy.buys === 'none') return 0;
   const need = needRank(buyerSquad);
   const role = roleOf(player);
   const mine = need.find(n => n.role === role) || { short: 0, best: 0, have: 9, want: 4 };
@@ -366,9 +421,18 @@ export function botBid(listing, buyerSquad, bank, player) {
   // is better than what they have
   const better = (+player.rating || 0) > mine.best * 1.04;
   if (!mine.short && !better) return 0;
+  // a TIGHT club fills holes only - an upgrade is a luxury it defers
+  if (policy.buys === 'need' && !mine.short) return 0;
+  // and it will not sign a wage that tips recurring income into deficit:
+  // the guard is a ceiling on the bill as a share of what comes in
+  if (policy.wageGuard != null && money && money.perRoundIncome > 0) {
+    const bill = (buyerSquad || []).reduce((s, p) => s + ((p && p.wage) || 0), 0);
+    if (bill + (+player.wage || 0) > money.perRoundIncome * policy.wageGuard) return 0;
+  }
   if ((buyerSquad || []).length >= SQUAD_CEILING) return 0;
   const ask = +listing.asking || 0;
-  const appetite = 0.86 + rnd('bid|' + listing.id + '|' + listing.buyerKey) * 0.34;   // 0.86 .. 1.20
+  const appetite = (0.86 + rnd('bid|' + listing.id + '|' + listing.buyerKey) * 0.34)   // 0.86 .. 1.20
+    * policy.appetite;
   const keen = (mine.short ? 1.06 : 1) * (better ? 1.05 : 1);
   let offer = Math.round(ask * appetite * keen / 500) * 500;
   // nobody bids past the wall: a quarter of the bank is the most any club
@@ -390,7 +454,8 @@ export async function placeBotBids(pool, now = Date.now()) {
   // a manager can - and the same botBid() cap still decides whether the man
   // actually improves them and what a quarter of the bank allows.
   const rich = (await pool.query(
-    `SELECT cl.country_id, cl.slot, cl.squad, cl.bank, (c.user_id IS NOT NULL) AS managed
+    `SELECT cl.country_id, cl.slot, cl.squad, cl.youth, cl.bank, cl.seats, cl.academy,
+            cl.is_boss, cl.finance, (c.user_id IS NOT NULL) AS managed
        FROM clubs cl LEFT JOIN claims c ON c.country_id=cl.country_id AND c.slot=cl.slot
       WHERE c.user_id IS NULL
       ORDER BY cl.bank DESC, cl.country_id, cl.slot LIMIT 8`)).rows;
@@ -419,13 +484,44 @@ export async function placeBotBids(pool, now = Date.now()) {
   const clubsOf = async (countryId) => {
     if (!clubsByCountry.has(countryId)) {
       clubsByCountry.set(countryId, (await pool.query(
-        `SELECT cl.country_id, cl.slot, cl.squad, cl.bank, (c.user_id IS NOT NULL) AS managed
+        `SELECT cl.country_id, cl.slot, cl.squad, cl.youth, cl.bank, cl.seats, cl.academy,
+                cl.is_boss, cl.finance, (c.user_id IS NOT NULL) AS managed
            FROM clubs cl LEFT JOIN claims c ON c.country_id=cl.country_id AND c.slot=cl.slot
           WHERE cl.country_id=$1
           ORDER BY cl.slot`, [countryId])).rows);
       fetches++;
     }
     return clubsByCountry.get(countryId);
+  };
+  // THE MONEY SENSE, once per club per pass. The posture reads the club's own
+  // row and its country's current season; both are stable for the length of
+  // one placeBotBids call (nothing here writes clubs or seasons), so the
+  // same cache-lifetime reasoning as clubsByCountry applies - and the same
+  // warning: it lives and dies with this call.
+  const ctxByCountry = new Map();
+  const ctxOf = async (countryId) => {
+    if (!ctxByCountry.has(countryId)) {
+      const c9 = await seasonCtx(pool, countryId, null);
+      // where the summer stands today, for the projection's horizon: during
+      // the fourteen it is the rounds still to pay; outside them the club
+      // budgets the season ahead
+      const r9 = roundOfDay(dayIx(now) - c9.startDay);
+      c9.roundsLeft = r9 != null && r9 >= 1 && r9 <= c9.rounds ? c9.rounds - r9 + 1 : null;
+      ctxByCountry.set(countryId, c9);
+    }
+    return ctxByCountry.get(countryId);
+  };
+  const moneyByClub = new Map();
+  const moneyOf = async (cl) => {
+    const k9 = cl.country_id + ':' + cl.slot;
+    if (!moneyByClub.has(k9)) {
+      const c9 = await ctxOf(cl.country_id);
+      moneyByClub.set(k9, botMoney(cl, {
+        country: cl.country_id, era2: c9.era2, div: c9.divOf[cl.slot],
+        roundsLeft: c9.roundsLeft, roundsTotal: c9.rounds
+      }));
+    }
+    return moneyByClub.get(k9);
   };
   for (const L of open) {
     // OPEN OUTCRY. botBid() is the club's CAP, seeded once and forever. On
@@ -448,7 +544,8 @@ export async function placeBotBids(pool, now = Date.now()) {
       !(r.country_id === L.country_id && r.slot === L.slot)));
     for (const cl of field) {
       if (cl.managed) continue;                   // a manager bids for himself
-      const cap = botBid({ ...L, buyerKey: cl.country_id + ':' + cl.slot }, cl.squad || [], Number(cl.bank || 0), L.player_json);
+      const cap = botBid({ ...L, buyerKey: cl.country_id + ':' + cl.slot }, cl.squad || [], Number(cl.bank || 0), L.player_json,
+        await moneyOf(cl));
       if (!cap) continue;
       const mine = board.find(b => b.country_id === cl.country_id && b.slot === cl.slot);
       const floor = Math.round((+L.asking || 0) * MIN_BID_PCT);
