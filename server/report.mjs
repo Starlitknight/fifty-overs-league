@@ -47,4 +47,11 @@ const orphan = claims.filter(c => !cs.some(x => x.id === c.country_id));
 if (orphan.length) console.log('\n!! claims in unknown countries: ' + JSON.stringify(orphan));
 console.log('\n' + claims.length + ' claimed club(s) across the world');
 
+// AND THE MONEY'S OWN REGISTER (read-only, finance-register.mjs): the banks
+// as stored and as re-walked, the wage obligations the match record implies
+// and the wage_rounds that freeze them - the evidence the 101 cutover's
+// invariants are checked against, before the migration and after it.
+const { financeRegister } = await import('./finance-register.mjs');
+await financeRegister(pool, { only });
+
 await pool.end();
