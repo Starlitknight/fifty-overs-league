@@ -32,34 +32,33 @@ const ovrLabel = v => call('foOvrLabel', v);
 // ---------------------------------------------------------------------------
 test('the skill ladder names every band at its exact boundary', () => {
   const want = [
-    [0, 'Awful'], [9, 'Awful'],
-    [10, 'Weak'], [19, 'Weak'],
-    [20, 'Limited'], [29, 'Limited'],
-    [30, 'Decent'], [39, 'Decent'],
-    [40, 'Solid'], [49, 'Solid'],
-    [50, 'Good'], [59, 'Good'],
-    [60, 'Strong'], [69, 'Strong'],
-    [70, 'Great'], [79, 'Great'],
-    [80, 'Brilliant'], [89, 'Brilliant'],
-    [90, 'Masterful'], [99, 'Masterful'],
-    [100, 'Iconic'], [109, 'Iconic'],
-    [110, 'Immortal'], [119, 'Immortal'],
-    [120, 'Generational'], [129, 'Generational'],
-    [130, 'Unprecedented'], [200, 'Unprecedented']
+    [0, 'Terrible'], [9, 'Terrible'],
+    [10, 'Poor'], [19, 'Poor'],
+    [20, 'Weak'], [29, 'Weak'],
+    [30, 'Below Average'], [39, 'Below Average'],
+    [40, 'Average'], [49, 'Average'],
+    [50, 'Above Average'], [59, 'Above Average'],
+    [60, 'Good'], [69, 'Good'],
+    [70, 'Excellent'], [79, 'Excellent'],
+    [80, 'Elite'], [84, 'Elite'],
+    [85, 'World Class'], [89, 'World Class'],
+    [90, 'Legendary'], [94, 'Legendary'],
+    [95, 'Transcendent'], [99, 'Transcendent'],
+    [100, 'Transcendent'], [126, 'Transcendent'], [200, 'Transcendent']
   ];
   for (const [v, w] of want) assert.equal(label(v), w, v + ' should read ' + w);
 });
 
 test('the ladder is open at the top and floored at the bottom', () => {
   // no clamp to 99, no "99+", no wrap round to the first rung
-  assert.equal(label(500), 'Unprecedented');
-  assert.equal(label(1e6), 'Unprecedented');
+  assert.equal(label(500), 'Transcendent');
+  assert.equal(label(1e6), 'Transcendent');
   // and nothing below zero falls off the front of the array
-  assert.equal(label(-1), 'Awful');
-  assert.equal(label(-999), 'Awful');
-  assert.equal(label(null), 'Awful');
-  assert.equal(label(undefined), 'Awful');
-  assert.equal(label(NaN), 'Awful');
+  assert.equal(label(-1), 'Terrible');
+  assert.equal(label(-999), 'Terrible');
+  assert.equal(label(null), 'Terrible');
+  assert.equal(label(undefined), 'Terrible');
+  assert.equal(label(NaN), 'Terrible');
   // every rung is a real word, and none of them is a number
   for (let v = 0; v <= 220; v++) {
     const w = label(v);
@@ -69,16 +68,15 @@ test('the ladder is open at the top and floored at the bottom', () => {
 });
 
 test('the brief\'s own worked examples read as stated', () => {
-  assert.equal(label(97), 'Masterful');
-  assert.equal(label(103), 'Iconic');
-  assert.equal(label(108), 'Iconic');
-  assert.equal(label(114), 'Immortal');
-  assert.equal(label(123), 'Generational');
-  assert.equal(label(134), 'Unprecedented');
-  // and the three from the core rule
-  assert.equal(label(116), 'Immortal');
-  assert.equal(label(76), 'Great');
-  assert.equal(label(94), 'Masterful');
+  // Transcendent is deliberately open-ended: no invented words above
+  // ninety-nine, the hidden number does the distinguishing
+  assert.equal(label(95), 'Transcendent');
+  assert.equal(label(99), 'Transcendent');
+  assert.equal(label(105), 'Transcendent');
+  assert.equal(label(118), 'Transcendent');
+  assert.equal(label(140), 'Transcendent');
+  assert.equal(label(76), 'Excellent');
+  assert.equal(label(94), 'Legendary');
 });
 
 // ---------------------------------------------------------------------------
@@ -94,15 +92,17 @@ test('the skill ladder and the OVR ladder are separate concepts', () => {
   assert.equal(ovrLabel(95), 'Immortal');
   assert.equal(ovrLabel(100), 'Immortal');
   // and they genuinely disagree, which is the point: 85 is a Masterful CARD
-  // and only a Brilliant ability, because an ability has further to run
-  assert.equal(label(85), 'Brilliant');
-  assert.equal(label(90), 'Masterful');
-  assert.equal(label(95), 'Masterful');
+  // on the bounded scale and a World Class ability on the open one
+  assert.equal(label(85), 'World Class');
+  assert.equal(label(90), 'Legendary');
+  assert.equal(label(95), 'Transcendent');
   assert.notEqual(label(85), ovrLabel(85));
   assert.notEqual(label(95), ovrLabel(95));
-  // OVR is bounded and saturates; a skill is not and does not
+  // both ladders saturate at their top rung, but at different values and in
+  // different words - and the skill's top rung opens at 95, not 130
   assert.equal(ovrLabel(130), ovrLabel(95));
-  assert.notEqual(label(130), label(95));
+  assert.equal(label(130), label(95));
+  assert.notEqual(label(94), label(95));
 });
 
 // ---------------------------------------------------------------------------
@@ -120,17 +120,17 @@ test('formatting is a pure read - no skill is mutated by being named', () => {
 });
 
 test('a 99 makes the round trip intact', () => {
-  // the old ladder clamped its index at 94+, so 96, 114 and 134 were one word
-  // and the whole point of taking the ceiling off was invisible
-  assert.equal(label(99), 'Masterful');
-  assert.notEqual(label(99), label(100));
-  assert.notEqual(label(99), label(110));
-  assert.notEqual(label(100), label(110));
-  assert.notEqual(label(110), label(120));
-  assert.notEqual(label(120), label(130));
+  // above ninety-nine nothing clamps and nothing invents: the top rung is one
+  // word by design, and every distinction below it is real
+  assert.equal(label(99), 'Transcendent');
+  assert.equal(label(99), label(105));
+  assert.equal(label(105), label(140));
+  assert.notEqual(label(84), label(85));
+  assert.notEqual(label(89), label(90));
+  assert.notEqual(label(94), label(95));
   // and the value itself is untouched by the helper
   const v = 99;
-  assert.equal(label(v), 'Masterful');
+  assert.equal(label(v), 'Transcendent');
   assert.equal(v, 99);
 });
 
@@ -157,15 +157,15 @@ test('an attribute bar stays on the track above ninety-nine', () => {
 test('sorting an attribute column uses the number, not the word', () => {
   // alphabetical order of the words is nothing like the order of the values -
   // "Awful" leads and "Weak" trails, which is exactly backwards
-  const vals = [134, 76, 116, 8, 94, 103, 45, 120];
+  const vals = [94, 76, 62, 8, 88, 45, 82, 51];
   const byNumber = vals.slice().sort((a, b) => b - a);
   const byWord = vals.slice().sort((a, b) => label(a).localeCompare(label(b)));
-  assert.deepEqual(byNumber, [134, 120, 116, 103, 94, 76, 45, 8]);
+  assert.deepEqual(byNumber, [94, 88, 82, 76, 62, 51, 45, 8]);
   assert.notDeepEqual(byWord, byNumber, 'sorting the strings is demonstrably wrong');
   // two men inside one band keep their true order under a numeric sort even
   // though they read identically on the card
-  assert.equal(label(84), label(88));
-  assert.deepEqual([88, 84].slice().sort((a, b) => b - a), [88, 84]);
+  assert.equal(label(85), label(88));
+  assert.deepEqual([88, 85].slice().sort((a, b) => b - a), [88, 85]);
 });
 
 // ---------------------------------------------------------------------------
@@ -176,11 +176,11 @@ test('the abbreviated form has one rung per band and never a digit', () => {
   const seen = new Set();
   for (let v = 0; v <= 200; v++) {
     const a = abbr(v);
-    assert.ok(typeof a === 'string' && a.length > 2, v + ' has a short form');
+    assert.ok(typeof a === 'string' && a.length >= 2, v + ' has a short form');
     assert.ok(!/\d/.test(a), v + ' short form leaks no digit: ' + a);
     seen.add(a);
   }
-  assert.equal(seen.size, 14, 'fourteen bands, fourteen short forms');
+  assert.equal(seen.size, 12, 'twelve bands, twelve short forms');
 });
 
 // ---------------------------------------------------------------------------
@@ -192,8 +192,8 @@ test('the shared card components draw the band and never the figure', () => {
   const bar = call.bind(null, 'bar');
   const mini = call.bind(null, 'miniBar');
   const cases = [
-    [116, 'Immortal'], [103, 'Iconic'], [76, 'Great'], [94, 'Masterful'],
-    [123, 'Generational'], [134, 'Unprecedented'], [99, 'Masterful']
+    [116, 'Transcendent'], [76, 'Excellent'], [94, 'Legendary'],
+    [87, 'World Class'], [82, 'Elite'], [99, 'Transcendent']
   ];
   for (const [v, want] of cases) {
     const b = bar(v, 'Power');

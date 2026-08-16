@@ -1705,13 +1705,7 @@
   // Aggregate skill (0-100) via the engine's own summary functions.
   function foAgg(p, nm) {
     try {
-      // a specialist bowler's Technique is his craft - accuracy, discipline,
-      // movement - not his batting feel (which is deliberately poor)
-      if (nm === "tech" && foPureBowler(p)) {
-        var s0 = p.skills || {};
-        return Math.max(0, Math.round(((s0.economy || 0) + (s0.discipline || 0) + (s0.moveTurn || 0)) / 3));
-      }
-      return Math.max(0, Math.round(({ bat: aggBat, bowl: aggBowl, keep: aggKeep, field: aggField, end: aggEnd, tech: aggTech })[nm](p)));
+      return Math.max(0, Math.round(({ bat: aggBat, bowl: aggBowl, keep: aggKeep, field: aggField, end: aggEnd })[nm](p)));
     } catch (e) { return 0; }
   }
   // The engine's skill word ("ordinary", "elite", "world class", …).
@@ -1720,13 +1714,18 @@
   // Four rungs became fourteen, and they are the ladder's own - the draft card
   // and the squad page now agree about what a man's colour is.
   function foSkTone(v) { try { return foSkillCls(v); } catch (e) { return ""; } }
-  // The game's full 7-skill read-out (Batting/Bowling/Keeping/Endurance/
-  // Technique/Power/Fielding), each a bar + the engine's word for it.
+  // The game's headline read-out (Batting/Bowling/Keeping/Endurance/Power/
+  // Fielding), each a bar + the engine's word for it. Technique is gone from
+  // here on purpose: it was an average of vs-pace, vs-spin and temperament
+  // that the ball engine never reads, and on a pure bowler it required a
+  // second, different formula just to avoid telling the wrong story - two
+  // definitions of one word on one card. The real facets live in the
+  // advanced view, under their own names.
   function foSkillBars(p) {
     var isBowler = p.bowlTypeFull ? p.bowlTypeFull !== "none" : !!p.bowlType;
     var pw = 0; try { pw = (typeof S === "function" ? S(p).power : (p.skills && p.skills.power)) || 0; } catch (e) {}
     var bars = [["Batting", foAgg(p, "bat")], ["Bowling", isBowler ? foAgg(p, "bowl") : 0], ["Keeping", foAgg(p, "keep")],
-      ["Endurance", foAgg(p, "end")], ["Technique", foAgg(p, "tech")], ["Power", Math.max(0, Math.round(pw))],
+      ["Endurance", foAgg(p, "end")], ["Power", Math.max(0, Math.round(pw))],
       ["Fielding", foAgg(p, "field")]];
     var tip = function (label) { try { return (typeof TIPS !== "undefined" && TIPS[label]) ? TIPS[label] : ""; } catch (e) { return ""; } };
     var wide = function (v) { try { return (typeof foSkBar === "function") ? foSkBar(v) : Math.min(100, v); } catch (e) { return Math.min(100, v); } };
@@ -1762,9 +1761,9 @@
       var F = App.founder, p = null; for (var i = 0; i < F.pool.length; i++) if (F.pool[i].name === name) { p = F.pool[i]; break; }
       if (!p) return;
       var isBowler = p.bowlTypeFull && p.bowlTypeFull !== "none";
-      var agg = function (nm) { try { return Math.round(({ bat: aggBat, bowl: aggBowl, keep: aggKeep, field: aggField, end: aggEnd, tech: aggTech })[nm](p)); } catch (e) { return 0; } };
+      var agg = function (nm) { try { return Math.round(({ bat: aggBat, bowl: aggBowl, keep: aggKeep, field: aggField, end: aggEnd })[nm](p)); } catch (e) { return 0; } };
       var pw = 0; try { pw = (typeof S === "function" ? S(p).power : (p.skills && p.skills.power)) || 0; } catch (e) {}
-      var bars = [["Batting", agg("bat")], ["Bowling", isBowler ? agg("bowl") : 0], ["Keeping", agg("keep")], ["Fielding", agg("field")], ["Power", pw], ["Technique", agg("tech")], ["Endurance", agg("end")]];
+      var bars = [["Batting", agg("bat")], ["Bowling", isBowler ? agg("bowl") : 0], ["Keeping", agg("keep")], ["Fielding", agg("field")], ["Power", pw], ["Endurance", agg("end")]];
       var word = function (v) { try { return typeof window.word === "function" ? window.word(v) : ""; } catch (e) { return ""; } };
       var wide = function (v) { try { return (typeof foSkBar === "function") ? foSkBar(v) : Math.min(100, v); } catch (e) { return Math.min(100, v); } };
       var barHtml = bars.map(function (b) { var v = Math.max(0, Math.round(b[1] || 0)); return "<div class='fo-pd-bar'><span>" + b[0] + "</span><i><b class='skfill " + foSkTone(v) + "' style='width:" + wide(v) + "%'></b></i><em>" + E(word(v) || "") + "</em></div>"; }).join("");
@@ -1843,7 +1842,7 @@
         ["Stamina", "How long a spell stays honest, and how fresh he starts the next matchday. Bowling burns energy roughly twice as fast as batting - genuine quicks fastest of all - and hot or humid days drain everyone faster."]
       ]),
       reserves: gsec("Reserves", "batters who do not bowl", [
-        ["Technique", "The engine never reads this bar - you do. It averages a batter&rsquo;s survival craft (vs pace, vs spin, temperament); on a pure bowler&rsquo;s card it becomes his control (economy, discipline, movement). Read it against the headline: well above means craft without punch, well below means muscle without craft. The full story, with what to do about each, is in Reading a player."],
+        ["Survival craft", "There is no single Technique bar - the engine never read one. A batter&rsquo;s craft is three facets read on every ball: vs pace, vs spin and composure, each under its own name in the advanced view. Read them against Power: craft well ahead means touch without punch, well behind means muscle without craft."],
         ["Stamina", "Not just for bowlers: stamina sets how fast <i>any</i> player tires, every ball he bats (keepers work hardest of the fielding side). Tired batters find fielders, and a long hot innings leaves the legs heavy for the next matchday."]
       ]),
       field: gsec("In the field", "", [
@@ -2906,7 +2905,7 @@
   var FO_PK_TIPS = {
     BATTING: "Run-scoring ability with the bat - how reliably he builds and converts innings.",
     BOWLING: "Wicket-taking threat and the ability to keep runs down with the ball.",
-    TECHNIQUE: "Consistency and execution - how often he does exactly what he intends.",
+    ENDURANCE: "Persistent stamina - how slowly a match wears him down, with the bat or over a long spell.",
     POWER: "Raw strength: boundary hitting with the bat, heavy-ball impact with it.",
     FIELDING: "Catching, ground fielding and agility in the ring or on the rope.",
     KEEPING: "Glovework behind the stumps - takes, stumpings and standing up to spin.",
@@ -2919,7 +2918,7 @@
     var I = {
       bat: "<path d=\'M5 19 17 7m-3-2 5 5\'/>",
       bowl: "<circle cx=\'12\' cy=\'12\' r=\'8\'/><path d=\'M8.5 6.5c2.5 3 3.5 8 3 11M15.5 6.5c-1 3.5-1 8 0 11\' stroke-width=\'1.4\'/>",
-      tech: "<circle cx=\'12\' cy=\'12\' r=\'3.2\'/><circle cx=\'12\' cy=\'12\' r=\'8\'/><path d=\'M12 1.5v4M12 18.5v4M1.5 12h4M18.5 12h4\'/>",
+      end: "<circle cx=\'12\' cy=\'13\' r=\'8\'/><path d=\'M12 13V7M12 13l4 3M9 2h6\'/>",
       pow: "<path d=\'M13 2 6 13h5l-1.5 9L18 10h-5l1.5-8z\'/>",
       fld: "<path d=\'M7 21V11a5 5 0 0 1 10 0v10zM7 15H5a2 2 0 0 1 0-4h2m10 4h2a2 2 0 0 0 0-4h-2\'/>",
       form: "<path d=\'M3 17l5-6 4 3 5-8 4 5\'/>",
@@ -2971,7 +2970,7 @@
       return "<span class=\'pk-tal\' data-tip=\"" + E(tip) + "\">" + E((typeof TALN !== "undefined" && TALN[t]) || t) + "</span>";
     }).join("");
     var rows = foPkStatRow("BATTING", "bat", aggBat(p)) + foPkStatRow("BOWLING", "bowl", p.bowlType ? aggBowl(p) : 8) +
-      foPkStatRow("TECHNIQUE", "tech", aggTech(p)) + foPkStatRow("POWER", "pow", p.power != null ? p.power : ((p.skills && p.skills.power) || 0)) +
+      foPkStatRow("ENDURANCE", "end", (p.skills && p.skills.stamina) || 0) + foPkStatRow("POWER", "pow", p.power != null ? p.power : ((p.skills && p.skills.power) || 0)) +
       (k === "wk" ? foPkStatRow("KEEPING", "fld", aggKeep(p)) : foPkStatRow("FIELDING", "fld", aggField(p)));
     var metaRole = (p.btLabel && !/does not bowl/i.test(p.btLabel)) ? p.btLabel : roleLbl;
     var meta = "<span>" + E(metaRole) + "</span><i>&bull;</i><span>Age " + (p.age | 0) + "</span><i>&bull;</i><span>" + E(p.nat || "") + "</span><span class=\'fl\'>" + (foQsFlag(p.nat) || "") + "</span>";

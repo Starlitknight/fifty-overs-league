@@ -100,7 +100,7 @@
       ' <span class="meta">('+esc(p.nat)+') · '+prole(p.role)+' · age '+p.age+' · rating <b>'+p.rating+'</b></span></div>'+
       '<div class="meta">'+(p.hand==='R'?'Right':'Left')+' hand batsman'+btline+' · form '+esc(p.formWord)+' · fatigue '+esc(p.fatigue)+tals+'</div>'+
       '<div class="cols"><div>'+bar(aggBat(p),'Batting')+'<br>'+bar(aggBowl(p),'Bowling')+'<br>'+bar(aggKeep(p),'Keeping')+'</div>'+
-      '<div>'+bar(aggEnd(p),'Endurance')+'<br>'+bar(aggTech(p),'Technique')+'<br>'+bar(S(p).power,'Power')+'</div>'+
+      '<div>'+bar(aggEnd(p),'Endurance')+'<br>'+bar(S(p).power,'Power')+'</div>'+
       '<div>'+bar(aggField(p),'Fielding')+'<br><span class="sklbl">Training</span> '+trainSel+'</div></div></div>';
   };
 
@@ -157,7 +157,7 @@
         '<div class="meta">'+(p.hand==='R'?'Right':'Left')+' hand batsman'+btline+' · exp '+esc(p.expWord||p.exp)+tal+'</div>'+
         '<div class="cols">'+
           '<div>'+bar(aggBat(p),'Batting')+'<br>'+bar(aggBowl(p),'Bowling')+'<br>'+bar(aggKeep(p),'Keeping')+'</div>'+
-          '<div>'+bar(aggEnd(p),'Endurance')+'<br>'+bar(aggTech(p),'Technique')+'<br>'+bar(S(p).power,'Power')+'</div>'+
+          '<div>'+bar(aggEnd(p),'Endurance')+'<br>'+bar(S(p).power,'Power')+'</div>'+
           '<div>'+bar(aggField(p),'Fielding')+'</div>'+
         '</div></div>';
     }catch(e){return _draftBlock?_draftBlock(p,picked,afford,spent):'';}
@@ -427,7 +427,7 @@
           // skills panel (two columns like FTP)
           '<div class="panel"><h4>Skills</h4><div class="pad fo-pl-skills">'+
             '<div>'+bar(aggBat(p),'Batting')+'<br>'+bar(aggBowl(p),'Bowling')+'<br>'+bar(aggKeep(p),'Keeping')+'<br>'+bar(aggField(p),'Fielding')+'</div>'+
-            '<div>'+bar(aggEnd(p),'Endurance')+'<br>'+bar(aggTech(p),'Technique')+'<br>'+bar(S(p).power,'Power')+'</div>'+
+            '<div>'+bar(aggEnd(p),'Endurance')+'<br>'+bar(S(p).power,'Power')+'</div>'+
             '<div class="fo-pl-adv"><details class="adv"><summary>Advanced engine view</summary><table class="kv">'+
               ['vsPace','vsSpin','power','rotation','temperament','wicket','economy','discipline','moveTurn','variation','stamina','fielding','catching','keeping','stumping'].map(function(k){return '<tr><td>'+k+'</td><td>'+(S(p)[k]!=null?S(p)[k]:0)+' <span class="small">('+word(S(p)[k]||0)+')</span></td></tr>';}).join('')+
             '</table></details></div>'+

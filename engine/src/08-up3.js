@@ -236,7 +236,7 @@
         '</div></div>'+
         '<div class="panel fo-skills-panel"><h4>★ Skills</h4><div class="pad"><div class="ftp-skills-2col">'+
           '<div>'+bigbar(aggBat(p),'Batting')+bigbar(aggBowl(p),'Bowling')+bigbar(aggKeep(p),'Keeping')+bigbar(aggField(p),'Fielding')+'</div>'+
-          '<div>'+bigbar(aggEnd(p),'Endurance')+bigbar(aggTech(p),'Technique')+bigbar(S(p).power,'Power')+'</div></div>'+
+          '<div>'+bigbar(aggEnd(p),'Endurance')+bigbar(S(p).power,'Power')+'</div></div>'+
           '<details class="adv"><summary>Advanced engine view</summary><table class="kv">'+['vsPace','vsSpin','power','rotation','temperament','wicket','economy','discipline','moveTurn','variation','stamina','fielding','catching','keeping','stumping'].map(function(k){var kv=S(p)[k]!=null?S(p)[k]:0;return '<tr><td>'+k+'</td><td class="skheat skg '+foSkillCls(kv)+'">'+word(kv)+'</td></tr>';}).join('')+'</table></details></div></div>'+
         '<div class="panel"><h4>Recent matches</h4><div class="pad"><table><tr><th>Date</th><th>Class</th><th>Teams</th><th>Batting</th><th>Bowling</th><th>Fielding</th></tr>'+histRows+'</table></div></div>'+
         '<div class="panel"><h4>Batting &amp; fielding</h4><div class="pad"><table><tr><th>Class</th><th class="n">Inns</th><th class="n">No</th><th class="n">Outs</th><th class="n">Runs</th><th class="n">HS</th><th class="n">Ave</th><th class="n">BF</th><th class="n">SR</th><th class="n">100</th><th class="n">50</th><th class="n">4s</th><th class="n">6s</th></tr>'+batStat+'</table></div></div>'+

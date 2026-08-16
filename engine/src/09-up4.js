@@ -286,7 +286,7 @@
         '</div></div>'+
         '<div class="panel fo-skills-panel"><h4>Skills</h4><div class="pad"><div class="ftp-skills-2col">'+
           '<div>'+bigbar(aggBat(p),'Batting')+bigbar(aggBowl(p),'Bowling')+bigbar(aggKeep(p),'Keeping')+bigbar(aggField(p),'Fielding')+'</div>'+
-          '<div>'+bigbar(aggEnd(p),'Endurance')+bigbar(aggTech(p),'Technique')+bigbar(S(p).power,'Power')+'</div></div>'+
+          '<div>'+bigbar(aggEnd(p),'Endurance')+bigbar(S(p).power,'Power')+'</div></div>'+
           '<details class="adv"><summary>Advanced engine view</summary><table class="kv">'+['vsPace','vsSpin','power','rotation','temperament','wicket','economy','discipline','moveTurn','variation','stamina','fielding','catching','keeping','stumping'].map(function(k){var kv=S(p)[k]!=null?S(p)[k]:0;return '<tr><td title="'+LADT+'">'+k+'</td><td class="skheat skg '+foSkillCls(kv)+'">'+word(kv)+'</td></tr>';}).join('')+'</table></details></div></div>'+
         '<div class="panel"><h4>Recent matches</h4><div class="pad"><table><tr><th>Date</th><th>Class</th><th>Teams</th><th>Batting</th><th>Bowling</th><th>Fielding</th></tr>'+histRows+'</table></div></div>'+
         '<div class="panel"><h4>Batting &amp; fielding</h4><div class="pad"><table class="fo-stattbl"><colgroup><col style="width:15%"><col span="11"></colgroup><tr><th>Class</th><th class="n" title="Innings batted">Inns</th><th class="n" title="Not outs">NO</th><th class="n">Runs</th><th class="n" title="Highest score">HS</th><th class="n" title="Runs per dismissal">Ave</th><th class="n" title="Balls faced">BF</th><th class="n" title="Runs per 100 balls">SR</th><th class="n">100</th><th class="n">50</th><th class="n">4s</th><th class="n">6s</th></tr>'+batStat+'</table></div></div>'+
@@ -310,10 +310,10 @@
     // still runs on GRIDKEYS, which are the raw numbers.
     var hc=function(v){return '<td class="skheat skg '+foSkillCls(v)+'">'+abbr(v)+'</td>';};
     return '<div class="panel"><h4>Overall grid <span style="font-weight:normal;font-size:9px">click a column to sort</span></h4><div class="pad"><table class="fo-gridtbl">'+
-    '<tr>'+['Player','Age','Nat','BT','End','Bat','Bowl','Tech','Power','Keep','Field'].map(H).join('')+'<th>Capt</th>'+['Exp','Fatg','Form','Wage'].map(H).join('')+H('Rating')+'</tr>'+
+    '<tr>'+['Player','Age','Nat','BT','End','Bat','Bowl','Power','Keep','Field'].map(H).join('')+'<th>Capt</th>'+['Exp','Fatg','Form','Wage'].map(H).join('')+H('Rating')+'</tr>'+
     ps.map(function(p){fatSync(p);if(!p.formWord)p.formWord=(typeof FORMW!=='undefined'?FORMW[p.formIx==null?3:p.formIx]:'steady');
       return '<tr><td>'+foRoleImg(p)+' '+playerLink(p)+'</td><td class="n">'+p.age+'</td><td>'+foFlag(p.nat)+'</td><td>'+esc(shortBT(p))+'</td>'+
-      hc(aggEnd(p))+hc(aggBat(p))+hc(aggBowl(p))+hc(aggTech(p))+hc(S(p).power)+hc(aggKeep(p))+hc(aggField(p))+
+      hc(aggEnd(p))+hc(aggBat(p))+hc(aggBowl(p))+hc(S(p).power)+hc(aggKeep(p))+hc(aggField(p))+
       hc(p.capt||30)+'<td>'+esc(p.expWord||p.exp)+'</td><td title="'+((typeof FATTIP!=='undefined')?FATTIP:'')+'">'+esc(p.fatWord||p.fatigue)+'</td><td>'+esc(p.formWord)+'</td><td class="n">$'+(p.wage||0).toLocaleString()+'</td><td class="n">'+p.rating+'</td></tr>';}).join('')+
     '</table></div></div>';
   };

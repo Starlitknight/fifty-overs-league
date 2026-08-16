@@ -522,7 +522,7 @@
   // which grid columns are ABILITIES (and so read as bands) rather than ratings,
   // money or state. ovr, exp, age, wage, form and fit are none of this game's
   // business here - they keep the readings they have always had.
-  var FO_SQ_ABIL = { bat: 1, bowl: 1, tech: 1, power: 1, field: 1, keep: 1 };
+  var FO_SQ_ABIL = { bat: 1, bowl: 1, end: 1, power: 1, field: 1, keep: 1 };
   var FO_SQ_COLS = [
     { k: "pos", l: "#", s: "#", tip: "Batting position in the XI", num: 1,
       v: function (p, x) { return x.xiIx(p) < 0 ? 99 : x.xiIx(p); } },
@@ -547,8 +547,17 @@
       v: function (p) { return Math.round(aggBat(p)); } },
     { k: "bowl", l: "Bowl", s: "Bowl", tip: "Bowling: threat, control, discipline, movement, variety, stamina", num: 1, agg: 1,
       v: function (p) { return p.bowlType ? Math.round(aggBowl(p)) : -1; } },
-    { k: "tech", l: "Tech", s: "Tech", tip: "Technique: vs pace, vs spin and temperament - the batting core", num: 1,
-      v: function (p) { return Math.round(aggTech(p)); } },
+    // ENDURANCE, WHERE TECHNIQUE STOOD. Technique was a presentation-only
+    // average of vs-pace, vs-spin and temperament that the ball engine never
+    // reads - and on a specialist bowler it said "limited technique" when it
+    // meant "limited batting", the wrong story in the one room built for
+    // comparing men. Endurance is a real facet the engine reads every over:
+    // his persistent stamina, how slowly a workload wears him down. It is
+    // deliberately NOT the Fitness column further right - that is the energy
+    // he happens to have left today - and it reads the raw stamina number so
+    // the sort is the engine's own quantity, not a role-dependent blend.
+    { k: "end", l: "End", s: "End", tip: "Endurance: persistent stamina - how slowly a match wears him down. Fitness (further right) is the energy he has left today", num: 1,
+      v: function (p) { return Math.round(S(p).stamina || 0); } },
     { k: "power", l: "Power", s: "Pwr", tip: "Six-hitting muscle", num: 1,
       v: function (p) { try { return Math.round((p.skills || {}).power || 0); } catch (e) { return 0; } } },
     { k: "field", l: "Field", s: "Fld", tip: "Fielding: ground work and catching", num: 1,

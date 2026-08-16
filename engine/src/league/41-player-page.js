@@ -120,31 +120,34 @@
       ["Fielding", (p.keeper || p.role === "wicketkeeper") ? agg(aggKeep, p) : agg(aggField, p)]
     ];
   }
-  // THE SHAPE IS THE JOB. Batting and bowling belong on it - a shape without
-  // them describes a cricketer you never picked - but a number nobody judges
-  // him on is noise: a spinner's batting, an opener's keeping. Each kind of
-  // cricketer shows what he is picked for, and the rest waits in the advanced
-  // engine view, where nothing is ever hidden.
-  function allFacets(p) {
+  // THE SHAPE IS THE JOB, AND THE JOB PICKS THE READINGS. One generic list
+  // told every cricketer's story in the same words - and led with Technique,
+  // an average the ball engine never reads, which on a specialist bowler said
+  // "limited technique" when it meant "limited batting". The role-aware
+  // profile (64-role-aware-skills, the one definition) answers the question
+  // this page exists for: why is THIS cricketer good. Eight readings for the
+  // bars, six independent ones for the radar - never an aggregate plotted
+  // beside its own ingredients.
+  function roleRead(p) {
+    try {
+      if (window.foRoleSkills && window.foRoleSkills.read) return window.foRoleSkills.read(p);
+    } catch (e) {}
+    // the profile module is load-order-late; if it is somehow absent, the page
+    // still stands on the canonical aggregates rather than dying
+    return { cls: "bat", all: [["Batting", agg(aggBat, p)], ["Power", num(skills(p).power)],
+      ["Fielding", agg(aggField, p)]], radar: null };
+  }
+  function facets(p) { return roleRead(p).all; }
+  function radarFacets(p) { return roleRead(p).radar || roleRead(p).all.slice(0, 6); }
+  // what the headline no longer says, said plainly at the top of the advanced
+  // view: the canonical aggregates the role list left out
+  function restFacets(p) {
+    var have = {};
+    facets(p).forEach(function (f) { have[f[0]] = 1; });
     var bowls = !!(p.bowlType && !/does not bowl/i.test(p.btLabel || ""));
     return [["Batting", agg(aggBat, p)], ["Bowling", bowls ? agg(aggBowl, p) : 0],
-      ["Technique", agg(aggTech, p)], ["Power", num(skills(p).power)], ["Endurance", agg(aggEnd, p)],
-      ["Fielding", agg(aggField, p)], ["Keeping", agg(aggKeep, p)]];
-  }
-  function hiddenFacetNames(p) {
-    var k = kindLbl(p);
-    if (k === "Wicketkeeper") return ["Bowling"];
-    if (k === "All-rounder") return ["Keeping"];
-    if (k === "Bowler") return ["Batting", "Keeping"];
-    return ["Bowling", "Keeping"];                       // a batter, pure and simple
-  }
-  function facets(p) {
-    var drop = hiddenFacetNames(p);
-    return allFacets(p).filter(function (f) { return drop.indexOf(f[0]) < 0; });
-  }
-  function restFacets(p) {
-    var drop = hiddenFacetNames(p);
-    return allFacets(p).filter(function (f) { return drop.indexOf(f[0]) >= 0; });
+      ["Keeping", agg(aggKeep, p)], ["Fielding", agg(aggField, p)]]
+      .filter(function (f) { return !have[f[0]]; });
   }
   // tired legs, in words the dressing room uses and a colour anyone can read
   function fatOf(word) {
@@ -170,9 +173,13 @@
     var spokes = vals.map(function (_, i) {
       var q = pt(i, R); return "<line x1='" + cx + "' y1='" + cy + "' x2='" + q[0] + "' y2='" + q[1] + "' stroke='rgba(20,28,40,.1)'></line>";
     }).join("");
-    var shape = vals.map(function (v, i) { return pt(i, R * Math.max(0.06, Math.min(1, (v[1] || 0) / 100))).join(","); }).join(" ");
+    var frac = function (v) {
+      var pct = (typeof foSkBar === "function") ? foSkBar(v || 0) : Math.min(100, v || 0);
+      return Math.max(0.06, Math.min(1, pct / 100));
+    };
+    var shape = vals.map(function (v, i) { return pt(i, R * frac(v[1])).join(","); }).join(" ");
     var dots = vals.map(function (v, i) {
-      var q = pt(i, R * Math.max(0.06, Math.min(1, (v[1] || 0) / 100)));
+      var q = pt(i, R * frac(v[1]));
       return "<circle cx='" + q[0] + "' cy='" + q[1] + "' r='2.6' fill='#8F6A1C'></circle>";
     }).join("");
     var labs = vals.map(function (v, i) {
@@ -720,7 +727,7 @@
       room =
         "<div class='fo-pp-col'>" +
         "<div class='fo-pp-card'><h3>The player</h3>" +
-        (mine ? "<div class='fo-pp-shape'>" + radar(facets(p)) + bars(facets(p)) + "</div>" + adv
+        (mine ? "<div class='fo-pp-shape'>" + radar(radarFacets(p)) + bars(facets(p)) + "</div>" + adv
           : bars(scoutRow(p))) +
         "</div>" +
         (mine ? "<div class='fo-pp-card pad0'><div class='fo-pp-ph'><h3>Recent matches</h3>" +

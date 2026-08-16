@@ -81,8 +81,11 @@ test('the colour is read off the same index as the word', () => {
 test('the class names the rung, and only the rung', () => {
   for (let i = 0; i < LADDER.length; i++) {
     const floor = LADDER[i][0];
+    // the band's own ceiling, not floor+9: the rungs narrow to five wide at
+    // the top, where the world's real distinctions live
+    const top = i + 1 < LADDER.length ? LADDER[i + 1][0] - 1 : floor + 40;
     assert.equal(call('foSkillCls', floor), 'sg' + i);
-    assert.equal(call('foSkillCls', floor + 9), 'sg' + i, 'still inside the band');
+    assert.equal(call('foSkillCls', top), 'sg' + i, 'still inside the band');
   }
   // a class is a rung, never a value: 70 and 79 are the same token
   assert.equal(call('foSkillCls', 70), call('foSkillCls', 79));
@@ -154,7 +157,7 @@ test('every render helper prints the word next to the colour', () => {
   // the INK, not the markup: a bar's width and a rung's class are attributes and
   // are allowed to carry digits, but nothing the manager can read may
   const ink = html => html.replace(/<[^>]*>/g, ' ');
-  for (const [v, band] of [[78, 'Great'], [114, 'Immortal']])
+  for (const [v, band] of [[78, 'Excellent'], [114, 'Transcendent']])
     for (const helper of ['bar', 'miniBar', 'sdot', 'meter']) {
       const html = call(helper, v, 'Batting');
       assert.match(html, new RegExp(band), helper + ' must print the band at ' + v);
@@ -170,25 +173,31 @@ test('every render helper prints the word next to the colour', () => {
 // 5. open at the top
 // ---------------------------------------------------------------------------
 
-test('above ninety-nine has colours of its own, and nothing clamps', () => {
-  assert.notEqual(call('foSkillCls', 99), call('foSkillCls', 100), 'Masterful is not Iconic');
+test('above ninety-nine has a colour, and nothing clamps', () => {
+  // the top rung opens at 95 by design - Transcendent is one open-ended band,
+  // so 99 and 140 share a colour and the last real split is Legendary/95
+  assert.notEqual(call('foSkillCls', 94), call('foSkillCls', 95), 'Legendary is not Transcendent');
+  assert.equal(call('foSkillCls', 99), call('foSkillCls', 100));
   for (const v of [100, 110, 120, 130, 175, 250]) {
     const ink = call('foSkillInk', v);
     assert.match(ink, /^#[0-9A-F]{6}$/, v + ' has a real colour');
   }
-  // open at the top: everything from 130 up is the last rung, and it does not
+  // open at the top: everything from 95 up is the last rung, and it does not
   // fall off the end of the array into undefined
-  assert.equal(call('foSkillInk', 130), INK[INK.length - 1]);
+  assert.equal(call('foSkillInk', 95), INK[INK.length - 1]);
   assert.equal(call('foSkillInk', 9999), INK[INK.length - 1]);
   assert.equal(call('foSkillCls', 9999), 'sg' + (INK.length - 1));
 });
 
-test('the four rungs above the old ceiling are marked as a tier', () => {
+test('the top two rungs are marked as a tier, and only those', () => {
   const css = call('foSkillGradeCss');
-  // 100+ is what B2 made possible at all, and it is marked categorically - a
-  // gilt rule - rather than by breaking the sequential ramp with a new hue
-  for (const i of [10, 11, 12, 13]) assert.match(css, new RegExp('\\.skg\\.sg' + i + '\\b'),
-    'rung ' + i + ' takes part in the beyond-ninety-nine rule');
+  // Legendary and Transcendent take the gilt rule - premium, not loot: marked
+  // categorically rather than by breaking the sequential ramp with a new hue
+  const giltRule = css.split('border-bottom:1px solid rgba(192,138,46')[0].split('}').pop();
+  for (const i of [10, 11]) assert.match(giltRule, new RegExp('\\.skg\\.sg' + i + '\\b'),
+    'rung ' + i + ' takes part in the premium rule');
+  assert.doesNotMatch(giltRule, /\.skg\.sg[0-9]\b(?![0-9])/,
+    'and no rung below Legendary does');
   assert.match(css, /border-bottom:1px solid rgba\(192,138,46/, 'and it is the gilt rule');
 });
 

@@ -922,17 +922,28 @@ function foOvrLabel(v) {
 // know about a player, and it leaves the exact figure where it belongs - in the
 // simulation. It is deliberately NOT scouting fog: there is no noise here, no
 // hidden accuracy stat, and the same man always reads the same way.
+// TWELVE RUNGS WHOSE ORDER EXPLAINS ITSELF. The first ladder used words like
+// Solid, Strong, Great and Brilliant, and a reader had to memorise which of
+// those outranked which - adjacent rungs whose order is not obvious defeat
+// the whole point of words. This vocabulary orders itself: Below Average sits
+// below Average, Above Average above it, World Class above Elite the way the
+// game's own commentary uses those words. The rungs narrow at the top - five
+// wide from 80 - because that is where the world's real distinctions live,
+// and TRANSCENDENT IS OPEN-ENDED ON PURPOSE: a 95 and a 140 read the same,
+// and the hidden number goes on distinguishing them mechanically. No new
+// words above ninety-nine; the ceiling came off the numbers, not the prose.
 const FO_SKILL_LADDER = [
-  [0, 'Awful'], [10, 'Weak'], [20, 'Limited'], [30, 'Decent'], [40, 'Solid'],
-  [50, 'Good'], [60, 'Strong'], [70, 'Great'], [80, 'Brilliant'],
-  [90, 'Masterful'], [100, 'Iconic'], [110, 'Immortal'], [120, 'Generational'],
-  [130, 'Unprecedented']
+  [0, 'Terrible'], [10, 'Poor'], [20, 'Weak'], [30, 'Below Average'],
+  [40, 'Average'], [50, 'Above Average'], [60, 'Good'], [70, 'Excellent'],
+  [80, 'Elite'], [85, 'World Class'], [90, 'Legendary'], [95, 'Transcendent']
 ];
-// the short form the chips and the narrow columns use, same rungs, same order
-const FO_SKILL_ABBR = ['awful', 'weak', 'ltd', 'decent', 'solid', 'good', 'strong',
-  'great', 'brill', 'master', 'iconic', 'immort', 'gener', 'unprec'];
+// the short form the chips and the narrow columns use, same rungs, same order.
+// Full words where they fit; where they cannot, forms no two of which can be
+// misread for each other
+const FO_SKILL_ABBR = ['terr', 'poor', 'weak', 'below', 'avg', 'above',
+  'good', 'exc', 'elite', 'wc', 'leg', 'trans'];
 // THE INDEX, which is the only place the arithmetic lives. Open at the top: a
-// 130 and a 200 are both Unprecedented, and nothing clamps to 99 on the way.
+// 95 and a 200 are both Transcendent, and nothing clamps to 99 on the way.
 function foSkillIx(v) {
   v = Math.round(+v || 0);
   if (v < 0) v = 0;
@@ -979,15 +990,15 @@ function foSkillAbbr(v) { return FO_SKILL_ABBR[foSkillIx(v)]; }
 // re-derives every one of those checks and will fail if a step is nudged by
 // eye. Single hue family, blue-green to green - a sequential scale, never a
 // rainbow, because the quantity is magnitude and magnitude has one direction.
-const FO_SKILL_INK = ['#606A69', '#556665', '#49625F', '#3E5F5B', '#335C55', '#27594F',
-  '#155448', '#004E3F', '#014838', '#004231', '#013C2A', '#003623', '#002F1C', '#002815'];
-const FO_SKILL_WASH = ['#F9FCFC', '#F1F9F8', '#E9F6F4', '#E2F3F0', '#DAF0EC', '#D3EEE7',
-  '#CCEBE2', '#C4E8DC', '#BEE5D7', '#B7E2D0', '#B1DFCA', '#ABDCC3', '#A5D9BC', '#A0D5B5'];
-const FO_SKILL_FILL = ['#C0D4D3', '#B0CCC9', '#A0C4C0', '#91BCB5', '#81B4AB', '#72AC9F',
-  '#62A494', '#529C88', '#41947C', '#2F8C6F', '#198462', '#017B55', '#04714A', '#01683F'];
+const FO_SKILL_INK = ['#606A69', '#526564', '#45615E', '#385D57', '#2A5A51', '#175448',
+  '#024E3F', '#004636', '#013F2E', '#003826', '#00301D', '#002815'];
+const FO_SKILL_WASH = ['#F9FCFC', '#F0F8F7', '#E7F5F3', '#DEF2EE', '#D5EEE8', '#CCEBE2',
+  '#C4E8DC', '#BCE4D5', '#B4E1CE', '#ADDDC6', '#A6D9BE', '#A0D5B5'];
+const FO_SKILL_FILL = ['#C0D4D3', '#ADCBC8', '#9BC1BC', '#88B8AF', '#76AEA2', '#63A595',
+  '#509C87', '#3D9278', '#268869', '#017F5A', '#04734C', '#01683F'];
 // The weight rises with the rung too, so the ramp still reads where colour does
 // not arrive - greyscale, a cheap screen, a colour-blind eye.
-const FO_SKILL_WEIGHT = [400, 400, 400, 400, 400, 500, 500, 500, 600, 600, 700, 700, 700, 700];
+const FO_SKILL_WEIGHT = [400, 400, 400, 400, 400, 500, 500, 500, 600, 600, 700, 700];
 function foSkillInk(v) { return FO_SKILL_INK[foSkillIx(v)]; }
 function foSkillWash(v) { return FO_SKILL_WASH[foSkillIx(v)]; }
 function foSkillFill(v) { return FO_SKILL_FILL[foSkillIx(v)]; }
@@ -1021,12 +1032,12 @@ function foSkillGradeCss() {
     // would lose to it.
     out.push('.skfill.sg' + i + '{background:' + FO_SKILL_FILL[i] + ' !important}');
   }
-  // BEYOND THE HUMAN CEILING. Rungs 10 and up are the ones B2 made possible at
-  // all - a hundred and over. They are marked categorically, with a gilt rule
-  // rather than a jump in hue, so the sequential ramp stays sequential and the
-  // tier is still unmistakable.
+  // THE TOP OF THE WORLD. Legendary and Transcendent - the last two rungs -
+  // are marked categorically, with a gilt rule rather than a jump in hue, so
+  // the sequential ramp stays sequential and the tier is still unmistakable
+  // without turning into loot rarity.
   const gilt = [];
-  for (let i = 10; i < FO_SKILL_LADDER.length; i++) gilt.push('.skg.sg' + i);
+  for (let i = FO_SKILL_LADDER.length - 2; i < FO_SKILL_LADDER.length; i++) gilt.push('.skg.sg' + i);
   out.push(gilt.join(',') + '{border-bottom:1px solid rgba(192,138,46,.55);padding-bottom:1px}');
   // A cell that is only a tint needs an edge or it reads as a rendering bug on
   // a striped table.
@@ -3564,7 +3575,7 @@ const ROLEN={opener:'Opener',topOrderBat:'Top order batsman',middleOrderBat:'Mid
 const prole=r=>ROLEN[r]||r;
 const TALN={fastStarter:'Fast Starter',anchor:'Anchor',finisher:'Finisher',sixMachine:'Six Machine',spinKiller:'Spin Killer',paceHunter:'Pace Hunter',busyRunner:'Busy Runner',newBallSpecialist:'New Ball Specialist',deathSpecialist:'Death Specialist',partnershipBreaker:'Partnership Breaker',bouncer:'Bouncer',miser:'Miser',goldenArm:'Golden Arm',mysteryBall:'Mystery Ball',lightningHands:'Lightning Hands',safeHands:'Safe Hands',rocketArm:'Rocket Arm'};
 const ptal=t=>TALN[t]||t;
-const TIPS={Batting:'Overall batting: vs pace, vs spin, rotation, temperament, power',Bowling:'Overall bowling: wicket threat, economy, discipline, craft, stamina',Keeping:'Glovework: keeping, stumping, catching',Endurance:'Stamina for bowlers; composure-fitness for batters. Slows in-match fatigue',Technique:'vs pace + vs spin + temperament',Power:'Six-hitting muscle',Fielding:'Ground fielding + catching. Catching sets drop chance',vsPace:'Batting vs seam/pace bowling',vsSpin:'Batting vs spin bowling',rotation:'Finds singles and twos, avoids dots',temperament:'Composure; batting core and pressure resistance',wicket:'Bowler wicket threat (engine: threat)',economy:'Run suppression and dot pressure (engine: control)',discipline:'Avoids wides and no-balls',moveTurn:'Seam movement / spin turn',variation:'Slower balls, googlies, deception',stamina:'Slows in-match fatigue during long spells and innings',catching:'Catch conversion - sets drop chance',keeping:'Wicketkeeper reliability',stumping:'Stumping conversion',End:'Endurance',Bat:'Batting aggregate',Bowl:'Bowling aggregate',Tech:'Technique',Keep:'Keeping',Field:'Fielding',Capt:'Captaincy - small team-wide effect',Exp:'Experience',Fatg:'Fatigue state',Form:'Current form',BT:'Bowling type',Wage:'Weekly wage',Rating:'Overall rating'};
+const TIPS={Batting:'Overall batting: vs pace, vs spin, rotation, temperament, power',Bowling:'Overall bowling: wicket threat, economy, discipline, craft, stamina',Keeping:'Glovework: keeping, stumping, catching',Endurance:'Stamina for bowlers; composure-fitness for batters. Slows in-match fatigue',Power:'Six-hitting muscle',Fielding:'Ground fielding + catching. Catching sets drop chance',vsPace:'Batting vs seam/pace bowling',vsSpin:'Batting vs spin bowling',rotation:'Finds singles and twos, avoids dots',temperament:'Composure; batting core and pressure resistance',wicket:'Bowler wicket threat (engine: threat)',economy:'Run suppression and dot pressure (engine: control)',discipline:'Avoids wides and no-balls',moveTurn:'Seam movement / spin turn',variation:'Slower balls, googlies, deception',stamina:'Slows in-match fatigue during long spells and innings',catching:'Catch conversion - sets drop chance',keeping:'Wicketkeeper reliability',stumping:'Stumping conversion',End:'Endurance',Bat:'Batting aggregate',Bowl:'Bowling aggregate',Keep:'Keeping',Field:'Fielding',Capt:'Captaincy - small team-wide effect',Exp:'Experience',Fatg:'Fatigue state',Form:'Current form',BT:'Bowling type',Wage:'Weekly wage',Rating:'Overall rating'};
 // THE NAME OF AN ATTRIBUTE, in the words a cricket person uses rather than the
 // engine's key. One map, so the squad page, the card and the nets all call the
 // same thing by the same name.
@@ -3574,7 +3585,11 @@ const LADDER=['atrocious','dreadful','poor','ordinary','average','reasonable','c
 const FORMLAD=['abysmal','poor','shaky','steady','good','strong','excellent'];
 const FATLAD=['exhausted','tired','weary','passable','rested','fresh','energetic'];
 const EXPLAD=['atrocious','dreadful','poor','ordinary','average','reasonable','capable','reliable','accomplished','expert','spectacular','elite'];
-const SKILLTIP='Skill ladder - atrocious ▸ dreadful ▸ poor ▸ ordinary ▸ average ▸ reasonable ▸ capable ▸ reliable ▸ accomplished ▸ expert ▸ outstanding ▸ spectacular ▸ exceptional ▸ world class ▸ elite ▸ legendary';
+// DERIVED, NOT WRITTEN OUT. This tooltip rode along on every skill bar still
+// describing a sixteen-rung ladder two vocabularies dead - nobody thought to
+// update prose that lived four thousand lines from the ladder it described.
+// Read off the ladder itself, it cannot be wrong again.
+const SKILLTIP='Skill ladder - '+FO_SKILL_LADDER.map(r=>r[1].toLowerCase()).join(' ▸ ');
 const FORMTIP='Form ladder - abysmal ▸ poor ▸ shaky ▸ steady ▸ good ▸ strong ▸ excellent. Effect on output: abysmal −6%, poor −4%, shaky −2%, steady 0, good +2%, strong +4%, excellent +6%.';
 const FATTIP='FTP fatigue ladder - rested ▸ revived ▸ energetic ▸ passable ▸ satisfactory ▸ moderate ▸ weary ▸ listless ▸ exhausted ▸ shattered ▸ clinically dead. Heavy fatigue reduces training and in-match output.';
 const EXPTIP='Experience ladder - atrocious ▸ dreadful ▸ poor ▸ ordinary ▸ average ▸ reasonable ▸ capable ▸ reliable ▸ accomplished ▸ expert ▸ spectacular ▸ elite. Higher experience steadies players in pressure phases (death overs, tight chases).';
@@ -4311,11 +4326,11 @@ function summaryBlock(p){
     <div class="meta">${p.hand==='R'?'Right':'Left'} hand batsman | ${esc(p.btLabel)} · exp ${esc(p.expWord||p.exp)} · form ${esc(p.formWord)} · ${esc(p.fatigue)} · capt ${esc(p.capt)}${(p.talents&&p.talents.length)?' &nbsp;'+p.talents.map(t=>`<span class="talchip" title="${TALTIPS[t]||''}">${ptal(t)}</span>`).join(' '):''}</div>
     <div class="cols">
       <div>${bar(aggBat(p),'Batting')}<br>${bar(aggBowl(p),'Bowling')}<br>${bar(aggKeep(p),'Keeping')}</div>
-      <div>${bar(aggEnd(p),'Endurance')}<br>${bar(aggTech(p),'Technique')}<br>${bar(S(p).power,'Power')}</div>
+      <div>${bar(aggEnd(p),'Endurance')}<br>${bar(S(p).power,'Power')}</div>
       <div>${bar(aggField(p),'Fielding')}<br><span class="sklbl">Training</span><select onchange="setTrain('${esc(p.name)}',this.value)" style="font-size:10px">${['none','Batting','Power','Rotation','Bowling','Discipline','Fielding','Keeping','Endurance','Rest'].map(k=>`<option ${p.trainFocus===k?'selected':''}>${k}</option>`).join('')}</select></div>
     </div></div>`;
 }
-const GRIDKEYS={Player:p=>p.name,Age:p=>p.age,Nat:p=>p.nat,BT:p=>shortBT(p),Role:p=>p.role,End:aggEnd,Bat:aggBat,Bowl:aggBowl,Tech:aggTech,Power:p=>S(p).power,Keep:aggKeep,Field:aggField,Exp:p=>p.exp,Fatg:p=>p.fatigue,Form:p=>p.formIx??3,Wage:p=>p.wage||0,Rating:p=>p.rating};
+const GRIDKEYS={Player:p=>p.name,Age:p=>p.age,Nat:p=>p.nat,BT:p=>shortBT(p),Role:p=>p.role,End:aggEnd,Bat:aggBat,Bowl:aggBowl,Power:p=>S(p).power,Keep:aggKeep,Field:aggField,Exp:p=>p.exp,Fatg:p=>p.fatigue,Form:p=>p.formIx??3,Wage:p=>p.wage||0,Rating:p=>p.rating};
 function gridSort(k){if(squadView.key===k)squadView.dir*=-1;else{squadView.key=k;squadView.dir=-1}
   if(App.page==='squad')pgSquad();}
 function gridTable(ps){
@@ -4330,9 +4345,9 @@ function gridTable(ps){
   // labels.
   const hc=v=>`<td class="skheat skg ${foSkillCls(v)}">${abbr(v)}</td>`;
   return `<div class="panel"><h4>Overall grid <span style="font-weight:normal;font-size:9px">click a column to sort</span></h4><div class="pad"><table>
-  <tr>${['Player','Age','Nat','BT','Role','End','Bat','Bowl','Tech','Power','Keep','Field'].map(H).join('')}<th>Capt</th>${['Exp','Fatg','Form','Rating'].map(H).join('')}</tr>
+  <tr>${['Player','Age','Nat','BT','Role','End','Bat','Bowl','Power','Keep','Field'].map(H).join('')}<th>Capt</th>${['Exp','Fatg','Form','Rating'].map(H).join('')}</tr>
   ${ps.map(p=>`<tr><td>${playerLink(p)}</td><td>${p.age}</td><td>${esc(p.nat)}</td><td>${esc(shortBT(p))}</td><td>${prole(p.role)}</td>
-   ${hc(aggEnd(p))}${hc(aggBat(p))}${hc(aggBowl(p))}${hc(aggTech(p))}${hc(S(p).power)}${hc(aggKeep(p))}${hc(aggField(p))}
+   ${hc(aggEnd(p))}${hc(aggBat(p))}${hc(aggBowl(p))}${hc(S(p).power)}${hc(aggKeep(p))}${hc(aggField(p))}
    <td class="skheat skg ${foSkillCls(p.capt||30)}" title="${TIPS.Capt}">${abbr(p.capt||30)}</td><td>${esc(p.expWord||p.exp)}</td><td>${esc(p.fatigue)}</td><td>${esc(p.formWord)}</td><td class="n">$${(p.wage||0).toLocaleString()}</td><td class="n">${p.rating}</td></tr>`).join('')}
   </table></div></div>`;
 }
@@ -4392,7 +4407,7 @@ function pgPlayer(q){
       ${bar(aggBat(p),'Batsman')}<br>${bar(aggBowl(p),'Bowler')}<br>${bar(aggKeep(p),'Keeper')}<br>${bar(allr,'Allrounder')}
     </div></div>
     <div class="panel"><h4>Skills</h4><div class="pad">
-      ${bar(aggBat(p),'Batting')}<br>${bar(aggBowl(p),'Bowling')}<br>${bar(aggKeep(p),'Keeping')}<br>${bar(aggField(p),'Fielding')}<br>${bar(aggEnd(p),'Endurance')}<br>${bar(aggTech(p),'Technique')}<br>${bar(S(p).power,'Power')}
+      ${bar(aggBat(p),'Batting')}<br>${bar(aggBowl(p),'Bowling')}<br>${bar(aggKeep(p),'Keeping')}<br>${bar(aggField(p),'Fielding')}<br>${bar(aggEnd(p),'Endurance')}<br>${bar(S(p).power,'Power')}
       <details class="adv"><summary>Every attribute</summary><table class="kv">
         ${['vsPace','vsSpin','power','rotation','temperament','wicket','economy','discipline','moveTurn','variation','stamina','fielding','catching','keeping','stumping'].map(k=>{const v=S(p)[k]??0;return `<tr><td>${SKN[k]||k}</td><td class="skheat skg ${foSkillCls(v)}">${word(v)}</td></tr>`}).join('')}
         <tr><td class="small">bowling</td><td class="small">${p.bowlType||'does not bowl'}</td></tr>
@@ -6404,7 +6419,7 @@ function draftBlock(p,picked,afford,spent){
     <div class="meta">${p.hand==='R'?'Right':'Left'} hand batsman | ${esc(p.btLabel)} · exp ${esc(p.expWord||p.exp)}${(p.talents&&p.talents.length)?' &nbsp;'+p.talents.map(t=>`<span class="talchip" title="${TALTIPS[t]||''}">${ptal(t)}</span>`).join(' '):''}</div>
     <div class="cols">
       <div>${bar(aggBat(p),'Batting')}<br>${bar(aggBowl(p),'Bowling')}<br>${bar(aggKeep(p),'Keeping')}</div>
-      <div>${bar(aggEnd(p),'Endurance')}<br>${bar(aggTech(p),'Technique')}<br>${bar(S(p).power,'Power')}</div>
+      <div>${bar(aggEnd(p),'Endurance')}<br>${bar(S(p).power,'Power')}</div>
       <div>${bar(aggField(p),'Fielding')}</div>
     </div></div>`;
 }
@@ -6919,7 +6934,7 @@ function runTour(){
   function trainingMini(p){const tr=ensureTraining(p), pr=trainProgressPct(p);return `<div class="small"><b>${esc(tr.program)}</b> · ${esc(tr.intensity)} · next ${esc(pr.skill||'-')} <span class="progress-bar mini"><i style="width:${pct(pr.pct)}"></i></span> ${Math.round(pr.pct)}%</div>`}
   summaryBlock=function(p){ensureTraining(p);return `<div class="pblock"><div class="hd">${playerLink(p)}${p.__y?`<span class="tag talent">U20</span> <button style="font-size:9px;padding:1px 5px" onclick="promoteYouth(App.teamIx,&quot;${esc(p.name)}&quot;)">promote</button>`:''} <span class="meta">(${esc(p.nat)}) · ${prole(p.role)} · age ${p.age} · rating <b>${p.rating}</b> · wage ${money(p.wage)}</span></div>
     <div class="meta">${p.hand==='R'?'Right':'Left'} hand batsman | ${esc(p.btLabel)} · form ${esc(p.formWord)} · fatigue ${esc(p.fatigue)} · potential ${esc(potentialRead(p))}${(p.talents&&p.talents.length)?' &nbsp;'+p.talents.map(t=>`<span class="talchip" title="${TALTIPS[t]||''}">${ptal(t)}</span>`).join(' '):''}</div>
-    <div class="cols"><div>${bar(aggBat(p),'Batting')}<br>${bar(aggBowl(p),'Bowling')}<br>${bar(aggKeep(p),'Keeping')}</div><div>${bar(aggEnd(p),'Endurance')}<br>${bar(aggTech(p),'Technique')}<br>${bar(S(p).power,'Power')}</div><div>${bar(aggField(p),'Fielding')}<br><span class="sklbl">Training</span><select onchange="setTrain('${safeName(p.name)}',this.value)" style="font-size:10px">${trainOptions(ensureTraining(p).program)}</select><br>${trainingMini(p)}</div></div>${roleNoteHtml(p)}</div>`};
+    <div class="cols"><div>${bar(aggBat(p),'Batting')}<br>${bar(aggBowl(p),'Bowling')}<br>${bar(aggKeep(p),'Keeping')}</div><div>${bar(aggEnd(p),'Endurance')}<br>${bar(S(p).power,'Power')}</div><div>${bar(aggField(p),'Fielding')}<br><span class="sklbl">Training</span><select onchange="setTrain('${safeName(p.name)}',this.value)" style="font-size:10px">${trainOptions(ensureTraining(p).program)}</select><br>${trainingMini(p)}</div></div>${roleNoteHtml(p)}</div>`};
 
   draftBlock=function(p,picked,afford,spent){
     const note=roleNoteObj(p);const scout=(p.age<=22?'':p.age>=33?'Veteran value, but the clock is ticking. ':'Prime-age professional. ')+note.note;
@@ -7086,7 +7101,7 @@ function foSetTrainSafe(nm,val){if(typeof setTrain==='function')setTrain(nm,val)
 function foNoPotentialMeta(p){return `${p.hand==='R'?'Right':'Left'} hand batsman | ${esc(p.btLabel)} · exp ${esc(p.expWord||p.exp)}`}
 function foSummaryBlock(p){foEnsureTraining(p);return `<div class="pblock"><div class="hd">${playerLink(p)}${p.__y?` <span class="tag talent">U20</span> <button style="font-size:9px;padding:1px 5px" onclick="promoteYouth(App.teamIx,&quot;${esc(p.name)}&quot;)">promote</button>`:''} <span class="meta">(${esc(p.nat)}) · ${prole(p.role)} · age ${p.age} · rating <b>${p.rating}</b></span></div>
   <div class="meta">${foNoPotentialMeta(p)} · form ${esc(p.formWord||'undefined')} · fatigue ${esc(p.fatigue||'rested')}${(p.talents&&p.talents.length)?' &nbsp;'+p.talents.map(t=>`<span class="talchip" title="${TALTIPS[t]||''}">${ptal(t)}</span>`).join(' '):''}</div>
-  <div class="cols"><div>${bar(aggBat(p),'Batting')}<br>${bar(aggBowl(p),'Bowling')}<br>${bar(aggKeep(p),'Keeping')}</div><div>${bar(aggEnd(p),'Endurance')}<br>${bar(aggTech(p),'Technique')}<br>${bar(S(p).power,'Power')}</div><div>${bar(aggField(p),'Fielding')}<br><span class="sklbl">Training</span> <select onchange="foSetTrainSafe('${safeName(p.name)}',this.value);saveGame(false)" style="font-size:11px">${foTrainOptions(foEnsureTraining(p).program)}</select></div></div></div>`}
+  <div class="cols"><div>${bar(aggBat(p),'Batting')}<br>${bar(aggBowl(p),'Bowling')}<br>${bar(aggKeep(p),'Keeping')}</div><div>${bar(aggEnd(p),'Endurance')}<br>${bar(S(p).power,'Power')}</div><div>${bar(aggField(p),'Fielding')}<br><span class="sklbl">Training</span> <select onchange="foSetTrainSafe('${safeName(p.name)}',this.value);saveGame(false)" style="font-size:11px">${foTrainOptions(foEnsureTraining(p).program)}</select></div></div></div>`}
 summaryBlock=foSummaryBlock;
 
 draftBlock=function(p,picked,afford,spent){
@@ -7101,7 +7116,7 @@ draftBlock=function(p,picked,afford,spent){
     <div class="meta">${foNoPotentialMeta(p)}${(p.talents&&p.talents.length)?' &nbsp;'+p.talents.map(t=>`<span class="talchip" title="${TALTIPS[t]||''}">${ptal(t)}</span>`).join(' '):''}</div>
     <div class="cols">
       <div>${bar(aggBat(p),'Batting')}<br>${bar(aggBowl(p),'Bowling')}<br>${bar(aggKeep(p),'Keeping')}</div>
-      <div>${bar(aggEnd(p),'Endurance')}<br>${bar(aggTech(p),'Technique')}<br>${bar(S(p).power,'Power')}</div>
+      <div>${bar(aggEnd(p),'Endurance')}<br>${bar(S(p).power,'Power')}</div>
       <div>${bar(aggField(p),'Fielding')}</div>
     </div></div>`;
 };

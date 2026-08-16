@@ -286,14 +286,14 @@
   // THE BID RAIL CARD (the owner's pick): three role-picked gauges up front,
   // the full seven reads behind a Full-card fold, the money in a navy rail.
   var READ_LBL = { bat: "Batting", bowl: "Bowling", keep: "Keeping", field: "Fielding",
-    tech: "Technique", pow: "Power", end: "Endurance" };
+    pow: "Power", end: "Endurance" };
   // which three reads a man is BOUGHT for, by the shelf he sits on
   function readPicks(man) {
     var b = man ? roleBucket({ role: man.role === "allRounder" ? "all-rounder" : man.role }) : "";
     if (b === "wk") return ["keep", "bat", "field"];
     if (b === "bowl") return ["bowl", "end", "field"];
     if (b === "ar") return ["bat", "bowl", "field"];
-    return ["bat", "tech", "pow"];
+    return ["bat", "pow", "end"];
   }
   function gaugesHtml(man) {
     if (!man || !man.skills) return "";
@@ -315,7 +315,7 @@
   function fullCardHtml(man) {
     if (!man || !man.skills) return "";
     try {
-      return "<div class='fo-mk-full'>" + ["bat", "bowl", "keep", "field", "tech", "pow", "end"].map(function (k) {
+      return "<div class='fo-mk-full'>" + ["bat", "bowl", "keep", "field", "pow", "end"].map(function (k) {
         var v = readOf(man, k), off = v < 0;
         return "<span class='fb" + (off ? " off" : "") + "' title='" + READ_LBL[k] + (off ? "" : " &middot; " + E(skWord(v))) + "'>" +
           "<i>" + READ_LBL[k] + "</i>" +
@@ -449,7 +449,7 @@
     ["The board", [["close", "Closing soon"], ["new", "Newest"], ["hi", "Price high"], ["lo", "Price low"]]],
     ["The man", [["ovr", "Overall"], ["young", "Age &middot; youngest"], ["old", "Age &middot; oldest"]]],
     ["The reads", [["s:bat", "Batting"], ["s:bowl", "Bowling"], ["s:keep", "Keeping"], ["s:field", "Fielding"],
-      ["s:tech", "Technique"], ["s:pow", "Power"], ["s:end", "Endurance"]]]
+      ["s:pow", "Power"], ["s:end", "Endurance"]]]
   ];
   // the man behind a listing, wherever his card rides
   function manOf(L) { return L.man || (snapOf(L.id) || {}).man || null; }
@@ -465,7 +465,6 @@
       }
       if (k === "keep") return man.keeper ? Math.round(aggKeep(man)) : -1;
       if (k === "field") return Math.round(aggField(man));
-      if (k === "tech") return Math.round(aggTech(man));
       if (k === "pow") return Math.round((man.skills && man.skills.power) || 0);
       if (k === "end") return Math.round(aggEnd(man));
     } catch (e) {}
@@ -559,7 +558,7 @@
   // name and club is a door, weak reads print ghost-grey like the cards,
   // the hammer column ticks, and one press bids the next minimum.
   var TH_COLS = [["", "The man"], ["age", "Age"], ["ovr", "OVR"], ["s:bat", "Bat"], ["s:bowl", "Bowl"],
-    ["s:keep", "Keep"], ["s:field", "Fld"], ["s:tech", "Tec"], ["s:pow", "Pwr"], ["s:end", "End"],
+    ["s:keep", "Keep"], ["s:field", "Fld"], ["s:pow", "Pwr"], ["s:end", "End"],
     ["wage", "Wage"], ["hi", "High bid"], ["close", "Hammer"], ["", ""]];
   function tableHtml(rows, cl, myBids) {
     var head = TH_COLS.map(function (c) {
@@ -583,9 +582,9 @@
       var hc = L.high_country != null ? L.high_country : L.highCountry;
       var hs = L.high_slot != null ? L.high_slot : L.highSlot;
       // the shelf reads in bands, like every other card in the product - two
-      // men four points apart are both Brilliant, and the buyer is choosing a
+      // men four points apart are both Elite, and the buyer is choosing a
       // cricketer rather than winning an arithmetic contest
-      var cells = ["bat", "bowl", "keep", "field", "tech", "pow", "end"].map(function (k) {
+      var cells = ["bat", "bowl", "keep", "field", "pow", "end"].map(function (k) {
         var v = man ? readOf(man, k) : -1;
         if (v < 0) return "<td class='dim'>&ndash;</td>";
         return "<td class='" + (k === picks[0] ? "hot" : v <= 20 ? "dim" : "") + "' data-v='" + v + "'>" + E(skWord(v)) + "</td>";
