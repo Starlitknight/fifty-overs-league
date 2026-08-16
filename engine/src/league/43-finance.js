@@ -190,6 +190,9 @@
       ".fo-wk-row{display:flex;align-items:baseline;gap:12px;padding:12px 16px;border-top:1px solid rgba(20,36,58,.07)}",
       ".fo-wk-row:first-of-type{border-top:0}",
       ".fo-wk-row u{text-decoration:none;font:450 13.5px/1.35 Manrope,sans-serif;color:var(--ink);min-width:0}",
+      // the one explanatory sub-line a ledger row may carry (club operations):
+      // muted, small, and never a second row of figures
+      ".fo-wk-row u .fo-wk-sub{display:block;margin-top:3px;font:400 11px/1.45 Manrope,sans-serif;font-style:normal;color:var(--mut)}",
       ".fo-wk-row b{margin-left:auto;font:600 14px/1 Manrope,sans-serif;font-variant-numeric:tabular-nums;color:var(--ink);white-space:nowrap}",
       // a projection is money that has not moved, and reads like it
       ".fo-wk-row.pj u,.fo-wk-row.pj b{color:var(--mut)}",
@@ -920,6 +923,12 @@
     var moodWord = String(f.moodWord || "patient");
     var ticket = Number(f.ticket) || 26;
     var homeCut = Number(f.homeCut) || 2 / 3;
+    // THE UMPIRE STATES HIS OWN NET SHARE (era 2). finance.matchdayNet is the
+    // exact constant the walk banks gates at, so the board prefers it to the
+    // mirrored TK.NET - a server-side config change can then never make this
+    // page disagree with the treasury. The mirror stays as the fallback for
+    // a snapshot settled by an older umpire, and a test holds the two equal.
+    if (Number(f.matchdayNet) > 0) TK.NET = Number(f.matchdayNet);
     var homeMatches = Number(f.homeMatches) || 0;
     var full = pct(lastAtt || avgAtt, seats);
     // "Revenue / seat" divided a season's gate by the capacity, so it grew for
@@ -1236,9 +1245,26 @@
       ["Player sales &middot; out to bid", pjSell, true],
       ["Player sales &middot; settled", sumKind(["player-sale"], 1), false]
     ];
+    // WHAT "CLUB OPERATIONS" IS. One ledger line, deliberately - but a line
+    // that can reach seven figures a season must not read as an unexplained
+    // balancing tax. The umpire serves its composition (finance.opsBreakdown:
+    // the base of being a club, the ground's running cost, the top-flight
+    // premium), and the row carries it as one muted sub-line: what the money
+    // broadly is, then the arithmetic. Served figures only - the page owns
+    // no copy of the operations constants.
+    var opsNote = null;
+    try {
+      var ob = f.opsBreakdown;
+      if (ob && Number(ob.perRound) > 0) {
+        opsNote = "Staff &amp; support, ground running, travel and facilities &middot; " +
+          Mk(ob.base) + " base + " + Mk(ob.ground) + " ground" +
+          (Number(ob.topFlight) > 0 ? " + " + Mk(ob.topFlight) + " top flight" : "") +
+          " each round";
+      }
+    } catch (eOb) {}
     OUT_ROWS = [
       ["Senior wages", sumKind(["wages"], -1), false],
-      ["Club operations", sumKind(["ops"], -1), false],
+      ["Club operations", sumKind(["ops"], -1), false, opsNote],
       ["Academy upkeep", sumKind(["upkeep"], -1), false],
       ["Academy building", sumKind(["academy", "contract"], -1), false],
       ["Ground building", sumKind(["stadium"], -1), false],
@@ -1271,7 +1297,9 @@
       } catch (e) { return ""; }
     };
     var ledRow = function (r) {
-      return "<div class='fo-wk-row" + (r[2] ? " pj" : "") + "'><u>" + r[0] + "</u><b>" + M(r[1]) + "</b></div>";
+      return "<div class='fo-wk-row" + (r[2] ? " pj" : "") + "'><u>" + r[0] +
+        (r[3] ? "<i class='fo-wk-sub'>" + r[3] + "</i>" : "") +
+        "</u><b>" + M(r[1]) + "</b></div>";
     };
 
     var html2 = "<div class='fo-wk'>" +
