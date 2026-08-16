@@ -1488,7 +1488,11 @@
       var fx = /Partnership ends at (\d+)\s*-\s*(.+?) out for (\d+)\s*\((\d+)\)\.\s*(.+?)\s+(\d+)\/(\d+)\./.exec(r.txt || "");
       if (fx) {
         if (!S.batTeam) S.batTeam = fx[5].trim();
-        S.fow.push({ sc: +fx[6], wkt: +fx[7], who: fx[2], ov: foFrOvOf(S.legal) });
+        // `w`, THE ENGINE'S OWN KEY. The umpire writes fall-of-wicket entries
+        // as {sc, w, who, ov} and every scorecard reads f.w back; this walk
+        // briefly spelled it `wkt`, which nothing anywhere reads, so a
+        // friendly's card printed "undefined-43" down the whole fall.
+        S.fow.push({ sc: +fx[6], w: +fx[7], who: fx[2], ov: foFrOvOf(S.legal) });
         // A STAND IS TWO MEN, and the page names them: "put on 74 from 61
         // balls". The umpire prints the runs and who fell; the pair and the
         // balls come off the deliveries since the last wicket.
@@ -1571,6 +1575,46 @@
     if (!I[0].batTeam) I[0].batTeam = (meta.elected === "bat") ? meta.toss : (meta.toss === hN ? aN : hN);
     if (!I[1].batTeam) I[1].batTeam = (I[0].batTeam === hN ? aN : hN);
     if (!I[1].legal) I[1] = null;
+    // AND WHO WAS BOWLING. The scorecard heads its bowling table with
+    // inn.bowlTeam, which the engine writes on every innings and this walk
+    // never did - so a friendly's table said "Bowling ()" over a full set of
+    // figures. There are two sides; the one not batting is bowling.
+    I.filter(Boolean).forEach(function (S2) {
+      S2.bowlTeam = S2.batTeam === hN ? aN : hN;
+    });
+    // THE MEN, NOT JUST THEIR NAMES. This walk rebuilds a card from the
+    // umpire's prose, so every batter and bowler starts life as {name} - and
+    // the scorecard's decorations read the man himself: the bowler-type tag
+    // wants bowlTypeFull and his hand, the stars want his skills, the link
+    // wants his pid. The served squads carry all of it (a public card becomes
+    // an engine player at the one adoption door in 52-served-truth), and the
+    // friendly RPC names both clubs by country and slot, so each name is
+    // traded for the real man where he can be found. A man since sold or
+    // retired stays a bare name and renders exactly as before - absence of
+    // decoration, never a wrong man's card.
+    try {
+      var WTf = window.__foWT;
+      if (WTf && WTf.serverSquad) {
+        var menOf = {};
+        [j.home, j.away].forEach(function (s3) {
+          if (!s3 || !s3.country || s3.slot == null || !s3.name) return;
+          var m3 = {};
+          (WTf.serverSquad(s3.country, s3.slot | 0) || []).forEach(function (p3) {
+            if (p3 && p3.name) m3[p3.name] = p3;
+          });
+          menOf[s3.name] = m3;
+        });
+        I.filter(Boolean).forEach(function (S3) {
+          var batM = menOf[S3.batTeam] || {}, bowlM = menOf[S3.bowlTeam] || {};
+          (S3.bat || []).forEach(function (b3) {
+            var real = b3.p && batM[b3.p.name]; if (real) b3.p = real;
+          });
+          Object.keys(S3.bowlers || {}).forEach(function (k3) {
+            var realB = bowlM[k3]; if (realB) S3.bowlers[k3].p = realB;
+          });
+        });
+      }
+    } catch (eMen) {}
 
     // who won, off the umpire's own words
     var txt = resultText || "", winner = null;
@@ -1600,6 +1644,10 @@
         .map(function (s) { return { rid: s.country, slot: s.slot | 0, name: s.name }; })
     };
   }
+
+  // on the window like foMrRecFromNat below it, so the contract this walk
+  // keeps with the scorecard - the engine's own innings shape - is testable
+  try { window.foMrRecFromFriendly = foMrRecFromFriendly; } catch (eXf) {}
 
   // one fetch for the two things a friendly report needs
   var FR_REC = {};
