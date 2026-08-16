@@ -30,7 +30,9 @@
 //
 //   supporters -> a crowd that grows on winning and drifts away on losing
 //   mood       -> what those supporters think, from recent form and position
-//   wages      -> the bill as it stands, every round played
+//   wages      -> the bill each round was played under, where the umpire has
+//                 banked it (migration 101); the bill as it stands today for
+//                 every round settled before the banking existed
 //   the academy-> upkeep by the round, and what its upgrades cost
 //   the ground -> seats you paid for, and the ceiling they put on a crowd
 //   the bank   -> and interest on it when it is the wrong side of nothing
@@ -48,6 +50,7 @@ import {
   ERA2_DAY, era2Season, isFullMember, ASSOC_POOL, OPS_ASSOC,
   MEDIA_SEASON, MATCHDAY_NET, SPONSOR_PACKAGES, SPONSOR_DEFAULT,
   sponsorSeasonValue, sponsorWinBonus, operationsPerRound,
+  OPS_PER_SEAT_ROUND, OPS_TOPFLIGHT_ROUND,
   prizeFor, PRIZE_PLAYOFF_CHAMP, foundingBankEra2
 } from './financeconfig.mjs';
 export { ERA2_DAY, era2Season } from './financeconfig.mjs';
@@ -483,6 +486,24 @@ export async function computeFinance(pool, country, opts = {}) {
   };
   const feeAt = {};
   for (const f of fees) feeAt[f.season_no + ':' + f.round + ':' + f.slot] = f;
+  // THE BILL EACH ROUND WAS PLAYED UNDER (migration 101). The walk used to
+  // charge every round at the bill AS IT STANDS TODAY - an honest
+  // simplification at a season's horizon that the long-run bench measured
+  // into a force of its own: today's bill re-priced the club's whole past,
+  // so a transfer or a season in the nets moved money that was settled years
+  // ago, retro-charging improving clubs and minting for declining ones. The
+  // umpire now banks the bill with the round it belongs to, and a banked
+  // round is charged its banked bill for ever. Rounds banked before the
+  // migration do not exist in this table and are charged at the standing
+  // bill exactly as they always were - no settled bank moves on deploy, the
+  // drift simply stops accruing.
+  let wageRows = [];
+  try {
+    wageRows = (await pool.query(
+      `SELECT season_no, round, slot, bill FROM wage_rounds WHERE country_id=$1`, [country])).rows;
+  } catch (eWr) { wageRows = []; }               // pre-101 database: the standing bill rules
+  const billAt = {};
+  for (const w of wageRows) billAt[w.season_no + ':' + w.round + ':' + w.slot] = Math.round(+w.bill);
   // WHAT THE MARKET DID TO THE BANK. A transfer is two clubs' money: the fee
   // out of the buyer, the fee into the seller, on the world day the umpire
   // opened the envelopes - plus what a manager paid his scouts to look. All
@@ -832,7 +853,10 @@ export async function computeFinance(pool, country, opts = {}) {
       const up = academyUpkeep(c.academy);
       const f = feeAt[R.ms[0].season_no + ':' + R.ms[0].round + ':' + slot];
       const comp = f ? f.paid : 0;
-      c.wagesPaid += c.wages; c.upkeep += up; c.rounds++;
+      // a banked round pays the bill it was played under; an unbanked one -
+      // every round settled before 101 - pays the standing bill, as ever
+      const wBill = billAt[R.ms[0].season_no + ':' + R.ms[0].round + ':' + slot] ?? c.wages;
+      c.wagesPaid += wBill; c.upkeep += up; c.rounds++;
       c.compensation += comp; c.capsAway += f ? f.men : 0;
       const wasAdmin = c.admin;
       if (c.admin) c.adminRounds++;
@@ -872,7 +896,7 @@ export async function computeFinance(pool, country, opts = {}) {
         }
       }
       if (comp) { c.bank += comp; line(slot, roundAt, 'compensation', 'International compensation \u00b7 ' + f.men + (f.men === 1 ? ' man' : ' men') + ' away', comp, c.bank); }
-      c.bank -= c.wages; line(slot, roundAt, 'wages', 'Player wages', -c.wages, c.bank);
+      c.bank -= wBill; line(slot, roundAt, 'wages', 'Player wages', -wBill, c.bank);
       if (curEra2) {
         // CLUB OPERATIONS - the one line that is the cost of BEING a club:
         // staff, ground, admin, travel. Composed in financeconfig.mjs from a
@@ -1000,6 +1024,19 @@ export async function computeFinance(pool, country, opts = {}) {
     const s = S[c.slot];
     if (preSeason) s.mood = MOOD_NEUTRAL;
     const avg = s.atts.length ? Math.round(s.atts.reduce((a, b) => a + b, 0) / s.atts.length) : 0;
+    // CLUB OPERATIONS, DECOMPOSED FOR THE READER (era 2). One ledger line
+    // stays one ledger line - this only says what composes it: the base cost
+    // of being a club, the ground's running cost by the seat, the top-flight
+    // premium. SERVED, NOT MIRRORED: the same constants the walk charges,
+    // composed the same way, so a seven-figure season of "Club operations"
+    // is explainable on the page without the client owning a second copy of
+    // the arithmetic. The parts sum to the charged rate to the dollar by
+    // construction (the base takes the rounding residue).
+    const dvNow = divOf(curSeason != null ? curSeason : maxSeason, c.slot);
+    const natOps9 = isFullMember(country) ? 1 : OPS_ASSOC;
+    const opsRound = operationsPerRound(s.seats, dvNow, natOps9);
+    const opsGround = Math.round(s.seats * OPS_PER_SEAT_ROUND * natOps9);
+    const opsTop = Math.round((dvNow === 1 ? OPS_TOPFLIGHT_ROUND : 0) * natOps9);
     return {
       slot: c.slot, bank: Math.round(s.bank),
       finance: {
@@ -1036,8 +1073,15 @@ export async function computeFinance(pool, country, opts = {}) {
         academyLevel: s.academy,
         nextAcademy: s.academy < ACADEMY_MAX ? s.academy + 1 : null,
         nextAcademyCost: s.academy < ACADEMY_MAX ? academyBuild(s.academy, s.academy + 1) : null,
-        // era 2 retired the away split: the whole take is the home club's
-        maxSeats: MAX_SEATS, seatBlock: 1000, homeCut: curEra2 ? 1 : HOME_CUT
+        // era 2 retired the away split: the whole take is the home club's -
+        // and the umpire STATES the net share he banks, so the client's
+        // mirrored constant is a fallback and never the authority
+        maxSeats: MAX_SEATS, seatBlock: 1000, homeCut: curEra2 ? 1 : HOME_CUT,
+        matchdayNet: curEra2 ? MATCHDAY_NET : null,
+        opsBreakdown: curEra2 ? {
+          perRound: opsRound, base: opsRound - opsGround - opsTop,
+          ground: opsGround, topFlight: opsTop, division: dvNow
+        } : null
       }
     };
   });

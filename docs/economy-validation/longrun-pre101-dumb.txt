@@ -1,0 +1,51 @@
+=== LONG-RUN ECONOMY BENCH === DUMB BOTS
+8 countries x 30 seasons x seeds [1,2,3]
+
+--- treasury by season (all clubs, all seeds) ---
+walked = the settled figure (wages restated at today's bill, production's law);
+true-ledger = the same walk with each season's wages frozen at its own bill
+(approximate: the interest/write-off cascade is not re-walked).
+season   walked p25       med        p75      total  | true p25       med        p75      total  admin  crit
+1           $1,332k   $1,831k    $2,193k    $28.76m     $1,332k   $1,831k    $2,193k    $28.76m      0     0
+3             $154k     $832k    $1,468k    $11.97m       $445k   $1,072k    $1,732k    $15.88m      3     0
+5              $14k   $1,082k    $2,078k    $16.98m      $-135k     $844k    $2,039k    $13.14m      3     0
+7           $1,580k   $3,081k    $4,693k    $50.79m        $23k   $1,472k    $2,734k    $21.17m      5     0
+9           $1,369k   $4,698k    $8,260k    $86.77m       $193k   $1,445k    $3,195k    $27.44m      6     0
+11          $2,716k   $7,142k   $13,446k   $143.07m       $-67k   $1,873k    $3,871k    $32.66m      6     0
+13          $2,357k   $9,159k   $20,099k   $213.45m       $118k   $1,982k    $4,944k    $43.11m      4     0
+15           $-139k   $7,361k   $23,187k   $219.41m       $-44k   $2,597k    $6,418k    $59.16m      9     0
+17         $-2,055k   $1,805k   $14,992k   $167.41m       $-13k   $3,409k    $8,269k    $75.91m     26     0
+19         $-2,228k   $1,748k   $10,562k   $131.16m      $-193k   $3,282k    $9,423k    $85.25m     15     0
+21         $-2,185k   $1,734k   $10,498k   $126.10m        $47k   $4,494k   $10,932k    $94.59m     24     0
+23         $-2,128k   $3,616k   $14,327k   $144.00m      $-265k   $4,670k   $11,474k   $102.46m     28     0
+25         $-2,140k   $5,393k   $17,297k   $180.09m      $-157k   $6,057k   $13,303k   $120.30m     19     0
+27         $-2,140k   $4,154k   $17,819k   $192.88m      $-233k   $6,352k   $13,710k   $129.94m     20     0
+29         $-1,956k   $3,012k   $16,325k   $192.40m    $-1,130k   $6,175k   $14,391k   $125.15m     26     0
+30         $-2,103k   $4,326k   $19,980k   $212.07m      $-478k   $6,849k   $15,690k   $142.56m     21     0
+
+--- season-on-season operating result (true-ledger wages, seasons 2+) ---
+operating margin               p5    -156.2% p25      -1.1% med      14.4% p75      33.0% p95     241.6%
+wage share of revenue          p5      13.9% p25      31.1% med      40.2% p75      51.9% p95      76.9%
+net transfer flow / season     p5   $-3,445k p25     $-979k med      $-14k p75        $0k p95      $658k
+  div 1                          margin med   19.7% | wages/rev med   39.7% | net transfers med     $-47k
+  div 2                          margin med    8.2% | wages/rev med   40.7% | net transfers med       $0k
+
+--- the whole-run flows (per country, averaged) ---
+transfer fees moved between clubs $505.68m across 1000 sales
+paid out of the world for free agents $295.89m
+
+--- concentration and mobility ---
+final-season share of positive cash held by top 4 of 16: med 75.4%  p95 94.6%
+D1 members still in D1 from season 5 to season 30: mean 69.3%
+final-season XI strength:  p5 40455 med 53000 p95 62455
+first-season  XI strength:  p5 37273 med 56273 p95 73455
+
+--- relegation cohorts (1392 relegations followed up to 5 seasons) ---
+  +1: backInD1   0.0% | true bank med   $2,213k / p5  $-3,824k | bill med    $165k | XI med  53273 | admin   3.4% | selling 1.0/yr
+  +2: backInD1  51.3% | true bank med   $2,356k / p5  $-3,813k | bill med    $165k | XI med  53364 | admin   3.5% | selling 1.2/yr
+  +3: backInD1  49.4% | true bank med   $2,633k / p5  $-3,805k | bill med    $166k | XI med  53545 | admin   4.2% | selling 1.2/yr
+  +4: backInD1  52.4% | true bank med   $2,716k / p5  $-3,816k | bill med    $164k | XI med  53091 | admin   4.5% | selling 1.3/yr
+  +5: backInD1  52.1% | true bank med   $3,072k / p5  $-4,021k | bill med    $164k | XI med  53273 | admin   4.0% | selling 1.4/yr
+  within 5 seasons: back in D1 at least once 78.1% | touched administration 15.3%
+
+rows dumped to /tmp/claude-0/-home-user-fifty-overs-league/bcb5e27e-d534-58a4-887b-f9ad9cc31e64/scratchpad/dump-dumb.json

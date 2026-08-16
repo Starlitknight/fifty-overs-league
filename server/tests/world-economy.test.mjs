@@ -39,7 +39,8 @@ import { makeHost } from '../enginehost.mjs';
 import { computeFinance, settleMoney, foundingBankFor, econStature, academyUpkeep } from '../economy.mjs';
 import {
   MEDIA_SEASON, SPONSOR_PACKAGES, sponsorSeasonValue, sponsorWinBonus,
-  operationsPerRound, prizeFor, PRIZE_PLAYOFF_CHAMP, era2Season, ERA2_DAY
+  operationsPerRound, prizeFor, PRIZE_PLAYOFF_CHAMP, era2Season, ERA2_DAY,
+  MATCHDAY_NET
 } from '../financeconfig.mjs';
 import { FULL_MEMBERS as INIT_FULL } from '../init-world.mjs';
 import { FULL_MEMBERS as CFG_FULL } from '../financeconfig.mjs';
@@ -301,6 +302,66 @@ test('a manager picks a shape and the walk honours it for the season it names', 
   assert.equal(led0.filter(l => l.kind === 'sponsor-bonus').reduce((a, l) => a + l.amount, 0),
     ROUNDS * sponsorWinBonus(f0.sponsorValue, 'safe'));
   await pool.query(`DELETE FROM sponsor_picks WHERE country_id='eng' AND slot=0`);
+});
+
+test('the finance document states the net share and decomposes club operations exactly', async () => {
+  await settled();
+  for (const c of clubs) {
+    const f = fin.find(r => r.slot === c.slot).finance;
+    // the umpire states the share he banks - the client's mirror is a fallback
+    assert.equal(f.matchdayNet, MATCHDAY_NET, 'slot ' + c.slot + ' is told the net share');
+    // and the one operations line explains itself: base + ground + top-flight
+    // sum to the charged rate to the dollar, on the club's own division
+    const dv = divisions['2'].map(Number).includes(c.slot) ? 2 : 1;
+    const ob = f.opsBreakdown;
+    assert.ok(ob, 'slot ' + c.slot + ' carries the breakdown');
+    assert.equal(ob.division, dv);
+    assert.equal(ob.perRound, operationsPerRound(c.seats, dv, 1), 'the stated rate is the charged rate');
+    assert.equal(ob.base + ob.ground + ob.topFlight, ob.perRound, 'the parts are the whole');
+    assert.equal(ob.topFlight > 0, dv === 1, 'only the top flight pays the premium');
+    // the ledger's own ops lines charge exactly the stated rate
+    const ops = leds[c.slot].filter(l => l.kind === 'ops');
+    for (const l of ops) assert.equal(-l.amount, ob.perRound);
+  }
+});
+
+test('a banked round is charged the bill it was played under, for ever (101)', async () => {
+  await settled();
+  const before8 = fin.find(r => r.slot === 8);
+  const curBill = -leds[8].filter(l => l.kind === 'wages')[0].amount;
+  // the umpire banks round 1's bill at a DIFFERENT figure than today's squad
+  // sums to - exactly what a later transfer or a season in the nets produces
+  const banked = curBill - 40000;
+  await pool.query(
+    `INSERT INTO wage_rounds(country_id, slot, season_no, round, bill)
+     VALUES ('eng', 8, 1, 1, $1)`, [banked]);
+  const rows = await computeFinance(pool, 'eng',
+    { ledgerSlots: [8], now: EPOCH + (START + 40) * DAY });
+  const led8 = rows.find(r => r.slot === 8).ledger;
+  const wages = led8.filter(l => l.kind === 'wages');
+  assert.equal(-wages[0].amount, banked, 'the banked round pays the banked bill');
+  for (let i = 1; i < wages.length; i++) {
+    assert.equal(-wages[i].amount, curBill, 'an unbanked round pays the standing bill, as ever');
+  }
+  // the whole difference lands in the treasury, once - and never compounds:
+  // the club is exactly 40,000 richer than the unbanked walk left it
+  assert.equal(rows.find(r => r.slot === 8).bank, before8.bank + 40000);
+  // and TODAY'S bill moving does not reprice the banked round: hand the club
+  // a dearer squad and only the unbanked rounds move
+  const sq8 = (await pool.query(
+    `SELECT squad FROM clubs WHERE country_id='eng' AND slot=8`)).rows[0].squad;
+  const dearer = sq8.map(p => ({ ...p, wage: (p.wage || 0) + 1000 }));
+  await pool.query(`UPDATE clubs SET squad=$1::jsonb WHERE country_id='eng' AND slot=8`,
+    [JSON.stringify(dearer)]);
+  const rows2 = await computeFinance(pool, 'eng',
+    { ledgerSlots: [8], now: EPOCH + (START + 40) * DAY });
+  const wages2 = rows2.find(r => r.slot === 8).ledger.filter(l => l.kind === 'wages');
+  assert.equal(-wages2[0].amount, banked, 'history stays priced as it was played');
+  assert.ok(-wages2[1].amount > curBill, 'only the standing bill follows the squad');
+  await pool.query(`UPDATE clubs SET squad=$1::jsonb WHERE country_id='eng' AND slot=8`,
+    [JSON.stringify(sq8)]);
+  await pool.query(`DELETE FROM wage_rounds WHERE country_id='eng'`);
+  fin = null; leds = null;                     // the record changed; later tests re-walk
 });
 
 test('a world founded before the era line keeps the founding economy, exactly', async () => {

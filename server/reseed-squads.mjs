@@ -70,6 +70,9 @@ const PLAY_TABLES = [
   'matches', 'cup_matches', 'nat_matches', 'youth_matches', 'comp_matches',
   'ticks', 'orders', 'callups', 'nat_squad', 'nat_squads', 'friendlies',
   'listings', 'bids', 'scouted', 'training_rounds', 'snapshots', 'match_logs',
+  // the bill each settled round was played under (101). Play twice over: it
+  // is keyed by rounds this script deletes and prices squads it replaces.
+  'wage_rounds',
   'comps', 'comp_clubs',
   // the club statement. Every line in it is rewritten from the finance walk
   // each time the money settles, so it is play, not world: wipe it with the

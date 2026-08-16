@@ -767,10 +767,15 @@ export async function rebuildWorldToday(pool, now) {
 // has ever played and derives the crowd, the mood, the gate, the sponsor, the
 // wages, the upkeep and the interest from the record alone. Re-running still
 // settles the same figure.
-// The one honest simplification survives: wages are charged at the bill as it
-// stands today, so a squad that trains itself upward revises its own history
-// slightly - and what a manager has spent on his academy or his ground is
-// carried from the founding, so nobody can hide a purchase in an overdraft.
+// The old honest simplification - wages charged at the bill as it stands
+// today, revising history a little every time a squad changed - is retired
+// for every round settled after migration 101: the bill is banked with the
+// round it was played under and charged at that figure for ever (the
+// long-run bench measured what the revision compounds into at decade scale;
+// see the migration's header). Rounds settled before the migration keep the
+// old law exactly. What a manager has spent on his academy or his ground is
+// still carried from the founding, so nobody can hide a purchase in an
+// overdraft.
 export { settleMoney } from './economy.mjs';
 
 export async function runTick(pool, host, country, day, { now = Date.now(), failAfter = null, world = true } = {}) {
@@ -884,6 +889,27 @@ export async function runTick(pool, host, country, day, { now = Date.now(), fail
       worldDay: day, startDay: season.start_day, restDays: REST_DAYS
     });
   } catch (eC) { console.error('scouting candidates failed for ' + country + ' day ' + day + ':', eC.message); }
+  // THE BILL THIS ROUND WAS PLAYED UNDER, banked before the money settles
+  // (migration 101). The walk charges a banked round its banked bill for
+  // ever; an unbanked round - everything before the migration - is charged
+  // at the standing bill exactly as it always was. Banked AFTER the fold, so
+  // the figure includes what today's nets did to the wages, which is the
+  // bill the settle below would otherwise charge. Written once (ON CONFLICT
+  // DO NOTHING), so a healed or re-run day can never re-price a round.
+  if (round) {
+    try {
+      await pool.query(
+        `INSERT INTO wage_rounds(country_id, slot, season_no, round, bill)
+         SELECT c.country_id, c.slot, $2, $3,
+                round(coalesce((SELECT sum((p->>'wage')::numeric)
+                                  FROM jsonb_array_elements(c.squad) p), 0)
+                    + coalesce((SELECT sum((y->>'wage')::numeric)
+                                  FROM jsonb_array_elements(c.youth) y), 0))::bigint
+           FROM clubs c WHERE c.country_id=$1
+         ON CONFLICT (country_id, slot, season_no, round) DO NOTHING`,
+        [country, season.season_no, round]);
+    } catch (eW) { /* pre-101 database: the standing bill still rules */ }
+  }
   await settleMoney(pool, country);
   await rebuildSnapshots(pool, country, now, { world: world });
   await pool.query(`UPDATE ticks SET status='done', finished_at=now(), detail=$2 WHERE key=$1`,

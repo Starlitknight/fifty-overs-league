@@ -185,6 +185,9 @@ function poolFor(world, uptoSeason) {
       if (/FROM cup_matches/.test(sql)) return { rows: [] };
       if (/FROM seasons/.test(sql)) return { rows: world.seasons.filter(s => s.season_no <= uptoSeason) };
       if (/FROM sponsor_picks/.test(sql)) return { rows: world.picks };
+      // no banked bills: the bench's payrolls are frozen, so the pre-101 and
+      // post-101 laws charge the identical dollar
+      if (/FROM wage_rounds/.test(sql)) return { rows: [] };
       throw new Error('the bench does not know this query: ' + sql.slice(0, 80));
     }
   };
