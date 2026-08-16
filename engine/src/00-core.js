@@ -1020,6 +1020,12 @@ function foSkillGradeCss() {
     // ignored on exactly the pages that most needed it. Every render site
     // therefore carries `skg` alongside its rung.
     out.push('.skg.sg' + i + '{color:' + FO_SKILL_INK[i] + ';font-weight:' + FO_SKILL_WEIGHT[i] + '}');
+    // the TEXT-ONLY voice of the same ramp: ink alone carries the heat, the
+    // surface keeps its own weight and there is no wash behind it. The squad
+    // grid reads this way - a table of one weight whose words darken as the
+    // rung climbs - after the tinted cells and the rising bold made it read
+    // as decoration rather than a table.
+    out.push('.skink.sg' + i + '{color:' + FO_SKILL_INK[i] + '}');
     // !important, and not lightly. Three separate sheets paint a td background
     // underneath this one - the base row hover, the roster's zebra striping and
     // its tinted headline columns - and every one of them outranks a two-class
@@ -4344,12 +4350,12 @@ function gridTable(ps){
   // The sort is untouched and still runs on GRIDKEYS, which are the raw numbers -
   // colouring a cell must never turn a column into an alphabetical sort of its
   // labels.
-  const hc=v=>`<td class="skheat skg ${foSkillCls(v)}">${abbr(v)}</td>`;
+  const hc=v=>`<td class="skink ${foSkillCls(v)}">${abbr(v)}</td>`;
   return `<div class="panel"><h4>Overall grid <span style="font-weight:normal;font-size:9px">click a column to sort</span></h4><div class="pad"><table>
   <tr>${['Player','Age','Nat','BT','Role','End','Bat','Bowl','Power','Keep','Field'].map(H).join('')}<th>Capt</th>${['Exp','Fatg','Form','Rating'].map(H).join('')}</tr>
   ${ps.map(p=>`<tr><td>${playerLink(p)}</td><td>${p.age}</td><td>${esc(p.nat)}</td><td>${esc(shortBT(p))}</td><td>${prole(p.role)}</td>
    ${hc(aggEnd(p))}${hc(aggBat(p))}${hc(aggBowl(p))}${hc(S(p).power)}${hc(aggKeep(p))}${hc(aggField(p))}
-   <td class="skheat skg ${foSkillCls(p.capt||30)}" title="${TIPS.Capt}">${abbr(p.capt||30)}</td><td>${esc(p.expWord||p.exp)}</td><td>${esc(p.fatigue)}</td><td>${esc(p.formWord)}</td><td class="n">$${(p.wage||0).toLocaleString()}</td><td class="n">${p.rating}</td></tr>`).join('')}
+   <td class="skink ${foSkillCls(p.capt||30)}" title="${TIPS.Capt}">${abbr(p.capt||30)}</td><td>${esc(p.expWord||p.exp)}</td><td>${esc(p.fatigue)}</td><td>${esc(p.formWord)}</td><td class="n">$${(p.wage||0).toLocaleString()}</td><td class="n">${p.rating}</td></tr>`).join('')}
   </table></div></div>`;
 }
 function shortBT(p){const m={'none':'-','seamFast':'RF','seamFastMedium':'RFM','seamMedium':'RM','wristSpin':'WS','fingerSpin':'FS','partTimeSeam':'pt-S','partTimeSpin':'pt-Sp'};

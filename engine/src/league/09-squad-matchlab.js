@@ -679,9 +679,9 @@
       // paints OVR, experience and fitness just above, which are ratings and
       // are meant to look like ratings.
       var g = (typeof foSkillCls === "function") ? foSkillCls(v) : "";
-      return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + " skheat " + g +
-        "' data-v='" + v + "' title='" + E(c.l + ": " + foSqLad(v, c.k)) + "'>" +
-        "<span class='fo-sqg-v skg " + g + "'>" + E(foSqLad(v, c.k)) + "</span></td>";
+      return "<td class='n c-" + c.k + (c.agg ? " agg" : "") + "'" +
+        " data-v='" + v + "' title='" + E(c.l + ": " + foSqLad(v, c.k)) + "'>" +
+        "<span class='fo-sqg-v skink " + g + "'>" + E(foSqLad(v, c.k)) + "</span></td>";
     };
 
     var body = rows.map(function (p) {
@@ -885,6 +885,14 @@
       ".fo-sqg-fit i{display:block;height:100%;border-radius:3px}",
       "@media(max-width:900px){.fo-sqg-fit{width:22px}}",
       ".fo-sqg td.agg .fo-sqg-v{font-weight:700;font-size:11.5px}",
+      // ONE WEIGHT, ONE SIZE, INK ONLY. The ability cells used to carry a
+      // heat wash, a rising font weight and the agg columns' bold on top -
+      // three emphasis systems in one table. The words now sit on the plain
+      // row in the grid's own 600 at the grid's own size, and the ramp
+      // speaks through the ink alone: the same solved colours, darkening as
+      // the rung climbs, AA-legible at every step, with the word itself
+      // still the authority for anyone who cannot read the colour.
+      ".fo-sqg td .fo-sqg-v.skink,.fo-sqg td.agg .fo-sqg-v.skink{font-weight:600;font-size:11px}",
       ".fo-sqg td.c-ovr .fo-sqg-v{font-size:15px}",
       // the club's own line, under the men
       ".fo-sqg-none{text-align:center;font:400 13px Fraunces,Georgia,serif;color:rgba(20,28,40,.5);height:74px}",

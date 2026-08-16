@@ -308,7 +308,7 @@
     var H=function(k){return '<th style="cursor:pointer" title="'+(TIPS[k]||k)+' - click to sort" onclick="gridSort(\''+k+'\')">'+k+(squadView.key===k?(squadView.dir<0?' \u25BC':' \u25B2'):'')+'</th>';};
     // tinted by rung, worded by rung - the same heat the roster uses. The sort
     // still runs on GRIDKEYS, which are the raw numbers.
-    var hc=function(v){return '<td class="skheat skg '+foSkillCls(v)+'">'+abbr(v)+'</td>';};
+    var hc=function(v){return '<td class="skink '+foSkillCls(v)+'">'+abbr(v)+'</td>';};
     return '<div class="panel"><h4>Overall grid <span style="font-weight:normal;font-size:9px">click a column to sort</span></h4><div class="pad"><table class="fo-gridtbl">'+
     '<tr>'+['Player','Age','Nat','BT','End','Bat','Bowl','Power','Keep','Field'].map(H).join('')+'<th>Capt</th>'+['Exp','Fatg','Form','Wage'].map(H).join('')+H('Rating')+'</tr>'+
     ps.map(function(p){fatSync(p);if(!p.formWord)p.formWord=(typeof FORMW!=='undefined'?FORMW[p.formIx==null?3:p.formIx]:'steady');
