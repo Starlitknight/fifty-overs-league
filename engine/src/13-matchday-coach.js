@@ -118,16 +118,50 @@ var FO_MDC = {
   DEPTH_SEATS: 7,
   DEPTH_CAPABLE: 0.42,
   DEPTH_RUNS: 26,
-  // the sixth bowling option: real, and deliberately small. It buys the
-  // captain a way out of a bad day rather than runs - aiPickBowler can only
-  // choose from what is on the field, and the best five bowl the overs.
-  SIXTH_BOWLER: 6.0,
-  // a seventh is worth a token amount and no more
+  // ---- THE EXTRA BOWLING OPTION, AND THE PREMIUM THAT WAS PAID TWICE -------
+  //
+  // There used to be THREE numbers here: SIXTH_BOWLER 6.0, SEVENTH_BOWLER 1.5
+  // and a standalone ALLROUND 4.0 "for genuine all-round flexibility". They
+  // were audited by tools/matchday-allrounder.mjs - controlled elevens that
+  // differ by exactly one man, scored by this file and then PLAYED, 1,200
+  // paired fixtures a case, 21,600 matches. Two things came back.
+  //
+  // 1. ALLROUND WAS SIXTH_BOWLER UNDER ANOTHER NAME. It paid 4.0 per frontline
+  //    bowler ranked inside the side's top SEVEN BATSMEN - by rank, not by
+  //    ability - and every eleven has seven men in its top seven. Measured on
+  //    a side with no all-rounder in it at all, the seventh-best bat was a
+  //    specialist quick of 20 runs a dismissal, and he collected the premium:
+  //        top seven: T0(75) T1(72) T2(68) T3(65) X(53) Keeper(48) B0(20,FRONTLINE)
+  //    So it fired on almost every side, and what actually moved it was how
+  //    many frontline bowlers were in the eleven - which is what SIXTH_BOWLER
+  //    already says. A side with six bowlers collected 8.0 where a side with
+  //    five collected 4.0: a second sixth-bowler bonus, spelled differently.
+  //    It is deleted. Case F is the proof that nothing is lost - an
+  //    all-rounder who genuinely bowls his ten shows up in the MEASURED bat
+  //    and bowl terms, which predicted +32.4 and delivered a 63.1% win rate.
+  //
+  // 2. THE PREMIUM WAS BLIND TO WHETHER HE CAN BOWL. A sixth option with a
+  //    bowling skill of 30 and one with 62 scored IDENTICALLY (216.2 against
+  //    216.2), because with six frontline bowlers the best five take all fifty
+  //    overs and the sixth man's cost never enters the sum. Played, the two
+  //    are not identical at all: the useful one wins 52.67% of the time
+  //    (z=3.24). And the flat +10 the useless one collected bought nothing -
+  //    he wins 49.04%, if anything slightly worse than a specialist batsman.
+  //
+  // So the premium survives, at a size the cricket actually paid, and it is
+  // now WEIGHTED by how real an option he is: measured against the marginal
+  // man of the attack - the fifth-cheapest, the last one who actually bowls -
+  // and falling to nothing when his overs are OPTION_SPAN runs dearer.
+  // Calibrated against the two measured points: a useful sixth option (0.71
+  // runs dearer than the marginal man) is worth 3.7, and a useless one (3.14
+  // dearer) is worth nothing.
+  SIXTH_BOWLER: 4.8,
+  // a seventh is worth a token amount and no more, and that is measured too:
+  // six frontline against seven, batting held identical, is 50.40% (z=0.51).
   SEVENTH_BOWLER: 1.5,
-  // GENUINE ALL-ROUND FLEXIBILITY. A man who is a real option with both bat
-  // and ball lets the side change shape mid-match; priced as a small premium
-  // on top of the two contributions the optimiser has already counted.
-  ALLROUND: 4.0,
+  // how much dearer than the attack's marginal man an extra option's overs can
+  // be before he stops being an option at all
+  OPTION_SPAN: 3.0,
   // CAPTAINCY, AND WHY IT IS DELIBERATELY CHEAP. The engine's law is
   // aiPickBowler's slip: a captain of 88 or better always gets his best
   // bowler, and below that he reaches for the second or third choice with
@@ -455,10 +489,24 @@ function foMdcScoreXI(cards, doctrine) {
   if (left > 0) cost += left * 12;
   // the attack is a cost, so it enters the total negatively
   let bowl = -cost;
-  // flexibility: a sixth and seventh genuine option, which is what gives the
-  // captain somewhere to turn on a day when a plan is not working
-  if (front.length >= 6) bowl += FO_MDC.SIXTH_BOWLER;
-  if (front.length >= 7) bowl += FO_MDC.SEVENTH_BOWLER;
+  // FLEXIBILITY: somewhere for the captain to turn on a day when a plan is not
+  // working - but only if the man he turns to can bowl. See SIXTH_BOWLER above
+  // for the measurement; the short version is that the extra option's overs
+  // are never bought by the fifty-over allocation (the best five take them
+  // all), so his quality has to enter here or it never enters at all.
+  //
+  // The yardstick is the MARGINAL man of the attack: the fifth-cheapest front
+  // option, the last one who actually gets overs. An extra bowler as good as
+  // him is a full option; one whose overs are OPTION_SPAN runs dearer is not
+  // an option at all, whatever his card says.
+  const marginal = front.length >= 5 ? front[4].bowlCost
+                 : (front.length ? front[front.length - 1].bowlCost : 0);
+  const optionWeight = function (c) {
+    if (!c || !isFinite(c.bowlCost)) return 0;
+    return Math.max(0, Math.min(1, 1 - (c.bowlCost - marginal) / FO_MDC.OPTION_SPAN));
+  };
+  if (front.length >= 6) bowl += FO_MDC.SIXTH_BOWLER * optionWeight(front[5]);
+  if (front.length >= 7) bowl += FO_MDC.SEVENTH_BOWLER * optionWeight(front[6]);
 
   // 3. THE GLOVES. Exactly one man keeps; the side is worth his hands.
   const keepers = cards.filter(function (c) { return c.canKeep; })
@@ -477,15 +525,15 @@ function foMdcScoreXI(cards, doctrine) {
   for (let i = 0; i < cards.length; i++) capt = Math.max(capt, cards[i].capt);
   capt = (Math.min(FO_MDC.CAPT_CEIL, capt) - 50) * FO_MDC.CAPT_RUNS;
 
-  // 6. GENUINE ALL-ROUNDERS. Counted once, and only where both halves are
-  // real - a bowler who can hold a bat is not an all-rounder.
-  let allr = 0;
-  const batRank = {};
-  byBat.forEach(function (c, i) { batRank[c.name] = i; });
-  for (let i = 0; i < cards.length; i++) {
-    const c = cards[i];
-    if (c.front && batRank[c.name] <= 6) allr += FO_MDC.ALLROUND;
-  }
+  // 6. THERE IS NO ALL-ROUNDER PREMIUM, and that is a measured decision - see
+  // SIXTH_BOWLER at the head of this file. The term that stood here paid 4.0
+  // per frontline bowler inside the top seven BY BATTING RANK, which every
+  // eleven has seven of, so it fired on a genuine number eleven in a thin side
+  // and what actually moved it was the number of bowlers in the eleven: the
+  // sixth-bowler premium again, under a second name. An all-rounder is worth
+  // his batting and his bowling, both of which are measured above, plus the
+  // option he gives the captain, which is priced once in the bowling term.
+  const allr = 0;
 
   // 7. DOCTRINE, at the margin and nowhere else.
   let doc = 0;
@@ -735,6 +783,32 @@ function foMdcBowlingPlan(xi, ctx, pitch, refs, doctrine) {
   const openers = opts.slice().sort(function (a, b) {
     return nbScore(b) - nbScore(a) || (a.name < b.name ? -1 : 1);
   }).slice(0, 2);
+  // THE BURST IS THE CONDITIONS', AND NOT THE MAN'S — AND THAT IS A MEASURED
+  // CONCLUSION, not the absence of one.
+  //
+  // tools/matchday-endurance.mjs asked the shipped engine whether a burst
+  // ought to be cut to the individual, by forcing a continuous ten-over spell
+  // in a real match, sampling the engine's own fatigue tank ball by ball and
+  // reading each over's exact cost back out of ballDist. It does not:
+  //
+  //   * STAMINA SETS NO SPELL LENGTH AT ALL. Holding a man's six overs fixed
+  //     and asking whether they are cheaper straight through or split 3+3 gave
+  //     0.00 runs at every stamina from 30 to 90 for anyone under thirty, and
+  //     0.48 flat across that same stamina range at 36. Flat to two decimals.
+  //   * The reason is structural: the tank fills per ball bowled ALL INNINGS
+  //     and drains only at drinks and the innings break, so RESTING A MAN DOES
+  //     NOT EMPTY IT. The only two terms that read the unbroken-spell counter
+  //     are one that ignores stamina and does not start until 36 balls, and
+  //     one gated entirely on age over thirty.
+  //   * AGE moves it, but only just: over the spell channel alone the whole
+  //     span from 24 to 36 is 0.287 against 0.317 runs. Cutting a burst on
+  //     that would mean choosing a threshold between 0.204 and 0.22 myself,
+  //     which is a crude band wearing a measurement's clothes.
+  //
+  // So a "low-endurance quick bowls a short burst" rule would be a rule about
+  // cricket this engine does not play. The ceiling stays what WAS measured -
+  // the conditions - because the new ball's decay is worth six overs where it
+  // bites and three where it does not.
   const burst = bite ? 6 : 3;
   for (let i = 0; i < burst; i++) {
     give(1 + i * 2, openers[0]);
@@ -755,12 +829,34 @@ function foMdcBowlingPlan(xi, ctx, pitch, refs, doctrine) {
   const closers = opts.slice().sort(function (a, b) {
     return deathScore(b) - deathScore(a) || (a.name < b.name ? -1 : 1);
   });
-  // reserve, do not spend: only the last four, alternating, and only if the
-  // man has overs left in him
-  const dPair = closers.slice(0, 2);
+  // ...AND A MAN'S LEGS ARE SPENT ONLY ONCE. The opening burst above has
+  // already booked its two men for three or six overs apiece, and the engine
+  // charges for that twice over: the fatigue tank fills per ball bowled all
+  // innings and does not drain by resting, so an opener who has sent down six
+  // arrives at the death a materially worse bowler than he looks on paper.
+  //
+  // Measured (tools/matchday-endurance.mjs), a quick on a balanced pitch costs
+  //     over 1   2.23 runs        over 7   4.48 runs
+  //     over 4   3.69 runs        over 8   4.80 runs
+  // so the last four overs of the innings, handed to a man who opened, are
+  // bought at roughly twice the price the death ranking quoted for them - and
+  // the ranking is computed on his freshest self, because that is the only
+  // self a pre-match card knows.
+  //
+  // This does not re-rank anybody or invent a workload coefficient. It simply
+  // prefers, for the two explicit death slots, the best closers who are NOT
+  // already carrying the new ball - and falls straight back to the best two
+  // available when a side is too thin to afford the distinction, because a
+  // four-man attack must double up and pretending otherwise would leave the
+  // death unplanned.
+  const opened = {};
+  openers.forEach(function (c) { if (c) opened[c.name] = 1; });
+  const restedClosers = closers.filter(function (c) { return !opened[c.name]; });
+  const dPair = (restedClosers.length >= 2 ? restedClosers : closers).slice(0, 2);
   if (dPair.length === 2) {
     give(47, dPair[0]); give(48, dPair[1]); give(49, dPair[0]); give(50, dPair[1]);
-    notes.push('death: ' + dPair.map(function (c) { return c.name; }).join(' and ') + ' hold overs 47-50');
+    notes.push('death: ' + dPair.map(function (c) { return c.name; }).join(' and ') + ' hold overs 47-50' +
+      (restedClosers.length >= 2 ? '' : ' (a thin attack has to double up)'));
   }
   // THE MIDDLE, only where the surface makes it obvious. A real turner with a
   // real spinner is the one middle-overs call the coach is more sure of than

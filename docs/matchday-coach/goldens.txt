@@ -1,11 +1,16 @@
 GOLDEN MASTERS vs THE MATCH-DAY COACH — 9 fixtures
 
-  coach OFF reproduces the recorded master : 9/9   <- the ball model, the toss and the tuning are UNTOUCHED
-  coach ON  reproduces the recorded master : 0/9
-  toss call unchanged with the coach on    : 9/9   <- the toss RNG draw is untouched
+  test/golden/masters.json was recorded with: the MATCH-DAY COACH
+  coach OFF reproduces it : 0/9
+  coach ON  reproduces it : 6/9
+  toss call unchanged     : 9/9   <- the toss RNG draw is untouched
+
+  VERDICT: the selector these were recorded with reproduces only 6/9.
+           Selection has moved (which may be intended) - but check the
+           OTHER column is still exact before re-blessing anything.
 
 -- balanced/Sunny/seed 42
-   card  master 358/7 & 359/4   coachOFF 358/7 & 359/4   coachON 287/9 & 290/6
+   card  master 287/9 & 290/6   coachOFF 358/7 & 359/4   coachON 287/9 & 290/6
    bats first: master Surrey, coach Surrey
    team 0 (squad of 16): in [Quinton Bavuma]  out [Daan de Vries]  6 of the retained men bat in a different position
      off order: Daan de Vries > Pieter Smit > Lars de Boer > Jasper Kuiper > Sven Veldman > Wouter van der Meer > Timo Nijhuis > Zak Wilson > Pranav Sharma > Mitchell Whitfield > Daan van Dijk
@@ -15,7 +20,7 @@ GOLDEN MASTERS vs THE MATCH-DAY COACH — 9 fixtures
      on  order: Jasper van der Meer > Avishka Mendis > Lars Veldman > Pathum de Silva > Cooper Turner > Wanindu Mathews > Lasith Fernando > Tom Brown > Joost Visser > Nathan Marsh > Harry Wells
 
 -- balanced/Sunny/seed 11
-   card  master 355/7 & 301/10   coachOFF 355/7 & 301/10   coachON 345/7 & 161/10
+   card  master 345/7 & 161/10   coachOFF 355/7 & 301/10   coachON 345/7 & 161/10
    bats first: master Yorkshire, coach Yorkshire
    team 0 (squad of 16): in [Quinton Bavuma]  out [Daan de Vries]  6 of the retained men bat in a different position
      off order: Daan de Vries > Pieter Smit > Lars de Boer > Jasper Kuiper > Sven Veldman > Wouter van der Meer > Timo Nijhuis > Zak Wilson > Pranav Sharma > Mitchell Whitfield > Daan van Dijk
@@ -25,7 +30,7 @@ GOLDEN MASTERS vs THE MATCH-DAY COACH — 9 fixtures
      on  order: Jasper van der Meer > Avishka Mendis > Lars Veldman > Pathum de Silva > Cooper Turner > Wanindu Mathews > Lasith Fernando > Tom Brown > Joost Visser > Nathan Marsh > Harry Wells
 
 -- balanced/Sunny/seed 7
-   card  master 375/5 & 220/10   coachOFF 375/5 & 220/10   coachON 330/7 & 256/10
+   card  master 330/7 & 256/10   coachOFF 375/5 & 220/10   coachON 330/7 & 256/10
    bats first: master Yorkshire, coach Yorkshire
    team 0 (squad of 16): in [Quinton Bavuma]  out [Daan de Vries]  6 of the retained men bat in a different position
      off order: Daan de Vries > Pieter Smit > Lars de Boer > Jasper Kuiper > Sven Veldman > Wouter van der Meer > Timo Nijhuis > Zak Wilson > Pranav Sharma > Mitchell Whitfield > Daan van Dijk
@@ -35,7 +40,7 @@ GOLDEN MASTERS vs THE MATCH-DAY COACH — 9 fixtures
      on  order: Jasper van der Meer > Avishka Mendis > Lars Veldman > Pathum de Silva > Cooper Turner > Wanindu Mathews > Lasith Fernando > Tom Brown > Joost Visser > Nathan Marsh > Harry Wells
 
 -- dry/Sunny/seed 42
-   card  master 304/9 & 231/10   coachOFF 304/9 & 231/10   coachON 130/10 & 132/4
+   card  master 130/10 & 132/4   coachOFF 304/9 & 231/10   coachON 130/10 & 132/4
    bats first: master Surrey, coach Surrey
    team 0 (squad of 16): in [Quinton Bavuma]  out [Daan de Vries]  5 of the retained men bat in a different position
      off order: Daan de Vries > Pieter Smit > Lars de Boer > Jasper Kuiper > Sven Veldman > Wouter van der Meer > Timo Nijhuis > Zak Wilson > Pranav Sharma > Mitchell Whitfield > Daan van Dijk
@@ -45,7 +50,7 @@ GOLDEN MASTERS vs THE MATCH-DAY COACH — 9 fixtures
      on  order: Jasper van der Meer > Avishka Mendis > Lars Veldman > Pathum de Silva > Cooper Turner > Ruben de Vries > Wanindu Mathews > Lasith Fernando > Tom Brown > Nathan Marsh > Harry Wells
 
 -- dry/Sunny/seed 11
-   card  master 338/5 & 150/10   coachOFF 338/5 & 150/10   coachON 336/6 & 207/10
+   card  master 336/6 & 207/10   coachOFF 338/5 & 150/10   coachON 336/6 & 207/10
    bats first: master Yorkshire, coach Yorkshire
    team 0 (squad of 16): in [Quinton Bavuma]  out [Daan de Vries]  5 of the retained men bat in a different position
      off order: Daan de Vries > Pieter Smit > Lars de Boer > Jasper Kuiper > Sven Veldman > Wouter van der Meer > Timo Nijhuis > Zak Wilson > Pranav Sharma > Mitchell Whitfield > Daan van Dijk
@@ -55,7 +60,7 @@ GOLDEN MASTERS vs THE MATCH-DAY COACH — 9 fixtures
      on  order: Jasper van der Meer > Avishka Mendis > Lars Veldman > Pathum de Silva > Cooper Turner > Ruben de Vries > Wanindu Mathews > Lasith Fernando > Tom Brown > Nathan Marsh > Harry Wells
 
 -- dry/Sunny/seed 7
-   card  master 354/5 & 100/10   coachOFF 354/5 & 100/10   coachON 242/10 & 143/10
+   card  master 242/10 & 143/10   coachOFF 354/5 & 100/10   coachON 242/10 & 143/10
    bats first: master Yorkshire, coach Yorkshire
    team 0 (squad of 16): in [Quinton Bavuma]  out [Daan de Vries]  5 of the retained men bat in a different position
      off order: Daan de Vries > Pieter Smit > Lars de Boer > Jasper Kuiper > Sven Veldman > Wouter van der Meer > Timo Nijhuis > Zak Wilson > Pranav Sharma > Mitchell Whitfield > Daan van Dijk
@@ -65,32 +70,32 @@ GOLDEN MASTERS vs THE MATCH-DAY COACH — 9 fixtures
      on  order: Jasper van der Meer > Avishka Mendis > Lars Veldman > Pathum de Silva > Cooper Turner > Ruben de Vries > Wanindu Mathews > Lasith Fernando > Tom Brown > Nathan Marsh > Harry Wells
 
 -- green/Overcast/seed 42
-   card  master 335/7 & 249/10   coachOFF 335/7 & 249/10   coachON 290/9 & 163/10
+   card  master 290/9 & 163/10   coachOFF 335/7 & 249/10   coachON 196/10 & 133/10
    bats first: master Surrey, coach Surrey
    team 0 (squad of 16): in [Quinton Bavuma, Pieter de Boer]  out [Daan de Vries, Mitchell Whitfield]  8 of the retained men bat in a different position
      off order: Daan de Vries > Pieter Smit > Lars de Boer > Jasper Kuiper > Sven Veldman > Wouter van der Meer > Timo Nijhuis > Zak Wilson > Pranav Sharma > Mitchell Whitfield > Daan van Dijk
      on  order: Wouter van der Meer > Sven Veldman > Jasper Kuiper > Timo Nijhuis > Pieter Smit > Lars de Boer > Quinton Bavuma > Pieter de Boer > Zak Wilson > Pranav Sharma > Daan van Dijk
-   team 1 (squad of 16): in [Ruben de Vries]  out [Pathum de Silva]  4 of the retained men bat in a different position
+   team 1 (squad of 16): in []  out []  4 of the retained men bat in a different position
      off order: Cooper Turner > Jasper van der Meer > Lars Veldman > Avishka Mendis > Pathum de Silva > Wanindu Mathews > Lasith Fernando > Joost Visser > Cooper Maxwell > Nathan Marsh > Harry Wells
-     on  order: Jasper van der Meer > Avishka Mendis > Lars Veldman > Cooper Turner > Wanindu Mathews > Ruben de Vries > Lasith Fernando > Joost Visser > Cooper Maxwell > Nathan Marsh > Harry Wells
+     on  order: Jasper van der Meer > Avishka Mendis > Lars Veldman > Pathum de Silva > Cooper Turner > Wanindu Mathews > Lasith Fernando > Joost Visser > Cooper Maxwell > Nathan Marsh > Harry Wells
 
 -- green/Overcast/seed 11
-   card  master 251/10 & 53/10   coachOFF 251/10 & 53/10   coachON 204/10 & 196/10
+   card  master 204/10 & 196/10   coachOFF 251/10 & 53/10   coachON 164/10 & 144/10
    bats first: master Surrey, coach Surrey
    team 0 (squad of 16): in [Quinton Bavuma, Pieter de Boer]  out [Daan de Vries, Mitchell Whitfield]  8 of the retained men bat in a different position
      off order: Daan de Vries > Pieter Smit > Lars de Boer > Jasper Kuiper > Sven Veldman > Wouter van der Meer > Timo Nijhuis > Zak Wilson > Pranav Sharma > Mitchell Whitfield > Daan van Dijk
      on  order: Wouter van der Meer > Sven Veldman > Jasper Kuiper > Timo Nijhuis > Pieter Smit > Lars de Boer > Quinton Bavuma > Pieter de Boer > Zak Wilson > Pranav Sharma > Daan van Dijk
-   team 1 (squad of 16): in [Ruben de Vries]  out [Pathum de Silva]  4 of the retained men bat in a different position
+   team 1 (squad of 16): in []  out []  4 of the retained men bat in a different position
      off order: Cooper Turner > Jasper van der Meer > Lars Veldman > Avishka Mendis > Pathum de Silva > Wanindu Mathews > Lasith Fernando > Joost Visser > Cooper Maxwell > Nathan Marsh > Harry Wells
-     on  order: Jasper van der Meer > Avishka Mendis > Lars Veldman > Cooper Turner > Wanindu Mathews > Ruben de Vries > Lasith Fernando > Joost Visser > Cooper Maxwell > Nathan Marsh > Harry Wells
+     on  order: Jasper van der Meer > Avishka Mendis > Lars Veldman > Pathum de Silva > Cooper Turner > Wanindu Mathews > Lasith Fernando > Joost Visser > Cooper Maxwell > Nathan Marsh > Harry Wells
 
 -- green/Overcast/seed 7
-   card  master 280/10 & 163/10   coachOFF 280/10 & 163/10   coachON 105/10 & 106/4
+   card  master 105/10 & 106/4   coachOFF 280/10 & 163/10   coachON 100/10 & 104/4
    bats first: master Yorkshire, coach Yorkshire
    team 0 (squad of 16): in [Quinton Bavuma, Pieter de Boer]  out [Daan de Vries, Mitchell Whitfield]  8 of the retained men bat in a different position
      off order: Daan de Vries > Pieter Smit > Lars de Boer > Jasper Kuiper > Sven Veldman > Wouter van der Meer > Timo Nijhuis > Zak Wilson > Pranav Sharma > Mitchell Whitfield > Daan van Dijk
      on  order: Wouter van der Meer > Sven Veldman > Jasper Kuiper > Timo Nijhuis > Pieter Smit > Lars de Boer > Quinton Bavuma > Pieter de Boer > Zak Wilson > Pranav Sharma > Daan van Dijk
-   team 1 (squad of 16): in [Ruben de Vries]  out [Pathum de Silva]  4 of the retained men bat in a different position
+   team 1 (squad of 16): in []  out []  4 of the retained men bat in a different position
      off order: Cooper Turner > Jasper van der Meer > Lars Veldman > Avishka Mendis > Pathum de Silva > Wanindu Mathews > Lasith Fernando > Joost Visser > Cooper Maxwell > Nathan Marsh > Harry Wells
-     on  order: Jasper van der Meer > Avishka Mendis > Lars Veldman > Cooper Turner > Wanindu Mathews > Ruben de Vries > Lasith Fernando > Joost Visser > Cooper Maxwell > Nathan Marsh > Harry Wells
+     on  order: Jasper van der Meer > Avishka Mendis > Lars Veldman > Pathum de Silva > Cooper Turner > Wanindu Mathews > Lasith Fernando > Joost Visser > Cooper Maxwell > Nathan Marsh > Harry Wells
 

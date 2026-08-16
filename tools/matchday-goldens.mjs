@@ -100,12 +100,31 @@ for (const m of masters) {
 
 if (asJson) { console.log(JSON.stringify({ offMatch, onMatch, tossSame, n: masters.length, rows }, null, 2)); process.exit(0); }
 
+// WHICH SELECTOR THE MASTERS ON DISK WERE RECORDED WITH, worked out rather
+// than assumed. This mattered the moment the masters were re-blessed: before
+// that, "coach OFF reproduces the master" meant the ball model was untouched;
+// after it, the master IS the coach's own cricket and coach-off reproducing it
+// would mean the coach had stopped working. Printing one fixed verdict for
+// both regimes told the reader to do the opposite of the right thing.
+const recordedWith = offMatch >= onMatch ? 'the FOUNDING selector' : 'the MATCH-DAY COACH';
 console.log('GOLDEN MASTERS vs THE MATCH-DAY COACH — ' + masters.length + ' fixtures\n');
-console.log('  coach OFF reproduces the recorded master : ' + offMatch + '/' + masters.length +
-  (offMatch === masters.length ? '   <- the ball model, the toss and the tuning are UNTOUCHED' : '   <- NOT selection-only; do not re-bless'));
-console.log('  coach ON  reproduces the recorded master : ' + onMatch + '/' + masters.length);
-console.log('  toss call unchanged with the coach on    : ' + tossSame + '/' + masters.length +
-  (tossSame === masters.length ? '   <- the toss RNG draw is untouched' : ''));
+console.log('  test/golden/masters.json was recorded with: ' + recordedWith);
+console.log('  coach OFF reproduces it : ' + offMatch + '/' + masters.length);
+console.log('  coach ON  reproduces it : ' + onMatch + '/' + masters.length);
+console.log('  toss call unchanged     : ' + tossSame + '/' + masters.length +
+  (tossSame === masters.length ? '   <- the toss RNG draw is untouched' : '   <- THE TOSS MOVED; that is not selection'));
+console.log('');
+// The verdict that is true in BOTH regimes: whichever selector the file was
+// recorded with must still reproduce it bit-for-bit. If the side that should
+// match does not, something other than selection has changed and nothing here
+// may be re-blessed until it is explained.
+const shouldMatch = Math.max(offMatch, onMatch);
+console.log(shouldMatch === masters.length
+  ? '  VERDICT: the selector these were recorded with still reproduces them exactly,\n' +
+    '           so the ball model, the toss and the tuning are UNTOUCHED.'
+  : '  VERDICT: the selector these were recorded with reproduces only ' + shouldMatch + '/' +
+    masters.length + '.\n           Selection has moved (which may be intended) - but check the\n' +
+    '           OTHER column is still exact before re-blessing anything.');
 console.log('');
 for (const r of rows) {
   console.log('-- ' + r.fixture);

@@ -548,3 +548,152 @@ test('J: availability is respected - an absent man is never picked', () => {
   assert.ok(p.xi.indexOf('Quick One') < 0, 'and so does an absent bowler');
   assert.equal(p.xi.length, 11);
 });
+
+// ---- K. ENDURANCE, SPELL LENGTH AND WORKLOAD ------------------------------
+//
+// These pin a NEGATIVE result, which is the point of them. The engine was
+// asked (tools/matchday-endurance.mjs) whether a bowler's stamina ought to
+// change how long a spell the coach paints for him, by forcing a continuous
+// ten-over spell in a real match, sampling the engine's own fatigue tank ball
+// by ball and reading each over's cost back out of ballDist. It said no, and
+// said it flatly: holding six overs fixed and asking whether they are cheaper
+// bowled through or split 3+3 gave 0.00 runs at EVERY stamina from 30 to 90.
+//
+// The reason is structural. The tank fills per ball bowled all innings and
+// drains only at drinks and the innings break, so resting a man does not empty
+// it; and the only two terms that read the unbroken-spell counter are one that
+// ignores stamina entirely and one gated on age over thirty. So the coach does
+// NOT cut a burst to the man, because doing so would be modelling cricket this
+// engine does not play.
+//
+// If somebody later gives the engine a stamina-in-spell law, the first of
+// these tests fails - and that failure is the message: the measurement is
+// stale, re-run the probe and give the coach its burst lengths back.
+
+test('K: stamina does not change what a spell costs, so the coach does not pretend it does', () => {
+  const probe = inVm(`
+    var t = GD.teams[0], src = t.players;
+    var out = {};
+    [30, 60, 90].forEach(function (st) {
+      var p = JSON.parse(JSON.stringify(src.filter(function (x) { return x.bowlType; })[0]));
+      p.name = 'S' + st; p.talents = []; p.age = 27;
+      p.skills.stamina = st;
+      var refs = foMdcRefs([p]);
+      var ctx = foMdcCtx('sunny', FO_KQ_PAR, 50, false);
+      var c = foMdcCard(p, refs, ctx, 'balanced', 0.62);
+      // his cost in over 1 of a spell against over 6 of the SAME spell, with
+      // only the unbroken-spell counter moved - which is the whole of what a
+      // burst length controls
+      var at = function (spellB) {
+        var c2 = {}; for (var k in ctx) c2[k] = ctx[k];
+        c2.ballsThisSpell = spellB;
+        var d = ballDist(refs.bat, c.today, 'pp', 12, 0, 0, 'balanced', 'bal', 5, c2);
+        var w = (d.wC||0)+(d.wB||0)+(d.wLBW||0)+(d.wRO||0)+(d.wST||0);
+        var r = (d['1']||0)+2*(d['2']||0)+3*(d['3']||0)+4*(d['4']||0)+6*(d['6']||0);
+        return r - w * 25;
+      };
+      out[st] = at(30) - at(0);
+    });
+    return out;
+  `);
+  const decay = [probe[30], probe[60], probe[90]];
+  const spread = Math.max(...decay) - Math.min(...decay);
+  assert.ok(spread < 0.01,
+    'a spell costs the same whatever a man\'s stamina (30/60/90 gave ' +
+    decay.map(v => v.toFixed(4)).join(', ') + '); if this now differs, ' +
+    're-run tools/matchday-endurance.mjs and give the coach burst lengths');
+});
+
+test('K: two bowlers alike but for stamina get the same burst, and the plan says so', () => {
+  const squad = BASE_SQUAD.map(m => ({ ...m }));
+  const weak = squad.map(m => m.name === 'Quick One' ? { ...m, skills: { stamina: 30 } } : m);
+  const strong = squad.map(m => m.name === 'Quick One' ? { ...m, skills: { stamina: 95 } } : m);
+  const a = planFor(weak, { pitch: 'green', weather: 'overcast' });
+  const b = planFor(strong, { pitch: 'green', weather: 'overcast' });
+  const overs = p => {
+    const n = {};
+    for (let o = 1; o <= 50; o++) if (p.bowlingPlan[o]) n[p.bowlingPlan[o]] = (n[p.bowlingPlan[o]] || 0) + 1;
+    return n;
+  };
+  assert.deepEqual(overs(a), overs(b),
+    'the engine prices their spells identically, so the coach plans them identically');
+});
+
+test('K: the conditions still set the burst - a biting new ball buys a longer one', () => {
+  const green = planFor(BASE_SQUAD, { pitch: 'green', weather: 'overcast' });
+  const flat = planFor(BASE_SQUAD, { pitch: 'flat', weather: 'sunny' });
+  const opening = p => {
+    let n = 0;
+    for (let o = 1; o <= 20; o += 2) if (p.bowlingPlan[o] && p.bowlingPlan[o] === p.bowlingPlan[1]) n++;
+    return n;
+  };
+  assert.ok(opening(green) > opening(flat),
+    'the ball doing something is worth more overs of it (' +
+    opening(green) + ' on green vs ' + opening(flat) + ' on a road)');
+});
+
+test('K: a man who opens is not also handed the death when somebody else is rested', () => {
+  const p = planFor(BASE_SQUAD, { pitch: 'green', weather: 'overcast' });
+  const openers = new Set([p.bowlingPlan[1], p.bowlingPlan[2]].filter(Boolean));
+  const closers = [47, 48, 49, 50].map(o => p.bowlingPlan[o]).filter(Boolean);
+  assert.ok(closers.length >= 2, 'the death is planned at all');
+  for (const c of closers) {
+    assert.ok(!openers.has(c),
+      c + ' opened the bowling AND holds a death over; his seventh over costs ' +
+      'twice his first (tools/matchday-endurance.mjs) and this squad has rested men');
+  }
+});
+
+test('K: ...but a thin attack is allowed to double up rather than leave the death unplanned', () => {
+  // exactly five bowling options, so somebody must do both jobs
+  const thin = BASE_SQUAD.filter(m =>
+    ['Bat One', 'Bat Two', 'Bat Three', 'Bat Four', 'Bat Five', 'Keeper Prime',
+     'Quick One', 'Quick Two', 'Seam Three', 'Spin One', 'Spin Two'].includes(m.name));
+  const p = planFor(thin, { pitch: 'green', weather: 'overcast' });
+  const closers = [47, 48, 49, 50].map(o => p.bowlingPlan[o]).filter(Boolean);
+  assert.ok(closers.length >= 2, 'the death is still planned when nobody is spare');
+});
+
+// ---- L. THE EXTRA BOWLING OPTION, PRICED ONCE AND FOR QUALITY -------------
+//
+// tools/matchday-allrounder.mjs is the audit these came from: controlled
+// elevens differing by exactly one man, scored by the coach and then PLAYED,
+// 1,200 paired fixtures a case. It found the sixth-bowler premium being paid
+// twice (once as SIXTH_BOWLER and again as a rank-based ALLROUND term) and
+// paid blind - a man with a bowling skill of 30 collected exactly what a man
+// with 62 collected, though the cricket separates them at z = 3.2.
+
+test('L: a sixth option who cannot really bowl earns no flexibility premium', () => {
+  const five = BASE_SQUAD.filter(m => m.name !== 'Allround');
+  const useless = five.concat([{ name: 'Cart Horse', kind: 'bowler',
+    bowlType: 'medium', level: 54, bowl: 12, mpos: 6 }]);
+  const useful = five.concat([{ name: 'Cart Horse', kind: 'bowler',
+    bowlType: 'medium', level: 54, bowl: 58, mpos: 6 }]);
+  const a = planFor(useless), b = planFor(useful);
+  const sa = a.explanation.score, sb = b.explanation.score;
+  assert.ok(sb.bowl > sa.bowl,
+    'the useful sixth option is worth more than the useless one (' +
+    sa.bowl + ' vs ' + sb.bowl + ') - they used to score identically');
+});
+
+test('L: a genuine number eleven does not collect an all-rounder premium', () => {
+  // a side whose seventh-best BAT is a specialist quick: under the old
+  // rank-based term he was paid 4.0 for being an all-rounder, which he is not
+  const p = planFor(BASE_SQUAD);
+  assert.equal(p.explanation.score.allround, 0,
+    'there is no standalone all-round premium left to misfire');
+});
+
+test('L: an all-rounder who genuinely bowls is still preferred, on measured cricket alone', () => {
+  // four specialists only, so the all-rounder's overs must actually be bowled
+  const thin = BASE_SQUAD.filter(m => !['Spin Two', 'Allround', 'Reserve Bat'].includes(m.name));
+  const withAR = thin.concat([{ name: 'Real Allrounder', kind: 'bowler',
+    bowlType: 'fastMedium', level: 56, bowl: 60, mpos: 6 }]);
+  const withBat = thin.concat([{ name: 'Just A Bat', kind: 'bat',
+    bowlType: null, level: 56, mpos: 6 }]);
+  const a = planFor(withAR), b = planFor(withBat);
+  assert.ok(a.xi.includes('Real Allrounder'),
+    'a side that cannot cover fifty overs without him picks him');
+  assert.ok(!b.xi.includes('Just A Bat') || a.explanation.score.total > b.explanation.score.total,
+    'and he is worth more than the batsman who cannot bowl a ball');
+});

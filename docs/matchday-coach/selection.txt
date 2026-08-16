@@ -15,7 +15,7 @@ scenario 11 tires the best batsman         : Sven Veldman
   captain                : Nijhuis
   coach painted          : 10 overs
       · new ball: Daan van Dijk and Zak Wilson for 3 overs each
-      · death: Zak Wilson and Pranav Sharma hold overs 47-50
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
   left to the captain    : 40 overs
   toss                   : bat (margin 0.027)
 
@@ -32,7 +32,7 @@ scenario 11 tires the best batsman         : Sven Veldman
   captain                : Nijhuis
   coach painted          : 16 overs
       · new ball: Daan van Dijk and Zak Wilson for 6 overs each (the ball is doing something)
-      · death: Zak Wilson and Daan van Dijk hold overs 47-50
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
   left to the captain    : 34 overs
   toss                   : bowl (margin -0.026)
 
@@ -49,7 +49,7 @@ scenario 11 tires the best batsman         : Sven Veldman
   captain                : Nijhuis
   coach painted          : 16 overs
       · new ball: Daan van Dijk and Zak Wilson for 6 overs each (the ball is doing something)
-      · death: Zak Wilson and Daan van Dijk hold overs 47-50
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
   left to the captain    : 34 overs
   toss                   : bowl (margin -0.026)
 
@@ -64,7 +64,7 @@ scenario 11 tires the best batsman         : Sven Veldman
   captain                : Nijhuis
   coach painted          : 14 overs
       · new ball: Daan van Dijk and Zak Wilson for 3 overs each
-      · death: Zak Wilson and Pranav Sharma hold overs 47-50
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
       · middle: Pranav Sharma gets 4 overs on a turning pitch
   left to the captain    : 36 overs
   toss                   : bat (margin 0.071)
@@ -80,7 +80,7 @@ scenario 11 tires the best batsman         : Sven Veldman
   captain                : Nijhuis
   coach painted          : 14 overs
       · new ball: Daan van Dijk and Zak Wilson for 3 overs each
-      · death: Zak Wilson and Pranav Sharma hold overs 47-50
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
       · middle: Pranav Sharma gets 4 overs on a turning pitch
   left to the captain    : 36 overs
   toss                   : bat (margin 0.045)
@@ -98,7 +98,7 @@ scenario 11 tires the best batsman         : Sven Veldman
   captain                : Nijhuis
   coach painted          : 10 overs
       · new ball: Daan van Dijk and Zak Wilson for 3 overs each
-      · death: Zak Wilson and Pranav Sharma hold overs 47-50
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
   left to the captain    : 40 overs
   toss                   : bat (margin 0.027)
 
@@ -115,7 +115,7 @@ scenario 11 tires the best batsman         : Sven Veldman
   captain                : Nijhuis
   coach painted          : 10 overs
       · new ball: Daan van Dijk and Zak Wilson for 3 overs each
-      · death: Zak Wilson and Pranav Sharma hold overs 47-50
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
   left to the captain    : 40 overs
   toss                   : bat (margin 0.027)
 
@@ -130,7 +130,7 @@ scenario 11 tires the best batsman         : Sven Veldman
   captain                : Nijhuis
   coach painted          : 10 overs
       · new ball: Daan van Dijk and Zak Wilson for 3 overs each
-      · death: Zak Wilson and Pranav Sharma hold overs 47-50
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
   left to the captain    : 40 overs
   toss                   : bat (margin 0.027)
 
@@ -145,7 +145,7 @@ scenario 11 tires the best batsman         : Sven Veldman
   captain                : Nijhuis
   coach painted          : 14 overs
       · new ball: Daan van Dijk and Zak Wilson for 3 overs each
-      · death: Zak Wilson and Pranav Sharma hold overs 47-50
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
       · middle: Pranav Sharma gets 4 overs on a turning pitch
   left to the captain    : 36 overs
   toss                   : bat (margin 0.011)
@@ -161,7 +161,7 @@ scenario 11 tires the best batsman         : Sven Veldman
   captain                : Nijhuis
   coach painted          : 10 overs
       · new ball: Daan van Dijk and Zak Wilson for 3 overs each
-      · death: Zak Wilson and Pranav Sharma hold overs 47-50
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
   left to the captain    : 40 overs
   toss                   : bat (margin 0.027)
 
@@ -176,7 +176,7 @@ scenario 11 tires the best batsman         : Sven Veldman
   captain                : Nijhuis
   coach painted          : 10 overs
       · new ball: Daan van Dijk and Zak Wilson for 3 overs each
-      · death: Zak Wilson and Pranav Sharma hold overs 47-50
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
   left to the captain    : 40 overs
   toss                   : bat (margin 0.027)
 
@@ -191,7 +191,7 @@ scenario 11 tires the best batsman         : Sven Veldman
   captain                : Nijhuis
   coach painted          : 10 overs
       · new ball: Daan van Dijk and Zak Wilson for 3 overs each
-      · death: Zak Wilson and Pranav Sharma hold overs 47-50
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
   left to the captain    : 40 overs
   toss                   : bat (margin 0.027)
 
@@ -210,7 +210,7 @@ scenario 11 tires the best batsman         : Sven Veldman
   captain                : Nijhuis
   coach painted          : 10 overs
       · new ball: Daan van Dijk and Zak Wilson for 3 overs each
-      · death: Zak Wilson and Pranav Sharma hold overs 47-50
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
   left to the captain    : 40 overs
   toss                   : bat (margin 0.027)
 

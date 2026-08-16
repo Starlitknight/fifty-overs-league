@@ -1405,6 +1405,9 @@ test('018: the academy is paid for, and it recomputes', async () => {
   // THE MONEY. An upgrade is a spent fact, so the treasury still recomputes.
   await settleMoney(pool, 'eng');
   const bank0 = Number((await pool.query(`SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank);
+  // the interest the walk has charged SO FAR, because the identity below is
+  // about what an academy costs and overdraft interest is not that
+  const fin0 = (await computeFinance(pool, 'eng')).find(f => f.slot === 1).finance;
   const rounds = Number((await pool.query(
     `SELECT count(*) AS n FROM matches WHERE country_id='eng' AND (home_slot=1 OR away_slot=1)`)).rows[0].n);
   assert.ok(bank0 > 900000, 'a fortnight of era-2 money covers a level-three academy');
@@ -1435,9 +1438,23 @@ test('018: the academy is paid for, and it recomputes', async () => {
   // level does not only cost the lump, it re-charges every round already
   // played at the dearer rate. So the treasury falls by the building AND by
   // the difference in upkeep across the whole season so far.
+  // ...AND OVERDRAFT INTEREST, WHICH THIS IDENTITY USED TO OMIT.
+  //
+  // It read `bank1 == bank0 - build - rounds x upkeepDelta` and was true only
+  // while this particular club happened to stay the right side of nothing at
+  // every round of the re-walk. It need not: buying a level makes the club
+  // poorer at EVERY round the walk replays, which can tip it into the red at
+  // rounds where it was previously solvent, and an overdraft costs DEBT_ROUND
+  // (3%) a round. The missing term was found when the match-day coach changed
+  // which clubs won what - the assertion failed by $457 on a $245,000 bank,
+  // which is one round of interest on a small overdraft and not an accounting
+  // error. The economy was right; the test was incomplete.
+  const interestPaid = Number(fin1.interest || 0) - Number(fin0.interest || 0);
   assert.equal(bank1, bank0 - academyBuild(2, 3)
-                          - fin1.rounds * (academyUpkeep(3) - academyUpkeep(2)),
-    'the upgrade is charged once and the bigger academy for every round settled');
+                          - fin1.rounds * (academyUpkeep(3) - academyUpkeep(2))
+                          - interestPaid,
+    'the upgrade is charged once, the bigger academy every round settled, and ' +
+    'any overdraft the upgrade itself opened up (interest ' + interestPaid + ')');
   await settleMoney(pool, 'eng');
   assert.equal(Number((await pool.query(
     `SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank), bank1, 'settling twice settles the same figure');
