@@ -493,10 +493,16 @@ export async function computeFinance(pool, country, opts = {}) {
   // so a transfer or a season in the nets moved money that was settled years
   // ago, retro-charging improving clubs and minting for declining ones. The
   // umpire now banks the bill with the round it belongs to, and a banked
-  // round is charged its banked bill for ever. Rounds banked before the
-  // migration do not exist in this table and are charged at the standing
-  // bill exactly as they always were - no settled bank moves on deploy, the
-  // drift simply stops accruing.
+  // round is charged its banked bill for ever. The migration itself froze
+  // every round it found already charged (the cutover backfill, at the
+  // standing bill - the figure the old law was charging that instant, so no
+  // bank moved a dollar), and the tick banks every round it settles from
+  // then on. The standing-bill fallback below is therefore NOT a door back
+  // to the old law for real history: after cutover it can only be reached
+  // by a round in its prebank window (charged at the standing bill exactly
+  // as the old law would, then banked at its day-settle), by a tick healing
+  // a crash that landed between the match rows and the banking (same
+  // moment, same figure), or by a fabricated test world that never ticked.
   let wageRows = [];
   try {
     wageRows = (await pool.query(

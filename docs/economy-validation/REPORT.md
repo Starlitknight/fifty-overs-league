@@ -39,12 +39,31 @@ and most "administrations" in the walked books were THIS, not economics.
 **The repair (migration 101, the smallest that closes it):** when the umpire
 settles a round he banks the bill that round was played under
 (`wage_rounds`, one row per club-round, written once), and the walk charges
-a banked round its banked bill forever. Rounds settled before the migration
-have no row and are charged exactly as they always were — **no settled bank
-moves a dollar on deploy**; the drift simply stops accruing. Proved in
-`server/tests/world-economy.test.mjs` ("a banked round is charged the bill
-it was played under, for ever"). The walk stays a pure derivation: the
-banked bill is a fact of the record, like a match card.
+a banked round its banked bill forever — and the migration itself **freezes
+all pre-cutover history at the standing bill**, the figure the old law was
+charging at that instant. (The first cut left pre-101 rounds falling back to
+the standing bill forever — the original bug preserved for all history that
+predated the migration; review caught it.) The cutover rule: a round counts
+as charged if it has match rows, because that is the walk's own charging
+condition — `computeFinance` reads the matches table with no settlement cut,
+so the backfilled set is exactly the set the old law was already pricing.
+Three laws hold, each test-proved (`world-wage-cutover.test.mjs`, executing
+the migration's backfill statement verbatim):
+
+1. deploy moves no bank by one dollar (banks, wage totals and ledgers
+   byte-identical across the cutover);
+2. no wage event afterwards — transfer in, transfer out, development
+   repricing up, decline repricing down — moves a pre-cutover wage line, the
+   historical wage total, or the bank;
+3. every post-cutover round banks its real bill at settle (after the fold,
+   so nets-derived wages are included), is immutable in its turn, and a tick
+   that crashes between the match rows and the banking heals to exactly one
+   authoritative bill with no duplicates.
+
+The walk stays a pure derivation: the banked bill is a fact of the record,
+like a match card. The standing-bill fallback survives only for a round in
+its prebank window (charged as the old law would until its day settles), a
+crash-heal in flight, and fabricated test worlds.
 
 ## 2. Bot financial intelligence (`server/botfinance.mjs`)
 
