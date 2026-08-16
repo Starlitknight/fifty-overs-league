@@ -19,7 +19,7 @@ import { migrate } from '../migrate.mjs';
 import { initWorld } from '../init-world.mjs';
 import { makeHost } from '../enginehost.mjs';
 import { runDue } from '../tick.mjs';
-import { computeFinance, gateSale, TICKET, HOME_CUT } from '../economy.mjs';
+import { computeFinance, gateSale, TICKET } from '../economy.mjs';
 import { EPOCH, DAY, natHour, dayOfRound } from '../clock.mjs';
 
 const DB = 'fotickets_test';
@@ -261,32 +261,28 @@ test('the board is the banked sale trimmed to the clock', () => {
 // reader can do all of it: heads x per-head is the gross, two thirds of the
 // gross is the money. That is what this checks - against the banked figure
 // rather than against a sentence.
-test('the home club banks two thirds of a gate and the visitor the rest', async () => {
+test('the whole gate is the host\'s: no away share and nobody paid by the head (era 2)', async () => {
   // THE LINE NO LONGER SHOWS ITS WORKING, so the working is checked here.
-  // It used to print the crowd, what they paid a head and the gross, which was
-  // asked for and then asked to go again: a statement line is what came in and
-  // what it came in from. That is a fair call - but the split it was proving is
-  // still real money, so it is proved against the LEDGER rather than against a
-  // sentence. Every gate has a matching away share, and the two are the whole
-  // house: that cannot be true by accident and it cannot be true if the shares
-  // ever drift apart.
+  // Under era 2 (financeconfig.mjs) the two-thirds split and the per-head
+  // broadcast fee are retired: the home club banks the net of its own sale
+  // and nothing else moves on a matchday. The proof is the LEDGER: every
+  // gate line belongs to a host, no away-share or broadcast line exists,
+  // and the away clubs' cut is an exact zero.
   await pool.query('DELETE FROM ticket_prices');
   const rows = await computeFinance(pool, 'eng', { ledgerSlots: [0,1,2,3,4,5,6,7,8,9,10,11,12,13,14,15] });
   const led = rows.flatMap(r => r.ledger || []);
   const gates = led.filter(l => l.kind === 'gate');
-  const aways = led.filter(l => l.kind === 'gate-away');
   assert.ok(gates.length, 'somebody hosted');
-  assert.equal(gates.length, aways.length, 'every gate has a visitor taking a share of it');
+  assert.equal(led.filter(l => l.kind === 'gate-away').length, 0, 'no share travels with the bus');
+  assert.equal(led.filter(l => l.kind === 'broadcast').length, 0, 'no broadcaster counts heads');
   for (const g of gates) {
     assert.ok(g.amount > 0, 'a gate is money: ' + g.label);
     assert.match(g.label, /^Gate takings v /, 'and the line names the visitor: ' + g.label);
   }
-  for (const a of aways) assert.match(a.label, /^Away share at /, a.label);
-  // the two shares of one house: home is two thirds of the whole, to the pound
-  const whole = gates.reduce((s, g) => s + g.amount, 0) + aways.reduce((s, a) => s + a.amount, 0);
-  const home = gates.reduce((s, g) => s + g.amount, 0);
-  assert.ok(Math.abs(home / whole - HOME_CUT) < 0.002,
-    'the home clubs took ' + (100 * home / whole).toFixed(2) + '% of every gate in the country');
+  for (const r of rows) {
+    assert.equal(r.finance.awayCut, 0, 'slot ' + r.slot + ' took nothing away from home');
+    assert.equal(r.finance.broadcast, 0, 'slot ' + r.slot + ' was paid nothing by the head');
+  }
 });
 
 // A SPONSOR SIGNS A CONTRACT. It used to be priced off the table and the mood
@@ -294,18 +290,26 @@ test('the home club banks two thirds of a gate and the visitor the rest', async 
 // up saw its sponsorship nearly double between one match and the next - 32,020
 // one week and 59,427 the next, which is what was reported. It is signed in the
 // close season on where the club finished and paid flat until the next one.
-test('the sponsor pays the same every round of a season', async () => {
+test('the sponsor\'s guarantee pays in even installments that sum to the contract', async () => {
+  // Era 2: the guaranteed share of the deal is the season figure paid in R
+  // parts by cumulative rounding, so any two installments differ by at most
+  // a dollar and k rounds of them sum to exactly round(G x k / R). The old
+  // sin this guarded against - the cheque re-read from the table every week,
+  // 32,020 one round and 59,427 the next - stays impossible.
   const rows = await computeFinance(pool, 'eng', { ledgerSlots: [0, 1, 8, 15] });
+  const R = 14;                                  // the stored schedule's own length
   let checked = 0;
   for (const r of rows) {
     const sp = (r.ledger || []).filter(l => l.kind === 'sponsor');
     if (sp.length < 2) continue;
-    const first = sp[0].amount;
-    sp.forEach(function (l) {
-      assert.equal(l.amount, first,
-        'slot ' + r.slot + ' was paid ' + l.amount + ' having been paid ' + first + ' earlier the same season');
-    });
+    const G = Math.round((r.finance.sponsorValue || 0) * 0.70);   // every unpicked club signs BALANCED
+    for (const l of sp) assert.ok(Math.abs(l.amount - sp[0].amount) <= 1,
+      'slot ' + r.slot + ': installments an even split, not a re-read of the table (' +
+      l.amount + ' v ' + sp[0].amount + ')');
+    const paid = sp.reduce((s, l) => s + l.amount, 0);
+    assert.equal(paid, Math.round(G * sp.length / R),
+      'slot ' + r.slot + ': ' + sp.length + ' installments sum to their share of the guarantee');
     checked++;
   }
-  assert.ok(checked >= 1, 'at least one club has a season of sponsor lines to compare (' + checked + ')');
+  assert.ok(checked >= 1, 'at least one club has sponsor lines to compare (' + checked + ')');
 });

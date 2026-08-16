@@ -5,11 +5,31 @@
 // derived from the record: who played whom, who won, where each club stood
 // that morning, and how many people fancied going.
 //
+// THE WALK KNOWS TWO ERAS, and a season is settled under the law that was in
+// force when it was played (financeconfig.mjs owns the line and every era-2
+// tunable). The founding economy:
+//
+//   the gate   -> attendance x the ticket, split two thirds home, one third
+//                 away, plus a broadcaster paying the host $7.50 a head
+//   sponsors   -> a figure off last summer's finish, paid flat by the round
+//
+// Era 2 - a club's year has a stable centre and a controllable cost:
+//
+//   media      -> the division's flat distribution, equal for every club,
+//                 blind to the turnstiles, paid by the league round
+//   the gate   -> the HOME club's alone, banked net of matchday staging;
+//                 nothing travels and nobody pays by the head
+//   sponsors   -> a contract with a chosen SHAPE (safe / balanced /
+//                 contender): a guarantee by the round, the rest earned on
+//                 wins, the playoffs and the title
+//   prizes     -> the final table's cheque, and a purse for the champions
+//   operations -> the one cost of BEING a club - staff, ground, travel -
+//                 by the round, alongside wages and the academy
+//
+// Common to both eras:
+//
 //   supporters -> a crowd that grows on winning and drifts away on losing
 //   mood       -> what those supporters think, from recent form and position
-//   the gate   -> attendance x the ticket, split two thirds home, one third away
-//   sponsors   -> a contract signed each close season on where you finished,
-//                 then paid flat every round of it
 //   wages      -> the bill as it stands, every round played
 //   the academy-> upkeep by the round, and what its upgrades cost
 //   the ground -> seats you paid for, and the ceiling they put on a crowd
@@ -18,7 +38,19 @@
 // THE LAW HOLDS: nothing here is incremented imperatively and nothing is
 // stored that a re-run could not rebuild. Settle it twice and it settles the
 // same figure, which is what lets an offline manager trust it.
-import { seedOf, dayOfRound, natHour, EPOCH, DAY, COLTS_DAYS, TRANSITION_DAY, dayIx } from './clock.mjs';
+import { seedOf, dayOfRound, natHour, EPOCH, DAY, COLTS_DAYS, TRANSITION_DAY, dayIx, ROUNDS } from './clock.mjs';
+// THE TUNABLES LIVE IN ONE FILE, AND THE ERA LINE WITH THEM. Everything the
+// era-2 economy can be tuned by - the media grants, the sponsor packages, the
+// prize tables, club operations, the founding capital - is stated and
+// documented in financeconfig.mjs, so no settlement loop below carries a
+// magic number the calibration sim cannot reach.
+import {
+  ERA2_DAY, era2Season, isFullMember, ASSOC_POOL, OPS_ASSOC,
+  MEDIA_SEASON, MATCHDAY_NET, SPONSOR_PACKAGES, SPONSOR_DEFAULT,
+  sponsorSeasonValue, sponsorWinBonus, operationsPerRound,
+  prizeFor, PRIZE_PLAYOFF_CHAMP, foundingBankEra2
+} from './financeconfig.mjs';
+export { ERA2_DAY, era2Season } from './financeconfig.mjs';
 
 export const FOUNDING_BANK = 2500000;
 export const FOUNDING_SUPPORT = 12000;
@@ -107,6 +139,15 @@ export function foundingSupport(slot, isBoss) {
 // same squad have the same means to keep it.
 export function econStature(slot, isBoss) {
   return Math.max(0.62, stature(slot, isBoss));
+}
+// THE FOUNDING LINE KNOWS ITS ERA. A club founded under the old economy keeps
+// the bank it was founded with for ever - that line is history, and the walk
+// below re-states it every settle. A club founded under era 2 starts on
+// working capital sized to the new turnover (financeconfig.mjs) rather than
+// the old one, which had grown to over half a season's income and made the
+// first two summers financially weightless.
+export function foundingBankFor(slot, isBoss, era2) {
+  return era2 ? foundingBankEra2(econStature(slot, isBoss)) : foundingBank(slot, isBoss);
 }
 export const MAX_SEATS = 45000;
 export const TICKET = 26;                    // the league's price, and every bot club's
@@ -503,15 +544,45 @@ export async function computeFinance(pool, country, opts = {}) {
   let starts = [];
   try {
     starts = (await pool.query(
-      'SELECT season_no, start_day, divisions FROM seasons WHERE country_id=$1', [country])).rows;
+      'SELECT season_no, start_day, divisions, schedule FROM seasons WHERE country_id=$1', [country])).rows;
   } catch (eS0) { starts = []; }
   const startOf = Object.fromEntries(starts.map(x => [x.season_no, x.start_day]));
   // who played the second flight, season by season - their gates run thinner
   const div2Of = {};
+  // HOW MANY LEAGUE ROUNDS A SEASON HOLDS, read off its own stored schedule
+  // rather than assumed. The era-2 installments (media, sponsor guaranteed)
+  // divide a season figure by this, so a season of a different length pays
+  // the same annual money in more or fewer parts - never more or less money.
+  const roundsOf = {};
   for (const t of starts) {
     const d2 = t.divisions && t.divisions['2'];
     if (Array.isArray(d2) && d2.length) div2Of[t.season_no] = new Set(d2.map(Number));
+    const sch = t.schedule;
+    const r1 = Array.isArray(sch) ? sch : (sch && (sch['1'] || sch[1]));
+    roundsOf[t.season_no] = Array.isArray(r1) && r1.length ? r1.length : ROUNDS;
   }
+  // WHICH DIVISION A SLOT PLAYED, for a given summer. Pre-pyramid seasons
+  // carry no divisions row; everyone reads as the top flight, which is what
+  // they were.
+  const divOf = (seasonNo, slot) => (div2Of[seasonNo] && div2Of[seasonNo].has(slot)) ? 2 : 1;
+  // THE CLOSE-SEASON SPONSOR TABLE. Which shape each club signed, by the
+  // season it signed it for. Bots and the undecided sign BALANCED - a real
+  // choice a manager left on the table, not a penalty.
+  let spk = [];
+  try {
+    spk = (await pool.query(
+      'SELECT slot, season_no, package FROM sponsor_picks WHERE country_id=$1', [country])).rows;
+  } catch (eSp) { spk = []; }                    // pre-100 database: no picks yet
+  const pickOf = {};
+  for (const p of spk) pickOf[p.season_no + ':' + p.slot] = p.package;
+  // an associate's central money runs at a documented fraction of a member's
+  const natF = isFullMember(country) ? 1 : ASSOC_POOL;
+  // THE COUNTRY'S OWN ERA. The founding line is priced by the economy the
+  // country was founded under - season one's start day says which that was.
+  let firstStart = null;
+  for (const t of starts) if (firstStart == null || +t.season_no < firstStart.no)
+    firstStart = { no: +t.season_no, day: t.start_day | 0 };
+  const foundedEra2 = firstStart != null && era2Season(firstStart.day);
   for (const t of purse) {
     const won = t.result && t.result.winner === t.b.name ? t.b : t.a;
     const lost = won === t.a ? t.b : t.a;
@@ -542,10 +613,11 @@ export async function computeFinance(pool, country, opts = {}) {
       stature: stature(c.slot, c.is_boss),
       // what a manager has already spent is a fact; the books carry it from
       // the founding, so nobody can hide a purchase in an overdraft
-      bank: foundingBank(c.slot, c.is_boss) - (+c.academy_paid || 0) - (+c.seats_paid || 0),
+      bank: foundingBankFor(c.slot, c.is_boss, foundedEra2) - (+c.academy_paid || 0) - (+c.seats_paid || 0),
       sup: foundingSupport(c.slot, c.is_boss),
       mood: MOOD_NEUTRAL, pts: 0, played: 0, form: [], sPts: 0, sPlayed: 0,
       gate: 0, awayCut: 0, bcast: 0, sponsor: 0, wagesPaid: 0, upkeep: 0, interest: 0,
+      media: 0, ops: 0, prize: 0, sponsorBonus: 0,
       compensation: 0, capsAway: 0,
       feesIn: 0, feesOut: 0, scouting: 0, soldN: 0, boughtN: 0, academySpend: 0, coltsPurse: 0,
       writtenOff: 0, admin: false, adminRounds: 0,
@@ -555,7 +627,7 @@ export async function computeFinance(pool, country, opts = {}) {
     // and the academy are running totals in the register with no dates behind
     // them, so they can only be stated as what has been spent to date - the
     // one place this statement cannot say WHEN.
-    let b0 = foundingBank(c.slot, c.is_boss);
+    let b0 = foundingBankFor(c.slot, c.is_boss, foundedEra2);
     line(c.slot, EPOCH + HOUR, 'founding', 'Founding capital from the board', b0, b0);
     if (+c.academy_paid) { b0 -= +c.academy_paid; line(c.slot, EPOCH + HOUR, 'academy', 'Academy building, to date', -(+c.academy_paid), b0); }
     if (+c.seats_paid) { b0 -= +c.seats_paid; line(c.slot, EPOCH + HOUR, 'stadium', 'Stadium building, to date', -(+c.seats_paid), b0); }
@@ -615,6 +687,11 @@ export async function computeFinance(pool, country, opts = {}) {
   };
 
   let curSeason = null;
+  // the current season's era and its league-round count, set at each boundary
+  let curEra2 = false, curR = ROUNDS;
+  // an eight-club division only ever needs the first eight ordinals
+  const ORD = n => n === 1 ? '1st' : n === 2 ? '2nd' : n === 3 ? '3rd' : n + 'th';
+  const DIV_NAME = { 1: 'Division One', 2: 'Division Two' };
   for (const R of byRound) {
     // THE MOOD RESETS WITH THE SEASON. A new summer opens on a level footing:
     // the form book is blank, the supporters are settled, and everything the
@@ -623,33 +700,77 @@ export async function computeFinance(pool, country, opts = {}) {
     // opening day; what resets is what those supporters currently think.)
     const sNo9 = R.ms.length ? R.ms[0].season_no : null;
     if (sNo9 !== null && sNo9 !== curSeason) {
-      // A SPONSOR SIGNS A CONTRACT, HE DOES NOT RE-READ THE TABLE EVERY WEEK.
-      // The cheque was priced off the club's position and mood on the morning
-      // of each round, so it moved every time the table did - a club that
-      // climbed from ninth to fifth and cheered up saw its sponsorship nearly
-      // double between one match and the next, which is not a thing sponsorship
-      // does. It is signed once, in the close season, on where the club
-      // FINISHED - the table as it stood when the previous summer ended, which
-      // is what posMap still holds at this exact moment - and paid flat every
-      // round until the next contract. Standing is still worth money; it is
-      // worth it a year at a time, the way a real deal is.
-      const posEnd = posMap();
-      for (const c8 of clubs) {
-        const t8 = S[c8.slot];
-        t8.sponsorFee = sponsorOf(
-          curSeason === null ? (c8.slot | 0) + 1 : (posEnd[c8.slot] || (c8.slot | 0) + 1),
-          MOOD_NEUTRAL, N);
+      const boundaryEra2 = era2Season(startOf[sNo9] ?? 0);
+      if (!boundaryEra2) {
+        // A SPONSOR SIGNS A CONTRACT, HE DOES NOT RE-READ THE TABLE EVERY WEEK.
+        // The cheque was priced off the club's position and mood on the morning
+        // of each round, so it moved every time the table did - a club that
+        // climbed from ninth to fifth and cheered up saw its sponsorship nearly
+        // double between one match and the next, which is not a thing sponsorship
+        // does. It is signed once, in the close season, on where the club
+        // FINISHED - the table as it stood when the previous summer ended, which
+        // is what posMap still holds at this exact moment - and paid flat every
+        // round until the next contract. Standing is still worth money; it is
+        // worth it a year at a time, the way a real deal is.
+        const posEnd = posMap();
+        for (const c8 of clubs) {
+          const t8 = S[c8.slot];
+          t8.sponsorFee = sponsorOf(
+            curSeason === null ? (c8.slot | 0) + 1 : (posEnd[c8.slot] || (c8.slot | 0) + 1),
+            MOOD_NEUTRAL, N);
+        }
+      } else {
+        // ERA 2: THE SPONSOR IS STILL A CLOSE-SEASON SIGNATURE - one deal, one
+        // summer - but the deal now has a headline value AND a shape. The value
+        // reads the division the club will play in and where it finished in
+        // its division LAST summer (its own season table, not the all-time
+        // standings - a sponsor reads this year's paper). The shape is the
+        // club's own pick out of sponsor_picks; everyone else signs BALANCED.
+        const rankOf = {}, rankN = {};
+        if (curSeason === null) {
+          // the world's first summer: no table exists, so the founding order
+          // within each division stands in for one - the same seeding the old
+          // economy priced its first sponsors off
+          for (const dv of [1, 2]) {
+            const mem = clubs.filter(c => divOf(sNo9, c.slot) === dv)
+              .map(c => c.slot).sort((a, b) => a - b);
+            mem.forEach((s9, i) => { rankOf[s9] = i + 1; rankN[s9] = mem.length; });
+          }
+        } else {
+          for (const dv of [1, 2]) {
+            const mem = clubs.filter(c => divOf(curSeason, c.slot) === dv).map(c => S[c.slot])
+              .sort((a, b) => b.sPts - a.sPts || b.sPlayed - a.sPlayed || a.slot - b.slot);
+            mem.forEach((x, i) => { rankOf[x.slot] = i + 1; rankN[x.slot] = mem.length; });
+          }
+        }
+        for (const c8 of clubs) {
+          const t8 = S[c8.slot];
+          const dvNew = divOf(sNo9, c8.slot);
+          // the rank is where the club stood in the division it PLAYED; the
+          // tier is the division it plays NOW - so a promoted club signs a
+          // Division One deal at the top of the scale, which is the money
+          // promotion is worth
+          const V = sponsorSeasonValue(dvNew, rankOf[c8.slot] || 4, rankN[c8.slot] || 8, natF,
+            econStature(c8.slot, c8.is_boss));
+          const pkg = pickOf[sNo9 + ':' + c8.slot] || SPONSOR_DEFAULT;
+          const shape = SPONSOR_PACKAGES[pkg] || SPONSOR_PACKAGES[SPONSOR_DEFAULT];
+          t8.spV = V; t8.spPkg = pkg;
+          t8.spG = Math.round(V * shape.guaranteed);
+          t8.spWin = sponsorWinBonus(V, pkg);
+        }
       }
       curSeason = sNo9;
+      curEra2 = boundaryEra2;
+      curR = roundsOf[sNo9] || ROUNDS;
       for (const c of clubs) { const t9 = S[c.slot]; t9.form = []; t9.mood = MOOD_NEUTRAL; t9.sPts = 0; t9.sPlayed = 0; }
     }
     const pos = posMap();
     // every deal that closed on or before this round's day has already moved
     // the money by the time the gate is counted
     if (R.ms.length) drainMarket((startOf[R.ms[0].season_no] ?? 0) + (dayOfRound(R.ms[0].round) ?? (R.ms[0].round - 1)));
-    const takings = {};                                   // slot -> money this round
     const gates = {};                                     // slot -> the lines behind it
-    for (const c of clubs) { takings[c.slot] = 0; gates[c.slot] = []; }
+    const wonThisRound = new Set();                       // era 2: who banked a win bonus
+    for (const c of clubs) { gates[c.slot] = []; }
     for (const m of R.ms) {
       const H = S[m.home_slot], A = S[m.away_slot];
       if (!H || !A) continue;
@@ -662,19 +783,41 @@ export async function computeFinance(pool, country, opts = {}) {
       const sale = gateSale(demand, H.seats, matchMs, priceFnFor(H.slot, m.season_no, m.round), null,
         gateHeat(big9, H.mood, m.round));
       const att = sale.sold, gate = sale.take;
-      const home = Math.round(gate * HOME_CUT), away = gate - Math.round(gate * HOME_CUT);
-      const bc = Math.round(att * BROADCAST_PER_HEAD);
-      H.gate += home; H.bcast += bc; H.atts.push(att); H.lastAtt = att; H.lastWeather = w.word;
-      A.awayCut += away;
-      takings[H.slot] += home + bc; takings[A.slot] += away;
+      H.atts.push(att); H.lastAtt = att; H.lastWeather = w.word;
       // THE LINE NAMES THE MATCH, AND THE FIGURE IS THE FIGURE. It carried the
       // crowd, the price a head and the share, which was true and which nobody
       // wanted to read on a statement: a ledger line is what came in and what
       // it came in from. The arithmetic behind a gate lives on the ground page,
       // where a manager sets the price.
-      gates[H.slot].push({ kind: 'gate', label: 'Gate takings v ' + m.away_name, amount: home });
-      gates[H.slot].push({ kind: 'broadcast', label: 'Broadcast fee v ' + m.away_name, amount: bc });
-      gates[A.slot].push({ kind: 'gate-away', label: 'Away share at ' + m.home_name, amount: away });
+      if (!curEra2) {
+        // the founding economy: two thirds of the gate stays home, a third
+        // travels, and the broadcast van pays the host by the head. Kept
+        // alive, exactly, for every season it governed.
+        const home = Math.round(gate * HOME_CUT), away = gate - Math.round(gate * HOME_CUT);
+        const bc = Math.round(att * BROADCAST_PER_HEAD);
+        H.gate += home; H.bcast += bc; A.awayCut += away;
+        gates[H.slot].push({ kind: 'gate', label: 'Gate takings v ' + m.away_name, amount: home });
+        gates[H.slot].push({ kind: 'broadcast', label: 'Broadcast fee v ' + m.away_name, amount: bc });
+        gates[A.slot].push({ kind: 'gate-away', label: 'Away share at ' + m.home_name, amount: away });
+      } else {
+        // ERA 2: MATCHDAY IS THE HOME CLUB'S, AND IT BANKS THE NET. The gate
+        // its own pricing earned stays at the ground that earned it - no away
+        // share, and no broadcaster counting heads (the media money arrives
+        // below, flat, whether the ground was full or empty). What lands is
+        // the gross sale times MATCHDAY_NET: the staging costs come off at
+        // the turnstile, at a constant share, so the price dial still moves
+        // the banked figure exactly in proportion.
+        const net = Math.round(gate * MATCHDAY_NET);
+        H.gate += net;
+        gates[H.slot].push({ kind: 'gate', label: 'Gate takings v ' + m.away_name, amount: net });
+        // a league win is worth sponsor money the round it is won - playoff
+        // wins are paid through the title bonus instead, so the same run is
+        // never sold to the sponsor twice
+        if (m.winner != null && m.round <= curR) {
+          const W = m.winner === m.home_name ? H : m.winner === m.away_name ? A : null;
+          if (W) wonThisRound.add(W.slot);
+        }
+      }
     }
     // the world moment this round's books are settled: its nation's own hour
     const roundAt = EPOCH + ((startOf[R.ms[0].season_no] ?? 0) +
@@ -683,26 +826,63 @@ export async function computeFinance(pool, country, opts = {}) {
     // academy, and then answers to the bank
     const playing = new Set();
     for (const m of R.ms) { playing.add(m.home_slot); playing.add(m.away_slot); }
+    const rdNo = R.ms.length ? R.ms[0].round : 0;
     for (const slot of playing) {
       const c = S[slot];
-      // a club already under administration signs a distressed deal: the
-      // sponsor stays, but for half of what he would otherwise pay
-      const sp = Math.round((c.sponsorFee != null ? c.sponsorFee : sponsorOf(pos[slot], MOOD_NEUTRAL, N))
-        * (c.admin ? ADMIN_SPONSOR : 1));
       const up = academyUpkeep(c.academy);
       const f = feeAt[R.ms[0].season_no + ':' + R.ms[0].round + ':' + slot];
       const comp = f ? f.paid : 0;
-      c.sponsor += sp; c.wagesPaid += c.wages; c.upkeep += up; c.rounds++;
+      c.wagesPaid += c.wages; c.upkeep += up; c.rounds++;
       c.compensation += comp; c.capsAway += f ? f.men : 0;
       const wasAdmin = c.admin;
       if (c.admin) c.adminRounds++;
       // the same sum as ever, taken one entry at a time so the running balance
       // the statement prints is the balance the club actually held
       for (const g of gates[slot]) { c.bank += g.amount; line(slot, roundAt, g.kind, g.label, g.amount, c.bank); }
-      c.bank += sp;
-      line(slot, roundAt, 'sponsor', wasAdmin ? 'Sponsor, on administration terms' : 'Sponsor', sp, c.bank);
+      if (!curEra2) {
+        // a club already under administration signs a distressed deal: the
+        // sponsor stays, but for half of what he would otherwise pay
+        const sp = Math.round((c.sponsorFee != null ? c.sponsorFee : sponsorOf(pos[slot], MOOD_NEUTRAL, N))
+          * (wasAdmin ? ADMIN_SPONSOR : 1));
+        c.sponsor += sp; c.bank += sp;
+        line(slot, roundAt, 'sponsor', wasAdmin ? 'Sponsor, on administration terms' : 'Sponsor', sp, c.bank);
+      } else if (rdNo >= 1 && rdNo <= curR) {
+        // ERA 2, A LEAGUE ROUND. The stable centre of the club's year arrives
+        // here: the division's media installment and the sponsor's guaranteed
+        // cheque, both regardless of home or away, form or crowd. Each is the
+        // season figure paid in R parts by CUMULATIVE rounding - installment
+        // r is round(G*r/R) - round(G*(r-1)/R) - so a season of any length
+        // banks its grant to the exact dollar, never a rounding penny more.
+        const dv9 = divOf(R.ms[0].season_no, slot);
+        const G9 = Math.round((MEDIA_SEASON[dv9] || MEDIA_SEASON[2]) * natF);
+        const med = Math.round(G9 * rdNo / curR) - Math.round(G9 * (rdNo - 1) / curR);
+        c.media += med; c.bank += med;
+        line(slot, roundAt, 'media', 'Media distribution', med, c.bank);
+        // the guaranteed installment - halved, like the old cheque, while the
+        // club is under administration
+        const gIn = Math.round((Math.round(c.spG * rdNo / curR) - Math.round(c.spG * (rdNo - 1) / curR))
+          * (wasAdmin ? ADMIN_SPONSOR : 1));
+        c.sponsor += gIn; c.bank += gIn;
+        line(slot, roundAt, 'sponsor', wasAdmin ? 'Sponsor, on administration terms' : 'Sponsor', gIn, c.bank);
+        // and the results-dependent part of the deal, if today earned it
+        if (wonThisRound.has(slot) && c.spWin) {
+          const wb = Math.round(c.spWin * (wasAdmin ? ADMIN_SPONSOR : 1));
+          c.sponsorBonus += wb; c.bank += wb;
+          line(slot, roundAt, 'sponsor-bonus', 'Sponsor bonus \u00b7 the win', wb, c.bank);
+        }
+      }
       if (comp) { c.bank += comp; line(slot, roundAt, 'compensation', 'International compensation \u00b7 ' + f.men + (f.men === 1 ? ' man' : ' men') + ' away', comp, c.bank); }
       c.bank -= c.wages; line(slot, roundAt, 'wages', 'Player wages', -c.wages, c.bank);
+      if (curEra2) {
+        // CLUB OPERATIONS - the one line that is the cost of BEING a club:
+        // staff, ground, admin, travel. Composed in financeconfig.mjs from a
+        // base, the seats and the flight; a bigger ground and a higher
+        // division cost more to run, every round, home or away.
+        const ops = operationsPerRound(c.seats, divOf(R.ms[0].season_no, slot),
+          isFullMember(country) ? 1 : OPS_ASSOC);
+        c.ops += ops; c.bank -= ops;
+        line(slot, roundAt, 'ops', 'Club operations', -ops, c.bank);
+      }
       c.bank -= up; line(slot, roundAt, 'upkeep', 'Academy upkeep \u00b7 level ' + c.academy, -up, c.bank);
       if (c.bank < 0) {
         const i = Math.round(-c.bank * DEBT_ROUND); c.interest += i; c.bank -= i;
@@ -728,6 +908,68 @@ export async function computeFinance(pool, country, opts = {}) {
       H.form.push(hp); A.form.push(ap);
       if (H.form.length > 5) H.form.shift();
       if (A.form.length > 5) A.form.shift();
+    }
+    // -----------------------------------------------------------------------
+    // ERA 2, THE SEASON'S OWN CHEQUES. Both are facts of the record and land
+    // the moment the record shows them, so a re-run can neither pay twice nor
+    // pay early:
+    //   - the final league round seals the table: every club is paid its
+    //     place in its division (prize money is deliberately the smallest
+    //     pool in the game - see financeconfig.mjs), and a top-four finish
+    //     triggers the playoff bonus of any sponsor deal that carries one;
+    //   - the playoff final crowns a champion: the winners take the playoff
+    //     purse, and a CONTENDER deal pays its title money.
+    // Income only, so no overdraft interest falls due here - but the floor
+    // flag is re-read, because prize money is exactly what can lift a club
+    // back over the administration line.
+    // -----------------------------------------------------------------------
+    if (curEra2 && R.ms.length) {
+      const sn2 = R.ms[0].season_no;
+      if (rdNo === curR) {
+        for (const dv of [1, 2]) {
+          const mem = clubs.filter(c9 => divOf(sn2, c9.slot) === dv).map(c9 => S[c9.slot])
+            .sort((a, b) => b.sPts - a.sPts || b.sPlayed - a.sPlayed || a.slot - b.slot);
+          mem.forEach((t, i) => {
+            const pz = prizeFor(dv, i + 1, natF);
+            if (pz) {
+              t.prize += pz; t.bank += pz;
+              line(t.slot, roundAt, 'prize', 'Prize money · ' + ORD(i + 1) + ' in ' + DIV_NAME[dv], pz, t.bank);
+            }
+            const shape = SPONSOR_PACKAGES[t.spPkg] || SPONSOR_PACKAGES[SPONSOR_DEFAULT];
+            if (i < 4 && shape.playoffShare) {
+              const b9 = Math.round((t.spV || 0) * shape.playoffShare * (t.admin ? ADMIN_SPONSOR : 1));
+              if (b9) {
+                t.sponsorBonus += b9; t.bank += b9;
+                line(t.slot, roundAt, 'sponsor-bonus', 'Sponsor bonus · playoff qualification', b9, t.bank);
+              }
+            }
+            t.admin = t.bank <= -DEBT_LIMIT;
+          });
+        }
+      }
+      if (rdNo === curR + 2) {                    // the playoff final, both divisions
+        for (const m of R.ms) {
+          const W = m.winner == null ? null
+            : m.winner === m.home_name ? S[m.home_slot]
+            : m.winner === m.away_name ? S[m.away_slot] : null;
+          if (!W) continue;
+          const dv = divOf(sn2, W.slot);
+          const pz = Math.round((PRIZE_PLAYOFF_CHAMP[dv] || 0) * natF);
+          if (pz) {
+            W.prize += pz; W.bank += pz;
+            line(W.slot, roundAt, 'prize', 'Prize money · ' + DIV_NAME[dv] + ' playoff champions', pz, W.bank);
+          }
+          const shape = SPONSOR_PACKAGES[W.spPkg] || SPONSOR_PACKAGES[SPONSOR_DEFAULT];
+          if (shape.titleShare) {
+            const b9 = Math.round((W.spV || 0) * shape.titleShare * (W.admin ? ADMIN_SPONSOR : 1));
+            if (b9) {
+              W.sponsorBonus += b9; W.bank += b9;
+              line(W.slot, roundAt, 'sponsor-bonus', 'Sponsor bonus · champions', b9, W.bank);
+            }
+          }
+          W.admin = W.bank <= -DEBT_LIMIT;
+        }
+      }
     }
     const pos2 = posMap();
     const posS = posMapSeason();
@@ -766,6 +1008,12 @@ export async function computeFinance(pool, country, opts = {}) {
         // the club's standing price: the latest dated decision, $26 before any
         avgAttendance: avg, ticket: priceAtMs((priceRows[c.slot] || {}).club || null, Infinity),
         gate: s.gate, awayCut: s.awayCut, broadcast: s.bcast, sponsor: s.sponsor,
+        // the era-2 lines: an era-1 world reads them as honest zeroes
+        media: s.media, ops: s.ops, prize: s.prize, sponsorBonus: s.sponsorBonus,
+        sponsorPackage: s.spPkg || null, sponsorValue: s.spV || 0,
+        // which economy the CURRENT season settles under - what the client
+        // needs to know to describe a matchday truthfully
+        era: curEra2 ? 2 : 1,
         compensation: s.compensation, capsAway: s.capsAway,
         feesIn: s.feesIn, feesOut: s.feesOut, scouting: s.scouting, academySpend: s.academySpend,
         coltsPurse: s.coltsPurse,
@@ -776,7 +1024,7 @@ export async function computeFinance(pool, country, opts = {}) {
         debtLimit: DEBT_LIMIT,
         // what THIS club's board put in, not the world's flat figure - the
         // ledger identity is checked against it
-        founded: foundingBank(s.slot, s.is_boss), rounds: s.rounds,
+        founded: foundingBankFor(s.slot, s.is_boss, foundedEra2), rounds: s.rounds,
         // how many of those rounds were at home is exactly how many gates were
         // counted, and it is the only honest divisor for an average gate
         homeMatches: s.atts.length, awayMatches: Math.max(0, s.rounds - s.atts.length),
@@ -788,7 +1036,8 @@ export async function computeFinance(pool, country, opts = {}) {
         academyLevel: s.academy,
         nextAcademy: s.academy < ACADEMY_MAX ? s.academy + 1 : null,
         nextAcademyCost: s.academy < ACADEMY_MAX ? academyBuild(s.academy, s.academy + 1) : null,
-        maxSeats: MAX_SEATS, seatBlock: 1000, homeCut: HOME_CUT
+        // era 2 retired the away split: the whole take is the home club's
+        maxSeats: MAX_SEATS, seatBlock: 1000, homeCut: curEra2 ? 1 : HOME_CUT
       }
     };
   });

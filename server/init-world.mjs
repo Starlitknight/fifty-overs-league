@@ -8,7 +8,7 @@
 import { makePool } from './db.mjs';
 import { makeHost, ENGINE_VERSION } from './enginehost.mjs';
 import { EPOCH, CYCLE, ROUNDS, dayIx, scheduleOf, seasonSchedules, natHour } from './clock.mjs';
-import { foundingSeats, foundingBank } from './economy.mjs';
+import { foundingSeats, foundingBankFor, era2Season } from './economy.mjs';
 import { expOfYears, expWordOf } from './living.mjs';
 import { squadStrength } from './ratings.mjs';
 
@@ -344,7 +344,10 @@ async function foundCountry(c, cfg, host, startDay, gen = 1) {
        // a club is founded with the ground and the capital its standing is
        // worth. Both are derived from the slot, so the books rebuild them; the
        // row carries them so a world reads right before its first settlement.
-       foundingSeats(club.slot, !!club.boss), foundingBank(club.slot, !!club.boss),
+       // Which economy the country opens under decides the capital: a club
+       // founded in era 2 starts on working capital sized to the new
+       // turnover, not the old one (financeconfig.mjs).
+       foundingSeats(club.slot, !!club.boss), foundingBankFor(club.slot, !!club.boss, era2Season(startDay)),
        // a club is born knowing what its eleven is worth, so a world founded
        // this morning never needs the backfill (migration 092)
        squadStrength(players)]);

@@ -25,7 +25,7 @@ import { academyRate } from '../living.mjs';
 import { fantasyPoints, teamRatings, matchRating, squadStrength,
          ladderRating, strengthRating, RATING_UNITS, RANK_BASE } from '../ratings.mjs';
 import { roundRobin, bracket, roundsOf, closeEnrolment, playComps, computeComp, rebuildComps } from '../comps.mjs';
-import { academyUpkeep, academyBuild, TICKET, HOME_CUT, MAX_SEATS, MOOD_WORD, MOOD_MAX, DEBT_LIMIT, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance, supportTarget, stature, foundingBank, foundingSeats, foundingSupport } from '../economy.mjs';
+import { academyUpkeep, academyBuild, TICKET, MAX_SEATS, MOOD_WORD, MOOD_MAX, DEBT_LIMIT, weatherOf, moodOf, stadiumCost, seatBlockPrice, computeFinance, supportTarget, stature, foundingBankFor, foundingSeats, foundingSupport } from '../economy.mjs';
 import { EPOCH, DAY, seedOf, dayOfRound } from '../clock.mjs';
 import { seasonTourPlan } from '../nations.mjs';
 
@@ -1076,7 +1076,12 @@ test('016: the nets, the face and the money all belong to the world', async () =
     `SELECT slot, bank FROM clubs WHERE country_id='eng' ORDER BY slot`)).rows;
   assert.equal(money.length, 16);
   money.forEach(m => assert.ok(Number.isFinite(Number(m.bank)), 'club ' + m.slot + ' has a treasury'));
-  assert.ok(money.every(m => Number(m.bank) > 0), 'nobody has been bankrupted by a fortnight of cricket');
+  // Era 2 runs tight margins by design: a heavy Division One payroll may
+  // lawfully dip into its overdraft inside a fortnight (interest and the
+  // floor are the mechanics that answer it). What a fortnight must never do
+  // is drive anybody to the administration floor.
+  assert.ok(money.every(m => Number(m.bank) > -2500000 / 2), 'nobody near the floor after a fortnight of cricket');
+  assert.ok(money.filter(m => Number(m.bank) > 0).length >= 10, 'most treasuries still in the black');
   // SETTLING TWICE SETTLES THE SAME FIGURE - the same inputs, the same
   // books. The pure-recompute evolve above legitimately moved the squads
   // (a living man's rating follows his record, and his wage follows him),
@@ -1099,8 +1104,9 @@ test('016: the nets, the face and the money all belong to the world', async () =
       WHERE country_id='eng' AND slot=1 ORDER BY seq`)).rows;
   assert.ok(led.length > 10, 'the club has a statement: ' + led.length + ' entries');
   assert.equal(led[0].kind, 'founding', 'it opens with the board\'s money');
-  // the board's money is what THIS club's standing is worth, not a flat figure
-  assert.equal(Number(led[0].balance), foundingBank(1, false));
+  // the board's money is what THIS club's standing is worth, not a flat
+  // figure - and this world was founded under era 2, on working capital
+  assert.equal(Number(led[0].balance), foundingBankFor(1, false, true));
   // the running balance is exactly the entries walked in order
   let run = 0;
   led.forEach(l => { run += Number(l.amount); assert.equal(Number(l.balance), run, 'entry ' + l.seq + ' leaves the right balance'); });
@@ -1394,20 +1400,20 @@ test('018: the academy is paid for, and it recomputes', async () => {
   const bank0 = Number((await pool.query(`SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank);
   const rounds = Number((await pool.query(
     `SELECT count(*) AS n FROM matches WHERE country_id='eng' AND (home_slot=1 OR away_slot=1)`)).rows[0].n);
-  assert.ok(bank0 > 300000, 'a season of gate money covers an academy');
+  assert.ok(bank0 > 900000, 'a fortnight of era-2 money covers a level-three academy');
 
   await assert.rejects(pool.query(`SELECT public.world_set_academy(3)`), /sign in/);
   // 058 took the ladder to ten. Nine is now a real rung; eleven is not.
   await assert.rejects(as(U1, `SELECT public.world_set_academy(11)`), /1 to 10/);
   await assert.rejects(as(U1, `SELECT public.world_set_academy(1)`), /never sold back/);
-  const up = await as(U1, `SELECT public.world_set_academy(4) AS r`);
-  assert.equal(up.rows[0].r.academy, 4);
-  assert.equal(Number(up.rows[0].r.cost), academyBuild(2, 4), 'the build ladder, and the steps get steeper');
+  const up = await as(U1, `SELECT public.world_set_academy(3) AS r`);
+  assert.equal(up.rows[0].r.academy, 3);
+  assert.equal(Number(up.rows[0].r.cost), academyBuild(2, 3), 'the build ladder, and the steps get steeper');
   const paid = (await pool.query(
     `SELECT academy, academy_paid, bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0];
-  assert.equal(paid.academy, 4);
-  assert.equal(Number(paid.academy_paid), academyBuild(2, 4), 'what was spent is remembered');
-  assert.equal(Number(paid.bank), bank0 - academyBuild(2, 4), 'and it came straight out of the treasury');
+  assert.equal(paid.academy, 3);
+  assert.equal(Number(paid.academy_paid), academyBuild(2, 3), 'what was spent is remembered');
+  assert.equal(Number(paid.bank), bank0 - academyBuild(2, 3), 'and it came straight out of the treasury');
 
   await settleMoney(pool, 'eng');
   const bank1 = Number((await pool.query(`SELECT bank FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].bank);
@@ -1416,14 +1422,14 @@ test('018: the academy is paid for, and it recomputes', async () => {
   // recomputing it here: how many rounds a club has settled is the walk's
   // business, and a test that guesses it is a test that breaks on the calendar.
   const fin1 = (await computeFinance(pool, 'eng')).find(f => f.slot === 1).finance;
-  assert.equal(fin1.upkeep, fin1.rounds * academyUpkeep(4),
+  assert.equal(fin1.upkeep, fin1.rounds * academyUpkeep(3),
     'every settled round charged the academy the club holds NOW');
   // and that is the point of a walk that recomputes from genesis: buying a
   // level does not only cost the lump, it re-charges every round already
   // played at the dearer rate. So the treasury falls by the building AND by
   // the difference in upkeep across the whole season so far.
-  assert.equal(bank1, bank0 - academyBuild(2, 4)
-                          - fin1.rounds * (academyUpkeep(4) - academyUpkeep(2)),
+  assert.equal(bank1, bank0 - academyBuild(2, 3)
+                          - fin1.rounds * (academyUpkeep(3) - academyUpkeep(2)),
     'the upgrade is charged once and the bigger academy for every round settled');
   await settleMoney(pool, 'eng');
   assert.equal(Number((await pool.query(
@@ -1490,7 +1496,7 @@ test('018: the academy is paid for, and it recomputes', async () => {
 
   // THE LINE. A rival sees the building, never the boys inside it.
   const seen = (await pool.query(`SELECT * FROM public.world_clubs WHERE country_id='eng' AND slot=1`)).rows[0];
-  assert.equal(seen.academy, 4, 'an academy is a building, and buildings are visible');
+  assert.equal(seen.academy, 3, 'an academy is a building, and buildings are visible');
   assert.ok(!('youth' in seen), 'who is in it is nobody else\'s business');
   assert.ok(JSON.stringify(seen).indexOf('Green Lad') === -1);
 
@@ -1507,7 +1513,7 @@ test('018: the academy is paid for, and it recomputes', async () => {
   // your own status carries the academy home
   const st = (await as(U1, `SELECT public.world_my_status() AS s`)).rows[0].s;
   assert.equal(st.manager, 'Santosh K');
-  assert.equal(st.academy, 4);
+  assert.equal(st.academy, 3);
   assert.equal(st.youth.length, (await pool.query(
     `SELECT youth FROM clubs WHERE country_id='eng' AND slot=1`)).rows[0].youth.length,
     'the boys on his books are the boys the world has');
@@ -1601,7 +1607,12 @@ test('020: the books are a ledger, and they recompute from the record', async ()
     assert.ok(f.supporters >= 4000 && f.supporters <= 60000, 'a believable following');
     assert.ok(f.mood >= 0 && f.mood <= 8 && MOOD_WORD[f.mood] === f.moodWord);
     assert.ok(f.lastAttendance > 0 && f.lastAttendance <= r.seats, 'nobody sold more seats than they built');
-    assert.ok(f.gate > 0 && f.awayCut > 0, 'money came through the gate at home and away');
+    // era 2: the whole gate is the host's, and nothing travels with the bus
+    assert.ok(f.gate > 0, 'money came through the gate at home');
+    assert.equal(f.awayCut, 0, 'the away split is retired under era 2');
+    assert.equal(f.broadcast, 0, 'nobody pays by the head under era 2');
+    assert.ok(f.media > 0, 'the media distribution arrived');
+    assert.ok(f.ops > 0, 'club operations were paid');
     assert.ok(f.sponsor > 0 && f.wages > 0 && f.upkeep > 0);
     // a club that lost men to the international windows was paid for them,
     // and one that lost none was paid nothing
@@ -1614,8 +1625,9 @@ test('020: the books are a ledger, and they recompute from the record', async ()
   for (const r of rows) {
     const f = r.finance;
     const expect = f.founded + f.gate + f.awayCut + (f.broadcast || 0) + f.sponsor + (f.compensation || 0)
+      + (f.media || 0) + (f.prize || 0) + (f.sponsorBonus || 0)
       + (f.feesIn || 0) + f.writtenOff
-      - f.wages - f.upkeep - f.interest - f.academyPaid - f.seatsPaid
+      - f.wages - (f.ops || 0) - f.upkeep - f.interest - f.academyPaid - f.seatsPaid
       - (f.feesOut || 0) - (f.scouting || 0) - (f.academySpend || 0);
     assert.equal(Number(r.bank), Math.round(expect), 'club ' + r.slot + ': the books add up');
   }
@@ -1693,12 +1705,12 @@ test('020: the books are a ledger, and they recompute from the record', async ()
   });
   assert.ok(crowds.size > 1, 'the clubs do not all draw the identical crowd');
 
-  // THE GATE SPLIT: two thirds to the home club, one third to the visitors
+  // THE GATE IS THE HOST'S, WHOLE (era 2): nothing travels with the visitors
   const cash = await computeFinance(pool, 'eng');
-  const totalGate = cash.reduce((s, c) => s + c.finance.gate + c.finance.awayCut, 0);
   const homeShare = cash.reduce((s, c) => s + c.finance.gate, 0);
-  assert.ok(Math.abs(homeShare / totalGate - HOME_CUT) < 0.01,
-    'the home clubs took two thirds of everything through the turnstiles');
+  const awayShare = cash.reduce((s, c) => s + c.finance.awayCut, 0);
+  assert.ok(homeShare > 0, 'money came through the turnstiles');
+  assert.equal(awayShare, 0, 'the away split is retired under era 2');
 
   // BUILDING THE GROUND. The cost curve in SQL is the cost curve in the server.
   for (const [a, b] of [[15000, 16000], [15000, 20000], [20000, 25000], [15000, 45000]]) {
@@ -1790,8 +1802,9 @@ test('020: the books are a ledger, and they recompute from the record', async ()
   // and the books still add up with the write-off in them
   assert.equal(red, Math.round(broke.finance.founded + broke.finance.gate + broke.finance.awayCut + (broke.finance.broadcast || 0)
     + broke.finance.sponsor + (broke.finance.compensation || 0) + (broke.finance.feesIn || 0)
+    + (broke.finance.media || 0) + (broke.finance.prize || 0) + (broke.finance.sponsorBonus || 0)
     + broke.finance.writtenOff
-    - broke.finance.wages - broke.finance.upkeep
+    - broke.finance.wages - (broke.finance.ops || 0) - broke.finance.upkeep
     - broke.finance.interest - broke.finance.academyPaid - broke.finance.seatsPaid
     - (broke.finance.feesOut || 0) - (broke.finance.scouting || 0)),
     'the ruined books add up too');

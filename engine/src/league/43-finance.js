@@ -15,9 +15,12 @@
    carries it) and lays it out the way a treasurer would:
 
      THE BANK       what is there, against what he was founded with
-     MONEY IN       gate, away cut, sponsor, international fees, transfers in
-     MONEY OUT      wages, the academy, the ground, scouting, transfers out,
-                    interest on an overdraft
+     MONEY IN       matchday, the media distribution, sponsor (guaranteed and
+                    earned), prize money, international fees, transfers in -
+                    and, in the founding era's books, the away cut and the
+                    per-head broadcast fee those seasons were paid under
+     MONEY OUT      wages, club operations, the academy, the ground, scouting,
+                    transfers out, interest on an overdraft
      THE CROWD      supporters, their mood, the gate they turned into - the
                     reason the biggest line in the ledger is the size it is
      THE GROUND     seats, what the next stand costs, and whether he can afford
@@ -493,7 +496,21 @@
              WBASE: 6, WMAX: 14,
              // a sale day arrives in six four-hourly parts, so the board moves
              // through the day instead of standing still between midnights
-             TICK: 4 * 3600000, TICKS: 6 };
+             TICK: 4 * 3600000, TICKS: 6,
+             // era 2: the club banks this share of the gross sale - the rest
+             // is matchday staging, taken at the turnstile. Mirrors
+             // MATCHDAY_NET in server/financeconfig.mjs.
+             NET: 0.72 };
+  // WHAT A SALE BANKS. The umpire says which economy a world is on by the
+  // homeCut he quotes: 1 is era 2 (the whole gate, net of staging), anything
+  // less is the founding share-and-broadcast arithmetic, kept exactly for
+  // worlds still governed by it. Every money figure derived from a sale on
+  // this page goes through here, so the board can never disagree with the
+  // gate the umpire banks.
+  function mdayMoney(take, sold, homeCut) {
+    return homeCut >= 1 ? Math.round(take * TK.NET)
+      : Math.round(take * homeCut + sold * TK.BCAST);
+  }
   function tkWindow(heat) {
     var h = Math.max(0, Math.min(1, heat || 0));
     var days = TK.WBASE + Math.round((TK.WMAX - TK.WBASE) * h);
@@ -747,7 +764,7 @@
         (function (v) { return function () { return v; }; })(p), null, head.heat);
       out.p.push(p);
       out.sold.push(s.sold);
-      out.take.push(Math.round(s.take * homeCut + s.sold * TK.BCAST));
+      out.take.push(mdayMoney(s.take, s.sold, homeCut));
     }
     return out;
   }
@@ -853,12 +870,17 @@
     var inGate = Number(f.gate) || 0, inAway = Number(f.awayCut) || 0, inBcast = Number(f.broadcast) || 0;
     var inSpon = Number(f.sponsor) || 0, inComp = Number(f.compensation) || 0, inFees = Number(f.feesIn) || 0;
     var inPurse = Number(f.coltsPurse) || 0, inWriteOff = Number(f.writtenOff) || 0;
-    var totIn = inGate + inAway + inBcast + inSpon + inComp + inFees + inPurse + inWriteOff;
+    // the era-2 lines (an older world reads them as zeroes): the league's
+    // media distribution, prize money, and the results half of the sponsor's
+    // deal on the income side; club operations on the other
+    var inMedia = Number(f.media) || 0, inPrize = Number(f.prize) || 0, inSpBon = Number(f.sponsorBonus) || 0;
+    var totIn = inGate + inAway + inBcast + inSpon + inSpBon + inMedia + inPrize + inComp + inFees + inPurse + inWriteOff;
     var outWage = Number(f.wages) || 0, outUp = Number(f.upkeep) || 0, outInt = Number(f.interest) || 0;
     var outFees = Number(f.feesOut) || 0, outScout = Number(f.scouting) || 0;
+    var outOps = Number(f.ops) || 0;
     var outAcadSpend = Number(f.academySpend) || 0;
     var outAcad = Number(f.academyPaid) || 0, outSeats = Number(f.seatsPaid) || 0;
-    var totOut = outWage + outUp + outInt + outFees + outScout + outAcadSpend + outAcad + outSeats;
+    var totOut = outWage + outOps + outUp + outInt + outFees + outScout + outAcadSpend + outAcad + outSeats;
     var net = totIn - totOut;
     // and the proof: the bank the world holds is the founding money plus that
     // net, to the pound. It is checked - a missing line has been a real bug
@@ -880,8 +902,8 @@
     // rounds played while excluding the fees out - one-off money inflating a
     // rate. This is the operating result only: what the club earns by playing,
     // less what it costs to field and run.
-    var opIn = inGate + inAway + inBcast + inSpon + inComp;
-    var opOut = outWage + outUp + outInt;
+    var opIn = inGate + inAway + inBcast + inSpon + inSpBon + inMedia + inPrize + inComp;
+    var opOut = outWage + outOps + outUp + outInt;
     var perRound = rounds ? (opIn - opOut) / rounds : 0;
 
     var squad = (st.squad || []).slice().filter(function (p) { return p && p.name; });
@@ -904,7 +926,7 @@
     // ever and meant nothing. What a treasurer wants is the average gate a
     // home match brings in.
     var avgGate = homeMatches > 0 ? Math.round(inGate / homeMatches)
-      : avgAtt ? Math.round(avgAtt * ticket * homeCut) : 0;
+      : avgAtt ? mdayMoney(avgAtt * ticket, avgAtt, homeCut) : 0;
     // the ground is on the claim, not on the status root: reading st.ground
     // gave every club in the world the same made-up name
     var groundNm = String((st.claim && st.claim.ground) || "the ground");
@@ -934,7 +956,7 @@
     var projectedCrowd = Math.max(0, Math.min(seats || moodCrowd, lastAtt || avgAtt || moodCrowd));
     // and only the home club's share of it. The full gate was being quoted as
     // if the visitors took nothing.
-    var projectedGate = Math.round(projectedCrowd * ticket * homeCut);
+    var projectedGate = mdayMoney(projectedCrowd * ticket, projectedCrowd, homeCut);
 
     var acad = Number(f.academyLevel) || Number(st.academy) || 1;
     var nextSeats = Number(f.nextSeats) || 0, nextSeatsCost = Number(f.nextSeatsCost) || 0;
@@ -1108,7 +1130,7 @@
                 "<button type='button' class='d'>&minus;</button><b>$" + r.price + "</b>" +
                 "<button type='button' class='u'>+</button><button type='button' class='ok'>Set</button></em>") +
             "</div>" +
-            "<div class='mn'><b>~" + M(Math.round(r.fin.take * homeCut + r.fin.sold * TK.BCAST)) + "</b><u>matchday</u></div>" +
+            "<div class='mn'><b>~" + M(mdayMoney(r.fin.take, r.fin.sold, homeCut)) + "</b><u>matchday</u></div>" +
             "<div class='sq'>" + sq + "</div>" +
             "<div class='cl'><span><u>Gate</u><b class='" + (r.gLock ? "lk" : "") + "'>" + gTxt + "</b></span>" +
             "<span><u>Square</u><b class='" + (r.said || r.sLock ? "lk" : "") + "'>" + sTxt + "</b></span></div>" +
@@ -1200,16 +1222,23 @@
 
     var IN_ROWS, OUT_ROWS;
     IN_ROWS = [
-      ["Gate takings", sumKind(["gate"], 1), false],
+      // the era-2 lines first, since they are the living ones; the founding
+      // economy's rows (away share, per-head broadcast) stay for the weeks
+      // history wrote them in and simply read zero afterwards
+      ["Matchday takings", sumKind(["gate"], 1), false],
+      ["Media distribution", sumKind(["media"], 1), false],
+      ["Sponsorship", sumKind(["sponsor"], 1), false],
+      ["Sponsor bonus", sumKind(["sponsor-bonus"], 1), false],
+      ["Prize money", sumKind(["prize"], 1), false],
       ["Away share", sumKind(["gate-away"], 1), false],
       ["Broadcast fees", sumKind(["broadcast"], 1), false],
-      ["Sponsorship", sumKind(["sponsor"], 1), false],
       ["International compensation", sumKind(["compensation"], 1), false],
       ["Player sales &middot; out to bid", pjSell, true],
       ["Player sales &middot; settled", sumKind(["player-sale"], 1), false]
     ];
     OUT_ROWS = [
       ["Senior wages", sumKind(["wages"], -1), false],
+      ["Club operations", sumKind(["ops"], -1), false],
       ["Academy upkeep", sumKind(["upkeep"], -1), false],
       ["Academy building", sumKind(["academy", "contract"], -1), false],
       ["Ground building", sumKind(["stadium"], -1), false],
@@ -1295,7 +1324,33 @@
     // already names the level being bought and what it costs.
     html2 += "<div class='fo-wk-lever'><div><span>The academy</span><b>Level " + acad + "</b></div>" +
       (acad < 5 ? "<button type='button' id='fo-fin-acad'" + (canAcad ? "" : " disabled") + ">Upgrade</button>" : "") +
-      "</div><div class='fo-fin-msg' id='fo-fin-msg'></div>";
+      "</div>";
+
+    // THE SPONSOR'S TABLE - the other decision this room owns. Three shapes
+    // of the same deal (server/financeconfig.mjs prices them; the headline
+    // value is the umpire's, off division and last summer's finish). What is
+    // SIGNED is this summer's contract; a pick made here binds the first
+    // season that has not started, and a club that never picks is on
+    // Balanced. Only drawn on an era-2 world - an older world's sponsor has
+    // no table to choose from.
+    if (Number(f.era) === 2 || f.sponsorPackage) {
+      var SPX = {
+        safe: ["Safe", "~90% guaranteed &middot; results barely move it"],
+        balanced: ["Balanced", "~70% guaranteed &middot; ~30% rides on wins"],
+        contender: ["Contender", "~45% guaranteed &middot; wins, the playoffs and the title pay the rest"]
+      };
+      var signedPkg = String(f.sponsorPackage || "balanced");
+      var pickRow = st.sponsorPick || null;
+      var chosenPkg = pickRow && pickRow.package ? String(pickRow.package) : signedPkg;
+      html2 += ["safe", "balanced", "contender"].map(function (k) {
+        var on = chosenPkg === k;
+        return "<div class='fo-wk-lever'><div><span>Sponsor &middot; " + SPX[k][0] +
+          (signedPkg === k ? " &middot; signed" : "") + "</span><b>" + SPX[k][1] + "</b></div>" +
+          "<button type='button' class='fo-sp-pick' data-pkg='" + k + "'" + (on ? " disabled" : "") + ">" +
+          (on ? "Chosen" : "Choose") + "</button></div>";
+      }).join("");
+    }
+    html2 += "<div class='fo-fin-msg' id='fo-fin-msg'></div>";
 
     html2 += "<div class='fo-wk-doors'>" +
       "<a href='#/ground'>The ground &rsaquo;</a>" +
@@ -1417,6 +1472,29 @@
           })
           .catch(function (e) { done(String(e.message).slice(0, 160), true); });
       });
+
+    // ---- the sponsor's table: sign a shape for the coming summer -----------
+    page.querySelectorAll(".fo-sp-pick").forEach(function (b) {
+      b.addEventListener("click", function () {
+        var pkg = String(b.getAttribute("data-pkg") || "balanced");
+        var commit = function () {
+          b.disabled = true;
+          rpc("world_set_sponsor", { p_package: pkg })
+            .then(function (r) {
+              say("Signed: the " + pkg + " deal" +
+                (r && r.season ? ", from season " + r.season : "") + ".");
+              reload(page);
+            })
+            .catch(function (e) { b.disabled = false; say(String(e.message).slice(0, 160), true); });
+        };
+        if (!window.foDecide) { commit(); return; }
+        window.foDecide(b, {
+          q: "Sign the " + pkg + " sponsorship for the coming summer?",
+          note: "One deal a summer. The guaranteed share is paid round by round; the rest is yours to earn.",
+          ok: "Sign it", onYes: commit
+        });
+      });
+    });
 
     // ---- the ticket dial: choose, then set - one dated decision ------------
     (function () {
@@ -1541,7 +1619,12 @@
     scouting: "Scouting reports", "written-off": "Written off",
     // the umpire writes these three too; without a heading each the statement
     // printed the raw slug - "coach", "contract", "colts-purse"
-    contract: "Academy contracts", "colts-purse": "Colts Cup purse"
+    contract: "Academy contracts", "colts-purse": "Colts Cup purse",
+    // the era-2 economy's own lines (financeconfig.mjs): the league's media
+    // money, the one operating cost of being a club, the prize table, and
+    // the results half of a sponsor's deal
+    media: "Media distribution", ops: "Club operations",
+    prize: "Prize money", "sponsor-bonus": "Sponsor bonus"
   };
   function stDetail(type, label) {
     label = String(label || "");

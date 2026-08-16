@@ -117,8 +117,12 @@ const PLAY_TABLES = [
 //   ticket_prices is a MANAGER'S standing decision about his own gate, like
 //   the seats he built - the redeal replaces the cricket, not the club's
 //   pricing policy, so it survives.
+//   sponsor_picks is the same kind of thing for the sponsor's table (100): a
+//   standing choice of contract shape, keyed by season. The redeal replaces
+//   the cricket a season held, not the deal a manager preferred, so his pick
+//   for the seasons to come survives the way his ticket price does.
 const WORLD_TABLES = ['countries', 'clubs', 'claims', 'seasons', 'worlds', 'schema_migrations',
-  'notif_seen', 'ticket_prices'];
+  'notif_seen', 'ticket_prices', 'sponsor_picks'];
 
 const pool = makePool();
 

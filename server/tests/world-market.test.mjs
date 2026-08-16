@@ -300,8 +300,9 @@ test('the books walk the deal, and settling twice pays once', async () => {
   for (const f of fin) {
     const x = f.finance;
     const expect = x.founded + x.gate + x.awayCut + (x.broadcast || 0) + x.sponsor + (x.compensation || 0)
+      + (x.media || 0) + (x.prize || 0) + (x.sponsorBonus || 0)
       + (x.feesIn || 0) + x.writtenOff
-      - x.wages - x.upkeep - x.interest - x.academyPaid - x.seatsPaid
+      - x.wages - (x.ops || 0) - x.upkeep - x.interest - x.academyPaid - x.seatsPaid
       - (x.feesOut || 0) - (x.scouting || 0);
     assert.equal(Number(f.bank), Math.round(expect), 'club ' + f.slot + ': the books add up');
   }
@@ -461,8 +462,9 @@ test('quick-sell and release: a manager\'s own two doors out', async () => {
   for (const f of fin) {
     const x = f.finance;
     const expect = x.founded + x.gate + x.awayCut + (x.broadcast || 0) + x.sponsor + (x.compensation || 0)
+      + (x.media || 0) + (x.prize || 0) + (x.sponsorBonus || 0)
       + (x.feesIn || 0) + x.writtenOff
-      - x.wages - x.upkeep - x.interest - x.academyPaid - x.seatsPaid
+      - x.wages - (x.ops || 0) - x.upkeep - x.interest - x.academyPaid - x.seatsPaid
       - (x.feesOut || 0) - (x.scouting || 0);
     assert.equal(Number(f.bank), Math.round(expect), 'club ' + f.slot + ': the books add up');
   }
