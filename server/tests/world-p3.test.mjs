@@ -1771,6 +1771,16 @@ test('020: the books are a ledger, and they recompute from the record', async ()
   const ruinous = solvent.map(p => Object.assign({}, p, { wage: 600000 }));
   await pool.query(`UPDATE clubs SET squad=$1::jsonb WHERE country_id='eng' AND slot=9`,
     [JSON.stringify(ruinous)]);
+  // SINCE 101 THE RECORD CARRIES THE BILL: the walk charges each banked
+  // round the bill it was played under, so today's squad edit alone no
+  // longer re-prices played rounds - which is the whole point of the
+  // migration. 'Ruin from the record' therefore means the banked rounds
+  // carry the ruinous bill: re-bank them at it, exactly as if every round
+  // had been played under this payroll, and put the truth back afterwards.
+  const bankedBills = (await pool.query(
+    `SELECT season_no, round, bill FROM wage_rounds WHERE country_id='eng' AND slot=9`)).rows;
+  await pool.query(`UPDATE wage_rounds SET bill=$1 WHERE country_id='eng' AND slot=9`,
+    [ruinous.reduce((s, p) => s + (p.wage || 0), 0)]);
   await settleMoney(pool, 'eng');
   const broke = (await pool.query(
     `SELECT bank, finance FROM clubs WHERE country_id='eng' AND slot=9`)).rows[0];
@@ -1814,6 +1824,11 @@ test('020: the books are a ledger, and they recompute from the record', async ()
     'even ruin recomputes to the same figure');
   await pool.query(`UPDATE clubs SET squad=$1::jsonb WHERE country_id='eng' AND slot=9`,
     [JSON.stringify(solvent)]);
+  for (const b of bankedBills) {
+    await pool.query(
+      `UPDATE wage_rounds SET bill=$3 WHERE country_id='eng' AND slot=9 AND season_no=$1 AND round=$2`,
+      [b.season_no, b.round, b.bill]);
+  }
   await settleMoney(pool, 'eng');
 
   // A CLUB IN THE RED BUILDS NOTHING, and is told so in English
