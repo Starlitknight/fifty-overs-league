@@ -1,0 +1,101 @@
+[
+ {
+  "cell": "balanced/Sunny/seed42",
+  "oldReproducesGolden": true,
+  "firstDivergence": "inn 0 over 13.6 (ball #84 of 617)",
+  "xiIdentical": true,
+  "battingOrderConsistent": true,
+  "totalsOld": "328/7 & 318/9",
+  "totalsNew": "268/10 & 228/10",
+  "nearestDecisionBefore": "pick over 13",
+  "decisions": 630
+ },
+ {
+  "cell": "balanced/Sunny/seed11",
+  "oldReproducesGolden": true,
+  "firstDivergence": "inn 0 over 1.1 (ball #6 of 604)",
+  "xiIdentical": true,
+  "battingOrderConsistent": true,
+  "totalsOld": "367/7 & 321/10",
+  "totalsNew": "356/2 & 283/10",
+  "nearestDecisionBefore": "pick over 1",
+  "decisions": 1273
+ },
+ {
+  "cell": "balanced/Sunny/seed7",
+  "oldReproducesGolden": true,
+  "firstDivergence": "inn 0 over 13.1 (ball #80 of 577)",
+  "xiIdentical": true,
+  "battingOrderConsistent": true,
+  "totalsOld": "373/5 & 267/10",
+  "totalsNew": "364/3 & 365/5",
+  "nearestDecisionBefore": "pick over 13",
+  "decisions": 1342
+ },
+ {
+  "cell": "dry/Sunny/seed42",
+  "oldReproducesGolden": true,
+  "firstDivergence": "inn 0 over 23.5 (ball #146 of 561)",
+  "xiIdentical": true,
+  "battingOrderConsistent": true,
+  "totalsOld": "248/9 & 246/10",
+  "totalsNew": "193/10 & 194/8",
+  "nearestDecisionBefore": "pick over 23",
+  "decisions": 759
+ },
+ {
+  "cell": "dry/Sunny/seed11",
+  "oldReproducesGolden": true,
+  "firstDivergence": "inn 0 over 1.1 (ball #6 of 548)",
+  "xiIdentical": true,
+  "battingOrderConsistent": true,
+  "totalsOld": "372/8 & 218/10",
+  "totalsNew": "366/4 & 223/10",
+  "nearestDecisionBefore": "pick over 1",
+  "decisions": 1188
+ },
+ {
+  "cell": "dry/Sunny/seed7",
+  "oldReproducesGolden": true,
+  "firstDivergence": "inn 0 over 1.4 (ball #9 of 497)",
+  "xiIdentical": true,
+  "battingOrderConsistent": true,
+  "totalsOld": "315/7 & 133/10",
+  "totalsNew": "283/8 & 198/10",
+  "nearestDecisionBefore": "pick over 1",
+  "decisions": 1107
+ },
+ {
+  "cell": "green/Overcast/seed42",
+  "oldReproducesGolden": true,
+  "firstDivergence": "inn 0 over 3.2 (ball #20 of 391)",
+  "xiIdentical": true,
+  "battingOrderConsistent": true,
+  "totalsOld": "155/10 & 156/6",
+  "totalsNew": "142/10 & 143/3",
+  "nearestDecisionBefore": "pick over 3",
+  "decisions": 589
+ },
+ {
+  "cell": "green/Overcast/seed11",
+  "oldReproducesGolden": true,
+  "firstDivergence": "inn 0 over 27.2 (ball #169 of 482)",
+  "xiIdentical": true,
+  "battingOrderConsistent": true,
+  "totalsOld": "165/10 & 167/4",
+  "totalsNew": "213/10 & 85/10",
+  "nearestDecisionBefore": "pick over 27",
+  "decisions": 622
+ },
+ {
+  "cell": "green/Overcast/seed7",
+  "oldReproducesGolden": true,
+  "firstDivergence": "inn 0 over 1.2 (ball #7 of 108)",
+  "xiIdentical": true,
+  "battingOrderConsistent": true,
+  "totalsOld": "34/10 & 35/7",
+  "totalsNew": "126/10 & 127/1",
+  "nearestDecisionBefore": "pick over 1",
+  "decisions": 782
+ }
+]
