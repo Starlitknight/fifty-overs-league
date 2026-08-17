@@ -138,12 +138,20 @@ globalThis.__prRun = function (ta, tb, seed, opts) {
   M.meta = { home: ta.name, away: tb.name, pitch: M.pitch,
              weather: opts.weather || 'Sunny', comp: 'cal', isUser: false, neutral: true };
   M.isUserMatch = false; M.ordersMap = {};
+  // a filed bowling plan for side A (the engine's "user bowls" path reads
+  // ordersFor + UI.usePlan): opts.ordersA = { compiled: [over -> name] }
+  if (opts.ordersA) M.ordersMap[ta.name] = opts.ordersA;
+  UI.usePlan = !!opts.ordersA;
   App.tossState = { stage: 'x' };
   applyToss(aiTossDecision());
   var g = 0;
   var fld = [ {}, {} ];           // per innings (of the BOWLING side's work)
   var bump = function (ix, k) { fld[ix][k] = (fld[ix][k] || 0) + 1; };
   var overBowl = [ [], [] ];      // over number -> bowler name
+  var cumRuns = [ [], [] ];       // over number -> cumulative runs at its end
+  var lastLegal = [ 0, 0 ];       // extras leave inn.legal still - only a ball
+                                  // that advanced it may stamp the over ledgers,
+                                  // or a wide first-up writes into the PREVIOUS over
   var spellMax = [ {}, {} ];      // bowler -> longest consecutive-spell balls
   var fatPeak = {};               // name -> max in-match fatigue seen
   var trace = [];                 // optional per-over fatigue of one name
@@ -159,11 +167,15 @@ globalThis.__prRun = function (ta, tb, seed, opts) {
     var ev = M._fldEv;
     if (ev && ev.k) bump(ix, ev.k === 'save' ? ('save' + (ev.d || 0)) : ev.k);
     if (!ev && M._fieldingEvent && M._fieldingEvent.indexOf('can only watch') >= 0) bump(ix, 'beat');
-    if (inn.curBowlerName && inn.legal > 0) {
-      overBowl[ix][Math.floor((inn.legal - 1) / 6)] = inn.curBowlerName;
-      var br = inn.bowlers[inn.curBowlerName];
-      if (br) { var sm = spellMax[ix];
-        if ((br.spellB || 0) > (sm[inn.curBowlerName] || 0)) sm[inn.curBowlerName] = br.spellB; }
+    if (inn.legal > lastLegal[ix]) {
+      lastLegal[ix] = inn.legal;
+      if (inn.legal % 6 === 0) cumRuns[ix][inn.legal / 6 - 1] = inn.runs;
+      if (inn.curBowlerName) {
+        overBowl[ix][Math.floor((inn.legal - 1) / 6)] = inn.curBowlerName;
+        var br = inn.bowlers[inn.curBowlerName];
+        if (br) { var sm = spellMax[ix];
+          if ((br.spellB || 0) > (sm[inn.curBowlerName] || 0)) sm[inn.curBowlerName] = br.spellB; }
+      }
     }
     for (var nm in M.fat) if ((M.fat[nm] || 0) > (fatPeak[nm] || 0)) fatPeak[nm] = M.fat[nm];
     if (opts.traceFat && inn.legal % 6 === 0)
@@ -177,7 +189,8 @@ globalThis.__prRun = function (ta, tb, seed, opts) {
     for (var nm in inn.bowlers) { var r = inn.bowlers[nm];
       bowlers[nm] = { b: r.b, r: r.r, w: r.w, maxSpell: spellMax[ix][nm] || 0 }; }
     return { batTeam: inn.batTeam, runs: inn.runs, wkts: inn.wkts, legal: inn.legal,
-      extras: inn.extras, fld: fld[ix], overBowl: overBowl[ix], bowlers: bowlers,
+      extras: inn.extras, fld: fld[ix], overBowl: overBowl[ix], cumRuns: cumRuns[ix],
+      ph_r: inn.ph_r, ph_b: inn.ph_b, bowlers: bowlers,
       bat: inn.bat.map(function (b) { return { nm: b.p.name, r: b.r, b: b.b, out: b.out }; }),
       fielding: inn.fielding };
   };
