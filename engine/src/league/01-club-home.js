@@ -1716,8 +1716,55 @@
   }
   // One number a manager can act on: how suited each player is to TODAY's
   // pitch and weather (form and fatigue included). Replaces raw stat-reading.
+  // A CACHE, BECAUSE THE COACH PRICES A WHOLE SQUAD AT ONCE. planMatchDay
+  // measures every man against the ball model in one call; asking it per row
+  // of a table would be the same work fifteen times over. Keyed on the squad
+  // and the conditions, so it dies the moment either changes.
+  var _foFitCache = null;
+  function foFitCards(t, pitch, wx) {
+    var key = (t && t.name) + "|" + (t && t.players ? t.players.length : 0) + "|" + pitch + "|" + wx;
+    if (_foFitCache && _foFitCache.key === key) return _foFitCache.by;
+    var by = null;
+    try {
+      if (typeof planMatchDay === "function" && t && t.players && t.players.length) {
+        var plan = planMatchDay({ team: { name: t.name, players: t.players },
+          pitch: pitch || "balanced", weather: wx || "sunny" });
+        var cards = plan && plan.explanation && plan.explanation.cards;
+        if (cards && cards.length) {
+          by = {};
+          cards.forEach(function (c) { by[c.name] = c; });
+        }
+      }
+    } catch (e) {}
+    _foFitCache = { key: key, by: by };
+    return by;
+  }
   function foTodayFit(p) {
     var pend = App.pending || {}, pitch = pend.pitch || "balanced", wx = String(pend.weather || "").toLowerCase();
+    // ---- THE NUMBER COMES FROM THE COACH ------------------------------------
+    // This used to be a THIRD conditions model with its own invented weights -
+    // "+10 for pace on a green top", "-6 for a finger spinner in dew", its own
+    // fatigue table - sitting beside the ball model and drifting from it. The
+    // column it fills is a manager's shortlist for the very fixture the coach
+    // is about to pick a side for, so the two disagreeing is the one thing it
+    // must not do: a man the coach picks cannot read 31 in the Today column.
+    //
+    // It quotes foMdcCard now - the same measurement the selector uses -
+    // combining what he is worth with the bat (runs per dismissal) and what his
+    // overs save, and scaling to the 1-99 the column has always shown. The old
+    // model is kept ONLY as a fallback for a squad the coach cannot read.
+    try {
+      var t = (typeof userTeam === "function") ? userTeam() : null;
+      var by = foFitCards(t, pitch, wx);
+      var c = by && by[p.name];
+      if (c) {
+        // rpd runs from about 20 (a number eleven) to 90 (a fine batsman);
+        // bowl is runs saved an over, about -1 to +5. Both are already
+        // measured in today's conditions and already carry form and fatigue.
+        var v2 = (c.rpd || 0) * 0.62 + (c.bowl || 0) * 7.5;
+        return Math.max(1, Math.min(99, Math.round(v2)));
+      }
+    } catch (eF) {}
     var k; try { k = (typeof S === "function") ? S(p) : (p.skills || {}); } catch (e) { k = p.skills || {}; }
     var bowler = p.bowlTypeFull && p.bowlTypeFull !== "none";
     var v;

@@ -460,6 +460,56 @@ function foMdcScoreXI(cards, doctrine) {
   for (let i = 0; i < byBat.length && i < FO_MDC.DEPTH_SEATS; i++) {
     if (byBat[i].rpd >= bestRpd * FO_MDC.DEPTH_CAPABLE) capable++;
   }
+  // ...AND THE CHARGE IS CONVEX, WHICH IT WAS NOT, AND THAT WAS THE LAST
+  // SYSTEMATIC BIAS IN THIS FILE.
+  //
+  // It used to be linear: 26 runs for every unfilled seat. Measured
+  // (tools/matchday-exchange.mjs), that is far too steep for the FIRST seat.
+  // Sweeping a lower-order man's batting and watching the coach's own score
+  // against the win rate he actually delivers:
+  //
+  //     below the threshold (skill 20 -> 44)   4.2 model points buy 1.48
+  //                                            win-points - a slope of 0.352
+  //     TOP-ORDER batsman, same measurement    a slope of 0.347
+  //     crossing the threshold (44 -> 56)     34.3 model points buy 3.16
+  //                                            win-points - a slope of 0.092
+  //
+  // So SLOT_BALLS is right - a lower-order run and a top-order run are priced
+  // on one scale, within a hundredth. What is wrong is the cliff: releasing ONE
+  // seat is worth about a quarter of what the linear charge paid for it. And
+  // the men who release a seat are precisely the all-rounders, which is why the
+  // controlled contests kept over-scoring sides that stacked them.
+  //
+  // AND IT IS STILL LINEAR, WHICH IS A MEASURED DECISION AND NOT AN OVERSIGHT.
+  //
+  // A quadratic charge was written, built and played, precisely because of the
+  // measurement above: gap x gap / 4 leaves the four-seat catastrophe priced
+  // where it was (104) and makes one seat cheap (6.5 instead of 26). On the
+  // controlled contests it did what it was meant to - the C, G and H residuals
+  // fell hard - and it was still WRONG, for two reasons that only showed up
+  // when it was tested properly.
+  //
+  // First, it cannot be the explanation. Cases F, G and H all move the same
+  // single seat (gap 1 -> 0) and the cricket pays them +13.1, +3.9 and +2.2
+  // win-points. One term with one value per seat moves all three together, so
+  // no setting of it can separate them: making C/G/H fit broke F by 25 points
+  // and the mean absolute error over the controlled set ROSE, 5.87 to 6.51.
+  //
+  // Second, and decisively, it introduced the very bias this pass exists to
+  // remove. On 30 generated squads across five conditions - 197 near-miss
+  // comparisons, tools/matchday-regret.mjs - the quadratic charge made the
+  // coach keep all-rounders it should not have kept, because the depth charge
+  // is what protects specialist batting:
+  //
+  //     keeping an all-rounder over a...     LINEAR          QUADRATIC
+  //       specialist batsman                 +5.76 (72.7%)   +2.77 (60.0%)
+  //       specialist bowler                  +6.84 (75.9%)   +9.16 (85.7%)
+  //       difference                          1.08 +/- 1.76   6.39 +/- 1.43
+  //                                           z = 0.6 (none)  z = 4.5 (real)
+  //
+  // Overall accuracy rose slightly (76.2% -> 78.7%) and the ROLE SYMMETRY,
+  // which is the thing that matters, got significantly worse. The linear charge
+  // stays.
   bat -= Math.max(0, FO_MDC.DEPTH_SEATS - capable) * FO_MDC.DEPTH_RUNS;
 
   // 2. BOWLING. Fifty overs have to be bowled, whoever is in the side, so an

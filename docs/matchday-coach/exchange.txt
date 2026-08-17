@@ -1,0 +1,45 @@
+=== THE EXCHANGE RATE BETWEEN THE COACH'S TWO CHANNELS ===
+1200 pairs a rung, each played home and away against one fixed opponent.
+
+BAT LADDER — one middle-order batsman swept, bowling untouched
+  skill   bat score   bowl score      win%      SE
+     50       234.1        -23.4     56.25    0.87
+     58       242.8        -23.4     60.33    0.86
+     66       256.6        -23.4     66.98    0.83
+     74       270.6        -23.4     70.27    0.82
+     82       281.1        -23.4     72.44    0.81
+
+BOWL LADDER — one bowler swept, batting untouched
+  skill   bat score   bowl score      win%      SE
+     46       237.8        -43.0     51.21    0.87
+     54       237.8        -30.5     56.10    0.89
+     62       237.8        -16.4     59.54    0.86
+     70       237.8         -3.9     62.06    0.84
+     78       237.8          5.1     67.75    0.84
+
+--- THE ANSWER ---
+  win-points per BAT  score-point : 0.3467
+  win-points per BOWL score-point : 0.3143
+  ratio (bowl / bat)              : 0.906
+
+  A ratio of 1.0 means the two channels are already on one scale and the
+  residuals are something else. A ratio above 1 means a bowling point buys
+  MORE cricket than a batting point, so the coach is over-paying batting -
+  which is what would make an all-rounder's batting look too good.
+  The correction is to multiply the BAT channel by (bat slope / bowl slope),
+  i.e. 1.103, or equivalently scale bowling up by 0.906.
+
+LOWER-ORDER LADDER — a bowler's BATTING swept, his bowling untouched
+  skill   bat score   bowl score      win%      SE
+     20       237.8        -23.4     57.96    0.86
+     32       238.8        -23.4     57.60    0.88
+     44       242.0        -23.4     59.44    0.87
+     56       276.3        -23.4     62.60    0.85
+
+  win-points per LOWER-ORDER bat score-point : 0.1189
+  win-points per TOP-ORDER   bat score-point : 0.3467
+  ratio (lower / top)                       : 0.343
+
+  Below 1.0 means the model pays for lower-order batting at a rate the
+  cricket does not, and SLOT_BALLS is too fat down the order - which would
+  over-value every all-rounder, because an all-rounder always bats there.

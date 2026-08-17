@@ -93,6 +93,14 @@ globalThis.__arScore = function (playersJson, poolJson, pitch, weather) {
   // pull the two premiums back out of the bowl term so they can be reported
   // separately from the measured cost of the overs
   var flex = (front >= 6 ? FO_MDC.SIXTH_BOWLER : 0) + (front >= 7 ? FO_MDC.SEVENTH_BOWLER : 0);
+  // how many of the top-seven seats are NOT held by a recognised batsman - the
+  // quantity the depth charge is a function of, reported so a reader can see
+  // which side of the curve a case sits on
+  var byBat = cards.slice().sort(function (a, b) { return b.rpd - a.rpd; });
+  var bestRpd = byBat.length ? byBat[0].rpd : 0, capable = 0;
+  for (var i = 0; i < byBat.length && i < FO_MDC.DEPTH_SEATS; i++)
+    if (byBat[i].rpd >= bestRpd * FO_MDC.DEPTH_CAPABLE) capable++;
+  var gap = Math.max(0, FO_MDC.DEPTH_SEATS - capable);
   return JSON.stringify({
     // s.bowl ALREADY carries the flex premium (foMdcScoreXI adds it in), so
     // the overs-only cost is s.bowl MINUS flex. Adding it was the first way
@@ -100,7 +108,7 @@ globalThis.__arScore = function (playersJson, poolJson, pitch, weather) {
     // overs were twelve runs cheaper when they are not bowled at all.
     total: s.total, bowl: s.bowl, bowlOvers: s.bowl - flex, bat: s.bat, flex: flex,
     keep: s.keep, field: s.field, capt: s.capt, allround: s.allround,
-    front: front, legal: foMdcLegal(cards)
+    front: front, gap: gap, legal: foMdcLegal(cards)
   });
 };
 // BOTH SIDES ARE GIVEN A SENSIBLE, IDENTICALLY-DERIVED SHEET. These men are
@@ -165,6 +173,23 @@ function xi(contested, nBowl) {
 // the fifty overs cannot be covered without him, so his quality is spent
 // rather than merely held. Both sides stay LEGAL - an illegal eleven scores
 // -1e6 for the missing keeper or fifth bowler and compares against nothing.
+// the extra cast the I-L shapes need
+const ELITE_FIVE = [0, 1, 2, 3, 4].map(i => man('E' + i, { bat: 22, bowl: 80,
+  type: ['fast', 'fastMedium', 'medium', 'fingerSpin', 'wristSpin'][i % 5] }));
+const MED_FIVE = [0, 1, 2, 3, 4].map(i => man('M' + i, { bat: 22, bowl: 52,
+  type: ['fast', 'fastMedium', 'medium', 'fingerSpin', 'wristSpin'][i % 5] }));
+const AR_ELITE = man('X', { bat: 62, bowl: 78, type: 'fastMedium' });
+// TWO MEN OF THE SAME CARD, SPENDING IT DIFFERENTLY. The rating jsDerive
+// computes is the canonical card, so these are checked rather than asserted -
+// the tool prints both ratings so a reader can see they really are close.
+// CARD-EQUAL, CHECKED RATHER THAN CLAIMED: jsDerive gives both men a rating of
+// exactly 71000. The first pair tried here was bat 74 against bat 56 / bowl 60,
+// which reads balanced and is not - 71000 against 63000 - so the "same overall
+// strength" case would have been a contest between a good player and a worse
+// one, and would have proved nothing about how the card is SPENT.
+const SHIFT_BAT = man('X', { bat: 74 });
+const SHIFT_ALL = man('X', { bat: 62, bowl: 70, type: 'medium' });
+
 const AR2 = man('Y', { bat: 56, bowl: 62, type: 'fingerSpin' });
 const AR3 = man('Z', { bat: 54, bowl: 62, type: 'fastMedium' });
 const fourSpecPlus = extra =>
@@ -184,16 +209,32 @@ const CASES = [
     [keeper].concat(FIVE_BOWL.slice(0, 4), [AR_USEFUL, AR2], TOP_BATS.slice(0, 4))],
   ['H  three all-rounders in one eleven',                   xi(PURE_BAT, 5),
     [keeper].concat(FIVE_BOWL.slice(0, 3), [AR_USEFUL, AR2, AR3], TOP_BATS.slice(0, 4))],
+  // I-L are the shapes the calibration pass added: a side with no all-rounder
+  // at all, a weak all-rounder among elite bowlers, an elite all-rounder
+  // against a merely competent specialist attack, and - the sharpest of them -
+  // two men of the SAME overall card who spend it differently.
+  ['I  no all-rounder anywhere vs one useful sixth option',
+    [keeper].concat(FIVE_BOWL.slice(0, 5), TOP_BATS.slice(0, 5)),
+    [keeper].concat(FIVE_BOWL.slice(0, 5), [AR_USEFUL], TOP_BATS.slice(0, 4))],
+  ['J  four elite bowlers + weak all-rounder vs five elite bowlers',
+    [keeper].concat(ELITE_FIVE.slice(0, 4), [AR_USELESS], TOP_BATS.slice(0, 5)),
+    [keeper].concat(ELITE_FIVE.slice(0, 5), TOP_BATS.slice(0, 5))],
+  ['K  five medium specialists vs four specialists + elite all-rounder',
+    [keeper].concat(MED_FIVE.slice(0, 5), TOP_BATS.slice(0, 5)),
+    [keeper].concat(MED_FIVE.slice(0, 4), [AR_ELITE], TOP_BATS.slice(0, 5))],
+  ['L  same overall card, spent on batting vs spent on both',
+    [keeper].concat(FIVE_BOWL.slice(0, 5), TOP_BATS.slice(0, 4), [SHIFT_BAT]),
+    [keeper].concat(FIVE_BOWL.slice(0, 5), TOP_BATS.slice(0, 4), [SHIFT_ALL])],
   // WHAT A SEVENTH OPTION IS WORTH, with batting held EXACTLY: the man who
   // makes it seven has the same batting as the specialist batsman he replaces,
   // so the only difference between the sides is that he also bowls.
-  ['I  six frontline vs seven frontline, batting identical',
+  ['M  six frontline vs seven frontline, batting identical',
     [keeper].concat(FIVE_BOWL.slice(0, 5), [AR_USEFUL], TOP_BATS.slice(0, 4)),
     [keeper].concat(FIVE_BOWL.slice(0, 5), [AR_USEFUL], TOP_BATS.slice(0, 3),
       [man('S7', { bat: 64, bowl: 62, type: 'wristSpin' })])]
 ];
 
-const hdr = 'case                                                    total     bat    bowl    flex  allrnd    keep   field    capt  front';
+const hdr = 'case                                                    total     bat    bowl    flex  allrnd    keep   field    capt  front  gap';
 console.log('=== ALL-ROUNDER BIAS: the coach\'s own decomposition ===');
 console.log('bowl = the measured cost of fifty overs (already net of flex); flex = SIXTH/SEVENTH;');
 console.log('allrnd = the standalone ALLROUND premium.\n');
@@ -211,6 +252,7 @@ for (const [label, A, B] of CASES) {
     s.total.toFixed(1).padStart(8) + s.bat.toFixed(1).padStart(8) + s.bowlOvers.toFixed(1).padStart(8) +
     s.flex.toFixed(1).padStart(8) + s.allround.toFixed(1).padStart(8) + s.keep.toFixed(1).padStart(8) +
     s.field.toFixed(1).padStart(8) + s.capt.toFixed(1).padStart(8) + String(s.front).padStart(7) +
+    String(s.gap).padStart(5) +
     (s.legal ? '' : '  ILLEGAL'));
   console.log(f(sa, label + '  [left]'));
   console.log(f(sb, ' '.repeat(4) + '[right]'));
