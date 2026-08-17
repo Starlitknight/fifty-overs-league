@@ -1,0 +1,19 @@
+  S0 done  S1 done  S2 done  S3 done  S4 done  S5 done  S6 done  S7 done  S8 done  S9 done  S10 done  S11 done  S12 done  S13 done  S14 done  S15 done  S16 done  S17 done  S18 done  S19 done  S20 done  S21 done  S22 done  S23 done
+
+=== RANDOM-SQUAD SELECTOR ACCURACY ===
+24 generated squads x 5 conditions, 60 paired fixtures a comparison. "edge" = the coach XI's win rate minus the
+rejected alternative's, both against one fixed opponent from identical seeds.
+
+swap class                        n   coach won   edge%      SE       z    regret%
+ALL                             145     75.9%      7.23    0.78    9.27      5.42
+
+specialist -> all-rounder        11     72.7%      6.36    2.31    2.76      2.78
+all-rounder -> batsman           23     82.6%      7.79    2.09    3.72      7.08
+all-rounder -> bowler           111     74.8%      7.20    0.89    8.07      5.47
+
+READ IT LIKE THIS. A positive edge means the coach's side really was the
+better one. The bias question is whether the three rows DISAGREE: if the
+coach over-values all-rounders, then "specialist -> all-rounder" (where it
+kept the specialist) would look good while the two "all-rounder -> ..." rows
+(where it kept the all-rounder) would look bad. Symmetric rows mean no
+systematic role bias, whatever the overall accuracy.
