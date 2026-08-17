@@ -1,3 +1,6 @@
+node tools/calibration-check.mjs — on the final captaincy build
+(engine core 20260817-1353-307ef2 / head 20260817-1404-7fb824)
+
 international: 300/300 matches complete (96s)
 flagship_clubs: 300/300 matches complete (188s)
 division_two: 300/300 matches complete (284s)
@@ -7,4 +10,7 @@ SMOKE RUN (CAL_N set) — not written to the golden file.
 CALIBRATION DRIFT — the engine no longer matches its frozen contract:
   pinned-match fingerprint changed: 370/6 vs golden 365/6
 
-[exited with code 0]
+Every calibration band passes; the single drift is the pinned match's
+exact score, which is what a deterministic change to bowling-change
+and field decisions must produce. Not re-blessed — that waits for the
+model to be accepted at review.

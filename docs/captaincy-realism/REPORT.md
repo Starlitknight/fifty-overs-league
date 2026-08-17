@@ -324,4 +324,31 @@ breaks ties; it does not buy a materially worse cricketer a shirt.
 
 ## 10. Regressions and suites
 
-<!-- SUITES -->
+On the final head, in full:
+
+- **Engine: 487/488.** The single red is `golden-master replays
+  reproduce shipped gameplay bit-for-bit` — expected, deliberate, and
+  the brief's own instruction: gameplay changed and the goldens are
+  not re-blessed until the model is accepted. There is no other
+  engine failure.
+- One statistical test needed an honest repair, not a retune:
+  `orders.test.mjs`'s phase-plan test asserted wickets-up over SIX
+  fixed seeds, and the new deterministic decision stream re-dealt
+  every innings so that particular six landed 4–2 the wrong way —
+  forever, not as flake. Measured at N=48 the mechanic is emphatic
+  (5.7 → 7.9 wkts/inn defending v launching, 40 of 48 seeds the right
+  way); the test now runs eighteen seeds of its own with the
+  measurement in its comment.
+- **Server: 437/437** with `--test-concurrency=1`. The living fold,
+  settles, transfers and world logic never see the captaincy code.
+- **Replay determinism: 3/3** seeds bit-identical on re-run — every
+  read, anchor and field slip is hashed from the match seed; there is
+  no live RNG anywhere in the new channels.
+- **calibration-check**: all bands pass; pinned-match fingerprint
+  drift only (§8), not re-blessed.
+- Manual orders remain law: a painted plan still overrides every
+  captaincy channel (the aiPickBowler changes live inside the
+  auto-path only, and the orders suite passes in full).
+
+Not merged, not deployed, goldens held. The branch is a complete,
+measured proposal awaiting review.
