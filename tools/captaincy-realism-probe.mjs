@@ -141,7 +141,12 @@ if (has('contexts') || has('all')) {
 // a sixth option — every over a real choice.
 // ---------------------------------------------------------------------------
 if (has('difficulty') || has('all')) {
-  const M0 = Math.min(N, 400);
+  // These three environments are their own controlled compositions — the
+  // --het overlay must NOT leak into them (noHet below), or "five clones"
+  // stops being clones and the slot lists collide. The first run of the het
+  // battery did exactly that, which is why its §4 numbers disagree with the
+  // uniform battery's; only noHet runs of this section are evidence.
+  const M0 = Math.min(N, 1600);
   say('\n=== §4 DECISION ENVIRONMENTS (N=' + M0 + ') ===');
   // Three environments, because "difficult" is not "close": when every
   // candidate is interchangeable a wrong pick is FREE, and when one man is
@@ -159,9 +164,9 @@ if (has('difficulty') || has('all')) {
   ];
   out.difficulty = [];
   for (const [lbl, so, ro] of [
-    ['simple: five clones', {}, {}],
-    ['obvious: dominant seamer, green', { slots: EASY }, { pitch: 'green', weather: 'Overcast' }],
-    ['difficult: real spreads + moments', { slots: HARD, sixth: true, sixthLevel: 54 }, {}]]) {
+    ['simple: five clones', { noHet: 1 }, {}],
+    ['obvious: dominant seamer, green', { noHet: 1, slots: EASY }, { pitch: 'green', weather: 'Overcast' }],
+    ['difficult: real spreads + moments', { noHet: 1, slots: HARD, sixth: true, sixthLevel: 54 }, {}]]) {
     const lo = cell(20, M0, so, ro), hi = cell(95, M0, so, ro);
     const dc = [], dv = [];
     for (let i = 0; i < M0; i++) {
