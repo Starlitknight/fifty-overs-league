@@ -26,9 +26,22 @@ const SEEDS = [3101, 3102, 3103, 3104, 3105, 3106];
 
 test('a phase plan changes how the club bats - rate up, wickets up', () => {
   // batting first, with no target to chase, isolates the plan from the
-  // captain's own scoreboard sense
+  // captain's own scoreboard sense.
+  //
+  // EIGHTEEN SEEDS, NOT SIX, and they are this test's own. The wickets
+  // half of the claim is a ~+2 wickets/innings effect (measured at N=48:
+  // 5.7 defending v 7.9 launching, goW>=defW on 40 of 48 seeds) - but the
+  // per-seed draw is deterministic, so a six-seed set that happens to
+  // break against it does not average out on re-run, it fails FOREVER.
+  // The captaincy-judgement engine re-dealt every innings (the fielding
+  // captain's bowling changes moved) and the old six seeds landed 4-2 the
+  // wrong way on wickets while the rate half still passed. Eighteen seeds
+  // put the aggregate safely past the noise for an effect this size
+  // without letting the suite crawl.
+  const PLAN_SEEDS = [3101, 3102, 3103, 3104, 3105, 3106, 3107, 3108, 3109,
+    3110, 3111, 3112, 3113, 3114, 3115, 3116, 3117, 3118];
   let dR = 0, dB = 0, dW = 0, gR = 0, gB = 0, gW = 0, diffs = 0;
-  for (const seed of SEEDS) {
+  for (const seed of PLAN_SEEDS) {
     const def = eng.sim(A, B, 'balanced', 'Sunny', seed, { Ashfield: { tossDecision: 'bat', phaseIntent: { pp: -1, mid: -1, death: -1 } } });
     const go = eng.sim(A, B, 'balanced', 'Sunny', seed, { Ashfield: { tossDecision: 'bat', phaseIntent: { pp: 2, mid: 2, death: 2 } } });
     assert.ok(def && go, 'a match failed to complete');
@@ -38,7 +51,7 @@ test('a phase plan changes how the club bats - rate up, wickets up', () => {
     dR += d.runs; dB += d.legal; dW += d.wkts;
     gR += g.runs; gB += g.legal; gW += g.wkts;
   }
-  assert.equal(diffs, SEEDS.length, 'the plan left some innings untouched');
+  assert.equal(diffs, PLAN_SEEDS.length, 'the plan left some innings untouched');
   assert.ok(6 * gR / gB > 6 * dR / dB, 'launching scored no faster than shutting up shop');
   assert.ok(gW >= dW, 'launching cost no more wickets than defending');
 });
