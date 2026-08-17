@@ -228,7 +228,33 @@ calibration band width, not a regime change.
 
 ## 8. Calibration
 
-<!-- CAL-RESULTS -->
+`node tools/calibration-check.mjs` (smoke, 300 matches/cell, four cells:
+international, flagship, division two, cross-division) against the
+frozen `calibration-golden.json`:
+
+* **Every statistical band HELD**: first-innings mean, boundary share,
+  extras per innings, all-out share, the pyramid ordering
+  (internationals above flagship above division two), the
+  weaker-sides-bowled-out-more ordering, and seed-determinism all
+  passed at their frozen tolerances. The checker prints every violated
+  band; it printed none.
+* **One drift item**: `pinned-match fingerprint changed: 365/6 vs
+  golden 362/8` — the single ball-for-ball pinned match, which cannot
+  survive any change to bowler selection by construction. Same class
+  as the replay golden failure in §7: the intended consequence, not a
+  regression. **Not re-blessed** — re-blessing (calibration golden +
+  `tools/record-masters.mjs` + the bench gate) is the review's
+  decision at merge time, per the phase's rules.
+* **Server suite on the new engine: 437/437 pass** — the resolver,
+  the living fold, banked-match immutability and the whole world layer
+  are indifferent to the new spell/recovery behaviour (banked matches
+  replay under the laws they were played with; nothing rewrites
+  history).
+
+Metric-by-metric environment movement is §6: −1.8 runs/50ov, +0.23
+wickets/innings, all-out flat, death −0.11 RPO, powerplay +0.08 —
+inside a third of a band width everywhere. Criterion 11 (calibration
+remains controllable): **met**.
 
 ## 9. Known limitations
 
