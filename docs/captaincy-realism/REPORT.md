@@ -1,7 +1,10 @@
 # CAPTAINCY REALISM — JUDGEMENT, MOMENTS, THE FIELD, AND A SLIVER OF LEADERSHIP
 
 Branch `claude/captaincy-realism`, built on Phase 2A main (`f03ba28`).
-Gameplay changes; **not merged, not deployed, goldens not re-blessed.**
+Approved as measured; goldens and the calibration golden re-blessed
+once for the accepted model at ship (chapters 1–9 describe the
+measurement as it happened, so their "not re-blessed" framing is the
+state DURING the phase).
 Instrument: `tools/captaincy-realism-probe.mjs`; evidence beside this
 file — `baseline-evidence.json` (old engine), `new-uniform-evidence.json`
 and `new-het-evidence.json` (final build), `difficulty-evidence.json`
@@ -350,5 +353,17 @@ On the final head, in full:
   captaincy channel (the aiPickBowler changes live inside the
   auto-path only, and the orders suite passes in full).
 
-Not merged, not deployed, goldens held. The branch is a complete,
-measured proposal awaiting review.
+Those tallies were the review gate. At ship, after approval, the one
+intentional re-bless happened: replay masters re-recorded (with
+`golden-inspection.json` proving all nine divergences captaincy-shaped
+— the origin/main build still reproduced the OLD goldens bit-for-bit,
+XIs and batting orders identical, every first divergent ball in or
+just after an over with a logged pick decision), and the calibration
+golden re-run in full (3334 matches a cell; every non-tail metric
+within 1% of the old contract). Final head: **engine 488/488, server
+437/437, coach 32/32, calibration-check PASS, replay PASS,
+deterministic repeat 5/5, source hash == shipped asset (7fb824)**.
+Per review: the organisation sliver is deliberately NOT retuned here —
+it rides the fielding pathway, and fielding magnitude is the next
+Player Realism phase's subject; the leadership sliver gets re-measured
+after that rather than tuning the same interaction twice.
