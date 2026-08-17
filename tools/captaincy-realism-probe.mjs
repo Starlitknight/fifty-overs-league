@@ -142,19 +142,26 @@ if (has('contexts') || has('all')) {
 // ---------------------------------------------------------------------------
 if (has('difficulty') || has('all')) {
   const M0 = Math.min(N, 400);
-  say('\n=== §4 EASY v DIFFICULT TACTICAL MATCHES (N=' + M0 + ') ===');
+  say('\n=== §4 DECISION ENVIRONMENTS (N=' + M0 + ') ===');
+  // Three environments, because "difficult" is not "close": when every
+  // candidate is interchangeable a wrong pick is FREE, and when one man is
+  // overwhelmingly right even a poor captain rarely misses him. The
+  // environment where captaincy should pay most is CONSEQUENTIAL-BUT-NOT-
+  // OBVIOUS: moderate real gaps whose right answer shifts with the moment -
+  // a weary strike man, a death specialist to hold back, a sixth option.
   const EASY = [{ slot: 6, skills: { wicket: 74, economy: 70, moveTurn: 76 } }];
   const HARD = [
-    { slot: 6, skills: { wicket: 62, economy: 55, moveTurn: 62 }, fatigue: 'weary' },
-    { slot: 7, skills: { wicket: 60, economy: 58, moveTurn: 58 } },
-    { slot: 8, talents: ['deathSpecialist'], skills: { wicket: 54, economy: 64, discipline: 64 } },
-    { slot: 9, skills: { wicket: 58, economy: 60, moveTurn: 64 } },
-    { slot: 10, skills: { wicket: 61, economy: 54, variation: 64 } }
+    { slot: 6, skills: { wicket: 66, economy: 50, moveTurn: 64 }, fatigue: 'weary' },
+    { slot: 7, skills: { wicket: 58, economy: 63 } },
+    { slot: 8, talents: ['deathSpecialist'], skills: { wicket: 48, economy: 68, discipline: 68 } },
+    { slot: 9, skills: { wicket: 63, economy: 52, variation: 66 } },
+    { slot: 10, skills: { wicket: 52, economy: 60 } }
   ];
   out.difficulty = [];
   for (const [lbl, so, ro] of [
-    ['easy: dominant seamer, green', { slots: EASY }, { pitch: 'green', weather: 'Overcast' }],
-    ['hard: five close calls + sixth', { slots: HARD, sixth: true, sixthLevel: 54 }, {}]]) {
+    ['simple: five clones', {}, {}],
+    ['obvious: dominant seamer, green', { slots: EASY }, { pitch: 'green', weather: 'Overcast' }],
+    ['difficult: real spreads + moments', { slots: HARD, sixth: true, sixthLevel: 54 }, {}]]) {
     const lo = cell(20, M0, so, ro), hi = cell(95, M0, so, ro);
     const dc = [], dv = [];
     for (let i = 0; i < M0; i++) {
