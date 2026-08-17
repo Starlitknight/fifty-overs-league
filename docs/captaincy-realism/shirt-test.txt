@@ -1,0 +1,10 @@
+
+=== §6 THE SHIRT TEST (Match-Day Coach, shipped) ===
+  armband bats 61 (-0): picked=true displacing S-bat4  captain=S-armband
+  armband bats 57 (-4): picked=true displacing S-bat4  captain=S-armband
+  armband bats 53 (-8): picked=true displacing S-bat4  captain=S-armband
+  armband bats 49 (-12): picked=true displacing S-bat4  captain=S-armband
+  armband bats 45 (-16): picked=false  captain=S-bat0
+  armband bats 41 (-20): picked=false  captain=S-bat0
+  armband bats 35 (-26): picked=false  captain=S-bat0
+  armband bats 29 (-32): picked=false  captain=S-bat0
