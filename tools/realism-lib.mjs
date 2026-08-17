@@ -152,6 +152,9 @@ globalThis.__prRun = function (ta, tb, seed, opts) {
   var lastLegal = [ 0, 0 ];       // extras leave inn.legal still - only a ball
                                   // that advanced it may stamp the over ledgers,
                                   // or a wide first-up writes into the PREVIOUS over
+  var outCnt = [ {}, {} ];        // outcome -> count ('dot','1','2','3','4','6',
+                                  // 'wide','wC',...) — the fielding phase needs
+                                  // singles/twos/boundary COUNTS, not just runs
   var spellMax = [ {}, {} ];      // bowler -> longest consecutive-spell balls
   var fatPeak = {};               // name -> max in-match fatigue seen
   var trace = [];                 // optional per-over fatigue of one name
@@ -166,7 +169,13 @@ globalThis.__prRun = function (ta, tb, seed, opts) {
     if (!inn) continue;
     var ev = M._fldEv;
     if (ev && ev.k) bump(ix, ev.k === 'save' ? ('save' + (ev.d || 0)) : ev.k);
+    // where it happened, for the positional questions: catches and saves keep
+    // their post label ("catch@second slip"), so a probe can ask whether the
+    // cordon man or the boundary rider is the one doing the work
+    if (ev && ev.k && ev.at) bump(ix, ev.k + '@' + ev.at);
     if (!ev && M._fieldingEvent && M._fieldingEvent.indexOf('can only watch') >= 0) bump(ix, 'beat');
+    var lo0 = M.log && M.log[0];
+    if (lo0 && lo0.no) outCnt[ix][lo0.out] = (outCnt[ix][lo0.out] || 0) + 1;
     if (inn.legal > lastLegal[ix]) {
       lastLegal[ix] = inn.legal;
       if (inn.legal % 6 === 0) cumRuns[ix][inn.legal / 6 - 1] = inn.runs;
@@ -189,7 +198,7 @@ globalThis.__prRun = function (ta, tb, seed, opts) {
     for (var nm in inn.bowlers) { var r = inn.bowlers[nm];
       bowlers[nm] = { b: r.b, r: r.r, w: r.w, maxSpell: spellMax[ix][nm] || 0 }; }
     return { batTeam: inn.batTeam, runs: inn.runs, wkts: inn.wkts, legal: inn.legal,
-      extras: inn.extras, fld: fld[ix], overBowl: overBowl[ix], cumRuns: cumRuns[ix],
+      extras: inn.extras, fld: fld[ix], outs: outCnt[ix], overBowl: overBowl[ix], cumRuns: cumRuns[ix],
       ph_r: inn.ph_r, ph_b: inn.ph_b,
       fow: (inn.fow || []).map(function (f) { return { sc: f.sc, w: f.w, ov: f.ov }; }),
       pships: (inn.pships || []).map(function (s) { return { w: s.w, runs: s.runs }; }),
