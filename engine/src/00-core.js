@@ -2642,17 +2642,17 @@ function availableBowlers(inn){
 // NEW choice is made, exactly as before.
 //
 // The margin is MEASURED, not chosen (tools/spell-probe.mjs §1, margins
-// 0/4/8/12/16 x captaincy 20..95): the regime is broad and stable from 0 to
-// 12 and cliffs at 16, where three quarters of bowler-innings run past 36
-// consecutive balls because the margin swallows the mid-overs spin bonus
-// (+14) that is supposed to end a seamer's spell. At 8, an ordinary
-// captain's one-over spells fall from 80% to ~45%, 3-or-more-over spells
-// rise from 6% to ~43%, and the longest spell averages 39 balls against the
-// old 15 - while phase changes, fatigue (the score reads the tank), the
-// spellB>=30 penalty and the save-overs term still break spells at sensible
-// moments. Captaincy stays what it was - decision QUALITY at the change
-// points, whose mistakes now persist for a spell rather than one over -
-// instead of becoming a spell-length stat.
+// 0/4/8/12/16 x captaincy 20..95, N=220 a cell): the regime is broad and
+// stable from 0 to 12 and cliffs at 16, where three quarters of
+// bowler-innings run past 36 consecutive balls because the margin swallows
+// the mid-overs spin bonus (+14) that is supposed to end a seamer's spell.
+// At 8, an ordinary captain's one-over spells fall from 78% to 35%,
+// 3-or-more-over spells rise from 7% to 59%, and the longest spell averages
+// 39 balls against the old 15 - while phase changes, fatigue (the score
+// reads the tank), the spellB>=30 penalty and the save-overs term still
+// break spells at sensible moments. Captaincy stays what it was - decision
+// QUALITY at the change points, whose mistakes now persist for a spell
+// rather than one over - instead of becoming a spell-length stat.
 //
 // Deterministic like everything else here: the gate reads only scores and
 // spell state, no dice. __foSpellOff restores the per-over re-roll at runtime
