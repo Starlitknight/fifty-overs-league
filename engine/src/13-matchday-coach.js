@@ -152,31 +152,57 @@ var FO_MDC = {
   // now WEIGHTED by how real an option he is: measured against the marginal
   // man of the attack - the fifth-cheapest, the last one who actually bowls -
   // and falling to nothing when his overs are OPTION_SPAN runs dearer.
-  // Calibrated against the two measured points: a useful sixth option (0.71
-  // runs dearer than the marginal man) is worth 3.7, and a useless one (3.14
-  // dearer) is worth nothing.
-  SIXTH_BOWLER: 4.8,
-  // a seventh is worth a token amount and no more, and that is measured too:
-  // six frontline against seven, batting held identical, is 50.40% (z=0.51).
+  //
+  // RE-MEASURED FOR PHASE 2A (tools/coach-followup-probe.mjs §1). Off-spell
+  // recovery changed what the option is FOR: a healthy five-man attack can
+  // now manage its own legs, so a marginal-quality sixth saves only ~1.6
+  // runs there - while a workload-stressed frontline still buys real relief
+  // (one weary man +6.9, three weary +5.9, and the win column moves with
+  // it). The old flat 4.8 was the average of two different situations, so
+  // the premium is now QUALITY x NEED: a base for the flexibility itself
+  // plus a slope on the summed starting load of the five men who will
+  // actually bowl. Fitted by least squares through the six measured
+  // frontline states at marginal quality (loadSum 0 -> 1.30 maps to 1.6 ->
+  // 5.9 runs saved); optionWeight then scales it by whether the man is a
+  // real option at all, exactly as before. No thresholds anywhere: a side
+  // one point more tired pays one sliver more insurance.
+  //
+  // (A STRONG sixth - better than the marginal frontliner - measured 10-21
+  // runs, but he takes his ~10 overs on merit and the fifty-over cost
+  // allocation above already prices that; the insurance term is only for
+  // the option who does NOT get planned overs.)
+  S6_BASE: 2.0,
+  S6_NEED: 4.0,
+  // a seventh is worth a token amount and no more, re-measured on the new
+  // engine (probe §2): 0.0 runs with a healthy attack, +4.9 (within +/-2.2)
+  // with two weary quicks - and in the stressed case the SIXTH term above is
+  // already paying for the same need. Six and seven are deliberately not
+  // symmetric formulas; the token stays a token.
   SEVENTH_BOWLER: 1.5,
   // how much dearer than the attack's marginal man an extra option's overs can
   // be before he stops being an option at all
   OPTION_SPAN: 3.0,
-  // CAPTAINCY, AND WHY IT IS DELIBERATELY CHEAP. The engine's law is
-  // aiPickBowler's slip: a captain of 88 or better always gets his best
-  // bowler, and below that he reaches for the second or third choice with
-  // probability (88-capt)/88, never past the fourth. So the WHOLE span from an
-  // ordinary captain (50) to a fine one (88) is worth about 37% of fifty overs
-  // bowled by the second-best option instead of the best - a few tenths of a
-  // run an over, call it seven runs a match.
+  // CAPTAINCY, RE-PRICED FOR PHASE 2A. The engine's law is still
+  // aiPickBowler's slip - always the top of the ranking from captaincy 88 up,
+  // reaching past it below - but the continuation gate means the slip now
+  // acts at CHANGE POINTS (roughly fifteen an innings) rather than fifty
+  // re-rolls, so each point of captaincy buys less cricket than it did.
   //
-  // The first cut priced it at 0.55 a point, i.e. 27 runs across that span,
-  // and the test caught exactly what the brief warns of: a level-20 cricketer
-  // with a captaincy of 99 bought himself a place in the side. Captaincy is
-  // now worth what it measures, which is far too little to buy anybody a
-  // shirt - and it is capped at 88, because above that the engine gives
-  // nothing further.
-  CAPT_RUNS: 0.18,
+  // Measured (tools/coach-followup-probe.mjs §5, capt 40/64/88 across attack
+  // shapes): ~0.10-0.12 runs a point where the attack is heterogeneous
+  // enough for a wrong pick to cost something (pace-heavy 0.104, spin-heavy
+  // 0.124, one tired quick 0.111) and ~nothing on an artificially uniform
+  // attack of interchangeable men (balanced probe side -0.01, six options
+  // 0.02). Real squads are the heterogeneous kind, so the price is the
+  // cluster, not the average with the degenerate cells: 0.10 - just over
+  // half the old 0.18, which was measured against the per-over re-roll.
+  //
+  // The invariant the shirt test holds: at 0.10 the whole 40->88 armband
+  // premium is ~3.4 runs, about six or seven points of batting - enough to
+  // break a genuine tie, nowhere near enough to buy a materially worse
+  // cricketer a place. Capped at 88 as ever, because above that the engine
+  // gives nothing further.
+  CAPT_RUNS: 0.10,
   CAPT_CEIL: 88,
   // the fielding contest is a whole-side term (foFieldLevel); one man's hands
   // move it a little, and the engine already reads catching/fielding through
@@ -555,7 +581,15 @@ function foMdcScoreXI(cards, doctrine) {
     if (!c || !isFinite(c.bowlCost)) return 0;
     return Math.max(0, Math.min(1, 1 - (c.bowlCost - marginal) / FO_MDC.OPTION_SPAN));
   };
-  if (front.length >= 6) bowl += FO_MDC.SIXTH_BOWLER * optionWeight(front[5]);
+  // QUALITY x NEED (see S6_BASE/S6_NEED above): the need is the summed
+  // starting tank of the five men whose fifty overs the allocation just
+  // priced - the engine's own foFatigueLoad, already on every card as
+  // c.load. A fresh attack pays the base for flexibility alone; a leggy one
+  // pays more, because the sixth man's overs are the rest the frontline can
+  // now actually bank (off-spell recovery, Phase 2A).
+  let needLoad = 0;
+  for (let i = 0; i < Math.min(5, bowlers.length); i++) needLoad += bowlers[i].load || 0;
+  if (front.length >= 6) bowl += (FO_MDC.S6_BASE + FO_MDC.S6_NEED * needLoad) * optionWeight(front[5]);
   if (front.length >= 7) bowl += FO_MDC.SEVENTH_BOWLER * optionWeight(front[6]);
 
   // 3. THE GLOVES. Exactly one man keeps; the side is worth his hands.
@@ -833,45 +867,64 @@ function foMdcBowlingPlan(xi, ctx, pitch, refs, doctrine) {
   const openers = opts.slice().sort(function (a, b) {
     return nbScore(b) - nbScore(a) || (a.name < b.name ? -1 : 1);
   }).slice(0, 2);
-  // THE BURST IS THE CONDITIONS', AND NOT THE MAN'S — AND THAT IS A MEASURED
-  // CONCLUSION, not the absence of one.
-  //
-  // tools/matchday-endurance.mjs asked the shipped engine whether a burst
-  // ought to be cut to the individual, by forcing a continuous ten-over spell
-  // in a real match, sampling the engine's own fatigue tank ball by ball and
-  // reading each over's exact cost back out of ballDist. It does not:
-  //
-  //   * STAMINA SETS NO SPELL LENGTH AT ALL. Holding a man's six overs fixed
-  //     and asking whether they are cheaper straight through or split 3+3 gave
-  //     0.00 runs at every stamina from 30 to 90 for anyone under thirty, and
-  //     0.48 flat across that same stamina range at 36. Flat to two decimals.
-  //   * The reason is structural: the tank fills per ball bowled ALL INNINGS
-  //     and drains only at drinks and the innings break, so RESTING A MAN DOES
-  //     NOT EMPTY IT. The only two terms that read the unbroken-spell counter
-  //     are one that ignores stamina and does not start until 36 balls, and
-  //     one gated entirely on age over thirty.
-  //   * AGE moves it, but only just: over the spell channel alone the whole
-  //     span from 24 to 36 is 0.287 against 0.317 runs. Cutting a burst on
-  //     that would mean choosing a threshold between 0.204 and 0.22 myself,
-  //     which is a crude band wearing a measurement's clothes.
-  //
-  // So a "low-endurance quick bowls a short burst" rule would be a rule about
-  // cricket this engine does not play. The ceiling stays what WAS measured -
-  // the conditions - because the new ball's decay is worth six overs where it
-  // bites and three where it does not.
-  const burst = bite ? 6 : 3;
+  // THE BURST IS THE CONDITIONS', AND ONLY WHERE THE CONDITIONS SPEAK — a
+  // measured conclusion twice over. The old engine needed a painted burst to
+  // stop the captain churning one-over bowlers; Phase 2A's continuation gate
+  // means he holds sensible spells by himself, so painting is only worth
+  // anything where the coach genuinely knows better than the ranking.
+  // Measured on the new engine (tools/coach-followup-probe.mjs §3, bursts
+  // 0/2/3/4/5/6 by pitch): on green under cloud the nominated swing pair
+  // saves ~5.7 runs over leaving it open, and two overs painted do as well
+  // as six - the value is naming the RIGHT PAIR, not the length. On
+  // balanced and flat decks painting saves nothing at all (0 painted was
+  // marginally the best row) and costs flexibility: the captain brings his
+  // openers back at the death 4.2 overs a match unpainted against 2.9
+  // painted. So where the ball bites the coach nominates the burst it
+  // always did, and where it does not it paints nothing and trusts the
+  // captain the engine now has. Stamina still sets no burst length - the
+  // per-man spell question remains the captain's, over by over, through the
+  // tank his score already reads.
+  const burst = bite ? 6 : 0;
   for (let i = 0; i < burst; i++) {
     give(1 + i * 2, openers[0]);
     give(2 + i * 2, openers[1]);
   }
-  if (openers.length) {
+  if (burst && openers.length) {
     notes.push('new ball: ' + openers.map(function (c) { return c.name; }).join(' and ') +
-      ' for ' + burst + ' overs each' + (bite ? ' (the ball is doing something)' : ''));
+      ' for ' + burst + ' overs each (the ball is doing something)');
+  } else if (openers.length) {
+    notes.push('new ball: left to the captain - conditions do not separate the seamers');
   }
-  // THE DEATH. Protect the last four overs for the best death options, and
-  // leave 41-46 to the captain - he knows the score and the coach does not.
+  // THE DEATH, PLANNED ON THE MAN WHO WILL ACTUALLY ARRIVE THERE. Protect
+  // the last four overs for the best death options, and leave 41-46 to the
+  // captain - he knows the score and the coach does not.
+  //
+  // The old rule here categorically refused an opener the death slots,
+  // because under the old engine the tank never drained by resting and a man
+  // who bowled six early overs arrived at over 47 carrying every one of
+  // them. Phase 2A repealed that physics: off-spell recovery means a quick
+  // who bowls four with the new ball projects to a tank of ~0.10-0.14 at
+  // the death - UNDER the 0.12 ramp, effectively fresh - and the played
+  // comparison (tools/coach-followup-probe.mjs §4) has him dead level with
+  // a rested closer, while a pre-tired man (projected 0.27) is still
+  // rightly worse. A category cannot say all of that; a projection can.
+  //
+  // So every candidate is scored AS HE WILL BE AT OVER 47: his planned
+  // overs so far (the painted burst) run through foFatProject - the same
+  // pure law apply() charges ball by ball, not a coach-side copy - and the
+  // result enters ballDist through ctx.bowlFat, exactly the channel the
+  // match itself will read. An opener returns when his projected self is
+  // genuinely the best answer; a tired or low-stamina one stands aside, and
+  // nobody is excluded for the shape of his morning.
+  const plannedOvers = {};
+  for (let o = 1; o <= 50; o++) if (plan[o]) {
+    (plannedOvers[plan[o]] = plannedOvers[plan[o]] || []).push(o - 1);
+  }
   const deathScore = function (c) {
-    const d = ballDist(refs.bat, c.today, 'death', 40, 1, 0, pitch, 'bal', 47, ctx);
+    const dctx = {};
+    for (const k in ctx) dctx[k] = ctx[k];
+    dctx.bowlFat = foFatProject(c.today, plannedOvers[c.name] || [], 46);
+    const d = ballDist(refs.bat, c.today, 'death', 40, 1, 0, pitch, 'bal', 47, dctx);
     const w = (d.wC || 0) + (d.wB || 0) + (d.wLBW || 0) + (d.wRO || 0) + (d.wST || 0);
     const r = (d['1'] || 0) + 2 * (d['2'] || 0) + 3 * (d['3'] || 0) + 4 * (d['4'] || 0) + 6 * (d['6'] || 0);
     return (w * FO_MDC.WKT_RUNS - r) + (foMdcHasTal(c.p, 'deathSpecialist') ? 4 : 0);
@@ -879,34 +932,15 @@ function foMdcBowlingPlan(xi, ctx, pitch, refs, doctrine) {
   const closers = opts.slice().sort(function (a, b) {
     return deathScore(b) - deathScore(a) || (a.name < b.name ? -1 : 1);
   });
-  // ...AND A MAN'S LEGS ARE SPENT ONLY ONCE. The opening burst above has
-  // already booked its two men for three or six overs apiece, and the engine
-  // charges for that twice over: the fatigue tank fills per ball bowled all
-  // innings and does not drain by resting, so an opener who has sent down six
-  // arrives at the death a materially worse bowler than he looks on paper.
-  //
-  // Measured (tools/matchday-endurance.mjs), a quick on a balanced pitch costs
-  //     over 1   2.23 runs        over 7   4.48 runs
-  //     over 4   3.69 runs        over 8   4.80 runs
-  // so the last four overs of the innings, handed to a man who opened, are
-  // bought at roughly twice the price the death ranking quoted for them - and
-  // the ranking is computed on his freshest self, because that is the only
-  // self a pre-match card knows.
-  //
-  // This does not re-rank anybody or invent a workload coefficient. It simply
-  // prefers, for the two explicit death slots, the best closers who are NOT
-  // already carrying the new ball - and falls straight back to the best two
-  // available when a side is too thin to afford the distinction, because a
-  // four-man attack must double up and pretending otherwise would leave the
-  // death unplanned.
-  const opened = {};
-  openers.forEach(function (c) { if (c) opened[c.name] = 1; });
-  const restedClosers = closers.filter(function (c) { return !opened[c.name]; });
-  const dPair = (restedClosers.length >= 2 ? restedClosers : closers).slice(0, 2);
+  const dPair = closers.slice(0, 2);
   if (dPair.length === 2) {
     give(47, dPair[0]); give(48, dPair[1]); give(49, dPair[0]); give(50, dPair[1]);
+    const opened = {};
+    openers.slice(0, burst ? 2 : 0).forEach(function (c) { if (c) opened[c.name] = 1; });
+    const returns = dPair.filter(function (c) { return opened[c.name]; });
     notes.push('death: ' + dPair.map(function (c) { return c.name; }).join(' and ') + ' hold overs 47-50' +
-      (restedClosers.length >= 2 ? '' : ' (a thin attack has to double up)'));
+      (returns.length ? ' (' + returns.map(function (c) { return c.name; }).join(' and ') +
+        ' returning - projected fresh enough)' : ''));
   }
   // THE MIDDLE, only where the surface makes it obvious. A real turner with a
   // real spinner is the one middle-overs call the coach is more sure of than

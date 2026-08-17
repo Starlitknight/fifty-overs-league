@@ -1453,6 +1453,60 @@ function foFatiguePenalty(p){
   const ix=foFatigueIndex(p), st=foSkE(p,'stamina')||p.stamina||50;
   return foClamp(ix*1.05*foAgeTireFactor(p) - Math.max(0,st-60)*0.045, 0, 13.5);
 }
+// ---------------------------------------------------------------------------
+// THE IN-MATCH FATIGUE LAWS, AS PURE FUNCTIONS OF THE MAN. One law, two
+// readers: apply() plays it ball by ball, and the Match-Day Coach projects
+// with it when it asks what a bowler's tank will read at the death
+// (foFatProject below). They existed as inline arithmetic inside apply()
+// first, and the coach follow-up to Phase 2A needed the same numbers - a
+// second copy of 0.0165 and 0.35 scattered into 13-matchday-coach.js is a
+// future fatigue change silently missing one of its two homes, so the law
+// moved here and both callers read it. The expressions are verbatim what
+// apply() inlined; gameplay is byte-identical (proven against recorded ball
+// logs, flags on and off, before this comment was allowed to say so).
+// ---------------------------------------------------------------------------
+function foFatBatPerBall(p){
+  const st=foSkE(p,'stamina')||50;
+  const age=(p._ageTire||foAgeTireFactor(p));
+  const role=p.keeper?1.04:1.0;
+  return ((1.75-st/100)/120)*age*role;
+}
+function foFatBowlPerBall(p){
+  const st=foSkE(p,'stamina')||50;
+  const age=(p._ageTire||foAgeTireFactor(p));
+  const role=(p.bowlType==='fast'?1.08:(p.bowlType==='fastMedium'?1.04:1.0));
+  return ((1.85-st/100)/74)*age*role;
+}
+// one legal ball of off-spell rest (Phase 2A): decay toward a floor of
+// 0.35 x the man's match peak. The overridable constants stay overridable -
+// tools/spell-probe.mjs sweeps them through these same names.
+function foRestStep(f,pk){
+  const rr=(typeof __foRestR!=='undefined')?__foRestR:0.0165;
+  const fl0=(typeof __foRestFloor!=='undefined')?__foRestFloor:0.35;
+  const fl=fl0*(pk||f);
+  return f>fl?fl+(f-fl)*(1-rr):f;
+}
+// WHAT WILL HIS TANK READ AT OVER N? The pre-match projection the coach
+// plans the death with: play the laws above over a planned set of overs
+// (0-based over numbers he bowls), resting him through the others exactly
+// the way apply() would - no decay while his spell is live (he bowled one
+// of the two previous overs), drinks x0.62 after over 25. A projection, not
+// a replay: the unplanned overs a captain may later hand him are unknowable
+// before the toss, so this is the tank his PLANNED work costs him, priced
+// by the same law the match will actually charge.
+function foFatProject(p,bowlOvers,atOver){
+  var fat=foFatigueLoad(p),pk=fat;
+  var per=foFatBowlPerBall(p);
+  var set={};for(var i=0;i<(bowlOvers||[]).length;i++)set[bowlOvers[i]]=1;
+  for(var o=0;o<atOver;o++){
+    if(set[o]){fat+=per*6;if(fat>pk)pk=fat;}
+    else if(!set[o-1]&&!set[o-2]&&!((typeof __foRestOff!=='undefined')&&__foRestOff)){
+      for(var b=0;b<6;b++)fat=foRestStep(fat,pk);
+    }
+    if(o===24)fat*=0.62;                     // drinks falls at the end of over 25
+  }
+  return fat;
+}
 // THE WORLD'S MEDIAN KEEPER, measured over all 512 glovemen in the sixteen
 // leagues. Every term that asks "is this keeper better or worse than average"
 // counts from here.
@@ -2618,6 +2672,46 @@ function availableBowlers(inn){
 // It is DETERMINISTIC - a hash of the over's own identity, never M.rand() - so
 // a replay bowls the same men in the same order and the golden master survives
 // captaincy existing at all.
+//
+// ---- A SPELL IS A DECISION THAT STANDS UNTIL SOMETHING CHANGES -------------
+//
+// The audit (docs/player-realism-audit, §8) measured what this function used
+// to produce: under an ordinary captain 80% of all spells were ONE OVER, the
+// mean longest spell was 15 balls, and the 36-ball longSpell fatigue term
+// fired in 1.3% of bowler-innings - decorative code. The cause was not the
+// slip law's quality but its CADENCE: the choice re-rolled every over, so a
+// captaincy-40 side sent down fifty overs of one-over cameos, which is not
+// cricket anywhere on earth.
+//
+// A real captain does not re-open the argument six balls after settling it.
+// He leaves a bowler on while that bowler remains ROUGHLY the right answer,
+// and re-decides only when something has actually changed - the phase turns,
+// the man tires, his overs run short, the surface starts favouring somebody
+// else. All of that is already in the scoring below; what was missing was the
+// standing decision. So: if the man who bowled this end's previous over is
+// still available and scores within FO_SPELL.margin of the top of the
+// ranking, he CONTINUES, for every captain alike. Only when he falls outside
+// the margin - his spell has stopped being roughly the right answer - is
+// there a genuine change point, and the slip law then decides how well the
+// NEW choice is made, exactly as before.
+//
+// The margin is MEASURED, not chosen (tools/spell-probe.mjs §1, margins
+// 0/4/8/12/16 x captaincy 20..95, N=220 a cell): the regime is broad and
+// stable from 0 to 12 and cliffs at 16, where three quarters of
+// bowler-innings run past 36 consecutive balls because the margin swallows
+// the mid-overs spin bonus (+14) that is supposed to end a seamer's spell.
+// At 8, an ordinary captain's one-over spells fall from 78% to 35%,
+// 3-or-more-over spells rise from 7% to 59%, and the longest spell averages
+// 39 balls against the old 15 - while phase changes, fatigue (the score
+// reads the tank), the spellB>=30 penalty and the save-overs term still
+// break spells at sensible moments. Captaincy stays what it was - decision
+// QUALITY at the change points, whose mistakes now persist for a spell
+// rather than one over - instead of becoming a spell-length stat.
+//
+// Deterministic like everything else here: the gate reads only scores and
+// spell state, no dice. __foSpellOff restores the per-over re-roll at runtime
+// (the A/B lever of tools/spell-probe.mjs), without a rebuild.
+const FO_SPELL={margin:8};
 function aiPickBowler(inn,over){
   const av=availableBowlers(inn);const ph=phaseOf(over);
   if(!av.length){const any=inn.bxi.filter(p=>p.bowlType);if(any.length)return any[0];return inn.bxi.slice().sort((a,b)=>(b.threat||0)-(a.threat||0))[0];}
@@ -2642,7 +2736,24 @@ function aiPickBowler(inn,over){
     if(tc==='pace'&&over<12&&(M.pitch==='green'||['overcast','humid','misty'].includes(String((M.meta&&M.meta.weather)||'').toLowerCase())))v+=(mv-50)*0.22;
     if(tc==='spin'&&over>=25&&['dry','cracked','slow'].includes(M.pitch))v+=(mv-50)*0.20;
     return v;};
-  av.sort((a,b)=>sc(b)-sc(a));
+  // scored once each - the comparator used to recompute sc() per comparison,
+  // and the continuation gate below needs the same numbers the sort saw
+  const scores={};for(const p of av)scores[p.name]=sc(p);
+  av.sort((a,b)=>scores[b.name]-scores[a.name]);
+  // THE STANDING DECISION (see the header above): this end's active bowler
+  // carries on while he is within the margin of the best available option.
+  // availableBowlers has already excluded him if his ten overs are done, and
+  // the score he is judged on already carries his tank, his spell length and
+  // his remaining overs - so every reason a real spell ends is a reason this
+  // one ends.
+  if(!(typeof __foSpellOff!=='undefined'&&__foSpellOff)&&av.length>1){
+    const cont=av.find(p=>{const r=inn.bowlers[p.name];
+      return r&&r.lastSpellOver===over-2&&(r.spellB||0)>0;});
+    if(cont){
+      const mg=(typeof __foSpellMargin!=='undefined')?__foSpellMargin:FO_SPELL.margin;
+      if(scores[cont.name]>=scores[av[0].name]-mg)return cont;
+    }
+  }
   // HOW MUCH OF THAT HE ACTUALLY SEES. A captaincy of 50 gets it right most of
   // the time and occasionally reaches past the best man for the second or third
   // best; below that the reach gets longer. Never worse than the fourth choice,
@@ -3138,14 +3249,65 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
   if(sb.r>=50&&!sb.fifty){sb.fifty=true;milestones.push(`FIFTY for ${sb.p.name} - ${sb.r} off ${sb.b}.`)}
   if(sb.r>=100&&!sb.hundred){sb.hundred=true;milestones.push(`HUNDRED! ${sb.p.name} raises the bat - ${sb.r} off ${sb.b}.`)}
   if(!ext){if(inn.freeHit&&out!=='noball')inn.freeHit=false;inn.legal++;brec.b++;brec.spellB=(brec.spellB||0)+1;inn.ph_b[phaseOf(over)]++;inn.pshipB++;inn.faced[sb.p.name]=(inn.faced[sb.p.name]||0)+1;
-    const stB=foSkE(sb.p,'stamina')||50,stW=foSkE(bowler,'stamina')||50;
-    const ageB=(sb.p._ageTire||foAgeTireFactor(sb.p)),ageW=(bowler._ageTire||foAgeTireFactor(bowler));
-    const roleB=sb.p.keeper?1.04:1.0, roleW=(bowler.bowlType==='fast'?1.08:(bowler.bowlType==='fastMedium'?1.04:1.0));
-    M.fat[sb.p.name]=(M.fat[sb.p.name]||0)+((1.75-stB/100)/120)*ageB*roleB;
-    M.fat[bowler.name]=(M.fat[bowler.name]||0)+((1.85-stW/100)/74)*ageW*roleW;
+    // the laws themselves live above as pure functions (foFatBatPerBall /
+    // foFatBowlPerBall) so the coach's projection and this accrual can never
+    // drift apart; the arithmetic is verbatim what stood inline here
+    M.fat[sb.p.name]=(M.fat[sb.p.name]||0)+foFatBatPerBall(sb.p);
+    M.fat[bowler.name]=(M.fat[bowler.name]||0)+foFatBowlPerBall(bowler);
+    // THE HIGH-WATER MARK, kept so rest can never quietly erase a day's work:
+    // the recovery floor below is a fraction of the worst point a man reached,
+    // not of wherever he happens to stand. Built on demand - a match restored
+    // from an older save has never heard of this ledger.
+    M.fatPk=M.fatPk||{};
+    for(const nm of [sb.p.name,bowler.name])
+      if((M.fat[nm]||0)>(M.fatPk[nm]||0))M.fatPk[nm]=M.fat[nm];
     for(const nm of [sb.p.name,bowler.name]){
       if((M.fat[nm]||0)>0.65&&!M.fatWarned[nm]){M.fatWarned[nm]=1;
         M.log.unshift({no:'',out:'⚑',txt:nm+' is visibly tiring'+(nm===bowler.name?' - this spell is taking a toll.':' out there.'),d:null,inn:M.inns,mile:true});}}
+    // ---- AN OVER AT FINE LEG IS WORTH SOMETHING NOW --------------------------
+    //
+    // The audit (docs/player-realism-audit, §3) traced the tank through whole
+    // innings and found it strictly monotone outside two scripted cliffs -
+    // drinks (x0.62) and the innings break (x0.5). Ten overs of rest repaid
+    // 0.000, so "give the strike bowler a rest and bring him back" - the
+    // organising idea of a fifty-over attack - could not exist: a man came
+    // back exactly as tired as he left.
+    //
+    // So every legal ball, each member of the bowling side who is NOT bowling
+    // and NOT mid-spell (he bowled this end's previous over and may carry on;
+    // an active spell must not drain between its own overs) recovers a
+    // fraction of the RECOVERABLE part of his tank:
+    //
+    //     fat' = floor + (fat - floor) * (1 - r),   floor = 0.35 * his peak
+    //
+    // The exponential is the physiology asked for: the first overs off repay
+    // the most and each one after repays less. The floor is the honesty: a
+    // man who reached 0.60 can rest to 0.21 and no further this innings -
+    // above the 0.12 ramp, visibly a man who has bowled, never fresh. r is
+    // sized so five overs off repay about a quarter of the whole tank
+    // (1 - 0.9835^30 = 39% of the recoverable 65%), ten about 40% - measured
+    // against the return-spell scenarios in tools/spell-probe.mjs before it
+    // was frozen. Recovery deliberately does NOT read stamina: stamina
+    // already slows the filling of the tank and softens the pre-match
+    // penalty, and the probe found scaling r by stamina adds a third helping
+    // of one attribute for no cricket the accrual side does not already
+    // express (the report's §5 shows the candidate laws side by side).
+    //
+    // Batting-side men are untouched - the striker is working, the pavilion
+    // already has the innings break - and the drinks cliff stays: a scheduled
+    // sit-down under an umbrella genuinely is worth more than an over in the
+    // deep. __foRestOff restores the old still tank at runtime (the A/B lever
+    // of tools/spell-probe.mjs), without a rebuild.
+    if(!(typeof __foRestOff!=='undefined'&&__foRestOff)){
+      M.fatPk=M.fatPk||{};
+      for(const p of inn.bxi){
+        if(p.name===bowler.name)continue;
+        const rec=inn.bowlers[p.name];
+        if(rec&&rec.lastSpellOver!=null&&rec.lastSpellOver>=over-2)continue;
+        const f=M.fat[p.name]||0;if(f<=0)continue;
+        M.fat[p.name]=foRestStep(f,M.fatPk[p.name]||f);
+      }
+    }
     if(inn.legal===150){
       for(const k in M.fat)M.fat[k]*=0.62;
       M.log.unshift({no:'',out:'☕',txt:'DRINKS - over 25. Players take on fluids; fatigue eases across the board.',d:null,inn:M.inns,mile:true});}}

@@ -604,19 +604,22 @@ test('K: stamina does not change what a spell costs, so the coach does not prete
     're-run tools/matchday-endurance.mjs and give the coach burst lengths');
 });
 
-test('K: two bowlers alike but for stamina get the same burst, and the plan says so', () => {
+test('K: stamina sets no burst length - the painted opening is identical; only the death may read it', () => {
+  // Phase 2A: the tank recovers off-spell, so what stamina NOW changes is
+  // the man a planned burst delivers to over 47 (foFatProject). The opening
+  // paint itself remains the conditions' and not the man's.
   const squad = BASE_SQUAD.map(m => ({ ...m }));
   const weak = squad.map(m => m.name === 'Quick One' ? { ...m, skills: { stamina: 30 } } : m);
   const strong = squad.map(m => m.name === 'Quick One' ? { ...m, skills: { stamina: 95 } } : m);
   const a = planFor(weak, { pitch: 'green', weather: 'overcast' });
   const b = planFor(strong, { pitch: 'green', weather: 'overcast' });
-  const overs = p => {
+  const opening = p => {
     const n = {};
-    for (let o = 1; o <= 50; o++) if (p.bowlingPlan[o]) n[p.bowlingPlan[o]] = (n[p.bowlingPlan[o]] || 0) + 1;
+    for (let o = 1; o <= 12; o++) if (p.bowlingPlan[o]) n[p.bowlingPlan[o]] = (n[p.bowlingPlan[o]] || 0) + 1;
     return n;
   };
-  assert.deepEqual(overs(a), overs(b),
-    'the engine prices their spells identically, so the coach plans them identically');
+  assert.deepEqual(opening(a), opening(b),
+    "the burst is the conditions', not the man's: same paint at stamina 30 and 95");
 });
 
 test('K: the conditions still set the burst - a biting new ball buys a longer one', () => {
@@ -632,16 +635,60 @@ test('K: the conditions still set the burst - a biting new ball buys a longer on
     opening(green) + ' on green vs ' + opening(flat) + ' on a road)');
 });
 
-test('K: a man who opens is not also handed the death when somebody else is rested', () => {
-  const p = planFor(BASE_SQUAD, { pitch: 'green', weather: 'overcast' });
+test('K: the death goes to the man PROJECTED best at over 47 - a fresh opener may return', () => {
+  // The old law here banned an opener from the death outright, because the
+  // old engine's tank never drained by resting. Phase 2A repealed that
+  // physics: a high-stamina quick who bowls the burst projects under the
+  // 0.12 fatigue ramp by over 47 (foFatProject), and if his death skills
+  // are the best in the side he should hold the death HE ALSO OPENED.
+  const squad = BASE_SQUAD.map(m => m.name === 'Quick One'
+    ? { ...m, talents: ['deathSpecialist'],
+        skills: { stamina: 90, economy: 72, discipline: 72, moveTurn: 70, wicket: 62 } }
+    : m);
+  const p = planFor(squad, { pitch: 'green', weather: 'overcast' });
   const openers = new Set([p.bowlingPlan[1], p.bowlingPlan[2]].filter(Boolean));
   const closers = [47, 48, 49, 50].map(o => p.bowlingPlan[o]).filter(Boolean);
   assert.ok(closers.length >= 2, 'the death is planned at all');
-  for (const c of closers) {
-    assert.ok(!openers.has(c),
-      c + ' opened the bowling AND holds a death over; his seventh over costs ' +
-      'twice his first (tools/matchday-endurance.mjs) and this squad has rested men');
-  }
+  assert.ok(openers.has('Quick One'), 'the best swing bowler takes the new ball');
+  assert.ok(closers.includes('Quick One'),
+    'and returns for the death: his projected tank after the burst is under the ' +
+    'ramp and his death skills are the best in the side - the old categorical ' +
+    'exclusion is repealed');
+});
+
+test('K: ...and a man whose planned morning leaves him spent at 47 stands aside', () => {
+  // the same elite closer profile, but with no legs: a stamina-25 quick who
+  // bowls a six-over burst projects WELL above the ramp at the death, and a
+  // nearly-as-good fresh man should take the last overs instead
+  // identical death profiles - same skills, same talent - so the ONLY thing
+  // separating them at over 47 is the tank the plan delivers them with:
+  // Quick One opens (his movement takes the new ball) on stamina 25; Quick
+  // Two waits fresh, because Seam Three's swing takes the other new-ball
+  // slot ahead of him
+  const squad = BASE_SQUAD.map(m => {
+    if (m.name === 'Quick One') return { ...m, talents: ['deathSpecialist'],
+      skills: { stamina: 25, economy: 72, discipline: 72, moveTurn: 70, wicket: 62 } };
+    if (m.name === 'Quick Two') return { ...m, bowl: 62, bowlType: 'fast',
+      talents: ['deathSpecialist'],
+      skills: { stamina: 80, economy: 72, discipline: 72, moveTurn: 40, wicket: 62 } };
+    if (m.name === 'Seam Three') return { ...m, bowl: 61, bowlType: 'fastMedium',
+      skills: { moveTurn: 74, stamina: 70 } };
+    return m;
+  });
+  const p = planFor(squad, { pitch: 'green', weather: 'overcast' });
+  const openers = new Set([p.bowlingPlan[1], p.bowlingPlan[2]].filter(Boolean));
+  const closers = [47, 48, 49, 50].map(o => p.bowlingPlan[o]).filter(Boolean);
+  assert.ok(closers.length >= 2, 'the death is planned at all');
+  assert.ok(openers.has('Quick One'), 'the swing man opens');
+  assert.ok(!openers.has('Quick Two'), 'his twin genuinely waits');
+  // between two otherwise IDENTICAL closers, the projection must rank the
+  // fresh man first: over 47 belongs to the twin who did not bowl the burst.
+  // (The spent twin may still hold the other end on class - an elite closer
+  // at 0.38 tank beats a mediocre fresh one, and the played measurement
+  // agrees - but he must not outrank his fresh equal.)
+  assert.equal(p.bowlingPlan[47], 'Quick Two',
+    'the fresh twin takes the first death slot; the man who bowled six on ' +
+    'stamina 25 projects to ~0.38 tank and ranks behind him');
 });
 
 test('K: ...but a thin attack is allowed to double up rather than leave the death unplanned', () => {

@@ -1940,10 +1940,17 @@ test('021: a manager founds a competition and the umpire plays it out', async ()
   assert.equal(card.results.length, 3);
   assert.ok(card.champion, 'somebody is holding it: ' + card.champion);
   assert.ok(card.clubs.some(c => c.name === card.champion), 'and it is one of the four');
-  const semis = card.results.filter(r => r.round === 1).map(r => r.winner).filter(Boolean);
+  // WHO COMES THROUGH A SEMI is the bracket's own law (comps.mjs): the
+  // winner, or on a TIE the higher seat - which is what a seeding is for. A
+  // tie is real cricket and this fixture is played on the real engine, so
+  // the assertion states the law rather than assuming winners exist.
+  const seatByName = Object.fromEntries(card.clubs.map(c => [c.name, c.seat]));
+  const through = card.results.filter(r => r.round === 1).map(m =>
+    m.winner || (seatByName[m.a] <= seatByName[m.b] ? m.a : m.b));
   const fin = card.results.find(r => r.round === 2);
-  assert.ok(semis.includes(fin.a) && semis.includes(fin.b),
-    'the final is between the two who won their semi-finals');
+  assert.ok(through.includes(fin.a) && through.includes(fin.b),
+    'the final is between the two who came through the semi-finals - the ' +
+    'winner of each, or on a tie its higher seat');
   assert.equal((await pool.query('SELECT status, champion FROM comps WHERE id=$1', [cid])).rows[0].status, 'done');
 
   // A ROUND ROBIN keeps a table instead of a bracket
