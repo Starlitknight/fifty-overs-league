@@ -182,28 +182,35 @@ var FO_MDC = {
   // how much dearer than the attack's marginal man an extra option's overs can
   // be before he stops being an option at all
   OPTION_SPAN: 3.0,
-  // CAPTAINCY, RE-PRICED FOR PHASE 2A. The engine's law is still
-  // aiPickBowler's slip - always the top of the ranking from captaincy 88 up,
-  // reaching past it below - but the continuation gate means the slip now
-  // acts at CHANGE POINTS (roughly fifteen an innings) rather than fifty
-  // re-rolls, so each point of captaincy buys less cricket than it did.
+  // CAPTAINCY, RE-PRICED FOR THE JUDGEMENT MODEL. The engine's law is no
+  // longer the slip: every candidate's score reaches the captain through
+  // deterministic reading noise that shrinks continuously with captaincy
+  // and never reaches zero, the continuation read carries a
+  // confirmation-bias anchor (poor captains persist too long), the field
+  // intent is a per-over decision he can fluff, and the organisation
+  // sliver rides the fieldAvg pathway. Two consequences for the price:
+  // value continues ABOVE 88 (the old law gave literally nothing there),
+  // and uniform attacks are no longer worth ~zero, because organisation
+  // and the field are attack-independent.
   //
-  // Measured (tools/coach-followup-probe.mjs §5, capt 40/64/88 across attack
-  // shapes): ~0.10-0.12 runs a point where the attack is heterogeneous
-  // enough for a wrong pick to cost something (pace-heavy 0.104, spin-heavy
-  // 0.124, one tired quick 0.111) and ~nothing on an artificially uniform
-  // attack of interchangeable men (balanced probe side -0.01, six options
-  // 0.02). Real squads are the heterogeneous kind, so the price is the
-  // cluster, not the average with the degenerate cells: 0.10 - just over
-  // half the old 0.18, which was measured against the per-over re-roll.
+  // Re-measured on that engine (tools/coach-followup-probe.mjs §5, capt
+  // 40/64/88 across attack shapes): pace-heavy 0.105 runs a point,
+  // spin-heavy 0.101, one tired quick 0.053, balanced 0.037, six options
+  // 0.028. Same pricing philosophy as Phase 2A.1: real squads are the
+  // heterogeneous kind, so the price follows that cluster - 0.09, a shade
+  // under the old 0.10 (the tired-quick cell halved: the anchor means a
+  // weak captain now mishandles the weary man rather than the slip
+  // randomly rescuing him, and part of that cost was already priced in
+  // fatigue).
   //
-  // The invariant the shirt test holds: at 0.10 the whole 40->88 armband
-  // premium is ~3.4 runs, about six or seven points of batting - enough to
-  // break a genuine tie, nowhere near enough to buy a materially worse
-  // cricketer a place. Capped at 88 as ever, because above that the engine
-  // gives nothing further.
-  CAPT_RUNS: 0.10,
-  CAPT_CEIL: 88,
+  // The ceiling moves 88 -> 95: the batteries put 88v95 at ~0.05 runs a
+  // point (0.26±0.53 uniform, 0.45±0.50 het over seven points), so a flat
+  // 0.09 overpays that last stretch by at most ~0.3 runs - immaterial
+  // beside the invariant the shirt test holds, which is unchanged: the
+  // whole 40->95 armband premium is ~5 runs, enough to break a genuine
+  // tie, nowhere near enough to buy a materially worse cricketer a place.
+  CAPT_RUNS: 0.09,
+  CAPT_CEIL: 95,
   // the fielding contest is a whole-side term (foFieldLevel); one man's hands
   // move it a little, and the engine already reads catching/fielding through
   // ctx.fieldAvg. This weights the side's mean fielding into the total.
@@ -603,8 +610,10 @@ function foMdcScoreXI(cards, doctrine) {
   for (let i = 0; i < cards.length; i++) fld += cards[i].field;
   fld = (fld / Math.max(1, cards.length) - 50) * FO_MDC.FIELD_RUNS;
 
-  // 5. THE CAPTAIN. aiPickBowler's slip law is the mechanic; the coach prices
-  // the best captain available in this eleven against an ordinary one.
+  // 5. THE CAPTAIN. aiPickBowler's judgement noise, the continuation anchor,
+  // the field decision and the organisation sliver are the mechanics; the
+  // coach prices the best captain available in this eleven against an
+  // ordinary one.
   let capt = 0;
   for (let i = 0; i < cards.length; i++) capt = Math.max(capt, cards[i].capt);
   capt = (Math.min(FO_MDC.CAPT_CEIL, capt) - 50) * FO_MDC.CAPT_RUNS;

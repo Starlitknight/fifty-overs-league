@@ -1507,6 +1507,66 @@ function foFatProject(p,bowlOvers,atOver){
   }
   return fat;
 }
+// ---------------------------------------------------------------------------
+// CAPTAINCY (Captaincy Realism phase). Captaincy is JUDGEMENT plus a sliver
+// of ORGANISATION, and these constants are its whole vocabulary:
+//
+//   amp        the captain's reading error, in score points, at captaincy 20.
+//              Every candidate's score reaches him through deterministic
+//              noise of amplitude amp*(102-capt)/82 - continuous from 20 to
+//              99, never zero (a 95 still misreads a genuinely close call),
+//              never a cliff (95 beats 88 beats 80, always). This replaces
+//              the old slip law, whose 88 ceiling made every captain above
+//              it identical - the top-end compression the redesign exists
+//              to remove.
+//   fieldSlip  how often, at captaincy 20, the side settles for a balanced
+//              field when the context wants an attacking or defensive one.
+//              Shrinks with the same (102-capt)/82 - the field is a REAL
+//              decision now (aiField), and captaincy decides how reliably
+//              the right intent is chosen, through the existing geometry.
+//   orgDot /   the leadership sliver: a well-led side is marginally harder
+//   orgFour    to score off - the ring in the right place, the sweeper
+//              square of where the drive actually goes. It rides the same
+//              channel as ctx.fieldAvg (positioning, dots and cut-off
+//              boundaries) at about half that term's slope, deliberately
+//              TINY beside the fielding system the audit already flagged as
+//              oversized, and it never touches the catch or stumping
+//              contests - a captain organises hands, he does not improve
+//              them. Multiplier around par 50: a poor captain costs what a
+//              fine one buys. This replaces the old 0.0002 dot-sliver,
+//              which was the same idea too small to ever measure.
+//
+// Every channel has an off-switch for attribution (tools/
+// captaincy-realism-probe.mjs §6): __foCaptSharp (everyone reads true),
+// __foCaptTermsOff (situation terms out of the ranking), __foCaptFieldSharp
+// (everyone picks the right field), __foCaptFieldOff (the old aiField),
+// __foCaptOrgOff (organisation term back to the old sliver), __foCaptAmp
+// (override the noise base). All deterministic: same seed, same captain,
+// same decisions, exactly as the slip law was.
+//   anchor     confirmation bias on the CONTINUATION read, in score points
+//              at captaincy 20: a poor captain overrates the man already
+//              bowling and persists with him past the change the ranking
+//              wants - the "persists too long" failure the brief names.
+//              Measured necessity, not taste: without it a poor captain's
+//              reading noise CHURNED his attack, and churn accidentally
+//              rotates bowlers onto fresh legs - Phase 2A's recovery then
+//              PAID him for his indecision (the channel table showed the
+//              20->95 gap GROWING when noise was switched off). Anchoring is
+//              the real cricket failure and it cancels the accidental gift:
+//              the tiring man stays on, and the tank makes that expensive.
+//              Sized by sweep at N=2000 paired seeds on the varied attack
+//              (scratch anchor-sweep, 20v95): anchor 6 gave 4.30±0.72 runs,
+//              anchor 9 gave 4.67±0.73 and +4.9±1.1 win pts; raising amp to
+//              11 instead LOST run value both ways (4.06 / 3.68) because
+//              more noise is more churn. 9 is also the honest ceiling: at
+//              captaincy 20 the incumbent bias then equals the reading
+//              noise itself - beyond that the bias would outweigh what the
+//              captain can even perceive, which is caricature.
+const FO_CAPT={amp:9,anchor:9,fieldSlip:0.55,orgDot:0.012,orgFour:0.010};
+function foCaptErr(capt){
+  const c=Math.max(1,Math.min(99,capt||50));
+  return (102-c)/82;                       // 1.0 at 20, 0.27 at 80, 0.085 at 95
+}
 // THE WORLD'S MEDIAN KEEPER, measured over all 512 glovemen in the sixteen
 // leagues. Every term that asks "is this keeper better or worse than average"
 // counts from here.
@@ -2057,18 +2117,19 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   if(longSpell>0){W-=0.10*longSpell;L.dot-=0.09*longSpell;L['4']+=0.075*longSpell;L['6']+=0.04*longSpell}
   const ageBowlLate=Math.max(0,((bowl.age||28)-30)/8)*Math.max(0,Math.min(1,((ctx.ballsThisSpell||0)-18)/30));
   if(ageBowlLate>0){W-=0.115*ageBowlLate;L.dot-=0.055*ageBowlLate;L['1']+=0.020*ageBowlLate;L['4']+=0.055*ageBowlLate;L['6']+=0.025*ageBowlLate;}
-  // CAPTAINCY DOES NOT LIVE HERE ANY MORE, or barely. It used to be a flat
-  // per-ball bonus to both sides - a captain who made his bowlers bowl better
-  // by standing at slip, which is not a thing that happens. What a captain
-  // actually does is CHOOSE: who bowls, when to change, what field to set,
-  // which matchup to hunt. That is aiPickBowler() and aiField(), and it is
-  // where captaincy went.
-  //
-  // What is left is the sliver that genuinely is on-field presence rather than
-  // selection - a settled side under a good captain gives away marginally less
-  // - and it is a quarter of what it was, because the rest of it was pretending
-  // to be something else.
-  L.dot+=((ctx.captBowl||50)-50)*0.00020;
+  // CAPTAINCY'S ORGANISATION SLIVER (see FO_CAPT). Selection and timing live
+  // in aiPickBowler and aiField; what lives HERE is leadership as the field's
+  // organisation - the ring where the drive actually goes, the sweeper square
+  // rather than fine. It rides the fieldAvg channel (dots up, boundaries
+  // down) at about half that term's slope and never touches the catch or
+  // stumping contests: a captain cannot give a man better hands, only a
+  // better position. Continuous around par 50 both ways; the whole 20->95
+  // span is worth about a run and a half over fifty overs - deliberately tiny
+  // beside a fielding system the audit already calls oversized.
+  if(!(typeof __foCaptOrgOff!=='undefined'&&__foCaptOrgOff)){
+    const orgE=(((ctx.captBowl||50)-50)/45);
+    L.dot+=FO_CAPT.orgDot*orgE;L['4']-=FO_CAPT.orgFour*orgE;L['2']-=0.002*orgE;
+  }else{L.dot+=((ctx.captBowl||50)-50)*0.00020;}
   W-=((ctx.captBat||50)-50)*0.00012;
   // ---- THE THREE SKILLS THAT DID NOTHING AT ALL -----------------------------
   //
@@ -2724,48 +2785,103 @@ function aiPickBowler(inn,over){
     const rec=inn.bowlers[p.name];const used=rec?oversOf(rec):0;
     v-=Math.max(0,used-7)*6;  // save overs
     // ---- AND THE THINGS ONLY A CAPTAIN NOTICES ------------------------------
-    // A stand that has gone past fifty wants a wicket-taker and a change of
-    // pace, not the containing man who has just watched it grow. A bowler deep
-    // into a spell has stopped being the bowler he was an hour ago. And a
-    // surface that is turning wants the man who turns it.
-    if((inn.pshipR||0)>=45)v+=(foSkE(p,'variation')||50)*0.16+p.threat*0.14;
+    // A stand that grows wants a wicket-taker and a change of pace, not the
+    // containing man who has just watched it grow - CONTINUOUSLY, because a
+    // hundred stand is a louder alarm than a fifty (the old flat >=45 step
+    // could not tell them apart). A bowler deep into a spell has stopped
+    // being the bowler he was an hour ago. A surface that is turning wants
+    // the man who turns it. An EXPOSED TAIL and a BATTER TWO BALLS AT THE
+    // CREASE both want the strike bowler while the window is open - the two
+    // moments the realism audit found no captain in this engine could see.
+    // And the closer's last overs are not spent at 42 when the death is
+    // where they pay. These are the TRUE scores; which captain actually
+    // reads them, and how well, is the judgement noise below.
     const spellB=(rec&&rec.spellB)||0;
     if(spellB>=30)v-=(spellB-30)*0.55;
     if((M.fat&&M.fat[p.name]||0)>0.55)v-=((M.fat[p.name]-0.55)*70);
     const mv=foSkE(p,'moveTurn')||50;
     if(tc==='pace'&&over<12&&(M.pitch==='green'||['overcast','humid','misty'].includes(String((M.meta&&M.meta.weather)||'').toLowerCase())))v+=(mv-50)*0.22;
     if(tc==='spin'&&over>=25&&['dry','cracked','slow'].includes(M.pitch))v+=(mv-50)*0.20;
+    if(typeof __foCaptTermsOff!=='undefined'&&__foCaptTermsOff){
+      // attribution lever: the audit-era single partnership step, nothing else
+      if((inn.pshipR||0)>=45)v+=(foSkE(p,'variation')||50)*0.16+p.threat*0.14;
+      return v;
+    }
+    // the stand, continuously: reaches the old >=45 coefficients at a
+    // hundred-run stand and keeps climbing to a cap at 100+
+    const psh=Math.min(1.6,(inn.pshipR||0)/62.5);
+    if(psh>0.45)v+=psh*((foSkE(p,'variation')||50)*0.10+p.threat*0.0875);
+    // the tail is in: wicket-takers over containers, harder the deeper it is
+    if((inn.wkts||0)>=6)v+=(p.threat-50)*(0.10+0.05*Math.min(3,inn.wkts-6));
+    // a new man at the crease: the strike bowler's window, before he is set
+    if(inn.since!=null&&inn.since<=3&&(inn.wkts||0)>=1)v+=(p.threat-50)*0.12;
+    // death resources: overs 41-46 do not burn the closer's last two overs -
+    // rest-and-return (Phase 2A) is what makes holding him back real
+    if(over>=40&&over<46){
+      const remain=10-used;
+      if(remain<=2)v-=((p.control-55)*0.30+(((p.talents||[]).includes('deathSpecialist'))?7:0));
+    }
     return v;};
   // scored once each - the comparator used to recompute sc() per comparison,
-  // and the continuation gate below needs the same numbers the sort saw
+  // and the judgement below needs the same numbers the sort saw
   const scores={};for(const p of av)scores[p.name]=sc(p);
   av.sort((a,b)=>scores[b.name]-scores[a.name]);
-  // THE STANDING DECISION (see the header above): this end's active bowler
-  // carries on while he is within the margin of the best available option.
-  // availableBowlers has already excluded him if his ten overs are done, and
-  // the score he is judged on already carries his tank, his spell length and
-  // his remaining overs - so every reason a real spell ends is a reason this
-  // one ends.
+  // ---- HOW MUCH OF THAT HE ACTUALLY SEES (Captaincy Realism) ----------------
+  //
+  // The old slip law rolled one die: with probability 0.85*(88-capt)/88 the
+  // captain reached past his best man, never past the fourth. Two things were
+  // wrong with it as cricket. Above 88 every captain was IDENTICAL - the
+  // top-end compression the redesign brief refuses - and the error was blind
+  // to the SIZE of the mistake: reaching past a man 20 points better cost the
+  // same die as reaching past a man half a point better.
+  //
+  // Judgement is now a READING error, not a lottery: every candidate's true
+  // score reaches the captain through deterministic noise whose amplitude is
+  // FO_CAPT.amp * (102-capt)/82 score points. The consequences are exactly
+  // the cricket asked for. A close call stays a close call for everybody -
+  // even a 95 sometimes takes the second of two nearly-equal men, which is
+  // not a blunder at all. A LARGE gap is misread only by a poor captain,
+  // because the noise has to beat the gap. Regret therefore declines with
+  // captaincy and never reaches zero, 95 > 88 > 80 continuously, and the
+  // same noise judges the CONTINUATION decision below - so a weak captain
+  // also persists with a spent man or breaks a working spell too early,
+  // which is change-point QUALITY, not spell length, exactly as briefed.
+  //
+  // Deterministic per over identity per man, like everything the captain does.
+  const capt=Math.max(1,Math.min(99,(inn.captBowl||50)));
+  const amp=(typeof __foCaptSharp!=='undefined'&&__foCaptSharp)?0
+    :((typeof __foCaptAmp!=='undefined')?__foCaptAmp:FO_CAPT.amp)*foCaptErr(capt);
+  const read={};
+  for(const p of av){
+    const h=(foHashStr((M?M.seedKey:'x')+'|cj|'+inn.bowlTeam+'|'+over+'|'+p.name)%100000)/100000;
+    read[p.name]=scores[p.name]+(amp?(h-0.5)*2*amp:0);
+  }
+  let best=av[0];for(const p of av)if(read[p.name]>read[best.name])best=p;
+  let pick=best;
+  // THE STANDING DECISION (Phase 2A): this end's active bowler carries on
+  // while the captain READS him within the margin of the best option - the
+  // margin is the engine's, the reading is the captain's.
   if(!(typeof __foSpellOff!=='undefined'&&__foSpellOff)&&av.length>1){
     const cont=av.find(p=>{const r=inn.bowlers[p.name];
       return r&&r.lastSpellOver===over-2&&(r.spellB||0)>0;});
     if(cont){
       const mg=(typeof __foSpellMargin!=='undefined')?__foSpellMargin:FO_SPELL.margin;
-      if(scores[cont.name]>=scores[av[0].name]-mg)return cont;
+      // the anchor (see FO_CAPT): a poor captain overrates the incumbent and
+      // persists past the change the clean ranking wants; an elite one barely
+      // does. This is where "persists too long with a tiring man" lives.
+      const anchor=(typeof __foCaptAnchorOff!=='undefined'&&__foCaptAnchorOff)?0
+        :FO_CAPT.anchor*foCaptErr(capt);
+      if(read[cont.name]+anchor>=read[best.name]-mg)pick=cont;
     }
   }
-  // HOW MUCH OF THAT HE ACTUALLY SEES. A captaincy of 50 gets it right most of
-  // the time and occasionally reaches past the best man for the second or third
-  // best; below that the reach gets longer. Never worse than the fourth choice,
-  // because even a bad captain is picking from five bowlers and not at random.
-  const capt=Math.max(1,Math.min(99,(inn.captBowl||50)));
-  if(av.length<2||capt>=92)return av[0];
-  const slip=Math.max(0,(88-capt)/88);                    // 0 at 88+, ~0.99 at 1
-  const h=(foHashStr((M?M.seedKey:'x')+'|b|'+inn.bowlTeam+'|'+over)%100000)/100000;
-  if(h>=slip*0.85)return av[0];
-  const depth=Math.min(av.length-1,1+Math.floor(slip*2.4));
-  const h2=foHashStr((M?M.seedKey:'x')+'|b2|'+inn.bowlTeam+'|'+over)%depth;
-  return av[1+h2]||av[0];
+  // the decision log (probe instrumentation, off in play): what he chose,
+  // what the clean ranking said, and whether this over was a tactical moment
+  if(typeof __foCaptLog!=='undefined'&&__foCaptLog&&M){
+    const moment=((inn.wkts||0)>=6)||(inn.since!=null&&inn.since<=3&&(inn.wkts||0)>=1)||((inn.pshipR||0)>=50);
+    (M._captLog=M._captLog||[]).push({k:'pick',team:inn.bowlTeam,over:over,
+      chosen:pick.name,best:av[0].name,moment:moment});
+  }
+  return pick;
 }
 // ---- THE ORDERS ARE THE ORDERS ---------------------------------------------
 // A saved sheet is a manager's whole voice in a match he will not attend, so
@@ -2868,13 +2984,51 @@ function aiIntent(inn){
   // only ever the captain thinking for himself.
   return v>=1.55?2:v>=0.62?1:v>=-0.45?0:-1;
 }
-function aiField(inn){
+// ---- THE FIELD IS A DECISION NOW (Captaincy Realism) -----------------------
+//
+// aiField used to be a fixed policy: powerplay up, death back, two quick
+// wickets attack, otherwise balanced - the same field for every captain who
+// ever lived, and blind to an exposed tail. Two changes:
+//
+//   1. THE POLICY learns the tail: seven down in the middle overs is a
+//      wicket-hunting field, which is the cricket the audit found missing.
+//      (aiFieldWant is that policy - what the CONTEXT wants.)
+//   2. THE CAPTAIN decides how reliably the side actually posts it. With
+//      probability FO_CAPT.fieldSlip * (102-capt)/82 the side settles for a
+//      balanced field where the context wanted attack or defence - the
+//      missed moment made visible on the oval. Continuous in captaincy, no
+//      cliff, deterministic per over. The intent then pays through the
+//      existing ballDist field terms and the posted geometry: an attacking
+//      field at the right moment is where a good captain's extra wickets
+//      genuinely come from - no shortcut term anywhere.
+//
+// __foCaptFieldOff restores the old fixed policy outright;
+// __foCaptFieldSharp keeps the new policy but gives every captain the right
+// field (the attribution levers of tools/captaincy-realism-probe.mjs).
+function aiFieldWant(inn){
   const over=Math.floor(inn.legal/6);
   if(over<8)return 'att';
   if(M.target){const req=(M.target-inn.runs)/Math.max(1,(foBallCap()-inn.legal)/6);if(req>7.5&&inn.wkts>=5)return 'att';if(req>5.8)return 'def';if(req<4.5&&Math.floor(inn.legal/6)>=30)return 'att'}
   if(phaseOf(over)==='death')return 'def';
   if(inn.since<=2)return 'att';
+  if(!(typeof __foCaptFieldOff!=='undefined'&&__foCaptFieldOff)&&(inn.wkts||0)>=7&&over<40)return 'att';
   return 'bal';
+}
+function aiField(inn){
+  const want=aiFieldWant(inn);
+  if(typeof __foCaptFieldOff!=='undefined'&&__foCaptFieldOff)return want;
+  let chosen=want;
+  if(want!=='bal'&&!(typeof __foCaptFieldSharp!=='undefined'&&__foCaptFieldSharp)){
+    const over=Math.floor(inn.legal/6);
+    const slip=FO_CAPT.fieldSlip*foCaptErr(inn.captBowl||50);
+    const h=(foHashStr((M?M.seedKey:'x')+'|cf|'+inn.bowlTeam+'|'+over)%100000)/100000;
+    if(h<slip)chosen='bal';
+  }
+  if(typeof __foCaptLog!=='undefined'&&__foCaptLog&&M&&want!=='bal'){
+    (M._captLog=M._captLog||[]).push({k:'field',team:inn.bowlTeam,
+      over:Math.floor(inn.legal/6),want:want,chosen:chosen});
+  }
+  return chosen;
 }
 // ---- true fielding (P3a): each in-play ball gets a real direction from
 // the seeded stream, and the POSTED field intercepts geometrically - saves

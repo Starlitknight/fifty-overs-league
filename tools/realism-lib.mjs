@@ -190,7 +190,10 @@ globalThis.__prRun = function (ta, tb, seed, opts) {
       bowlers[nm] = { b: r.b, r: r.r, w: r.w, maxSpell: spellMax[ix][nm] || 0 }; }
     return { batTeam: inn.batTeam, runs: inn.runs, wkts: inn.wkts, legal: inn.legal,
       extras: inn.extras, fld: fld[ix], overBowl: overBowl[ix], cumRuns: cumRuns[ix],
-      ph_r: inn.ph_r, ph_b: inn.ph_b, bowlers: bowlers,
+      ph_r: inn.ph_r, ph_b: inn.ph_b,
+      fow: (inn.fow || []).map(function (f) { return { sc: f.sc, w: f.w, ov: f.ov }; }),
+      pships: (inn.pships || []).map(function (s) { return { w: s.w, runs: s.runs }; }),
+      bowlers: bowlers,
       bat: inn.bat.map(function (b) { return { nm: b.p.name, r: b.r, b: b.b, out: b.out }; }),
       fielding: inn.fielding };
   };

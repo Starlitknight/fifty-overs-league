@@ -1,0 +1,2 @@
+# stderr captures from in-flight probe runs; the evidence is the .json
+.*-err.log

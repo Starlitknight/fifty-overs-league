@@ -27,123 +27,123 @@
     "international": {
       "n": 3334,
       "firstInnings": {
-        "mean": 274.4,
-        "stddev": 53.1
+        "mean": 272.4,
+        "stddev": 55
       },
       "wicketsHistogram": [
         0.0003,
-        0.0063,
-        0.0258,
-        0.0612,
-        0.1008,
-        0.1314,
-        0.1005,
-        0.0948,
-        0.0897,
-        0.0807,
-        0.3086
+        0.0054,
+        0.0297,
+        0.0597,
+        0.0918,
+        0.1422,
+        0.0999,
+        0.0924,
+        0.0816,
+        0.0741,
+        0.323
       ],
-      "boundaryPctPerBall": 8.77,
-      "extrasPerInnings": 21.97,
+      "boundaryPctPerBall": 8.7,
+      "extrasPerInnings": 22.03,
       "runRateByPhase": {
-        "powerplay_1_10": 5.36,
+        "powerplay_1_10": 5.29,
         "middle_11_40": 5.12,
-        "death_41_50": 6.73
+        "death_41_50": 6.6
       },
-      "tiePct": 0.42,
-      "pctRunWinsUnder20": 6.48
+      "tiePct": 0.63,
+      "pctRunWinsUnder20": 5.37
     },
     "flagship_clubs": {
       "n": 3334,
       "firstInnings": {
-        "mean": 250.3,
-        "stddev": 51
+        "mean": 251,
+        "stddev": 51.4
       },
       "wicketsHistogram": [
-        0.0012,
-        0.0108,
-        0.0297,
-        0.0624,
-        0.0975,
-        0.1212,
-        0.1035,
+        0.0018,
+        0.0078,
+        0.03,
+        0.0669,
+        0.0909,
+        0.1227,
+        0.1002,
         0.0921,
-        0.0933,
-        0.0798,
-        0.3086
+        0.102,
+        0.0846,
+        0.3011
       ],
       "boundaryPctPerBall": 7.03,
-      "extrasPerInnings": 23.7,
+      "extrasPerInnings": 23.76,
       "runRateByPhase": {
-        "powerplay_1_10": 4.8,
-        "middle_11_40": 4.79,
-        "death_41_50": 5.86
+        "powerplay_1_10": 4.76,
+        "middle_11_40": 4.8,
+        "death_41_50": 5.93
       },
-      "tiePct": 0.54,
-      "pctRunWinsUnder20": 5.79
+      "tiePct": 0.36,
+      "pctRunWinsUnder20": 5.49
     },
     "division_two": {
       "n": 3334,
       "firstInnings": {
-        "mean": 234.2,
-        "stddev": 36.9
+        "mean": 233.7,
+        "stddev": 37.6
       },
       "wicketsHistogram": [
-        0.0009,
-        0.0123,
-        0.021,
-        0.0576,
+        0.0012,
+        0.0078,
+        0.0237,
+        0.0591,
         0.0768,
-        0.1167,
-        0.1242,
-        0.1155,
-        0.1095,
-        0.0996,
-        0.266
+        0.1137,
+        0.126,
+        0.1185,
+        0.117,
+        0.0972,
+        0.2591
       ],
-      "boundaryPctPerBall": 5.07,
-      "extrasPerInnings": 28.62,
+      "boundaryPctPerBall": 5.08,
+      "extrasPerInnings": 28.56,
       "runRateByPhase": {
-        "powerplay_1_10": 4.27,
-        "middle_11_40": 4.63,
+        "powerplay_1_10": 4.24,
+        "middle_11_40": 4.62,
         "death_41_50": 5.27
       },
-      "tiePct": 0.84,
-      "pctRunWinsUnder20": 10.53
+      "tiePct": 0.81,
+      "pctRunWinsUnder20": 9.45
     },
     "international_vs_division_two": {
       "n": 3334,
       "firstInnings": {
-        "mean": 261.9,
-        "stddev": 95.3
+        "mean": 261.4,
+        "stddev": 95.7
       },
       "wicketsHistogram": [
         0.0048,
-        0.0336,
-        0.0687,
-        0.096,
-        0.1059,
-        0.1113,
-        0.0804,
-        0.0645,
-        0.0477,
-        0.0561,
-        0.3311
+        0.0369,
+        0.0663,
+        0.0984,
+        0.1143,
+        0.102,
+        0.069,
+        0.057,
+        0.0567,
+        0.057,
+        0.3377
       ],
       "boundaryPctPerBall": 6.63,
       "extrasPerInnings": 26.18,
       "runRateByPhase": {
-        "powerplay_1_10": 5.01,
+        "powerplay_1_10": 4.96,
         "middle_11_40": 5,
         "death_41_50": 6.19
       },
       "tiePct": 0,
-      "pctRunWinsUnder20": 0.03
+      "pctRunWinsUnder20": 0.09
     }
   },
   "determinism": {
     "seed": 424242,
     "identical": true,
-    "fingerprint": "365/6"
+    "fingerprint": "370/6"
   }
 }
