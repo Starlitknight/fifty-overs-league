@@ -1453,6 +1453,60 @@ function foFatiguePenalty(p){
   const ix=foFatigueIndex(p), st=foSkE(p,'stamina')||p.stamina||50;
   return foClamp(ix*1.05*foAgeTireFactor(p) - Math.max(0,st-60)*0.045, 0, 13.5);
 }
+// ---------------------------------------------------------------------------
+// THE IN-MATCH FATIGUE LAWS, AS PURE FUNCTIONS OF THE MAN. One law, two
+// readers: apply() plays it ball by ball, and the Match-Day Coach projects
+// with it when it asks what a bowler's tank will read at the death
+// (foFatProject below). They existed as inline arithmetic inside apply()
+// first, and the coach follow-up to Phase 2A needed the same numbers - a
+// second copy of 0.0165 and 0.35 scattered into 13-matchday-coach.js is a
+// future fatigue change silently missing one of its two homes, so the law
+// moved here and both callers read it. The expressions are verbatim what
+// apply() inlined; gameplay is byte-identical (proven against recorded ball
+// logs, flags on and off, before this comment was allowed to say so).
+// ---------------------------------------------------------------------------
+function foFatBatPerBall(p){
+  const st=foSkE(p,'stamina')||50;
+  const age=(p._ageTire||foAgeTireFactor(p));
+  const role=p.keeper?1.04:1.0;
+  return ((1.75-st/100)/120)*age*role;
+}
+function foFatBowlPerBall(p){
+  const st=foSkE(p,'stamina')||50;
+  const age=(p._ageTire||foAgeTireFactor(p));
+  const role=(p.bowlType==='fast'?1.08:(p.bowlType==='fastMedium'?1.04:1.0));
+  return ((1.85-st/100)/74)*age*role;
+}
+// one legal ball of off-spell rest (Phase 2A): decay toward a floor of
+// 0.35 x the man's match peak. The overridable constants stay overridable -
+// tools/spell-probe.mjs sweeps them through these same names.
+function foRestStep(f,pk){
+  const rr=(typeof __foRestR!=='undefined')?__foRestR:0.0165;
+  const fl0=(typeof __foRestFloor!=='undefined')?__foRestFloor:0.35;
+  const fl=fl0*(pk||f);
+  return f>fl?fl+(f-fl)*(1-rr):f;
+}
+// WHAT WILL HIS TANK READ AT OVER N? The pre-match projection the coach
+// plans the death with: play the laws above over a planned set of overs
+// (0-based over numbers he bowls), resting him through the others exactly
+// the way apply() would - no decay while his spell is live (he bowled one
+// of the two previous overs), drinks x0.62 after over 25. A projection, not
+// a replay: the unplanned overs a captain may later hand him are unknowable
+// before the toss, so this is the tank his PLANNED work costs him, priced
+// by the same law the match will actually charge.
+function foFatProject(p,bowlOvers,atOver){
+  var fat=foFatigueLoad(p),pk=fat;
+  var per=foFatBowlPerBall(p);
+  var set={};for(var i=0;i<(bowlOvers||[]).length;i++)set[bowlOvers[i]]=1;
+  for(var o=0;o<atOver;o++){
+    if(set[o]){fat+=per*6;if(fat>pk)pk=fat;}
+    else if(!set[o-1]&&!set[o-2]&&!((typeof __foRestOff!=='undefined')&&__foRestOff)){
+      for(var b=0;b<6;b++)fat=foRestStep(fat,pk);
+    }
+    if(o===24)fat*=0.62;                     // drinks falls at the end of over 25
+  }
+  return fat;
+}
 // THE WORLD'S MEDIAN KEEPER, measured over all 512 glovemen in the sixteen
 // leagues. Every term that asks "is this keeper better or worse than average"
 // counts from here.
@@ -3195,11 +3249,11 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
   if(sb.r>=50&&!sb.fifty){sb.fifty=true;milestones.push(`FIFTY for ${sb.p.name} - ${sb.r} off ${sb.b}.`)}
   if(sb.r>=100&&!sb.hundred){sb.hundred=true;milestones.push(`HUNDRED! ${sb.p.name} raises the bat - ${sb.r} off ${sb.b}.`)}
   if(!ext){if(inn.freeHit&&out!=='noball')inn.freeHit=false;inn.legal++;brec.b++;brec.spellB=(brec.spellB||0)+1;inn.ph_b[phaseOf(over)]++;inn.pshipB++;inn.faced[sb.p.name]=(inn.faced[sb.p.name]||0)+1;
-    const stB=foSkE(sb.p,'stamina')||50,stW=foSkE(bowler,'stamina')||50;
-    const ageB=(sb.p._ageTire||foAgeTireFactor(sb.p)),ageW=(bowler._ageTire||foAgeTireFactor(bowler));
-    const roleB=sb.p.keeper?1.04:1.0, roleW=(bowler.bowlType==='fast'?1.08:(bowler.bowlType==='fastMedium'?1.04:1.0));
-    M.fat[sb.p.name]=(M.fat[sb.p.name]||0)+((1.75-stB/100)/120)*ageB*roleB;
-    M.fat[bowler.name]=(M.fat[bowler.name]||0)+((1.85-stW/100)/74)*ageW*roleW;
+    // the laws themselves live above as pure functions (foFatBatPerBall /
+    // foFatBowlPerBall) so the coach's projection and this accrual can never
+    // drift apart; the arithmetic is verbatim what stood inline here
+    M.fat[sb.p.name]=(M.fat[sb.p.name]||0)+foFatBatPerBall(sb.p);
+    M.fat[bowler.name]=(M.fat[bowler.name]||0)+foFatBowlPerBall(bowler);
     // THE HIGH-WATER MARK, kept so rest can never quietly erase a day's work:
     // the recovery floor below is a fraction of the worst point a man reached,
     // not of wherever he happens to stand. Built on demand - a match restored
@@ -3245,16 +3299,13 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
     // deep. __foRestOff restores the old still tank at runtime (the A/B lever
     // of tools/spell-probe.mjs), without a rebuild.
     if(!(typeof __foRestOff!=='undefined'&&__foRestOff)){
-      const rr=(typeof __foRestR!=='undefined')?__foRestR:0.0165;
-      const fl0=(typeof __foRestFloor!=='undefined')?__foRestFloor:0.35;
       M.fatPk=M.fatPk||{};
       for(const p of inn.bxi){
         if(p.name===bowler.name)continue;
         const rec=inn.bowlers[p.name];
         if(rec&&rec.lastSpellOver!=null&&rec.lastSpellOver>=over-2)continue;
         const f=M.fat[p.name]||0;if(f<=0)continue;
-        const fl=fl0*(M.fatPk[p.name]||f);
-        if(f>fl)M.fat[p.name]=fl+(f-fl)*(1-rr);
+        M.fat[p.name]=foRestStep(f,M.fatPk[p.name]||f);
       }
     }
     if(inn.legal===150){
