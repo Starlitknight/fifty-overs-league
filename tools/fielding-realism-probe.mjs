@@ -45,6 +45,16 @@ const winOf = r => r.winner === 'A' ? 1 : (r.winner ? 0 : 0.5);
 
 const LEVELS = [20, 30, 40, 50, 60, 70, 80, 90, 95];
 
+// --pair=GK,CK runs every requested section under a candidate slope pair,
+// so the finalists can be compared on individuals and attribute values,
+// not only on team gaps
+const PAIR = arg('pair', '');
+if (PAIR) {
+  const [g, c] = PAIR.split(',').map(Number);
+  set(`__foFldKG=${g};__foFldK=${c};1`);
+  say(`(all sections under gk=${g} ck=${c})`);
+}
+
 // the contest constants, read out of the build so the closed form can never
 // drift from the engine
 const FLD = JSON.parse(set('JSON.stringify(FO_FLD)'));
@@ -252,9 +262,11 @@ if (has('indiv') || has('all')) {
     for (let i = 0; i < cnt; i++) slots.push({ slot: 1 + i, skills: { fielding: fld, catching: cat } });
     return H.side('A', { all: { fielding: 50, catching: 50 }, slots });
   };
-  for (const [lbl, cnt, fld, cat] of [
-    ['1 elite', 1, 90, 90], ['2 elite', 2, 90, 90], ['3 elite', 3, 90, 90],
-    ['1 poor', 1, 25, 25], ['2 poor', 2, 25, 25], ['3 poor', 3, 25, 25]]) {
+  const CELLS = has('indivshort')
+    ? [['1 elite', 1, 90, 90], ['1 poor', 1, 25, 25]]
+    : [['1 elite', 1, 90, 90], ['2 elite', 2, 90, 90], ['3 elite', 3, 90, 90],
+       ['1 poor', 1, 25, 25], ['2 poor', 2, 25, 25], ['3 poor', 3, 25, 25]];
+  for (const [lbl, cnt, fld, cat] of CELLS) {
     const R = pairVs(mk(cnt, fld, cat), N);
     out.indiv.push({ lbl, ...R });
     say(`  ${lbl.padEnd(9)} saves ${f(R.dSaved.mean, 2)}±${R.dSaved.se.toFixed(2)} runs, ${f(R.dWin.mean * 100, 1)} win pts  (catches/inn ${R.catches.toFixed(2)}, gsaves ${R.saves.toFixed(1)}, misf ${R.misf.toFixed(1)})`);
@@ -400,6 +412,40 @@ if (has('keeper') || has('all')) {
     out.keeper.push({ kq, stumpings: summary(st), byes: summary(by), keeperCatches: summary(kc) });
     say(`  keeper ${String(kq).padEnd(3)}: stumpings/inn ${f(summary(st).mean, 3)}  byes ${f(summary(by).mean, 2)}  keeper catches ${f(summary(kc).mean, 2)}`);
   }
+}
+
+// ---------------------------------------------------------------------------
+// §8 ATTRIBUTE VALUE PER POINT. One slot-2 man, +20 points of one family,
+// paired against the untouched control on the same seeds. The brief's
+// relative-value test: secondary attributes meaningful, not dominant.
+// dTotal>0 = the improvement helped (runs scored more / conceded fewer).
+// ---------------------------------------------------------------------------
+if (has('attr') || has('all')) {
+  say(`\n=== §8 MARGINAL VALUE PER POINT, slot-2 man +20 (N=${N} paired) ===`);
+  out.attr = [];
+  const ctrl = H.side('A', { all: { fielding: 50, catching: 50 } });
+  const B = H.side('B', { all: { fielding: 50, catching: 50 } });
+  const runPair = (lbl, slots, dir) => {
+    const A2 = H.side('A', { all: { fielding: 50, catching: 50 }, slots });
+    const dd = [], dv = [];
+    for (let i = 0; i < N; i++) {
+      const s = 510001 + i * 104729;
+      const r1 = H.run(ctrl, B, s, {}), r2 = H.run(A2, B, s, {});
+      if (!r1 || !r2) continue;
+      dv.push(winOf(r2) - winOf(r1));
+      let x1 = null, x2 = null;
+      for (const inn of [r1.i1, r1.i2]) if (inn && (dir === 'bat' ? inn.batTeam === 'A' : inn.batTeam !== 'A')) x1 = per50(inn.runs, inn.legal);
+      for (const inn of [r2.i1, r2.i2]) if (inn && (dir === 'bat' ? inn.batTeam === 'A' : inn.batTeam !== 'A')) x2 = per50(inn.runs, inn.legal);
+      if (x1 != null && x2 != null) dd.push(dir === 'bat' ? x2 - x1 : x1 - x2);
+    }
+    const D = summary(dd), W = summary(dv);
+    out.attr.push({ lbl, perPoint: D.mean / 20, dTotal: D, dWin: W });
+    say(`  ${lbl.padEnd(24)} ${f(D.mean, 2)}±${D.se.toFixed(2)} runs (+20) = ${f(D.mean / 20, 3)}/pt, ${f(W.mean * 100, 1)} win pts`);
+  };
+  runPair('batting (vsPace+vsSpin)', [{ slot: 2, skills: { vsPace: 81, vsSpin: 81 } }], 'bat');
+  runPair('bowling (wicket+econ)', [{ slot: 7, skills: { wicket: 75, economy: 75 } }], 'bowl');
+  runPair('fielding (ground)', [{ slot: 2, skills: { fielding: 70 } }], 'bowl');
+  runPair('catching', [{ slot: 2, skills: { catching: 70 } }], 'bowl');
 }
 
 if (has('json')) console.log(JSON.stringify(out, null, 1));
