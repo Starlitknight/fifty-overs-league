@@ -235,10 +235,11 @@ if (has('channels') || has('all')) {
       ['situation terms off (tail/new-bat/stand/death)', '__foCaptTermsOff=1'],
       ['field judgement off (everyone right field)', '__foCaptFieldSharp=1'],
       ['field policy off (old aiField)', '__foCaptFieldOff=1'],
-      ['organisation term off', '__foCaptOrgOff=1']
+      ['organisation term off', '__foCaptOrgOff=1'],
+      ['continuation anchor off (no confirmation bias)', '__foCaptAnchorOff=1']
     ];
     for (const [lbl, expr] of CH) {
-      set('__foCaptSharp=0;__foCaptTermsOff=0;__foCaptFieldSharp=0;__foCaptFieldOff=0;__foCaptOrgOff=0;1');
+      set('__foCaptSharp=0;__foCaptTermsOff=0;__foCaptFieldSharp=0;__foCaptFieldOff=0;__foCaptOrgOff=0;__foCaptAnchorOff=0;1');
       if (expr) set(expr + ';1');
       const lo = cell(20, M0, {}, {}), hi = cell(95, M0, {}, {});
       const dc = [], dv = [];
@@ -252,7 +253,7 @@ if (has('channels') || has('all')) {
       say(`  ${lbl.padEnd(46)} gap ${f(DC.mean, 2)}±${DC.se.toFixed(2)} runs, ${f(DV.mean * 100, 1)} win pts`);
       out.channels.push({ lbl, dConceded: DC, dWin: DV });
     }
-    set('__foCaptSharp=0;__foCaptTermsOff=0;__foCaptFieldSharp=0;__foCaptFieldOff=0;__foCaptOrgOff=0;1');
+    set('__foCaptSharp=0;__foCaptTermsOff=0;__foCaptFieldSharp=0;__foCaptFieldOff=0;__foCaptOrgOff=0;__foCaptAnchorOff=0;1');
   }
 }
 

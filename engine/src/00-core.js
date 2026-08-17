@@ -1543,7 +1543,18 @@ function foFatProject(p,bowlOvers,atOver){
 // __foCaptOrgOff (organisation term back to the old sliver), __foCaptAmp
 // (override the noise base). All deterministic: same seed, same captain,
 // same decisions, exactly as the slip law was.
-const FO_CAPT={amp:9,fieldSlip:0.55,orgDot:0.007,orgFour:0.006};
+//   anchor     confirmation bias on the CONTINUATION read, in score points
+//              at captaincy 20: a poor captain overrates the man already
+//              bowling and persists with him past the change the ranking
+//              wants - the "persists too long" failure the brief names.
+//              Measured necessity, not taste: without it a poor captain's
+//              reading noise CHURNED his attack, and churn accidentally
+//              rotates bowlers onto fresh legs - Phase 2A's recovery then
+//              PAID him for his indecision (the channel table showed the
+//              20->95 gap GROWING when noise was switched off). Anchoring is
+//              the real cricket failure and it cancels the accidental gift:
+//              the tiring man stays on, and the tank makes that expensive.
+const FO_CAPT={amp:9,anchor:6,fieldSlip:0.55,orgDot:0.012,orgFour:0.010};
 function foCaptErr(capt){
   const c=Math.max(1,Math.min(99,capt||50));
   return (102-c)/82;                       // 1.0 at 20, 0.27 at 80, 0.085 at 95
@@ -2847,7 +2858,12 @@ function aiPickBowler(inn,over){
       return r&&r.lastSpellOver===over-2&&(r.spellB||0)>0;});
     if(cont){
       const mg=(typeof __foSpellMargin!=='undefined')?__foSpellMargin:FO_SPELL.margin;
-      if(read[cont.name]>=read[best.name]-mg)pick=cont;
+      // the anchor (see FO_CAPT): a poor captain overrates the incumbent and
+      // persists past the change the clean ranking wants; an elite one barely
+      // does. This is where "persists too long with a tiring man" lives.
+      const anchor=(typeof __foCaptAnchorOff!=='undefined'&&__foCaptAnchorOff)?0
+        :FO_CAPT.anchor*foCaptErr(capt);
+      if(read[cont.name]+anchor>=read[best.name]-mg)pick=cont;
     }
   }
   // the decision log (probe instrumentation, off in play): what he chose,

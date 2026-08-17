@@ -65,6 +65,21 @@ judges the Phase 2A continuation margin, so change-point *quality* —
 persisting with a spent man, breaking a working spell early — is now
 captaincy's, while spell length itself stays the engine's.
 
+The noise alone turned out to be the wrong shape of wrongness. Round-1
+measurement (`pre-anchor-uniform.json` / `pre-anchor-het.json`, kept
+as the record of why) showed the 20→95 gap *shrinking* below baseline while the
+noise-off control *widened* it: a poor captain's random churn was
+rotating bowlers onto Phase 2A's fresh-legs recovery, and the engine
+was paying him for indecision. The cricket-honest correction is the
+failure mode the brief itself names: poor captains do not churn, they
+**persist too long**. The continuation read therefore carries a
+confirmation-bias anchor of `FO_CAPT.anchor(6) × (102−capt)/82` score
+points in the incumbent's favour — 6.0 at captaincy 20, 0.5 at 95 — so
+a weak captain leaves a weary man on past the point the clean numbers
+would pull him, and the fatigue he keeps in the attack is where his
+runs leak. Same error curve, same determinism, no new constants
+family.
+
 **B · The moments** (new terms in the true ranking, all captains',
 seen through each captain's noise): the exposed tail wants
 wicket-takers (`threat` weighted up from six down, harder the deeper);
