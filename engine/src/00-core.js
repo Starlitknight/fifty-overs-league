@@ -3161,7 +3161,32 @@ var FO_FLD={
   // mattering, which is exactly the thing that should never have mattered.
   par:50,         // the fielding the offsets were solved against
   cpar:51,        // and the catching
-  lvlCap:25       // no sample drags the contest further than this
+  lvlCap:25,      // no sample drags the contest further than this
+  // CATCH COMPRESSION (Phase 2B). The audit measured team fielding 20->95 at
+  // ~107 runs and the realistic 40->80 band at ~65 - catching's extreme range
+  // was the engine's single most valuable skill family, because a 95 took
+  // 97% of everything (near-automatic) and a 20 took 52%, and every extra
+  // catch compounds: wicket -> new man -> setness gone -> lower total. The
+  // fix is a slope around par, not a nerf: an OUTFIELDER's catching enters
+  // the contest as
+  //     cpar + ck x (raw - cpar)
+  // so a par catcher is untouched, extremes compress toward him, order is
+  // preserved (assignment still puts the best hands in the cordon), and
+  // talents (Safe Hands +11) and weather stay FULL size - a talent is worth
+  // its points on the contest whatever the slope. The keeper's gloves route
+  // through foKeeperQuality and are deliberately NOT compressed - keeper
+  // slopes were audited as correctly sized. ck=1 is bit-identical OLD
+  // behaviour (the code branches rather than trusting float round-trips);
+  // __foFldK overrides at runtime for the A/B sweep. The frozen value is
+  // chosen by measurement in docs/fielding-realism/REPORT.md.
+  ck:1.0,
+  // The same slope for GROUND fielding (foFieldSkill in the ground contest),
+  // around par. Default 1.0 = the shipped ground game untouched: the brief's
+  // §6 says the ground half may already be defensible and minimum change
+  // wins - gk exists so that claim can be MEASURED (via __foFldKG) rather
+  // than assumed, and it is only frozen below 1 if the ground channel alone
+  // still shows a clear problem after catching is compressed.
+  gk:1.0
 };
 // ---- WHAT STANDARD OF CRICKET THIS MATCH IS, read once off the two squads ---
 //
@@ -3249,7 +3274,9 @@ function groundFieldingAdjust(inn,out,bowler){
   if(near&&pick&&near.ang<=16)foTalCount(M._tal,inn.bowlTeam,pick,{},['rocketArm']);
   if(out==='6')return out;                       // it cleared them all
   if(!near||!pick||near.ang>FO_FLD.gate)return out;
-  const fs=foFieldSkill(pick)+foLvlShift('field'), diff=foChanceDiff(out,near.ang), won=fs>=diff;
+  const _gk=(typeof __foFldKG!=='undefined')?__foFldKG:FO_FLD.gk;
+  const _rawFs=foFieldSkill(pick);
+  const fs=(_gk===1?_rawFs:FO_FLD.par+_gk*(_rawFs-FO_FLD.par))+foLvlShift('field'), diff=foChanceDiff(out,near.ang), won=fs>=diff;
   const deep=!!near.spot.deep, at=near.spot.label;
   const isRocket=foTalHas(pick,{key:M._talKey})('rocketArm');
   const say=(txt,k,d,arm)=>{M._fielder=pick;M._fieldPos=at;M._fieldingEvent=txt;
@@ -3346,7 +3373,9 @@ function stepBall(){
     if(near&&near.ang<=30&&A&&A.byLbl[near.spot.label]){f=A.byLbl[near.spot.label];M._fieldPos=near.spot.label;}
     else if(_dir!=null&&foRegionOf(_dir,_FS?_FS.lhb:false)==='the sight screen')f=bowler;
     if(!f){f=inn.bxi.find(p=>p.keeper)||inn.bxi[0];M._ballDir=null;}
-    const cat=(f.keeper?foKeeperQuality(f):(foSkE(f,'catching')||50))
+    const _ck=(typeof __foFldK!=='undefined')?__foFldK:FO_FLD.ck;
+    const _rawCat=foSkE(f,'catching')||50;
+    const cat=(f.keeper?foKeeperQuality(f):(_ck===1?_rawCat:FO_FLD.cpar+_ck*(_rawCat-FO_FLD.cpar)))
       +(((M.meta&&M.meta.weather)||'').toLowerCase()==='chilly'?-9:0)
       +(((M.meta&&M.meta.weather)||'').toLowerCase()==='misty'?-6:0);
     // the chance came to him: that is what a fielding talent applies to, so it
