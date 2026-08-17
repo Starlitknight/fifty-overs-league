@@ -3162,32 +3162,59 @@ var FO_FLD={
   par:50,         // the fielding the offsets were solved against
   cpar:51,        // and the catching
   lvlCap:25,      // no sample drags the contest further than this
-  // CATCH COMPRESSION (Phase 2B). The audit measured team fielding 20->95 at
-  // ~107 runs and the realistic 40->80 band at ~65 - catching's extreme range
-  // was the engine's single most valuable skill family, because a 95 took
-  // 97% of everything (near-automatic) and a 20 took 52%, and every extra
-  // catch compounds: wicket -> new man -> setness gone -> lower total. The
-  // fix is a slope around par, not a nerf: an OUTFIELDER's catching enters
-  // the contest as
-  //     cpar + ck x (raw - cpar)
-  // so a par catcher is untouched, extremes compress toward him, order is
-  // preserved (assignment still puts the best hands in the cordon), and
-  // talents (Safe Hands +11) and weather stay FULL size - a talent is worth
-  // its points on the contest whatever the slope. The keeper's gloves route
-  // through foKeeperQuality and are deliberately NOT compressed - keeper
-  // slopes were audited as correctly sized. ck=1 is bit-identical OLD
-  // behaviour (the code branches rather than trusting float round-trips);
-  // __foFldK overrides at runtime for the A/B sweep. The frozen value is
+  // FIELDING MAGNITUDE (Phase 2B). The audit and this phase's decomposition
+  // (docs/fielding-realism) measured team fielding+catching 20->95 at ~110
+  // runs and the realistic 40->80 band at ~66 - more than most batting
+  // differences - with the GROUND contest carrying 50 of those 66 through
+  // the band asymmetry this file's own population essay once described (a
+  // save must beat +37/+44, a misfield only lose to -59, so a whole XI
+  // crossing par together swings 70 event-runs).
+  //
+  // A single compression slope could not fix it: team magnitude and
+  // individual identity ride the same knob, and squeezing the skill range
+  // pushes more of it into the steep transition (measured: gk=0.3 still
+  // left 22 of the 50-run ground band, while one elite fielder's value
+  // fell from 5.0 to 2.1 runs). So a man's skill enters the contest in
+  // TWO parts, judged differently:
+  //
+  //     eff = par + T x (teamMean - par) + I x (raw - teamMean)
+  //
+  // T discounts the COLLECTIVE distance of the fielding XI from par - the
+  // team-magnitude knob; I is the man's own deviation from his side - the
+  // identity knob, frozen at 1: within-team play (who saves, who fumbles,
+  // who is hidden at mid-on, what one elite or liability man is worth) is
+  // EXACTLY the shipped game. This is the old foLvlShift idea turned
+  // honest: a per-team level correction, sloped rather than free, measured
+  // rather than assumed. A star on a weak side may play a shade above his
+  // raw number (the standard around him dropped; his level did not), which
+  // is cricket, not a bug.
+  //
+  // The keeper's gloves route through foKeeperQuality and are untouched;
+  // Safe Hands and weather stay full size; assignment, geometry, band
+  // offsets, the drop margin and run-outs are untouched. T=I=1 is
+  // bit-identical shipped behaviour (branched, not trusted to float
+  // round-trips). Flags for the A/B: __foFldKG/__foFldK set T=I=k (the
+  // single-slope family), __foTgG/__foTgC set T alone. Frozen values
   // chosen by measurement in docs/fielding-realism/REPORT.md.
-  ck:1.0,
-  // The same slope for GROUND fielding (foFieldSkill in the ground contest),
-  // around par. Default 1.0 = the shipped ground game untouched: the brief's
-  // §6 says the ground half may already be defensible and minimum change
-  // wins - gk exists so that claim can be MEASURED (via __foFldKG) rather
-  // than assumed, and it is only frozen below 1 if the ground channel alone
-  // still shows a clear problem after catching is compressed.
-  gk:1.0
+  gT:1.0,gI:1.0,   // ground: team knob, identity knob
+  cT:1.0,cI:1.0    // catching (outfielders only)
 };
+// the effective skill entering a fielding contest: see FO_FLD block above
+function foFldEff(raw,mean,par,T,I){
+  if(T===1&&I===1)return raw;
+  return par+T*(mean-par)+I*(raw-mean);
+}
+// the fielding XI's mean ground/catching level, cached per innings; the
+// catching mean is over OUTFIELDERS (the keeper's gloves are his own)
+function foFldMeans(inn){
+  if(inn._fldMeans)return inn._fldMeans;
+  var f=0,c=0,nf=0,nc=0;
+  for(var i=0;i<inn.bxi.length;i++){var p=inn.bxi[i];if(!p)continue;
+    f+=(p.field||foSkE(p,'fielding')||50);nf++;
+    if(!p.keeper){c+=(foSkE(p,'catching')||50);nc++;}}
+  inn._fldMeans={f:nf?f/nf:FO_FLD.par,c:nc?c/nc:FO_FLD.cpar};
+  return inn._fldMeans;
+}
 // ---- WHAT STANDARD OF CRICKET THIS MATCH IS, read once off the two squads ---
 //
 // THE BUG THIS EXISTS FOR. The standard term used to read the SUM of the two
@@ -3274,9 +3301,10 @@ function groundFieldingAdjust(inn,out,bowler){
   if(near&&pick&&near.ang<=16)foTalCount(M._tal,inn.bowlTeam,pick,{},['rocketArm']);
   if(out==='6')return out;                       // it cleared them all
   if(!near||!pick||near.ang>FO_FLD.gate)return out;
-  const _gk=(typeof __foFldKG!=='undefined')?__foFldKG:FO_FLD.gk;
+  const _gT=(typeof __foFldKG!=='undefined')?__foFldKG:((typeof __foTgG!=='undefined')?__foTgG:FO_FLD.gT);
+  const _gI=(typeof __foFldKG!=='undefined')?__foFldKG:FO_FLD.gI;
   const _rawFs=foFieldSkill(pick);
-  const fs=(_gk===1?_rawFs:FO_FLD.par+_gk*(_rawFs-FO_FLD.par))+foLvlShift('field'), diff=foChanceDiff(out,near.ang), won=fs>=diff;
+  const fs=foFldEff(_rawFs,foFldMeans(inn).f,FO_FLD.par,_gT,_gI)+foLvlShift('field'), diff=foChanceDiff(out,near.ang), won=fs>=diff;
   const deep=!!near.spot.deep, at=near.spot.label;
   const isRocket=foTalHas(pick,{key:M._talKey})('rocketArm');
   const say=(txt,k,d,arm)=>{M._fielder=pick;M._fieldPos=at;M._fieldingEvent=txt;
@@ -3373,9 +3401,10 @@ function stepBall(){
     if(near&&near.ang<=30&&A&&A.byLbl[near.spot.label]){f=A.byLbl[near.spot.label];M._fieldPos=near.spot.label;}
     else if(_dir!=null&&foRegionOf(_dir,_FS?_FS.lhb:false)==='the sight screen')f=bowler;
     if(!f){f=inn.bxi.find(p=>p.keeper)||inn.bxi[0];M._ballDir=null;}
-    const _ck=(typeof __foFldK!=='undefined')?__foFldK:FO_FLD.ck;
+    const _cT=(typeof __foFldK!=='undefined')?__foFldK:((typeof __foTgC!=='undefined')?__foTgC:FO_FLD.cT);
+    const _cI=(typeof __foFldK!=='undefined')?__foFldK:FO_FLD.cI;
     const _rawCat=foSkE(f,'catching')||50;
-    const cat=(f.keeper?foKeeperQuality(f):(_ck===1?_rawCat:FO_FLD.cpar+_ck*(_rawCat-FO_FLD.cpar)))
+    const cat=(f.keeper?foKeeperQuality(f):foFldEff(_rawCat,foFldMeans(inn).c,FO_FLD.cpar,_cT,_cI))
       +(((M.meta&&M.meta.weather)||'').toLowerCase()==='chilly'?-9:0)
       +(((M.meta&&M.meta.weather)||'').toLowerCase()==='misty'?-6:0);
     // the chance came to him: that is what a fielding talent applies to, so it

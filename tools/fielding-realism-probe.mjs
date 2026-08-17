@@ -54,6 +54,14 @@ if (PAIR) {
   set(`__foFldKG=${g};__foFldK=${c};1`);
   say(`(all sections under gk=${g} ck=${c})`);
 }
+// --anchor=GT,CT engages the TEAM knob alone (identity knob stays 1): the
+// two-term form eff = par + T(mean-par) + (raw-mean)
+const ANCHOR = arg('anchor', '');
+if (ANCHOR) {
+  const [gt, ct] = ANCHOR.split(',').map(Number);
+  set(`__foTgG=${gt};__foTgC=${ct};1`);
+  say(`(all sections under TEAM anchor gT=${gt} cT=${ct}, identity=1)`);
+}
 
 // the contest constants, read out of the build so the closed form can never
 // drift from the engine
