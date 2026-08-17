@@ -153,4 +153,38 @@ if (has('decomp') || has('all')) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// §2b THE SWEEP. Candidate ck values over the cells that define the brief's
+// sanity checks - catching swept (and both swept) at 20/40/50/70/80/95 -
+// each cell on the same seeds as every other, so any two cells difference
+// out. The 40->80 gap (currently ~65 with both) is the number under
+// indictment; 20->95 must stay dramatic; 50 must not move at all.
+// ---------------------------------------------------------------------------
+if (has('sweep')) {
+  const ks = (arg('ks', '1.00,0.85,0.75,0.65,0.55,0.45')).split(',').map(Number);
+  const gks = (arg('gks', '')).split(',').filter(Boolean).map(Number);
+  const SL = [20, 40, 50, 70, 80, 95];
+  out.sweep = [];
+  for (const k of ks) {
+    for (const gk of (gks.length ? gks : [1])) {
+      set(`__foFldK=${k};__foFldKG=${gk};1`);
+      const lbl = `ck=${k}` + (gks.length ? ` gk=${gk}` : '');
+      say(`\n=== §2b SWEEP ${lbl} (N=${N}/cell, both-swept) ===`);
+      say('  lvl  conceded     wkts   win%   take  drop  fieldRuns');
+      const rows = [];
+      for (const lvl of SL) {
+        const L = ledger('both', lvl, N);
+        rows.push(L);
+        say('  ' + String(lvl).padEnd(4) + f(L.conceded.mean, 1) + '±' + L.conceded.se.toFixed(1).padEnd(4)
+          + f(L.wkts.mean, 2) + f(100 * L.win.mean, 1) + f(L.taken, 2) + f(L.dropped, 2) + f(L.fieldRuns, 1));
+      }
+      const at = l => rows.find(r => r.lvl === l);
+      const gap = (a, b) => (at(a).conceded.mean - at(b).conceded.mean);
+      say(`  gaps: 40->80 ${gap(40, 80).toFixed(1)}  50->70 ${gap(50, 70).toFixed(1)}  20->95 ${gap(20, 95).toFixed(1)}`);
+      out.sweep.push({ k, gk, rows, gaps: { g4080: gap(40, 80), g5070: gap(50, 70), g2095: gap(20, 95) } });
+    }
+  }
+  set('__foFldK=1;__foFldKG=1;1');
+}
+
 if (has('json')) console.log(JSON.stringify(out, null, 1));
