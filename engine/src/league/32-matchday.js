@@ -45,10 +45,19 @@
     "I have seen {dog} ruin better sides than this for fun. Watch the first ten overs."
   ];
 
-  // the ACTUAL XI: saved orders if the coach has spoken, else the very
-  // eleven the engine will field - keeper, the five best bowlers, best
-  // bats, in match order. No "probable" guesswork: this is the teamsheet.
-  function probableXI(team, mine) {
+  // THE ACTUAL XI, AND IT HAS TO BE THE COACH'S OR IT IS A LIE.
+  //
+  // This function's own comment used to end "No 'probable' guesswork: this is
+  // the teamsheet" - and it was a line-for-line copy of the OLD pickXI: best
+  // keeper by bat, five highest threat+control, best remaining bats, in mpos
+  // order. Since 13-matchday-coach.js that is not the side the engine fields,
+  // so a page promising the teamsheet was printing a different eleven from the
+  // one that would walk out, on a page whose whole job is to preview the match.
+  //
+  // It asks the one authority now. A saved sheet still wins - that is the
+  // manager's own eleven and it outranks everybody - and the founding order is
+  // kept only as a last resort for a squad the coach cannot read.
+  function probableXI(team, mine, pitch, wx) {
     try {
       if (mine && App.orders && App.orders.saved && App.orders.batOrder && App.orders.batOrder.length >= 11) {
         var byName = {}; (team.players || []).forEach(function (p) { byName[p.name] = p; });
@@ -58,9 +67,22 @@
     } catch (e) {}
     var P = (team.players || []).slice();
     if (!P.length) return { xi: [], fromOrders: false };
+    // the coach, in this fixture's conditions - the same call the umpire makes
+    try {
+      if (typeof planMatchDay === "function" && P.length > 11) {
+        var plan = planMatchDay({ team: { name: team.name, players: P },
+          pitch: pitch || "balanced", weather: wx || "sunny",
+          doctrine: (team.doctrine || null) });
+        if (plan && plan.battingOrder && plan.battingOrder.length === 11) {
+          var by2 = {}; P.forEach(function (p) { by2[p.name] = p; });
+          var picked = plan.battingOrder.map(function (n) { return by2[n]; }).filter(Boolean);
+          if (picked.length === 11) return { xi: picked, fromOrders: false, fromCoach: true };
+        }
+      }
+    } catch (eC) {}
     var kps = P.filter(function (p) { return p.keeper; }).sort(function (a, b) { return b.bat - a.bat; });
     var keeper = kps[0] || P.slice().sort(function (a, b) { return b.bat - a.bat; })[0];
-    var bowlers = P.filter(function (p) { return p.bowlType && p.key !== keeper; }).sort(function (a, b) { return (b.threat + b.control) - (a.threat + a.control); });
+    var bowlers = P.filter(function (p) { return p.bowlType && p !== keeper; }).sort(function (a, b) { return (b.threat + b.control) - (a.threat + a.control); });
     var chosen = {}; chosen[keeper.name] = 1;
     bowlers.slice(0, 5).forEach(function (b) { chosen[b.name] = 1; });
     var rest = P.filter(function (p) { return !chosen[p.name]; }).sort(function (a, b) { return b.bat - a.bat; });
@@ -140,7 +162,7 @@
       });
 
       // both elevens, and the broadcaster's number
-      var pHome = probableXI(home, isHome), pAway = probableXI(away, !isHome);
+      var pHome = probableXI(home, isHome, pitch, wx), pAway = probableXI(away, !isHome, pitch, wx);
       var sH = xiStrength(pHome.xi) + 2;                     // home ground is worth a nudge
       var sA = xiStrength(pAway.xi);
       var probHome = Math.round(100 / (1 + Math.pow(10, -(sH - sA) / 12)));
@@ -162,7 +184,7 @@
       // the pundit speaks (deterministically)
       var seed = h32("md|" + (App.seasonNo || 1) + "|" + r + "|" + home.name + "|" + away.name);
       var fav = probHome >= 50 ? home : away, dog = probHome >= 50 ? away : home;
-      var dogStar = (probableXI(dog, false).xi[0] || {}).name || dog.name;
+      var dogStar = (probableXI(dog, false, pitch, wx).xi[0] || {}).name || dog.name;
       var pundit = PUNDITS[seed % PUNDITS.length];
       var line = BANTER[(seed >>> 3) % BANTER.length]
         .replace("{fav}", fav.name).replace("{dog}", dog.name)

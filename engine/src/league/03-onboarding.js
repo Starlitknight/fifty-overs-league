@@ -3399,189 +3399,27 @@
     }
     return order;
   }
-  function foSmartBowling() {
-    // App/userTeam/isPT are const bindings in the engine realm (not on window);
-    // typeClass/pickXI/pgOrders are function declarations. All resolve bare here.
-    if (typeof App === "undefined" || typeof userTeam !== "function" || typeof pickXI !== "function" || typeof typeClass !== "function") return foOrigSuggest();
-    var t = userTeam(), xi = pickXI(t);
-    var bs = xi.filter(function (p) { return p.bowlType && !isPT(p); });
-    if (bs.length < 5) return foOrigSuggest();      // need 5+ to cover 50 legally
-
-    // ---- batting order built for the CONDITIONS, not the roster sheet ----
-    var pend0 = App.pending || {}, pitch0 = pend0.pitch || "balanced";
-    var wx0 = String(pend0.weather || "").toLowerCase();
-    var newBallBites = pitch0 === "green" || pitch0 === "cracked" || /overcast|humid|misty|drizzle/.test(wx0);
-    var turnLater = pitch0 === "dry" || pitch0 === "slow" || pitch0 === "twoPaced";
-    var SK = function (p) { try { return (typeof S === "function") ? S(p) : (p.skills || {}); } catch (e) { return p.skills || {}; } };
-    var tHas = function (p, tl) { return (p.talents || []).indexOf(tl) >= 0; };
-    var shade = function (p, s) {
-      s *= 0.90 + 0.033 * (p.formIx == null ? 3 : p.formIx);
-      var fr = { "clinically dead": 0.72, shattered: 0.76, exhausted: 0.80, listless: 0.85, weary: 0.90, moderate: 0.94, satisfactory: 0.97 }[String(p.fatigue || "rested").toLowerCase()];
-      return fr ? s * fr : s;
-    };
-    var openScore = function (p) {   // survive the new ball
-      var k = SK(p);
-      var s = (newBallBites ? 0.55 : 0.45) * (k.vsPace || 0) + 0.25 * (k.temperament || 0) + 0.15 * (k.rotation || 0) + 0.05 * (k.vsSpin || 0);
-      if (tHas(p, "fastStarter")) s += 7;
-      if (tHas(p, "anchor")) s += 5;
-      if (tHas(p, "newBallSpecialist")) s -= 4;    // save frontline bowlers' legs
-      return shade(p, s);
-    };
-    var midScore = function (p) {    // own the middle overs
-      var k = SK(p);
-      var spinW = turnLater ? 0.42 : 0.30;
-      var s = (0.72 - spinW) * (k.vsPace || 0) + spinW * (k.vsSpin || 0) + 0.18 * (k.rotation || 0) + 0.10 * (k.temperament || 0);
-      if (tHas(p, "anchor")) s += 4;
-      if (tHas(p, "spinKiller") && turnLater) s += 7;
-      return shade(p, s);
-    };
-    var finScore = function (p) {    // hit at the death
-      var k = SK(p);
-      var s = 0.50 * (k.power || 0) + 0.22 * (k.temperament || 0) + 0.18 * (k.rotation || 0) + 0.10 * (k.vsPace || 0);
-      if (tHas(p, "finisher")) s += 9;
-      if (tHas(p, "sixMachine")) s += 6;
-      return shade(p, s);
-    };
-    var pool2 = xi.slice(), orderNames = [];
-    var takeBest = function (fn) {
-      pool2.sort(function (a, b) { return fn(b) - fn(a); });
-      var p2 = pool2.shift(); if (p2) orderNames.push(p2.name); return p2;
-    };
-    takeBest(openScore); takeBest(openScore);                 // openers
-    takeBest(midScore); takeBest(midScore); takeBest(midScore); // 3-5
-    takeBest(finScore); takeBest(finScore);                   // 6-7 finishers
-    // tail: remaining by plain batting, best first
-    pool2.sort(function (a, b) { return (b.bat || 0) - (a.bat || 0); });
-    pool2.forEach(function (p2) { orderNames.push(p2.name); });
-    App.orders.batOrder = orderNames;
-    // captain: the XI's best leader · captaincy skill first, experience as tiebreak
-    var cap = xi.slice().sort(function (a, b) {
-      return ((b.capt || 0) + (b.exp || 0) * 0.25) - ((a.capt || 0) + (a.exp || 0) * 0.25);
-    })[0] || xi[0];
-    App.orders.captain = cap.name;
-    App.orders.keeper = (xi.find(function (p) { return p.keeper; }) || xi[0]).name;
-
-    // Read the fixture's pitch + weather (App.pending is the next match's meta).
-    var pend = App.pending || {}, pitch = pend.pitch || "balanced";
-    var wx = String(pend.weather || "").toLowerCase();
-    var seamPitch = pitch === "green" || pitch === "cracked" || pitch === "twoPaced";
-    var seamWx = /overcast|humid|drizzle|dew|swing/.test(wx);
-    var spinPitch = pitch === "dry" || pitch === "slow" || pitch === "cracked";
-    var isPace = function (p) { return typeClass(p.bowlType) === "pace"; };
-    var isSpin = function (p) { return typeClass(p.bowlType) === "spin"; };
-    var has = function (p, tl) { return (p.talents || []).indexOf(tl) >= 0; };
-    var score = function (p) {
-      var s = 0.55 * (p.threat || 0) + 0.45 * (p.control || 0);
-      // form (0-6, 3 = steady) and fatigue shade the ranking
-      s *= 0.90 + 0.033 * (p.formIx == null ? 3 : p.formIx);
-      var fr = { "clinically dead": 0.72, shattered: 0.76, exhausted: 0.80, listless: 0.85, weary: 0.90, moderate: 0.94, satisfactory: 0.97 }[String(p.fatigue || "rested").toLowerCase()];
-      if (fr) s *= fr;
-      if (isPace(p) && (seamPitch || seamWx)) s += 12;
-      if (isSpin(p) && spinPitch) s += 12;
-      if (has(p, "newBallSpecialist")) s += 6;
-      if (has(p, "deathSpecialist")) s += 4;
-      return s;
-    };
-    var ranked = bs.slice().sort(function (a, b) { return score(b) - score(a); });
-    var paceOf = {}; bs.forEach(function (p) { paceOf[p.name] = isPace(p); });
-    var caps = {}, capArr = foCapDist(ranked.length);
-    ranked.forEach(function (p, i) { caps[p.name] = capArr[i]; });
-
-    // Partition the bowlers into DISJOINT north/south groups (each covering its 25
-    // overs), so no bowler is at both ends and back-to-back overs are impossible.
-    // Pace bowlers are placed first and spread across the two ends so each powerplay
-    // can open with seam; the one "straddler" that may span both ends tends to be a
-    // spinner and is kept out of the powerplay (north death + south middle).
-    var nc = {}, sc = {}, nSum = 0, sSum = 0, straddler = null;
-    var ordered = ranked.filter(function (p) { return paceOf[p.name]; }).concat(ranked.filter(function (p) { return !paceOf[p.name]; }));
-    ordered.forEach(function (p) {
-      var nm = p.name, c = caps[nm], take;
-      if (nSum <= sSum) {                                   // fill the emptier end first
-        if (nSum + c <= 25) { nc[nm] = c; nSum += c; }
-        else { take = 25 - nSum; if (take > 0) { nc[nm] = take; nSum = 25; } sc[nm] = c - take; sSum += c - take; straddler = nm; }
-      } else {
-        if (sSum + c <= 25) { sc[nm] = c; sSum += c; }
-        else { take = 25 - sSum; if (take > 0) { sc[nm] = take; sSum = 25; } nc[nm] = c - take; nSum += c - take; straddler = nm; }
-      }
-    });
-    if (nSum !== 25 || sSum !== 25) return foOrigSuggest();               // couldn't tile 25/25
-    if (straddler && (nc[straddler] > 5 || sc[straddler] > 5)) return foOrigSuggest(); // rare
-
-    var byName = {}; bs.forEach(function (p) { byName[p.name] = p; });
-    var spells = { north: [], south: [] };
-    [["north", nc, 1], ["south", sc, 2]].forEach(function (E) {
-      var end = E[0], counts = {}, first = E[2], k;
-      for (k in E[1]) counts[k] = E[1][k];                   // clone (we deduct as we lay spells)
-      var overs = []; for (var o = first; o <= 50; o += 2) overs.push(o);
-      var strN = straddler && counts[straddler] ? counts[straddler] : 0;
-
-      // Powerplay (this end's first 5 overs = match overs ≤10): cover it with seam.
-      var paceMains = Object.keys(counts).filter(function (n) { return n !== straddler && paceOf[n] && counts[n] > 0; })
-        .sort(function (a, b) {
-          var nb = (has(byName[b], "newBallSpecialist") ? 1 : 0) - (has(byName[a], "newBallSpecialist") ? 1 : 0);
-          return nb || (score(byName[b]) - score(byName[a]));
-        });
-      var order = [], ppCovered = 0, lastPP = null;
-      while (ppCovered < 5) {
-        var cand = paceMains.filter(function (n) { return counts[n] > 0 && n !== lastPP; });
-        if (!cand.length) break;
-        var pk = cand[0], need = 5 - ppCovered, L = Math.min(counts[pk], 5);
-        if (L > need) L = Math.max(need, 2);
-        if (counts[pk] - L === 1) L = Math.max(2, L - 1);
-        order.push({ bowler: pk, n: L }); counts[pk] -= L; ppCovered += L; lastPP = pk;
-      }
-
-      // Remaining overs: chunk what's left (spin welcome now) and interleave.
-      var restMains = Object.keys(counts).filter(function (n) { return n !== straddler && counts[n] > 0; });
-      var chunks = {}; restMains.forEach(function (n) { chunks[n] = foChunks(counts[n]); });
-      order = order.concat(foInterleave(restMains, chunks));
-
-      if (strN) {
-        var sp = { bowler: straddler, n: strN };
-        if (end === "north") { order.push(sp); }             // straddler bowls the death at north
-        else {                                               // and the middle at south (never the powerplay)
-          var cum = 0, ins = order.length, m;
-          for (m = 0; m < order.length; m++) { cum += order[m].n; if (cum >= 5) { ins = m + 1; break; } }
-          order.splice(ins, 0, sp);
-        }
-      }
-      order = foDeAdjacent(order);
-      // death overs (each end's final spell): hand them to the best death bowler
-      var deathScore = function (n) {
-        var p3 = byName[n]; if (!p3) return -1;
-        var k3 = (typeof S === "function") ? S(p3) : (p3.skills || {});
-        return (has(p3, "deathSpecialist") ? 40 : 0) + 0.5 * (k3.economy || 0) + 0.3 * (k3.variation || 0) + 0.2 * (k3.discipline || 0);
-      };
-      var bestIx = -1, bestVal = -1, strIx = -1;
-      if (straddler) for (var qi = 0; qi < order.length; qi++) if (order[qi].bowler === straddler) { strIx = qi; break; }
-      // never move a spell from BEFORE the straddler: everything after it would
-      // slide, and the straddler's overs can then overlap its spell at the
-      // other end (same bowler in consecutive overs - illegal)
-      for (var di = Math.max(1, strIx + 1); di < order.length - 1; di++) {    // keep the PP head intact
-        var v = deathScore(order[di].bowler);
-        if (v > bestVal && order[di].bowler !== order[order.length - 1].bowler) { bestVal = v; bestIx = di; }
-      }
-      if (bestIx > 0 && order.length > 2 && bestVal > deathScore(order[order.length - 1].bowler)) {
-        var sp2 = order.splice(bestIx, 1)[0];
-        if (order[order.length - 1].bowler !== sp2.bowler) order.push(sp2);
-        else order.splice(order.length - 1, 0, sp2);
-        order = foDeAdjacent(order);
-      }
-
-      var oi = 0;
-      order.forEach(function (sp) {
-        var f = overs[oi];
-        spells[end].push({ bowler: sp.bowler, first: f, n: sp.n, field: f <= 10 ? "att" : (f >= 41 ? "def" : "bal") });
-        oi += sp.n;
-      });
-    });
-    if (!spells.north.length || !spells.south.length) return foOrigSuggest();
-    App.orders.spells = spells;
-    App.orders.grid = null;                          // let the grid reseed from the new plan
-    // only re-render when the manager is actually ON the orders page - the
-    // one-tap XI confirm calls this from the club home and must stay there
-    try { if (App.page === "orders") pgOrders(); } catch (e) {}
-  }
+  // AUTO IS THE COACH, AND THIS IS ALL THAT IS LEFT OF WHAT USED TO STAND HERE.
+  //
+  // foSmartBowling was two hundred lines of a SECOND conditions model, and it
+  // was the shipped Auto button: the override below replaced the engine's
+  // suggestOrders with it, so nothing a manager pressed ever reached
+  // 13-matchday-coach.js. It carried its own newBallBites and turnLater rules,
+  // its own opener/middle/finisher weights (0.55 x vsPace + 0.25 x temperament
+  // ...), its own fatigue table, its own captaincy tiebreak and its own
+  // "+12 for pace on a green top" - every one of them a number nobody had
+  // measured, drifting from the ball model with each retune.
+  //
+  // Worse for the design, it tiled ALL FIFTY OVERS across the two ends, 25 and
+  // 25. The coach paints only the overs it is surer of than the captain and
+  // leaves the rest for him to react in; a fully painted fifty deletes
+  // captaincy as a skill, and the orders page had just been taught to say
+  // "Coach has specified 18 overs, captain adapts the remaining 32" about a
+  // sheet that in fact had every over filled in.
+  //
+  // The name survives because window.__fol exports it and a device may hold an
+  // older page; the behaviour is now the one authority and nothing else.
+  function foSmartBowling() { return foOrigSuggest(); }
   // The engine dates rounds a week apart (its solo roots). This league plays
   // one round per day at 9:00 AM ET: round dates anchor to TODAY's round.
   try {

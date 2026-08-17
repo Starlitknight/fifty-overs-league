@@ -1,0 +1,218 @@
+=== MATCH-DAY SELECTION DIAGNOSTIC ===
+club: Yorkshire  (16 men)
+
+scenario 10 tires the best frontline quick : Daan van Dijk
+scenario 11 tires the best batsman         : Sven Veldman
+
+--------------------------------------------------------------------------
+1. balanced + sunny (baseline)   [balanced / sunny]
+--------------------------------------------------------------------------
+  XI changes vs baseline : none
+  attack                 : 2 pace, 3 spin  ->  Sharma(wristSpin 0.5), Dijk(fast 0.1), Wilson(medium -1.4), Nijhuis(fingerSpin -1.6), Whitfield(fingerSpin -3.0)
+  top seven              : Meer > Veldman > Kuiper > Smit > Nijhuis > Boer > Bavuma
+  tail                   : Wilson > Sharma > Whitfield > Dijk
+  keeper                 : Veldman  (glove quality 83)
+  captain                : Nijhuis
+  coach painted          : 10 overs
+      · new ball: Daan van Dijk and Zak Wilson for 3 overs each
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
+  left to the captain    : 40 overs
+  toss                   : bat (margin 0.027)
+
+--------------------------------------------------------------------------
+2. green + overcast   [green / overcast]
+--------------------------------------------------------------------------
+  XI changes vs baseline : IN  Boer   OUT Whitfield
+      in : Boer         bowl value   -1.11 (baseline   -3.21)  runs/dismissal    10
+      out: Whitfield    bowl value   -2.92 (baseline   -2.99)  runs/dismissal   9.1
+  attack                 : 3 pace, 2 spin  ->  Dijk(fast 5.3), Wilson(medium 1.2), Sharma(wristSpin 0.3), Boer(medium -1.1), Nijhuis(fingerSpin -1.7)
+  top seven              : Meer > Veldman > Kuiper > Nijhuis > Smit > Boer > Bavuma
+  tail                   : Boer > Wilson > Sharma > Dijk
+  keeper                 : Veldman  (glove quality 83)
+  captain                : Nijhuis
+  coach painted          : 16 overs
+      · new ball: Daan van Dijk and Zak Wilson for 6 overs each (the ball is doing something)
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
+  left to the captain    : 34 overs
+  toss                   : bowl (margin -0.026)
+
+--------------------------------------------------------------------------
+3. green + humid   [green / humid]
+--------------------------------------------------------------------------
+  XI changes vs baseline : IN  Boer   OUT Whitfield
+      in : Boer         bowl value   -1.92 (baseline   -3.21)  runs/dismissal  11.6
+      out: Whitfield    bowl value      -3 (baseline   -2.99)  runs/dismissal  10.5
+  attack                 : 3 pace, 2 spin  ->  Dijk(fast 3.7), Sharma(wristSpin 0.2), Wilson(medium 0.1), Nijhuis(fingerSpin -1.7), Boer(medium -1.9)
+  top seven              : Meer > Veldman > Kuiper > Nijhuis > Smit > Boer > Bavuma
+  tail                   : Boer > Wilson > Sharma > Dijk
+  keeper                 : Veldman  (glove quality 83)
+  captain                : Nijhuis
+  coach painted          : 16 overs
+      · new ball: Daan van Dijk and Zak Wilson for 6 overs each (the ball is doing something)
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
+  left to the captain    : 34 overs
+  toss                   : bowl (margin -0.026)
+
+--------------------------------------------------------------------------
+4. dry + sunny   [dry / sunny]
+--------------------------------------------------------------------------
+  XI changes vs baseline : none
+  attack                 : 2 pace, 3 spin  ->  Sharma(wristSpin 4.8), Nijhuis(fingerSpin 0.9), Dijk(fast 0.1), Whitfield(fingerSpin -0.6), Wilson(medium -1.4)
+  top seven              : Meer > Veldman > Kuiper > Smit > Boer > Bavuma > Nijhuis
+  tail                   : Wilson > Sharma > Whitfield > Dijk
+  keeper                 : Veldman  (glove quality 83)
+  captain                : Nijhuis
+  coach painted          : 14 overs
+      · new ball: Daan van Dijk and Zak Wilson for 3 overs each
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
+      · middle: Pranav Sharma gets 4 overs on a turning pitch
+  left to the captain    : 36 overs
+  toss                   : bat (margin 0.071)
+
+--------------------------------------------------------------------------
+5. cracked   [cracked / sunny]
+--------------------------------------------------------------------------
+  XI changes vs baseline : none
+  attack                 : 2 pace, 3 spin  ->  Sharma(wristSpin 3.2), Dijk(fast 1.1), Nijhuis(fingerSpin -0.7), Wilson(medium -0.8), Whitfield(fingerSpin -2.0)
+  top seven              : Meer > Veldman > Kuiper > Smit > Nijhuis > Boer > Bavuma
+  tail                   : Wilson > Sharma > Whitfield > Dijk
+  keeper                 : Veldman  (glove quality 83)
+  captain                : Nijhuis
+  coach painted          : 14 overs
+      · new ball: Daan van Dijk and Zak Wilson for 3 overs each
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
+      · middle: Pranav Sharma gets 4 overs on a turning pitch
+  left to the captain    : 36 overs
+  toss                   : bat (margin 0.045)
+
+--------------------------------------------------------------------------
+6. slow   [slow / sunny]
+--------------------------------------------------------------------------
+  XI changes vs baseline : IN  Vries   OUT Bavuma
+      in : Vries        bowl value    null (baseline    null)  runs/dismissal  28.8
+      out: Bavuma       bowl value    null (baseline    null)  runs/dismissal  27.1
+  attack                 : 2 pace, 3 spin  ->  Sharma(wristSpin 1.9), Dijk(fast 0.3), Wilson(medium -0.8), Nijhuis(fingerSpin -0.9), Whitfield(fingerSpin -2.1)
+  top seven              : Meer > Veldman > Kuiper > Vries > Smit > Boer > Nijhuis
+  tail                   : Wilson > Sharma > Whitfield > Dijk
+  keeper                 : Veldman  (glove quality 83)
+  captain                : Nijhuis
+  coach painted          : 10 overs
+      · new ball: Daan van Dijk and Zak Wilson for 3 overs each
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
+  left to the captain    : 40 overs
+  toss                   : bat (margin 0.027)
+
+--------------------------------------------------------------------------
+7. two-paced   [twoPaced / sunny]
+--------------------------------------------------------------------------
+  XI changes vs baseline : IN  Vries   OUT Bavuma
+      in : Vries        bowl value    null (baseline    null)  runs/dismissal  27.8
+      out: Bavuma       bowl value    null (baseline    null)  runs/dismissal  26.2
+  attack                 : 2 pace, 3 spin  ->  Sharma(wristSpin 2.1), Dijk(fast 0.7), Nijhuis(fingerSpin -0.7), Wilson(medium -0.7), Whitfield(fingerSpin -2.0)
+  top seven              : Meer > Veldman > Kuiper > Nijhuis > Smit > Boer > Vries
+  tail                   : Wilson > Sharma > Whitfield > Dijk
+  keeper                 : Veldman  (glove quality 83)
+  captain                : Nijhuis
+  coach painted          : 10 overs
+      · new ball: Daan van Dijk and Zak Wilson for 3 overs each
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
+  left to the captain    : 40 overs
+  toss                   : bat (margin 0.027)
+
+--------------------------------------------------------------------------
+8. flat   [flat / sunny]
+--------------------------------------------------------------------------
+  XI changes vs baseline : none
+  attack                 : 2 pace, 3 spin  ->  Sharma(wristSpin -1.6), Dijk(fast -2.1), Wilson(medium -2.8), Nijhuis(fingerSpin -3.0), Whitfield(fingerSpin -4.3)
+  top seven              : Veldman > Meer > Kuiper > Smit > Nijhuis > Boer > Bavuma
+  tail                   : Wilson > Sharma > Whitfield > Dijk
+  keeper                 : Veldman  (glove quality 83)
+  captain                : Nijhuis
+  coach painted          : 10 overs
+      · new ball: Daan van Dijk and Zak Wilson for 3 overs each
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
+  left to the captain    : 40 overs
+  toss                   : bat (margin 0.027)
+
+--------------------------------------------------------------------------
+9. dew later   [dry / dew later]
+--------------------------------------------------------------------------
+  XI changes vs baseline : none
+  attack                 : 2 pace, 3 spin  ->  Sharma(wristSpin 4.8), Nijhuis(fingerSpin 0.9), Dijk(fast 0.1), Whitfield(fingerSpin -0.6), Wilson(medium -1.4)
+  top seven              : Meer > Veldman > Kuiper > Smit > Boer > Bavuma > Nijhuis
+  tail                   : Wilson > Sharma > Whitfield > Dijk
+  keeper                 : Veldman  (glove quality 83)
+  captain                : Nijhuis
+  coach painted          : 14 overs
+      · new ball: Daan van Dijk and Zak Wilson for 3 overs each
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
+      · middle: Pranav Sharma gets 4 overs on a turning pitch
+  left to the captain    : 36 overs
+  toss                   : bat (margin 0.011)
+
+--------------------------------------------------------------------------
+10. baseline, frontline quick exhausted   [balanced / sunny]
+--------------------------------------------------------------------------
+  XI changes vs baseline : none
+  attack                 : 2 pace, 3 spin  ->  Sharma(wristSpin 0.5), Wilson(medium -1.4), Nijhuis(fingerSpin -1.6), Dijk(fast -1.8), Whitfield(fingerSpin -3.0)
+  top seven              : Meer > Veldman > Kuiper > Smit > Nijhuis > Boer > Bavuma
+  tail                   : Wilson > Sharma > Whitfield > Dijk
+  keeper                 : Veldman  (glove quality 83)
+  captain                : Nijhuis
+  coach painted          : 10 overs
+      · new ball: Daan van Dijk and Zak Wilson for 3 overs each
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
+  left to the captain    : 40 overs
+  toss                   : bat (margin 0.027)
+
+--------------------------------------------------------------------------
+11. baseline, star batter exhausted   [balanced / sunny]
+--------------------------------------------------------------------------
+  XI changes vs baseline : none
+  attack                 : 2 pace, 3 spin  ->  Sharma(wristSpin 0.5), Dijk(fast 0.1), Wilson(medium -1.4), Nijhuis(fingerSpin -1.6), Whitfield(fingerSpin -3.0)
+  top seven              : Meer > Kuiper > Veldman > Smit > Nijhuis > Boer > Bavuma
+  tail                   : Wilson > Sharma > Whitfield > Dijk
+  keeper                 : Veldman  (glove quality 83)
+  captain                : Nijhuis
+  coach painted          : 10 overs
+      · new ball: Daan van Dijk and Zak Wilson for 3 overs each
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
+  left to the captain    : 40 overs
+  toss                   : bat (margin 0.027)
+
+--------------------------------------------------------------------------
+12. opposition weak vs spin   [balanced / sunny]
+--------------------------------------------------------------------------
+  XI changes vs baseline : none
+  attack                 : 2 pace, 3 spin  ->  Sharma(wristSpin 0.8), Dijk(fast 0.1), Nijhuis(fingerSpin -1.3), Wilson(medium -1.4), Whitfield(fingerSpin -2.6)
+  top seven              : Meer > Veldman > Kuiper > Nijhuis > Smit > Boer > Bavuma
+  tail                   : Wilson > Sharma > Whitfield > Dijk
+  keeper                 : Veldman  (glove quality 83)
+  captain                : Nijhuis
+  coach painted          : 10 overs
+      · new ball: Daan van Dijk and Zak Wilson for 3 overs each
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
+  left to the captain    : 40 overs
+  toss                   : bat (margin 0.027)
+
+--------------------------------------------------------------------------
+13. opposition weak vs pace   [balanced / sunny]
+--------------------------------------------------------------------------
+  XI changes vs baseline : IN  Vries, Boer   OUT Bavuma, Whitfield
+      in : Vries        bowl value    null (baseline    null)  runs/dismissal  30.7
+      in : Boer         bowl value   -2.86 (baseline   -3.21)  runs/dismissal  13.9
+      out: Bavuma       bowl value    null (baseline    null)  runs/dismissal  29.9
+      out: Whitfield    bowl value   -2.99 (baseline   -2.99)  runs/dismissal  12.1
+  attack                 : 3 pace, 2 spin  ->  Sharma(wristSpin 0.5), Dijk(fast 0.4), Wilson(medium -1.0), Nijhuis(fingerSpin -1.6), Boer(medium -2.9)
+  top seven              : Meer > Veldman > Kuiper > Smit > Nijhuis > Boer > Vries
+  tail                   : Boer > Wilson > Sharma > Dijk
+  keeper                 : Veldman  (glove quality 83)
+  captain                : Nijhuis
+  coach painted          : 10 overs
+      · new ball: Daan van Dijk and Zak Wilson for 3 overs each
+      · death: Pranav Sharma and Timo Nijhuis hold overs 47-50
+  left to the captain    : 40 overs
+  toss                   : bat (margin 0.027)
+
+==========================================================================
+every figure above comes from the shipped ball model via planMatchDay()

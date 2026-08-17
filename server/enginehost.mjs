@@ -13,6 +13,16 @@ export const ENGINE_VERSION = 'v3';
 export function makeHost() {
   const eng = makeEngine();
   eng.setTuning(true);
+  // THE BISECT HANDLE, ON THIS SIDE TOO. CLAUDE.md: a term is proven
+  // responsible by being turned off and re-measured, never by being reasoned
+  // about - and the engine already carries __foCoachOff for exactly that. The
+  // World Service needed its own way to reach it, because the question "did
+  // the match-day coach do this, or is it something else?" is asked of SERVER
+  // outcomes (a club's bank, a league table) at least as often as of engine
+  // ones. FO_COACH_OFF=1 puts the founding selector back for a whole run, in
+  // the host AND in the unmanaged-club sheets tick.mjs files. It changes
+  // nothing on disk and ships disabled.
+  if (process.env.FO_COACH_OFF) eng.ctx.__foCoachOff = true;
   vm.runInContext(`
 // THIS IS THE SERVED WORLD, so the served world's money applies. foWageOf
 // prices quality on a curve calibrated to THIS economy's income; a browser
@@ -388,6 +398,17 @@ globalThis.__svcCond = function (rid, slot, seasonNo, round) {
 globalThis.__svcDoctrine = function (rid, slot) {
   return JSON.stringify(window.__foPlanet.doctrineOf(rid, slot));
 };
+// THE MATCH-DAY COACH, reached by the umpire (engine/src/13-matchday-coach.js).
+// The same planMatchDay a phone calls when a manager presses Auto - so an
+// unmanaged club and a human asking for a suggestion get one answer from one
+// authority, which is the whole point of the file. Pure: it reads the squad it
+// is handed and nothing else, and returns a plan without touching the world.
+globalThis.__svcPlanMatchDay = function (reqJson) {
+  return JSON.stringify(window.planMatchDay(JSON.parse(reqJson)));
+};
+globalThis.__svcPublicScout = function (squadJson) {
+  return JSON.stringify(window.foMdcPublicScout(JSON.parse(squadJson)));
+};
 globalThis.__svcWorldCfg = function () {
   // the world's shape read from the SHIPPED build itself — regions, club
   // names and national hours come from the same code the phones run, so the
@@ -418,6 +439,8 @@ globalThis.__svcWorldCfg = function () {
   const cfg = vm.runInContext('__svcWorldCfg', eng.ctx);
   const cond = vm.runInContext('__svcCond', eng.ctx);
   const doct = vm.runInContext('__svcDoctrine', eng.ctx);
+  const mdc = vm.runInContext('__svcPlanMatchDay', eng.ctx);
+  const pubScout = vm.runInContext('__svcPublicScout', eng.ctx);
   const train = vm.runInContext('__svcTrain', eng.ctx);
   const der = vm.runInContext('__svcDerive', eng.ctx);
   const aged = vm.runInContext('__svcAgeDecline', eng.ctx);
@@ -505,6 +528,13 @@ globalThis.__svcWorldCfg = function () {
     // the sheet an unmanaged club's identity writes - the theatre reads the
     // very same table, so a replayed broadcast files the same doctrine
     doctrineFor(rid, slot) { return JSON.parse(doct(rid, slot)); },
+    // the coach: {team:{name,players}, pitch, weather, doctrine,
+    // oppositionScout, unavailable} -> {xi, battingOrder, captain, keeper,
+    // tossDecision, spells, explanation}
+    planMatchDay(req) { return JSON.parse(mdc(JSON.stringify(req || {}))); },
+    // the coarse opposition bands the scout page publishes to a manager, and
+    // the ONLY thing a bot is allowed to know about the other side
+    publicScout(squad) { return JSON.parse(pubScout(JSON.stringify(squad || []))); },
     // the 19 nations as the shipped client defines them
     worldConfig() { return JSON.parse(cfg()); }
   };

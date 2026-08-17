@@ -1,0 +1,29 @@
+=== LINEAR depth charge (SHIPPED) ===
+swap class                        n   coach won   edge%      SE       z    regret%
+ALL                             189     76.2%      6.87    0.64   10.75      4.66
+
+specialist -> all-rounder        15     86.7%      9.67    1.87    5.17      5.00
+all-rounder -> batsman           33     72.7%      5.76    1.60    3.59      5.09
+all-rounder -> bowler           141     75.9%      6.84    0.74    9.25      4.53
+
+READ IT LIKE THIS. A positive edge means the coach's side really was the
+better one. The bias question is whether the three rows DISAGREE: if the
+coach over-values all-rounders, then "specialist -> all-rounder" (where it
+kept the specialist) would look good while the two "all-rounder -> ..." rows
+(where it kept the all-rounder) would look bad. Symmetric rows mean no
+systematic role bias, whatever the overall accuracy.
+
+=== QUADRATIC depth charge (candidate, REJECTED) ===
+swap class                        n   coach won   edge%      SE       z    regret%
+ALL                             197     78.7%      7.64    0.65   11.77      4.89
+
+specialist -> all-rounder        17     64.7%      6.57    2.22    2.95      2.83
+all-rounder -> batsman           40     60.0%      2.77    1.21    2.29      5.00
+all-rounder -> bowler           140     85.7%      9.16    0.76   12.07      5.39
+
+READ IT LIKE THIS. A positive edge means the coach's side really was the
+better one. The bias question is whether the three rows DISAGREE: if the
+coach over-values all-rounders, then "specialist -> all-rounder" (where it
+kept the specialist) would look good while the two "all-rounder -> ..." rows
+(where it kept the all-rounder) would look bad. Symmetric rows mean no
+systematic role bias, whatever the overall accuracy.

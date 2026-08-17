@@ -1,0 +1,74 @@
+CALIBRATION: THE ENGINE'S FROZEN CONTRACT vs THE MATCH-DAY COACH
+
+300 matches per cell (CAL_CHECK_N default), same build throughout.
+coachOFF sets __foCoachOff on the VM: the founding selector, this build.
+
+== international
+                      golden  coachOFF   coachON     delta(ON-golden)
+firstInnings.mean       274.6    277.3    278.4    3.800
+firstInnings.stddev      53.1       55     54.6    1.500
+boundaryPctPerBall       8.79     8.94     8.95    0.160
+extrasPerInnings        22.37    22.56    22.35   -0.020
+rr.powerplay             4.85     4.85     5.36    0.510
+rr.middle                5.22     5.25     5.23    0.010
+rr.death                 6.95     7.15     6.79   -0.160
+allOutShare            0.2825     0.26   0.2933    0.011
+
+== flagship_clubs
+                      golden  coachOFF   coachON     delta(ON-golden)
+firstInnings.mean       250.6    253.9    253.8    3.200
+firstInnings.stddev      45.6     45.5     48.8    3.200
+boundaryPctPerBall       6.99     7.09      7.1    0.110
+extrasPerInnings        23.68    23.27    24.25    0.570
+rr.powerplay             4.39     4.37     4.79    0.400
+rr.middle                4.87     4.91     4.85   -0.020
+rr.death                 6.07     6.29     6.05   -0.020
+allOutShare            0.3065   0.2967     0.27   -0.036
+
+== division_two
+                      golden  coachOFF   coachON     delta(ON-golden)
+firstInnings.mean       235.3      238    237.2    1.900
+firstInnings.stddev      35.3     33.8     37.4    2.100
+boundaryPctPerBall       5.07     5.15     5.08    0.010
+extrasPerInnings        29.06       29    28.89   -0.170
+rr.powerplay             4.02     4.08     4.32    0.300
+rr.middle                4.65     4.71     4.71    0.060
+rr.death                 5.56     5.57     5.26   -0.300
+allOutShare            0.2567   0.2467   0.2333   -0.023
+
+== international_vs_division_two
+                      golden  coachOFF   coachON     delta(ON-golden)
+firstInnings.mean       259.5      259    261.2    1.700
+firstInnings.stddev      89.4     90.7     96.6    7.200
+boundaryPctPerBall       6.55     6.61     6.65    0.100
+extrasPerInnings        26.95     26.9    26.23   -0.720
+rr.powerplay             4.59     4.51     4.87    0.280
+rr.middle                4.94     4.96     4.99    0.050
+rr.death                 6.53     6.52     6.29   -0.240
+allOutShare            0.3122   0.3167   0.2867   -0.025
+
+pinned-match fingerprint  golden 373/6   coachOFF 373/6   coachON 352/4
+seed-determinism          coachOFF true   coachON true
+
+--------------------------------------------------------------------------
+AFTERWARDS: THE GOLDEN WAS RE-RECORDED (13,336 matches, 3,334 a cell).
+
+The "golden" column above is the record as it stood before this work - the
+founding selector's cricket. It is kept here because it is the before half of
+a before/after, and because the proof that only SELECTION moved is that
+CAL_COACH_OFF=1 reproduced it exactly, fingerprint 373/6 included.
+
+The new record, written by `node tools/calibration.mjs`:
+
+  cell                            1st    pp    mid  death  allout  extras
+  international                 276.8  5.34   5.18   6.80   0.296   22.48
+  flagship_clubs                250.1  4.76   4.79   5.87  0.2924   23.99
+  division_two                  235.1  4.25   4.67   5.27   0.249   28.76
+  international_vs_division_two 263.2  5.00   5.00   6.34   0.296   26.45
+  engineVersion v3   perCell 3334   fingerprint 352/4   deterministic true
+
+engineVersion is deliberately NOT bumped: v3 names the BALL MODEL, and the
+ball model did not change. The powerplay rate is the one number that moved
+with intent, in every cell, and it is the batting order.
+
+  node tools/calibration-check.mjs   -> PASS (300 matches/cell)

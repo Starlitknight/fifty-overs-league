@@ -38,6 +38,20 @@ if (process.env.CAL_SET) {
   eng.applyCal(patch);
 }
 
+// AND THE SECOND BISECT HANDLE, for the same reason and by the same law.
+// A calibration cell is a MATCH, and a match begins by choosing an eleven —
+// so this harness measures the ball model and the SELECTOR together, and
+// cannot by itself tell you which of the two moved. When the match-day coach
+// (engine/src/13-matchday-coach.js) landed, the gate reported drift; the only
+// honest way to answer "did the engine change?" is to re-run with the coach
+// off and see whether the golden comes back.
+//
+//   CAL_COACH_OFF=1 node tools/calibration-check.mjs
+//
+// __foCoachOff is the same flag engine/src/00-core.js pickXI reads, set here
+// inside the VM before a ball is bowled. Nothing is written; no build changes.
+if (process.env.CAL_COACH_OFF) eng.ctx.__foCoachOff = true;
+
 // deep-copy a baked squad and scale every numeric skill — pure, deterministic
 vm.runInContext(`
 // AND THE SCALED MAN IS RE-DERIVED, which he was not, and that quietly broke
@@ -160,7 +174,7 @@ function aggregate(rows) {
 
 const golden = {
   engineVersion: 'v3',
-  note: 'Frozen behavioural record of the shipped engine. Descriptive, not aspirational - EXCEPT the international cell, which calibration-check additionally holds to real men\'s-ODI bands, because international data is the only cricket the model was fitted against. The engine has NO T20 mode (newMatch is 50-over only); T20 calibration is intentionally absent, not omitted by error.',
+  note: 'Frozen behavioural record of the shipped engine. Descriptive, not aspirational - EXCEPT the international cell, which calibration-check additionally holds to real men\'s-ODI bands, because international data is the only cricket the model was fitted against. The engine has NO T20 mode (newMatch is 50-over only); T20 calibration is intentionally absent, not omitted by error. A CALIBRATION CELL IS A MATCH, AND A MATCH BEGINS BY CHOOSING AN ELEVEN, so this record measures the ball model AND the selector together. It was re-recorded when the match-day coach (engine/src/13-matchday-coach.js) replaced the founding pickXI; the ball model was NOT touched, and the proof is that CAL_COACH_OFF=1 reproduces the previous record exactly, fingerprint 373/6 included. What moved was the powerplay run-rate, up 0.28 to 0.51 an over in all four cells, with the death rate down and first-innings totals within 4 runs: the coach opens with men who can open, so the runs arrive earlier rather than in greater number. Bisect any future drift the same way before believing it is the engine.',
   config: { pitch: 'balanced', weather: 'Sunny', tuned: true, perCell: PER_CELL, seedStep: 7,
     tiers: { international: 46000, flagship_clubs: 40860, division_two: 29930 },
     seedBase: { international: 11000, flagship_clubs: 22000, division_two: 33000, international_vs_division_two: 44000 } },

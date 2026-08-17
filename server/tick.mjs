@@ -137,24 +137,64 @@ async function playRound(pool, host, country, season, round, opts) {
     };
     const H = sideOf(home), A = sideOf(away);
     const tieOrders = {};
-    const fileSheet = (club, side) => {
-      let o = ordersMap[club.name];
-      if (!o) return;
-      if (side.gone.length) o = coverSheet(o, side.players, side.gone);
-      if (o) tieOrders[club.name] = o;
-    };
-    fileSheet(home, H); fileSheet(away, A);
-    for (const club of [home, away]) {
-      if (tieOrders[club.name]) continue;                  // a manager's sheet stands
-      const doc = host.doctrineFor(country, club.slot);    // the planet's own table
-      if (doc) tieOrders[club.name] = doc;
-    }
     // the fixture's conditions: the home nation's climate, tilted by the home
     // club's own groundsman - deterministic, so the forecast a phone printed
     // is the pitch the umpire rolls out, and a healed day replays itself
     const cond = host.condFor(country, hs, season.season_no, round);
     // ...unless the home club prepared its own square. The sky is nobody's.
+    // Read BEFORE any sheet is drawn up, because the surface a club is
+    // standing on is the first thing its coach needs to know.
     const pitch = called.get(hs | 0) || cond.pitch;
+    const fileSheet = (club, side) => {
+      let o = ordersMap[club.name];
+      if (!o) return;
+      // a manager who lost a man to his country gets a replacement chosen for
+      // TODAY's conditions rather than off a rating column (nations.mjs)
+      if (side.gone.length) o = coverSheet(o, side.players, side.gone,
+        { host: host, pitch: pitch, weather: cond.weather });
+      if (o) tieOrders[club.name] = o;
+    };
+    fileSheet(home, H); fileSheet(away, A);
+    // ---- AN UNMANAGED CLUB GETS A COACHED SHEET -----------------------------
+    // It used to get its doctrine and nothing else - four numbers describing
+    // how it likes to bat - and the engine then picked its side with the crude
+    // fallback, blind to the pitch it was standing on. It now files the same
+    // plan a manager would get from Auto: the coach's XI, batting order,
+    // keeper, captain and a deliberately partial bowling plan, with the club's
+    // doctrine riding along as the style prior it always was. A MANAGER'S
+    // SHEET STILL STANDS - this only fills the clubs nobody is managing.
+    for (const club of [home, away]) {
+      if (tieOrders[club.name]) continue;                  // a manager's sheet stands
+      const doc = host.doctrineFor(country, club.slot);    // the planet's own table
+      let sheet = doc ? { ...doc } : {};
+      // the same bisect handle the host carries (enginehost.mjs): with
+      // FO_COACH_OFF set, an unmanaged club files its doctrine and nothing
+      // else, which is exactly what it filed before this work
+      try {
+        if (process.env.FO_COACH_OFF) throw new Error('coach-off');
+        // the men actually available - anybody away on international duty has
+        // already been taken out of side.players, so the coach never picks him
+        const side = club === home ? H : A;
+        const oppSide = club === home ? A : H;
+        const plan = host.planMatchDay({
+          team: { name: club.name, players: side.players },
+          pitch: pitch, weather: cond.weather, doctrine: doc,
+          // ONLY WHAT THE SCOUT PAGE PUBLISHES about the other side. A bot may
+          // not read an opponent's hidden attributes, because a human manager
+          // cannot: publicScout returns the same coarse bands the client draws.
+          oppositionScout: host.publicScout(oppSide.players || [])
+        });
+        if (plan && plan.xi && plan.xi.length === 11) {
+          sheet.xi = plan.xi;
+          sheet.batOrder = plan.battingOrder;
+          sheet.captain = plan.captain;
+          sheet.keeper = plan.keeper;
+          sheet.spells = plan.spells;
+          sheet.tossDecision = plan.tossDecision;
+        }
+      } catch (eMdc) { /* a squad the coach cannot read keeps its doctrine */ }
+      if (Object.keys(sheet).length) tieOrders[club.name] = sheet;
+    }
     const resultJson = host.runMatch({ name: home.name, players: H.players }, { name: away.name, players: A.players }, pitch, seed, tieOrders, cond.weather);
     if (!resultJson) throw new Error('engine failed to complete ' + id);
     // the living state these men carried into the match, banked with it:

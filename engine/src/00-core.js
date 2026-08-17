@@ -2415,6 +2415,53 @@ function pickXI(team){
     }
   }catch(e){}
   const P=team.players.slice();
+  // ---- THE COACH PICKS THE SIDE (13-matchday-coach.js) ---------------------
+  // What stood here was the whole of pre-match thought: the best-batting
+  // keeper, the five highest threat+control, the best remaining bats. It could
+  // not see the pitch, the sky, a man's form or his tiredness - while the ball
+  // model it feeds reads every one of them, and withForm() then made the
+  // already-chosen eleven tired. The coach measures each cricketer against the
+  // REAL ball model in today's conditions and searches the elevens
+  // compositionally; this is the same authority the bots and the Auto button
+  // use, so an unmanaged club and a human pressing Suggest get one answer.
+  //
+  // It is a FALLBACK still: a filed sheet of eleven was honoured above and
+  // never reaches here.
+  // THE BISECT HANDLE (CLAUDE.md: a term is proven responsible by being turned
+  // off and re-measured, never by being reasoned about). Setting __foCoachOff
+  // inside a test VM puts the founding selector back without a rebuild, which
+  // is how the coach's effect on scores and on the golden masters was measured.
+  //
+  // AND THE ANSWER IS CACHED FOR THE LIFE OF THE MATCH, which is both faster
+  // and more correct. pickXI is asked the same question fourteen times in one
+  // fixture - the resolver, the fielding side, the scorecard - and the coach
+  // measures every man in the squad against the ball model each time it is
+  // asked. Measured on a green top: 66ms a match became 200ms. Cached, it is
+  // asked twice, once per side.
+  //
+  // The cache hangs off M, so it dies with the match and can never serve a
+  // stale eleven to the next one - and a side that changed between fixtures
+  // (a transfer, a week's training) is re-measured because the M is new.
+  // Correctness, not just speed: a side picks ONE eleven and then plays it.
+  try{
+    if(typeof planMatchDay==='function'&&P.length>11&&!(typeof __foCoachOff!=='undefined'&&__foCoachOff)){
+      const inM=(typeof M!=='undefined'&&M)?M:null;
+      if(inM&&inM.__xiCache&&inM.__xiCache[team.name])return inM.__xiCache[team.name].slice();
+      const cond=inM?{pitch:inM.pitch,weather:(inM.meta&&inM.meta.weather)||'sunny'}:{pitch:'balanced',weather:'sunny'};
+      const plan=planMatchDay({team:{name:team.name,players:P},pitch:cond.pitch,weather:cond.weather,
+        doctrine:(team.doctrine||null)});
+      if(plan&&plan.battingOrder&&plan.battingOrder.length===11){
+        const by={};P.forEach(p=>{by[p.name]=p});
+        const picked=plan.battingOrder.map(n=>by[n]).filter(Boolean);
+        // the coach hands back a batting ORDER, and that order is the order:
+        // mpos is a generated hint, not a decision anybody made today
+        if(picked.length===11){
+          if(inM){if(!inM.__xiCache)inM.__xiCache={};inM.__xiCache[team.name]=picked.slice()}
+          return picked;
+        }
+      }
+    }
+  }catch(eMdc){}
   const kps=P.filter(p=>p.keeper).sort((a,b)=>b.bat-a.bat);
   const keeper=kps[0]||P.sort((a,b)=>b.bat-a.bat)[0];
   const bowlers=P.filter(p=>p.bowlType&&p.key!==keeper).sort((a,b)=>(b.threat+b.control)-(a.threat+a.control));
@@ -4703,7 +4750,10 @@ function bowlOpts(sel){
   return '<option value="">-</option>'+bs.map(p=>`<option ${sel===p.name?'selected':''} value="${esc(p.name)}">${esc(p.name)} (${esc(shortBT(p))})</option>`).join('');
 }
 function compilePlan(){
-  const plan=new Array(50).fill(null);const tot={};const warns=[];
+  // WARNINGS ARE FAULTS; NOTES ARE DECISIONS. A double-booked over is a fault.
+  // An over left open is a decision - the captain's - so it travels in its own
+  // channel and nothing renders it in the warning colour.
+  const plan=new Array(50).fill(null);const tot={};const warns=[];const notes=[];
   for(const end of ['north','south']){
     for(const sp of App.orders.spells[end]){
       if(!sp.bowler||!sp.first||!sp.n)continue;
@@ -4720,9 +4770,23 @@ function compilePlan(){
   for(const b in tot)if(tot[b]>10)warns.push(`${b}: ${tot[b]} overs planned (max 10)`);
   for(let o=0;o<49;o++)if(plan[o]&&plan[o]===plan[o+1])warns.push(`${plan[o]}: consecutive overs ${o+1}-${o+2}`);
   const covered=plan.filter(Boolean).length;
-  if(covered<50)warns.push(`Only ${covered}/50 overs assigned - AI fills gaps`);
+  // A PARTIAL PLAN IS NOT AN ERROR, AND MUST NOT READ LIKE ONE. This said
+  // "Only 18/50 overs assigned - AI fills gaps", which tells a manager he has
+  // failed to finish a form. He has not: the overs he leaves open are the
+  // overs his captain gets to react in - a stand that will not break, a
+  // bowler who has lost his length, a chase that has changed. The coach
+  // leaves them deliberately (13-matchday-coach.js), and a fully painted
+  // fifty is usually the WORSE sheet because it deletes captaincy.
+  //
+  // THE SENTENCE LIVES HERE AND NOWHERE ELSE. Two pages render this line
+  // (league/08-orders.js and 07-up2.js) and they said different things about
+  // the same sheet - one called it a warning, the other a note. Both now read
+  // this channel, so the wording cannot drift again.
+  notes.push(covered>=50
+    ? '50/50 overs planned · every over is yours'
+    : `Coach has specified ${covered} overs · captain adapts the remaining ${50-covered}`);
   App.orders.compiled=plan;App.orders.tot=tot;
-  return{plan,tot,warns,covered};
+  return{plan,tot,warns,notes,covered,open:50-covered};
 }
 function plannedBowler(inn,over){ // consumed by engine patch P1/P3; P16: per-team orders map
   if(typeof App==='undefined'||!UI.usePlan)return null;
@@ -4762,7 +4826,45 @@ function applyPreset(kind){
   pgOrders();
 }
 function suggestOrders(){
-  const t=userTeam();const xi=pickXI(t);
+  const t=userTeam();
+  // ---- AUTO IS THE COACH (13-matchday-coach.js) ----------------------------
+  // This used to hand back the fallback XI in mpos order, name xi[0] captain
+  // whoever he was, and paint the same four template spells at both ends
+  // whatever the pitch was doing. It now asks the ONE authority - the same
+  // planMatchDay the umpire runs for every unmanaged club in the world - so a
+  // manager pressing Auto and a bot in the same conditions get the same side.
+  //
+  // AND THE PLAN IT PAINTS IS DELIBERATELY PARTIAL. The overs it leaves empty
+  // are overs the in-match captain gets to react in; a fully painted fifty
+  // deletes captaincy as a skill. compilePlan reports what is covered and the
+  // orders page says who covers the rest.
+  try{
+    const pend=App.pending||{};
+    // THE OPPOSITION IS READ THE WAY THE SCOUT PAGE READS IT AND NO OTHER WAY.
+    // App.pending names the other club by INDEX (oppIx) - an earlier cut of
+    // this asked for pend.opp.players, a field that has never existed on
+    // App.pending, so the scout silently arrived as null and the coach planned
+    // every match blind. foMdcPublicScout takes the raw squad and returns only
+    // the coarse bands a manager is shown; the raw skills go no further.
+    const oppT=(pend.oppIx!=null&&GD.teams)?GD.teams[pend.oppIx]:null;
+    const plan=planMatchDay({team:{name:t.name,players:t.players},
+      pitch:pend.pitch||'balanced',weather:pend.weather||'sunny',
+      oppositionScout:(oppT&&oppT.players)?foMdcPublicScout(oppT.players):null});
+    if(plan&&plan.xi&&plan.xi.length===11){
+      App.orders.xi=plan.xi.slice();
+      App.orders.batOrder=plan.battingOrder.slice();
+      App.orders.captain=plan.captain;
+      App.orders.keeper=plan.keeper;
+      App.orders.spells=plan.spells;
+      if(plan.tossDecision)App.orders.tossDecision=plan.tossDecision;
+      // how many overs are left open is NOT stashed here: compilePlan counts
+      // the painted overs off the spells themselves, so a manager who then
+      // adds or deletes a spell gets a line that is still true
+      pgOrders();
+      return;
+    }
+  }catch(eSg){}
+  const xi=pickXI(t);
   App.orders.batOrder=xi.map(p=>p.name);
   App.orders.captain=xi[0].name;
   App.orders.keeper=(xi.find(p=>p.keeper)||xi[0]).name;

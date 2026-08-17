@@ -177,7 +177,16 @@
     var covered = v.covered || 0;
     var bad = (v.warns || []).filter(function (w) { return /double-booked|consecutive|max 10|not a/.test(w); });
     return "<div class='fo-og-pal'>" + chips + "</div>" + rows + foOrdFieldRows() +
-      "<div class='fo-os-tot'>" + tchips + "<span class='fo-os-cov'>" + covered + "/50 overs planned" + (covered < 50 ? " · the AI captain covers the rest" : "") + "</span></div>" +
+      // A PARTIAL PLAN IS A DECISION, NOT A SHORTFALL. The coach paints the
+      // overs it is surer of than the captain - the new ball, the death, a
+      // turning middle - and leaves the rest open on purpose, because an over
+      // painted is an over the captain cannot react in. So the line says who
+      // has the rest, in those words, and never in the warning colour. The
+      // words come from compilePlan's `notes`, which is the one place they
+      // are written - 07-up2.js renders the same channel.
+      "<div class='fo-os-tot'>" + tchips + "<span class='fo-os-cov'>" +
+        E((v.notes || [])[0] || (covered + "/50 overs planned")) +
+      "</span></div>" +
       (bad.length ? "<div class='fo-os-warn'>&#9888; " + bad.map(E).join(" · ") + "</div>" : "");
   }
   function foOrdBenchSheet(outNm) {
