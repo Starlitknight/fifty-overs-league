@@ -31,9 +31,23 @@ const f = (x, n = 2) => (x == null || !isFinite(x) ? '   -  ' : (+x).toFixed(n).
 const winOf = r => r.winner === 'A' ? 1 : (r.winner ? 0 : 0.5);
 const set = expr => vm.runInContext(expr, H.ctx);
 
+// --het: a REALISTIC varied attack instead of five clones. Real squads carry
+// a strike quick, a container, a death man, a frontline spinner and a filler
+// — the score gaps between them are what give a captain something to misread,
+// and the audit measured captaincy at ~0 on artificially uniform attacks.
+const HET_SLOTS = [
+  { slot: 6, skills: { wicket: 64, economy: 52, moveTurn: 66 } },
+  { slot: 7, skills: { wicket: 58, economy: 62 } },
+  { slot: 8, talents: ['deathSpecialist'], skills: { wicket: 50, economy: 66, discipline: 66 } },
+  { slot: 9, skills: { wicket: 61, economy: 55, variation: 63 } },
+  { slot: 10, skills: { wicket: 55, economy: 58 } }
+];
+const HET = has('het');
+
 // one cell: side A with the armband at `capt`, everything else per opts
 function cell(capt, n, sideOpts, runOpts, seed0) {
   const o = JSON.parse(JSON.stringify(sideOpts || {}));
+  if (HET && !o.noHet) o.slots = (o.slots || []).concat(JSON.parse(JSON.stringify(HET_SLOTS)));
   o.slots = (o.slots || []).concat([{ slot: 0, capt }]);
   const A = H.side('A', o);
   const B = H.side('B', { slots: [{ slot: 0, capt: 50 }],
