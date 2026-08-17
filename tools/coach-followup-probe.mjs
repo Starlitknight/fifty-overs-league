@@ -249,4 +249,56 @@ if (has('capt') || has('all')) {
   }
 }
 
+// ---------------------------------------------------------------------------
+// §6 THE COMPOSITION DECISION, DEMONSTRATED. A twelve-man pool where exactly
+// one man sits out: batting depth (a 56-level spare bat) or a sixth bowling
+// option, across frontline fatigue x sixth quality. The insurance formula's
+// behavioural test: fresh sides should prefer the bat unless the option is
+// genuinely good; leggy sides should reach for the extra bowler.
+// ---------------------------------------------------------------------------
+if (has('composition') || has('all')) {
+  say('\n=== §6 BATTING DEPTH v SIXTH OPTION (planMatchDay, exact) ===');
+  const CV = `(function(){
+    function mk(spec){
+      var t=GD.teams[0],src=t.players,b=null;
+      for(var i=0;i<src.length;i++){var p=src[i];
+        if(spec.kind==='keeper'&&p.keeper){b=p;break}
+        if(spec.kind==='bowler'&&p.bowlType&&!p.keeper){b=p;break}
+        if(spec.kind==='bat'&&!p.bowlType&&!p.keeper){b=p;break}}
+      var p=JSON.parse(JSON.stringify(b||src[0]));
+      p.name=spec.name;p.talents=[];p.formWord='steady';p.formIx=3;
+      p.fatigue=spec.fatigue||'rested';p.fatWord=p.fatigue;p.keeper=spec.kind==='keeper';
+      p.capt=40;p.mpos=spec.mpos||5;
+      var lvl=spec.level==null?50:spec.level;
+      for(var k in p.skills)p.skills[k]=lvl;
+      p.bat=lvl;p.power=lvl;p.rotation=lvl;p.temperament=lvl;p.vsPace=lvl;p.vsSpin=lvl;p.field=lvl;p.keeping=lvl;
+      p.threat=spec.bowl==null?0:spec.bowl;p.control=spec.bowl==null?0:spec.bowl;
+      if(spec.bowlType){p.bowlType=spec.bowlType;p.bowlTypeFull=spec.bowlType;}
+      else{p.bowlType=null;p.bowlTypeFull='none';}
+      p.rating=lvl*1000;return p;}
+    var pool=function(f,sb){return [
+      mk({name:'Bat A',kind:'bat',level:62,mpos:1}),mk({name:'Bat B',kind:'bat',level:60,mpos:2}),
+      mk({name:'Bat C',kind:'bat',level:61,mpos:3}),mk({name:'Bat D',kind:'bat',level:58,mpos:4}),
+      mk({name:'SpareBat',kind:'bat',level:56,mpos:5}),mk({name:'Keeper',kind:'keeper',level:52,mpos:7}),
+      mk({name:'Front1',kind:'bowler',bowlType:'fast',level:44,bowl:60,mpos:9,fatigue:f[0]}),
+      mk({name:'Front2',kind:'bowler',bowlType:'fastMedium',level:44,bowl:58,mpos:9,fatigue:f[1]}),
+      mk({name:'Front3',kind:'bowler',bowlType:'medium',level:43,bowl:56,mpos:10,fatigue:f[2]}),
+      mk({name:'Front4',kind:'bowler',bowlType:'fingerSpin',level:44,bowl:57,mpos:10}),
+      mk({name:'Front5',kind:'bowler',bowlType:'wristSpin',level:43,bowl:55,mpos:11}),
+      mk({name:'SixthOpt',kind:'bowler',bowlType:'medium',level:43,bowl:sb,mpos:6})];};
+    var out=[];
+    var cases=[['fresh',['rested','rested','rested']],['one weary',['weary','rested','rested']],
+               ['three weary',['weary','weary','weary']]];
+    for(var ci=0;ci<cases.length;ci++)for(var s=0;s<3;s++){
+      var sb=[42,52,58][s];
+      var plan=planMatchDay({team:{name:'V',players:pool(cases[ci][1],sb)},pitch:'balanced',weather:'sunny',doctrine:null});
+      out.push({state:cases[ci][0],sixth:sb,plays:plan.battingOrder.indexOf('SixthOpt')>=0?'sixth':'bat'});
+    }
+    return JSON.stringify(out);
+  })()`;
+  const rows = JSON.parse(vm.runInContext(CV, H.ctx));
+  for (const r of rows) say(`  ${r.state.padEnd(12)} sixth ${r.sixth}: seat 11 -> ${r.plays === 'sixth' ? 'SIXTH OPTION' : 'spare bat'}`);
+  out.composition = rows;
+}
+
 if (has('json')) console.log(JSON.stringify(out, null, 1));

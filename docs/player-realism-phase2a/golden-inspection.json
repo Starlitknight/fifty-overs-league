@@ -1,0 +1,146 @@
+[
+ {
+  "mode": "flagsOFF",
+  "fx": "balanced/42",
+  "toss": true,
+  "balls": true,
+  "innings": true,
+  "firstDiff": -1
+ },
+ {
+  "mode": "flagsOFF",
+  "fx": "balanced/11",
+  "toss": true,
+  "balls": true,
+  "innings": true,
+  "firstDiff": -1
+ },
+ {
+  "mode": "flagsOFF",
+  "fx": "balanced/7",
+  "toss": true,
+  "balls": true,
+  "innings": true,
+  "firstDiff": -1
+ },
+ {
+  "mode": "flagsOFF",
+  "fx": "dry/42",
+  "toss": true,
+  "balls": true,
+  "innings": true,
+  "firstDiff": -1
+ },
+ {
+  "mode": "flagsOFF",
+  "fx": "dry/11",
+  "toss": true,
+  "balls": true,
+  "innings": true,
+  "firstDiff": -1
+ },
+ {
+  "mode": "flagsOFF",
+  "fx": "dry/7",
+  "toss": true,
+  "balls": true,
+  "innings": true,
+  "firstDiff": -1
+ },
+ {
+  "mode": "flagsOFF",
+  "fx": "green/42",
+  "toss": true,
+  "balls": true,
+  "innings": true,
+  "firstDiff": -1
+ },
+ {
+  "mode": "flagsOFF",
+  "fx": "green/11",
+  "toss": true,
+  "balls": true,
+  "innings": true,
+  "firstDiff": -1
+ },
+ {
+  "mode": "flagsOFF",
+  "fx": "green/7",
+  "toss": true,
+  "balls": true,
+  "innings": true,
+  "firstDiff": -1
+ },
+ {
+  "mode": "flagsON",
+  "fx": "balanced/42",
+  "toss": true,
+  "balls": false,
+  "innings": false,
+  "firstDiff": 69
+ },
+ {
+  "mode": "flagsON",
+  "fx": "balanced/11",
+  "toss": true,
+  "balls": false,
+  "innings": false,
+  "firstDiff": 94
+ },
+ {
+  "mode": "flagsON",
+  "fx": "balanced/7",
+  "toss": true,
+  "balls": false,
+  "innings": false,
+  "firstDiff": 42
+ },
+ {
+  "mode": "flagsON",
+  "fx": "dry/42",
+  "toss": true,
+  "balls": false,
+  "innings": false,
+  "firstDiff": 18
+ },
+ {
+  "mode": "flagsON",
+  "fx": "dry/11",
+  "toss": true,
+  "balls": false,
+  "innings": false,
+  "firstDiff": 100
+ },
+ {
+  "mode": "flagsON",
+  "fx": "dry/7",
+  "toss": true,
+  "balls": false,
+  "innings": false,
+  "firstDiff": 36
+ },
+ {
+  "mode": "flagsON",
+  "fx": "green/42",
+  "toss": true,
+  "balls": false,
+  "innings": false,
+  "firstDiff": 20
+ },
+ {
+  "mode": "flagsON",
+  "fx": "green/11",
+  "toss": true,
+  "balls": false,
+  "innings": false,
+  "firstDiff": 65
+ },
+ {
+  "mode": "flagsON",
+  "fx": "green/7",
+  "toss": true,
+  "balls": false,
+  "innings": false,
+  "firstDiff": 37
+ }
+]
