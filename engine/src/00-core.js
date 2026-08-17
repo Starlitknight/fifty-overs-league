@@ -3196,12 +3196,26 @@ var FO_FLD={
   // round-trips). Flags for the A/B: __foFldKG/__foFldK set T=I=k (the
   // single-slope family), __foTgG/__foTgC set T alone. Frozen values
   // chosen by measurement in docs/fielding-realism/REPORT.md.
-  gT:1.0,gI:1.0,   // ground: team knob, identity knob
-  cT:1.0,cI:1.0    // catching (outfielders only)
+  // FROZEN AT T=I (the single-slope family) after the two-term anchor was
+  // tried and REFUTED by measurement: with T<I the algebra makes the XI's
+  // total effective skill depend only on T (the mean-anchor telescopes),
+  // so a signed star raises the team mean and taxes his ten teammates -
+  // measured, one elite fielder's paired value fell from +5.0 to +0.34
+  // runs at T=0.3 even with I=1. Per-man honesty and team magnitude
+  // cannot be decoupled by any linear mechanism; the frozen pair is the
+  // measured balance point on that frontier (grid in the report): the
+  // 40->80 team band falls 65.6 -> 40.2 (-39%), 20->95 stays dramatic at
+  // 68, a level-20 side fumbles 8.6 times an innings instead of 25.6, and
+  // one elite fielder keeps ~2.3 runs of visible value. The general
+  // (T, I) form is kept because the negative result is worth more than
+  // the four bytes it costs.
+  gT:0.35,gI:0.35, // ground: team knob, identity knob
+  cT:0.55,cI:0.55  // catching (outfielders only)
 };
 // the effective skill entering a fielding contest: see FO_FLD block above
 function foFldEff(raw,mean,par,T,I){
   if(T===1&&I===1)return raw;
+  if(T===I)return par+T*(raw-par);   // slope around par; the mean cancels
   return par+T*(mean-par)+I*(raw-mean);
 }
 // the fielding XI's mean ground/catching level, cached per innings; the
