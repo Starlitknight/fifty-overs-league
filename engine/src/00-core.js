@@ -1554,7 +1554,15 @@ function foFatProject(p,bowlOvers,atOver){
 //              20->95 gap GROWING when noise was switched off). Anchoring is
 //              the real cricket failure and it cancels the accidental gift:
 //              the tiring man stays on, and the tank makes that expensive.
-const FO_CAPT={amp:9,anchor:6,fieldSlip:0.55,orgDot:0.012,orgFour:0.010};
+//              Sized by sweep at N=2000 paired seeds on the varied attack
+//              (scratch anchor-sweep, 20v95): anchor 6 gave 4.30±0.72 runs,
+//              anchor 9 gave 4.67±0.73 and +4.9±1.1 win pts; raising amp to
+//              11 instead LOST run value both ways (4.06 / 3.68) because
+//              more noise is more churn. 9 is also the honest ceiling: at
+//              captaincy 20 the incumbent bias then equals the reading
+//              noise itself - beyond that the bias would outweigh what the
+//              captain can even perceive, which is caricature.
+const FO_CAPT={amp:9,anchor:9,fieldSlip:0.55,orgDot:0.012,orgFour:0.010};
 function foCaptErr(capt){
   const c=Math.max(1,Math.min(99,capt||50));
   return (102-c)/82;                       // 1.0 at 20, 0.27 at 80, 0.085 at 95
