@@ -298,4 +298,25 @@ re-blessed** — that waits for this model to be accepted at review.
 
 ## 15. Regressions, suites, A/B proof
 
-<!-- SUITES -->
+On the final head (build `20260818-0058-59f1ce`):
+
+- **Engine: 487/488.** The single red is the golden-master replay —
+  expected and deliberate: gameplay changed, goldens held for review.
+- One source-shape test followed the code it guards: the
+  ground-contest assertion ("one comparison, no thresholds") now
+  matches the line with the slope in it — the slope changes what the
+  number *is*, never how the contest works. Fielding-contest suite
+  9/9.
+- **Server: 437/437** (`--test-concurrency=1`). The living fold and
+  settles never see the fielding constants.
+- **Match-Day Coach: 32/32** with the re-priced FIELD_RUNS.
+- **Deterministic repeat: 3/3** bit-identical — the slopes are pure
+  functions of skill; no new randomness anywhere.
+- **The A/B proof, exact**: with `__foFldK=1;__foFldKG=1` the frozen
+  build reproduces the pre-fielding golden masters **9/9 bit-for-bit**
+  — OLD and NEW are one build, one switch, identical seeds, and the
+  inertness of the mechanism at slope 1 was proven twice more along
+  the way (replay green on both instrumented pre-freeze builds).
+
+Not merged, not deployed, goldens held. The branch is a complete,
+measured proposal awaiting review.
