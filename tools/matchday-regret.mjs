@@ -169,6 +169,19 @@ for (const sq of squads) {
     const outAR2 = best([...picked].filter(isAR), n => -cards[n].rpd);
     if (inBowl && outAR2) trials.push({ cls: 'all-rounder -> bowler', out: outAR2, in: inBowl });
 
+    // THE BAT-v-FIELD CROSSOVER (Phase 2B): the picked batsman with the worst
+    // hands out, the omitted batsman with the best hands in. This is the swap
+    // FIELD_RUNS prices, and the one the fielding recalibration re-priced -
+    // if the coach at 0.95 is over- or under-selecting fielders on real
+    // squads, this row's agreement is where it shows.
+    const fldOf = n => { const p = by[n]; if (!p) return 50;
+      return ((p.field || (p.skills && p.skills.fielding) || 50)
+            + ((p.skills && p.skills.catching) || 50)) / 2; };
+    const inFld = best(omitted.filter(isBat), n => fldOf(n));
+    const outFld = best([...picked].filter(isBat), n => -fldOf(n));
+    if (inFld && outFld && fldOf(inFld) > fldOf(outFld) + 4)
+      trials.push({ cls: 'bat-v-field crossover', out: outFld, in: inFld });
+
     for (const t of trials) {
       const alt = plan.xi.filter(n => n !== t.out).concat([t.in]);
       if (alt.length !== 11) continue;
