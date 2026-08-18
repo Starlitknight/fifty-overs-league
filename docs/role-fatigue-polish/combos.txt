@@ -1,0 +1,10 @@
+between-match load per appearance (steady daily state = load x 1.857):
+  specialist bat + captain        12.0   steady 22.3
+  fast bowler + captain           36.5   steady 67.8
+  spinner + captain               25.5   steady 47.4
+  wicketkeeper + captain          18.0   steady 33.4
+  wicketkeeper-batter + captain   19.0   steady 35.3
+  (fast bowler, no armband)       32.5   steady 60.4
+  (keeper, no armband)            14.0   steady 26.0
+in-match keeper-captain v split duties (N=300 paired):
+  win delta -0.2±1.0 pts; keeper bat delta 0.37±0.66 runs
