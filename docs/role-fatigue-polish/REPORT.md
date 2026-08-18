@@ -239,4 +239,9 @@ three surfaces).
   3.20±0.82 — healthy, skill dominant.
 - Environment: 269.2/50ov v the fielding build's 270.1, wickets
   7.15 v 7.22, phases within one SE.
-- <!-- FINAL-GATES -->
+- Suites on the exact final head (build `20260818-1752-2ff772`):
+  engine **487/488** (the golden replay the single expected red —
+  gameplay changed, goldens held for review), server **437/437**,
+  calibration-check **every band passes** with pinned-fingerprint
+  drift only (337/7 v 317/2 — identical to the pre-instrumentation
+  build, confirming the flag changed nothing).
