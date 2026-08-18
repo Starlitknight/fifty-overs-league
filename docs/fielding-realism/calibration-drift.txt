@@ -1,0 +1,25 @@
+node tools/calibration-check.mjs — on the frozen fielding build
+(20260818-0058-59f1ce; slopes gT/gI=0.35, cT/cI=0.55, FIELD_RUNS 0.95)
+
+SMOKE RUN (CAL_N set) — not written to the golden file.
+CALIBRATION DRIFT — the engine no longer matches its frozen contract:
+  division_two firstInnings.mean: 217.4 vs golden 233.7 (tol 11.685)
+  pinned-match fingerprint changed: 317/2 vs golden 370/6
+
+Two drifts, both the fielding change speaking in the open:
+
+- The pinned fingerprint is what any deterministic gameplay change
+  must produce.
+- The division_two band breach is the compression's mirror side: that
+  league's ~36-median fielders are judged at par + 0.35 x (raw - par),
+  so the weak world's misfield hemorrhage shrinks and first-innings
+  scores fall 16 runs. This is precisely the "twelve misfields and
+  not one good stop is not a broadcast anybody wants" problem the
+  FO_FLD population essay described, resolved by the slope - recorded
+  as honest drift. The top leagues stay in band; the generated-squad
+  world lands at 270/50ov, inside the 2026 ODI layer's stated 265-270
+  par target.
+
+Not re-blessed — that waits for this model to be accepted at review.
+No unrelated batting/bowling coefficient was retuned to mask any of
+this (the brief's §17 rule).
