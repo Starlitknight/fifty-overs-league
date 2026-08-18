@@ -320,3 +320,77 @@ On the final head (build `20260818-0058-59f1ce`):
 
 Not merged, not deployed, goldens held. The branch is a complete,
 measured proposal awaiting review.
+
+## 16. The acceptance pass: real teams, not clones
+
+The final review asked whether the ~39-run synthetic 40→80 band means
+anything given the teams that actually exist. It does not
+(`world-acceptance.json`, `tools/fielding-world-probe.mjs`).
+
+**The world's fielding distribution** (64 generated club squads, XIs
+chosen by the Match-Day Coach; tiers at the calibration factors):
+
+| population | XI field mean | med | P10 | P25 | P75 | P90 | min–max |
+|---|---|---|---|---|---|---|---|
+| generated club world | 55.6 | 56.1 | 50.2 | 52.6 | 58.7 | 60.6 | 48.1–65.8 |
+| international (×.850) | 47.2 | 47.7 | 42.7 | 44.6 | 49.9 | 51.5 | 40.9–55.9 |
+| flagship (×.755) | 42.0 | 42.3 | 37.9 | 39.6 | 44.3 | 45.7 | 36.3–49.7 |
+| division two (×.529) | 29.3 | 29.5 | 26.5 | 27.7 | 30.8 | 32.0 | 25.4–34.8 |
+
+(catching distributions within half a point of the same; individuals
+span 26–95 with P10/P50/P90 at 37/56/74 — wide for men, narrow for
+elevens.) **A same league's team XIs sit ~10 points apart P10→P90.**
+The synthetic sweep's 40-point gap is a fixture no league schedules.
+
+**Translated into runs** (real XI profiles painted onto controlled
+sides, batting/bowling identical, N=400 paired):
+
+| pairing | field means | runs | win pts |
+|---|---|---|---|
+| P10 v P90, same league | 51.3 v 61.4 | **5.1±1.4** | +6.6±2.2 |
+| P25 v P75 combined-effective | — | **8.1±1.3** | +6.9±2.6 |
+| worst v best realistic | 50.1 v 61.4 | **11.3±1.4** | +12.8±2.5 |
+
+The fielding advantage between teams that could actually meet is
+**5–11 runs** — inside (indeed below) the 15–30 sanity band. The
+40→80 number was an artifact of sweeping eleven clones.
+
+**Division two, root-caused** (median tier sides, OLD v NEW on
+identical seeds): scores 321.9 → 304.6, and the ledger decomposes the
+whole −17: **−12.5 from misfields** (18.8 → 6.3 an innings, each one
+a gifted run), −2.5 from ground saves finally existing (0.03 → 1.68),
+−1.5 from catching (+0.28 catches, +0.25 wickets), −1 from
+boundaries; innings length unchanged (283.7 → 284.5 balls). Roughly
+three quarters of the old division-two par was a **misfield subsidy**
+— classification B in the review's terms: not a calibration
+regression but the removal of an unrealistic scoring subsidy. The
+division pyramid stays ordered and steepens honestly: international
+272 > flagship 251 > division two 217, and only the tier whose
+fielding was cartoonish moved.
+
+**Match texture**: elite v elite shows 4.7 catches, 12.4 saves, zero
+misfields an innings; poor v poor 2.8 catches, 6.1 misfields (one
+every eight overs — visible, not slapstick); ordinary div one 2.3
+misfields, 6.1 saves. It looks like cricket.
+
+**The selector on real squads** (`coach-regret.txt`,
+`coach-regret-field.txt`): 16 generated squads × 5 conditions, paired
+near-miss XIs — overall the coach beats its rejected alternative
+64.0% with a +5.43±0.83 edge (z=6.6); role rows symmetric (+4.7 /
++9.1 / +6.9 — no all-rounder bias reappeared); and on the 73
+bat-v-field crossovers the re-priced 0.95 wins 57.5% with +3.22±1.12
+(z=2.9). FIELD_RUNS 0.95 is safe on messy real squads.
+
+**Rating/wages, quantified for the later phase**: on the card, 40
+points of hands = +8 OVR (wage +47%) while 20 points of bat = +9 OVR
+(wage +54%) — near parity; on the cricket, the same packages are 2.7
+v 5.6 runs — a 2:1 gap. Rating overprices hands ~1.85× relative to
+bat; the eventual player-value fix is roughly halving the field
+family weights (fielding 0.200/catching 0.110 → ~0.10/0.06, or the
+FIELD_SHARE cap from ~1/6 of a card to ~1/12). Nothing touched now.
+
+**Decision: A — ACCEPT.** Slopes stay ground 0.35 / catching 0.55.
+Goldens re-recorded once for the accepted model (replay green; the
+A/B switch at flags=1 reproduced the previous masters 9/9 bit-for-bit
+first); the calibration contract re-recorded in full on the accepted
+cricket — the division-two cell now records the honest number.
