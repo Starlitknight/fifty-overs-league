@@ -1492,7 +1492,24 @@ function foFatBatPerBall(p){
 //              err x (1 + captFat x load), load in [0,1]. Skill dominates
 //              by construction - doubling a 95's error is still a fifth of
 //              a 60's.
-var FO_RFAT={spinWork:1.0,keepDiv:0,gloveFat:0,captFat:0};
+// FROZEN BY MEASUREMENT (docs/role-fatigue-polish):
+//   spinWork 0.90 - the smallest separation that is real: a spinner's
+//     forced ten-over spell peaks 10% below a medium's (0.985 v 1.095 at
+//     stamina 50), deterministic and visible, while cricket outputs stay
+//     inside noise at 0.94/0.90/0.85 - the tank ladder is the point.
+//     Finger and wrist spin measured inseparable and stay one bucket.
+//   keepDiv 550 - fifty overs of keeping now costs about a third of a
+//     bowling shift (tank 0.33 at stamina 50, 0.38 at 30, 0.22 at 90);
+//     keeping-then-batting costs -3.7 runs at stamina 30, -1.7 at 50,
+//     nil at 70/90. Stamina copes through the existing law, unchanged.
+//   gloveFat 4 - a keeper who has kept fifty overs is ~1.2 quality
+//     points down: stumping miss +0.5pp per chance, a bye every ~40
+//     innings, routine takes barely move. Deliberately below what N=300
+//     resolves in sim; stated exactly from the contest math.
+//   captFat 0.4 - an exhausted captain-70's wrong-field rate rises
+//     21.7 -> 28.5% and off-true picks +2.3pp; an exhausted 95 reads
+//     like a fresh 93 and still beats a RESTED 70 on every column.
+var FO_RFAT={spinWork:0.90,keepDiv:550,gloveFat:4,captFat:0.4};
 // the canonical bowling-work classification: one function, both fatigue
 // systems' ordering. The server's between-match law uses its own absolute
 // scale (server/living.mjs) but the same buckets in the same order.
