@@ -182,7 +182,11 @@ for (const sq of squads) {
     if (inFld && outFld && fldOf(inFld) > fldOf(outFld) + 4)
       trials.push({ cls: 'bat-v-field crossover', out: outFld, in: inFld });
 
+    // --only <substr> narrows to one swap class (rerunning a single new row
+    // without paying for the whole validation again)
+    const ONLY = (() => { const i = argv.indexOf('--only'); return i >= 0 ? argv[i + 1] : null; })();
     for (const t of trials) {
+      if (ONLY && t.cls.indexOf(ONLY) < 0) continue;
       const alt = plan.xi.filter(n => n !== t.out).concat([t.in]);
       if (alt.length !== 11) continue;
       if (legalIn(squadJson, JSON.stringify(alt), cond.pitch, cond.weather) !== 'true') continue;
@@ -222,7 +226,7 @@ console.log('rejected alternative\'s, both against one fixed opponent from ident
 console.log('swap class                        n   coach won   edge%      SE       z    regret%');
 report('ALL', rows);
 console.log('');
-for (const cls of ['specialist -> all-rounder', 'all-rounder -> batsman', 'all-rounder -> bowler']) {
+for (const cls of [...new Set(rows.map(r => r.cls))]) {
   report(cls, rows.filter(r => r.cls === cls));
 }
 console.log('');
