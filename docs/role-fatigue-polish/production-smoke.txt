@@ -1,0 +1,10 @@
+1. workload hierarchy (peak tank, 10 forced overs): fast 1.168  >  fast-med 1.138  >  medium 1.095  >  spin 0.985
+2. rested v tired bowler: rested 49.5 runs/10ov  ->  weary 56.0 runs/10ov
+3. keeper tank after 50 overs kept: 0.328 (law off: 0.000)
+4. keeper batting second, law ON v OFF: 22.8 v 23.2 runs (-0.4)
+5. late glove dip: 1.32 keeper-quality points after 50 overs (a 90 reads 88.7, a 60 reads 60)
+6. captain fatigue -> judgement: capt70 wrong-field 22.5% rested -> 29.7% exhausted
+7. exhausted elite stays elite: capt95 exhausted 6.4% wrong-field v capt70 RESTED 22.5%; off-true 15.5% v 21.1%
+8. manual orders authoritative: 30/30 innings bowled exactly as painted
+9. 2B fielding magnitude: team 40->80 worth 34.9±2.2 runs (accepted band ~39)
+10. deterministic replay: 3/3 bit-identical
