@@ -394,3 +394,13 @@ Goldens re-recorded once for the accepted model (replay green; the
 A/B switch at flags=1 reproduced the previous masters 9/9 bit-for-bit
 first); the calibration contract re-recorded in full on the accepted
 cricket — the division-two cell now records the honest number.
+
+**The accepted-model ship gate, run in full**: engine **488/488**
+(replay green against the re-recorded masters), server **437/437**,
+coach **32/32**, **calibration-check PASS** against the re-recorded
+contract (international 268.5 — inside the real-ODI window that cell
+alone is held to; flagship 243.8; division two 215.5, the honest
+number; mixed 250.0), the A/B switch provably reproduces the OLD
+engine (9/9 masters bit-for-bit at flags=1), NEW play deterministic
+(3/3 bit-identical repeats), and the random-squad selector validated.
+Awaiting the ship decision — not merged, not deployed.
