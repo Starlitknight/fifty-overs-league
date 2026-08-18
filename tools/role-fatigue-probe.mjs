@@ -264,11 +264,13 @@ function captCell(capt, fatWord, cf, n) {
 if (has('captfat') || has('all')) {
   out.captfat = [];
   const cfs = (arg('cfs', '0')).split(',').map(Number);
+  const capts = (arg('capts', '50,70,80,90,95')).split(',').map(Number);
+  const fws = (arg('fws', 'rested,moderate,weary,exhausted')).split(',');
   say(`\n=== §5 THE TIRED MIND (difficult fixture, N=${N}) ===`);
   say('  cf    capt  fatigue     conceded    win%   missPick%  missField%');
   for (const cf of cfs) {
-    for (const capt of [50, 70, 80, 90, 95]) {
-      for (const fw of ['rested', 'moderate', 'weary', 'exhausted']) {
+    for (const capt of capts) {
+      for (const fw of fws) {
         const C = captCell(capt, fw, cf, N);
         out.captfat.push(C);
         say('  ' + String(cf).padEnd(5) + String(capt).padEnd(5) + fw.padEnd(11)
