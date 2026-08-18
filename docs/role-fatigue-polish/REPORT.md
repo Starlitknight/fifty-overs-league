@@ -152,7 +152,14 @@ double punishment anywhere near unusability.
   takes); experience/temperament/sixth values in noise.
 - Fielding same-league spread: P10vP90 6.1±1.7 v 5.1±1.4 before.
 - Keeper value: slopes preserved (§4).
-- Captaincy: <!-- CAPT-REG -->
-- Suites: <!-- SUITES -->
+- Captaincy: 20v95 = 6.58±0.97 runs (+7.0±1.5 win pts), 80v95 = 3.20±0.82 — healthy
+  and slightly up from the fielding build's 5.26/2.20 (within ~1 joint
+  SE; a captain who has batted now carries a little tank into the
+  field). Skill remains the dominant variable everywhere.
+- Suites: engine **487/488** (the golden replay the single expected red —
+  gameplay changed, goldens held for review; no cricket test broke
+  under the new laws), server **437/437** (the four-rung law passes
+  the living-fold suite), calibration-check: **every band passes**,
+  pinned fingerprint drift only.
 
 Not merged, not deployed, goldens held for review.
