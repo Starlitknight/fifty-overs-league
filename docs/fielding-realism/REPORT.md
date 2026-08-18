@@ -273,7 +273,28 @@ bundled into this engine phase.
 
 ## 14. Calibration
 
-<!-- CAL -->
+The world A/B (`env-new.json` v the captaincy phase's, same seeds,
+N=450): scoring **263.5 → 270.1**/50ov, wickets 7.19 → 7.22
+(unchanged), all-out 37.8 → 39.9%, phase run-rates lifted evenly.
+The event ledger explains the lift honestly: generated-world XIs
+field slightly above par, so compression cost them saves (8.1 →
+6.0/inn) and returned a few misfields (0.5 → 1.3). 270 sits inside
+the 2026 ODI layer's own stated 265–270 par target, so **no
+compensating retune** of unrelated batting/bowling coefficients is
+proposed (the brief's §17 rule). Temperament and sixth-bowler paired
+values ticked up 1.5–2.5 SE with the livelier scoring — noted, not
+chased.
+
+`calibration-check` (`calibration-drift.txt`): the pinned fingerprint
+changed (as any deterministic gameplay change must), and one real
+band breach — **division_two first-innings mean 233.7 → 217.4**
+(1.4× tolerance). That is the compression's mirror side: the weak
+league's ~36-median fielders are judged at `par + 0.35×(raw−par)`,
+so the misfield hemorrhage the `FO_FLD` population essay described
+("twelve misfields and not one good stop is not a broadcast anybody
+wants") shrinks and weak-league scores fall. Recorded as honest,
+directional drift. **Goldens and the calibration golden are not
+re-blessed** — that waits for this model to be accepted at review.
 
 ## 15. Regressions, suites, A/B proof
 
