@@ -2178,7 +2178,15 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   // either end: the term is zero below 0.12 and rises linearly from it, which is
   // the same shape as before and simply positioned where the cricket is.
   const bF=Math.min(1,ctx.batFat||0),wF=Math.min(1,ctx.bowlFat||0);
-  const bFe=Math.max(0,(bF-0.12)/0.88),wFe=Math.max(0,(wF-0.12)/0.88);
+  const bFe=Math.max(0,(bF-0.12)/0.88);
+  // __foBowlFatPerfOff (instrumentation, never set in play): the tank still
+  // fills exactly as it does, the bowler keeps every characteristic of his
+  // type, and ONLY the performance consequence of his accumulated fatigue is
+  // neutralised. That A/B is the only way to read the cost of fatigue itself
+  // out of an early-v-late comparison, which is otherwise dominated by phase,
+  // ball age and how set the batsmen are (tools/role-fatigue-probe.mjs §7).
+  const wFe=((typeof __foBowlFatPerfOff!=='undefined')&&__foBowlFatPerfOff)?0
+    :Math.max(0,(wF-0.12)/0.88);
   //
   // AND THE SIZE OF IT, WHICH WAS THE REST OF THE PROBLEM. Moving the ramp was
   // not enough: measured, a stamina-30 attack peaks at 0.93 fatigue against a

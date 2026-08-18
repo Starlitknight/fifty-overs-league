@@ -283,4 +283,87 @@ if (has('captfat') || has('all')) {
   set('__foCaptFatAmp=undefined;__foCaptLog=undefined;1');
 }
 
+// ---------------------------------------------------------------------------
+// §7 THE ISOLATED COST OF FATIGUE. The early-v-late drift of §1 cannot answer
+// "what does fatigue cost this trade?", because a bowler's late overs differ
+// from his early ones in ball age, phase, field restrictions and how set the
+// batsmen are - and those differ BY TYPE. So: the same forced ten-over
+// workload, the same seeds, run twice - once normally, once with ONLY the
+// performance consequence of accumulated bowling fatigue neutralised
+// (__foBowlFatPerfOff; the tank still fills, the type keeps every
+// characteristic). ON minus OFF is the cost of fatigue itself.
+// ---------------------------------------------------------------------------
+function isoCell(btFull, stamina, n) {
+  const A = H.side('A', { slots: [{ slot: 6, bowlTypeFull: btFull,
+    skills: { wicket: 60, economy: 58, stamina: stamina, moveTurn: 58, variation: 55, discipline: 58 } }] });
+  const B = H.side('B', {});
+  const name = A.players[6].name;
+  const compiled = []; let idx = 0;
+  for (let o = 0; o < 50; o++) {
+    if (o % 2 === 0 && o / 2 < 10) compiled[o] = name;
+    else { compiled[o] = A.players[7 + Math.floor(idx / 10)].name; idx++; }
+  }
+  // his own figures, per innings he bowled in
+  const grab = flagOn => {
+    set(flagOn ? '__foBowlFatPerfOff=1;1' : '__foBowlFatPerfOff=0;1');
+    const runs = [], wkts = [], dots = [], fours = [], balls = [];
+    for (let i = 0; i < n; i++) {
+      const r = H.run(A, B, 670001 + i * 104729, { ordersA: { compiled, tossDecision: 'bowl' } });
+      if (!r) continue;
+      for (const inn of [r.i1, r.i2]) {
+        if (!inn || inn.batTeam === 'A') continue;
+        const rec = inn.bowlers[name];
+        if (!rec || !rec.b) continue;
+        runs.push(rec.r); wkts.push(rec.w || 0); balls.push(rec.b);
+        // dot/boundary rate over HIS overs, off the over ledger
+        const ob = inn.overBowl || [], cr = inn.cumRuns || [];
+        let f4 = 0, hisOv = 0;
+        for (let o = 0; o < ob.length; o++) if (ob[o] === name) { hisOv++; }
+        fours.push(hisOv ? (rec.r / Math.max(1, hisOv)) : 0);
+      }
+    }
+    return { runs: summary(runs), wkts: summary(wkts), balls: summary(balls) };
+  };
+  const ON = grab(false), OFF = grab(true);
+  const econ = x => x.runs.mean / (x.balls.mean / 6);
+  return { bt: btFull, stamina,
+    dRuns: ON.runs.mean - OFF.runs.mean,
+    dRunsSe: Math.sqrt(ON.runs.se ** 2 + OFF.runs.se ** 2),
+    dEcon: econ(ON) - econ(OFF),
+    dWkts: ON.wkts.mean - OFF.wkts.mean,
+    dWktsSe: Math.sqrt(ON.wkts.se ** 2 + OFF.wkts.se ** 2),
+    on: ON, off: OFF };
+}
+if (has('iso')) {
+  out.iso = [];
+  const sts = (arg('sts', '30,50,70,90')).split(',').map(Number);
+  say(`\n=== §7 ISOLATED FATIGUE COST — fatigue ON minus OFF, same seeds (N=${N}) ===`);
+  say('  type            stam   dRuns(10ov)      dEcon    dWkts');
+  const pool = {};
+  for (const st of sts) {
+    for (const [bt, btFull] of [['fast', 'seamFast'], ['fastMedium', 'seamFastMedium'],
+      ['medium', 'seamMedium'], ['spin', 'fingerSpin']]) {
+      const I = isoCell(btFull, st, N);
+      out.iso.push(I);
+      (pool[btFull] = pool[btFull] || []).push(I);
+      say('  ' + btFull.padEnd(16) + String(st).padEnd(5)
+        + f(I.dRuns, 2) + '±' + I.dRunsSe.toFixed(2) + '   '
+        + f(I.dEcon, 3) + f(I.dWkts, 3) + '±' + I.dWktsSe.toFixed(3));
+    }
+    say('');
+  }
+  say('  POOLED across stamina (the hierarchy test):');
+  out.isoPooled = [];
+  for (const k in pool) {
+    const rows = pool[k];
+    const m = rows.reduce((a, r) => a + r.dRuns, 0) / rows.length;
+    const se = Math.sqrt(rows.reduce((a, r) => a + r.dRunsSe ** 2, 0)) / rows.length;
+    const e = rows.reduce((a, r) => a + r.dEcon, 0) / rows.length;
+    const w = rows.reduce((a, r) => a + r.dWkts, 0) / rows.length;
+    out.isoPooled.push({ bt: k, dRuns: m, se, dEcon: e, dWkts: w });
+    say('    ' + k.padEnd(16) + f(m, 2) + '±' + se.toFixed(2) + ' runs/10ov   econ ' + f(e, 3) + '   wkts ' + f(w, 3));
+  }
+  set('__foBowlFatPerfOff=0;1');
+}
+
 if (has('json')) console.log(JSON.stringify(out, null, 1));
