@@ -101,7 +101,65 @@ chooses.
 
 ## 4. The sweep and the chosen slopes
 
-<!-- SWEEP -->
+Two families were swept on identical seeds. The **single-slope family**
+(`k` applied per channel; `sweep-evidence.json`) tamed the extremes but
+ran into a structural bind: compression squeezes more of the skill
+range *into* the steep transition around par, so even gk=0.3 kept 22
+of the ground channel's 50-run band — while one elite fielder's value
+fell 5.0 → 2.1 runs. Within-XI spread softens nothing (67.1 v 68.5 —
+the steep zone is wider than any realistic spread), and the channels
+turn superadditive under compression (52.2 both-swept at (0.5, 0.75)
+against 43.8 predicted).
+
+The **two-term anchor** (`eff = par + T×(teamMean−par) +
+I×(raw−teamMean)`) tried to give team magnitude and individual
+identity separate knobs — and was refuted by measurement: the XI's
+total effective skill telescopes to depend only on T, so a signed star
+raises the team mean and taxes his ten teammates; his paired value
+collapsed from +5.0 to +0.34 runs at T=0.3 even with I=1. **The
+negative result is the finding**: per-man honesty and team magnitude
+cannot be decoupled by any linear mechanism, because a team is eleven
+honest per-man values plus mild convexity. The general form stays in
+the code, frozen at T=I, as the record of why.
+
+**The frontier, both-swept, par cell pinned at 275 everywhere:**
+
+| pair (gk, ck) | 40→80 | 50→70 | 20→95 | misf@20 | 1 elite |
+|---|---|---|---|---|---|
+| shipped (1, 1) | 65.6 | 36.5 | 109.9 | 25.6 | +5.0 |
+| **(0.35, 0.55) — frozen** | **40.2** | **18.6** | **68.0** | **8.6** | **+2.7** |
+| (0.30, 0.50) | 35.3 | 16.8 | 60.6 | 7.1 | ~2.0 |
+| (0.25, 0.45) | 32.4 | 15.3 | 55.3 | 6.0 | ~1.8 |
+
+The brief's 15–30-run hypothesis and its 3rd/4th criteria (elite
+visible, liability costly) pull against each other on this frontier —
+below (0.30, 0.50) the team band buys its last few runs directly out
+of individual identity. **(0.35, 0.55)** is the frozen balance point:
+the band falls 39%, a level-20 side fumbles 8.6 times an innings
+instead of 25.6, and one elite fielder still swings +2.7 runs and
++4.4 win points. The final frozen curve
+(`frozen-evidence.json` verify section): 40→80 = 38.9, 50→70 = 17.9,
+20→95 = 67.9, wickets 5.37 → 8.90 across the full span.
+
+## 5. Catch conversion shape at the chosen slope
+
+At ck = 0.55 (straight chance; angle adds difficulty on top —
+`frozen-evidence.json` §1 tables):
+
+| skill | routine | moderate | difficult | extreme | overall |
+|---|---|---|---|---|---|
+| 20 | 100% | 48% | 0% | 0% | 64.5% |
+| 50 | 100% | 86% | 0% | 0% | 75.7% |
+| 70 | 100% | 100% | 13% | 0% | 81.9% |
+| 95 | 100% | 100% | 58% | 0% | 88.7% |
+
+The shape the brief asked for: routine stays routine for everybody
+(the band offset already guaranteed it — a 20 was never useless),
+elite hands are still clearly better where it is hard, **95 is no
+longer automatic** (88.7% overall against the shipped 97.3%, taking
+58% of difficult chances instead of 100%, and still 0% on the extreme
+band — luck keeps its seat), and the whole skill separation lives in
+the moderate/difficult bands where a spectator would put it.
 
 ## 5. Catch conversion shape at the chosen slope
 
@@ -109,35 +167,109 @@ chooses.
 
 ## 6. Individual fielders: elite and liability
 
-<!-- INDIV -->
+Frozen slopes, N=400 paired, all-par XI (`frozen-downstream.json`):
+
+| change | runs | win pts |
+|---|---|---|
+| 1 elite (90/90) | +2.69±0.97 | +4.4 |
+| 2 elite | +3.76±1.11 | +6.6 |
+| 3 elite | +7.33±1.28 | +8.1 |
+| 1 liability (25/25) | −2.54±0.91 | ~0 |
+| 2 liabilities | −3.43±1.09 | −2.8 |
+| 3 liabilities | −4.86±1.17 | −5.4 |
+
+One elite fielder is a real signing; three are valuable (+8 win
+points) and sub-additive — they do not transform an attack. One
+liability costs; three cost more but less than three times one.
+Exactly the diminishing-returns shape the brief ordered.
 
 ## 7. Positional identity
 
-<!-- POS -->
+The assignment engine still tells men apart (per-post event labels):
+the **elite catcher** (90 hands, 50 legs) lifts cordon catches 19%
+over par (0.250 v 0.210/inn) and total catches to 3.27; the **elite
+athlete** (90 legs, 50 hands) lifts neither cordon number — his value
+arrives through ground saves instead; the liability is hidden at
+mid-on but still found (3.12 team catches, more misfields). A
+specialist catcher is worth more in catching positions, an athlete
+where the ground matters — compression did not blur them.
 
 ## 8. Conditions
 
-<!-- COND -->
+Team 40v80, paired, five pitches × five batting styles: the band runs
+**34.6 to 45.7 runs** with green highest (45.0±2.0 — more chances
+carried to hand) and balanced lowest (37.4±1.6). A natural, believable
+spread produced by the existing model; no pitch-specific fielding
+coefficients were added or needed.
 
 ## 9. Run-outs and the arm (guard)
 
-<!-- ARM -->
+0 / 1 / 3 Rocket Arms: 0.610 / 0.693 / 0.755 run-outs an innings,
+conceded 277.6 / 276.7 / 275.5. Within noise of the audit's shipped
+values — the recalibration did not touch the run-out model and the
+measurement confirms it did not move. Left exactly alone.
 
 ## 10. The keeper (guard)
 
-<!-- KEEPER -->
+Keeper 50 / 74 / 95: stumpings 0.085 / 0.210 / 0.320 an innings, byes
+3.13 / 1.90 / 1.18, keeper catches 0.25 / 0.38 / 0.41 — byte-for-byte
+the shipped slopes. The keeper's separate pathway (`foKeeperQuality`)
+did its job: outfield compression never reached the gloves.
 
 ## 11. Captaincy interaction (report only)
 
-<!-- CAPT -->
+Re-measured at N=2000 paired (`captaincy-remeasure.json`): captaincy
+20v95 is now worth **5.26±0.80 runs and +5.9±1.3 win points** against
+3.96/+3.2 on shipped fielding, 80v95 = 2.20±0.70. Cricket-sensible:
+when the field saves less, the captain's bowling-change judgement —
+above all the persist-too-long anchor, whose attribution roughly
+doubles to ~2.3 runs — decides more of the match. The organisation
+sliver's isolated attribution fell into the noise (4.67 all-on v 4.61
+org-off); its ballDist pathway was deliberately left uncompressed, so
+this is attribution noise plus channel interaction at N=1200. Per the
+phase brief **no captaincy constant was touched**; both measurements
+are recorded here for the promised post-fielding captaincy review.
 
 ## 12. The Match-Day Coach
 
-<!-- COACH -->
+`FIELD_RUNS` was wrong at the definition level: it multiplies the
+XI's MEAN fielding, so its honest value is the engine's team slope
+per mean-point — which even on the shipped engine was ~1.6 (65.6
+runs over 40 points), against which the old 0.30 undercharged the
+field several times over. Controlled seat contests caught it: the
+coach took bat 65/field 30 over bat 62/field 90 while the cricket
+paid the fielder 4.3±1.9 runs. **FIELD_RUNS 0.30 → 0.95** (the
+frozen team slope, 38.9/40): the resolved crossover flips to the
+fielder, the measured ties stay with the bat, coach suite 32/32.
+(`coach-crossover.txt`, including the harness lesson: the first run
+let the coach dodge the choice by dropping a core bat and keeping
+both candidates.)
 
 ## 13. Attribute values and the wage question
 
-<!-- ATTR -->
+Marginal value of +20 points on one man, paired (N=400):
+
+| family | runs | per point |
+|---|---|---|
+| batting (vsPace+vsSpin) | 5.63±1.35 | 0.281 |
+| bowling (wicket+economy) | 9.61±1.75 | 0.481 |
+| fielding (ground) | −0.08±0.80 | ≈0 (≤0.04) |
+| catching | 0.13±0.30 | ≈0 (≤0.02) |
+
+Secondary attributes are now unambiguously secondary — a point of
+hands can no longer rival a point of bat. The elite-fielder pair
+(§6) puts the combined 40-point fielding+catching package at ~2.7
+runs ≈ 0.034/pt, roughly **an eighth of batting**.
+
+**Wages** (report only, per the brief): wages derive from rating;
+rating gives an outfielder's hands `fielding 0.200 / catching 0.110`
+of the field family, deliberately capped at about **a sixth** of his
+card — priced when a point of fielding bought shipped-sized cricket.
+The cricket share is now nearer an **eighth to a ninth**, so the
+rating/wage system mildly overprices fielding for outfielders (order
+1.3–1.5×, worst for pure batsmen with golden hands). This is flagged
+for a follow-up wage/valuation recalibration and deliberately NOT
+bundled into this engine phase.
 
 ## 14. Calibration
 
