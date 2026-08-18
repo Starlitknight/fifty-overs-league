@@ -114,7 +114,10 @@ test('a chance is a difficulty and a man, and the angle is part of it', () => {
     'skewed toward the routine, lifted by what the ball was worth');
   assert.match(CORE, /\+FO_FLD\.ang\*Math\.min\(1,ang\/\(gate\|\|FO_FLD\.gate\)\)/,
     'and by how far he had to go');
-  assert.match(CORE, /const fs=foFieldSkill\(pick\)\+foLvlShift\('field'\), diff=foChanceDiff\(out,near\.ang\), won=fs>=diff;/,
+  // Phase 2B: his skill reaches the comparison through the magnitude slope
+  // (foFldEff, around FO_FLD.par) - still one comparison, no thresholds; the
+  // slope changes what the number IS, never how the contest works
+  assert.match(CORE, /const fs=foFldEff\(_rawFs,foFldMeans\(inn\)\.f,FO_FLD\.par,_gT,_gI\)\+foLvlShift\('field'\), diff=foChanceDiff\(out,near\.ang\), won=fs>=diff;/,
     'his fielding against the chance - one comparison, no thresholds');
   assert.match(CORE, /if\(!near\|\|!pick\|\|near\.ang>FO_FLD\.gate\)return out;/, 'and nothing at all beyond the gate');
 });

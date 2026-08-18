@@ -169,7 +169,24 @@ for (const sq of squads) {
     const outAR2 = best([...picked].filter(isAR), n => -cards[n].rpd);
     if (inBowl && outAR2) trials.push({ cls: 'all-rounder -> bowler', out: outAR2, in: inBowl });
 
+    // THE BAT-v-FIELD CROSSOVER (Phase 2B): the picked batsman with the worst
+    // hands out, the omitted batsman with the best hands in. This is the swap
+    // FIELD_RUNS prices, and the one the fielding recalibration re-priced -
+    // if the coach at 0.95 is over- or under-selecting fielders on real
+    // squads, this row's agreement is where it shows.
+    const fldOf = n => { const p = by[n]; if (!p) return 50;
+      return ((p.field || (p.skills && p.skills.fielding) || 50)
+            + ((p.skills && p.skills.catching) || 50)) / 2; };
+    const inFld = best(omitted.filter(isBat), n => fldOf(n));
+    const outFld = best([...picked].filter(isBat), n => -fldOf(n));
+    if (inFld && outFld && fldOf(inFld) > fldOf(outFld) + 4)
+      trials.push({ cls: 'bat-v-field crossover', out: outFld, in: inFld });
+
+    // --only <substr> narrows to one swap class (rerunning a single new row
+    // without paying for the whole validation again)
+    const ONLY = (() => { const i = argv.indexOf('--only'); return i >= 0 ? argv[i + 1] : null; })();
     for (const t of trials) {
+      if (ONLY && t.cls.indexOf(ONLY) < 0) continue;
       const alt = plan.xi.filter(n => n !== t.out).concat([t.in]);
       if (alt.length !== 11) continue;
       if (legalIn(squadJson, JSON.stringify(alt), cond.pitch, cond.weather) !== 'true') continue;
@@ -209,7 +226,7 @@ console.log('rejected alternative\'s, both against one fixed opponent from ident
 console.log('swap class                        n   coach won   edge%      SE       z    regret%');
 report('ALL', rows);
 console.log('');
-for (const cls of ['specialist -> all-rounder', 'all-rounder -> batsman', 'all-rounder -> bowler']) {
+for (const cls of [...new Set(rows.map(r => r.cls))]) {
   report(cls, rows.filter(r => r.cls === cls));
 }
 console.log('');

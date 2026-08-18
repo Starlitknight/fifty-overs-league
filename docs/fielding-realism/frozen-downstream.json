@@ -1,0 +1,743 @@
+{
+ "indiv": [
+  {
+   "lbl": "1 elite",
+   "dSaved": {
+    "n": 400,
+    "mean": 2.6907441830535173,
+    "se": 0.9728648273162266
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.04375,
+    "se": 0.02071473132784883
+   },
+   "catches": 3.8825,
+   "saves": 5.9875,
+   "misf": 1.725
+  },
+  {
+   "lbl": "2 elite",
+   "dSaved": {
+    "n": 400,
+    "mean": 3.7619122046651188,
+    "se": 1.1100343969273267
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.06625,
+    "se": 0.021892648627102572
+   },
+   "catches": 3.7825,
+   "saves": 6.74,
+   "misf": 1.6375
+  },
+  {
+   "lbl": "3 elite",
+   "dSaved": {
+    "n": 400,
+    "mean": 7.327104615448526,
+    "se": 1.2754701570033335
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.08125,
+    "se": 0.022333956384156917
+   },
+   "catches": 3.885,
+   "saves": 7.8725,
+   "misf": 1.4175
+  },
+  {
+   "lbl": "1 poor",
+   "dSaved": {
+    "n": 400,
+    "mean": -2.539647997875175,
+    "se": 0.9101096840463151
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.01,
+    "se": 0.016784047802947615
+   },
+   "catches": 3.555,
+   "saves": 4.7375,
+   "misf": 2.4
+  },
+  {
+   "lbl": "2 poor",
+   "dSaved": {
+    "n": 400,
+    "mean": -3.426473017935174,
+    "se": 1.0945729350726687
+   },
+   "dWin": {
+    "n": 400,
+    "mean": -0.0275,
+    "se": 0.022346314448328134
+   },
+   "catches": 3.465,
+   "saves": 4.3125,
+   "misf": 3.0175
+  },
+  {
+   "lbl": "3 poor",
+   "dSaved": {
+    "n": 400,
+    "mean": -4.859060882102604,
+    "se": 1.1708265775518705
+   },
+   "dWin": {
+    "n": 400,
+    "mean": -0.05375,
+    "se": 0.021400579566086864
+   },
+   "catches": 3.4225,
+   "saves": 3.83,
+   "misf": 3.555
+  }
+ ],
+ "pos": [
+  {
+   "lbl": "elite catcher (90 hands)",
+   "man": "A-bat2",
+   "inns": 400,
+   "at": {
+    "save@third man": 176,
+    "catch@slip": 100,
+    "catch@mid-on": 156,
+    "fumble@mid-on": 43,
+    "save@mid-off": 137,
+    "fumble@mid-off": 54,
+    "save@sweeper": 153,
+    "catch@deep midwicket": 138,
+    "catch@cover": 125,
+    "save@deep midwicket": 258,
+    "fumble@point": 83,
+    "misfield@square leg": 61,
+    "catch@fine leg": 47,
+    "save@deep cover": 52,
+    "save@cover": 257,
+    "save@point": 185,
+    "catch@long-on": 48,
+    "save@fine leg": 227,
+    "catch@sweeper": 36,
+    "misfield@third man": 24,
+    "save@mid-on": 155,
+    "misfield@mid-on": 47,
+    "catch@third man": 255,
+    "save@long-off": 45,
+    "fumble@cover": 41,
+    "misfield@cover": 18,
+    "save@midwicket": 125,
+    "save@square leg": 197,
+    "fumble@deep midwicket": 28,
+    "misfield@midwicket": 13,
+    "catch@point": 193,
+    "misfield@point": 41,
+    "misfield@long-off": 10,
+    "fumble@midwicket": 13,
+    "misfield@deep midwicket": 47,
+    "save@long-on": 35,
+    "fumble@slip": 17,
+    "misfield@fine leg": 49,
+    "misfield@mid-off": 31,
+    "fumble@fine leg": 21,
+    "catch@midwicket": 52,
+    "catch@square leg": 75,
+    "catch@mid-off": 47,
+    "fumble@third man": 32,
+    "save@slip": 26,
+    "catch@deep cover": 18,
+    "fumble@square leg": 15,
+    "misfield@sweeper": 4,
+    "misfield@long-on": 14,
+    "fumble@long-off": 7,
+    "catch@long-off": 14,
+    "fumble@long-on": 13,
+    "save@short leg": 1,
+    "fumble@sweeper": 2,
+    "catch@silly point": 3,
+    "misfield@deep cover": 1
+   },
+   "catchesCordon": 100,
+   "catchesAll": 1307
+  },
+  {
+   "lbl": "elite athlete (90 legs)",
+   "man": "A-bat2",
+   "inns": 400,
+   "at": {
+    "save@third man": 552,
+    "catch@slip": 83,
+    "catch@mid-on": 146,
+    "fumble@mid-on": 44,
+    "save@mid-off": 146,
+    "fumble@mid-off": 58,
+    "save@sweeper": 141,
+    "catch@deep midwicket": 122,
+    "catch@cover": 115,
+    "catch@square leg": 70,
+    "fumble@point": 84,
+    "misfield@square leg": 61,
+    "save@deep midwicket": 281,
+    "save@deep cover": 118,
+    "misfield@cover": 22,
+    "catch@third man": 263,
+    "save@cover": 255,
+    "save@point": 185,
+    "save@mid-on": 149,
+    "misfield@mid-on": 49,
+    "catch@fine leg": 49,
+    "save@square leg": 214,
+    "catch@point": 201,
+    "save@long-off": 46,
+    "fumble@cover": 39,
+    "save@midwicket": 113,
+    "fumble@deep midwicket": 25,
+    "save@fine leg": 228,
+    "misfield@midwicket": 16,
+    "catch@mid-off": 54,
+    "misfield@point": 41,
+    "misfield@long-off": 16,
+    "save@slip": 22,
+    "catch@midwicket": 66,
+    "fumble@midwicket": 12,
+    "catch@long-on": 41,
+    "misfield@deep midwicket": 46,
+    "save@long-on": 34,
+    "misfield@fine leg": 54,
+    "fumble@square leg": 15,
+    "fumble@slip": 18,
+    "catch@sweeper": 39,
+    "misfield@mid-off": 32,
+    "fumble@fine leg": 20,
+    "save@short leg": 5,
+    "catch@deep cover": 19,
+    "catch@long-off": 14,
+    "misfield@long-on": 13,
+    "fumble@long-off": 9,
+    "catch@silly point": 3,
+    "fumble@long-on": 12,
+    "misfield@sweeper": 3,
+    "save@silly point": 1,
+    "fumble@sweeper": 2
+   },
+   "catchesCordon": 83,
+   "catchesAll": 1285
+  },
+  {
+   "lbl": "par control",
+   "man": "A-bat2",
+   "inns": 400,
+   "at": {
+    "save@third man": 177,
+    "catch@slip": 84,
+    "catch@mid-on": 155,
+    "fumble@mid-on": 44,
+    "save@mid-off": 138,
+    "fumble@mid-off": 55,
+    "save@sweeper": 156,
+    "catch@deep midwicket": 120,
+    "catch@cover": 117,
+    "save@deep midwicket": 259,
+    "fumble@point": 81,
+    "misfield@square leg": 62,
+    "catch@fine leg": 46,
+    "save@deep cover": 53,
+    "save@cover": 257,
+    "save@point": 190,
+    "misfield@third man": 28,
+    "save@mid-on": 152,
+    "misfield@mid-on": 47,
+    "catch@third man": 257,
+    "save@long-off": 43,
+    "fumble@cover": 41,
+    "misfield@cover": 18,
+    "save@midwicket": 129,
+    "save@square leg": 206,
+    "catch@mid-off": 53,
+    "catch@long-on": 39,
+    "fumble@deep midwicket": 26,
+    "save@fine leg": 230,
+    "misfield@midwicket": 13,
+    "catch@point": 198,
+    "misfield@point": 41,
+    "misfield@long-off": 10,
+    "fumble@midwicket": 13,
+    "misfield@deep midwicket": 50,
+    "save@long-on": 37,
+    "fumble@slip": 17,
+    "misfield@fine leg": 49,
+    "misfield@mid-off": 35,
+    "catch@sweeper": 39,
+    "fumble@fine leg": 20,
+    "catch@midwicket": 52,
+    "catch@square leg": 71,
+    "fumble@third man": 30,
+    "save@slip": 29,
+    "catch@deep cover": 19,
+    "fumble@square leg": 14,
+    "misfield@sweeper": 4,
+    "misfield@long-on": 14,
+    "fumble@long-off": 8,
+    "catch@long-off": 14,
+    "fumble@long-on": 13,
+    "save@short leg": 1,
+    "fumble@sweeper": 2,
+    "catch@silly point": 2,
+    "misfield@deep cover": 1
+   },
+   "catchesCordon": 84,
+   "catchesAll": 1266
+  },
+  {
+   "lbl": "liability (25/25)",
+   "man": "A-bat2",
+   "inns": 400,
+   "at": {
+    "save@third man": 183,
+    "catch@slip": 92,
+    "save@mid-off": 144,
+    "save@point": 180,
+    "catch@deep midwicket": 116,
+    "save@square leg": 162,
+    "catch@square leg": 81,
+    "fumble@point": 80,
+    "fumble@mid-off": 52,
+    "misfield@square leg": 91,
+    "misfield@mid-on": 150,
+    "save@deep midwicket": 253,
+    "catch@fine leg": 49,
+    "save@deep cover": 58,
+    "save@cover": 248,
+    "save@long-off": 55,
+    "catch@point": 188,
+    "save@sweeper": 157,
+    "misfield@third man": 25,
+    "save@mid-on": 24,
+    "catch@cover": 132,
+    "catch@third man": 263,
+    "catch@mid-off": 50,
+    "fumble@cover": 45,
+    "misfield@cover": 14,
+    "save@midwicket": 113,
+    "fumble@mid-on": 146,
+    "save@long-on": 43,
+    "fumble@deep midwicket": 29,
+    "misfield@midwicket": 13,
+    "catch@mid-on": 113,
+    "save@fine leg": 220,
+    "misfield@point": 45,
+    "misfield@long-off": 12,
+    "fumble@midwicket": 11,
+    "misfield@deep midwicket": 47,
+    "misfield@slip": 1,
+    "catch@long-on": 36,
+    "fumble@slip": 17,
+    "misfield@fine leg": 51,
+    "misfield@mid-off": 32,
+    "catch@sweeper": 39,
+    "fumble@fine leg": 23,
+    "catch@midwicket": 60,
+    "fumble@third man": 33,
+    "save@slip": 24,
+    "catch@deep cover": 14,
+    "catch@long-off": 12,
+    "fumble@square leg": 24,
+    "misfield@sweeper": 4,
+    "misfield@long-on": 12,
+    "fumble@long-off": 6,
+    "fumble@long-on": 14,
+    "catch@silly point": 2,
+    "save@short leg": 1,
+    "misfield@deep cover": 1,
+    "fumble@sweeper": 1
+   },
+   "catchesCordon": 92,
+   "catchesAll": 1247
+  }
+ ],
+ "cond": [
+  {
+   "pitch": "green",
+   "style": "par batting",
+   "d4080": {
+    "n": 400,
+    "mean": 45.02719412572278,
+    "se": 1.99549580027217
+   }
+  },
+  {
+   "pitch": "green",
+   "style": "boundary-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 45.03167958060012,
+    "se": 2.085194988717083
+   }
+  },
+  {
+   "pitch": "green",
+   "style": "rotation-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 42.93410236073124,
+    "se": 1.8774692734456946
+   }
+  },
+  {
+   "pitch": "green",
+   "style": "weak batting",
+   "d4080": {
+    "n": 400,
+    "mean": 36.78247571149362,
+    "se": 1.7021925282902113
+   }
+  },
+  {
+   "pitch": "green",
+   "style": "elite batting",
+   "d4080": {
+    "n": 400,
+    "mean": 41.81215969961619,
+    "se": 2.0980884267607047
+   }
+  },
+  {
+   "pitch": "balanced",
+   "style": "par batting",
+   "d4080": {
+    "n": 400,
+    "mean": 37.44381040544523,
+    "se": 1.620461686629666
+   }
+  },
+  {
+   "pitch": "balanced",
+   "style": "boundary-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 45.444153088093884,
+    "se": 1.9340980810828907
+   }
+  },
+  {
+   "pitch": "balanced",
+   "style": "rotation-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 36.183365571314695,
+    "se": 1.724171657968098
+   }
+  },
+  {
+   "pitch": "balanced",
+   "style": "weak batting",
+   "d4080": {
+    "n": 400,
+    "mean": 35.79980618108948,
+    "se": 1.5397702224837804
+   }
+  },
+  {
+   "pitch": "balanced",
+   "style": "elite batting",
+   "d4080": {
+    "n": 400,
+    "mean": 39.81000101930011,
+    "se": 1.6347926726299513
+   }
+  },
+  {
+   "pitch": "flat",
+   "style": "par batting",
+   "d4080": {
+    "n": 400,
+    "mean": 38.956962417818836,
+    "se": 1.6392909091263965
+   }
+  },
+  {
+   "pitch": "flat",
+   "style": "boundary-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 43.544388020006366,
+    "se": 1.9740630770208607
+   }
+  },
+  {
+   "pitch": "flat",
+   "style": "rotation-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 34.63311261945131,
+    "se": 1.5351371683547037
+   }
+  },
+  {
+   "pitch": "flat",
+   "style": "weak batting",
+   "d4080": {
+    "n": 400,
+    "mean": 37.491341904369804,
+    "se": 1.7134476613579048
+   }
+  },
+  {
+   "pitch": "flat",
+   "style": "elite batting",
+   "d4080": {
+    "n": 400,
+    "mean": 39.53601851496855,
+    "se": 1.7577726988889493
+   }
+  },
+  {
+   "pitch": "slow",
+   "style": "par batting",
+   "d4080": {
+    "n": 400,
+    "mean": 40.509704883684115,
+    "se": 1.6419103759261462
+   }
+  },
+  {
+   "pitch": "slow",
+   "style": "boundary-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 38.29139793753927,
+    "se": 1.602918799378968
+   }
+  },
+  {
+   "pitch": "slow",
+   "style": "rotation-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 36.65203338680329,
+    "se": 1.6400850180357092
+   }
+  },
+  {
+   "pitch": "slow",
+   "style": "weak batting",
+   "d4080": {
+    "n": 400,
+    "mean": 36.09406942202816,
+    "se": 1.6446536894486277
+   }
+  },
+  {
+   "pitch": "slow",
+   "style": "elite batting",
+   "d4080": {
+    "n": 400,
+    "mean": 37.545784043130695,
+    "se": 1.5977807302367455
+   }
+  },
+  {
+   "pitch": "dry",
+   "style": "par batting",
+   "d4080": {
+    "n": 400,
+    "mean": 41.074237000308855,
+    "se": 1.8971583726914238
+   }
+  },
+  {
+   "pitch": "dry",
+   "style": "boundary-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 43.75371398907665,
+    "se": 2.0017987711364587
+   }
+  },
+  {
+   "pitch": "dry",
+   "style": "rotation-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 40.05521563510535,
+    "se": 1.8005263110216896
+   }
+  },
+  {
+   "pitch": "dry",
+   "style": "weak batting",
+   "d4080": {
+    "n": 400,
+    "mean": 41.48880192939032,
+    "se": 1.71697586720751
+   }
+  },
+  {
+   "pitch": "dry",
+   "style": "elite batting",
+   "d4080": {
+    "n": 400,
+    "mean": 45.73652331034629,
+    "se": 1.8354752962858347
+   }
+  }
+ ],
+ "arm": [
+  {
+   "arms": 0,
+   "runouts": {
+    "n": 400,
+    "mean": 0.61,
+    "se": 0.039032792588323706
+   },
+   "conceded": {
+    "n": 400,
+    "mean": 277.57333375130963,
+    "se": 1.5265805276720659
+   }
+  },
+  {
+   "arms": 1,
+   "runouts": {
+    "n": 400,
+    "mean": 0.6925,
+    "se": 0.04167374626571928
+   },
+   "conceded": {
+    "n": 400,
+    "mean": 276.6765048231529,
+    "se": 1.5408552337788972
+   }
+  },
+  {
+   "arms": 3,
+   "runouts": {
+    "n": 400,
+    "mean": 0.7475,
+    "se": 0.04346357187577312
+   },
+   "conceded": {
+    "n": 400,
+    "mean": 275.53887733304,
+    "se": 1.5622377635500642
+   }
+  }
+ ],
+ "keeper": [
+  {
+   "kq": 50,
+   "stumpings": {
+    "n": 400,
+    "mean": 0.085,
+    "se": 0.014831974537184085
+   },
+   "byes": {
+    "n": 400,
+    "mean": 3.135,
+    "se": 0.08774214614725545
+   },
+   "keeperCatches": {
+    "n": 400,
+    "mean": 0.25,
+    "se": 0.02637212016134674
+   }
+  },
+  {
+   "kq": 74,
+   "stumpings": {
+    "n": 400,
+    "mean": 0.21,
+    "se": 0.0229906813420444
+   },
+   "byes": {
+    "n": 400,
+    "mean": 1.9,
+    "se": 0.06603712785728254
+   },
+   "keeperCatches": {
+    "n": 400,
+    "mean": 0.3825,
+    "se": 0.02966790921336939
+   }
+  },
+  {
+   "kq": 95,
+   "stumpings": {
+    "n": 400,
+    "mean": 0.32,
+    "se": 0.02776557793916316
+   },
+   "byes": {
+    "n": 400,
+    "mean": 1.175,
+    "se": 0.05320257310000291
+   },
+   "keeperCatches": {
+    "n": 400,
+    "mean": 0.41,
+    "se": 0.032517587298403205
+   }
+  }
+ ],
+ "attr": [
+  {
+   "lbl": "batting (vsPace+vsSpin)",
+   "perPoint": 0.2814139812822067,
+   "dTotal": {
+    "n": 400,
+    "mean": 5.628279625644134,
+    "se": 1.3451188997895003
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.04125,
+    "se": 0.026909457277645862
+   }
+  },
+  {
+   "lbl": "bowling (wicket+econ)",
+   "perPoint": 0.48067256280319504,
+   "dTotal": {
+    "n": 400,
+    "mean": 9.6134512560639,
+    "se": 1.7509719311207643
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.16375,
+    "se": 0.028597585536129354
+   }
+  },
+  {
+   "lbl": "fielding (ground)",
+   "perPoint": -0.0038447779110600882,
+   "dTotal": {
+    "n": 400,
+    "mean": -0.07689555822120177,
+    "se": 0.7983775095788938
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.015,
+    "se": 0.01750581714988517
+   }
+  },
+  {
+   "lbl": "catching",
+   "perPoint": 0.006424756075031496,
+   "dTotal": {
+    "n": 400,
+    "mean": 0.12849512150062992,
+    "se": 0.30424133367777184
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.005,
+    "se": 0.006376845646634579
+   }
+  }
+ ]
+}
