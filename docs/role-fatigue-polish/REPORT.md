@@ -163,3 +163,80 @@ double punishment anywhere near unusability.
   pinned fingerprint drift only.
 
 Not merged, not deployed, goldens held for review.
+
+## 8. Acceptance: the isolated cost of fatigue (`isolation-evidence.json`)
+
+The review asked the right question: §1's early-v-late drift cannot
+answer "what does fatigue cost this trade?", because a bowler's late
+overs differ from his early ones in ball age, phase, field
+restrictions and how set the batsmen are — and those differ **by
+type**. So the performance consequence of accumulated bowling fatigue
+(the `wFe` ramp in ballDist, and nothing else) is neutralised by
+`__foBowlFatPerfOff`: the tank still fills identically, every type
+keeps every characteristic, and the same seeds run twice. **ON minus
+OFF is the cost of fatigue itself.**
+
+4 types × 4 stamina × 600 paired matches, per ten-over workload:
+
+| type | Δ runs | Δ economy | Δ wickets |
+|---|---|---|---|
+| fast | **4.90±0.32** | +0.489 | **−0.189** |
+| fast-medium | **4.09±0.29** | +0.408 | **−0.147** |
+| medium | **3.27±0.28** | +0.327 | **−0.067** |
+| spin | **3.19±0.29** | +0.319 | **−0.045** |
+
+**FAST > FAST-MEDIUM > MEDIUM > SPIN on every column.** Fast v medium
+is 1.63±0.43 (z=3.8); fast > fast-medium > medium orders correctly in
+all four stamina cells independently (5.86/5.03/4.32 at stamina 30
+down to 3.72/2.96/2.37 at 90 — the cost also falls with stamina, as
+it should). The wicket differential is monotone across all four
+trades with the tightest relative errors in the battery.
+
+Medium v spin is 0.08±0.40 in runs — **unresolved by design**: a 10%
+work factor acting on a 3.3-run effect is 0.33 runs, below what 600
+paired matches can see. The separation is real and deterministic in
+the tank (0.985 v 1.095 peak at stamina 50, every seed), and the
+wicket column (−0.067 v −0.045) points the same way. Resolving it in
+runs would need either ~10× the sample or a bigger constant, and the
+brief asked for the smallest separation that creates a meaningful
+difference, not the largest that is easy to measure.
+
+## 9. Why medium's raw drift beat fast's (`drift-cause.txt`)
+
+The same drift measured twice on identical seeds (N=500), with only
+fatigue's performance consequence removed the second time:
+
+| type | raw drift | non-fatigue part | fatigue's own | team wkts by ov 14 |
+|---|---|---|---|---|
+| fast | 1.27±0.12 | 0.53 | **0.74** | 2.28 |
+| fast-medium | 1.39±0.11 | 0.61 | **0.77** | 1.95 |
+| medium | 1.42±0.11 | **0.84** | **0.59** | 1.74 |
+| spin | 0.55±0.11 | 0.09 | **0.45** | 1.54 |
+
+The raw table was inverted by its **non-fatigue half**, and the last
+column names the mechanism: by the time his eighth over starts, the
+fast bowler's side has 2.28 wickets down against the medium's 1.74,
+so his late overs are bowled at **less set batsmen** — he is
+flattered by his own wickets and medium is penalised by the lack of
+them. Ball age and phase (his overs 1–3 are match overs 0/2/4 under
+powerplay restrictions; his 8–10 are 14/16/18) supply the rest. So
+the cause is **batter setness plus phase, not fatigue scaling** —
+categories C and B of the review's list, with noise a minor
+contributor (raw drifts sit within ~2 SE of each other across the
+three pace trades). Fatigue's own contribution never inverted.
+
+**Decision: ACCEPT the existing constants unchanged.** No constant
+was moved in this pass; the only code change is the instrumentation
+flag, proven bit-for-bit inert against the frozen build (12 matches,
+three surfaces).
+
+## 10. Final regression confirmation
+
+- `FO_RFAT = {spinWork: 0.90, keepDiv: 550, gloveFat: 4, captFat: 0.4}`
+  — unchanged; server ladder 2.6 / 2.5 / 2.4 / 1.5 and
+  `LOAD_CAPTAINCY = 4` unchanged.
+- Captaincy 20→95 = 6.58±0.97 runs (+7.0±1.5 win pts), 80→95 =
+  3.20±0.82 — healthy, skill dominant.
+- Environment: 269.2/50ov v the fielding build's 270.1, wickets
+  7.15 v 7.22, phases within one SE.
+- <!-- FINAL-GATES -->
