@@ -1,0 +1,1668 @@
+{
+ "exact": [
+  [
+   {
+    "k": 1,
+    "skill": 20,
+    "eff": 20,
+    "routine": 1,
+    "moderate": 0.057,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.517
+   },
+   {
+    "k": 1,
+    "skill": 30,
+    "eff": 30,
+    "routine": 1,
+    "moderate": 0.37625,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.61275
+   },
+   {
+    "k": 1,
+    "skill": 40,
+    "eff": 40,
+    "routine": 1,
+    "moderate": 0.63075,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.68925
+   },
+   {
+    "k": 1,
+    "skill": 50,
+    "eff": 50,
+    "routine": 1,
+    "moderate": 0.84675,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.754
+   },
+   {
+    "k": 1,
+    "skill": 60,
+    "eff": 60,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.07325,
+    "extreme": 0,
+    "overall": 0.811
+   },
+   {
+    "k": 1,
+    "skill": 70,
+    "eff": 70,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.41425,
+    "extreme": 0,
+    "overall": 0.86225
+   },
+   {
+    "k": 1,
+    "skill": 80,
+    "eff": 80,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.72575,
+    "extreme": 0,
+    "overall": 0.90875
+   },
+   {
+    "k": 1,
+    "skill": 90,
+    "eff": 90,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 1,
+    "extreme": 0.0405,
+    "overall": 0.952
+   },
+   {
+    "k": 1,
+    "skill": 95,
+    "eff": 95,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 1,
+    "extreme": 0.4495,
+    "overall": 0.9725
+   }
+  ],
+  [
+   {
+    "k": 0.85,
+    "skill": 20,
+    "eff": 24.650000000000002,
+    "routine": 1,
+    "moderate": 0.21625,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.56475
+   },
+   {
+    "k": 0.85,
+    "skill": 30,
+    "eff": 33.150000000000006,
+    "routine": 1,
+    "moderate": 0.46175,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.6385
+   },
+   {
+    "k": 0.85,
+    "skill": 40,
+    "eff": 41.65,
+    "routine": 1,
+    "moderate": 0.66875,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.7005
+   },
+   {
+    "k": 0.85,
+    "skill": 50,
+    "eff": 50.15,
+    "routine": 1,
+    "moderate": 0.84975,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.755
+   },
+   {
+    "k": 0.85,
+    "skill": 60,
+    "eff": 58.65,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.0245,
+    "extreme": 0,
+    "overall": 0.80375
+   },
+   {
+    "k": 0.85,
+    "skill": 70,
+    "eff": 67.15,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.3205,
+    "extreme": 0,
+    "overall": 0.848
+   },
+   {
+    "k": 0.85,
+    "skill": 80,
+    "eff": 75.65,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.5935,
+    "extreme": 0,
+    "overall": 0.889
+   },
+   {
+    "k": 0.85,
+    "skill": 90,
+    "eff": 84.15,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.84775,
+    "extreme": 0,
+    "overall": 0.92725
+   },
+   {
+    "k": 0.85,
+    "skill": 95,
+    "eff": 88.4,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.96875,
+    "extreme": 0,
+    "overall": 0.94525
+   }
+  ],
+  [
+   {
+    "k": 0.75,
+    "skill": 20,
+    "eff": 27.75,
+    "routine": 1,
+    "moderate": 0.3115,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.5935
+   },
+   {
+    "k": 0.75,
+    "skill": 30,
+    "eff": 35.25,
+    "routine": 1,
+    "moderate": 0.51575,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.65475
+   },
+   {
+    "k": 0.75,
+    "skill": 40,
+    "eff": 42.75,
+    "routine": 1,
+    "moderate": 0.6935,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.708
+   },
+   {
+    "k": 0.75,
+    "skill": 50,
+    "eff": 50.25,
+    "routine": 1,
+    "moderate": 0.85175,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.7555
+   },
+   {
+    "k": 0.75,
+    "skill": 60,
+    "eff": 57.75,
+    "routine": 1,
+    "moderate": 0.99575,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.79875
+   },
+   {
+    "k": 0.75,
+    "skill": 70,
+    "eff": 65.25,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.2565,
+    "extreme": 0,
+    "overall": 0.8385
+   },
+   {
+    "k": 0.75,
+    "skill": 80,
+    "eff": 72.75,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.5025,
+    "extreme": 0,
+    "overall": 0.8755
+   },
+   {
+    "k": 0.75,
+    "skill": 90,
+    "eff": 80.25,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.73325,
+    "extreme": 0,
+    "overall": 0.91
+   },
+   {
+    "k": 0.75,
+    "skill": 95,
+    "eff": 84,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.8435,
+    "extreme": 0,
+    "overall": 0.9265
+   }
+  ],
+  [
+   {
+    "k": 0.65,
+    "skill": 20,
+    "eff": 30.849999999999998,
+    "routine": 1,
+    "moderate": 0.39975,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.62
+   },
+   {
+    "k": 0.65,
+    "skill": 30,
+    "eff": 37.35,
+    "routine": 1,
+    "moderate": 0.56775,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.67025
+   },
+   {
+    "k": 0.65,
+    "skill": 40,
+    "eff": 43.85,
+    "routine": 1,
+    "moderate": 0.71775,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.71525
+   },
+   {
+    "k": 0.65,
+    "skill": 50,
+    "eff": 50.35,
+    "routine": 1,
+    "moderate": 0.85375,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.75625
+   },
+   {
+    "k": 0.65,
+    "skill": 60,
+    "eff": 56.85,
+    "routine": 1,
+    "moderate": 0.97925,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.79375
+   },
+   {
+    "k": 0.65,
+    "skill": 70,
+    "eff": 63.35,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.19125,
+    "extreme": 0,
+    "overall": 0.82875
+   },
+   {
+    "k": 0.65,
+    "skill": 80,
+    "eff": 69.85,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.4095,
+    "extreme": 0,
+    "overall": 0.8615
+   },
+   {
+    "k": 0.65,
+    "skill": 90,
+    "eff": 76.35,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.615,
+    "extreme": 0,
+    "overall": 0.89225
+   },
+   {
+    "k": 0.65,
+    "skill": 95,
+    "eff": 79.6,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.71375,
+    "extreme": 0,
+    "overall": 0.907
+   }
+  ],
+  [
+   {
+    "k": 0.55,
+    "skill": 20,
+    "eff": 33.95,
+    "routine": 1,
+    "moderate": 0.4825,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.64475
+   },
+   {
+    "k": 0.55,
+    "skill": 30,
+    "eff": 39.45,
+    "routine": 1,
+    "moderate": 0.618,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.6855
+   },
+   {
+    "k": 0.55,
+    "skill": 40,
+    "eff": 44.95,
+    "routine": 1,
+    "moderate": 0.74175,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.7225
+   },
+   {
+    "k": 0.55,
+    "skill": 50,
+    "eff": 50.45,
+    "routine": 1,
+    "moderate": 0.85575,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.75675
+   },
+   {
+    "k": 0.55,
+    "skill": 60,
+    "eff": 55.95,
+    "routine": 1,
+    "moderate": 0.9625,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.78875
+   },
+   {
+    "k": 0.55,
+    "skill": 70,
+    "eff": 61.45,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.12475,
+    "extreme": 0,
+    "overall": 0.81875
+   },
+   {
+    "k": 0.55,
+    "skill": 80,
+    "eff": 66.95,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.31375,
+    "extreme": 0,
+    "overall": 0.847
+   },
+   {
+    "k": 0.55,
+    "skill": 90,
+    "eff": 72.45,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.493,
+    "extreme": 0,
+    "overall": 0.874
+   },
+   {
+    "k": 0.55,
+    "skill": 95,
+    "eff": 75.2,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.5795,
+    "extreme": 0,
+    "overall": 0.887
+   }
+  ],
+  [
+   {
+    "k": 0.45,
+    "skill": 20,
+    "eff": 37.05,
+    "routine": 1,
+    "moderate": 0.5605,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.66825
+   },
+   {
+    "k": 0.45,
+    "skill": 30,
+    "eff": 41.55,
+    "routine": 1,
+    "moderate": 0.6665,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.7
+   },
+   {
+    "k": 0.45,
+    "skill": 40,
+    "eff": 46.05,
+    "routine": 1,
+    "moderate": 0.76525,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.7295
+   },
+   {
+    "k": 0.45,
+    "skill": 50,
+    "eff": 50.55,
+    "routine": 1,
+    "moderate": 0.85775,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.75725
+   },
+   {
+    "k": 0.45,
+    "skill": 60,
+    "eff": 55.05,
+    "routine": 1,
+    "moderate": 0.9455,
+    "difficult": 0,
+    "extreme": 0,
+    "overall": 0.78375
+   },
+   {
+    "k": 0.45,
+    "skill": 70,
+    "eff": 59.55,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.057,
+    "extreme": 0,
+    "overall": 0.8085
+   },
+   {
+    "k": 0.45,
+    "skill": 80,
+    "eff": 64.05,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.2155,
+    "extreme": 0,
+    "overall": 0.83225
+   },
+   {
+    "k": 0.45,
+    "skill": 90,
+    "eff": 68.55,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.36675,
+    "extreme": 0,
+    "overall": 0.855
+   },
+   {
+    "k": 0.45,
+    "skill": 95,
+    "eff": 70.8,
+    "routine": 1,
+    "moderate": 1,
+    "difficult": 0.44025,
+    "extreme": 0,
+    "overall": 0.866
+   }
+  ]
+ ],
+ "verify": [
+  {
+   "mode": "both",
+   "lvl": 20,
+   "conceded": {
+    "n": 400,
+    "mean": 298.9142559366461,
+    "se": 1.3805551421933362
+   },
+   "wkts": {
+    "n": 400,
+    "mean": 5.37,
+    "se": 0.14193524592252532
+   },
+   "win": {
+    "n": 400,
+    "mean": 0.295,
+    "se": 0.02276198078866502
+   },
+   "inns": 400,
+   "offered": 2.6100000000000003,
+   "taken": 2.15,
+   "dropped": 0.4475,
+   "beaten": 0.0125,
+   "saves": {
+    "s1": 0.7325,
+    "s2": 0,
+    "s3": 0,
+    "s4": 0
+   },
+   "fieldRuns": -7.6525,
+   "misfields": 8.385,
+   "runouts": 0.575,
+   "outs": {
+    "dot": 100.885,
+    "one": 81.3025,
+    "two": 18.98,
+    "three": 1.2075,
+    "four": 17.3275,
+    "six": 3.3125
+   }
+  },
+  {
+   "mode": "both",
+   "lvl": 30,
+   "conceded": {
+    "n": 400,
+    "mean": 292.31048728460996,
+    "se": 1.3363961473124055
+   },
+   "wkts": {
+    "n": 400,
+    "mean": 6.02,
+    "se": 0.1479568452967804
+   },
+   "win": {
+    "n": 400,
+    "mean": 0.3775,
+    "se": 0.02413899547944964
+   },
+   "inns": 400,
+   "offered": 3.1475,
+   "taken": 2.6825,
+   "dropped": 0.445,
+   "beaten": 0.02,
+   "saves": {
+    "s1": 1.93,
+    "s2": 0,
+    "s3": 0,
+    "s4": 0
+   },
+   "fieldRuns": -3.6775,
+   "misfields": 5.6075,
+   "runouts": 0.5975,
+   "outs": {
+    "dot": 102.3825,
+    "one": 81.06,
+    "two": 17.04,
+    "three": 1.045,
+    "four": 17.2425,
+    "six": 3.2125
+   }
+  },
+  {
+   "mode": "both",
+   "lvl": 40,
+   "conceded": {
+    "n": 400,
+    "mean": 285.0881347558815,
+    "se": 1.4205782484576053
+   },
+   "wkts": {
+    "n": 400,
+    "mean": 6.5575,
+    "se": 0.14852401432791995
+   },
+   "win": {
+    "n": 400,
+    "mean": 0.46375,
+    "se": 0.024744860355942398
+   },
+   "inns": 400,
+   "offered": 3.6374999999999997,
+   "taken": 3.1275,
+   "dropped": 0.4875,
+   "beaten": 0.0225,
+   "saves": {
+    "s1": 3.24,
+    "s2": 0.0275,
+    "s3": 0.01,
+    "s4": 0.0175
+   },
+   "fieldRuns": -0.10499999999999998,
+   "misfields": 3.5,
+   "runouts": 0.6775,
+   "outs": {
+    "dot": 104.63,
+    "one": 80.685,
+    "two": 15.2,
+    "three": 0.9825,
+    "four": 17.115,
+    "six": 3.165
+   }
+  },
+  {
+   "mode": "both",
+   "lvl": 50,
+   "conceded": {
+    "n": 400,
+    "mean": 275.5080751144181,
+    "se": 1.4835783173339772
+   },
+   "wkts": {
+    "n": 400,
+    "mean": 7.08,
+    "se": 0.1417629777291541
+   },
+   "win": {
+    "n": 400,
+    "mean": 0.5825,
+    "se": 0.024497135528930937
+   },
+   "inns": 400,
+   "offered": 4.125,
+   "taken": 3.6275,
+   "dropped": 0.475,
+   "beaten": 0.0225,
+   "saves": {
+    "s1": 4.6025,
+    "s2": 0.145,
+    "s3": 0.0825,
+    "s4": 0.105
+   },
+   "fieldRuns": 3.655,
+   "misfields": 1.9049999999999998,
+   "runouts": 0.6675,
+   "outs": {
+    "dot": 106.0025,
+    "one": 80.2775,
+    "two": 13.3675,
+    "three": 0.8525,
+    "four": 16.285,
+    "six": 3.065
+   }
+  },
+  {
+   "mode": "both",
+   "lvl": 60,
+   "conceded": {
+    "n": 400,
+    "mean": 267.8855357167547,
+    "se": 1.4377606165975083
+   },
+   "wkts": {
+    "n": 400,
+    "mean": 7.515,
+    "se": 0.14079771835414912
+   },
+   "win": {
+    "n": 400,
+    "mean": 0.6225,
+    "se": 0.024138995479449636
+   },
+   "inns": 400,
+   "offered": 4.7225,
+   "taken": 4.1925,
+   "dropped": 0.5075,
+   "beaten": 0.0225,
+   "saves": {
+    "s1": 5.9125,
+    "s2": 0.44,
+    "s3": 0.275,
+    "s4": 0.3
+   },
+   "fieldRuns": 7.992499999999999,
+   "misfields": 0.825,
+   "runouts": 0.6325,
+   "outs": {
+    "dot": 106.7075,
+    "one": 80.065,
+    "two": 12.4075,
+    "three": 0.73,
+    "four": 15.6025,
+    "six": 3.02
+   }
+  },
+  {
+   "mode": "both",
+   "lvl": 70,
+   "conceded": {
+    "n": 400,
+    "mean": 257.62413397508686,
+    "se": 1.5638702127706616
+   },
+   "wkts": {
+    "n": 400,
+    "mean": 7.895,
+    "se": 0.1339020608682402
+   },
+   "win": {
+    "n": 400,
+    "mean": 0.67875,
+    "se": 0.023276341291315
+   },
+   "inns": 400,
+   "offered": 5.145,
+   "taken": 4.63,
+   "dropped": 0.495,
+   "beaten": 0.02,
+   "saves": {
+    "s1": 7.175,
+    "s2": 0.8875,
+    "s3": 0.495,
+    "s4": 0.5725
+   },
+   "fieldRuns": 12.497499999999999,
+   "misfields": 0.22749999999999998,
+   "runouts": 0.61,
+   "outs": {
+    "dot": 106.65,
+    "one": 79.65,
+    "two": 10.84,
+    "three": 0.68,
+    "four": 14.2325,
+    "six": 2.9175
+   }
+  },
+  {
+   "mode": "both",
+   "lvl": 80,
+   "conceded": {
+    "n": 400,
+    "mean": 246.2115329860807,
+    "se": 1.5951289745307058
+   },
+   "wkts": {
+    "n": 400,
+    "mean": 8.3675,
+    "se": 0.12229472340797674
+   },
+   "win": {
+    "n": 400,
+    "mean": 0.785,
+    "se": 0.020413949233508703
+   },
+   "inns": 400,
+   "offered": 5.7475,
+   "taken": 5.2,
+   "dropped": 0.5275,
+   "beaten": 0.02,
+   "saves": {
+    "s1": 7.9925,
+    "s2": 1.3025,
+    "s3": 0.8075,
+    "s4": 0.965
+   },
+   "fieldRuns": 16.854999999999997,
+   "misfields": 0.025,
+   "runouts": 0.6125,
+   "outs": {
+    "dot": 107.6175,
+    "one": 77.9875,
+    "two": 10.03,
+    "three": 0.635,
+    "four": 12.8875,
+    "six": 2.735
+   }
+  },
+  {
+   "mode": "both",
+   "lvl": 90,
+   "conceded": {
+    "n": 400,
+    "mean": 235.98630271471072,
+    "se": 1.6037788891078522
+   },
+   "wkts": {
+    "n": 400,
+    "mean": 8.8075,
+    "se": 0.10667501240063983
+   },
+   "win": {
+    "n": 400,
+    "mean": 0.835,
+    "se": 0.018497781483180646
+   },
+   "inns": 400,
+   "offered": 6.145,
+   "taken": 5.6125,
+   "dropped": 0.5175,
+   "beaten": 0.015,
+   "saves": {
+    "s1": 8.4625,
+    "s2": 1.9175,
+    "s3": 1.105,
+    "s4": 1.3825
+   },
+   "fieldRuns": 21.139999999999997,
+   "misfields": 0.0025,
+   "runouts": 0.6075,
+   "outs": {
+    "dot": 107.1225,
+    "one": 76.0575,
+    "two": 9.845,
+    "three": 0.6475,
+    "four": 11.29,
+    "six": 2.6025
+   }
+  },
+  {
+   "mode": "both",
+   "lvl": 95,
+   "conceded": {
+    "n": 400,
+    "mean": 230.9934182087484,
+    "se": 1.5758589131292378
+   },
+   "wkts": {
+    "n": 400,
+    "mean": 8.9,
+    "se": 0.10198530534476864
+   },
+   "win": {
+    "n": 400,
+    "mean": 0.8525,
+    "se": 0.017663929659834193
+   },
+   "inns": 400,
+   "offered": 6.3025,
+   "taken": 5.7975,
+   "dropped": 0.485,
+   "beaten": 0.02,
+   "saves": {
+    "s1": 8.8275,
+    "s2": 2.0725,
+    "s3": 1.2575,
+    "s4": 1.535
+   },
+   "fieldRuns": 22.885,
+   "misfields": 0,
+   "runouts": 0.575,
+   "outs": {
+    "dot": 107.3225,
+    "one": 75.605,
+    "two": 9.665,
+    "three": 0.6025,
+    "four": 10.6475,
+    "six": 2.41
+   }
+  }
+ ],
+ "indiv": [
+  {
+   "lbl": "1 elite",
+   "dSaved": {
+    "n": 400,
+    "mean": 5.356358681639154,
+    "se": 1.044037161116748
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.0575,
+    "se": 0.020819293514817955
+   },
+   "catches": 4.0325,
+   "saves": 6.85,
+   "misf": 1.6725
+  },
+  {
+   "lbl": "2 elite",
+   "dSaved": {
+    "n": 400,
+    "mean": 6.513593682225487,
+    "se": 1.1870241390971343
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.09375,
+    "se": 0.021126539480616914
+   },
+   "catches": 3.9125,
+   "saves": 8,
+   "misf": 1.62
+  },
+  {
+   "lbl": "3 elite",
+   "dSaved": {
+    "n": 400,
+    "mean": 14.36229562173996,
+    "se": 1.3198970073381557
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.14875,
+    "se": 0.02251418029901028
+   },
+   "catches": 4.0675,
+   "saves": 10.3125,
+   "misf": 1.3525
+  },
+  {
+   "lbl": "1 poor",
+   "dSaved": {
+    "n": 400,
+    "mean": -4.585240538818379,
+    "se": 1.1369231914037905
+   },
+   "dWin": {
+    "n": 400,
+    "mean": -0.025,
+    "se": 0.02192919798603624
+   },
+   "catches": 3.54,
+   "saves": 4.66,
+   "misf": 4.0925
+  },
+  {
+   "lbl": "2 poor",
+   "dSaved": {
+    "n": 400,
+    "mean": -8.560083450404429,
+    "se": 1.2656426601128559
+   },
+   "dWin": {
+    "n": 400,
+    "mean": -0.06875,
+    "se": 0.024121062536603403
+   },
+   "catches": 3.34,
+   "saves": 4.0375,
+   "misf": 6.495
+  },
+  {
+   "lbl": "3 poor",
+   "dSaved": {
+    "n": 400,
+    "mean": -11.739014679917641,
+    "se": 1.2813639234940473
+   },
+   "dWin": {
+    "n": 400,
+    "mean": -0.10625,
+    "se": 0.024998041903266995
+   },
+   "catches": 3.185,
+   "saves": 3.465,
+   "misf": 8.5325
+  }
+ ],
+ "pos": [
+  {
+   "lbl": "elite catcher (90 hands)",
+   "man": "A-bat2",
+   "inns": 400,
+   "at": {
+    "save@third man": 172,
+    "catch@slip": 105,
+    "catch@mid-on": 157,
+    "fumble@mid-on": 44,
+    "save@mid-off": 132,
+    "fumble@mid-off": 53,
+    "save@sweeper": 154,
+    "catch@deep midwicket": 149,
+    "catch@cover": 116,
+    "save@deep midwicket": 251,
+    "fumble@point": 82,
+    "misfield@square leg": 59,
+    "catch@fine leg": 49,
+    "save@deep cover": 52,
+    "save@cover": 257,
+    "save@point": 182,
+    "catch@long-on": 52,
+    "save@fine leg": 223,
+    "catch@sweeper": 35,
+    "misfield@third man": 26,
+    "save@mid-on": 146,
+    "misfield@mid-on": 47,
+    "catch@third man": 254,
+    "save@long-off": 49,
+    "fumble@cover": 41,
+    "misfield@cover": 18,
+    "save@midwicket": 127,
+    "save@square leg": 200,
+    "fumble@deep midwicket": 27,
+    "misfield@midwicket": 13,
+    "catch@point": 190,
+    "catch@mid-off": 48,
+    "misfield@point": 41,
+    "misfield@long-off": 9,
+    "fumble@midwicket": 13,
+    "misfield@deep midwicket": 44,
+    "save@long-on": 35,
+    "fumble@slip": 16,
+    "misfield@mid-off": 34,
+    "misfield@fine leg": 49,
+    "fumble@fine leg": 21,
+    "catch@midwicket": 58,
+    "catch@square leg": 76,
+    "fumble@third man": 33,
+    "fumble@square leg": 14,
+    "misfield@sweeper": 3,
+    "save@slip": 24,
+    "misfield@long-on": 15,
+    "fumble@long-off": 8,
+    "catch@deep cover": 17,
+    "catch@long-off": 12,
+    "fumble@long-on": 13,
+    "misfield@deep cover": 2,
+    "save@short leg": 1,
+    "fumble@sweeper": 2,
+    "misfield@slip": 1,
+    "catch@silly point": 3
+   },
+   "catchesCordon": 105,
+   "catchesAll": 1321
+  },
+  {
+   "lbl": "elite athlete (90 legs)",
+   "man": "A-bat2",
+   "inns": 400,
+   "at": {
+    "save@third man": 921,
+    "catch@slip": 79,
+    "catch@mid-on": 140,
+    "fumble@mid-on": 47,
+    "save@mid-off": 137,
+    "fumble@mid-off": 54,
+    "save@sweeper": 144,
+    "catch@deep midwicket": 110,
+    "catch@cover": 117,
+    "save@deep cover": 170,
+    "catch@square leg": 66,
+    "fumble@point": 87,
+    "misfield@square leg": 62,
+    "save@deep midwicket": 270,
+    "misfield@cover": 18,
+    "catch@third man": 264,
+    "save@cover": 246,
+    "catch@mid-off": 49,
+    "save@mid-on": 150,
+    "save@square leg": 214,
+    "save@long-off": 52,
+    "misfield@mid-on": 45,
+    "catch@fine leg": 49,
+    "misfield@sweeper": 3,
+    "save@long-on": 33,
+    "catch@midwicket": 77,
+    "fumble@cover": 39,
+    "save@midwicket": 121,
+    "catch@long-on": 49,
+    "fumble@deep midwicket": 26,
+    "save@fine leg": 224,
+    "misfield@midwicket": 13,
+    "catch@point": 204,
+    "save@point": 192,
+    "misfield@point": 41,
+    "misfield@long-off": 14,
+    "save@slip": 23,
+    "fumble@midwicket": 10,
+    "misfield@deep midwicket": 40,
+    "misfield@slip": 1,
+    "misfield@fine leg": 53,
+    "fumble@square leg": 15,
+    "fumble@slip": 16,
+    "catch@sweeper": 37,
+    "save@silly point": 2,
+    "misfield@mid-off": 33,
+    "fumble@fine leg": 23,
+    "catch@deep cover": 18,
+    "catch@long-off": 12,
+    "save@short leg": 12,
+    "misfield@long-on": 12,
+    "fumble@long-off": 10,
+    "fumble@long-on": 13,
+    "catch@silly point": 2,
+    "fumble@sweeper": 2
+   },
+   "catchesCordon": 79,
+   "catchesAll": 1273
+  },
+  {
+   "lbl": "par control",
+   "man": "A-bat2",
+   "inns": 400,
+   "at": {
+    "save@third man": 174,
+    "catch@slip": 81,
+    "catch@mid-on": 153,
+    "fumble@mid-on": 44,
+    "save@mid-off": 135,
+    "fumble@mid-off": 53,
+    "save@sweeper": 158,
+    "catch@deep midwicket": 118,
+    "catch@cover": 115,
+    "save@deep midwicket": 260,
+    "fumble@point": 81,
+    "misfield@square leg": 61,
+    "catch@fine leg": 46,
+    "save@deep cover": 53,
+    "save@cover": 259,
+    "save@point": 191,
+    "misfield@third man": 28,
+    "save@mid-on": 152,
+    "misfield@mid-on": 46,
+    "catch@third man": 256,
+    "save@long-off": 46,
+    "fumble@cover": 38,
+    "misfield@cover": 18,
+    "save@midwicket": 132,
+    "save@square leg": 204,
+    "catch@mid-off": 53,
+    "catch@long-on": 39,
+    "fumble@deep midwicket": 26,
+    "save@fine leg": 229,
+    "misfield@midwicket": 12,
+    "catch@point": 197,
+    "misfield@point": 41,
+    "misfield@long-off": 10,
+    "fumble@midwicket": 13,
+    "misfield@deep midwicket": 48,
+    "save@long-on": 36,
+    "fumble@slip": 17,
+    "misfield@fine leg": 48,
+    "misfield@mid-off": 35,
+    "catch@sweeper": 38,
+    "fumble@fine leg": 20,
+    "catch@midwicket": 59,
+    "catch@square leg": 71,
+    "fumble@third man": 30,
+    "save@slip": 28,
+    "catch@deep cover": 19,
+    "fumble@square leg": 14,
+    "misfield@sweeper": 4,
+    "misfield@long-on": 15,
+    "fumble@long-off": 8,
+    "catch@long-off": 13,
+    "fumble@long-on": 13,
+    "save@short leg": 1,
+    "fumble@sweeper": 2,
+    "catch@silly point": 2,
+    "misfield@deep cover": 1
+   },
+   "catchesCordon": 81,
+   "catchesAll": 1260
+  },
+  {
+   "lbl": "liability (25/25)",
+   "man": "A-bat2",
+   "inns": 400,
+   "at": {
+    "save@third man": 169,
+    "catch@slip": 87,
+    "fumble@mid-on": 437,
+    "save@mid-off": 126,
+    "save@point": 182,
+    "catch@deep midwicket": 130,
+    "save@cover": 253,
+    "misfield@cover": 17,
+    "catch@square leg": 68,
+    "misfield@mid-on": 377,
+    "fumble@point": 89,
+    "fumble@mid-off": 54,
+    "misfield@square leg": 205,
+    "save@square leg": 161,
+    "save@deep midwicket": 246,
+    "catch@fine leg": 47,
+    "save@deep cover": 63,
+    "catch@mid-off": 65,
+    "fumble@long-on": 13,
+    "save@long-off": 47,
+    "misfield@third man": 25,
+    "catch@third man": 250,
+    "catch@point": 181,
+    "catch@cover": 131,
+    "save@sweeper": 160,
+    "fumble@cover": 40,
+    "catch@midwicket": 82,
+    "catch@mid-on": 95,
+    "save@midwicket": 123,
+    "fumble@deep midwicket": 37,
+    "misfield@midwicket": 10,
+    "misfield@point": 45,
+    "save@fine leg": 219,
+    "fumble@midwicket": 10,
+    "fumble@square leg": 55,
+    "catch@long-on": 31,
+    "catch@sweeper": 46,
+    "fumble@slip": 17,
+    "misfield@deep midwicket": 36,
+    "misfield@fine leg": 52,
+    "misfield@mid-off": 33,
+    "fumble@long-off": 10,
+    "fumble@fine leg": 22,
+    "catch@silly point": 2,
+    "fumble@third man": 34,
+    "save@slip": 25,
+    "catch@deep cover": 17,
+    "misfield@long-off": 10,
+    "save@long-on": 34,
+    "catch@long-off": 13,
+    "misfield@long-on": 13,
+    "fumble@sweeper": 2,
+    "misfield@sweeper": 3,
+    "save@short leg": 1,
+    "misfield@slip": 1
+   },
+   "catchesCordon": 87,
+   "catchesAll": 1245
+  }
+ ],
+ "cond": [
+  {
+   "pitch": "green",
+   "style": "par batting",
+   "d4080": {
+    "n": 400,
+    "mean": 72.80020595016894,
+    "se": 1.987796446424906
+   }
+  },
+  {
+   "pitch": "green",
+   "style": "boundary-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 72.9059129438171,
+    "se": 2.144824894928233
+   }
+  },
+  {
+   "pitch": "green",
+   "style": "rotation-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 68.2313086907323,
+    "se": 1.7823484921470396
+   }
+  },
+  {
+   "pitch": "green",
+   "style": "weak batting",
+   "d4080": {
+    "n": 400,
+    "mean": 63.799557435240764,
+    "se": 1.635548012370204
+   }
+  },
+  {
+   "pitch": "green",
+   "style": "elite batting",
+   "d4080": {
+    "n": 400,
+    "mean": 70.53020503646438,
+    "se": 1.9670492352036824
+   }
+  },
+  {
+   "pitch": "balanced",
+   "style": "par batting",
+   "d4080": {
+    "n": 400,
+    "mean": 65.19349289388597,
+    "se": 1.60998271611503
+   }
+  },
+  {
+   "pitch": "balanced",
+   "style": "boundary-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 71.03874323698082,
+    "se": 1.9513661807423461
+   }
+  },
+  {
+   "pitch": "balanced",
+   "style": "rotation-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 65.92196535891883,
+    "se": 1.622282063616462
+   }
+  },
+  {
+   "pitch": "balanced",
+   "style": "weak batting",
+   "d4080": {
+    "n": 400,
+    "mean": 62.99498923135603,
+    "se": 1.6974351761472204
+   }
+  },
+  {
+   "pitch": "balanced",
+   "style": "elite batting",
+   "d4080": {
+    "n": 400,
+    "mean": 70.75499728710557,
+    "se": 1.7331957557088848
+   }
+  },
+  {
+   "pitch": "flat",
+   "style": "par batting",
+   "d4080": {
+    "n": 400,
+    "mean": 69.59484548946412,
+    "se": 1.6804899198698144
+   }
+  },
+  {
+   "pitch": "flat",
+   "style": "boundary-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 68.90574832062828,
+    "se": 2.2670601371834604
+   }
+  },
+  {
+   "pitch": "flat",
+   "style": "rotation-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 65.73774007943736,
+    "se": 1.72648069839089
+   }
+  },
+  {
+   "pitch": "flat",
+   "style": "weak batting",
+   "d4080": {
+    "n": 400,
+    "mean": 67.05201325894915,
+    "se": 1.5881686541407278
+   }
+  },
+  {
+   "pitch": "flat",
+   "style": "elite batting",
+   "d4080": {
+    "n": 400,
+    "mean": 73.07657472068304,
+    "se": 1.8882153412119054
+   }
+  },
+  {
+   "pitch": "slow",
+   "style": "par batting",
+   "d4080": {
+    "n": 400,
+    "mean": 66.4616608930007,
+    "se": 1.70489072807133
+   }
+  },
+  {
+   "pitch": "slow",
+   "style": "boundary-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 66.7571004839503,
+    "se": 1.8121748718800568
+   }
+  },
+  {
+   "pitch": "slow",
+   "style": "rotation-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 66.46955387812226,
+    "se": 1.7184865993918395
+   }
+  },
+  {
+   "pitch": "slow",
+   "style": "weak batting",
+   "d4080": {
+    "n": 400,
+    "mean": 59.85828386328504,
+    "se": 1.6005814047926228
+   }
+  },
+  {
+   "pitch": "slow",
+   "style": "elite batting",
+   "d4080": {
+    "n": 400,
+    "mean": 65.47395088607497,
+    "se": 1.7384972306611244
+   }
+  },
+  {
+   "pitch": "dry",
+   "style": "par batting",
+   "d4080": {
+    "n": 400,
+    "mean": 69.05749966512568,
+    "se": 1.7155878468081023
+   }
+  },
+  {
+   "pitch": "dry",
+   "style": "boundary-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 75.74257991541653,
+    "se": 2.1687019084215287
+   }
+  },
+  {
+   "pitch": "dry",
+   "style": "rotation-heavy",
+   "d4080": {
+    "n": 400,
+    "mean": 71.40981875948786,
+    "se": 1.867660978642058
+   }
+  },
+  {
+   "pitch": "dry",
+   "style": "weak batting",
+   "d4080": {
+    "n": 400,
+    "mean": 61.58337209505169,
+    "se": 1.8023526099222325
+   }
+  },
+  {
+   "pitch": "dry",
+   "style": "elite batting",
+   "d4080": {
+    "n": 400,
+    "mean": 74.84590305409442,
+    "se": 2.077975120831046
+   }
+  }
+ ],
+ "arm": [
+  {
+   "arms": 0,
+   "runouts": {
+    "n": 400,
+    "mean": 0.6075,
+    "se": 0.039050245571545274
+   },
+   "conceded": {
+    "n": 400,
+    "mean": 277.56269936545186,
+    "se": 1.5535580469458339
+   }
+  },
+  {
+   "arms": 1,
+   "runouts": {
+    "n": 400,
+    "mean": 0.6975,
+    "se": 0.04191511143270452
+   },
+   "conceded": {
+    "n": 400,
+    "mean": 276.6326149717677,
+    "se": 1.559026265662319
+   }
+  },
+  {
+   "arms": 3,
+   "runouts": {
+    "n": 400,
+    "mean": 0.755,
+    "se": 0.04392905535931653
+   },
+   "conceded": {
+    "n": 400,
+    "mean": 275.33854941977114,
+    "se": 1.5704104542945854
+   }
+  }
+ ],
+ "keeper": [
+  {
+   "kq": 50,
+   "stumpings": {
+    "n": 400,
+    "mean": 0.085,
+    "se": 0.014831974537184085
+   },
+   "byes": {
+    "n": 400,
+    "mean": 3.135,
+    "se": 0.08781352708351452
+   },
+   "keeperCatches": {
+    "n": 400,
+    "mean": 0.245,
+    "se": 0.026012094738442387
+   }
+  },
+  {
+   "kq": 74,
+   "stumpings": {
+    "n": 400,
+    "mean": 0.205,
+    "se": 0.022830694284312905
+   },
+   "byes": {
+    "n": 400,
+    "mean": 1.895,
+    "se": 0.06620722007436149
+   },
+   "keeperCatches": {
+    "n": 400,
+    "mean": 0.385,
+    "se": 0.0296924502863947
+   }
+  },
+  {
+   "kq": 95,
+   "stumpings": {
+    "n": 400,
+    "mean": 0.3225,
+    "se": 0.027805885945840336
+   },
+   "byes": {
+    "n": 400,
+    "mean": 1.18,
+    "se": 0.05374683064619974
+   },
+   "keeperCatches": {
+    "n": 400,
+    "mean": 0.4075,
+    "se": 0.03249999999999994
+   }
+  }
+ ],
+ "attr": [
+  {
+   "lbl": "batting (vsPace+vsSpin)",
+   "perPoint": 0.28531778772379945,
+   "dTotal": {
+    "n": 400,
+    "mean": 5.706355754475989,
+    "se": 1.3533456440233242
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.03625,
+    "se": 0.027159186240443743
+   }
+  },
+  {
+   "lbl": "bowling (wicket+econ)",
+   "perPoint": 0.48640365944757524,
+   "dTotal": {
+    "n": 400,
+    "mean": 9.728073188951505,
+    "se": 1.7570869866015066
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.16625,
+    "se": 0.028670889304025966
+   }
+  },
+  {
+   "lbl": "fielding (ground)",
+   "perPoint": 0.07529843786142755,
+   "dTotal": {
+    "n": 400,
+    "mean": 1.505968757228551,
+    "se": 0.9162323789190752
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.015,
+    "se": 0.019615668127551156
+   }
+  },
+  {
+   "lbl": "catching",
+   "perPoint": 0.025724087171705618,
+   "dTotal": {
+    "n": 400,
+    "mean": 0.5144817434341123,
+    "se": 0.36930891771886265
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.00875,
+    "se": 0.007391391982475064
+   }
+  }
+ ]
+}

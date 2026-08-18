@@ -206,7 +206,7 @@ if (has('sweep')) {
   };
   for (const gk of gks) sweepOne('ground', '__foFldKG', gk);
   for (const k of ks) sweepOne('catch', '__foFldK', k);
-  set('__foFldK=1;__foFldKG=1;1');
+  set('__foFldK=undefined;__foFldKG=undefined;1');
 }
 // --verify --ck=X --gk=Y : the chosen pair, both-mode, full ledger
 if (has('verify')) {
@@ -227,7 +227,7 @@ if (has('verify')) {
   const at = l => out.verify.find(r => r.lvl === l);
   const gap = (a, b) => (at(a).conceded.mean - at(b).conceded.mean);
   say(`  gaps: 40->80 ${gap(40, 80).toFixed(1)}  50->70 ${gap(50, 70).toFixed(1)}  20->95 ${gap(20, 95).toFixed(1)}`);
-  set('__foFldK=1;__foFldKG=1;1');
+  set('__foFldK=undefined;__foFldKG=undefined;1');
 }
 
 // ---------------------------------------------------------------------------
