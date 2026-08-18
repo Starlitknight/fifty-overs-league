@@ -214,7 +214,20 @@ var FO_MDC = {
   // the fielding contest is a whole-side term (foFieldLevel); one man's hands
   // move it a little, and the engine already reads catching/fielding through
   // ctx.fieldAvg. This weights the side's mean fielding into the total.
-  FIELD_RUNS: 0.30,
+  //
+  // RE-PRICED FOR THE 2B FIELDING SLOPES, and the old 0.30 was wrong twice
+  // over. This term multiplies the XI's MEAN fielding, so its honest value
+  // is the engine's team slope per mean-point - which even on the shipped
+  // engine was ~1.6 runs (the 40->80 band was 65.6 over 40 points), so 0.30
+  // undercharged the field three to five times and the coach sat a
+  // measurably better fielding side on the bench whenever three batting
+  // points said otherwise. Under the frozen 2B slopes the team band is
+  // 38.9 runs over 40 mean-points: 0.97 a point. Validated on controlled
+  // seat contests (docs/fielding-realism/coach-crossover.txt): at 0.95 the
+  // coach takes bat 62/field 90 over bat 65/field 30 - the one crossover
+  // the cricket itself resolves (4.3±1.9 runs) - and still takes the bat
+  // when the measured contest is a tie.
+  FIELD_RUNS: 0.95,
   // WHAT THE GLOVES ARE WORTH. Measured (probe section 7): moving the keeper
   // from the world median 74 to 95 buys +0.030 wickets/over against spin on a
   // dry pitch and +0.038 against pace on a green one; dropping to 40 costs

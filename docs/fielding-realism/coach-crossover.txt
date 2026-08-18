@@ -1,0 +1,31 @@
+Bat 70/Field 40 v Bat 66/Field 80:
+  measured: X-side -1.03±1.98 run-margin, -1.4±2.6 win pts -> better man: Y
+  coach picks: X  (DISAGREES)
+Bat 65/Field 30 v Bat 62/Field 90:
+  measured: X-side -4.34±1.86 run-margin, -4.4±2.7 win pts -> better man: Y
+  coach picks: X  (DISAGREES)
+Bat 70/Field 40 v Bat 62/Field 90:
+  measured: X-side -1.04±2.07 run-margin, -2.6±2.9 win pts -> better man: Y
+  coach picks: X  (DISAGREES)
+Bat 64/Field 50 v Bat 60/Field 85:
+  measured: X-side -0.07±1.88 run-margin, 1.8±2.5 win pts -> better man: X
+  coach picks: X  (ALIGNED)
+
+[exited with code 0]
+
+--- corrected harness (undroppable core, so the X/Y seat is the only open
+    question; the first run above let the coach dodge the choice by dropping
+    a weaker core bat and keeping both candidates) ---
+
+FIELD_RUNS 0.30 picks: BOTH, X, X, X
+FIELD_RUNS 0.95 picks: BOTH, Y, X, X
+ case 1 70/40 v 66/80  truth: tie (Y by 1.0±2.0)
+ case 2 65/30 v 62/90  truth: Y by 4.3±1.9   <- the resolved case
+ case 3 70/40 v 62/90  truth: tie (Y by 1.0±2.1)
+ case 4 64/50 v 60/85  truth: tie (X by 0.1±1.9)
+
+Forced-XI score decomposition (case 2): bat term 239.6 v 236.1 (1.17
+runs per bat point), field term at 0.30 = 0.8 v 2.5. FIELD_RUNS
+multiplies the XI MEAN, so its honest value is the engine's team slope
+per mean-point: 38.9/40 = 0.97 under the frozen 2B slopes. Frozen at
+0.95, crossover-validated.
