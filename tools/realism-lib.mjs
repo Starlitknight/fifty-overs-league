@@ -173,6 +173,13 @@ globalThis.__prRun = function (ta, tb, seed, opts) {
     // their post label ("catch@second slip"), so a probe can ask whether the
     // cordon man or the boundary rider is the one doing the work
     if (ev && ev.k && ev.at) bump(ix, ev.k + '@' + ev.at);
+    // ...and WHEN, for the late-innings glove questions: every fielding
+    // event and every bye is also banded by over (early <10, late >=40)
+    var band = (function () { var ov = Math.floor((inn.legal || 0) / 6);
+      return ov < 10 ? 'early' : (ov >= 40 ? 'late' : 'mid'); })();
+    if (ev && ev.k) bump(ix, ev.k + '#' + band);
+    var lo9 = M.log && M.log[0];
+    if (lo9 && lo9.no && lo9.out === 'bye') bump(ix, 'bye#' + band);
     if (!ev && M._fieldingEvent && M._fieldingEvent.indexOf('can only watch') >= 0) bump(ix, 'beat');
     var lo0 = M.log && M.log[0];
     if (lo0 && lo0.no) outCnt[ix][lo0.out] = (outCnt[ix][lo0.out] || 0) + 1;
