@@ -1471,11 +1471,94 @@ function foFatBatPerBall(p){
   const role=p.keeper?1.04:1.0;
   return ((1.75-st/100)/120)*age*role;
 }
+// ---- ROLE-SPECIFIC FATIGUE (Role Fatigue Polish phase) --------------------
+// The one vocabulary for what a trade's work costs. Values here are frozen
+// by measurement (docs/role-fatigue-polish); every one defaults to the
+// SHIPPED behaviour so the block is inert until a constant moves.
+//   spinWork   in-match work factor for spin, per ball bowled. Shipped law
+//              had spin == medium (1.0) inside the match while the server
+//              charged spin 1.5/over v pace 2.4 between matches - the same
+//              physical claim (a spinner's over costs less) made in one
+//              system and denied in the other. FAST > FAST-MEDIUM > MEDIUM
+//              > SPIN is the required ordering, in both systems.
+//   keepDiv    the keeper's per-ball work while actively keeping: the
+//              batting law's shape over its own divisor (0 = off). He is
+//              exempt from off-spell rest while the innings is live - a man
+//              behind the stumps is working, by the rest loop's own logic.
+//   gloveFat   keeperQuality points lost per unit of in-match fat - the
+//              SMALL late-innings glove effect. Never touches raw skill.
+//   captFat    how much a captain's fatigue widens his judgement error:
+//              the amp/anchor/fieldSlip channels read
+//              err x (1 + captFat x load), load in [0,1]. Skill dominates
+//              by construction - doubling a 95's error is still a fifth of
+//              a 60's.
+// FROZEN BY MEASUREMENT (docs/role-fatigue-polish):
+//   spinWork 0.90 - the smallest separation that is real: a spinner's
+//     forced ten-over spell peaks 10% below a medium's (0.985 v 1.095 at
+//     stamina 50), deterministic and visible, while cricket outputs stay
+//     inside noise at 0.94/0.90/0.85 - the tank ladder is the point.
+//     Finger and wrist spin measured inseparable and stay one bucket.
+//   keepDiv 550 - fifty overs of keeping now costs about a third of a
+//     bowling shift (tank 0.33 at stamina 50, 0.38 at 30, 0.22 at 90);
+//     keeping-then-batting costs -3.7 runs at stamina 30, -1.7 at 50,
+//     nil at 70/90. Stamina copes through the existing law, unchanged.
+//   gloveFat 4 - a keeper who has kept fifty overs is ~1.2 quality
+//     points down: stumping miss +0.5pp per chance, a bye every ~40
+//     innings, routine takes barely move. Deliberately below what N=300
+//     resolves in sim; stated exactly from the contest math.
+//   captFat 0.4 - an exhausted captain-70's wrong-field rate rises
+//     21.7 -> 28.5% and off-true picks +2.3pp; an exhausted 95 reads
+//     like a fresh 93 and still beats a RESTED 70 on every column.
+var FO_RFAT={spinWork:0.90,keepDiv:550,gloveFat:4,captFat:0.4};
+// the canonical bowling-work classification: one function, both fatigue
+// systems' ordering. The server's between-match law uses its own absolute
+// scale (server/living.mjs) but the same buckets in the same order.
+function foBowlWorkFactor(bt){
+  if(bt==='fast')return 1.08;
+  if(bt==='fastMedium')return 1.04;
+  if(typeClass(bt)==='pace')return 1.0;      // medium
+  return (typeof __foFatSpin!=='undefined')?__foFatSpin:FO_RFAT.spinWork;
+}
 function foFatBowlPerBall(p){
   const st=foSkE(p,'stamina')||50;
   const age=(p._ageTire||foAgeTireFactor(p));
-  const role=(p.bowlType==='fast'?1.08:(p.bowlType==='fastMedium'?1.04:1.0));
+  const role=foBowlWorkFactor(p.bowlType);
   return ((1.85-st/100)/74)*age*role;
+}
+// the keeper's work, per legal ball kept: the batting law's shape (stamina
+// softens it, age hardens it) over its own divisor. 0 = the shipped game
+// (keeping cost nothing inside the match).
+function foFatKeepPerBall(p){
+  const kd=(typeof __foFatKeep!=='undefined')?__foFatKeep:FO_RFAT.keepDiv;
+  if(!kd)return 0;
+  const st=foSkE(p,'stamina')||50;
+  const age=(p._ageTire||foAgeTireFactor(p));
+  return ((1.75-st/100)/kd)*age;
+}
+// keeperQuality points a tired keeper is down: small, in-match, never the
+// raw skill. Reads the same M.fat the rest of the engine plays by.
+function foGloveFat(p){
+  const gf=(typeof __foGloveFat!=='undefined')?__foGloveFat:FO_RFAT.gloveFat;
+  if(!gf||!p||!p.name)return 0;
+  return gf*(((typeof M!=='undefined')&&M&&M.fat&&M.fat[p.name])||0);
+}
+// a captain's fatigue as a judgement-load in [0,1]: his pre-match state
+// (foFatigueLoad, capped 0.86) plus half his in-match tank, capped at 1.
+function foCaptFatLoad(p){
+  if(!p)return 0;
+  const pre=foFatigueLoad(p)/0.86;
+  const live=((typeof M!=='undefined')&&M&&M.fat&&M.fat[p.name])||0;
+  return Math.min(1,pre+0.5*live);
+}
+// the widening the three judgement channels (amp, anchor, fieldSlip) apply:
+// 1 when the law is off or the captain is fresh; deterministic like
+// everything else he does (fatigue state and tank are seed-derived).
+function foCaptFatWiden(inn){
+  const f=(typeof __foCaptFatOff!=='undefined'&&__foCaptFatOff)?0
+    :((typeof __foCaptFatAmp!=='undefined')?__foCaptFatAmp:FO_RFAT.captFat);
+  if(!f)return 1;
+  const cap=inn.bxi.find(p=>p&&p.name===inn.captBowlName);
+  return 1+f*foCaptFatLoad(cap);
 }
 // one legal ball of off-spell rest (Phase 2A): decay toward a floor of
 // 0.35 x the man's match peak. The overridable constants stay overridable -
@@ -2095,7 +2178,15 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   // either end: the term is zero below 0.12 and rises linearly from it, which is
   // the same shape as before and simply positioned where the cricket is.
   const bF=Math.min(1,ctx.batFat||0),wF=Math.min(1,ctx.bowlFat||0);
-  const bFe=Math.max(0,(bF-0.12)/0.88),wFe=Math.max(0,(wF-0.12)/0.88);
+  const bFe=Math.max(0,(bF-0.12)/0.88);
+  // __foBowlFatPerfOff (instrumentation, never set in play): the tank still
+  // fills exactly as it does, the bowler keeps every characteristic of his
+  // type, and ONLY the performance consequence of his accumulated fatigue is
+  // neutralised. That A/B is the only way to read the cost of fatigue itself
+  // out of an early-v-late comparison, which is otherwise dominated by phase,
+  // ball age and how set the batsmen are (tools/role-fatigue-probe.mjs §7).
+  const wFe=((typeof __foBowlFatPerfOff!=='undefined')&&__foBowlFatPerfOff)?0
+    :Math.max(0,(wF-0.12)/0.88);
   //
   // AND THE SIZE OF IT, WHICH WAS THE REST OF THE PROBLEM. Moving the ramp was
   // not enough: measured, a stamina-30 attack peaks at 0.93 fatigue against a
@@ -2849,8 +2940,12 @@ function aiPickBowler(inn,over){
   //
   // Deterministic per over identity per man, like everything the captain does.
   const capt=Math.max(1,Math.min(99,(inn.captBowl||50)));
+  // A TIRED MIND READS WORSE (Role Fatigue Polish): the widening scales the
+  // ERROR, never the skill - an exhausted 95's error doubles at most, which
+  // is still a fifth of a fresh 60's. 1 until frozen by measurement.
+  const _cw=foCaptFatWiden(inn);
   const amp=(typeof __foCaptSharp!=='undefined'&&__foCaptSharp)?0
-    :((typeof __foCaptAmp!=='undefined')?__foCaptAmp:FO_CAPT.amp)*foCaptErr(capt);
+    :((typeof __foCaptAmp!=='undefined')?__foCaptAmp:FO_CAPT.amp)*foCaptErr(capt)*_cw;
   const read={};
   for(const p of av){
     const h=(foHashStr((M?M.seedKey:'x')+'|cj|'+inn.bowlTeam+'|'+over+'|'+p.name)%100000)/100000;
@@ -2870,7 +2965,7 @@ function aiPickBowler(inn,over){
       // persists past the change the clean ranking wants; an elite one barely
       // does. This is where "persists too long with a tiring man" lives.
       const anchor=(typeof __foCaptAnchorOff!=='undefined'&&__foCaptAnchorOff)?0
-        :FO_CAPT.anchor*foCaptErr(capt);
+        :FO_CAPT.anchor*foCaptErr(capt)*_cw;
       if(read[cont.name]+anchor>=read[best.name]-mg)pick=cont;
     }
   }
@@ -3020,7 +3115,7 @@ function aiField(inn){
   let chosen=want;
   if(want!=='bal'&&!(typeof __foCaptFieldSharp!=='undefined'&&__foCaptFieldSharp)){
     const over=Math.floor(inn.legal/6);
-    const slip=FO_CAPT.fieldSlip*foCaptErr(inn.captBowl||50);
+    const slip=FO_CAPT.fieldSlip*foCaptErr(inn.captBowl||50)*foCaptFatWiden(inn);
     const h=(foHashStr((M?M.seedKey:'x')+'|cf|'+inn.bowlTeam+'|'+over)%100000)/100000;
     if(h<slip)chosen='bal';
   }
@@ -3372,11 +3467,14 @@ function stepBall(){
   const fieldAvg=inn.bxi.reduce((a,p)=>a+((p.field||foSkE(p,'fielding')||50)),0)/Math.max(1,inn.bxi.length);
   const keeperObj=inn.bxi.find(p=>p.keeper)||{};
   const keeperTalent=keeperObj.talents||[];
-  const keeperQuality=foKeeperQuality(keeperObj);
+  // the glove dip (Role Fatigue Polish): a tired keeper is a few points
+  // down on the day, never on the card. 0 until frozen by measurement.
+  const _gDip=foGloveFat(keeperObj);
+  const keeperQuality=foKeeperQuality(keeperObj)-_gDip;
   // his two named skills, carried alongside the blend - see ballDist for why a
   // stumping is decided by stumping rather than by a weighted average of it
-  const keeperStump=keeperObj?(foSkE(keeperObj,'stumping')||keeperObj.stumping||50):null;
-  const keeperCatch=keeperObj?(foSkE(keeperObj,'catching')||keeperObj.catching||50):null;
+  const keeperStump=keeperObj?(foSkE(keeperObj,'stumping')||keeperObj.stumping||50)-_gDip:null;
+  const keeperCatch=keeperObj?(foSkE(keeperObj,'catching')||keeperObj.catching||50)-_gDip:null;
   const remBalls=Math.max(0,foBallCap()-inn.legal),reqRate=(M.target?(M.target-inn.runs)/Math.max(0.5,remBalls/6):0);
   // THIS BALL, FOR THE TWO MEN IN THE CONTEST. The context the counter reads is
   // the same context the gate reads, so what a man is credited for is exactly
@@ -3418,7 +3516,7 @@ function stepBall(){
     const _cT=(typeof __foFldK!=='undefined')?__foFldK:((typeof __foTgC!=='undefined')?__foTgC:FO_FLD.cT);
     const _cI=(typeof __foFldK!=='undefined')?__foFldK:FO_FLD.cI;
     const _rawCat=foSkE(f,'catching')||50;
-    const cat=(f.keeper?foKeeperQuality(f):foFldEff(_rawCat,foFldMeans(inn).c,FO_FLD.cpar,_cT,_cI))
+    const cat=(f.keeper?(foKeeperQuality(f)-foGloveFat(f)):foFldEff(_rawCat,foFldMeans(inn).c,FO_FLD.cpar,_cT,_cI))
       +(((M.meta&&M.meta.weather)||'').toLowerCase()==='chilly'?-9:0)
       +(((M.meta&&M.meta.weather)||'').toLowerCase()==='misty'?-6:0);
     // the chance came to him: that is what a fielding talent applies to, so it
@@ -3446,7 +3544,7 @@ function stepBall(){
       out=(M.rand()<0.45?'4':(M.rand()<0.55?'2':'1'));
     }
   }else if(out==='wST'){M._fielder=inn.bxi.find(p=>p.keeper)||inn.bxi[0];
-    const kq=foKeeperQuality(M._fielder), miss=foClamp(0.20-0.0038*(kq-FO_KQ_PAR),0.014,0.30);
+    const kq=foKeeperQuality(M._fielder)-foGloveFat(M._fielder), miss=foClamp(0.20-0.0038*(kq-FO_KQ_PAR),0.014,0.30);
     if(M.rand()<miss){M._dropped={by:M._fielder.name};out='dot';M._fldEv={k:'stumpMiss',by:M._fielder.name,d:0};M._fieldingEvent='Stumping chance missed by '+M._fielder.name+'.';}
     else {M._fldEv={k:'stumping',by:M._fielder.name,d:0};
       if(M._fielder&&foTalHas(M._fielder,{key:_talKey})('lightningHands')){M._fieldingEvent='Lightning Hands from '+M._fielder.name+' - the bails are gone in a blur.';M._talEv='Lightning Hands';}}}
@@ -3480,6 +3578,16 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
     // drift apart; the arithmetic is verbatim what stood inline here
     M.fat[sb.p.name]=(M.fat[sb.p.name]||0)+foFatBatPerBall(sb.p);
     M.fat[bowler.name]=(M.fat[bowler.name]||0)+foFatBowlPerBall(bowler);
+    // THE GLOVES WORK EVERY BALL (Role Fatigue Polish). The keeper stood
+    // through all hundred overs and paid 7 between matches for it, yet
+    // inside the match his tank never moved - he could keep fifty overs and
+    // bat pristine. He now pays the keeping law per legal ball; the law is
+    // 0 (inert) until frozen by measurement.
+    const _kpr=inn._kpr===undefined?(inn._kpr=inn.bxi.find(p=>p&&p.keeper)||null):inn._kpr;
+    if(_kpr&&_kpr.name!==bowler.name){
+      const _kw=foFatKeepPerBall(_kpr);
+      if(_kw)M.fat[_kpr.name]=(M.fat[_kpr.name]||0)+_kw;
+    }
     // THE HIGH-WATER MARK, kept so rest can never quietly erase a day's work:
     // the recovery floor below is a fraction of the worst point a man reached,
     // not of wherever he happens to stand. Built on demand - a match restored
@@ -3528,6 +3636,11 @@ function apply(inn,out,d,sb,bowler,brec,over,intent,field,userBat){
       M.fatPk=M.fatPk||{};
       for(const p of inn.bxi){
         if(p.name===bowler.name)continue;
+        // a keeper behind the stumps is WORKING, by this loop's own logic
+        // (the striker is working, the pavilion has the innings break) - so
+        // while the keeping law is live he does not bank off-spell rest.
+        // With the law at 0 nothing changes and the shipped decay stands.
+        if(p.keeper&&foFatKeepPerBall(p))continue;
         const rec=inn.bowlers[p.name];
         if(rec&&rec.lastSpellOver!=null&&rec.lastSpellOver>=over-2)continue;
         const f=M.fat[p.name]||0;if(f<=0)continue;

@@ -60,7 +60,15 @@ const clamp = (x, a, b) => Math.max(a, Math.min(b, x));
 // unmanaged club degrades, never dies.
 const REST_FRACTION = 0.35;
 const LOAD_BASE = 6;                       // a full day in the field
-const LOAD_PACE_PER_OVER = 2.4;            // fast and seam
+// THE TRADES ARE NOT ONE PRICE (Role Fatigue Polish). These are 2.4 x the
+// same work factors the match engine plays ball by ball (foBowlWorkFactor
+// in engine/src/00-core.js: fast 1.08, fast-medium 1.04, medium 1.00) - one
+// physical claim, two scales, the ordering FAST > FAST-MEDIUM > MEDIUM >
+// SPIN identical in both systems. Spin keeps its shipped 1.5 (the ratio the
+// in-match law now also expresses at 0.90 of medium).
+const LOAD_FAST_PER_OVER = 2.6;
+const LOAD_FASTMED_PER_OVER = 2.5;
+const LOAD_MED_PER_OVER = 2.4;
 const LOAD_SPIN_PER_OVER = 1.5;
 const LOAD_PER_BALL_FACED = 0.05;
 const LOAD_KEEPING = 7;                    // a hundred overs behind the stumps
@@ -1373,8 +1381,12 @@ export async function evolveCountry(pool, country, now = Date.now(), host = null
       q.formIx = formIxOf(e.apps);
       q.formWord = FORMW[q.formIx];
       // the price of each appearance, on the man's own terms
-      const spin = /spin|wrist|finger/i.test(String(q.bowlTypeFull || q.bowlType || ''));
-      const perOver = spin ? LOAD_SPIN_PER_OVER : LOAD_PACE_PER_OVER;
+      const _bt = String(q.bowlTypeFull || q.bowlType || '');
+      const spin = /spin|wrist|finger/i.test(_bt);
+      // fastMedium before fast: 'seamFastMedium' matches both patterns
+      const perOver = spin ? LOAD_SPIN_PER_OVER
+        : (/fastmedium/i.test(_bt) ? LOAD_FASTMED_PER_OVER
+        : (/fast|express/i.test(_bt) ? LOAD_FAST_PER_OVER : LOAD_MED_PER_OVER));
       const keeps = !!(q.keeper || q.role === 'wicketkeeper');
       let fat = 0, last = null;
       for (const a of e.apps) {

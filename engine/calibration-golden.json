@@ -27,123 +27,123 @@
     "international": {
       "n": 3334,
       "firstInnings": {
-        "mean": 268.5,
-        "stddev": 56.1
+        "mean": 267.5,
+        "stddev": 56.3
       },
       "wicketsHistogram": [
-        0,
-        0.0093,
-        0.0249,
+        0.0009,
+        0.0087,
+        0.024,
         0.0582,
-        0.0933,
-        0.1284,
-        0.0954,
-        0.0951,
-        0.0912,
-        0.0729,
-        0.3314
+        0.0864,
+        0.1347,
+        0.0921,
+        0.0963,
+        0.0846,
+        0.0723,
+        0.3419
       ],
-      "boundaryPctPerBall": 8.83,
-      "extrasPerInnings": 21.88,
+      "boundaryPctPerBall": 8.77,
+      "extrasPerInnings": 21.9,
       "runRateByPhase": {
         "powerplay_1_10": 5.24,
-        "middle_11_40": 5.05,
-        "death_41_50": 6.46
+        "middle_11_40": 5.03,
+        "death_41_50": 6.41
       },
-      "tiePct": 0.48,
-      "pctRunWinsUnder20": 6.06
+      "tiePct": 0.51,
+      "pctRunWinsUnder20": 6.48
     },
     "flagship_clubs": {
       "n": 3334,
       "firstInnings": {
-        "mean": 243.8,
-        "stddev": 51.2
+        "mean": 242.3,
+        "stddev": 50.9
       },
       "wicketsHistogram": [
-        0.0009,
-        0.006,
-        0.0303,
-        0.0561,
+        0.0012,
+        0.0054,
+        0.0297,
+        0.0534,
         0.0969,
-        0.1137,
-        0.0927,
-        0.1008,
-        0.1008,
-        0.0804,
+        0.1155,
+        0.1002,
+        0.09,
+        0.0906,
+        0.0957,
         0.3215
       ],
-      "boundaryPctPerBall": 7.02,
-      "extrasPerInnings": 23.75,
+      "boundaryPctPerBall": 6.96,
+      "extrasPerInnings": 23.81,
       "runRateByPhase": {
         "powerplay_1_10": 4.63,
-        "middle_11_40": 4.66,
-        "death_41_50": 5.76
+        "middle_11_40": 4.63,
+        "death_41_50": 5.7
       },
       "tiePct": 0.6,
-      "pctRunWinsUnder20": 5.67
+      "pctRunWinsUnder20": 5.91
     },
     "division_two": {
       "n": 3334,
       "firstInnings": {
-        "mean": 215.5,
-        "stddev": 39.2
+        "mean": 215,
+        "stddev": 38.6
       },
       "wicketsHistogram": [
-        0.0015,
-        0.0051,
-        0.0174,
-        0.0483,
-        0.0708,
-        0.0948,
+        0.0003,
+        0.0066,
+        0.0183,
+        0.0444,
+        0.0723,
+        0.0999,
+        0.1146,
+        0.1074,
         0.1044,
-        0.1197,
-        0.1179,
-        0.0954,
-        0.3248
+        0.1047,
+        0.3272
       ],
-      "boundaryPctPerBall": 4.99,
-      "extrasPerInnings": 28.1,
+      "boundaryPctPerBall": 4.93,
+      "extrasPerInnings": 28.25,
       "runRateByPhase": {
         "powerplay_1_10": 3.94,
-        "middle_11_40": 4.28,
-        "death_41_50": 4.77
+        "middle_11_40": 4.26,
+        "death_41_50": 4.78
       },
-      "tiePct": 0.51,
-      "pctRunWinsUnder20": 9.24
+      "tiePct": 0.9,
+      "pctRunWinsUnder20": 9.6
     },
     "international_vs_division_two": {
       "n": 3334,
       "firstInnings": {
-        "mean": 250,
-        "stddev": 90.8
+        "mean": 249.5,
+        "stddev": 90.6
       },
       "wicketsHistogram": [
-        0.006,
-        0.0231,
-        0.0543,
-        0.0882,
-        0.1113,
-        0.1113,
-        0.0837,
-        0.0648,
-        0.0528,
-        0.0531,
-        0.3515
+        0.0051,
+        0.0243,
+        0.06,
+        0.0891,
+        0.0966,
+        0.1221,
+        0.081,
+        0.0594,
+        0.0609,
+        0.0567,
+        0.3449
       ],
-      "boundaryPctPerBall": 6.57,
-      "extrasPerInnings": 26.11,
+      "boundaryPctPerBall": 6.5,
+      "extrasPerInnings": 26.14,
       "runRateByPhase": {
         "powerplay_1_10": 4.79,
-        "middle_11_40": 4.77,
-        "death_41_50": 5.89
+        "middle_11_40": 4.75,
+        "death_41_50": 5.91
       },
       "tiePct": 0,
-      "pctRunWinsUnder20": 0.12
+      "pctRunWinsUnder20": 0.09
     }
   },
   "determinism": {
     "seed": 424242,
     "identical": true,
-    "fingerprint": "317/2"
+    "fingerprint": "337/7"
   }
 }

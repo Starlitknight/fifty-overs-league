@@ -1,0 +1,5 @@
+ALL THREE LAWS OFF (must equal main)   9/9 identical to main
+only bowling-type spin work ON         2/9 identical to main   moved: balanced/42@18.3 balanced/11@23.6 balanced/7@18.2 dry/42@20.6 dry/11@7.2 dry/7@19.5 green/42@27.1
+only keeper workload+gloves ON         2/9 identical to main   moved: balanced/42@33.5 balanced/11@21.2 balanced/7@12.3 dry/42@1.6 dry/11@23.1 dry/7@49.1 green/11@0.3
+only captain fatigue ON                6/9 identical to main   moved: balanced/7@31.2 dry/7@31.1 green/11@44.1
+SHIPPED (all three ON)                 0/9 identical to main   moved: balanced/42@18.3 balanced/11@23.6 balanced/7@12.3 dry/42@20.6 dry/11@7.2 dry/7@19.5 green/42@27.1 green/11@44.1 green/7@15.6
