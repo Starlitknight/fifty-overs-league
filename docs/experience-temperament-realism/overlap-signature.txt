@@ -1,0 +1,7 @@
+state                          OLD exp/tmp ratio   NEW exp/tmp ratio
+  dead middle over, new batter       0.27              0.83
+  dead middle over, set batter       0.27              1.51
+  powerplay, new batter              0.31              1.14
+  death, set batter, no pressure     0.21              0.43
+  collapse 30/3                      0.23              0.23
+  hard chase, 35 off 24              0.22              0.13
