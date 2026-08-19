@@ -12,27 +12,27 @@
   "partTimeSpin": 36
  },
  "front": {
-  "seamMedium": 312,
-  "seamFastMedium": 330,
+  "seamMedium": 313,
+  "seamFastMedium": 333,
   "fingerSpin": 433,
-  "seamFast": 75,
-  "wristSpin": 130
+  "seamFast": 74,
+  "wristSpin": 127
  },
  "clubsWith": {
-  "seamMedium": 212,
-  "seamFastMedium": 218,
-  "fingerSpin": 246,
-  "seamFast": 75,
-  "wristSpin": 104
+  "seamMedium": 211,
+  "seamFastMedium": 219,
+  "fingerSpin": 247,
+  "seamFast": 74,
+  "wristSpin": 101
  },
  "legal5": 256,
  "sixth": 256,
  "frontShare": {
-  "seamMedium": 0.24375,
-  "seamFastMedium": 0.2578125,
+  "seamMedium": 0.24453125,
+  "seamFastMedium": 0.26015625,
   "fingerSpin": 0.33828125,
-  "seamFast": 0.05859375,
-  "wristSpin": 0.1015625
+  "seamFast": 0.0578125,
+  "wristSpin": 0.09921875
  },
- "spinShare": 0.43984375
+ "spinShare": 0.4375
 }
