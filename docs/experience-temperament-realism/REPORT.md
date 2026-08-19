@@ -68,10 +68,11 @@ Two attributes, two triggers, neither of them shared.
 
 **TEMPERAMENT = COMPOSURE**: its trigger drops the flat phase floor —
 which was never pressure, only which over it is — and keeps the
-situational half: `tmpFloor 0.10 + death 0.45 + chase 0.35 + four-down
+situational half: `tmpFloor 0.20 + death 0.45 + chase 0.35 + four-down
 0.25 + required-rate (≤0.45) + collapse 0.30`. The death stays because
 it is genuinely a nerve phase, at half its old weight; the middle overs
-do not.
+do not. (`tmpFloor` was 0.10 in the first cut and is 0.20 in the frozen
+one — see §10, where the choice is measured rather than argued.)
 
 The division of labour is now clean: **phase knowledge is experience,
 situational nerve is temperament.**
@@ -82,25 +83,31 @@ judged on.
 
 ## 3. The two laws, exactly (per delivery, 20→95 on wicket probability)
 
-| state | EXP old | EXP new | TMP old | TMP new |
-|---|---|---|---|---|
-| dead middle over, new batter | −0.105 | −0.068 | −0.391 | **−0.082** |
-| dead middle over, set batter | −0.088 | **−0.104** | −0.327 | **−0.069** |
-| powerplay, new batter | −0.105 | −0.124 | −0.334 | −0.108 |
-| death, set, no pressure | −0.316 | −0.356 | −1.477 | −0.822 |
-| collapse 30/3 | −0.145 | −0.070 | −0.616 | −0.297 |
-| hard chase, 35 off 24 | −0.587 | **−0.339** | −2.654 | **−2.525** |
+Frozen build (`final-evidence.json`):
+
+| state | EXP old | EXP new | TMP old | TMP new | new ratio |
+|---|---|---|---|---|---|
+| dead middle over, new batter | −0.105 | −0.068 | −0.391 | **−0.151** | 0.45 |
+| dead middle over, set batter | −0.088 | **−0.103** | −0.327 | **−0.126** | **0.82** |
+| powerplay, new batter | −0.105 | −0.124 | −0.334 | −0.199 | 0.62 |
+| death, set, no pressure | −0.316 | −0.355 | −1.477 | −0.967 | 0.37 |
+| collapse 30/3 | −0.145 | −0.070 | −0.616 | −0.368 | 0.19 |
+| hard chase, 35 off 24 | −0.587 | **−0.338** | −2.654 | −2.654 | **0.13** |
 
 Read the two columns that matter. Experience's old law **spiked to
 −0.587 in a hard chase** — nerve it should never have had — and now
-reads −0.339, its value coming from the death being *knowable* rather
-than frightening. Temperament sat at **−0.391 in a dead middle over** —
-nerve nobody needed — and now reads −0.082.
+reads −0.338, its remaining value there coming from the death being
+*knowable* rather than frightening. Temperament sat at **−0.391 in a
+dead middle over** — and now reads −0.126, a third of what it was.
 
-The new exp/tmp ratio runs **1.51 → 0.13**: experience is worth *more*
-than temperament in a calm middle over and an eighth of it in a hard
-chase. Temperament's own span from calmest to hardest state is now
-**37×** (it was 8×).
+The decisive column is the last one. The old ratio was **constant**
+(0.21–0.31 across every state — the signature of one shared trigger);
+the new one runs **0.82 in a calm over down to 0.13 in a hard chase**,
+a sixfold swing. Temperament's own span from its calmest state to its
+hardest is now **21×** (it was 8×), and the hard-chase value is
+unchanged at −2.654 — the cap binds in both laws, so nothing about
+pressure cricket was weakened. What changed is everything *outside*
+pressure.
 
 ## 4. Low pressure and high pressure, in runs (`final-evidence.json`)
 
@@ -205,6 +212,121 @@ next phase's re-pricing; **nothing was re-priced here**, per §16.
   fatigue, keeper workload and the bowling-type hierarchy are untouched
   by this diff — it is the experience block, the temperament trigger and
   one constants table.
+## 10. The weak-league question, and why `tmpFloor` is 0.20
+
+The first cut froze `tmpFloor` at 0.10 and `calibration-check` found
+the phase's one material downstream effect: division two's first
+innings rose 215 → 226.7, its death rate 4.78 → 5.35, and its
+**all-out share nearly halved, 32.7% → 18.3%**.
+
+Attributed by switch on a division-two-level cell
+(`d2-attribution.txt`), and the attribution is unambiguous:
+
+| configuration | score | wkts | all-out |
+|---|---|---|---|
+| SHIPPED (both old laws) | 225.3 | 7.34 | 33.5% |
+| experience law new only | 225.3 | 7.34 | 33.5% |
+| temperament law new only | 231.9 | 7.03 | 29.5% |
+| both new | 231.9 | 7.03 | 29.5% |
+
+**Temperament's change is the whole cause; the experience law moves
+weak-league cricket by exactly zero.** The mechanism is plain once
+stated: temperament's old flat phase floor was penalising
+*low*-temperament players in every over of every match, so it had been
+acting as a "bad players are bad everywhere" term wearing nerve's
+name. Removing all of it handed weak batting a reprieve its **skill**
+had not earned.
+
+The sensitivity, same cell and seeds:
+
+| `tmpFloor` | score | wkts | all-out | calm-over exp/tmp ratio |
+|---|---|---|---|---|
+| shipped | 225.3 | 7.34 | 33.5% | 0.27 |
+| 0.10 | 231.9 | 7.03 | 29.5% | 1.51 |
+| **0.20 (frozen)** | **228.9** | **7.17** | **33.3%** | **0.82** |
+| 0.30 | 227.3 | 7.24 | 34.7% | 0.56 |
+
+**0.20 is the choice**: weak-league collapse behaviour returns to what
+it was (33.3% against 33.5%), the phase's distinction survives intact
+(the calm-over ratio still improves threefold on the shipped 0.27, and
+temperament's dead-over effect stays ~60% below the old law), and the
+hard-chase end is untouched at every setting because the cap binds.
+Minimum change wins. The remaining +3.6 runs of weak-league scoring is
+acceptable and is the honest residue of the redesign: a nervous
+tail-ender no longer loses his wicket in the fourteenth over of a dead
+game *because of his nerve* — he loses it because he cannot bat.
+
+On the frozen build **every calibration band passes**; the only drift
+is the pinned-match fingerprint, which any deterministic gameplay
+change must produce.
+
+## 11. Attribute values for the OVR/wage phase (`attribute-values.json`)
+
+Every displayed attribute, swept +30 points from 45 on the man whose
+job it is, paired on identical seeds, priced as **match margin per 50
+overs** (runs scored − runs conceded) so batting and bowling points
+are directly comparable. N=300.
+
+| attribute | role | Δ margin (+30) | per point | win pts |
+|---|---|---|---|---|
+| wicket | bowling | 13.95±2.55 | **0.465** | +10.8 |
+| economy | bowling | 9.90±2.31 | **0.330** | +8.5 |
+| catching (**keeper**) | gloves | 7.83±1.96 | **0.261** | +6.3 |
+| vsPace | batting | 6.63±2.08 | 0.221 | +6.0 |
+| power | batting | 5.69±1.62 | 0.190 | +1.2 |
+| rotation | batting | 5.24±2.12 | 0.175 | +4.8 |
+| discipline | bowling | 3.85±1.49 | 0.128 | +2.8 |
+| temperament | batting | 2.31±1.70 | 0.077 | +1.7 |
+| captaincy | captaincy | 2.28±2.02 | 0.076 | +0.3 |
+| fielding | outfield | 2.23±1.37 | 0.074 | +4.0 |
+| stamina | bowling | 2.11±1.40 | 0.070 | −1.7 |
+| variation | bowling | 1.59±1.21 | 0.053 | −1.7 |
+| moveTurn | bowling | 1.02±0.77 | 0.034 | +1.2 |
+| vsSpin | batting | 0.85±1.91 | 0.028 | 0.0 |
+| stumping | gloves | 0.72±1.76 | 0.024 | −0.5 |
+| experience (bat) | batting | 0.62±1.29 | 0.021 | −1.3 |
+| keeping | gloves | 0.49±1.76 | 0.016 | +1.2 |
+| catching (outfield) | fielding | 0.34±0.51 | 0.011 | +0.8 |
+| experience (bowl) | bowling | 0.36±1.28 | 0.012 | −1.0 |
+
+Four findings the next phase should act on:
+
+1. **Bowling dominates per point** — wicket 0.465 and economy 0.330
+   against the best batting point at 0.221. A rating that prices a
+   batting point above a bowling one is contradicted by the cricket.
+2. **The keeper's catching is the third most valuable attribute in the
+   game** (0.261/pt) and is currently priced inside the `glove` family
+   at 0.226 — roughly right in rank, but it dwarfs `keeping` (0.016)
+   and `stumping` (0.024), which are priced at 0.045 and 0.030. The
+   glove family's *internal* weights are the wrong shape.
+3. **An outfielder's catching is worth 0.011/pt** — a twenty-fourth of
+   the keeper's — yet the value map prices outfield catching at 0.110.
+   This is the 2B finding restated in the new currency and is the
+   largest single misprice on the card.
+4. **vsSpin measures at 0.028** against vsPace's 0.221 — context, not
+   a defect: the reference attack is three seamers and two spinners
+   and the spin is ordinary, so a point of vsSpin applies to fewer and
+   weaker deliveries. The next phase should price it against a
+   spin-heavy attack too before concluding anything.
+
+Experience's own value (0.021 batting, 0.012 bowling per point) is
+small in this currency because +30 points on ONE man is a modest
+knowledge change; the 20→95 spans of §4–§5 are the fair statement of
+what the attribute is worth. **It remains unpriced in OVR entirely**,
+while temperament (0.077/pt) sits in the batting family at 0.060.
+
+## 12. Regressions and gates
+
+- Engine suite **488/489** with one documented skip; the golden replay
+  is the single red, **held for review** as instructed.
+- Server suite: see below. Match-Day Coach **32/32**.
+- calibration-check: **every band passes**, pinned fingerprint only.
+- Untouched by this diff and verified in code: Phase 2A spells and
+  recovery, captaincy's tactical model and its fatigue widening,
+  fielding magnitude (2B slopes), keeper workload and glove dip, the
+  bowling-type fatigue hierarchy, stamina, form (`formIx`), and age
+  (`foAgeTireFactor`). The diff is the experience block, the
+  temperament trigger, one constants table and two tests.
 - <!-- SUITES -->
 
 Not merged, not deployed, goldens held for review.
