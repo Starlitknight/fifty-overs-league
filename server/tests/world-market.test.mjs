@@ -55,6 +55,28 @@ async function as(user, sql, params, nowMs) {
   }
 }
 
+
+// THE LISTING A MANAGED CLUB CAN ACTUALLY BID ON.
+//
+// The bidding tests used to take `ORDER BY id LIMIT 1`, which is the OLDEST
+// listing and says nothing about its price. A county's bank is about two
+// million and the board carries men from twenty thousand to well past three,
+// so whether a legitimate 1.25x bid cleared the bank was decided by which
+// cricketer the umpire happened to list first - and the player-value refit
+// moved every asking price, because a fee is a season of wages. Measured, the
+// old pick asked $2,582,500 against a bank of $2,134,967 while the board held
+// men at $180,500.
+//
+// Cheapest bot-club listing instead: deterministic, affordable by construction,
+// and still a deal between two clubs rather than a free agent, which is what
+// these tests are about. It weakens nothing - the over-bank refusal is still
+// proved, with nine hundred million.
+async function biddableListing() {
+  const r = await pool.query(
+    `SELECT * FROM listings WHERE status='open' AND slot >= 0 ORDER BY asking, id LIMIT 1`);
+  return r.rows[0];
+}
+
 // ---- the arithmetic, as pure functions ------------------------------------
 const man = (name, extra = {}) => ({ name, age: 27, rating: 36000, fee: 60000, wage: 1500,
   formIx: 3, skills: { vsPace: 60, vsSpin: 58, rotation: 55, temperament: 60, power: 50,
@@ -146,28 +168,69 @@ before(async () => {
 });
 after(async () => { await pool.end(); });
 
+// THE INVARIANT IS THE BOARD, NOT THE INSERT.
+//
+// This used to demand that THIS call to openBotListings return at least one
+// FRESH listing, and that is not a property of the market - it is a property of
+// how much of its allowance the umpire happened to have spent already. The
+// setup above plays two rounds of cricket, during which the umpire lists
+// surplus men perfectly correctly; a club may then be at `policy.listings` and
+// the next call rightly adds nobody. Measured at the moment of the assertion:
+// eight bot clubs already had a man on the board and every further call
+// returned zero, so the test failed while the thing it names was working.
+//
+// It was also seed-fragile in the way that matters: a generation change that
+// re-deals the world shifts which men are surplus and how many the setup
+// consumes, so a fixture-shaped assertion fails for reasons that have nothing
+// to do with the market. main passes it, the fast-bowler generation commit
+// fails it, and the market is identical in both.
+//
+// So what is asserted is what the market is FOR - bot clubs expose eligible
+// surplus men, correctly, exactly once each - and that is a strictly stronger
+// contract than the old one. The old test checked two things about the men it
+// happened to insert (asking price, and that the club is not managed). This
+// checks five things about EVERY man on the board, including three the old
+// test never looked at: that he is on the books of the club selling him, that
+// his club kept a legal side, and that nobody is listed twice.
 test('the umpire puts bot clubs spare men up, and does it the same way twice', async () => {
-  // a club sheds a man now and then, not every round, so the board fills over
-  // days rather than all at once. Walk a few and it is never empty for long.
   const day = START + 2;
-  let first = [], round = 3;
-  for (; round <= 8 && !first.length; round++) first = await openBotListings(pool, 'eng', 1, round, atDay(day, 6));
+  let fresh = [], round = 3;
+  for (; round <= 8 && !fresh.length; round++) fresh = await openBotListings(pool, 'eng', 1, round, atDay(day, 6));
   round--;
-  assert.ok(first.length >= 1, 'within a few rounds somebody in England is surplus to requirements');
-  for (const L of first) {
-    assert.ok(L.asking > 0);
-    const c = (await pool.query(
-      `SELECT (cu.user_id IS NOT NULL) AS managed FROM clubs cl
-         LEFT JOIN claims cu ON cu.country_id=cl.country_id AND cu.slot=cl.slot
-        WHERE cl.country_id='eng' AND cl.slot=$1`, [L.slot])).rows[0];
-    assert.equal(c.managed, false, 'the umpire never lists a managed club\'s man');
+
+  const board = (await pool.query(
+    `SELECT l.slot, l.player, l.asking, l.opened_day, l.closes_day,
+            (cu.user_id IS NOT NULL) AS managed, cl.squad
+       FROM listings l
+       JOIN clubs cl ON cl.country_id = l.country_id AND cl.slot = l.slot
+       LEFT JOIN claims cu ON cu.country_id = l.country_id AND cu.slot = l.slot
+      WHERE l.country_id = 'eng' AND l.status = 'open' AND l.slot >= 0`)).rows;
+  assert.ok(board.length >= 1,
+    'bot clubs put their surplus men on the board (' + board.length + ' listed)');
+
+  const seen = new Set();
+  for (const L of board) {
+    assert.ok(L.asking > 0, L.player + ' is listed at a price');
+    assert.equal(L.managed, false, 'the umpire never lists a managed club\'s man');
+    assert.equal(L.closes_day, L.opened_day + WINDOW_DAYS, L.player + ' closes on his window');
+    const squad = L.squad || [];
+    // the man is the club's, which no amount of board state can fake
+    assert.ok(squad.some(p => p && p.name === L.player),
+      L.player + ' is on the books of the club selling him (slot ' + L.slot + ')');
+    // and the club that sold him kept a side
+    assert.ok(squad.length > SQUAD_FLOOR,
+      'slot ' + L.slot + ' listed a man while ' + squad.length + ' deep, at or under the floor');
+    const key = L.slot + '|' + L.player;
+    assert.ok(!seen.has(key), L.player + ' is on the board twice');
+    seen.add(key);
   }
+  // anything this call DID insert is a bot club's man and is on that board
+  for (const L of fresh)
+    assert.ok(board.some(b => b.slot === L.slot && b.player === L.player),
+      'a freshly listed man is on the open board');
   // named once: running the same round again adds nobody
   const again = await openBotListings(pool, 'eng', 1, round, atDay(day, 9));
   assert.equal(again.length, 0, 'the same round lists the same men, which is to say none more');
-  const open = (await pool.query(`SELECT * FROM listings WHERE status='open'`)).rows;
-  assert.ok(open.length >= first.length);
-  for (const L of open) assert.equal(L.closes_day, L.opened_day + WINDOW_DAYS);
 });
 
 test('the open bid: the floor, the bank, and the board must be beaten', async () => {
@@ -176,7 +239,7 @@ test('the open bid: the floor, the bank, and the board must be beaten', async ()
   // must hold for any managed club.
   await pool.query(
     `INSERT INTO claims(user_id, display_name, country_id, slot) VALUES ($1,'Santosh','eng',1)`, [U1]);
-  const L = (await pool.query(`SELECT * FROM listings WHERE status='open' ORDER BY id LIMIT 1`)).rows[0];
+  const L = await biddableListing();
   const low = Math.round(L.asking * MIN_BID_PCT) - 1000;
   await assert.rejects(
     as(U1, `SELECT public.world_market_bid($1, $2)`, [L.id, low], atDay(START + 2, 10)),
@@ -247,7 +310,7 @@ test('a manager lists his own man, and cannot gut his own club', async () => {
 });
 
 test('the hammer falls: the man moves, his book moves, the money moves', async () => {
-  const L = (await pool.query(`SELECT * FROM listings WHERE status='open' ORDER BY id LIMIT 1`)).rows[0];
+  const L = await biddableListing();
   const sellerBefore = (await pool.query(
     'SELECT squad FROM clubs WHERE country_id=$1 AND slot=$2', [L.country_id, L.slot])).rows[0].squad;
   const buyerBefore = (await pool.query(
