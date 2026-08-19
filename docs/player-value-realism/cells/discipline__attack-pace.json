@@ -1,0 +1,22 @@
+{
+ "attr": "discipline",
+ "fam": "bowl",
+ "ctx": "attack-pace",
+ "pitch": "balanced",
+ "attack": "pace",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": -0.959872046459416,
+  "se": 1.6112841865280456
+ },
+ "perPoint": -0.031995734881980535,
+ "dWin": {
+  "n": 200,
+  "mean": -0.01,
+  "se": 0.02767361822618507
+ }
+}

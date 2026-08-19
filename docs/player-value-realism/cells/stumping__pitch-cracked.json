@@ -1,0 +1,22 @@
+{
+ "attr": "stumping",
+ "fam": "glove",
+ "ctx": "pitch-cracked",
+ "pitch": "cracked",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 2.466583718758668,
+  "se": 2.095825249870689
+ },
+ "perPoint": 0.08221945729195561,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0375,
+  "se": 0.032857523250708565
+ }
+}

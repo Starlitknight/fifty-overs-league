@@ -1,0 +1,22 @@
+{
+ "attr": "keeping",
+ "fam": "glove",
+ "ctx": "pitch-dry",
+ "pitch": "dry",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 0.5316642342347605,
+  "se": 2.4283731259999093
+ },
+ "perPoint": 0.017722141141158682,
+ "dWin": {
+  "n": 200,
+  "mean": 0.04,
+  "se": 0.03015037688206655
+ }
+}

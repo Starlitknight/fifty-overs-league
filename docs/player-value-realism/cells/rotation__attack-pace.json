@@ -1,0 +1,22 @@
+{
+ "attr": "rotation",
+ "fam": "bat",
+ "ctx": "attack-pace",
+ "pitch": "balanced",
+ "attack": "pace",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 7.867900775677077,
+  "se": 2.534603594430227
+ },
+ "perPoint": 0.2622633591892359,
+ "dWin": {
+  "n": 200,
+  "mean": 0.085,
+  "se": 0.03474783533260028
+ }
+}

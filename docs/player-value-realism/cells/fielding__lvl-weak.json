@@ -1,0 +1,22 @@
+{
+ "attr": "fielding",
+ "fam": "field",
+ "ctx": "lvl-weak",
+ "pitch": "balanced",
+ "attack": "balanced",
+ "lvl": 0.72,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 2.7328543356490047,
+  "se": 1.4147756473651476
+ },
+ "perPoint": 0.09109514452163349,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0225,
+  "se": 0.02359027885128553
+ }
+}

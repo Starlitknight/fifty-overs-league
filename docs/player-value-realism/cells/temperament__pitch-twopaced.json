@@ -1,0 +1,22 @@
+{
+ "attr": "temperament",
+ "fam": "bat",
+ "ctx": "pitch-twopaced",
+ "pitch": "twoPaced",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 3.172068163846798,
+  "se": 2.214263662665313
+ },
+ "perPoint": 0.10573560546155993,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0825,
+  "se": 0.03522674221148144
+ }
+}

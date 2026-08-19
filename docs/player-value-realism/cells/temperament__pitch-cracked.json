@@ -1,0 +1,22 @@
+{
+ "attr": "temperament",
+ "fam": "bat",
+ "ctx": "pitch-cracked",
+ "pitch": "cracked",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 0.06157850770532306,
+  "se": 2.5548578951170593
+ },
+ "perPoint": 0.002052616923510769,
+ "dWin": {
+  "n": 200,
+  "mean": -0.015,
+  "se": 0.03379475443224406
+ }
+}

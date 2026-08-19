@@ -1,0 +1,22 @@
+{
+ "attr": "keeping",
+ "fam": "glove",
+ "ctx": "pitch-cracked",
+ "pitch": "cracked",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 2.611558069936574,
+  "se": 2.4129152090083017
+ },
+ "perPoint": 0.08705193566455247,
+ "dWin": {
+  "n": 200,
+  "mean": 0,
+  "se": 0.02922792084264496
+ }
+}

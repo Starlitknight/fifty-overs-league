@@ -1,0 +1,22 @@
+{
+ "attr": "catching",
+ "fam": "field",
+ "ctx": "pitch-cracked",
+ "pitch": "cracked",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 1.514604437168501,
+  "se": 0.963063862751528
+ },
+ "perPoint": 0.050486814572283364,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0275,
+  "se": 0.015119914320035907
+ }
+}

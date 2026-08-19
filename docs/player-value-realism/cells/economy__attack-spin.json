@@ -1,0 +1,22 @@
+{
+ "attr": "economy",
+ "fam": "bowl",
+ "ctx": "attack-spin",
+ "pitch": "balanced",
+ "attack": "spin",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 7.43689022894649,
+  "se": 2.3351455168249413
+ },
+ "perPoint": 0.247896340964883,
+ "dWin": {
+  "n": 200,
+  "mean": 0.09,
+  "se": 0.03763752003749531
+ }
+}

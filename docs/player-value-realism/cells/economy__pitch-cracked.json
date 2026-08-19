@@ -1,0 +1,22 @@
+{
+ "attr": "economy",
+ "fam": "bowl",
+ "ctx": "pitch-cracked",
+ "pitch": "cracked",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 8.867049868396693,
+  "se": 3.4362705370655924
+ },
+ "perPoint": 0.29556832894655644,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0475,
+  "se": 0.04019386125283394
+ }
+}

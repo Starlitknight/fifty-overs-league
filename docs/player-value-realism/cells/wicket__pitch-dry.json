@@ -1,0 +1,22 @@
+{
+ "attr": "wicket",
+ "fam": "bowl",
+ "ctx": "pitch-dry",
+ "pitch": "dry",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 12.347821237681977,
+  "se": 3.320422147252034
+ },
+ "perPoint": 0.4115940412560659,
+ "dWin": {
+  "n": 200,
+  "mean": 0.1025,
+  "se": 0.04014695054659758
+ }
+}

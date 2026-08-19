@@ -1,0 +1,22 @@
+{
+ "attr": "rotation",
+ "fam": "bat",
+ "ctx": "lvl-weak",
+ "pitch": "balanced",
+ "attack": "balanced",
+ "lvl": 0.72,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 0.23148210020060433,
+  "se": 2.5923032244900504
+ },
+ "perPoint": 0.007716070006686811,
+ "dWin": {
+  "n": 200,
+  "mean": -0.02,
+  "se": 0.03415159818063358
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "attr": "stumping",
+ "fam": "glove",
+ "ctx": "lvl-elite",
+ "pitch": "balanced",
+ "attack": "balanced",
+ "lvl": 1.22,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": -2.5988578220943968,
+  "se": 2.0241193640872326
+ },
+ "perPoint": -0.08662859406981323,
+ "dWin": {
+  "n": 200,
+  "mean": -0.045,
+  "se": 0.032521736063484
+ }
+}

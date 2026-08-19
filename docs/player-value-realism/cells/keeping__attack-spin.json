@@ -1,0 +1,22 @@
+{
+ "attr": "keeping",
+ "fam": "glove",
+ "ctx": "attack-spin",
+ "pitch": "balanced",
+ "attack": "spin",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 3.4171946220341316,
+  "se": 2.2075055124074114
+ },
+ "perPoint": 0.11390648740113772,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0125,
+  "se": 0.028890170643300028
+ }
+}

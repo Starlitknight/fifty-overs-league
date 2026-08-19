@@ -1,0 +1,22 @@
+{
+ "attr": "catching",
+ "fam": "field",
+ "ctx": "pitch-twopaced",
+ "pitch": "twoPaced",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 1.1730175007615873,
+  "se": 0.6430630801004209
+ },
+ "perPoint": 0.039100583358719576,
+ "dWin": {
+  "n": 200,
+  "mean": 0.005,
+  "se": 0.01120279039180926
+ }
+}

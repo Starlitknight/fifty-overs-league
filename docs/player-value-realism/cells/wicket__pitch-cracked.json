@@ -1,0 +1,22 @@
+{
+ "attr": "wicket",
+ "fam": "bowl",
+ "ctx": "pitch-cracked",
+ "pitch": "cracked",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 15.98745303917189,
+  "se": 3.428488935488147
+ },
+ "perPoint": 0.5329151013057296,
+ "dWin": {
+  "n": 200,
+  "mean": 0.1275,
+  "se": 0.04193760320779037
+ }
+}

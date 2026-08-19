@@ -1,0 +1,22 @@
+{
+ "attr": "capt",
+ "fam": "secondary",
+ "ctx": "attack-spin",
+ "pitch": "balanced",
+ "attack": "spin",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 1.4485779126766738,
+  "se": 2.306137681488674
+ },
+ "perPoint": 0.048285930422555794,
+ "dWin": {
+  "n": 200,
+  "mean": 0.055,
+  "se": 0.03575987757558893
+ }
+}

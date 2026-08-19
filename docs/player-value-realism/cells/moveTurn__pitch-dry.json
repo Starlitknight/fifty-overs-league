@@ -1,0 +1,22 @@
+{
+ "attr": "moveTurn",
+ "fam": "bowl",
+ "ctx": "pitch-dry",
+ "pitch": "dry",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 0.7867045155133217,
+  "se": 0.960136599506313
+ },
+ "perPoint": 0.026223483850444054,
+ "dWin": {
+  "n": 200,
+  "mean": -0.0025,
+  "se": 0.0056013951959046305
+ }
+}

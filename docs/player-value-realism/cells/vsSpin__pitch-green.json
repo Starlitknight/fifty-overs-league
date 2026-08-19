@@ -1,0 +1,22 @@
+{
+ "attr": "vsSpin",
+ "fam": "bat",
+ "ctx": "pitch-green",
+ "pitch": "green",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 5.992122436682862,
+  "se": 2.4917857884403354
+ },
+ "perPoint": 0.1997374145560954,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0825,
+  "se": 0.03450611700195721
+ }
+}

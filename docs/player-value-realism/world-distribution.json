@@ -1,0 +1,65 @@
+{
+ "pitch": {
+  "fixtures": 3584,
+  "nations": 16,
+  "counts": {
+   "twoPaced": 372,
+   "balanced": 1094,
+   "green": 700,
+   "dry": 661,
+   "cracked": 197,
+   "slow": 560
+  },
+  "share": {
+   "twoPaced": 0.10379464285714286,
+   "balanced": 0.3052455357142857,
+   "green": 0.1953125,
+   "dry": 0.18443080357142858,
+   "cracked": 0.054966517857142856,
+   "slow": 0.15625
+  }
+ },
+ "bowlType": {
+  "men": 3840,
+  "squads": 256,
+  "heads": {
+   "none": 1949,
+   "seamMedium": 518,
+   "seamFastMedium": 486,
+   "fingerSpin": 599,
+   "wristSpin": 216,
+   "partTimeSeam": 36,
+   "partTimeSpin": 36
+  },
+  "frontLine": {
+   "seamFastMedium": 418,
+   "fingerSpin": 484,
+   "seamMedium": 292,
+   "wristSpin": 86
+  },
+  "frontShare": {
+   "seamFastMedium": 0.3265625,
+   "fingerSpin": 0.378125,
+   "seamMedium": 0.228125,
+   "wristSpin": 0.0671875
+  }
+ },
+ "role": {
+  "men": 3840,
+  "counts": {
+   "opener": 512,
+   "topOrderBat": 512,
+   "middleOrderBat": 485,
+   "wicketkeeper": 512,
+   "allRounder": 548,
+   "seamFastMedium": 486,
+   "seamMedium": 261,
+   "fingerSpin": 308,
+   "wristSpin": 216
+  }
+ },
+ "exposure": {
+  "spinShare": 0.4453125,
+  "paceShare": 0.5546875
+ }
+}

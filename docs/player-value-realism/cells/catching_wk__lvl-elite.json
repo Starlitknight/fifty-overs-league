@@ -1,0 +1,22 @@
+{
+ "attr": "catching_wk",
+ "fam": "glove",
+ "ctx": "lvl-elite",
+ "pitch": "balanced",
+ "attack": "balanced",
+ "lvl": 1.22,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 6.892727498683476,
+  "se": 2.3918115130425637
+ },
+ "perPoint": 0.2297575832894492,
+ "dWin": {
+  "n": 200,
+  "mean": 0.055,
+  "se": 0.03662762501955139
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "attr": "catching_wk",
+ "fam": "glove",
+ "ctx": "pitch-slow",
+ "pitch": "slow",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 5.634311696107411,
+  "se": 1.9365509948557282
+ },
+ "perPoint": 0.18781038987024704,
+ "dWin": {
+  "n": 200,
+  "mean": 0.025,
+  "se": 0.03357845384787794
+ }
+}
