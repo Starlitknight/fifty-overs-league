@@ -37,7 +37,10 @@ var FO_ET={
   phaseMid:0.00,        // the middle overs are where least of it applies
   phaseDeath:0.45,      // the death is the most knowable of all
   craftSet:0.40,        // a bowler's craft against a set batter
-  rot:0.020             // strike/risk judgement: dots into ones, flat
+  rot:0.020,            // strike/risk judgement: dots into ones, flat
+  // and temperament's own trigger: the SITUATION, never the phase clock
+  tmpFloor:0.10,        // nerve is never wholly irrelevant, but nearly
+  tmpDeath:0.45         // the death is a real nerve phase (was a flat 1.00)
 };
 /* HOME ADVANTAGE, in the currency the whole distribution speaks.
  *
@@ -2093,7 +2096,23 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   // on the wicket logit for a nervous man and took a quarter of all deliveries
   // as wickets. Pressure compounds in cricket but nerve does not fail four times
   // over; the cap is where "this is as hard as it gets" sits.
-  const tmpUse=Math.min(1.7,CAL.tmp_base+pressureBase);
+  // PHASE 2C: TEMPERAMENT READS THE SITUATION, NOT THE PHASE. pressureBase
+  // carries a flat floor by phase (pp 0.35, mid 0.55, death 1.00) on top of
+  // the situational terms, and that floor is not pressure - it is simply
+  // which over it is. Measured on the shipped law, a nerveless man was a
+  // third of the way to his full benefit in a DEAD middle over of a game
+  // already won, which is not what nerve is for.
+  //
+  // So temperament now reads what actually makes a moment hard: a chase,
+  // wickets down, a required rate, a collapse, and the death (kept, at half
+  // the old weight - the death is genuinely a nerve phase, unlike the middle
+  // overs). The phase floor moved to EXPERIENCE, where knowing what a phase
+  // demands belongs. tmpFloor is the small residue that says nerve is never
+  // completely irrelevant. __foTmpOldMode restores the shipped trigger.
+  const tmpSit=(typeof __foTmpOldMode!=='undefined'&&__foTmpOldMode)?pressureBase
+    :(FO_ET.tmpFloor+(ph==='death'?FO_ET.tmpDeath:0)+(ctx&&ctx.chase?0.35:0)
+      +(ctx&&ctx.wkts>=4?0.25:0)+(rrDef>0?Math.min(0.45,rrDef*0.55):0)+collapseP);
+  const tmpUse=Math.min(1.7,CAL.tmp_base+tmpSit);
   w-=CAL.tmp_wkt*tmpQ*tmpUse; L.dot-=CAL.tmp_dot*tmpQ*tmpUse;
   let W=w+CAL.intent_wkt*eff;
   // v11.1: real ODI correction - more wickets without flattening ODI scoring.
