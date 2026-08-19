@@ -104,7 +104,7 @@
     "bat": 1,
     "bowl": 0,
     "field": 0,
-    "glove": 1.2
+    "glove": 1.8
    }
   }
  },
@@ -172,9 +172,9 @@
    "oldA": 72,
    "oldB": 55,
    "newA": 71,
-   "newB": 54,
+   "newB": 60,
    "wageA": 26600,
-   "wageB": 11700,
+   "wageB": 16050,
    "dMargin": {
     "n": 400,
     "mean": 9.213713739391512,
@@ -191,9 +191,9 @@
    "oldA": 77,
    "oldB": 67,
    "newA": 76,
-   "newB": 66,
+   "newB": 68,
    "wageA": 32620,
-   "wageB": 21370,
+   "wageB": 23370,
    "dMargin": {
     "n": 400,
     "mean": 0.7954737831484152,
@@ -209,10 +209,10 @@
    "pair": "young high-skill (21)  vs  veteran (34), same skills",
    "oldA": 71,
    "oldB": 71,
-   "newA": 72,
-   "newB": 72,
-   "wageA": 27740,
-   "wageB": 27740,
+   "newA": 71,
+   "newB": 73,
+   "wageA": 26600,
+   "wageB": 28910,
    "dMargin": {
     "n": 400,
     "mean": -2.66591207282009,
@@ -228,10 +228,10 @@
    "pair": "high experience  vs  low experience, same skills",
    "oldA": 70,
    "oldB": 70,
-   "newA": 70,
-   "newB": 70,
-   "wageA": 25490,
-   "wageB": 25490,
+   "newA": 71,
+   "newB": 69,
+   "wageA": 26600,
+   "wageB": 24410,
    "dMargin": {
     "n": 400,
     "mean": 4.160415461546921,
@@ -266,9 +266,9 @@
    "pair": "balanced all-rounder  vs  batting specialist",
    "oldA": 68,
    "oldB": 74,
-   "newA": 68,
+   "newA": 69,
    "newB": 75,
-   "wageA": 23370,
+   "wageA": 24410,
    "wageB": 31350,
    "dMargin": {
     "n": 400,
@@ -279,6 +279,101 @@
     "n": 400,
     "mean": -0.00375,
     "se": 0.024747392333704495
+   }
+  },
+  {
+   "pair": "elite keeper-bat  vs  balanced keeper",
+   "oldA": 84,
+   "oldB": 67,
+   "newA": 85,
+   "newB": 69,
+   "wageA": 45640,
+   "wageB": 24410,
+   "dMargin": {
+    "n": 400,
+    "mean": 10.617126575809332,
+    "se": 2.1009230620854122
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.09375,
+    "se": 0.027160339723293445
+   }
+  },
+  {
+   "pair": "bowling all-rounder (20/70) at No.8  vs  tail-ender",
+   "oldA": 68,
+   "oldB": 53,
+   "newA": 68,
+   "newB": 54,
+   "wageA": 23370,
+   "wageB": 11700,
+   "dMargin": {
+    "n": 400,
+    "mean": 14.616123296588796,
+    "se": 2.359817401782831
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.055,
+    "se": 0.026760096354314998
+   }
+  },
+  {
+   "pair": "batting all-rounder (70/20) at No.5  vs  bat specialist",
+   "oldA": 66,
+   "oldB": 66,
+   "newA": 67,
+   "newB": 67,
+   "wageA": 22350,
+   "wageB": 22350,
+   "dMargin": {
+    "n": 400,
+    "mean": -0.04332841301415677,
+    "se": 0.8942094869873652
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.00375,
+    "se": 0.015580733033289437
+   }
+  },
+  {
+   "pair": "captaincy 30 -> 95 on the CAPTAIN",
+   "oldA": 66,
+   "oldB": 66,
+   "newA": 67,
+   "newB": 67,
+   "wageA": 22350,
+   "wageB": 22350,
+   "dMargin": {
+    "n": 400,
+    "mean": 5.557593495461815,
+    "se": 2.0135206321054073
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.07,
+    "se": 0.026078251244474403
+   }
+  },
+  {
+   "pair": "captaincy 30 -> 95 on a NON-captain (seat 0 pinned 99)",
+   "oldA": 66,
+   "oldB": 66,
+   "newA": 67,
+   "newB": 67,
+   "wageA": 22350,
+   "wageB": 22350,
+   "dMargin": {
+    "n": 400,
+    "mean": 0,
+    "se": 0
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0,
+    "se": 0
    }
   }
  ]

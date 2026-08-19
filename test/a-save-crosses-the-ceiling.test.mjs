@@ -84,7 +84,14 @@ test('a pinned cricketer gets back the card the old ladder gave him', () => {
   const wanted = men.map(p => call('foOvrCurveV1', call('foPlayerValue', p).level));
   call('foMigrateSave', d);
   men.forEach((p, i) => {
-    const now = call('foPlayerValue', p).ovr;
+    // INTRINSIC BOTH SIDES. `wanted` is a function of .level - raw ability -
+    // and the card is not that any more: .ovr is CURRENT playing value, which
+    // is ability plus the experience the man has actually accumulated (up to
+    // two points either way). The migration's job is to preserve what a
+    // cricketer can DO, not what his experience adds to it, so comparing the
+    // old ladder's reading against .ovr would be asking whether a migration
+    // changed a man's career, and it does not touch one.
+    const now = call('foPlayerValue', p).intrinsicOvr;
     // the fit is exact to about a thousandth of a level and then rounds every
     // attribute to an integer, so a card can land a point either side. More
     // than that would mean the migration had changed what a man is worth.

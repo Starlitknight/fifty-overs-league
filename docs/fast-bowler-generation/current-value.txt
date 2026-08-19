@@ -1,0 +1,28 @@
+
+=== §6 EXPERIENCE, SWEPT IN THREE SEATS (N=600 paired, vs exp 45) ===
+  seat            exp     d margin/50    win pts
+  batsman         20     -1.80±0.75    -2.2
+  batsman         45      0.00±0.00     0.0
+  batsman         70      1.09±0.75     0.4
+  batsman         95     -0.08±0.94    -1.1
+  bowler          20     -0.31±0.75     1.4
+  bowler          45      0.00±0.00     0.0
+  bowler          70      0.95±0.83     1.0
+  bowler          95      2.97±1.08     2.8
+  all-rounder     20      2.18±0.97     3.8
+  all-rounder     45      0.00±0.00     0.0
+  all-rounder     70      2.68±0.83     3.1
+  all-rounder     95      3.99±1.03     5.1
+
+  runs per point of experience
+    batsman      0.0246 ± 0.0140
+    bowler       0.0423 ± 0.0155
+    all-rounder  0.0578 ± 0.0160
+    all seats    0.0401 ± 0.0087
+
+=== §7 CAPTAINCY, AS CAPTAIN AND AS A TEAMMATE (N=600 paired) ===
+  case                       d margin/50    win pts
+  capt 30->95, IS captain        7.61±1.62      8.4
+  capt 30->95, NOT captain       7.10±1.63      7.8
+capt 30->95 on the CAPTAIN (seat 0)           7.61±1.62     8.4
+capt 30->95 on a NON-captain (seat 3)         0.00±0.00     0.0

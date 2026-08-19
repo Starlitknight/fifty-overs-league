@@ -668,11 +668,42 @@ function foAgeDecline(p) {
 try { window.foAgeDecay = FO_AGE_DECAY; window.foAgeLoss = foAgeLoss;
       window.foAgePhase = foAgePhase; window.FO_AGE_PHASE = FO_AGE_PHASE;
       window.foAgeDecline = foAgeDecline; } catch (eAgeX) {}
+// RE-FITTED AGAINST THE ENGINE THE GAME NOW PLAYS. Every number is a measured
+// world-weighted value in runs of match margin per point - which is what the
+// comment below has always CLAIMED these numbers are, and after four realism
+// phases had stopped being true of several of them.
+//
+// The measurement is docs/player-value-realism/ : each attribute swept +30
+// points from 45 on the man whose job it is, paired on identical seeds, at
+// N=1000, across six pitches weighted by how often the world actually plays on
+// them (docs/player-value-realism/world-distribution.json, enumerated off the
+// planet's own condOf rather than guessed).
+//
+// The four that moved most, and why:
+//
+//   temperament  0.060 -> 0.104   underpaid by 73%. Phase 2C gave it a real
+//                                 pressure-specific law and nothing re-priced it.
+//   moveTurn     0.090 -> 0.029   overpaid threefold.
+//   economy      0.240 -> 0.287   the priced wicket:economy ratio was 0.58
+//                                 against a measured 0.78.
+//   field family 0.310 -> 0.106   Phase 2B measured the field family at a third
+//                                 of what it was being paid. See FO_VAL_MIX.
+//
+// vsPace and vsSpin come off an EXPOSURE fit rather than one fixture, because
+// the old single-attack probe read vsSpin at 0.028 and that was an artefact of
+// a batsman who barely faced any: against an all-spin attack it is worth 0.318
+// runs a point and against an all-pace attack -0.020. Fitted along that line
+// and evaluated at the 43.9% spin the world's front lines actually bowl, the
+// two come out 0.169 and 0.111.
+//
+// bowl.stamina is mixed over the TYPES the world bowls rather than taken from
+// one of them. A card does not know what its owner bowls, and a third of the
+// world's overs are finger spin where a point of stamina is worth 0.005 runs.
 const FO_VAL_W = {
-  bat:   { vsPace: 0.185, vsSpin: 0.145, power: 0.150, rotation: 0.150, temperament: 0.060 },
-  bowl:  { wicket: 0.415, economy: 0.240, discipline: 0.140, moveTurn: 0.090, variation: 0.060, stamina: 0.030 },
-  field: { fielding: 0.200, catching: 0.110 },
-  glove: { catching: 0.226, keeping: 0.045, stumping: 0.030 }
+  bat:   { vsPace: 0.169, vsSpin: 0.111, power: 0.137, rotation: 0.165, temperament: 0.104 },
+  bowl:  { wicket: 0.368, economy: 0.287, discipline: 0.088, moveTurn: 0.029, variation: 0.042, stamina: 0.026 },
+  field: { fielding: 0.077, catching: 0.029 },
+  glove: { catching: 0.230, keeping: 0.021, stumping: 0.018 }
 };
 // how much of each family a role actually uses. A specialist batsman does not
 // bowl; a keeper's ground fielding is somebody else's job. FIELD_SHARE is the
@@ -712,11 +743,48 @@ const FO_VAL_W = {
 // stumping almost nothing (0.010), so a gloveman's cricket value really is his
 // batting and his catching. A keeper who cannot bat reading 47 is the engine
 // telling the truth about itself, not the model losing him.
+// FIELD_SHARE IS GONE, AND ITS JOB WENT WITH IT.
+//
+// The 0.45 above was a cap on a family that was overpriced: fielding measured
+// as the most valuable single point a batsman owned, which was true of the old
+// weight and is not true of the measured one. Correcting the family sum and
+// keeping the cap would have under-paid fielding TWICE. The two have to move
+// together and the combination is what was tested:
+//
+//     effective field weight on a batsman's card = mix x family sum
+//        old   0.45 x 0.310 = 0.1395
+//        new   1.00 x 0.106 = 0.1060   <- the Phase 2B measured value, exactly
+//
+// A specialist fielder still is not a professional cricketer: fielding 95 with
+// everything else at 20 prices at level 30. The cap was doing that job by
+// arithmetic; the honest weight does it by being honest.
+//
+// THE KEEPER'S GLOVES GO TO 1.80, and that is a measurement rather than a
+// preference. Six keepers were played in the same seat of the same XI against
+// the same opposition on the same 600 seeds, and the engine ranked them
+// elite keeper-bat > elite bat/mediocre gloves > balanced keeper >
+// weak bat/elite gloves > ordinary keeper > poor keeper. At the old 1.20 the
+// card put the ordinary keeper ABOVE the elite gloveman; 1.80 is the smallest
+// multiplier that reproduces the engine's order, and the card-to-engine
+// correlation is on its plateau there (0.976, against 0.963 at 1.20 and 0.969
+// at 3.00). It does not manufacture superstars: a glove-only keeper who cannot
+// bat reaches 59, not 80.
+//
+// The all-rounder's 0.80 STAYS, and the reason is worth writing down because
+// the obvious experiment is a no-op. FO_VAL_C normalises a role by its own
+// mixture sum, so scaling ar.bat and ar.bowl together scales the numerator and
+// the denominator alike: swept 0.80 -> 1.20 the ten test all-rounders' cards
+// moved by at most one point and the correlation did not move at all. A
+// symmetric all-rounder mixture cannot express anything. What LOOKED like a
+// mis-rating - a 20/70 bowling all-rounder priced at 68 while measuring +7.72
+// runs - turned out to be the test seating him at No.5; at No.8, where such a
+// man actually bats, he measures +16.36. The model was right and the probe was
+// wrong.
 const FO_VAL_MIX = {
-  bat:   { bat: 1.00, bowl: 0.00, field: 0.45, glove: 0.00 },
-  bowl:  { bat: 0.00, bowl: 1.00, field: 0.45, glove: 0.00 },
-  ar:    { bat: 0.80, bowl: 0.80, field: 0.45, glove: 0.00 },
-  wk:    { bat: 1.00, bowl: 0.00, field: 0.00, glove: 1.20 }
+  bat:   { bat: 1.00, bowl: 0.00, field: 1.00, glove: 0.00 },
+  bowl:  { bat: 0.00, bowl: 1.00, field: 1.00, glove: 0.00 },
+  ar:    { bat: 0.80, bowl: 0.80, field: 1.00, glove: 0.00 },
+  wk:    { bat: 1.00, bowl: 0.00, field: 0.00, glove: 1.80 }
 };
 // AND THE CARD IS PRICED IN EFFECTIVE POINTS, NOT LATENT ONES.
 //
@@ -909,8 +977,68 @@ function foPlayerValue(p) {
   // is the OVR CURVE's job to keep the card inside 0-100, and it does that by
   // approaching 100 rather than by being stopped at it.
   const level = Math.max(0, lv);
-  return { fam: fam, levels: L, role: best, level: level, ovr: foOvrCurve(level) };
+  // ---- AND THE CARD IS NOT THE COORDINATE. -------------------------------
+  //
+  // `level` is INTRINSIC: raw cricket ability, made of the fifteen skills and
+  // nothing else. It is what foFitToLevel bisects toward and what foLayOnTier
+  // deals a squad against, and it MUST stay that way. foFitToLevel scales only
+  // FO_FIT_KEYS, so any attribute folded into `level` that the fitter cannot
+  // scale becomes a tax on the ones it can: a veteran fitted to a mark would
+  // be handed materially worse batting and bowling to pay for his experience,
+  // and foLayOnTier would compound it by ranking him up first and fitting him
+  // down second. That is the one rule this split exists to keep.
+  //
+  // `cur` is CURRENT PLAYING VALUE: what the man is worth in today's cricket,
+  // which is his ability plus the experience he has actually accumulated. It
+  // is computed here, OUTSIDE the fitting loop, and only the card reads it.
+  //
+  // Captaincy is deliberately NOT in it. Measured on the shipped engine, 600
+  // paired matches: captaincy 30 -> 95 is worth +7.61 +- 1.62 runs to the man
+  // wearing the armband and EXACTLY 0.00 +- 0.00 to anybody else, because the
+  // engine reads it only through the captain. Putting a conditional value on
+  // every card would make a captaincy-95 reserve who never leads look like a
+  // better cricketer than he is. It belongs to the market and to the Match-Day
+  // Coach, both of which already know who is captaining today.
+  const cur = level + foExpLevelBonus(p);
+  return { fam: fam, levels: L, role: best, level: level, cur: cur,
+           ovr: foOvrCurve(cur), intrinsicOvr: foOvrCurve(level) };
 }
+// WHAT EXPERIENCE IS WORTH, IN LEVELS, BOUNDED.
+//
+// Measured by sweeping exp 20/45/70/95 in three seats against a reference of
+// 45, 600 paired matches a cell, slope fitted through the reference weighted
+// by 1/se^2:
+//
+//     batsman      0.0246 +- 0.0140 runs a point
+//     bowler       0.0423 +- 0.0155
+//     all-rounder  0.0578 +- 0.0160
+//     all seats    0.0401 +- 0.0087        <- z = 4.6, and the one used
+//
+// The per-seat rows disagree by more than their own error bars suggest they
+// should, and the batsman's own sweep is not monotone (exp 95 came back at
+// -0.08 +- 0.94). That is why the pooled slope is the estimate and why the
+// contribution is CAPPED: the evidence supports "small, real, and secondary",
+// not a precise per-seat law.
+//
+// Runs become levels at the measured replacement rate - a point of overall
+// buys about 1.2 runs of match margin (role-replacement probe, N=1000, every
+// seat inside one and a half standard errors of every other) - so 0.0401 runs
+// a point is 0.0334 levels a point. Across the whole 20..95 range that is 2.5
+// levels, and the cap holds it inside +-2 so no amount of experience can carry
+// a mediocre cricketer past a genuinely better one.
+const FO_EXP_RUNS = 0.0401, FO_EXP_REF = 50, FO_EXP_RPO = 1.2, FO_EXP_CAP = 2.0;
+function foExpLevelBonus(p) {
+  // the A/B switch every realism phase has carried: an old-versus-new table is
+  // only honest if the OLD arm is actually the old law, and the experience
+  // layer lives in the engine rather than in a weight a probe can override
+  if (typeof __foExpOvrOff !== 'undefined' && __foExpOvrOff) return 0;
+  var e = p && p.exp;
+  if (!(typeof e === 'number' && isFinite(e))) return 0;
+  var b = (e - FO_EXP_REF) * FO_EXP_RUNS / FO_EXP_RPO;
+  return Math.max(-FO_EXP_CAP, Math.min(FO_EXP_CAP, b));
+}
+try { window.foExpLevelBonus = foExpLevelBonus; window.FO_EXP_RUNS = FO_EXP_RUNS;
+      window.FO_EXP_CAP = FO_EXP_CAP; } catch (eXp) {}
 // THE NUMBER ON THE CARD. Integer 0-100, and the single authority - every
 // other strength figure in this game is derived from it or from the value
 // object above, and nothing computes a competing opinion.

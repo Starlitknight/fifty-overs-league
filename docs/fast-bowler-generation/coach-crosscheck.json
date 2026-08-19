@@ -19,15 +19,15 @@
  },
  "newOvr": {
   "elite bat poor hands": 76,
-  "good bat elite hands": 71,
+  "good bat elite hands": 72,
   "ordinary bat": 60,
   "cool head": 66,
-  "no nerve": 61,
+  "no nerve": 62,
   "spin merchant bat": 63,
   "pace merchant bat": 66,
   "keeper bat": 71,
-  "gloveman": 54,
-  "strike quick": 67,
+  "gloveman": 60,
+  "strike quick": 68,
   "miser": 66,
   "fast-medium": 68,
   "workhorse": 64,
@@ -143,14 +143,14 @@
  ],
  "newRows": [
   {
-   "hi": "fast-medium",
+   "hi": "strike quick",
    "lo": "ordinary bat",
    "gap": 8,
-   "against": 5
+   "against": 4
   },
   {
-   "hi": "all-rounder",
-   "lo": "no nerve",
+   "hi": "fast-medium",
+   "lo": "ordinary bat",
    "gap": 8,
    "against": 5
   }

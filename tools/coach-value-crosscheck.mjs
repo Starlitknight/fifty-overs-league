@@ -31,6 +31,10 @@ const P = JSON.parse(fs.readFileSync(pairsFile, 'utf8'));
 const { OLD, NEW } = P.weights, { MIX_OLD, MIX_NEW } = P.mix;
 
 g('try{ window.FO_VAL_C = FO_VAL_C; window.FO_VAL_W = FO_VAL_W; window.FO_VAL_MIX = FO_VAL_MIX; }catch(e){}');
+// the OLD arm has to be the OLD law all the way down, and the experience layer
+// lives in the engine rather than in a weight - so it is switched off with the
+// old weights and back on with the new ones
+const expOff = v => g(`__foExpOvrOff=${v ? 1 : 0};1`);
 function setLaw(weights, mix) {
   g(`(function(W,M){ for (var f in W) for (var k in W[f]) FO_VAL_W[f][k] = W[f][k];
        for (var r in M) for (var k2 in M[r]) FO_VAL_MIX[r][k2] = M[r][k2];
@@ -96,8 +100,8 @@ function coachWorth(pitch) {
   return worth;
 }
 
-setLaw(OLD, MIX_OLD); const oldOvr = Object.fromEntries(SQUAD.map(p => [p.name, ovrOf(p)]));
-setLaw(NEW, MIX_NEW); const newOvr = Object.fromEntries(SQUAD.map(p => [p.name, ovrOf(p)]));
+expOff(true); setLaw(OLD, MIX_OLD); const oldOvr = Object.fromEntries(SQUAD.map(p => [p.name, ovrOf(p)]));
+expOff(false); setLaw(NEW, MIX_NEW); const newOvr = Object.fromEntries(SQUAD.map(p => [p.name, ovrOf(p)]));
 
 console.log('\n=== THE SQUAD, OLD CARD vs CANDIDATE CARD ===');
 console.log('  cricketer                  OLD   CAND     d');

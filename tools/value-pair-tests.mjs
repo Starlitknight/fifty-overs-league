@@ -105,9 +105,13 @@ const OLD = {
 const MIX_OLD = { bat: { bat: 1, bowl: 0, field: 0.45, glove: 0 }, bowl: { bat: 0, bowl: 1, field: 0.45, glove: 0 },
   ar: { bat: 0.80, bowl: 0.80, field: 0.45, glove: 0 }, wk: { bat: 1, bowl: 0, field: 0, glove: 1.20 } };
 const MIX_NEW = { bat: { bat: 1, bowl: 0, field: 1.00, glove: 0 }, bowl: { bat: 0, bowl: 1, field: 1.00, glove: 0 },
-  ar: { bat: 0.80, bowl: 0.80, field: 1.00, glove: 0 }, wk: { bat: 1, bowl: 0, field: 0, glove: 1.20 } };
+  ar: { bat: 0.80, bowl: 0.80, field: 1.00, glove: 0 }, wk: { bat: 1, bowl: 0, field: 0, glove: 1.80 } };
 
 g('try{ window.FO_VAL_C = FO_VAL_C; window.FO_VAL_W = FO_VAL_W; window.FO_VAL_MIX = FO_VAL_MIX; }catch(e){}');
+// the OLD arm has to be the OLD law all the way down, and the experience layer
+// lives in the engine rather than in a weight - so it is switched off with the
+// old weights and back on with the new ones
+const expOff = v => g(`__foExpOvrOff=${v ? 1 : 0};1`);
 function setLaw(weights, mix) {
   g(`(function(W,M){ for (var f in W) for (var k in W[f]) FO_VAL_W[f][k] = W[f][k];
        for (var r in M) for (var k2 in M[r]) FO_VAL_MIX[r][k2] = M[r][k2];
@@ -152,12 +156,33 @@ const PAIRS = [
   { name: 'balanced all-rounder  vs  batting specialist', seat: 4,
     A: { bowlTypeFull: 'seamMedium', role: 'allRounder',
          skills: S({ vsPace: 66, vsSpin: 64, power: 62, rotation: 64, temperament: 62, wicket: 64, economy: 62, discipline: 60, moveTurn: 60, variation: 58, stamina: 64 }) },
-    B: { skills: S({ vsPace: 80, vsSpin: 78, power: 74, rotation: 78, temperament: 72 }) } }
+    B: { skills: S({ vsPace: 80, vsSpin: 78, power: 74, rotation: 78, temperament: 72 }) } },
+  { name: 'elite keeper-bat  vs  balanced keeper', seat: 5,
+    A: { skills: S({ vsPace: 84, vsSpin: 82, rotation: 82, power: 74, temperament: 76, catching: 90, keeping: 88, stumping: 86 }) },
+    B: { skills: S({ vsPace: 62, vsSpin: 60, rotation: 60, power: 56, temperament: 58, catching: 80, keeping: 76, stumping: 74 }) } },
+  { name: 'bowling all-rounder (20/70) at No.8  vs  tail-ender', seat: 6,
+    A: { role: 'allRounder', bowlTypeFull: 'seamMedium', skills: S({ vsPace: 20, vsSpin: 18, rotation: 18, power: 14, wicket: 70, economy: 68, discipline: 66, moveTurn: 66, variation: 64, stamina: 70 }) },
+    B: { bowlTypeFull: 'seamMedium', skills: S({ vsPace: 20, vsSpin: 18, rotation: 18, power: 14, wicket: 55, economy: 53, discipline: 51, moveTurn: 51, variation: 49, stamina: 55 }) } },
+  { name: 'batting all-rounder (70/20) at No.5  vs  bat specialist', seat: 4,
+    A: { role: 'allRounder', bowlTypeFull: 'seamMedium', skills: S({ vsPace: 70, vsSpin: 68, rotation: 68, power: 64, temperament: 66, wicket: 20, economy: 18, discipline: 16, moveTurn: 16, variation: 14, stamina: 20 }) },
+    B: { skills: S({ vsPace: 70, vsSpin: 68, rotation: 68, power: 64, temperament: 66 }) } },
+  { name: 'captaincy 30 -> 95 on the CAPTAIN', seat: 0,
+    A: { capt: 95, skills: S({ vsPace: 70, vsSpin: 68, power: 64, rotation: 68, temperament: 66 }) },
+    B: { capt: 30, skills: S({ vsPace: 70, vsSpin: 68, power: 64, rotation: 68, temperament: 66 }) } },
+  { name: 'captaincy 30 -> 95 on a NON-captain (seat 0 pinned 99)', seat: 3,
+    pinCapt: true,
+    A: { capt: 95, skills: S({ vsPace: 70, vsSpin: 68, power: 64, rotation: 68, temperament: 66 }) },
+    B: { capt: 30, skills: S({ vsPace: 70, vsSpin: 68, power: 64, rotation: 68, temperament: 66 }) } }
 ];
 
-function sideWith(seat, spec) {
-  const slot = Object.assign({ slot: seat }, spec);
-  return H.side('A', { slots: [slot] });
+function sideWith(seat, spec, pinCapt) {
+  const slots = [Object.assign({ slot: seat }, spec)];
+  // THE ENGINE CHOOSES THE CAPTAIN ITSELF, as the highest-captaincy man in the
+  // XI (00-core.js:5577). So a "non-captain" case has to pin somebody ABOVE
+  // the swept man or raising his captaincy simply hands him the armband and
+  // measures the captain twice.
+  if (pinCapt) slots.unshift({ slot: 0, capt: 99 });
+  return H.side('A', { slots });
 }
 function marginOf(r) {
   let sc = null, co = null;
@@ -174,10 +199,10 @@ const out = [];
 console.log(`\n=== §8 PLAYER PAIRS (N=${N} paired) ===`);
 console.log('  pair                                                  OLD      CAND     wage(cand)     A-B margin  win');
 for (const P of PAIRS) {
-  const sideA = sideWith(P.seat, P.A), sideB = sideWith(P.seat, P.B);
+  const sideA = sideWith(P.seat, P.A, P.pinCapt), sideB = sideWith(P.seat, P.B, P.pinCapt);
   const manA = sideA.players[P.seat], manB = sideB.players[P.seat];
-  setLaw(OLD, MIX_OLD); const oA = ovrOf(manA), oB = ovrOf(manB);
-  setLaw(NEW, MIX_NEW); const nA = ovrOf(manA), nB = ovrOf(manB);
+  expOff(true); setLaw(OLD, MIX_OLD); const oA = ovrOf(manA), oB = ovrOf(manB);
+  expOff(false); setLaw(NEW, MIX_NEW); const nA = ovrOf(manA), nB = ovrOf(manB);
   const dm = [], dv = [];
   for (let i = 0; i < N; i++) {
     const s = 940001 + i * 104729;

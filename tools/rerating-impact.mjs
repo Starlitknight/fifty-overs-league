@@ -26,6 +26,10 @@ const P = JSON.parse(fs.readFileSync('docs/fast-bowler-generation/pair-tests.jso
 const { OLD, NEW } = P.weights, { MIX_OLD, MIX_NEW } = P.mix;
 
 g('try{ window.FO_VAL_C = FO_VAL_C; window.FO_VAL_W = FO_VAL_W; window.FO_VAL_MIX = FO_VAL_MIX; }catch(e){}');
+// the OLD arm has to be the OLD law all the way down, and the experience layer
+// lives in the engine rather than in a weight - so it is switched off with the
+// old weights and back on with the new ones
+const expOff = v => g(`__foExpOvrOff=${v ? 1 : 0};1`);
 function setLaw(weights, mix) {
   g(`(function(W,M){ for (var f in W) for (var k in W[f]) FO_VAL_W[f][k] = W[f][k];
        for (var r in M) for (var k2 in M[r]) FO_VAL_MIX[r][k2] = M[r][k2];
@@ -41,8 +45,8 @@ const WAGE = o => Math.max(400, Math.round(9290 * Math.pow(Math.max(1, o * 1000)
 const clubs = dealWorld();
 const men = [];
 for (const c of clubs) for (const p of c.players) men.push({ c, p });
-setLaw(OLD, MIX_OLD); const before = men.map(m => ovrOf(m.p));
-setLaw(NEW, MIX_NEW); const after = men.map(m => ovrOf(m.p));
+expOff(true); setLaw(OLD, MIX_OLD); const before = men.map(m => ovrOf(m.p));
+expOff(false); setLaw(NEW, MIX_NEW); const after = men.map(m => ovrOf(m.p));
 
 const d = men.map((m, i) => ({ name: m.p.name, role: m.p.role, club: m.c.name, div: m.c.div,
   tier: m.c.tier, old: before[i], neu: after[i], d: after[i] - before[i] }));

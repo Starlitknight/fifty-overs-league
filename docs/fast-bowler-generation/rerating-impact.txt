@@ -1,44 +1,44 @@
 
 === §14 HOW FAR 3840 EXISTING CRICKETERS MOVE ===
-  no change        1490
-  +-1              1929
-  +-2              396
-  +-3              25
-  +-4              0
-  +-5              0
+  no change        969
+  +-1              1616
+  +-2              857
+  +-3              314
+  +-4              66
+  +-5              18
   more than 5      0
 
-  largest rise  +3  Ben Ingram (opener, 86 -> 89)
-  largest fall  -3  Jasper Veldman (wristSpin, 29 -> 26)
+  largest rise  +5  Luke Kirby (wicketkeeper, 30 -> 35)
+  largest fall  -4  Charlie Bickley (fingerSpin, 30 -> 26)
 
   role                    n     up   down   mean d
-  allRounder             548    122    158    -0.08
-  topOrderBat            517    223    102     0.32
-  wicketkeeper           512     11    326    -0.67
-  middleOrderBat         510    157    133     0.06
-  opener                 482    296     30     0.75
-  seamFastMedium         405    102    140    -0.10
-  fingerSpin             282     86     92    -0.10
-  seamMedium             261     61    102    -0.21
-  wristSpin              242     70     92    -0.19
-  seamFast                81     28     19     0.11
+  allRounder             548    214    165     0.12
+  topOrderBat            517    261    105     0.56
+  wicketkeeper           512    421     15     1.91
+  middleOrderBat         510    221    139     0.27
+  opener                 482    378     20     1.32
+  seamFastMedium         405    155    118     0.14
+  fingerSpin             282    110     98    -0.01
+  seamMedium             261     86    107    -0.18
+  wristSpin              242     98     98    -0.12
+  seamFast                81     50     12     0.69
 
 === §15 THE WAGE BILL ===
-  total       $59,240,970  ->  $59,831,600   (1.0%)
-  median      $11,060  ->  $11,060
-  P90         $38,050  ->  $38,050
+  total       $58,277,680  ->  $60,538,260   (3.9%)
+  median      $11,060  ->  $11,700
+  P90         $36,640  ->  $38,050
   P99         $54,180  ->  $56,010
   top wage    $69,950  ->  $69,950
 
   club payroll by division (mean per club, per round)
-    division 1   $330,581  ->  $334,741   (1.3%)
-    division 2   $132,239  ->  $132,693   (0.3%)
+    division 1   $324,502  ->  $336,656   (3.7%)
+    division 2   $130,792  ->  $136,299   (4.2%)
 
   club payroll by tier
-    flagship   $438,143  ->  $446,680   (1.9%)
-    d1a        $358,936  ->  $363,178   (1.2%)
-    d1b        $282,425  ->  $285,429   (1.1%)
-    d2a        $172,991  ->  $174,095   (0.6%)
-    d2b        $91,486  ->  $91,292   (-0.2%)
+    flagship   $428,046  ->  $445,201   (4.0%)
+    d1a        $352,693  ->  $364,705   (3.4%)
+    d1b        $277,473  ->  $288,483   (4.0%)
+    d2a        $170,511  ->  $177,178   (3.9%)
+    d2b        $91,074  ->  $95,420   (4.8%)
 
-  worst single club   4.7%   best -4.4%
+  worst single club   13.7%   best -4.3%
