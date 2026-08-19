@@ -1,0 +1,38 @@
+{
+ "clubs": 256,
+ "men": 3840,
+ "heads": {
+  "none": 1949,
+  "seamMedium": 560,
+  "fingerSpin": 531,
+  "seamFastMedium": 405,
+  "wristSpin": 242,
+  "seamFast": 81,
+  "partTimeSeam": 36,
+  "partTimeSpin": 36
+ },
+ "front": {
+  "seamMedium": 312,
+  "seamFastMedium": 330,
+  "fingerSpin": 433,
+  "seamFast": 75,
+  "wristSpin": 130
+ },
+ "clubsWith": {
+  "seamMedium": 212,
+  "seamFastMedium": 218,
+  "fingerSpin": 246,
+  "seamFast": 75,
+  "wristSpin": 104
+ },
+ "legal5": 256,
+ "sixth": 256,
+ "frontShare": {
+  "seamMedium": 0.24375,
+  "seamFastMedium": 0.2578125,
+  "fingerSpin": 0.33828125,
+  "seamFast": 0.05859375,
+  "wristSpin": 0.1015625
+ },
+ "spinShare": 0.43984375
+}
