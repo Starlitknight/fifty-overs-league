@@ -1,0 +1,4 @@
+BOTH LAWS OFF (must equal main)   9/9 identical
+only experience new               1/9 identical   moved: balanced/42@i0:10.1 balanced/11@i0:23.6 balanced/7@i1:13.6 dry/42@i0:6.4 dry/11@i0:7.2 dry/7@i0:0.3 green/11@i0:40.1 green/7@i0:15.6
+only temperament new              0/9 identical   moved: balanced/42@i0:10.1 balanced/11@i0:13.1 balanced/7@i0:0.3 dry/42@i0:12.1 dry/11@i0:11.3 dry/7@i0:5.1 green/42@i0:2.3 green/11@i0:10.5 green/7@i0:10.1
+SHIPPED 2C (both new)             0/9 identical   moved: balanced/42@i0:10.1 balanced/11@i0:1.1 balanced/7@i0:0.2 dry/42@i0:8.6 dry/11@i0:7.2 dry/7@i0:0.3 green/42@i0:2.3 green/11@i0:6.5 green/7@i0:10.1
