@@ -1,0 +1,22 @@
+{
+ "attr": "economy",
+ "fam": "bowl",
+ "ctx": "pitch-green",
+ "pitch": "green",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 6.281239767166604,
+  "se": 3.134532580272595
+ },
+ "perPoint": 0.20937465890555348,
+ "dWin": {
+  "n": 200,
+  "mean": 0.03,
+  "se": 0.04082072584229069
+ }
+}

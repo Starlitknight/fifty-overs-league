@@ -1,0 +1,22 @@
+{
+ "attr": "exp_bat",
+ "fam": "secondary",
+ "ctx": "pitch-twopaced",
+ "pitch": "twoPaced",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": -0.15334333035594624,
+  "se": 1.4041950549434572
+ },
+ "perPoint": -0.005111444345198208,
+ "dWin": {
+  "n": 200,
+  "mean": -0.0225,
+  "se": 0.018176099774568685
+ }
+}

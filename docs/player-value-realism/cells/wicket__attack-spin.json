@@ -1,0 +1,22 @@
+{
+ "attr": "wicket",
+ "fam": "bowl",
+ "ctx": "attack-spin",
+ "pitch": "balanced",
+ "attack": "spin",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 13.869242647590273,
+  "se": 3.0767556434382164
+ },
+ "perPoint": 0.4623080882530091,
+ "dWin": {
+  "n": 200,
+  "mean": 0.135,
+  "se": 0.040367345875909746
+ }
+}

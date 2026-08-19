@@ -1,0 +1,623 @@
+{
+ "exposure": {
+  "spinShare": 0.4453125,
+  "vsPace": {
+   "a": 0.07167730377791139,
+   "b": 0.1735979002054294,
+   "at": 0.1679698890481105,
+   "pts": [
+    {
+     "x": 1,
+     "y": 0.1861502987124678,
+     "w": 332.4137256979746
+    },
+    {
+     "x": 0.79,
+     "y": 0.36078607577291105,
+     "w": 137.95299405272235
+    },
+    {
+     "x": 0.581,
+     "y": 0.18615619611654416,
+     "w": 678.3651789120861
+    },
+    {
+     "x": 0.398,
+     "y": 0.10480826407312357,
+     "w": 158.9713065877515
+    },
+    {
+     "x": 0,
+     "y": 0.06283596104535266,
+     "w": 546.5064513887455
+    }
+   ]
+  },
+  "vsSpin": {
+   "a": -0.035467116785453924,
+   "b": 0.33257994883775516,
+   "at": 0.11263489168135893,
+   "pts": [
+    {
+     "x": 0,
+     "y": -0.020209974243720952,
+     "w": 434.65965667736805
+    },
+    {
+     "x": 0.21,
+     "y": 0.10960600072319572,
+     "w": 149.31077493411158
+    },
+    {
+     "x": 0.419,
+     "y": 0.06684682417843595,
+     "w": 681.5145865169745
+    },
+    {
+     "x": 0.602,
+     "y": 0.1530780424593381,
+     "w": 180.975146585526
+    },
+    {
+     "x": 1,
+     "y": 0.318013740929545,
+     "w": 453.9704643687498
+    }
+   ]
+  }
+ },
+ "weights": {
+  "old": {
+   "bat": {
+    "vsPace": 0.185,
+    "vsSpin": 0.145,
+    "power": 0.15,
+    "rotation": 0.15,
+    "temperament": 0.06
+   },
+   "bowl": {
+    "wicket": 0.415,
+    "economy": 0.24,
+    "discipline": 0.14,
+    "moveTurn": 0.09,
+    "variation": 0.06,
+    "stamina": 0.03
+   },
+   "field": {
+    "fielding": 0.2,
+    "catching": 0.11
+   },
+   "glove": {
+    "catching": 0.226,
+    "keeping": 0.045,
+    "stumping": 0.03
+   }
+  },
+  "new": {
+   "bat": {
+    "vsPace": 0.168,
+    "vsSpin": 0.113,
+    "power": 0.137,
+    "rotation": 0.165,
+    "temperament": 0.104
+   },
+   "bowl": {
+    "wicket": 0.368,
+    "economy": 0.287,
+    "discipline": 0.088,
+    "moveTurn": 0.029,
+    "variation": 0.042,
+    "stamina": 0.046
+   },
+   "field": {
+    "fielding": 0.077,
+    "catching": 0.029
+   },
+   "glove": {
+    "catching": 0.23,
+    "keeping": 0.021,
+    "stumping": 0.018
+   }
+  }
+ },
+ "distribution": {
+  "old": {
+   "mean": 52.77734375,
+   "p50": 53,
+   "p95": 84,
+   "ge80": 381
+  },
+  "new": {
+   "mean": 53.04140625,
+   "p50": 53,
+   "p95": 87,
+   "ge80": 461
+  }
+ },
+ "movers": [
+  {
+   "name": "Freddie Wells",
+   "club": "Kandahar CC",
+   "role": "opener",
+   "old": 77,
+   "new": 84,
+   "d": 7
+  },
+  {
+   "name": "Ben Ingram",
+   "club": "Yorkshire",
+   "role": "opener",
+   "old": 79,
+   "new": 85,
+   "d": 6
+  },
+  {
+   "name": "Theo Dawson",
+   "club": "Middlesex",
+   "role": "topOrderBat",
+   "old": 75,
+   "new": 81,
+   "d": 6
+  },
+  {
+   "name": "Tom Whitehead",
+   "club": "Belfast CC",
+   "role": "opener",
+   "old": 79,
+   "new": 85,
+   "d": 6
+  },
+  {
+   "name": "Toby Whitaker",
+   "club": "Durban CC",
+   "role": "opener",
+   "old": 79,
+   "new": 85,
+   "d": 6
+  },
+  {
+   "name": "Will Dawson",
+   "club": "Paarl CC",
+   "role": "topOrderBat",
+   "old": 72,
+   "new": 78,
+   "d": 6
+  },
+  {
+   "name": "Ollie Hollins",
+   "club": "Lahore CC",
+   "role": "opener",
+   "old": 85,
+   "new": 91,
+   "d": 6
+  },
+  {
+   "name": "Mason Larkspur",
+   "club": "Multan CC",
+   "role": "wicketkeeper",
+   "old": 83,
+   "new": 89,
+   "d": 6
+  },
+  {
+   "name": "Rory Fairbairn",
+   "club": "Inverness CC",
+   "role": "opener",
+   "old": 77,
+   "new": 83,
+   "d": 6
+  },
+  {
+   "name": "Daniel Hale",
+   "club": "Morrisville CC",
+   "role": "opener",
+   "old": 79,
+   "new": 85,
+   "d": 6
+  },
+  {
+   "name": "Harry Whitaker",
+   "club": "Dublin CC",
+   "role": "opener",
+   "old": 82,
+   "new": 87,
+   "d": 5
+  },
+  {
+   "name": "Lewis Kirby",
+   "club": "Limerick CC",
+   "role": "allRounder",
+   "old": 31,
+   "new": 26,
+   "d": -5
+  },
+  {
+   "name": "Will Trott",
+   "club": "Waterford CC",
+   "role": "opener",
+   "old": 85,
+   "new": 90,
+   "d": 5
+  },
+  {
+   "name": "Archie Thorne",
+   "club": "Waterford CC",
+   "role": "middleOrderBat",
+   "old": 50,
+   "new": 55,
+   "d": 5
+  },
+  {
+   "name": "Zak Mercer",
+   "club": "Derry CC",
+   "role": "opener",
+   "old": 75,
+   "new": 80,
+   "d": 5
+  },
+  {
+   "name": "Noah Ogden",
+   "club": "Drogheda Athletic",
+   "role": "opener",
+   "old": 70,
+   "new": 75,
+   "d": 5
+  },
+  {
+   "name": "Douwe Driessen",
+   "club": "Amsterdam CC",
+   "role": "topOrderBat",
+   "old": 81,
+   "new": 86,
+   "d": 5
+  },
+  {
+   "name": "Melle Vos",
+   "club": "Eindhoven CC",
+   "role": "opener",
+   "old": 74,
+   "new": 79,
+   "d": 5
+  },
+  {
+   "name": "Bas Terpstra",
+   "club": "Deventer CC",
+   "role": "opener",
+   "old": 86,
+   "new": 91,
+   "d": 5
+  },
+  {
+   "name": "Melle Scholten",
+   "club": "Delft Rovers",
+   "role": "allRounder",
+   "old": 12,
+   "new": 7,
+   "d": -5
+  },
+  {
+   "name": "Joe Ellison",
+   "club": "Port of Spain CC",
+   "role": "opener",
+   "old": 87,
+   "new": 92,
+   "d": 5
+  },
+  {
+   "name": "Jack Taylor",
+   "club": "Port of Spain CC",
+   "role": "opener",
+   "old": 83,
+   "new": 88,
+   "d": 5
+  },
+  {
+   "name": "Jos Clarke",
+   "club": "Bridgetown CC",
+   "role": "opener",
+   "old": 82,
+   "new": 87,
+   "d": 5
+  },
+  {
+   "name": "Sam Taylor",
+   "club": "Georgetown CC",
+   "role": "fingerSpin",
+   "old": 79,
+   "new": 74,
+   "d": -5
+  },
+  {
+   "name": "Dominic Clarke",
+   "club": "Harare CC",
+   "role": "opener",
+   "old": 80,
+   "new": 85,
+   "d": 5
+  },
+  {
+   "name": "Daniel Wells",
+   "club": "Bulawayo CC",
+   "role": "topOrderBat",
+   "old": 80,
+   "new": 85,
+   "d": 5
+  },
+  {
+   "name": "Will Chadwick",
+   "club": "Sydney CC",
+   "role": "topOrderBat",
+   "old": 85,
+   "new": 90,
+   "d": 5
+  },
+  {
+   "name": "Will Taylor",
+   "club": "Brisbane CC",
+   "role": "opener",
+   "old": 80,
+   "new": 85,
+   "d": 5
+  },
+  {
+   "name": "Luke Trott",
+   "club": "Canberra Athletic",
+   "role": "opener",
+   "old": 58,
+   "new": 63,
+   "d": 5
+  },
+  {
+   "name": "Jacob Ellison",
+   "club": "Christchurch CC",
+   "role": "wristSpin",
+   "old": 56,
+   "new": 61,
+   "d": 5
+  },
+  {
+   "name": "Liam Kirby",
+   "club": "Hamilton CC",
+   "role": "opener",
+   "old": 83,
+   "new": 88,
+   "d": 5
+  },
+  {
+   "name": "George Fairbairn",
+   "club": "Dunedin CC",
+   "role": "allRounder",
+   "old": 34,
+   "new": 29,
+   "d": -5
+  },
+  {
+   "name": "George Ingram",
+   "club": "Napier CC",
+   "role": "allRounder",
+   "old": 37,
+   "new": 32,
+   "d": -5
+  },
+  {
+   "name": "Mason Ellison",
+   "club": "Pallekele CC",
+   "role": "opener",
+   "old": 66,
+   "new": 71,
+   "d": 5
+  },
+  {
+   "name": "Joe Radcliffe",
+   "club": "Hambantota CC",
+   "role": "seamFastMedium",
+   "old": 48,
+   "new": 43,
+   "d": -5
+  },
+  {
+   "name": "Reuben Crawford",
+   "club": "Matara CC",
+   "role": "fingerSpin",
+   "old": 86,
+   "new": 91,
+   "d": 5
+  },
+  {
+   "name": "Alfie Yardley",
+   "club": "Kolkata CC",
+   "role": "opener",
+   "old": 87,
+   "new": 92,
+   "d": 5
+  },
+  {
+   "name": "Max Whitehead",
+   "club": "Ahmedabad CC",
+   "role": "seamFastMedium",
+   "old": 82,
+   "new": 87,
+   "d": 5
+  },
+  {
+   "name": "Jamie Larkspur",
+   "club": "Karachi CC",
+   "role": "allRounder",
+   "old": 82,
+   "new": 87,
+   "d": 5
+  },
+  {
+   "name": "Luke Trott",
+   "club": "Faisalabad CC",
+   "role": "opener",
+   "old": 60,
+   "new": 65,
+   "d": 5
+  },
+  {
+   "name": "Liam Wells",
+   "club": "Sialkot CC",
+   "role": "opener",
+   "old": 84,
+   "new": 89,
+   "d": 5
+  },
+  {
+   "name": "Henry Vickers",
+   "club": "Hyderabad Wanderers",
+   "role": "opener",
+   "old": 64,
+   "new": 69,
+   "d": 5
+  },
+  {
+   "name": "Lewis Foster",
+   "club": "Kandahar CC",
+   "role": "seamFastMedium",
+   "old": 55,
+   "new": 50,
+   "d": -5
+  },
+  {
+   "name": "Oscar Pickering",
+   "club": "Kandahar CC",
+   "role": "fingerSpin",
+   "old": 87,
+   "new": 92,
+   "d": 5
+  },
+  {
+   "name": "Toby Ainsworth",
+   "club": "Mazar-i-Sharif CC",
+   "role": "opener",
+   "old": 86,
+   "new": 91,
+   "d": 5
+  },
+  {
+   "name": "Lewis Foster",
+   "club": "Kunduz CC",
+   "role": "topOrderBat",
+   "old": 81,
+   "new": 86,
+   "d": 5
+  },
+  {
+   "name": "Josh Jarvis",
+   "club": "Khost District XI",
+   "role": "opener",
+   "old": 68,
+   "new": 73,
+   "d": 5
+  },
+  {
+   "name": "Ben Sharpe",
+   "club": "Rajshahi CC",
+   "role": "opener",
+   "old": 75,
+   "new": 80,
+   "d": 5
+  },
+  {
+   "name": "Jos Dunn",
+   "club": "Rajshahi CC",
+   "role": "topOrderBat",
+   "old": 69,
+   "new": 74,
+   "d": 5
+  },
+  {
+   "name": "Joe Kirby",
+   "club": "Rangpur CC",
+   "role": "seamMedium",
+   "old": 39,
+   "new": 34,
+   "d": -5
+  },
+  {
+   "name": "Harry Stanton",
+   "club": "Tangail Gymkhana",
+   "role": "middleOrderBat",
+   "old": 22,
+   "new": 17,
+   "d": -5
+  },
+  {
+   "name": "Tom Whitaker",
+   "club": "Bhairahawa CC",
+   "role": "opener",
+   "old": 74,
+   "new": 79,
+   "d": 5
+  },
+  {
+   "name": "Ellis Bennett",
+   "club": "Biratnagar CC",
+   "role": "opener",
+   "old": 62,
+   "new": 67,
+   "d": 5
+  },
+  {
+   "name": "Joe Bickley",
+   "club": "Glasgow CC",
+   "role": "middleOrderBat",
+   "old": 75,
+   "new": 80,
+   "d": 5
+  },
+  {
+   "name": "Liam Chadwick",
+   "club": "Aberdeen CC",
+   "role": "opener",
+   "old": 80,
+   "new": 85,
+   "d": 5
+  },
+  {
+   "name": "George Jarvis",
+   "club": "Aberdeen CC",
+   "role": "topOrderBat",
+   "old": 64,
+   "new": 69,
+   "d": 5
+  },
+  {
+   "name": "Ellis Ellison",
+   "club": "Perth CC",
+   "role": "opener",
+   "old": 66,
+   "new": 71,
+   "d": 5
+  },
+  {
+   "name": "Jos Cole",
+   "club": "Grand Prairie CC",
+   "role": "opener",
+   "old": 84,
+   "new": 89,
+   "d": 5
+  },
+  {
+   "name": "Finlay Trott",
+   "club": "Lauderhill CC",
+   "role": "allRounder",
+   "old": 90,
+   "new": 95,
+   "d": 5
+  },
+  {
+   "name": "Jack Stanton",
+   "club": "Phoenix Athletic",
+   "role": "seamMedium",
+   "old": 28,
+   "new": 23,
+   "d": -5
+  }
+ ],
+ "wages": {
+  "oldTotal": 59129270,
+  "newTotal": 61965350
+ }
+}

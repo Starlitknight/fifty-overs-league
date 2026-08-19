@@ -1,0 +1,22 @@
+{
+ "attr": "wicket",
+ "fam": "bowl",
+ "ctx": "lvl-elite",
+ "pitch": "balanced",
+ "attack": "balanced",
+ "lvl": 1.22,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 7.259085645337641,
+  "se": 3.1186880120699167
+ },
+ "perPoint": 0.2419695215112547,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0525,
+  "se": 0.04031868963233228
+ }
+}

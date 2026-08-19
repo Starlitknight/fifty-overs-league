@@ -1,0 +1,22 @@
+{
+ "attr": "power",
+ "fam": "bat",
+ "ctx": "attack-spin",
+ "pitch": "balanced",
+ "attack": "spin",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 5.181232098814694,
+  "se": 1.4317602840275538
+ },
+ "perPoint": 0.17270773662715647,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0375,
+  "se": 0.02239927201796239
+ }
+}

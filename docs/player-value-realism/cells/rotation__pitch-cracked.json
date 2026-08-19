@@ -1,0 +1,22 @@
+{
+ "attr": "rotation",
+ "fam": "bat",
+ "ctx": "pitch-cracked",
+ "pitch": "cracked",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 4.044931654472992,
+  "se": 2.867828150813254
+ },
+ "perPoint": 0.13483105514909974,
+ "dWin": {
+  "n": 200,
+  "mean": 0.02,
+  "se": 0.03781733403835921
+ }
+}

@@ -1,0 +1,47 @@
+=== §7 BOWLER STAMINA, PRICED OVER THE TYPES THE WORLD BOWLS ===
+  seamMedium        24.4% of overs   x 0.0308 runs/pt
+  seamFastMedium    25.8% of overs   x 0.0464 runs/pt
+  fingerSpin        33.8% of overs   x 0.0053 runs/pt
+  seamFast           5.9% of overs   x 0.0722 runs/pt
+  wristSpin         10.2% of overs   x 0.0053 runs/pt
+  -> mix 0.0261   (the earlier candidate used the fast-medium figure alone, 0.0464)
+
+=== §8 PLAYER PAIRS (N=400 paired) ===
+  pair                                                  OLD      CAND     wage(cand)     A-B margin  win
+  elite bat / poor field  vs  good bat / elite field     73v73    75v72  $31,350/$27,740      2.65±2.08   3.3
+  wicket threat  vs  economy                             68v63    67v65  $22,350/$20,410      3.08±2.20   8.9
+  genuine quick  vs  fast-medium of the same class       69v69    69v69  $24,410/$24,410      0.01±1.80   0.0
+  keeper-batsman  vs  elite gloves / poor bat            72v55    71v54  $26,600/$11,700      9.21±2.03   7.5
+  keeper: elite bat / mediocre gloves  vs  balanced keeper   77v67    76v66  $32,620/$21,370      0.80±2.21   0.0
+  young high-skill (21)  vs  veteran (34), same skills   71v71    72v72  $27,740/$27,740     -2.67±1.49  -4.1
+  high experience  vs  low experience, same skills       70v70    70v70  $25,490/$25,490      4.16±1.60   2.3
+  elite captain  vs  ordinary captain                    66v66    67v67  $22,350/$22,350      5.64±1.92   4.8
+  balanced all-rounder  vs  batting specialist           68v74    68v75  $23,370/$31,350      2.07±2.18  -0.4
+
+=== CANDIDATE WEIGHTS AFTER §7 ===
+{
+ "bat": {
+  "vsPace": 0.169,
+  "vsSpin": 0.111,
+  "power": 0.137,
+  "rotation": 0.165,
+  "temperament": 0.104
+ },
+ "bowl": {
+  "wicket": 0.368,
+  "economy": 0.287,
+  "discipline": 0.088,
+  "moveTurn": 0.029,
+  "variation": 0.042,
+  "stamina": 0.026
+ },
+ "field": {
+  "fielding": 0.077,
+  "catching": 0.029
+ },
+ "glove": {
+  "catching": 0.23,
+  "keeping": 0.021,
+  "stumping": 0.018
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "attr": "exp_bat",
+ "fam": "secondary",
+ "ctx": "lvl-elite",
+ "pitch": "balanced",
+ "attack": "balanced",
+ "lvl": 1.22,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": -0.9678429646293638,
+  "se": 1.2820379909485666
+ },
+ "perPoint": -0.032261432154312125,
+ "dWin": {
+  "n": 200,
+  "mean": -0.02,
+  "se": 0.01936167275467948
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "attr": "exp_bowl",
+ "fam": "secondary",
+ "ctx": "pitch-green",
+ "pitch": "green",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": -0.9283463309467177,
+  "se": 1.8866769470430547
+ },
+ "perPoint": -0.030944877698223922,
+ "dWin": {
+  "n": 200,
+  "mean": -0.0025,
+  "se": 0.019250236571019118
+ }
+}

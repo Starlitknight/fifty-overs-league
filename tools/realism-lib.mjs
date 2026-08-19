@@ -61,6 +61,21 @@ globalThis.__prMake = function (spec) {
       stamina: 55, fielding: 55, catching: 55, keeping: 55, stumping: 55
     }
   };
+  // THE LEAGUE, BEFORE THE MAN. spec.lvl multiplies every skill on the
+  // default card - including the ones a caller never mentions - so a weak
+  // league's cricketers are weaker at everything rather than weaker at only
+  // the four attributes their spec happened to name. Multiplicative because
+  // that is the engine's own transform for moving a man up and down the
+  // ladder (foFitToLevel bisects exactly one factor over the same fifteen
+  // keys), and it leaves every ratio inside a cricketer alone: a power hitter
+  // is still a power hitter in division two.
+  //
+  // It runs BEFORE spec.skills, so a swept attribute handed in explicitly is
+  // an ABSOLUTE number in every league. That is what makes a per-point value
+  // comparable across the three of them, which is the only reason to measure
+  // it in three of them.
+  if (spec.lvl != null && spec.lvl !== 1)
+    for (var kL in p.skills) p.skills[kL] = Math.max(8, Math.round(p.skills[kL] * spec.lvl));
   for (var k in (spec.skills || {})) p.skills[k] = spec.skills[k];
   jsDerive(p);
   if (spec.mpos != null) p.mpos = spec.mpos;
@@ -81,6 +96,11 @@ globalThis.__prSide = function (name, o) {
   var mk = function (nm, pos, role, bt, sk, extra) {
     var spec = { name: nm, mpos: pos, role: role, bowlTypeFull: bt, skills: sk || {} };
     if (extra) for (var k in extra) spec[k] = extra[k];
+    // o.lvl — THE LEAGUE THE MATCH IS PLAYED IN. Handed to __prMake, which
+    // applies it after the defaults are merged and before anything overrides
+    // them, so it reaches the skills a spec never mentions (a batsman's
+    // economy, a bowler's catching) as well as the ones it does.
+    if (o.lvl != null) spec.lvl = o.lvl;
     if (o.all) {
       if (o.all.exp != null) spec.exp = o.all.exp;
       if (o.all.capt != null) spec.capt = o.all.capt;

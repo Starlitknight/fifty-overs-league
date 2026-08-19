@@ -1,0 +1,285 @@
+{
+ "n": 400,
+ "weights": {
+  "OLD": {
+   "bat": {
+    "vsPace": 0.185,
+    "vsSpin": 0.145,
+    "power": 0.15,
+    "rotation": 0.15,
+    "temperament": 0.06
+   },
+   "bowl": {
+    "wicket": 0.415,
+    "economy": 0.24,
+    "discipline": 0.14,
+    "moveTurn": 0.09,
+    "variation": 0.06,
+    "stamina": 0.03
+   },
+   "field": {
+    "fielding": 0.2,
+    "catching": 0.11
+   },
+   "glove": {
+    "catching": 0.226,
+    "keeping": 0.045,
+    "stumping": 0.03
+   }
+  },
+  "NEW": {
+   "bat": {
+    "vsPace": 0.169,
+    "vsSpin": 0.111,
+    "power": 0.137,
+    "rotation": 0.165,
+    "temperament": 0.104
+   },
+   "bowl": {
+    "wicket": 0.368,
+    "economy": 0.287,
+    "discipline": 0.088,
+    "moveTurn": 0.029,
+    "variation": 0.042,
+    "stamina": 0.026
+   },
+   "field": {
+    "fielding": 0.077,
+    "catching": 0.029
+   },
+   "glove": {
+    "catching": 0.23,
+    "keeping": 0.021,
+    "stumping": 0.018
+   }
+  }
+ },
+ "mix": {
+  "MIX_OLD": {
+   "bat": {
+    "bat": 1,
+    "bowl": 0,
+    "field": 0.45,
+    "glove": 0
+   },
+   "bowl": {
+    "bat": 0,
+    "bowl": 1,
+    "field": 0.45,
+    "glove": 0
+   },
+   "ar": {
+    "bat": 0.8,
+    "bowl": 0.8,
+    "field": 0.45,
+    "glove": 0
+   },
+   "wk": {
+    "bat": 1,
+    "bowl": 0,
+    "field": 0,
+    "glove": 1.2
+   }
+  },
+  "MIX_NEW": {
+   "bat": {
+    "bat": 1,
+    "bowl": 0,
+    "field": 1,
+    "glove": 0
+   },
+   "bowl": {
+    "bat": 0,
+    "bowl": 1,
+    "field": 1,
+    "glove": 0
+   },
+   "ar": {
+    "bat": 0.8,
+    "bowl": 0.8,
+    "field": 1,
+    "glove": 0
+   },
+   "wk": {
+    "bat": 1,
+    "bowl": 0,
+    "field": 0,
+    "glove": 1.2
+   }
+  }
+ },
+ "stamMix": 0.02607760103873026,
+ "pairs": [
+  {
+   "pair": "elite bat / poor field  vs  good bat / elite field",
+   "oldA": 73,
+   "oldB": 73,
+   "newA": 75,
+   "newB": 72,
+   "wageA": 31350,
+   "wageB": 27740,
+   "dMargin": {
+    "n": 400,
+    "mean": 2.649764157057979,
+    "se": 2.080097705004536
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.0325,
+    "se": 0.026617769235939927
+   }
+  },
+  {
+   "pair": "wicket threat  vs  economy",
+   "oldA": 68,
+   "oldB": 63,
+   "newA": 67,
+   "newB": 65,
+   "wageA": 22350,
+   "wageB": 20410,
+   "dMargin": {
+    "n": 400,
+    "mean": 3.08197026362127,
+    "se": 2.2036374326420507
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.08875,
+    "se": 0.02760255143758753
+   }
+  },
+  {
+   "pair": "genuine quick  vs  fast-medium of the same class",
+   "oldA": 69,
+   "oldB": 69,
+   "newA": 69,
+   "newB": 69,
+   "wageA": 24410,
+   "wageB": 24410,
+   "dMargin": {
+    "n": 400,
+    "mean": 0.01340218582177961,
+    "se": 1.79542347182587
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0,
+    "se": 0.023680729345944767
+   }
+  },
+  {
+   "pair": "keeper-batsman  vs  elite gloves / poor bat",
+   "oldA": 72,
+   "oldB": 55,
+   "newA": 71,
+   "newB": 54,
+   "wageA": 26600,
+   "wageB": 11700,
+   "dMargin": {
+    "n": 400,
+    "mean": 9.213713739391512,
+    "se": 2.027102665185304
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.075,
+    "se": 0.029110669482068485
+   }
+  },
+  {
+   "pair": "keeper: elite bat / mediocre gloves  vs  balanced keeper",
+   "oldA": 77,
+   "oldB": 67,
+   "newA": 76,
+   "newB": 66,
+   "wageA": 32620,
+   "wageB": 21370,
+   "dMargin": {
+    "n": 400,
+    "mean": 0.7954737831484152,
+    "se": 2.211588106318596
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0,
+    "se": 0.027761064311897756
+   }
+  },
+  {
+   "pair": "young high-skill (21)  vs  veteran (34), same skills",
+   "oldA": 71,
+   "oldB": 71,
+   "newA": 72,
+   "newB": 72,
+   "wageA": 27740,
+   "wageB": 27740,
+   "dMargin": {
+    "n": 400,
+    "mean": -2.66591207282009,
+    "se": 1.4925495762443202
+   },
+   "dWin": {
+    "n": 400,
+    "mean": -0.04125,
+    "se": 0.020575884216193427
+   }
+  },
+  {
+   "pair": "high experience  vs  low experience, same skills",
+   "oldA": 70,
+   "oldB": 70,
+   "newA": 70,
+   "newB": 70,
+   "wageA": 25490,
+   "wageB": 25490,
+   "dMargin": {
+    "n": 400,
+    "mean": 4.160415461546921,
+    "se": 1.597059405228437
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.0225,
+    "se": 0.02143029441694617
+   }
+  },
+  {
+   "pair": "elite captain  vs  ordinary captain",
+   "oldA": 66,
+   "oldB": 66,
+   "newA": 67,
+   "newB": 67,
+   "wageA": 22350,
+   "wageB": 22350,
+   "dMargin": {
+    "n": 400,
+    "mean": 5.635698528816214,
+    "se": 1.9249335399759469
+   },
+   "dWin": {
+    "n": 400,
+    "mean": 0.0475,
+    "se": 0.025538989309237488
+   }
+  },
+  {
+   "pair": "balanced all-rounder  vs  batting specialist",
+   "oldA": 68,
+   "oldB": 74,
+   "newA": 68,
+   "newB": 75,
+   "wageA": 23370,
+   "wageB": 31350,
+   "dMargin": {
+    "n": 400,
+    "mean": 2.074778852510102,
+    "se": 2.181337041733543
+   },
+   "dWin": {
+    "n": 400,
+    "mean": -0.00375,
+    "se": 0.024747392333704495
+   }
+  }
+ ]
+}

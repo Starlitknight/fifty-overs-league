@@ -1,0 +1,22 @@
+{
+ "attr": "catching",
+ "fam": "field",
+ "ctx": "pitch-green",
+ "pitch": "green",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 1.1032492368809785,
+  "se": 0.8905283438150803
+ },
+ "perPoint": 0.036774974562699285,
+ "dWin": {
+  "n": 200,
+  "mean": 0.03,
+  "se": 0.012092607484694698
+ }
+}

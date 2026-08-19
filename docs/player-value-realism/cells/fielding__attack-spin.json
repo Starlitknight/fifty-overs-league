@@ -1,0 +1,22 @@
+{
+ "attr": "fielding",
+ "fam": "field",
+ "ctx": "attack-spin",
+ "pitch": "balanced",
+ "attack": "spin",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 1.1745479588042085,
+  "se": 1.300137921310536
+ },
+ "perPoint": 0.03915159862680695,
+ "dWin": {
+  "n": 200,
+  "mean": 0.005,
+  "se": 0.02530964024728993
+ }
+}

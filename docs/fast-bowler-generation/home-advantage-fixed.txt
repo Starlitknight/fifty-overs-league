@@ -1,0 +1,7 @@
+seed 4242 home 58.2%
+seed 7788 home 53.7%
+seed 1001 home 52.5%
+seed 2002 home 56.1%
+seed 3003 home 54.8%
+seed 5005 home 57.3%
+mean 55.44%

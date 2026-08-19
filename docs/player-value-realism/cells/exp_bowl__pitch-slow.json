@@ -1,0 +1,22 @@
+{
+ "attr": "exp_bowl",
+ "fam": "secondary",
+ "ctx": "pitch-slow",
+ "pitch": "slow",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 1.186923920479577,
+  "se": 1.6208534968091197
+ },
+ "perPoint": 0.03956413068265256,
+ "dWin": {
+  "n": 200,
+  "mean": -0.02,
+  "se": 0.02576468698582203
+ }
+}

@@ -1,0 +1,499 @@
+{
+ "bands": {
+  "zero": 1490,
+  "one": 1929,
+  "two": 396,
+  "three": 25,
+  "four": 0,
+  "five": 0,
+  "more": 0
+ },
+ "largestRise": {
+  "name": "Ben Ingram",
+  "role": "opener",
+  "club": "Yorkshire",
+  "div": 1,
+  "tier": "d1a",
+  "old": 86,
+  "neu": 89,
+  "d": 3
+ },
+ "largestFall": {
+  "name": "Jasper Veldman",
+  "role": "wristSpin",
+  "club": "Deventer Athletic",
+  "div": 2,
+  "tier": "d2a",
+  "old": 29,
+  "neu": 26,
+  "d": -3
+ },
+ "byRole": {
+  "opener": {
+   "n": 482,
+   "up": 296,
+   "down": 30,
+   "sum": 362
+  },
+  "topOrderBat": {
+   "n": 517,
+   "up": 223,
+   "down": 102,
+   "sum": 168
+  },
+  "middleOrderBat": {
+   "n": 510,
+   "up": 157,
+   "down": 133,
+   "sum": 31
+  },
+  "wicketkeeper": {
+   "n": 512,
+   "up": 11,
+   "down": 326,
+   "sum": -342
+  },
+  "allRounder": {
+   "n": 548,
+   "up": 122,
+   "down": 158,
+   "sum": -45
+  },
+  "seamFastMedium": {
+   "n": 405,
+   "up": 102,
+   "down": 140,
+   "sum": -42
+  },
+  "seamMedium": {
+   "n": 261,
+   "up": 61,
+   "down": 102,
+   "sum": -55
+  },
+  "fingerSpin": {
+   "n": 282,
+   "up": 86,
+   "down": 92,
+   "sum": -29
+  },
+  "wristSpin": {
+   "n": 242,
+   "up": 70,
+   "down": 92,
+   "sum": -45
+  },
+  "seamFast": {
+   "n": 81,
+   "up": 28,
+   "down": 19,
+   "sum": 9
+  }
+ },
+ "wages": {
+  "oldTotal": 59240970,
+  "newTotal": 59831600
+ },
+ "movers": [
+  {
+   "name": "Ben Ingram",
+   "role": "opener",
+   "club": "Yorkshire",
+   "div": 1,
+   "tier": "d1a",
+   "old": 86,
+   "neu": 89,
+   "d": 3
+  },
+  {
+   "name": "George Dawson",
+   "role": "opener",
+   "club": "Limerick Colts",
+   "div": 2,
+   "tier": "d2a",
+   "old": 75,
+   "neu": 78,
+   "d": 3
+  },
+  {
+   "name": "Noah Ogden",
+   "role": "opener",
+   "club": "Drogheda Athletic",
+   "div": 2,
+   "tier": "d2a",
+   "old": 69,
+   "neu": 72,
+   "d": 3
+  },
+  {
+   "name": "Tijmen van Leeuwen",
+   "role": "allRounder",
+   "club": "Eindhoven CC",
+   "div": 1,
+   "tier": "d1b",
+   "old": 32,
+   "neu": 35,
+   "d": 3
+  },
+  {
+   "name": "Jasper Veldman",
+   "role": "wristSpin",
+   "club": "Deventer Athletic",
+   "div": 2,
+   "tier": "d2a",
+   "old": 29,
+   "neu": 26,
+   "d": -3
+  },
+  {
+   "name": "Rory Lowe",
+   "role": "wristSpin",
+   "club": "Kingston CC",
+   "div": 1,
+   "tier": "d1a",
+   "old": 43,
+   "neu": 40,
+   "d": -3
+  },
+  {
+   "name": "Jos Ellison",
+   "role": "wristSpin",
+   "club": "Georgetown CC",
+   "div": 1,
+   "tier": "d1a",
+   "old": 51,
+   "neu": 48,
+   "d": -3
+  },
+  {
+   "name": "Ollie Mercer",
+   "role": "wristSpin",
+   "club": "Basseterre CC",
+   "div": 1,
+   "tier": "d1b",
+   "old": 30,
+   "neu": 33,
+   "d": 3
+  },
+  {
+   "name": "Toby Dunn",
+   "role": "seamMedium",
+   "club": "Victoria Falls CC",
+   "div": 1,
+   "tier": "d1a",
+   "old": 41,
+   "neu": 38,
+   "d": -3
+  },
+  {
+   "name": "Josh Vickers",
+   "role": "seamFastMedium",
+   "club": "Perth CC",
+   "div": 1,
+   "tier": "d1a",
+   "old": 47,
+   "neu": 50,
+   "d": 3
+  },
+  {
+   "name": "Tom Foster",
+   "role": "wristSpin",
+   "club": "Perth CC",
+   "div": 1,
+   "tier": "d1a",
+   "old": 43,
+   "neu": 40,
+   "d": -3
+  },
+  {
+   "name": "Theo Taylor",
+   "role": "seamMedium",
+   "club": "Canberra CC",
+   "div": 1,
+   "tier": "d1b",
+   "old": 37,
+   "neu": 34,
+   "d": -3
+  },
+  {
+   "name": "Eddie Thorne",
+   "role": "fingerSpin",
+   "club": "Cairns Athletic",
+   "div": 2,
+   "tier": "d2b",
+   "old": 40,
+   "neu": 37,
+   "d": -3
+  },
+  {
+   "name": "Sebastian Jarvis",
+   "role": "fingerSpin",
+   "club": "Hamilton Athletic",
+   "div": 2,
+   "tier": "d2a",
+   "old": 59,
+   "neu": 56,
+   "d": -3
+  },
+  {
+   "name": "Oscar Yardley",
+   "role": "seamFastMedium",
+   "club": "Mumbai CC",
+   "div": 1,
+   "tier": "d1a",
+   "old": 66,
+   "neu": 63,
+   "d": -3
+  },
+  {
+   "name": "Jacob Mercer",
+   "role": "opener",
+   "club": "Kolkata CC",
+   "div": 1,
+   "tier": "d1a",
+   "old": 80,
+   "neu": 83,
+   "d": 3
+  },
+  {
+   "name": "Max Ogden",
+   "role": "topOrderBat",
+   "club": "Dharamshala CC",
+   "div": 1,
+   "tier": "d1b",
+   "old": 71,
+   "neu": 74,
+   "d": 3
+  },
+  {
+   "name": "Sam Sharpe",
+   "role": "opener",
+   "club": "Rawalpindi CC",
+   "div": 1,
+   "tier": "d1b",
+   "old": 72,
+   "neu": 75,
+   "d": 3
+  },
+  {
+   "name": "Josh Hargreaves",
+   "role": "wristSpin",
+   "club": "Jalalabad CC",
+   "div": 1,
+   "tier": "d1a",
+   "old": 51,
+   "neu": 48,
+   "d": -3
+  },
+  {
+   "name": "Charlie Ingram",
+   "role": "fingerSpin",
+   "club": "Ghazni CC",
+   "div": 1,
+   "tier": "d1b",
+   "old": 61,
+   "neu": 58,
+   "d": -3
+  },
+  {
+   "name": "Isaac Radcliffe",
+   "role": "topOrderBat",
+   "club": "Sylhet CC",
+   "div": 1,
+   "tier": "flagship",
+   "old": 74,
+   "neu": 77,
+   "d": 3
+  },
+  {
+   "name": "Jamie Whitaker",
+   "role": "seamFastMedium",
+   "club": "Dhaka CC",
+   "div": 1,
+   "tier": "d1a",
+   "old": 38,
+   "neu": 41,
+   "d": 3
+  },
+  {
+   "name": "Freddie Ellison",
+   "role": "wristSpin",
+   "club": "Comilla CC",
+   "div": 1,
+   "tier": "d1b",
+   "old": 30,
+   "neu": 27,
+   "d": -3
+  },
+  {
+   "name": "Daniel Pickering",
+   "role": "fingerSpin",
+   "club": "Rangpur Athletic",
+   "div": 2,
+   "tier": "d2a",
+   "old": 64,
+   "neu": 61,
+   "d": -3
+  },
+  {
+   "name": "Toby Sharpe",
+   "role": "seamFastMedium",
+   "club": "Birgunj Union CC",
+   "div": 2,
+   "tier": "d2a",
+   "old": 28,
+   "neu": 31,
+   "d": 3
+  },
+  {
+   "name": "Louis Clarke",
+   "role": "opener",
+   "club": "Essex",
+   "div": 1,
+   "tier": "flagship",
+   "old": 91,
+   "neu": 93,
+   "d": 2
+  },
+  {
+   "name": "Isaac Bennett",
+   "role": "opener",
+   "club": "Essex",
+   "div": 1,
+   "tier": "flagship",
+   "old": 86,
+   "neu": 88,
+   "d": 2
+  },
+  {
+   "name": "Archie Dunn",
+   "role": "topOrderBat",
+   "club": "Essex",
+   "div": 1,
+   "tier": "flagship",
+   "old": 88,
+   "neu": 90,
+   "d": 2
+  },
+  {
+   "name": "Noah Sharpe",
+   "role": "allRounder",
+   "club": "Essex",
+   "div": 1,
+   "tier": "flagship",
+   "old": 54,
+   "neu": 52,
+   "d": -2
+  },
+  {
+   "name": "Ollie Wells",
+   "role": "wristSpin",
+   "club": "Essex",
+   "div": 1,
+   "tier": "flagship",
+   "old": 50,
+   "neu": 48,
+   "d": -2
+  },
+  {
+   "name": "Louis Thorne",
+   "role": "middleOrderBat",
+   "club": "Yorkshire",
+   "div": 1,
+   "tier": "d1a",
+   "old": 66,
+   "neu": 68,
+   "d": 2
+  },
+  {
+   "name": "Lewis Harrison",
+   "role": "opener",
+   "club": "Lancashire",
+   "div": 1,
+   "tier": "d1a",
+   "old": 82,
+   "neu": 84,
+   "d": 2
+  },
+  {
+   "name": "Joe Bickley",
+   "role": "wicketkeeper",
+   "club": "Surrey",
+   "div": 1,
+   "tier": "d1a",
+   "old": 36,
+   "neu": 34,
+   "d": -2
+  },
+  {
+   "name": "Max Brown",
+   "role": "allRounder",
+   "club": "Surrey",
+   "div": 1,
+   "tier": "d1a",
+   "old": 82,
+   "neu": 84,
+   "d": 2
+  },
+  {
+   "name": "James Kirby",
+   "role": "seamMedium",
+   "club": "Surrey",
+   "div": 1,
+   "tier": "d1a",
+   "old": 53,
+   "neu": 55,
+   "d": 2
+  },
+  {
+   "name": "Oscar Hale",
+   "role": "wristSpin",
+   "club": "Surrey",
+   "div": 1,
+   "tier": "d1a",
+   "old": 54,
+   "neu": 56,
+   "d": 2
+  },
+  {
+   "name": "Jos Gibbs",
+   "role": "topOrderBat",
+   "club": "Middlesex",
+   "div": 1,
+   "tier": "d1b",
+   "old": 68,
+   "neu": 70,
+   "d": 2
+  },
+  {
+   "name": "Josh Trott",
+   "role": "seamFastMedium",
+   "club": "Warwickshire",
+   "div": 1,
+   "tier": "d1b",
+   "old": 38,
+   "neu": 40,
+   "d": 2
+  },
+  {
+   "name": "Jos Stanton",
+   "role": "opener",
+   "club": "Nottinghamshire",
+   "div": 1,
+   "tier": "d1b",
+   "old": 77,
+   "neu": 79,
+   "d": 2
+  },
+  {
+   "name": "Ben Ingram",
+   "role": "middleOrderBat",
+   "club": "Nottinghamshire",
+   "div": 1,
+   "tier": "d1b",
+   "old": 53,
+   "neu": 55,
+   "d": 2
+  }
+ ]
+}

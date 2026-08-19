@@ -1,0 +1,44 @@
+
+=== §14 HOW FAR 3840 EXISTING CRICKETERS MOVE ===
+  no change        1490
+  +-1              1929
+  +-2              396
+  +-3              25
+  +-4              0
+  +-5              0
+  more than 5      0
+
+  largest rise  +3  Ben Ingram (opener, 86 -> 89)
+  largest fall  -3  Jasper Veldman (wristSpin, 29 -> 26)
+
+  role                    n     up   down   mean d
+  allRounder             548    122    158    -0.08
+  topOrderBat            517    223    102     0.32
+  wicketkeeper           512     11    326    -0.67
+  middleOrderBat         510    157    133     0.06
+  opener                 482    296     30     0.75
+  seamFastMedium         405    102    140    -0.10
+  fingerSpin             282     86     92    -0.10
+  seamMedium             261     61    102    -0.21
+  wristSpin              242     70     92    -0.19
+  seamFast                81     28     19     0.11
+
+=== §15 THE WAGE BILL ===
+  total       $59,240,970  ->  $59,831,600   (1.0%)
+  median      $11,060  ->  $11,060
+  P90         $38,050  ->  $38,050
+  P99         $54,180  ->  $56,010
+  top wage    $69,950  ->  $69,950
+
+  club payroll by division (mean per club, per round)
+    division 1   $330,581  ->  $334,741   (1.3%)
+    division 2   $132,239  ->  $132,693   (0.3%)
+
+  club payroll by tier
+    flagship   $438,143  ->  $446,680   (1.9%)
+    d1a        $358,936  ->  $363,178   (1.2%)
+    d1b        $282,425  ->  $285,429   (1.1%)
+    d2a        $172,991  ->  $174,095   (0.6%)
+    d2b        $91,486  ->  $91,292   (-0.2%)
+
+  worst single club   4.7%   best -4.4%
