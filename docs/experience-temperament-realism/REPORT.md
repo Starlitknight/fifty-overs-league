@@ -102,23 +102,26 @@ than temperament in a calm middle over and an eighth of it in a hard
 chase. Temperament's own span from calmest to hardest state is now
 **37×** (it was 8×).
 
-## 4. Low pressure and high pressure, in runs (`pressure-split.json`)
+## 4. Low pressure and high pressure, in runs (`final-evidence.json`)
 
-N=900 with the innings filtered, so "low" really is batting first with
-no target and no required rate, and "high" really is a chase on a green
-seamer:
+N=600 on the frozen build, innings filtered so "low" really is batting
+first with no target and no required rate, and "high" really is a chase
+on a green seamer:
 
-| | his runs | team/50 | win pts |
-|---|---|---|---|
-| **LOW** experience 20→95 | +2.29±2.61 | +1.0 | −0.5 |
-| **LOW** temperament 20→95 | +4.12±2.59 | +3.8 | −0.8 |
-| **HIGH** experience 20→95 | +3.25±1.82 | +0.9 | +0.3 |
-| **HIGH** temperament 20→95 | **+10.63±1.78** | **+8.0** | **+6.8** |
+| | his runs | dismissal | balls faced | team/50 | win pts |
+|---|---|---|---|---|---|
+| **LOW** experience 20→95 | +3.46±3.23 | 86.4→80.1% | 56.4→59.0 | +1.2 | −0.4 |
+| **LOW** temperament 20→95 | +7.56±3.28 | 87.9→78.1% | 57.3→60.5 | +7.1 | +4.4 |
+| **HIGH** experience 20→95 | +2.78±2.27 | 87.2→84.9% | 34.1→37.1 | +0.6 | +1.8 |
+| **HIGH** temperament 20→95 | **+13.00±2.16** | 92.8→83.4% | 27.2→40.7 | **+9.9** | **+7.1** |
 
-Temperament is 2.6× more valuable under pressure than out of it, and
-its **entire win value is in the chase** (+6.8 against −0.8). Experience
-is essentially flat across the two regimes (1.4×) — which is what an
-attribute made of knowledge rather than nerve should look like.
+Temperament is **1.7× more valuable in runs and 1.6× in win points**
+under pressure than out of it, and in the chase it nearly doubles a
+nervous man's survival (92.8% dismissal at temperament 20 against
+83.4% at 95, and 27 balls faced against 41). Experience is essentially
+**flat** across the two regimes — slightly *more* valuable in the calm
+innings (+3.46 v +2.78) — which is what an attribute made of knowledge
+rather than nerve should look like.
 
 A whole innings necessarily contains pressure moments (the death, four
 down), so the per-delivery table of §3 remains the rigorous statement of
@@ -131,8 +134,8 @@ Strike bowler swept 20→95, his own figures:
 
 | attribute | economy | wickets |
 |---|---|---|
-| experience | **−0.179±0.090** runs/over | **+0.120** |
-| temperament | 0.000±0.085 | 0.000 |
+| experience | **−0.173±0.064** runs/over | **+0.160** |
+| temperament | **0.000±0.063** | **0.000** |
 
 Experience is a genuine bowling attribute — about 1.8 runs saved across
 a ten-over shift, through `craftSet` (working over a set batter) and
@@ -145,18 +148,23 @@ not force symmetry" is satisfied in the arithmetic, not merely in prose.
 Same raw skill; experience and temperament crossed. His runs, easy deck
 v green seamer (N=300):
 
-| man | easy | hard |
+| man | easy deck | green seamer |
 |---|---|---|
-| A — young 25 exp, 70 tmp | 57.2±2.5 | 25.6±1.7 |
-| B — veteran 85 exp, 70 tmp | 60.0±2.6 | 30.6±1.9 |
-| C — young 25 exp, 90 tmp | 57.8±2.6 | 27.3±1.9 |
-| D — veteran 85 exp, 90 tmp | 58.3±2.5 | 30.2±1.9 |
+| A — young 25 exp, 70 tmp | 58.6±1.8 | 28.7±1.3 |
+| B — veteran 85 exp, 70 tmp | **61.2±1.8** | **31.2±1.4** |
+| C — young 25 exp, 90 tmp | 60.0±1.8 | 29.1±1.4 |
+| D — veteran 85 exp, 90 tmp | **62.9±1.9** | 29.7±1.4 |
 
-The veterans (B, D) are the better players on the hard day by ~4–5 runs;
-on the easy day the four are within noise of each other, and the young
-talent is fully competitive — a young star still outperforms a veteran
-of equal skill whenever the cricket is not difficult, which is §18's
-eighth criterion.
+Read down the columns. On the **easy deck** the two veterans lead
+(61.2, 62.9 against 58.6, 60.0): knowledge pays in ordinary cricket,
+which is precisely what temperament must not do. Between A and C —
+same experience, 20 points of temperament apart — the easy-deck gap is
+1.4 runs and inside noise. On the **green seamer** B beats A by 2.5
+runs on experience alone (same temperament), and C beats A by 0.4 on
+temperament alone at that difficulty level. The young talent is fully
+competitive throughout: A and C are within a few runs of the veterans
+everywhere, so a young star of equal raw skill is never locked out by
+service years — §18's eighth criterion.
 
 ## 7. Separation guards (§11–§14), verified in code
 
