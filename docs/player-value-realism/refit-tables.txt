@@ -1,0 +1,98 @@
+=== §6 EXPOSURE FIT (world bowls 44.5% spin) ===
+  vsPace  value = 0.072 + 0.174 x paceShare  ->  0.1680
+  vsSpin  value = -0.035 + 0.333 x spinShare  ->  0.1126
+
+=== CANDIDATE FO_VAL_W (runs of match margin per point) ===
+  bat
+    vsPace        0.185 -> 0.168   (x0.91)
+    vsSpin        0.145 -> 0.113   (x0.78)
+    power         0.150 -> 0.137   (x0.91)
+    rotation      0.150 -> 0.165   (x1.10)
+    temperament   0.060 -> 0.104   (x1.73)
+    SUM           0.690 -> 0.687
+  bowl
+    wicket        0.415 -> 0.368   (x0.89)
+    economy       0.240 -> 0.287   (x1.20)
+    discipline    0.140 -> 0.088   (x0.63)
+    moveTurn      0.090 -> 0.029   (x0.32)
+    variation     0.060 -> 0.042   (x0.70)
+    stamina       0.030 -> 0.046   (x1.53)
+    SUM           0.975 -> 0.860
+  field
+    fielding      0.200 -> 0.077   (x0.38)
+    catching      0.110 -> 0.029   (x0.26)
+    SUM           0.310 -> 0.106
+  glove
+    catching      0.226 -> 0.230   (x1.02)
+    keeping       0.045 -> 0.021   (x0.47)
+    stumping      0.030 -> 0.018   (x0.60)
+    SUM           0.301 -> 0.269
+
+population: 3840 cricketers, dealt once
+
+=== OVR DISTRIBUTION, OLD vs NEW (same cricketers) ===
+              mean     p5    p25    p50    p75    p95    max   >=80   >=90
+  old         52.8     20     38     53     68     84     98    381     42
+  new         53.0     18     37     53     69     87     99    461     89
+
+=== 30 BIGGEST MOVERS ===
+  name                     role             old  new    d   why
+  Freddie Wells            opener             77   84   +7   tmp 89 econ 13
+  Ben Ingram               opener             79   85   +6   tmp 95 econ 10
+  Theo Dawson              topOrderBat        75   81   +6   tmp 88 econ 10
+  Tom Whitehead            opener             79   85   +6   tmp 104 econ 14
+  Toby Whitaker            opener             79   85   +6   tmp 88 econ 13
+  Will Dawson              topOrderBat        72   78   +6   tmp 90 econ 14
+  Ollie Hollins            opener             85   91   +6   tmp 103 econ 13
+  Mason Larkspur           wicketkeeper       83   89   +6   tmp 89 econ 6
+  Rory Fairbairn           opener             77   83   +6   tmp 97 econ 10
+  Daniel Hale              opener             79   85   +6   tmp 91 econ 34
+  Harry Whitaker           opener             82   87   +5   tmp 101 econ 13
+  Lewis Kirby              allRounder         31   26   -5   field 68/55
+  Will Trott               opener             85   90   +5   tmp 100 econ 10
+  Archie Thorne            middleOrderBat     50   55   +5   tmp 66 econ 7
+  Zak Mercer               opener             75   80   +5   tmp 91 econ 13
+  Noah Ogden               opener             70   75   +5   tmp 83 econ 9
+  Douwe Driessen           topOrderBat        81   86   +5   tmp 98 econ 13
+  Melle Vos                opener             74   79   +5   tmp 90 econ 8
+  Bas Terpstra             opener             86   91   +5   tmp 107 econ 13
+  Melle Scholten           allRounder         12    7   -5   field 42/65
+  Joe Ellison              opener             87   92   +5   tmp 94 econ 12
+  Jack Taylor              opener             83   88   +5   tmp 83 econ 11
+  Jos Clarke               opener             82   87   +5   tmp 78 econ 11
+  Sam Taylor               fingerSpin         79   74   -5   field 99/63
+  Dominic Clarke           opener             80   85   +5   tmp 79 econ 12
+  Daniel Wells             topOrderBat        80   85   +5   tmp 96 econ 10
+  Will Chadwick            topOrderBat        85   90   +5   tmp 73 econ 14
+  Will Taylor              opener             80   85   +5   tmp 95 econ 10
+  Luke Trott               opener             58   63   +5   tmp 73 econ 24
+  Jacob Ellison            wristSpin          56   61   +5   tmp 13 econ 98
+
+=== A WORLD DEALT UNDER EACH PRICE LIST (re-DEALT, not re-priced) ===
+              mean     p5    p25    p50    p75    p95    max   >=80   >=90
+  old         52.8     20     38     53     68     84     98    381     42
+  new         52.8     20     38     53     68     84     98    384     43
+
+=== WHAT THE GENERATOR HANDS OUT INSTEAD (median skill of the dealt world) ===
+  skill            old    new      d
+  vsPace            39     39     +0
+  vsSpin            37     37     +0
+  power             33     33     +0
+  rotation          39     39     +0
+  temperament       38     39     +1
+  wicket            13     13     +0
+  economy           13     13     +0
+  discipline        14     14     +0
+  moveTurn          12     12     +0
+  variation         11     11     +0
+  stamina           47     47     +0
+  fielding          48     48     +0
+  catching          51     51     +0
+  keeping            8      8     +0
+  stumping           6      6     +0
+
+=== WAGE BILL (whole population, before talents/scarcity) ===
+  old  $59,129,270 a round
+  new  $61,965,350 a round   (4.8%)
+  median man  $11,060 -> $11,060
+  a fee is wage x 18 x 2.4 x age x form, so it moves with the wage by construction
