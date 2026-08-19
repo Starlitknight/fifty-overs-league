@@ -1,0 +1,9 @@
+SHIPPED (both old)    score 225.3  wkts 7.34  all-out 33.5%  death rr 6.21
+experience new only   score 225.3  wkts 7.34  all-out 33.5%  death rr 6.21
+temperament new only  score 231.9  wkts 7.03  all-out 29.5%  death rr 6.27
+2C (both new)         score 231.9  wkts 7.03  all-out 29.5%  death rr 6.27
+SHIPPED (both old)    score 225.3  wkts 7.34  all-out 33.5%  death rr 6.21
+2C, tmpFloor 0.10     score 231.9  wkts 7.03  all-out 29.5%  death rr 6.27
+2C, tmpFloor 0.20     score 228.9  wkts 7.17  all-out 33.3%  death rr 6.22
+2C, tmpFloor 0.30     score 227.3  wkts 7.24  all-out 34.7%  death rr 6.32
+2C, tmpFloor 0.40     score 226.0  wkts 7.35  all-out 34.8%  death rr 6.20

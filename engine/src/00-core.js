@@ -21,6 +21,40 @@ function foAgeTireFactor(p){
   return a<=22?0.88:(a<=25?0.94:(a<=29?1.00:(a<=32?1.09:(a<=35?1.19:1.32))));
 }
 function foExperienceFactor(p){return foClamp(((p&&p.exp)||55)-55,-45,45)/45;}
+// ---------------------------------------------------------------------------
+// EXPERIENCE IS KNOWLEDGE, TEMPERAMENT IS COMPOSURE (Player Realism 2C).
+// These are experience's OWN triggers - see the block in ballDist for what
+// each one means and why none of them is pressureBase. Frozen by measurement
+// in docs/experience-temperament-realism; every value defaults to the shape
+// the phase chose, and __foExpOldMode restores the shipped law wholesale for
+// the A/B rather than making each constant separately reversible.
+// ---------------------------------------------------------------------------
+var FO_ET={
+  base:0.30,            // knowledge in a becalmed middle over
+  adapt:0.55,           // ...and what having SEEN it adds
+  adaptBowlBalls:36,    // a bowler has worked a batter out by six overs
+  phasePP:0.25,         // the powerplay is a knowable phase
+  phaseMid:0.00,        // the middle overs are where least of it applies
+  phaseDeath:0.45,      // the death is the most knowable of all
+  craftSet:0.40,        // a bowler's craft against a set batter
+  rot:0.020,            // strike/risk judgement: dots into ones, flat
+  // and temperament's own trigger: the SITUATION, never the phase clock
+  // MEASURED, NOT PICKED. The first cut was 0.10 and it separated the two
+  // attributes most cleanly (experience beat temperament 1.51:1 in a dead
+  // middle over), but it moved cricket this phase was never asked to move:
+  // weak-league sides went from 33.5% all out to 29.5% and scored six more,
+  // because temperament's old flat floor had been acting as a "bad players
+  // are bad everywhere" term wearing nerve's name, and removing all of it
+  // handed weak batting a reprieve its SKILL had not earned. 0.20 keeps the
+  // separation the phase exists for - temperament's dead-over effect is
+  // still 61% below the shipped law, and the exp/tmp ratio there is 0.82
+  // against a shipped 0.27 - while returning weak-league all-out rate to
+  // 33.3% against 33.5% and scoring to within four runs. Minimum change
+  // wins; the sensitivity is in docs/experience-temperament-realism/
+  // d2-attribution.txt.
+  tmpFloor:0.20,        // nerve is never wholly irrelevant, but nearly
+  tmpDeath:0.45         // the death is a real nerve phase (was a flat 1.00)
+};
 /* HOME ADVANTAGE, in the currency the whole distribution speaks.
  *
  * The engine gave the home side nothing at all - two identical squads split
@@ -1980,10 +2014,47 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   // remains is the half that is genuinely its own effect. exp_base is the floor:
   // how much of it speaks in a becalmed middle over. Keep it small, or
   // experience is a skill bonus wearing a hat.
-  const expUse=CAL.exp_base+pressureBase;
-  w+=-CAL.exp_wkt*batExp*expUse+CAL.exp_bowl_wkt*bowlExp*expUse;
-  L.dot+=0.018*bowlExp*(CAL.exp_base+pressureBase*0.8)-0.012*batExp*(CAL.exp_base+pressureBase*0.8);
-  L['1']+=0.014*batExp; L['4']-=0.010*bowlExp*expUse; L['6']-=0.008*bowlExp*(ph==='death'?1.2:0.5);
+  // PHASE 2C: THE OLD LAW READ THE SAME PRESSURE RAMP TEMPERAMENT READS -
+  // expUse = exp_base + pressureBase against tmpUse = tmp_base + pressureBase.
+  // Two attributes, one trigger, and the smaller of them was therefore a weak
+  // second temperament, which is precisely the muddle the audit named. The
+  // trigger is now KNOWLEDGE, and knowledge is not nerve:
+  //
+  //   base       what he knows in a becalmed middle over - small, but never
+  //              nought, because reading the game is worth something always.
+  //   adapt      what SEEING IT is worth. The batsman's (1-s) is the setness
+  //              the engine already tracks - experience does not add a second
+  //              setness system, it decides how much a man EXTRACTS from the
+  //              balls he has faced. The bowler's is his own deliveries at
+  //              this end (ctx.bballs): he works a batter out.
+  //   phase      knowing what a phase demands - the powerplay's field, the
+  //              death's angles. Deliberately NOT flat: the middle overs are
+  //              where the least of it applies.
+  //   craftSet   a bowler's craft against a SET batter (s low): the one
+  //              place a veteran seamer visibly out-thinks a man who has
+  //              made fifty.
+  //
+  // Nothing here reads pressureBase. Temperament keeps that channel to
+  // itself, which is the whole point of the phase. __foExpOldMode restores
+  // the shipped law for the A/B.
+  const _expOld=(typeof __foExpOldMode!=='undefined')&&__foExpOldMode;
+  const _setn=Math.max(0,Math.min(1,1-s));              // how well he has seen it
+  const _bowlAdapt=Math.min(1,((ctx&&ctx.bballs)||0)/FO_ET.adaptBowlBalls);
+  const _phaseKnow=(ph==='death'?FO_ET.phaseDeath:(ph==='pp'?FO_ET.phasePP:FO_ET.phaseMid));
+  const expBatU=_expOld?(CAL.exp_base+pressureBase)
+    :(FO_ET.base+FO_ET.adapt*_setn+_phaseKnow);
+  const expBowlU=_expOld?(CAL.exp_base+pressureBase)
+    :(FO_ET.base+FO_ET.adapt*_bowlAdapt+_phaseKnow+FO_ET.craftSet*_setn);
+  const expDotB=_expOld?(CAL.exp_base+pressureBase*0.8):expBowlU;
+  const expDotA=_expOld?(CAL.exp_base+pressureBase*0.8):expBatU;
+  w+=-CAL.exp_wkt*batExp*expBatU+CAL.exp_bowl_wkt*bowlExp*expBowlU;
+  L.dot+=0.018*bowlExp*expDotB-0.012*batExp*expDotA;
+  // STRIKE AND RISK JUDGEMENT, the flat half that was always legitimate: an
+  // experienced man turns dots into ones and declines the low-value risk.
+  // It is knowledge about scoring, not composure, so it does not scale with
+  // anything - and it is the reason experience still reads in a dead rubber.
+  L['1']+=(_expOld?0.014:FO_ET.rot)*batExp;
+  L['4']-=0.010*bowlExp*expBowlU; L['6']-=0.008*bowlExp*(ph==='death'?1.2:0.5);
   // ---- THE CONTEST ----------------------------------------------------------
   // One term, one meaning. A better batsman than the bowler he is facing is
   // harder to dismiss AND harder to tie down AND finds the rope more often -
@@ -2038,7 +2109,23 @@ function ballDist(bat,bowl,ph,faced,intent,rrDef,pitch,field,over,ctx){
   // on the wicket logit for a nervous man and took a quarter of all deliveries
   // as wickets. Pressure compounds in cricket but nerve does not fail four times
   // over; the cap is where "this is as hard as it gets" sits.
-  const tmpUse=Math.min(1.7,CAL.tmp_base+pressureBase);
+  // PHASE 2C: TEMPERAMENT READS THE SITUATION, NOT THE PHASE. pressureBase
+  // carries a flat floor by phase (pp 0.35, mid 0.55, death 1.00) on top of
+  // the situational terms, and that floor is not pressure - it is simply
+  // which over it is. Measured on the shipped law, a nerveless man was a
+  // third of the way to his full benefit in a DEAD middle over of a game
+  // already won, which is not what nerve is for.
+  //
+  // So temperament now reads what actually makes a moment hard: a chase,
+  // wickets down, a required rate, a collapse, and the death (kept, at half
+  // the old weight - the death is genuinely a nerve phase, unlike the middle
+  // overs). The phase floor moved to EXPERIENCE, where knowing what a phase
+  // demands belongs. tmpFloor is the small residue that says nerve is never
+  // completely irrelevant. __foTmpOldMode restores the shipped trigger.
+  const tmpSit=(typeof __foTmpOldMode!=='undefined'&&__foTmpOldMode)?pressureBase
+    :(FO_ET.tmpFloor+(ph==='death'?FO_ET.tmpDeath:0)+(ctx&&ctx.chase?0.35:0)
+      +(ctx&&ctx.wkts>=4?0.25:0)+(rrDef>0?Math.min(0.45,rrDef*0.55):0)+collapseP);
+  const tmpUse=Math.min(1.7,CAL.tmp_base+tmpSit);
   w-=CAL.tmp_wkt*tmpQ*tmpUse; L.dot-=CAL.tmp_dot*tmpQ*tmpUse;
   let W=w+CAL.intent_wkt*eff;
   // v11.1: real ODI correction - more wickets without flattening ODI scoring.

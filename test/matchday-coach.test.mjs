@@ -260,7 +260,16 @@ test('D: a large enough batting gap can legitimately win the gloves', () => {
   const squad = [
     { name: 'Gloveman', kind: 'keeper', keeper: true, bowlType: null, level: 26,
       keeping: 80, stumping: 78, catching: 78 },
-    { name: 'Batter Keeper', kind: 'keeper', keeper: true, bowlType: null, level: 82,
+    // 82 -> 88 AT PHASE 2C, and the reason is worth keeping. This builder
+    // sets EVERY skill to `level`, so the "batting gap" here was also a
+    // 56-point TEMPERAMENT gap - and 2C stopped temperament paying a flat
+    // rate in every over, moving it to the situations that actually apply
+    // pressure. The coach prices average conditions, so a man whose edge is
+    // partly nerve is now worth slightly less to it (and more in a chase).
+    // Measured by bisection on this exact cell: the crossover sat at or
+    // below 82 and now sits between 82 (376 v 378, gloveman) and 88 (batter
+    // wins). The principle the test exists for is unchanged and still true.
+    { name: 'Batter Keeper', kind: 'keeper', keeper: true, bowlType: null, level: 88,
       keeping: 58, stumping: 56, catching: 58 },
     { name: 'B1', kind: 'bat', bowlType: null, level: 78 },
     { name: 'B2', kind: 'bat', bowlType: null, level: 77 },
