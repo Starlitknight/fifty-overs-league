@@ -1,0 +1,3 @@
+# batteries write these in place; they are committed by hand once a run has
+# finished, so a mid-write file is never banked as evidence
+*-err.log
