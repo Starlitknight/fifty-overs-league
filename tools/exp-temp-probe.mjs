@@ -81,17 +81,25 @@ if (has('exact') || has('all')) {
   }
 }
 
-// one swept man (slot 2, a top-order bat), everything else held
-function sweepCell(attr, lvl, n, runOpts, sideOpts) {
+// one swept man (slot 2, a top-order bat), everything else held.
+// `want` decides WHICH innings counts: 'first' is genuinely low pressure (no
+// target, no required rate), 'chase' is the pressured one. Without this the
+// toss decides, so half of every "low pressure" cell was a run chase - which
+// is pressure by definition, and it is what made the first read of this
+// section show temperament worth nine runs in a "calm" innings.
+function sweepCell(attr, lvl, n, runOpts, want) {
   const slot = { slot: 2 };
   if (attr === 'exp') slot.exp = lvl; else slot.skills = { temperament: lvl };
-  const A = H.side('A', Object.assign({ slots: [slot] }, sideOpts || {}));
+  const A = H.side('A', { slots: [slot] });
   const B = H.side('B', {});
   const nm = A.players[2].name;
   const runs = [], outs = [], balls = [], team = [], win = [];
   for (let i = 0; i < n; i++) {
     const r = H.run(A, B, 820001 + i * 104729, runOpts || {});
     if (!r) continue;
+    const aFirst = !!(r.i1 && r.i1.batTeam === 'A');
+    if (want === 'first' && !aFirst) continue;
+    if (want === 'chase' && aFirst) continue;
     win.push(winOf(r));
     for (const inn of [r.i1, r.i2]) {
       if (!inn || inn.batTeam !== 'A') continue;
@@ -103,13 +111,13 @@ function sweepCell(attr, lvl, n, runOpts, sideOpts) {
   return { attr, lvl, runs: summary(runs), outRate: summary(outs), balls: summary(balls),
     team: summary(team), win: summary(win) };
 }
-function sweepReport(title, runOpts, sideOpts, key) {
+function sweepReport(title, runOpts, want, key) {
   say(`\n=== ${title} (N=${N}) ===`);
   say('  attr  lvl   his runs      balls   out%    team/50   win%');
   const rows = [];
   for (const attr of ['exp', 'tmp']) {
     for (const lvl of LEVELS) {
-      const C = sweepCell(attr, lvl, N, runOpts, sideOpts);
+      const C = sweepCell(attr, lvl, N, runOpts, want);
       rows.push(C);
       say('  ' + attr.padEnd(5) + String(lvl).padEnd(5) + f(C.runs.mean, 1) + '±' + C.runs.se.toFixed(1).padEnd(4)
         + f(C.balls.mean, 1) + f(100 * C.outRate.mean, 1) + f(C.team.mean, 1) + f(100 * C.win.mean, 1));
@@ -128,10 +136,11 @@ function sweepReport(title, runOpts, sideOpts, key) {
 }
 
 if (has('low') || has('all'))
-  sweepReport('§2 LOW PRESSURE (flat deck, batting first, no chase)', { pitch: 'flat' }, null, 'low');
+  sweepReport('§2 LOW PRESSURE (flat deck, BATTING FIRST - no target, no required rate)',
+    { pitch: 'flat' }, 'first', 'low');
 if (has('high') || has('all'))
-  sweepReport('§3 HIGH PRESSURE (green seamer, chasing)', { pitch: 'green', weather: 'Overcast' },
-    null, 'high');
+  sweepReport('§3 HIGH PRESSURE (green seamer, CHASING a target)',
+    { pitch: 'green', weather: 'Overcast' }, 'chase', 'high');
 
 // ---------------------------------------------------------------------------
 // §5 BOWLING. The swept man is the strike bowler; his own figures are read.
