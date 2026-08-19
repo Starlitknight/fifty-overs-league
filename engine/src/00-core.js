@@ -39,7 +39,20 @@ var FO_ET={
   craftSet:0.40,        // a bowler's craft against a set batter
   rot:0.020,            // strike/risk judgement: dots into ones, flat
   // and temperament's own trigger: the SITUATION, never the phase clock
-  tmpFloor:0.10,        // nerve is never wholly irrelevant, but nearly
+  // MEASURED, NOT PICKED. The first cut was 0.10 and it separated the two
+  // attributes most cleanly (experience beat temperament 1.51:1 in a dead
+  // middle over), but it moved cricket this phase was never asked to move:
+  // weak-league sides went from 33.5% all out to 29.5% and scored six more,
+  // because temperament's old flat floor had been acting as a "bad players
+  // are bad everywhere" term wearing nerve's name, and removing all of it
+  // handed weak batting a reprieve its SKILL had not earned. 0.20 keeps the
+  // separation the phase exists for - temperament's dead-over effect is
+  // still 61% below the shipped law, and the exp/tmp ratio there is 0.82
+  // against a shipped 0.27 - while returning weak-league all-out rate to
+  // 33.3% against 33.5% and scoring to within four runs. Minimum change
+  // wins; the sensitivity is in docs/experience-temperament-realism/
+  // d2-attribution.txt.
+  tmpFloor:0.20,        // nerve is never wholly irrelevant, but nearly
   tmpDeath:0.45         // the death is a real nerve phase (was a flat 1.00)
 };
 /* HOME ADVANTAGE, in the currency the whole distribution speaks.
