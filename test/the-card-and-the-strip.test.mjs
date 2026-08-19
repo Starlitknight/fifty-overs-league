@@ -96,12 +96,24 @@ test('the strip reads the same ladder as the card, both ends', () => {
 // THE IDENTITY, on real cricketers rather than on numbers a test chose: a
 // specialist's trade strip IS his card. This is the claim that the two fitted
 // regressions could only ever approximate, and it is the reason they are gone.
-test('a specialist wears his own card on his own strip', () => {
+// AND THE IDENTITY IS NOW ABOUT ABILITY, WHICH IS A REAL CHANGE.
+//
+// The strip is a reading of the fifteen numbers printed under it, so it is and
+// must stay a function of SKILL. The card stopped being one: foOvr is CURRENT
+// playing value now - ability plus accumulated experience, up to two points
+// either way - so a thirty-four-year-old specialist can wear four and a half
+// stars on his batting strip and five on his card without either being wrong.
+//
+// That is a visible consequence of the semantic choice and not a bug in the
+// arithmetic, so what the identity holds is ability against ability:
+// foPlayerValue(p).intrinsicOvr is the card with the career taken back out.
+test('a specialist wears his own ABILITY on his own strip', () => {
   const S = W.foStarsFor;
   let bats = 0, bowls = 0;
   for (let s = 1; s <= 12; s++) {
     for (const p of eng.genSquad(6100 + s, 'England', s % 2 ? 'rock' : 'express').players || []) {
-      const card = W.foOvr(p), keeps = !!(p.keeper || p.role === 'wicketkeeper');
+      const card = Math.max(0, Math.min(100, Math.round(W.foPlayerValue(p).intrinsicOvr)));
+      const keeps = !!(p.keeper || p.role === 'wicketkeeper');
       const bowler = !!(p.bowlType && p.bowlType !== 'none');
       if (p.role === 'allRounder' || keeps) continue;
       if (!bowler) {
