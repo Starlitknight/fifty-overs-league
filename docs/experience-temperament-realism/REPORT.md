@@ -319,7 +319,7 @@ while temperament (0.077/pt) sits in the batting family at 0.060.
 
 - Engine suite **488/489** with one documented skip; the golden replay
   is the single red, **held for review** as instructed.
-- Server suite: see below. Match-Day Coach **32/32**.
+- Server suite **437/437**; Match-Day Coach **32/32**.
 - calibration-check: **every band passes**, pinned fingerprint only.
 - Untouched by this diff and verified in code: Phase 2A spells and
   recovery, captaincy's tactical model and its fatigue widening,
@@ -327,6 +327,7 @@ while temperament (0.077/pt) sits in the batting family at 0.060.
   bowling-type fatigue hierarchy, stamina, form (`formIx`), and age
   (`foAgeTireFactor`). The diff is the experience block, the
   temperament trigger, one constants table and two tests.
-- <!-- SUITES -->
+- Deterministic replay **3/3** bit-identical; source hash equals the
+  shipped asset (`48e37b`).
 
 Not merged, not deployed, goldens held for review.
