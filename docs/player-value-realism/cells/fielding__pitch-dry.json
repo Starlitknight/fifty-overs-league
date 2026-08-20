@@ -1,0 +1,22 @@
+{
+ "attr": "fielding",
+ "fam": "field",
+ "ctx": "pitch-dry",
+ "pitch": "dry",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 1.834590154884249,
+  "se": 1.732868606309835
+ },
+ "perPoint": 0.0611530051628083,
+ "dWin": {
+  "n": 200,
+  "mean": 0.05,
+  "se": 0.022134808531896512
+ }
+}

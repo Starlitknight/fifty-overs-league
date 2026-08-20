@@ -1,0 +1,22 @@
+{
+ "attr": "stumping",
+ "fam": "glove",
+ "ctx": "pitch-dry",
+ "pitch": "dry",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": -0.973068693517512,
+  "se": 2.4228417963907285
+ },
+ "perPoint": -0.0324356231172504,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0175,
+  "se": 0.0311781838106174
+ }
+}

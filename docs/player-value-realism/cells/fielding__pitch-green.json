@@ -1,0 +1,22 @@
+{
+ "attr": "fielding",
+ "fam": "field",
+ "ctx": "pitch-green",
+ "pitch": "green",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 2.8508857243466856,
+  "se": 2.0807888542944366
+ },
+ "perPoint": 0.09502952414488952,
+ "dWin": {
+  "n": 200,
+  "mean": 0.02,
+  "se": 0.025764686985822
+ }
+}

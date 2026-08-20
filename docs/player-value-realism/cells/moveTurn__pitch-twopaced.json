@@ -1,0 +1,22 @@
+{
+ "attr": "moveTurn",
+ "fam": "bowl",
+ "ctx": "pitch-twopaced",
+ "pitch": "twoPaced",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": -0.10656330616535215,
+  "se": 1.0109835260785174
+ },
+ "perPoint": -0.003552110205511738,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0025,
+  "se": 0.014396354577657101
+ }
+}

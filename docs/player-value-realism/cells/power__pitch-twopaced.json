@@ -1,0 +1,22 @@
+{
+ "attr": "power",
+ "fam": "bat",
+ "ctx": "pitch-twopaced",
+ "pitch": "twoPaced",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 2.4933909222735586,
+  "se": 1.3728464100584645
+ },
+ "perPoint": 0.08311303074245195,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0225,
+  "se": 0.018854607690317514
+ }
+}

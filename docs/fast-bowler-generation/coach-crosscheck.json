@@ -1,0 +1,158 @@
+{
+ "oldOvr": {
+  "elite bat poor hands": 74,
+  "good bat elite hands": 73,
+  "ordinary bat": 60,
+  "cool head": 64,
+  "no nerve": 64,
+  "spin merchant bat": 63,
+  "pace merchant bat": 65,
+  "keeper bat": 71,
+  "gloveman": 55,
+  "strike quick": 69,
+  "miser": 65,
+  "fast-medium": 68,
+  "workhorse": 64,
+  "finger spinner": 67,
+  "wrist spinner": 66,
+  "all-rounder": 68
+ },
+ "newOvr": {
+  "elite bat poor hands": 76,
+  "good bat elite hands": 72,
+  "ordinary bat": 60,
+  "cool head": 66,
+  "no nerve": 62,
+  "spin merchant bat": 63,
+  "pace merchant bat": 66,
+  "keeper bat": 71,
+  "gloveman": 60,
+  "strike quick": 68,
+  "miser": 66,
+  "fast-medium": 68,
+  "workhorse": 64,
+  "finger spinner": 67,
+  "wrist spinner": 65,
+  "all-rounder": 69
+ },
+ "worths": {
+  "balanced": {
+   "elite bat poor hands": 67.6,
+   "good bat elite hands": 43,
+   "ordinary bat": 32.2,
+   "cool head": 37,
+   "no nerve": 38.2,
+   "spin merchant bat": 36.6,
+   "pace merchant bat": 39.4,
+   "keeper bat": 51.6,
+   "gloveman": 16.9,
+   "strike quick": 25.1,
+   "miser": 19.380000000000003,
+   "fast-medium": 20.380000000000003,
+   "workhorse": 18.52,
+   "finger spinner": 19.78,
+   "wrist spinner": 22.880000000000003,
+   "all-rounder": 33.519999999999996
+  },
+  "green": {
+   "elite bat poor hands": 50,
+   "good bat elite hands": 32.3,
+   "ordinary bat": 24.3,
+   "cool head": 27.9,
+   "no nerve": 28.8,
+   "spin merchant bat": 26,
+   "pace merchant bat": 31.3,
+   "keeper bat": 38.5,
+   "gloveman": 12.7,
+   "strike quick": 25.98,
+   "miser": 15.5,
+   "fast-medium": 18.9,
+   "workhorse": 14.84,
+   "finger spinner": 13.379999999999999,
+   "wrist spinner": 16.2,
+   "all-rounder": 26.259999999999998
+  },
+  "flat": {
+   "elite bat poor hands": 106.6,
+   "good bat elite hands": 65.3,
+   "ordinary bat": 48.1,
+   "cool head": 55.3,
+   "no nerve": 58.4,
+   "spin merchant bat": 54.9,
+   "pace merchant bat": 59.1,
+   "keeper bat": 79.8,
+   "gloveman": 23.6,
+   "strike quick": 32.379999999999995,
+   "miser": 28.82,
+   "fast-medium": 29.06,
+   "workhorse": 27.86,
+   "finger spinner": 28.939999999999998,
+   "wrist spinner": 30.799999999999997,
+   "all-rounder": 51.440000000000005
+  },
+  "dry": {
+   "elite bat poor hands": 49.3,
+   "good bat elite hands": 31.1,
+   "ordinary bat": 23.3,
+   "cool head": 26.9,
+   "no nerve": 27.7,
+   "spin merchant bat": 28.3,
+   "pace merchant bat": 27.2,
+   "keeper bat": 37.5,
+   "gloveman": 12.4,
+   "strike quick": 18.2,
+   "miser": 12.420000000000002,
+   "fast-medium": 13.440000000000001,
+   "workhorse": 11.56,
+   "finger spinner": 18.68,
+   "wrist spinner": 24.380000000000003,
+   "all-rounder": 22.36
+  },
+  "slow": {
+   "elite bat poor hands": 56.5,
+   "good bat elite hands": 36.7,
+   "ordinary bat": 27.8,
+   "cool head": 32,
+   "no nerve": 32.4,
+   "spin merchant bat": 32,
+   "pace merchant bat": 33.5,
+   "keeper bat": 43.6,
+   "gloveman": 15.2,
+   "strike quick": 22.4,
+   "miser": 17.3,
+   "fast-medium": 18.08,
+   "workhorse": 16.46,
+   "finger spinner": 18.5,
+   "wrist spinner": 22.46,
+   "all-rounder": 28.980000000000004
+  }
+ },
+ "oldRows": [
+  {
+   "hi": "strike quick",
+   "lo": "ordinary bat",
+   "gap": 9,
+   "against": 4
+  },
+  {
+   "hi": "fast-medium",
+   "lo": "ordinary bat",
+   "gap": 8,
+   "against": 5
+  }
+ ],
+ "newRows": [
+  {
+   "hi": "strike quick",
+   "lo": "ordinary bat",
+   "gap": 8,
+   "against": 4
+  },
+  {
+   "hi": "fast-medium",
+   "lo": "ordinary bat",
+   "gap": 8,
+   "against": 5
+  }
+ ]
+}

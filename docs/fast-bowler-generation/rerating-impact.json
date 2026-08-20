@@ -1,0 +1,499 @@
+{
+ "bands": {
+  "zero": 969,
+  "one": 1616,
+  "two": 857,
+  "three": 314,
+  "four": 66,
+  "five": 18,
+  "more": 0
+ },
+ "largestRise": {
+  "name": "Luke Kirby",
+  "role": "wicketkeeper",
+  "club": "Middlesex",
+  "div": 1,
+  "tier": "d1b",
+  "old": 30,
+  "neu": 35,
+  "d": 5
+ },
+ "largestFall": {
+  "name": "Charlie Bickley",
+  "role": "fingerSpin",
+  "club": "Drogheda Athletic",
+  "div": 2,
+  "tier": "d2a",
+  "old": 30,
+  "neu": 26,
+  "d": -4
+ },
+ "byRole": {
+  "opener": {
+   "n": 482,
+   "up": 378,
+   "down": 20,
+   "sum": 637
+  },
+  "topOrderBat": {
+   "n": 517,
+   "up": 261,
+   "down": 105,
+   "sum": 288
+  },
+  "middleOrderBat": {
+   "n": 510,
+   "up": 221,
+   "down": 139,
+   "sum": 140
+  },
+  "wicketkeeper": {
+   "n": 512,
+   "up": 421,
+   "down": 15,
+   "sum": 980
+  },
+  "allRounder": {
+   "n": 548,
+   "up": 214,
+   "down": 165,
+   "sum": 67
+  },
+  "seamFastMedium": {
+   "n": 405,
+   "up": 155,
+   "down": 118,
+   "sum": 55
+  },
+  "seamMedium": {
+   "n": 261,
+   "up": 86,
+   "down": 107,
+   "sum": -48
+  },
+  "fingerSpin": {
+   "n": 282,
+   "up": 110,
+   "down": 98,
+   "sum": -4
+  },
+  "wristSpin": {
+   "n": 242,
+   "up": 98,
+   "down": 98,
+   "sum": -29
+  },
+  "seamFast": {
+   "n": 81,
+   "up": 50,
+   "down": 12,
+   "sum": 56
+  }
+ },
+ "wages": {
+  "oldTotal": 58277680,
+  "newTotal": 60538260
+ },
+ "movers": [
+  {
+   "name": "Luke Kirby",
+   "role": "wicketkeeper",
+   "club": "Middlesex",
+   "div": 1,
+   "tier": "d1b",
+   "old": 30,
+   "neu": 35,
+   "d": 5
+  },
+  {
+   "name": "Luke Gibbs",
+   "role": "wicketkeeper",
+   "club": "Nottinghamshire",
+   "div": 1,
+   "tier": "d1b",
+   "old": 45,
+   "neu": 50,
+   "d": 5
+  },
+  {
+   "name": "Sebastian Chadwick",
+   "role": "wicketkeeper",
+   "club": "Derbyshire",
+   "div": 2,
+   "tier": "d2b",
+   "old": 14,
+   "neu": 19,
+   "d": 5
+  },
+  {
+   "name": "Louis Dawson",
+   "role": "wicketkeeper",
+   "club": "Cork CC",
+   "div": 1,
+   "tier": "flagship",
+   "old": 49,
+   "neu": 54,
+   "d": 5
+  },
+  {
+   "name": "Gijs Slot",
+   "role": "wicketkeeper",
+   "club": "Eindhoven CC",
+   "div": 1,
+   "tier": "d1b",
+   "old": 27,
+   "neu": 32,
+   "d": 5
+  },
+  {
+   "name": "Max Lowe",
+   "role": "wicketkeeper",
+   "club": "Gros Islet Athletic",
+   "div": 2,
+   "tier": "d2b",
+   "old": 24,
+   "neu": 29,
+   "d": 5
+  },
+  {
+   "name": "Jamie Chadwick",
+   "role": "wicketkeeper",
+   "club": "Bloemfontein Wanderers",
+   "div": 2,
+   "tier": "d2a",
+   "old": 21,
+   "neu": 26,
+   "d": 5
+  },
+  {
+   "name": "Ollie Harrison",
+   "role": "wicketkeeper",
+   "club": "Mutare CC",
+   "div": 1,
+   "tier": "d1a",
+   "old": 48,
+   "neu": 53,
+   "d": 5
+  },
+  {
+   "name": "James Bennett",
+   "role": "wicketkeeper",
+   "club": "Kadoma Union CC",
+   "div": 2,
+   "tier": "d2a",
+   "old": 27,
+   "neu": 32,
+   "d": 5
+  },
+  {
+   "name": "Sebastian Crawford",
+   "role": "wicketkeeper",
+   "club": "Rusape Colts",
+   "div": 2,
+   "tier": "d2b",
+   "old": 24,
+   "neu": 29,
+   "d": 5
+  },
+  {
+   "name": "Liam Bennett",
+   "role": "wicketkeeper",
+   "club": "Launceston Union CC",
+   "div": 2,
+   "tier": "d2b",
+   "old": 27,
+   "neu": 32,
+   "d": 5
+  },
+  {
+   "name": "Alfie Stanton",
+   "role": "wicketkeeper",
+   "club": "Kanpur Colts",
+   "div": 2,
+   "tier": "d2b",
+   "old": 20,
+   "neu": 25,
+   "d": 5
+  },
+  {
+   "name": "Max Norris",
+   "role": "wicketkeeper",
+   "club": "Sialkot Gymkhana",
+   "div": 2,
+   "tier": "d2b",
+   "old": 15,
+   "neu": 20,
+   "d": 5
+  },
+  {
+   "name": "Tom Barker",
+   "role": "wicketkeeper",
+   "club": "Herat Union CC",
+   "div": 2,
+   "tier": "d2a",
+   "old": 26,
+   "neu": 31,
+   "d": 5
+  },
+  {
+   "name": "Finlay Larkspur",
+   "role": "wicketkeeper",
+   "club": "Rangpur Athletic",
+   "div": 2,
+   "tier": "d2a",
+   "old": 24,
+   "neu": 29,
+   "d": 5
+  },
+  {
+   "name": "Finlay Dawson",
+   "role": "wicketkeeper",
+   "club": "Perth CC",
+   "div": 1,
+   "tier": "d1b",
+   "old": 32,
+   "neu": 37,
+   "d": 5
+  },
+  {
+   "name": "Luke Vickers",
+   "role": "wicketkeeper",
+   "club": "Stirling Union CC",
+   "div": 2,
+   "tier": "d2a",
+   "old": 38,
+   "neu": 43,
+   "d": 5
+  },
+  {
+   "name": "Lewis Bennett",
+   "role": "wicketkeeper",
+   "club": "Perth District XI",
+   "div": 2,
+   "tier": "d2b",
+   "old": 12,
+   "neu": 17,
+   "d": 5
+  },
+  {
+   "name": "Louis Clarke",
+   "role": "opener",
+   "club": "Essex",
+   "div": 1,
+   "tier": "flagship",
+   "old": 88,
+   "neu": 92,
+   "d": 4
+  },
+  {
+   "name": "Ben Ingram",
+   "role": "opener",
+   "club": "Yorkshire",
+   "div": 1,
+   "tier": "d1a",
+   "old": 84,
+   "neu": 88,
+   "d": 4
+  },
+  {
+   "name": "Jos Gibbs",
+   "role": "topOrderBat",
+   "club": "Middlesex",
+   "div": 1,
+   "tier": "d1b",
+   "old": 66,
+   "neu": 70,
+   "d": 4
+  },
+  {
+   "name": "Tommy Vickers",
+   "role": "wicketkeeper",
+   "club": "Durham",
+   "div": 2,
+   "tier": "d2a",
+   "old": 27,
+   "neu": 31,
+   "d": 4
+  },
+  {
+   "name": "George Kirby",
+   "role": "wicketkeeper",
+   "club": "Sussex",
+   "div": 2,
+   "tier": "d2a",
+   "old": 38,
+   "neu": 42,
+   "d": 4
+  },
+  {
+   "name": "Louis Crawford",
+   "role": "wicketkeeper",
+   "club": "Gloucestershire",
+   "div": 2,
+   "tier": "d2b",
+   "old": 21,
+   "neu": 25,
+   "d": 4
+  },
+  {
+   "name": "Eddie Dawson",
+   "role": "topOrderBat",
+   "club": "Derbyshire",
+   "div": 2,
+   "tier": "d2b",
+   "old": 67,
+   "neu": 71,
+   "d": 4
+  },
+  {
+   "name": "Charlie Bickley",
+   "role": "fingerSpin",
+   "club": "Drogheda Athletic",
+   "div": 2,
+   "tier": "d2a",
+   "old": 30,
+   "neu": 26,
+   "d": -4
+  },
+  {
+   "name": "Rory Clarke",
+   "role": "wicketkeeper",
+   "club": "Bangor Rovers",
+   "div": 2,
+   "tier": "d2a",
+   "old": 38,
+   "neu": 42,
+   "d": 4
+  },
+  {
+   "name": "Ollie Wright",
+   "role": "wicketkeeper",
+   "club": "Armagh Colts",
+   "div": 2,
+   "tier": "d2b",
+   "old": 8,
+   "neu": 12,
+   "d": 4
+  },
+  {
+   "name": "Jos Sharpe",
+   "role": "wicketkeeper",
+   "club": "Tralee Gymkhana",
+   "div": 2,
+   "tier": "d2b",
+   "old": 28,
+   "neu": 32,
+   "d": 4
+  },
+  {
+   "name": "Jasper Jansen",
+   "role": "allRounder",
+   "club": "Utrecht CC",
+   "div": 1,
+   "tier": "flagship",
+   "old": 75,
+   "neu": 79,
+   "d": 4
+  },
+  {
+   "name": "Jasper Bos",
+   "role": "wicketkeeper",
+   "club": "Arnhem Union CC",
+   "div": 2,
+   "tier": "d2b",
+   "old": 39,
+   "neu": 43,
+   "d": 4
+  },
+  {
+   "name": "Eddie Gibbs",
+   "role": "wicketkeeper",
+   "club": "Georgetown CC",
+   "div": 1,
+   "tier": "d1a",
+   "old": 54,
+   "neu": 58,
+   "d": 4
+  },
+  {
+   "name": "Jos Ellison",
+   "role": "wristSpin",
+   "club": "Georgetown CC",
+   "div": 1,
+   "tier": "d1a",
+   "old": 42,
+   "neu": 38,
+   "d": -4
+  },
+  {
+   "name": "Will Bickley",
+   "role": "wicketkeeper",
+   "club": "Basseterre CC",
+   "div": 1,
+   "tier": "d1b",
+   "old": 50,
+   "neu": 54,
+   "d": 4
+  },
+  {
+   "name": "Noah Foster",
+   "role": "wicketkeeper",
+   "club": "Roseau Union CC",
+   "div": 2,
+   "tier": "d2a",
+   "old": 40,
+   "neu": 44,
+   "d": 4
+  },
+  {
+   "name": "Finlay Ainsworth",
+   "role": "wicketkeeper",
+   "club": "Roseau Union CC",
+   "div": 2,
+   "tier": "d2a",
+   "old": 35,
+   "neu": 39,
+   "d": 4
+  },
+  {
+   "name": "Ben Hargreaves",
+   "role": "wicketkeeper",
+   "club": "Couva Rovers",
+   "div": 2,
+   "tier": "d2b",
+   "old": 44,
+   "neu": 48,
+   "d": 4
+  },
+  {
+   "name": "Daniel Bennett",
+   "role": "wicketkeeper",
+   "club": "Johannesburg CC",
+   "div": 1,
+   "tier": "d1a",
+   "old": 42,
+   "neu": 46,
+   "d": 4
+  },
+  {
+   "name": "George Bennett",
+   "role": "wicketkeeper",
+   "club": "Gqeberha CC",
+   "div": 1,
+   "tier": "d1b",
+   "old": 45,
+   "neu": 49,
+   "d": 4
+  },
+  {
+   "name": "Jamie Norris",
+   "role": "wicketkeeper",
+   "club": "Benoni District XI",
+   "div": 2,
+   "tier": "d2a",
+   "old": 20,
+   "neu": 24,
+   "d": 4
+  }
+ ]
+}

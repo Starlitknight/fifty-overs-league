@@ -1,0 +1,41 @@
+
+=== §2 KEEPERS IN A LEGAL XI (N=600, same seat, same opposition, same seeds) ===
+  keeper                          margin/50     win%   ct/inn  st/inn  byes   bat runs  avg
+  A elite bat / mediocre gloves      9.67±1.66    56.8     0.29    0.06   2.69      39.9  81.1
+  B balanced keeper-bat              7.06±1.72    55.7     0.37    0.15   1.58      25.3  43.1
+  C weak bat / elite gloves          1.45±1.82    53.3     0.35    0.25   1.07      11.3  14.9
+  D elite keeper-bat                21.15±1.71    68.8     0.42    0.24   1.26      36.7  79.1
+  E poor keeper                    -13.91±1.75    35.5     0.18    0.04   3.44      11.4  14.5
+  F ordinary league keeper          -2.05±1.78    46.3     0.31    0.07   2.22      20.6  30.7
+
+=== THE wk GLOVE MULTIPLIER, SWEPT AGAINST THAT MEASUREMENT ===
+  x1.2  A=79 B=67 C=53 D=84 E=34 F=56   r=0.963  worst mis-price 27.3 runs (AvE)
+  x1.5  A=79 B=68 C=56 D=85 E=34 F=57   r=0.972  worst mis-price 27.3 runs (AvE)
+  x1.8  A=79 B=69 C=59 D=85 E=34 F=57   r=0.976  worst mis-price 27.3 runs (AvE)
+  x2.1  A=79 B=70 C=62 D=85 E=34 F=57   r=0.975  worst mis-price 27.3 runs (AvE)
+  x2.4  A=79 B=70 C=64 D=86 E=34 F=58   r=0.975  worst mis-price 27.3 runs (AvE)
+  x2.7  A=79 B=71 C=66 D=86 E=34 F=58   r=0.971  worst mis-price 27.3 runs (AvE)
+  x3.0  A=79 B=71 C=67 D=86 E=34 F=58   r=0.969  worst mis-price 27.3 runs (AvE)
+  OLD   A=78 B=67 C=54 D=85 E=34 F=56
+
+=== §4 ALL-ROUNDERS AT No.5, THE SIDE'S SIXTH BOWLING OPTION (N=600) ===
+  man                        margin/50     win%    bat runs   avg
+  20/70 bowling AR               7.72±1.86    55.0       13.1   15.3
+  70/20 batting AR              11.44±1.75    59.3       40.2   61.6
+  45/45                         -3.88±1.74    45.5       19.6   22.6
+  55/55                          3.76±1.73    53.3       26.2   34.8
+  60/60                         13.82±1.76    61.8       31.4   43.6
+  65/55                         10.60±1.68    59.4       36.3   53.2
+  55/65                         14.56±1.70    63.0       28.0   38.1
+  70/70                         27.67±1.79    70.5       40.3   67.1
+  bat specialist 75             13.42±1.70    61.4       43.8   68.9
+  bat specialist 65             10.65±1.74    58.8       37.8   57.7
+
+=== THE ar bat/bowl MULTIPLIER, SWEPT AGAINST THAT MEASUREMENT ===
+  x0.80   68 67 47 58 64 63 64 73 71 62   r=0.847  worst 14.3 runs (20/70 bowling AR v 70/70)
+  x0.90   68 67 47 58 64 63 64 73 71 62   r=0.847  worst 14.3 runs (20/70 bowling AR v 70/70)
+  x1.00   68 67 47 58 64 63 64 73 71 62   r=0.847  worst 14.3 runs (20/70 bowling AR v 70/70)
+  x1.10   68 67 46 58 64 63 64 73 71 62   r=0.846  worst 14.3 runs (20/70 bowling AR v 70/70)
+  x1.20   68 67 46 58 64 63 64 73 71 62   r=0.846  worst 14.3 runs (20/70 bowling AR v 70/70)
+  OLD     68 67 47 58 64 63 64 73 71 62
+  order: 20/70 bowling AR | 70/20 batting AR | 45/45 | 55/55 | 60/60 | 65/55 | 55/65 | 70/70 | bat specialist 75 | bat specialist 65

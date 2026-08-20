@@ -1,0 +1,22 @@
+{
+ "attr": "moveTurn",
+ "fam": "bowl",
+ "ctx": "pitch-cracked",
+ "pitch": "cracked",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 2.0131416170981073,
+  "se": 1.2109389310548486
+ },
+ "perPoint": 0.06710472056993691,
+ "dWin": {
+  "n": 200,
+  "mean": 0.03,
+  "se": 0.014017218413804535
+ }
+}

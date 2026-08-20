@@ -1,0 +1,22 @@
+{
+ "attr": "vsPace",
+ "fam": "bat",
+ "ctx": "lvl-weak",
+ "pitch": "balanced",
+ "attack": "balanced",
+ "lvl": 0.72,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": -0.5436500000260182,
+  "se": 2.4686289752599304
+ },
+ "perPoint": -0.01812166666753394,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0325,
+  "se": 0.03363966237081028
+ }
+}

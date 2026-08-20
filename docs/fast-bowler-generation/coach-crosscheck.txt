@@ -1,0 +1,29 @@
+
+=== THE SQUAD, OLD CARD vs CANDIDATE CARD ===
+  cricketer                  OLD   CAND     d
+  elite bat poor hands        74     76    +2
+  good bat elite hands        73     72    -1
+  ordinary bat                60     60    +0
+  cool head                   64     66    +2
+  no nerve                    64     62    -2
+  spin merchant bat           63     63    +0
+  pace merchant bat           65     66    +1
+  keeper bat                  71     71    +0
+  gloveman                    55     60    +5
+  strike quick                69     68    -1
+  miser                       65     66    +1
+  fast-medium                 68     68    +0
+  workhorse                   64     64    +0
+  finger spinner              67     67    +0
+  wrist spinner               66     65    -1
+  all-rounder                 68     69    +1
+
+=== OLD CARD: pairs the card separates by >=8 where the coach prefers the LOWER man on 4+ of 5 pitches ===
+  card says strike quick > ordinary bat by 9; coach disagrees on 4/5 pitches
+  card says fast-medium > ordinary bat by 8; coach disagrees on 5/5 pitches
+
+=== CANDIDATE CARD: pairs the card separates by >=8 where the coach prefers the LOWER man on 4+ of 5 pitches ===
+  card says strike quick > ordinary bat by 8; coach disagrees on 4/5 pitches
+  card says fast-medium > ordinary bat by 8; coach disagrees on 5/5 pitches
+
+  systematic contradictions: old 2, candidate 2

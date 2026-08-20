@@ -1,0 +1,22 @@
+{
+ "attr": "economy",
+ "fam": "bowl",
+ "ctx": "pitch-dry",
+ "pitch": "dry",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 11.207118548123942,
+  "se": 2.979156642455849
+ },
+ "perPoint": 0.37357061827079807,
+ "dWin": {
+  "n": 200,
+  "mean": 0.05,
+  "se": 0.035796746153468735
+ }
+}

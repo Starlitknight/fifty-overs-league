@@ -1,0 +1,22 @@
+{
+ "attr": "wicket",
+ "fam": "bowl",
+ "ctx": "pitch-green",
+ "pitch": "green",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 3.2680514938331533,
+  "se": 3.066373522097211
+ },
+ "perPoint": 0.10893504979443844,
+ "dWin": {
+  "n": 200,
+  "mean": 0.03,
+  "se": 0.03893042369981656
+ }
+}

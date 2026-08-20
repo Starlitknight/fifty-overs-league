@@ -1,0 +1,18 @@
+
+=== 256 clubs, 3840 cricketers ===
+  style              heads   front line   clubs with one
+  seamFast              81         5.8%            28.9%
+  seamFastMedium       405        26.0%            85.5%
+  seamMedium           560        24.5%            82.4%
+  fingerSpin           531        33.8%            96.5%
+  wristSpin            242         9.9%            39.5%
+  partTimeSeam          36
+  partTimeSpin          36
+  none                1949
+
+  spin share of the front line   43.8%
+  clubs with five legal bowlers  256/256
+  clubs with a sixth option      256/256
+
+  clubs with a genuine quick, by division: d1 37/128  d2 37/128
+  ...by tier: flagship 4/16  d1a 15/48  d1b 18/64  d2a 22/64  d2b 15/64

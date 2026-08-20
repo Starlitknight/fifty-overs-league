@@ -1,0 +1,4 @@
+arm                                          0   ±1   ±2   ±3   ±4   ±5   >5   max   payroll
+weights + field mix only (wk 1.20, no exp)   1470 1961  372   37    0    0    0     3      1.1%
+  + keeper gloves 1.80                       1394 1797  457  134   42   13    3     6      1.8%
+  + experience layer  = FINAL                 969 1616  857  314   66   18    0     5      3.9%

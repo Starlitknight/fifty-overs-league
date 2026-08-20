@@ -1,0 +1,33 @@
+THIS build    20260819-1952-233571
+AGAINST build 20260819-1636-3ee099
+
+§4 RAW SKILLS  3840 cricketers, 15 attributes each
+   byte-identical under both laws: YES
+
+§10 MATCH PHYSICS  36/36 seeded matches bit-identical across the two builds
+
+§9 GENERATION  this 3840 men / 256 clubs   against 3840 men / 256 clubs
+   attribute            this            against
+   vsPace               40.4 (p50 38)      40.4 (p50 38)
+   vsSpin               39.6 (p50 37)      39.7 (p50 38)
+   power                35.6 (p50 33)      35.7 (p50 33)
+   rotation             39.6 (p50 39)      39.7 (p50 39)
+   temperament          41.2 (p50 38)      41.3 (p50 38)
+   wicket               29.0 (p50 12)      29.3 (p50 12)
+   economy              29.3 (p50 13)      29.5 (p50 13)
+   discipline           29.0 (p50 15)      29.2 (p50 15)
+   moveTurn             30.1 (p50 12)      30.3 (p50 12)
+   variation            27.9 (p50 12)      28.2 (p50 11)
+   stamina              47.8 (p50 46)      48.0 (p50 46)
+   fielding             49.4 (p50 48)      49.5 (p50 48)
+   catching             50.8 (p50 50)      50.9 (p50 50)
+   keeping               15.1 (p50 8)       15.2 (p50 8)
+   stumping              13.5 (p50 6)       13.6 (p50 6)
+   intrinsic level   mean 54.14   against 54.14
+   age               mean 25.34   against 25.34
+   total wage        61,135,260   against 59,819,180
+   roles this    {"opener":482,"topOrderBat":517,"middleOrderBat":510,"wicketkeeper":512,"allRounder":548,"seamFastMedium":405,"seamMedium":261,"fingerSpin":282,"wristSpin":242,"seamFast":81}
+   roles against {"opener":482,"topOrderBat":517,"middleOrderBat":510,"wicketkeeper":512,"allRounder":548,"seamFastMedium":405,"seamMedium":261,"fingerSpin":282,"wristSpin":242,"seamFast":81}
+   five-bowler legal 256/256   against 256/256
+   division 1 level  62.78   against 62.77
+   division 2 level  45.51   against 45.50

@@ -255,6 +255,58 @@
     });
     return bats + 0.85 * bowlSum + others + bench;
   }
+  // THE STYLE ROTATIONS, NAMED SO THEY CAN BE ARGUED WITH.
+  //
+  // These decide what a club's second, third and fourth quick (and second and
+  // third spinner) actually bowl. They were two anonymous locals inside the
+  // generator, which is how the world came to contain no fast bowlers for as
+  // long as it did: nothing named the distribution, so nothing could measure
+  // it and nothing could test it.
+  //
+  // The FIRST entry of each is deliberately not the rare style. A club's lead
+  // quick is a fast-medium bowler unless his archetype says otherwise, and the
+  // archetype saying otherwise is exactly what the standout rule above is for.
+  // That is what keeps genuine pace a minority: it arrives with a club's
+  // identity rather than with a dice roll on every pace slot.
+  var FO_PACE_STYLES = ["seamFastMedium", "seamFastMedium", "seamMedium", "seamMedium"];
+  var FO_SPIN_STYLES = ["fingerSpin", "wristSpin", "fingerSpin", "fingerSpin"];
+  // AND SOME CLUBS JUST HAVE A QUICK ONE, which the standout rule on its own
+  // cannot say. Measured with the standout rule alone: 40 genuine quicks in the
+  // world, spread evenly across the divisions - and FIVE NATIONS WITH NONE AT
+  // ALL, permanently, because their archetype palette (NAT_ARCH) contains no
+  // Pace Battery. The Netherlands could never produce a fast bowler; not
+  // rarely, never. A country that cannot is not a country.
+  //
+  // So a club's LEAD quick - and only his slot - is genuinely fast with this
+  // probability, independently of the club's identity. It is the smallest
+  // addition that decouples "does this world contain quicks" from "does this
+  // world contain Pace Batteries", and it cannot touch a second or third
+  // seamer: there is still no such thing as an attack with two of them unless
+  // the archetype bought one.
+  //
+  // The draw is taken UNCONDITIONALLY and compared afterwards, so that changing
+  // this number re-rolls nobody: every candidate value is measured against the
+  // same underlying world rather than against a differently-shuffled one. That
+  // is what makes the sweep below a comparison rather than five worlds:
+  //
+  //     p      quicks   front-line   clubs with one   nations with NONE
+  //     0        40        3.1%          15.6%              5 / 16
+  //     0.10     53        4.1%          20.7%              2 / 16
+  //     0.15     60        4.5%          22.7%              2 / 16
+  //     0.25     81        5.9%          29.3%              0 / 16
+  //     0.40    109        7.8%          39.1%              0 / 16
+  //
+  // 0.25 is the smallest value at which no nation is structurally incapable of
+  // producing a fast bowler, which was the whole complaint against the standout
+  // rule on its own. At it, genuine pace is 5.9% of the overs bowled against
+  // fast-medium's 25.8% and a seam-up total of 50.2%, and seven clubs in ten
+  // have no quick at all - so "clearly present" and "not every attack has one"
+  // are both true, measured rather than asserted.
+  //
+  // Nothing else moves: medium holds at 24.4% and the spin share at 44.0% for
+  // every value in that table, because the rule can only ever convert a lead
+  // fast-medium into a lead fast.
+  var FO_FAST_LEAD_P = 0.25;
   // The bucket a captain occupies in the squad composition.
   function foQsBucketOf(role) {
     if (role === "wicketkeeper") return "wk";
@@ -307,10 +359,52 @@
     for (var iA = 0; iA < want.ar; iA++) slots.push({ role: "allRounder", g: "ar" });
     // honest style rarity: no second genuine quick - the Express captain is the
     // league's apex predator; wrist spin stays scarce outside the Wizard
-    var paceStyles = ["seamFastMedium", "seamFastMedium", "seamMedium", "seamMedium"];
-    var spinStyles = ["fingerSpin", "wristSpin", "fingerSpin", "fingerSpin"];
+    //
+    // AND THE FIRST GENUINE QUICK CAME BACK, because for a while there was not
+    // one anywhere. Measured on the world's own sides: 256 squads, 3,840
+    // cricketers, ZERO seamFast. The rotations below say "no SECOND genuine
+    // quick" and are correct about that; the first one was supposed to arrive
+    // from the archetype's standout, and stopped when the captain was folded
+    // into the ordinary slot ladder. `var st = A.starter` a few dozen lines
+    // below survived as a dangling variable and its comment survived as a
+    // promise - "a Pace Battery is still led by a genuine quick" - that the
+    // code had quietly stopped keeping.
+    //
+    // The same slip cost the Spin Circus its wrist-spinner: its lead spinner
+    // was spinStyles[0], a finger spinner, and the archetype's whole billing is
+    // a mystery wrist-spinner. One repair fixes both, because it is one bug.
+    var paceStyles = FO_PACE_STYLES, spinStyles = FO_SPIN_STYLES;
     for (var iP = 0; iP < want.pace; iP++) slots.push({ role: paceStyles[iP % paceStyles.length], g: "pace" });
     for (var iS = 0; iS < want.spin; iS++) slots.push({ role: spinStyles[iS % spinStyles.length], g: "spin" });
+    // THE STANDOUT TAKES HIS OWN ROLE BACK. A department's slots are pushed
+    // first-choice first (iG === 0 gets the top of its own quality ladder, see
+    // the ladder below), so the archetype's standout is the FIRST slot of his
+    // own bucket - which is the man the rotation was overwriting.
+    //
+    // It bites only on pace and spin. A standout opener is already an opener
+    // and a standout keeper already a keeper; it is only the two style
+    // rotations that were talking over the archetype.
+    (function () {
+      var stRole = (A.starter || {}).role;
+      if (!stRole) return;
+      var bucket = foQsBucketOf(stRole);
+      for (var iSt = 0; iSt < slots.length; iSt++)
+        if (slots[iSt].g === bucket) { slots[iSt].role = stRole; return; }
+    })();
+    // ...and the club that simply has a quick one. Drawn every time so the
+    // probability can be moved without re-rolling the world; applied only to a
+    // lead quick the archetype has not already spoken for.
+    (function () {
+      var roll = rnd();
+      var p = (typeof window !== "undefined" && window.__foFastLeadP != null)
+        ? window.__foFastLeadP : FO_FAST_LEAD_P;
+      if (!(roll < p)) return;
+      for (var iF = 0; iF < slots.length; iF++)
+        if (slots[iF].g === "pace") {
+          if (slots[iF].role === "seamFastMedium") slots[iF].role = "seamFast";
+          return;
+        }
+    })();
     // ONE LADDER ACROSS THE WHOLE SQUAD MADE EVERY DEPARTMENT FLAT.
     //
     // The rungs used to be a single straight line from 0.80 down to 0.31 with

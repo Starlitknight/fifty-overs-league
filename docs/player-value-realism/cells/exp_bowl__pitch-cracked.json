@@ -1,0 +1,22 @@
+{
+ "attr": "exp_bowl",
+ "fam": "secondary",
+ "ctx": "pitch-cracked",
+ "pitch": "cracked",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 4.602583981111382,
+  "se": 2.0483274796819058
+ },
+ "perPoint": 0.15341946603704606,
+ "dWin": {
+  "n": 200,
+  "mean": 0.05,
+  "se": 0.028132850663097807
+ }
+}

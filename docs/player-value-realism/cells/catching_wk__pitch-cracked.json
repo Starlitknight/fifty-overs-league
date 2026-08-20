@@ -1,0 +1,22 @@
+{
+ "attr": "catching_wk",
+ "fam": "glove",
+ "ctx": "pitch-cracked",
+ "pitch": "cracked",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 9.601936304694753,
+  "se": 2.57622162837747
+ },
+ "perPoint": 0.3200645434898251,
+ "dWin": {
+  "n": 200,
+  "mean": 0.1525,
+  "se": 0.03530155448055681
+ }
+}

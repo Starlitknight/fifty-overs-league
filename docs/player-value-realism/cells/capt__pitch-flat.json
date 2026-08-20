@@ -1,0 +1,22 @@
+{
+ "attr": "capt",
+ "fam": "secondary",
+ "ctx": "pitch-flat",
+ "pitch": "flat",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 2.1711934653376663,
+  "se": 2.4648605367592844
+ },
+ "perPoint": 0.07237311551125554,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0575,
+  "se": 0.03600277418121722
+ }
+}

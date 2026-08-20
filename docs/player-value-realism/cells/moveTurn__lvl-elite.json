@@ -1,0 +1,22 @@
+{
+ "attr": "moveTurn",
+ "fam": "bowl",
+ "ctx": "lvl-elite",
+ "pitch": "balanced",
+ "attack": "balanced",
+ "lvl": 1.22,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 0.7644640350299923,
+  "se": 1.0917875647932918
+ },
+ "perPoint": 0.02548213450099974,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0025,
+  "se": 0.016047002256092437
+ }
+}

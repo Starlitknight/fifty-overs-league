@@ -1,0 +1,22 @@
+{
+ "attr": "exp_bowl",
+ "fam": "secondary",
+ "ctx": "pitch-dry",
+ "pitch": "dry",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 1.4033211986788734,
+  "se": 1.7968795013131522
+ },
+ "perPoint": 0.04677737328929578,
+ "dWin": {
+  "n": 200,
+  "mean": -0.01,
+  "se": 0.02240558078361853
+ }
+}

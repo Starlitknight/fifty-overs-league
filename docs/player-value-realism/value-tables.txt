@@ -1,0 +1,80 @@
+
+=== RAW (balanced pitch, balanced attack, ordinary league) AND WORLD-WEIGHTED ===
+  attribute        fam        ref/pt      se     world/pt   cover
+  wicket          bowl         0.3871  0.0480     0.3678    100%
+  economy         bowl         0.3205  0.0421     0.2869    100%
+  catching_wk     glove        0.2120  0.0352     0.2296    100%
+  rotation        bat          0.1870  0.0386     0.1650    100%
+  vsPace          bat          0.1862  0.0384     0.1849    100%
+  power           bat          0.1790  0.0269     0.1369    100%
+  temperament     bat          0.1348  0.0326     0.1041    100%
+  capt            secondary    0.1257  0.0377     0.1533    100%
+  discipline      bowl         0.0930  0.0259     0.0881    100%
+  stamina_fast    stamina      0.0722  0.0255     0.0722     31%
+  vsSpin          bat          0.0668  0.0383     0.1274    100%
+  fielding        field        0.0550  0.0244     0.0766    100%
+  exp_bowl        secondary    0.0547  0.0236     0.0286    100%
+  stamina_fastmed stamina      0.0464  0.0253     0.0464     31%
+  variation       bowl         0.0393  0.0218     0.0423    100%
+  stamina_bat     stamina      0.0364  0.0159     0.0364     31%
+  stamina_med     stamina      0.0308  0.0232     0.0308     31%
+  moveTurn        bowl         0.0254  0.0125     0.0293    100%
+  stumping        glove        0.0235  0.0330     0.0184    100%
+  exp_bat         secondary    0.0190  0.0217     0.0385    100%
+  stamina_wk      stamina      0.0165  0.0119     0.0165     31%
+  catching        field        0.0117  0.0101     0.0295    100%
+  keeping         glove        0.0075  0.0332     0.0211    100%
+  stamina_spin    stamina      0.0053  0.0257     0.0053     31%
+
+=== EXPOSURE (world bowls 44.5% spin, 55.5% pace) ===
+  attr      all-pace   pace-hvy   balanced   spin-hvy   all-spin   ->world
+  vsPace         0.186      0.361      0.186      0.105      0.063   0.131 / 0.103
+  vsSpin        -0.020      0.110      0.067      0.153      0.318   0.130 / 0.142
+
+=== MATCH STATE (reference cell, split on the control run) ===
+  attribute         bat 1st      chase   hard chase   easy chase
+  wicket                 0.363       0.421       0.975      -0.146
+  economy                0.310       0.336       0.805      -0.146
+  catching_wk            0.175       0.264       0.516      -0.001
+  rotation               0.124       0.277       0.411       0.136
+  vsPace                 0.215       0.144       0.456      -0.169
+  power                  0.214       0.129       0.185       0.073
+  temperament            0.120       0.156       0.299       0.007
+  capt                   0.121       0.133       0.484      -0.245
+  discipline             0.082       0.109       0.218      -0.002
+  stamina_fast           0.041       0.117       0.266      -0.035
+  vsSpin                 0.053       0.087       0.366      -0.193
+  fielding               0.058       0.050       0.187      -0.089
+  exp_bowl               0.034       0.084       0.240      -0.074
+  stamina_fastmed        0.038       0.059       0.254      -0.141
+  variation              0.014       0.076       0.182      -0.033
+  stamina_bat            0.041       0.030       0.055       0.004
+  stamina_med            0.027       0.036       0.121      -0.054
+  moveTurn               0.008       0.051       0.092       0.008
+  stumping               0.004       0.052       0.251      -0.153
+  exp_bat                0.025       0.010       0.050      -0.031
+  stamina_wk             0.018       0.015       0.031      -0.002
+  catching               0.001       0.027       0.057      -0.004
+  keeping                0.001       0.017       0.230      -0.211
+  stamina_spin           0.014      -0.008       0.087      -0.103
+
+=== LEAGUE LEVEL (x0.72 / ordinary / x1.22 on every skill of both sides) ===
+  attribute            weak    ordinary       elite
+  wicket                 0.511       0.387       0.242
+  economy                0.670       0.320       0.128
+  catching_wk            0.173       0.212       0.230
+  rotation               0.008       0.187       0.303
+  vsPace                -0.018       0.186       0.116
+  power                  0.123       0.179       0.068
+  temperament            0.185       0.135       0.092
+  capt                   0.138       0.126       0.071
+  discipline             0.123       0.093       0.090
+  vsSpin                 0.031       0.067       0.063
+  fielding               0.091       0.055       0.036
+  exp_bowl               0.040       0.055       0.095
+  variation              0.042       0.039       0.028
+  moveTurn               0.014       0.025       0.025
+  stumping               0.108       0.023      -0.087
+  exp_bat                0.033       0.019      -0.032
+  catching              -0.002       0.012       0.083
+  keeping               -0.024       0.007       0.092

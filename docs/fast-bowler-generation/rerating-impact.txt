@@ -1,0 +1,44 @@
+
+=== §14 HOW FAR 3840 EXISTING CRICKETERS MOVE ===
+  no change        969
+  +-1              1616
+  +-2              857
+  +-3              314
+  +-4              66
+  +-5              18
+  more than 5      0
+
+  largest rise  +5  Luke Kirby (wicketkeeper, 30 -> 35)
+  largest fall  -4  Charlie Bickley (fingerSpin, 30 -> 26)
+
+  role                    n     up   down   mean d
+  allRounder             548    214    165     0.12
+  topOrderBat            517    261    105     0.56
+  wicketkeeper           512    421     15     1.91
+  middleOrderBat         510    221    139     0.27
+  opener                 482    378     20     1.32
+  seamFastMedium         405    155    118     0.14
+  fingerSpin             282    110     98    -0.01
+  seamMedium             261     86    107    -0.18
+  wristSpin              242     98     98    -0.12
+  seamFast                81     50     12     0.69
+
+=== §15 THE WAGE BILL ===
+  total       $58,277,680  ->  $60,538,260   (3.9%)
+  median      $11,060  ->  $11,700
+  P90         $36,640  ->  $38,050
+  P99         $54,180  ->  $56,010
+  top wage    $69,950  ->  $69,950
+
+  club payroll by division (mean per club, per round)
+    division 1   $324,502  ->  $336,656   (3.7%)
+    division 2   $130,792  ->  $136,299   (4.2%)
+
+  club payroll by tier
+    flagship   $428,046  ->  $445,201   (4.0%)
+    d1a        $352,693  ->  $364,705   (3.4%)
+    d1b        $277,473  ->  $288,483   (4.0%)
+    d2a        $170,511  ->  $177,178   (3.9%)
+    d2b        $91,074  ->  $95,420   (4.8%)
+
+  worst single club   13.7%   best -4.3%

@@ -1,0 +1,22 @@
+{
+ "attr": "vsSpin",
+ "fam": "bat",
+ "ctx": "pitch-slow",
+ "pitch": "slow",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 3.8641720011275402,
+  "se": 2.76267701119369
+ },
+ "perPoint": 0.128805733370918,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0125,
+  "se": 0.03873591493081895
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "attr": "capt",
+ "fam": "secondary",
+ "ctx": "pitch-cracked",
+ "pitch": "cracked",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 3.5388608450173678,
+  "se": 2.8641405445862316
+ },
+ "perPoint": 0.11796202816724559,
+ "dWin": {
+  "n": 200,
+  "mean": 0.03,
+  "se": 0.036083376369891694
+ }
+}

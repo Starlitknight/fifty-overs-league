@@ -1,0 +1,7 @@
+
+=== §11 CARD vs ENGINE, BY ROLE ===
+  role            law        r     pair order    mis-price (runs)
+  keeper         OLD   0.970   100% of 13      12.4
+                 FINAL 0.976   100% of 13      12.3
+  all-rounder    OLD   0.845   92% of 26      5.5
+                 FINAL 0.847   92% of 26      5.6

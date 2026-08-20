@@ -1,0 +1,14 @@
+{
+ "FO_VAL_W": {
+  "bat":   { "vsPace": 0.169, "vsSpin": 0.111, "power": 0.137, "rotation": 0.165, "temperament": 0.104 },
+  "bowl":  { "wicket": 0.368, "economy": 0.287, "discipline": 0.088, "moveTurn": 0.029, "variation": 0.042, "stamina": 0.026 },
+  "field": { "fielding": 0.077, "catching": 0.029 },
+  "glove": { "catching": 0.230, "keeping": 0.021, "stumping": 0.018 }
+ },
+ "FO_VAL_MIX": {
+  "bat":  { "bat": 1.00, "bowl": 0.00, "field": 1.00, "glove": 0.00 },
+  "bowl": { "bat": 0.00, "bowl": 1.00, "field": 1.00, "glove": 0.00 },
+  "ar":   { "bat": 0.80, "bowl": 0.80, "field": 1.00, "glove": 0.00 },
+  "wk":   { "bat": 1.00, "bowl": 0.00, "field": 0.00, "glove": 1.80 }
+ }
+}

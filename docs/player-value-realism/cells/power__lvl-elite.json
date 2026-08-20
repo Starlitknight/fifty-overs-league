@@ -1,0 +1,22 @@
+{
+ "attr": "power",
+ "fam": "bat",
+ "ctx": "lvl-elite",
+ "pitch": "balanced",
+ "attack": "balanced",
+ "lvl": 1.22,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 2.048705507222771,
+  "se": 1.5334132333304553
+ },
+ "perPoint": 0.06829018357409236,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0225,
+  "se": 0.025632084754155744
+ }
+}

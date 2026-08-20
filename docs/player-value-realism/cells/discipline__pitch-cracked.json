@@ -1,0 +1,22 @@
+{
+ "attr": "discipline",
+ "fam": "bowl",
+ "ctx": "pitch-cracked",
+ "pitch": "cracked",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 3.3581407004257176,
+  "se": 2.128001540704597
+ },
+ "perPoint": 0.11193802334752392,
+ "dWin": {
+  "n": 200,
+  "mean": 0.01,
+  "se": 0.027445697871584365
+ }
+}

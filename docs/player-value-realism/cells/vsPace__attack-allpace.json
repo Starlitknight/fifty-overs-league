@@ -1,0 +1,23 @@
+{
+ "attr": "vsPace",
+ "fam": "bat",
+ "ctx": "attack-allpace",
+ "pitch": "balanced",
+ "attack": "allpace",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 600,
+ "dMargin": {
+  "n": 600,
+  "mean": 5.584508961374034,
+  "se": 1.6454389775003313
+ },
+ "perPoint": 0.1861502987124678,
+ "dWin": {
+  "n": 600,
+  "mean": 0.06,
+  "se": 0.020350298987793843
+ },
+ "n_target": 600
+}

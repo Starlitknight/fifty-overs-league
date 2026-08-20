@@ -1,0 +1,22 @@
+{
+ "attr": "exp_bowl",
+ "fam": "secondary",
+ "ctx": "lvl-weak",
+ "pitch": "balanced",
+ "attack": "balanced",
+ "lvl": 0.72,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 1.2122966725825213,
+  "se": 1.8154579986555035
+ },
+ "perPoint": 0.04040988908608404,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0375,
+  "se": 0.025788446441172938
+ }
+}

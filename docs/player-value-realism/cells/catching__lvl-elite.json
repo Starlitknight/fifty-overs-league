@@ -1,0 +1,22 @@
+{
+ "attr": "catching",
+ "fam": "field",
+ "ctx": "lvl-elite",
+ "pitch": "balanced",
+ "attack": "balanced",
+ "lvl": 1.22,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 2.4920494236935538,
+  "se": 0.8898914811703071
+ },
+ "perPoint": 0.08306831412311846,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0225,
+  "se": 0.014308824630680107
+ }
+}

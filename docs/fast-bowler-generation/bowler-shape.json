@@ -1,0 +1,254 @@
+{
+ "all": [
+  {
+   "label": "seamFast",
+   "n": 81,
+   "sk": {
+    "wicket": 66,
+    "economy": 69,
+    "moveTurn": 75,
+    "variation": 68,
+    "discipline": 69,
+    "stamina": 71
+   },
+   "age": 27,
+   "ovr": 66.95061728395062,
+   "ovrMed": 69,
+   "wage": 24410
+  },
+  {
+   "label": "seamFastMedium",
+   "n": 405,
+   "sk": {
+    "wicket": 54,
+    "economy": 50,
+    "moveTurn": 58,
+    "variation": 52,
+    "discipline": 49,
+    "stamina": 53
+   },
+   "age": 25,
+   "ovr": 52.02469135802469,
+   "ovrMed": 53,
+   "wage": 11080
+  },
+  {
+   "label": "seamMedium",
+   "n": 560,
+   "sk": {
+    "wicket": 44,
+    "economy": 45,
+    "moveTurn": 47,
+    "variation": 43,
+    "discipline": 42,
+    "stamina": 45
+   },
+   "age": 24,
+   "ovr": 46.90357142857143,
+   "ovrMed": 46,
+   "wage": 7230
+  },
+  {
+   "label": "fingerSpin",
+   "n": 531,
+   "sk": {
+    "wicket": 58,
+    "economy": 58,
+    "moveTurn": 61,
+    "variation": 56,
+    "discipline": 55,
+    "stamina": 51
+   },
+   "age": 25,
+   "ovr": 56.56497175141243,
+   "ovrMed": 58,
+   "wage": 14500
+  },
+  {
+   "label": "wristSpin",
+   "n": 242,
+   "sk": {
+    "wicket": 43,
+    "economy": 42,
+    "moveTurn": 47,
+    "variation": 39,
+    "discipline": 40,
+    "stamina": 38
+   },
+   "age": 23,
+   "ovr": 45.67768595041322,
+   "ovrMed": 41,
+   "wage": 5120
+  }
+ ],
+ "leads": [
+  {
+   "label": "seamFast",
+   "n": 52,
+   "sk": {
+    "wicket": 81,
+    "economy": 78,
+    "moveTurn": 80,
+    "variation": 77,
+    "discipline": 75,
+    "stamina": 78
+   },
+   "age": 28,
+   "ovr": 74.75,
+   "ovrMed": 76,
+   "wage": 33930
+  },
+  {
+   "label": "seamFastMedium",
+   "n": 121,
+   "sk": {
+    "wicket": 66,
+    "economy": 62,
+    "moveTurn": 70,
+    "variation": 65,
+    "discipline": 62,
+    "stamina": 64
+   },
+   "age": 27,
+   "ovr": 62.752066115702476,
+   "ovrMed": 64,
+   "wage": 19700
+  },
+  {
+   "label": "seamMedium",
+   "n": 83,
+   "sk": {
+    "wicket": 65,
+    "economy": 64,
+    "moveTurn": 65,
+    "variation": 61,
+    "discipline": 62,
+    "stamina": 65
+   },
+   "age": 27,
+   "ovr": 69.81927710843374,
+   "ovrMed": 68,
+   "wage": 23690
+  }
+ ],
+ "byTier": {
+  "flagship": {
+   "n": 16,
+   "fast": 4
+  },
+  "d1a": {
+   "n": 48,
+   "fast": 11
+  },
+  "d1b": {
+   "n": 64,
+   "fast": 13
+  },
+  "d2a": {
+   "n": 64,
+   "fast": 17
+  },
+  "d2b": {
+   "n": 64,
+   "fast": 7
+  }
+ },
+ "split": {
+  "express lead=seamFast": {
+   "label": "express lead=seamFast",
+   "n": 34,
+   "sk": {
+    "wicket": 90,
+    "economy": 80,
+    "moveTurn": 90,
+    "variation": 83,
+    "discipline": 79,
+    "stamina": 86
+   },
+   "age": 29,
+   "ovr": 81.02941176470588,
+   "ovrMed": 82,
+   "wage": 43440
+  },
+  "express lead=seamFastMedium": {
+   "label": "express lead=seamFastMedium",
+   "n": 5,
+   "sk": {
+    "wicket": 70,
+    "economy": 69,
+    "moveTurn": 68,
+    "variation": 62,
+    "discipline": 69,
+    "stamina": 76
+   },
+   "age": 28,
+   "ovr": 71.2,
+   "ovrMed": 64,
+   "wage": 20650
+  },
+  "express lead=seamMedium": {
+   "label": "express lead=seamMedium",
+   "n": 1,
+   "sk": {
+    "wicket": 59,
+    "economy": 64,
+    "moveTurn": 58,
+    "variation": 50,
+    "discipline": 63,
+    "stamina": 55
+   },
+   "age": 27,
+   "ovr": 58,
+   "ovrMed": 58,
+   "wage": 14500
+  },
+  "other lead=seamFast": {
+   "label": "other lead=seamFast",
+   "n": 18,
+   "sk": {
+    "wicket": 62,
+    "economy": 62,
+    "moveTurn": 66,
+    "variation": 64,
+    "discipline": 62,
+    "stamina": 67
+   },
+   "age": 27,
+   "ovr": 62.888888888888886,
+   "ovrMed": 67,
+   "wage": 23370
+  },
+  "other lead=seamFastMedium": {
+   "label": "other lead=seamFastMedium",
+   "n": 116,
+   "sk": {
+    "wicket": 66,
+    "economy": 62,
+    "moveTurn": 70,
+    "variation": 65,
+    "discipline": 61,
+    "stamina": 64
+   },
+   "age": 27,
+   "ovr": 62.38793103448276,
+   "ovrMed": 64,
+   "wage": 19700
+  },
+  "other lead=seamMedium": {
+   "label": "other lead=seamMedium",
+   "n": 82,
+   "sk": {
+    "wicket": 66,
+    "economy": 66,
+    "moveTurn": 65,
+    "variation": 61,
+    "discipline": 62,
+    "stamina": 65
+   },
+   "age": 27,
+   "ovr": 69.96341463414635,
+   "ovrMed": 69,
+   "wage": 24410
+  }
+ }
+}

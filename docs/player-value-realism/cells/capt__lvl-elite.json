@@ -1,0 +1,22 @@
+{
+ "attr": "capt",
+ "fam": "secondary",
+ "ctx": "lvl-elite",
+ "pitch": "balanced",
+ "attack": "balanced",
+ "lvl": 1.22,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 2.135396228035353,
+  "se": 2.3310241363554227
+ },
+ "perPoint": 0.0711798742678451,
+ "dWin": {
+  "n": 200,
+  "mean": -0.005,
+  "se": 0.038663280334590835
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "attr": "temperament",
+ "fam": "bat",
+ "ctx": "attack-pace",
+ "pitch": "balanced",
+ "attack": "pace",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 4.4365359286444495,
+  "se": 2.350784079469248
+ },
+ "perPoint": 0.147884530954815,
+ "dWin": {
+  "n": 200,
+  "mean": 0.0225,
+  "se": 0.032542492515102155
+ }
+}

@@ -1,0 +1,22 @@
+{
+ "attr": "variation",
+ "fam": "bowl",
+ "ctx": "pitch-twopaced",
+ "pitch": "twoPaced",
+ "attack": "balanced",
+ "lvl": 1,
+ "step": 30,
+ "base": 45,
+ "n": 200,
+ "dMargin": {
+  "n": 200,
+  "mean": 3.569637185472172,
+  "se": 1.790364210137776
+ },
+ "perPoint": 0.11898790618240573,
+ "dWin": {
+  "n": 200,
+  "mean": 0.015,
+  "se": 0.029635558568353197
+ }
+}
