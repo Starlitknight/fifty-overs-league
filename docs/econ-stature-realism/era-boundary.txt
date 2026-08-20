@@ -1,0 +1,97 @@
+=== 20. WOULD AN UNGATED CHANGE REACH ERA 1? ===
+
+  ERA2_DAY = 42. Production is season 1, start_day 14 -> era 2? false   (so every live club is era 1)
+
+  ARM nofloor:
+    slot   era-1 bank now    era-1 bank then      change     seats      support
+       9       $3,473,000         $3,420,000    -$53,000         -        -496
+      10       $3,473,000         $3,368,000   -$105,000     -1000        -984
+      11       $3,473,000         $3,316,000   -$157,000     -1000       -1464
+      12       $3,473,000         $3,264,000   -$209,000     -1000       -1935
+      13       $3,473,000         $3,211,000   -$262,000     -2000       -2397
+      14       $3,473,000         $3,159,000   -$314,000     -2000       -2851
+      15       $3,473,000         $3,107,000   -$366,000     -2000       -3295
+    -> 7/16 seats change their ERA-1 founding capital (worst -$366,000), 6/16 their ground, 7/16 their following.
+    -> AN UNGATED CHANGE IS FORBIDDEN. It must be era-gated.
+
+  ARM soft:
+    slot   era-1 bank now    era-1 bank then      change     seats      support
+       9       $3,473,000         $3,446,000    -$27,000         -        -249
+      10       $3,473,000         $3,420,000    -$53,000         -        -496
+      11       $3,473,000         $3,394,000    -$79,000     -1000        -741
+      12       $3,473,000         $3,368,000   -$105,000     -1000        -984
+      13       $3,473,000         $3,342,000   -$131,000     -1000       -1225
+      14       $3,473,000         $3,316,000   -$157,000     -1000       -1464
+      15       $3,473,000         $3,290,000   -$183,000     -1000       -1700
+    -> 7/16 seats change their ERA-1 founding capital (worst -$183,000), 5/16 their ground, 7/16 their following.
+    -> AN UNGATED CHANGE IS FORBIDDEN. It must be era-gated.
+
+  ARM tierflat:
+    slot   era-1 bank now    era-1 bank then      change     seats      support
+       1       $4,043,000         $3,959,000    -$84,000         -        -913
+       3       $3,876,000         $3,959,000     $83,000     +1000        +896
+       4       $3,793,000         $3,668,000   -$125,000     -1000       -1284
+       5       $3,710,000         $3,668,000    -$42,000         -        -423
+       6       $3,627,000         $3,668,000     $41,000         -        +418
+       7       $3,544,000         $3,668,000    $124,000     +1000       +1241
+       8       $3,473,000         $3,394,000    -$79,000     -1000        -741
+       9       $3,473,000         $3,394,000    -$79,000     -1000        -741
+      10       $3,473,000         $3,394,000    -$79,000     -1000        -741
+      11       $3,473,000         $3,394,000    -$79,000     -1000        -741
+      12       $3,473,000         $3,185,000   -$288,000     -2000       -2625
+      13       $3,473,000         $3,185,000   -$288,000     -2000       -2625
+      14       $3,473,000         $3,185,000   -$288,000     -2000       -2625
+      15       $3,473,000         $3,185,000   -$288,000     -2000       -2625
+    -> 14/16 seats change their ERA-1 founding capital (worst -$288,000), 11/16 their ground, 14/16 their following.
+    -> AN UNGATED CHANGE IS FORBIDDEN. It must be era-gated.
+
+=== THE GATE THAT WOULD BE NEEDED ===
+
+  econStature(slot, isBoss) is called from six places. Only ONE of them
+  is era-2-only, and it is the one that already takes the era:
+
+    foundingBankFor(slot, isBoss, era2)   <- already branches on the era
+    foundingBank(slot, isBoss)            era 1  -- MUST NOT MOVE
+    foundingSeats(slot, isBoss)           both   -- MUST NOT MOVE for era-1 clubs
+    foundingSupport(slot, isBoss)         both   -- MUST NOT MOVE for era-1 clubs
+    sponsorSeasonValue(...)               both   -- era-1 sponsor is priced
+                                                    WITHOUT stature (the era-1
+                                                    branch calls sponsorOf, not
+                                                    sponsorSeasonValue)
+    ambitionOf(slot, isBoss)              bots; botMoney short-circuits in era 1
+
+  So a correct implementation adds the era to the coordinate itself -
+  econStature(slot, isBoss, era2) - and returns the CURRENT law whenever
+  era2 is false. Every era-1 call site keeps the number it has today, by
+  construction rather than by inspection.
+
+  A club founded in era 1 that plays on into era 2 is the case to think
+  hardest about: its founding capital is an era-1 fact and must stay put,
+  while the sponsor it signs for an era-2 season is an era-2 fact. The
+  seam is the SEASON, not the club, and economy.mjs already carries
+  exactly that distinction (foundedEra2 for the founding line, curEra2 for
+  the season being walked).
+
+=== 21. THE TRANSITION, PRICED ===
+
+  A club crossing into its first era-2 season under each arm: what its
+  sponsor and founding coordinates would read on either side of the line.
+  (founding capital is NOT re-read at the crossing - it is history.)
+
+  slot   era-1 stature   era-2 stature (tierflat)   sponsor factor change
+     0         1.000                   1.000                0.00%
+     1         0.860                   0.825               -0.82%
+     2         0.825                   0.825                0.00%
+     3         0.790                   0.825                0.84%
+     4         0.755                   0.703               -1.26%
+     5         0.720                   0.703               -0.42%
+     6         0.685                   0.703                0.43%
+     7         0.650                   0.703                1.30%
+     8         0.620                   0.587               -0.82%
+     9         0.620                   0.587               -0.82%
+    10         0.620                   0.587               -0.82%
+    11         0.620                   0.587               -0.82%
+    12         0.620                   0.499               -3.01%
+    13         0.620                   0.499               -3.01%
+    14         0.620                   0.499               -3.01%
+    15         0.620                   0.499               -3.01%

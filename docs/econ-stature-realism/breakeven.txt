@@ -1,0 +1,38 @@
+=== THE COORDINATE SWEEP: annual net against stature ===
+
+  Each seat, at its own expected finish, swept across the whole coordinate
+  range and well past it. The flagship's own coordinate is 1.000.
+
+  seat  div  pos        0.40       0.47       0.50       0.55       0.62       0.70       0.80       0.90       1.00       1.20       1.50       2.00
+    15    2    8  -$592,858  -$560,583  -$521,008  -$502,157  -$455,546  -$391,330  -$293,721  -$230,295  -$118,610    $82,168   $447,084 $1,100,686
+    14    2    7  -$399,540  -$364,129  -$322,908  -$301,544  -$251,415  -$183,049   -$80,171   -$11,253   $105,947   $318,271   $701,183 $1,386,671
+    13    2    6  -$223,629  -$184,656  -$141,527  -$117,475   -$63,357     $9,589   $118,535   $193,521   $316,974   $542,165   $945,453 $1,666,855
+    12    2    5   $108,378   $159,315   $208,745   $242,494   $310,698   $400,552   $531,494   $629,650   $777,340 $1,053,760 $1,540,082 $2,415,122
+    11    2    4  -$749,388  -$691,811  -$638,826  -$599,855  -$524,051  -$425,249  -$282,752  -$172,531   -$12,285   $290,253   $818,496 $1,769,734
+     8    2    1   $680,985   $771,432   $842,117   $907,823 $1,022,424 $1,167,535 $1,370,606 $1,544,168 $1,770,202 $2,211,671 $2,921,984 $4,131,905
+     7    1    8-$1,904,063-$1,830,960-$1,769,507-$1,722,035-$1,635,709-$1,527,217-$1,374,359-$1,256,971-$1,091,151  -$777,105  -$228,601   $763,174
+     6    1    7-$1,441,983-$1,361,683-$1,296,831-$1,241,607-$1,143,541-$1,019,908  -$846,655  -$704,921  -$511,519  -$138,288   $506,108 $1,646,590
+     4    1    5  -$804,346  -$714,993  -$645,365  -$582,556  -$472,835  -$333,938  -$139,462    $25,100   $241,830   $663,561 $1,384,429 $2,689,082
+
+=== WHERE EACH SEAT BREAKS EVEN ===
+
+  slot 15  (D2, 8th)   today 0.620   break-even 1.118   <- ABOVE THE FLAGSHIP. No floor can reach it.
+  slot 14  (D2, 7th)   today 0.620   break-even 0.910
+  slot 13  (D2, 6th)   today 0.620   break-even 0.689
+  slot 12  (D2, 5th)   today 0.620   break-even always solvent
+  slot 11  (D2, 4th)   today 0.620   break-even 1.008   <- ABOVE THE FLAGSHIP. No floor can reach it.
+  slot  8  (D2, 1th)   today 0.620   break-even always solvent
+  slot  7  (D1, 8th)   today 0.650   break-even 1.615   <- ABOVE THE FLAGSHIP. No floor can reach it.
+  slot  6  (D1, 7th)   today 0.685   break-even 1.264   <- ABOVE THE FLAGSHIP. No floor can reach it.
+  slot  4  (D1, 5th)   today 0.755   break-even 0.885
+
+=== WHY: THE COST FLOOR A SMALL CLUB CANNOT MOVE ===
+
+  Club operations are charged per round as
+    $58,000 + seats x $3.1 (+ the top-flight premium)
+  which is a cost of BEING a club, and it does not scale down with a
+  club's commercial size. For the bottom of division two:
+
+  slot 15   revenue  $3,144,973   ops  $1,853,600 = 59% of revenue   wages 43%   together 102%
+  slot 12   revenue  $3,973,679   ops  $1,853,600 = 47% of revenue   wages 34%   together 81%
+  slot  8   revenue  $5,901,187   ops  $1,853,600 = 31% of revenue   wages 42%   together 73%

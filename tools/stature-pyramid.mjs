@@ -37,6 +37,7 @@ import {
 } from '../server/economy.mjs';
 import { FOUNDING_BANK_ERA2 } from '../server/financeconfig.mjs';
 import { ROUNDS } from '../server/clock.mjs';
+import { ARMS } from './stature-laws.mjs';
 
 const arg = (k, d) => { const a = process.argv.find(x => x.startsWith(`--${k}=`)); return a ? a.slice(k.length + 3) : d; };
 const SEASONS = +arg('seasons', 5);
@@ -44,13 +45,7 @@ const bankOf = st => Math.round(FOUNDING_BANK_ERA2 * (0.55 + 0.75 * st) / 1000) 
 const seatsOf = st => Math.round(FOUNDING_SEATS * (1 + 0.95 * st) / 1000) * 1000;
 const supOf = st => Math.round(FOUNDING_SUPPORT * (0.40 + 1.62 * Math.pow(st, 1.45)));
 
-const KNEE = 0.62, SOFT_K = 0.5;
-const ARMS = {
-  current: (s, b) => econStature(s, b),
-  nofloor: (s, b) => stature(s, b),
-  soft: (s, b) => { const r = stature(s, b); return r >= KNEE ? r : KNEE - (KNEE - r) * SOFT_K; }
-};
-const wanted = arg('arms', 'current,nofloor,soft').split(',').filter(a => ARMS[a]);
+const wanted = arg('arms', 'current,nofloor,soft,tierflat').split(',').filter(a => ARMS[a]);
 
 // a seeded generator, so every arm sees the same season
 const rng = seed => { let x = seed >>> 0 || 1; return () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return ((x >>> 0) % 1e6) / 1e6; }; };

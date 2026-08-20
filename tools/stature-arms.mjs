@@ -29,6 +29,7 @@ import {
 } from '../server/economy.mjs';
 import { isFullMember, FOUNDING_BANK_ERA2 } from '../server/financeconfig.mjs';
 import { ROUNDS } from '../server/clock.mjs';
+import { ARMS } from './stature-laws.mjs';
 
 const arg = (k, dflt) => {
   const a = process.argv.find(x => x.startsWith(`--${k}=`));
@@ -62,22 +63,7 @@ console.log('mirror verified against the shipped founding formulas at all sixtee
 // ---------------------------------------------------------------------------
 // THE ARMS.
 // ---------------------------------------------------------------------------
-// A SOFT LANDING RATHER THAN A CLIFF. The shipped floor is a hard max(): seven
-// of the sixteen seats are pinned to one number and the ladder simply stops.
-// This instead keeps descending but at a shallower gradient below the knee, so
-// no two adjacent seats ever jump and the bottom seat still sits meaningfully
-// under the top of its division. The knee is the shipped floor value and the
-// gradient is half the division-two gradient, which are the two numbers the
-// current law already contains - nothing new is invented here.
-const KNEE = 0.62, SOFT_K = 0.5;
-const softFloor = raw => (raw >= KNEE ? raw : KNEE - (KNEE - raw) * SOFT_K);
-
-const ARMS = {
-  current: (slot, boss) => econStature(slot, boss),
-  nofloor: (slot, boss) => stature(slot, boss),
-  soft: (slot, boss) => softFloor(stature(slot, boss))
-};
-const wanted = arg('arms', 'current,nofloor,soft').split(',');
+const wanted = arg('arms', 'current,nofloor,soft,tierflat').split(',');
 
 // ---------------------------------------------------------------------------
 // EVERY SEAT THE WORLD DEALS.

@@ -1,0 +1,85 @@
+=== 11. ADJACENT-SEAT SMOOTHNESS ===
+
+  The rule is that a step in the coordinate needs a structural reason.
+  Payroll is the structure: it is what the seat is obliged to pay.
+
+  step        payroll         current    nofloor       soft   tierflat
+  0->1           -17.8%     -14.0%     -14.0%     -14.0%     -17.5%   <- a real cost cliff
+  1->2            -0.1%      -4.1%      -4.1%      -4.1%       0.0%
+  2->3            -1.1%      -4.2%      -4.2%      -4.2%       0.0%
+  3->4           -18.8%      -4.4%      -4.4%      -4.4%     -14.8%   <- a real cost cliff
+  4->5            -1.2%      -4.6%      -4.6%      -4.6%       0.0%
+  5->6            -1.4%      -4.9%      -4.9%      -4.9%       0.0%
+  6->7             0.0%      -5.1%      -5.1%      -5.1%       0.0%
+  7->8           -38.9%      -4.6%      -4.6%      -4.6%     -16.4%   <- a real cost cliff
+  8->9             3.0%       0.0%      -3.5%      -1.8%       0.0%
+  9->10           -1.2%       0.0%      -3.7%      -1.8%       0.0%
+  10->11          -0.3%       0.0%      -3.8%      -1.8%       0.0%
+  11->12         -45.6%       0.0%      -4.0%      -1.9%     -15.0%   <- a real cost cliff
+  12->13          -0.9%       0.0%      -4.1%      -1.9%       0.0%
+  13->14          -1.9%       0.0%      -4.3%      -1.9%       0.0%
+  14->15           2.5%       0.0%      -4.5%      -2.0%       0.0%
+
+=== 12. DO CLUBS STILL FEEL DIFFERENT? (commercial variance) ===
+
+  arm         revenue P10     P50      P90    P90/P10   spread of
+                                                        annual net
+  current     $2,999,141$5,291,061$8,877,916     x2.96   $3,202,640
+  nofloor     $2,833,442$5,252,449$8,877,916     x3.13   $3,256,226
+  soft        $2,913,998$5,271,699$8,877,916     x3.05   $3,202,640
+  tierflat    $2,867,392$5,233,345$8,877,916     x3.10   $3,163,577
+
+  and the count of distinct commercial scales the world contains:
+  current    9 distinct stature values across the sixteen seats
+  nofloor    16 distinct stature values across the sixteen seats
+  soft       16 distinct stature values across the sixteen seats
+  tierflat   5 distinct stature values across the sixteen seats
+
+=== 13. SUPPORTERS, AND 14. GROUNDS ===
+
+  arm         supp P10    P50     P90    att P50   % of ground filled   biggest ground
+  current        10113   19757   33458      12054           48.2%            29000
+  nofloor         8133   19074   33458      12054           48.2%            29000
+  soft            9096   19413   33458      12054           48.2%            29000
+  tierflat        8290   19243   32823      12116           49.0%            29000
+
+  the check that matters: nobody should be selling out every week, and
+  nobody should be playing to an empty field.
+  current    clubs over 90% full: 32/256   under 15% full: 0   fullest 100%   emptiest 17%
+  nofloor    clubs over 90% full: 32/256   under 15% full: 16   fullest 100%   emptiest 14%
+  soft       clubs over 90% full: 32/256   under 15% full: 0   fullest 100%   emptiest 16%
+  tierflat   clubs over 90% full: 32/256   under 15% full: 16   fullest 100%   emptiest 15%
+
+=== 18. MANAGEMENT ARCHETYPES ===
+
+  FRUGAL spends 80% of the dealt payroll, NORMAL 100%, AGGRESSIVE 135%.
+  The question is not who wins - it is whether ambition can still ruin you.
+
+  arm         archetype     D1 annual     D2 annual   D1 ever-admin   world below zero
+  current    FRUGAL            $856,020      $448,470          9/128             40/256
+  current    NORMAL           -$224,488       $19,789         39/128             87/256
+  current    AGGRESSIVE     -$2,292,688     -$863,067        104/128            202/256
+  nofloor    FRUGAL            $856,020      $387,694          9/128             43/256
+  nofloor    NORMAL           -$224,488      -$52,889         39/128             93/256
+  nofloor    AGGRESSIVE     -$2,292,688     -$956,159        104/128            204/256
+  soft       FRUGAL            $856,020      $420,458          9/128             42/256
+  soft       NORMAL           -$224,488      -$14,192         39/128             90/256
+  soft       AGGRESSIVE     -$2,292,688     -$907,962        104/128            203/256
+  tierflat   FRUGAL            $853,500      $402,915         10/128             40/256
+  tierflat   NORMAL           -$227,139      -$34,823         40/128             92/256
+  tierflat   AGGRESSIVE     -$2,302,585     -$935,412        104/128            205/256
+
+=== 22. WAGES AGAINST REVENUE, AFTER THE COORDINATE IS CORRECTED ===
+
+  FO_WAGE_R50 is frozen this phase. The question it leaves is whether
+  correcting stature makes the wage anchor stop being a problem.
+
+  arm         div   wages/revenue   wages/cost   seats over 70% of revenue on wages
+  current    D1            68.7%        64.1%                        53/128
+  current    D2            49.1%        47.7%                         6/128
+  nofloor    D1            68.7%        64.1%                        53/128
+  nofloor    D2            50.6%        48.0%                         7/128
+  soft       D1            68.7%        64.1%                        53/128
+  soft       D2            49.9%        47.9%                         6/128
+  tierflat   D1            68.6%        64.1%                        53/128
+  tierflat   D2            50.5%        48.2%                         6/128
