@@ -50,6 +50,7 @@ import {
   ERA2_DAY, era2Season, isFullMember, ASSOC_POOL, OPS_ASSOC,
   MEDIA_SEASON, MATCHDAY_NET, SPONSOR_PACKAGES, SPONSOR_DEFAULT,
   sponsorSeasonValue, sponsorWinBonus, operationsPerRound,
+  centralInstallment,
   OPS_PER_SEAT_ROUND, OPS_TOPFLIGHT_ROUND,
   prizeFor, PRIZE_PLAYOFF_CHAMP, foundingBankEra2
 } from './financeconfig.mjs';
@@ -876,21 +877,31 @@ export async function computeFinance(pool, country, opts = {}) {
           * (wasAdmin ? ADMIN_SPONSOR : 1));
         c.sponsor += sp; c.bank += sp;
         line(slot, roundAt, 'sponsor', wasAdmin ? 'Sponsor, on administration terms' : 'Sponsor', sp, c.bank);
-      } else if (rdNo >= 1 && rdNo <= curR) {
-        // ERA 2, A LEAGUE ROUND. The stable centre of the club's year arrives
+      } else if (rdNo >= 1) {
+        // ERA 2, A ROUND PLAYED. The stable centre of the club's year arrives
         // here: the division's media installment and the sponsor's guaranteed
-        // cheque, both regardless of home or away, form or crowd. Each is the
-        // season figure paid in R parts by CUMULATIVE rounding - installment
-        // r is round(G*r/R) - round(G*(r-1)/R) - so a season of any length
-        // banks its grant to the exact dollar, never a rounding penny more.
+        // cheque, both regardless of home or away, form or crowd. How a season
+        // grant reaches a round is financeconfig.centralInstallment, so the
+        // media and the sponsor cannot drift apart and the calibration model
+        // in tools/ reads the same law the settle does.
+        //
+        // A PLAYOFF ROUND IS A ROUND. It used to be charged its wages, its
+        // club operations and its academy like any other week and paid
+        // nothing, which made the semi-final and the final a punishment for
+        // reaching them - the champions finished $855,000 poorer than a club
+        // that topped the table and went home. It now takes one ordinary
+        // installment for one ordinary week. No prize, bonus or gate
+        // multiplier moves; the pool grows only for the clubs that earned the
+        // extra weeks.
         const dv9 = divOf(R.ms[0].season_no, slot);
         const G9 = Math.round((MEDIA_SEASON[dv9] || MEDIA_SEASON[2]) * natF);
-        const med = Math.round(G9 * rdNo / curR) - Math.round(G9 * (rdNo - 1) / curR);
+        const med = centralInstallment(G9, rdNo, curR);
         c.media += med; c.bank += med;
-        line(slot, roundAt, 'media', 'Media distribution', med, c.bank);
+        line(slot, roundAt, 'media', rdNo > curR ? 'Media distribution · play-off round'
+          : 'Media distribution', med, c.bank);
         // the guaranteed installment - halved, like the old cheque, while the
         // club is under administration
-        const gIn = Math.round((Math.round(c.spG * rdNo / curR) - Math.round(c.spG * (rdNo - 1) / curR))
+        const gIn = Math.round(centralInstallment(c.spG, rdNo, curR)
           * (wasAdmin ? ADMIN_SPONSOR : 1));
         c.sponsor += gIn; c.bank += gIn;
         line(slot, roundAt, 'sponsor', wasAdmin ? 'Sponsor, on administration terms' : 'Sponsor', gIn, c.bank);
