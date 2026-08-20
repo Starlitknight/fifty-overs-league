@@ -1,7 +1,7 @@
 SECTION 14: WHAT GROWTH COSTS, STEP BY STEP
 
   A club growing its FOLLOWING (ground held at 24,000, Division Two)
-  support    shipped ops   candidate ops   marginal per 1,000 more supporters
+  support     prior ops     shipped ops   marginal per 1,000 more supporters
     6,000      $132,400         $98,100
    10,000      $132,400        $106,100                        $2,000
    14,000      $132,400        $114,100                        $2,000
@@ -13,14 +13,14 @@ SECTION 14: WHAT GROWTH COSTS, STEP BY STEP
    38,000      $132,400        $162,100                        $2,000
 
   A club building its GROUND (following held at 15,000, Division Two)
-  seats      shipped ops   candidate ops   marginal per 1,000 more seats
-   15,000      $104,500        $102,150
-   20,000      $120,000        $109,900                    $1,550
-   25,000      $135,500        $117,650                    $1,550
-   30,000      $151,000        $125,400                    $1,550
-   35,000      $166,500        $133,150                    $1,550
-   40,000      $182,000        $140,900                    $1,550
-   45,000      $197,500        $148,650                    $1,550
+  seats       prior ops     shipped ops   marginal per 1,000 more seats
+   15,000      $104,500         $88,200
+   20,000      $120,000        $103,700                    $3,100
+   25,000      $135,500        $119,200                    $3,100
+   30,000      $151,000        $134,700                    $3,100
+   35,000      $166,500        $150,200                    $3,100
+   40,000      $182,000        $165,700                    $3,100
+   45,000      $197,500        $181,200                    $3,100
 
   Both terms are linear in their coordinate, so the marginal cost is a
   constant and there is no size at which the bill jumps. The following
@@ -28,15 +28,15 @@ SECTION 14: WHAT GROWTH COSTS, STEP BY STEP
 
 SECTIONS 7 AND 15: MANAGEMENT ARCHETYPES, annual net
 
-club scale     archetype       shipped      candidate       change
+club scale     archetype     prior law        shipped       change
 ------------------------------------------------------------------
-flagship       FRUGAL            $993,805       $929,629         -64k
-               NORMAL            $934,870       $780,007        -155k
-               AGGRESSIVE     -$2,256,316    -$2,418,843        -163k
+flagship       FRUGAL            $993,805       $826,012        -168k
+               NORMAL            $934,870       $676,389        -258k
+               AGGRESSIVE     -$2,256,316    -$2,528,743        -272k
 
-large D1       FRUGAL            $182,823       $265,132         +82k
-               NORMAL            $105,407       $102,049          -3k
-               AGGRESSIVE       -$924,716    -$1,020,440         -96k
+large D1       FRUGAL            $182,823       $202,961         +20k
+               NORMAL            $105,407        $39,879         -66k
+               AGGRESSIVE       -$924,716    -$1,083,881        -159k
 
 small D1       FRUGAL           -$535,195      -$314,533        +221k
                NORMAL         -$1,556,512    -$1,330,377        +226k

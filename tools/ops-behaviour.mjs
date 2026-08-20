@@ -13,13 +13,18 @@
  *   node tools/ops-behaviour.mjs
  */
 import { seasonOf, makeSquadShop, tierOf, mean, $, SEASON_ROUNDS } from './economy-audit.mjs';
-import { shipped, scaled } from './ops-laws.mjs';
+import { shipped } from './ops-laws.mjs';
+import { operationsPerRound } from '../server/financeconfig.mjs';
 import { econStature, foundingSeats, foundingSupport, MAX_SEATS } from '../server/economy.mjs';
 
 const L = s => console.log(s);
-const CAND = { base: 48900, perSeat: 1.55, perSupporter: 2 };
-const cand = scaled(CAND);
-const ARMS = [['shipped', shipped], ['candidate', cand]];
+// THE TWO ARMS ARE THE PRIOR LAW AND THE ONE NOW SHIPPED. `shipped` in
+// ops-laws.mjs is frozen as literals at the pre-phase constants, so it stays
+// the baseline; the candidate column is read from financeconfig rather than
+// restated, so this file cannot drift from what the game actually charges.
+const cand = ({ seats, div, natOps, support }) =>
+  operationsPerRound(seats, div, natOps, support);
+const ARMS = [['prior', shipped], ['shipped', cand]];
 
 // ---------------------------------------------------------------------------
 // SECTION 14. SMOOTHNESS. Both terms are linear, so a cliff could only come
@@ -30,7 +35,7 @@ const ARMS = [['shipped', shipped], ['candidate', cand]];
 L('SECTION 14: WHAT GROWTH COSTS, STEP BY STEP');
 L('');
 L('  A club growing its FOLLOWING (ground held at 24,000, Division Two)');
-L('  support    shipped ops   candidate ops   marginal per 1,000 more supporters');
+L('  support     prior ops     shipped ops   marginal per 1,000 more supporters');
 let prev = null;
 for (let sup = 6000; sup <= 40000; sup += 4000) {
   const a = shipped({ seats: 24000, div: 2, natOps: 1, support: sup });
@@ -41,7 +46,7 @@ for (let sup = 6000; sup <= 40000; sup += 4000) {
 }
 L('');
 L('  A club building its GROUND (following held at 15,000, Division Two)');
-L('  seats      shipped ops   candidate ops   marginal per 1,000 more seats');
+L('  seats       prior ops     shipped ops   marginal per 1,000 more seats');
 prev = null;
 for (let s = 15000; s <= MAX_SEATS; s += 5000) {
   const a = shipped({ seats: s, div: 2, natOps: 1, support: 15000 });
@@ -93,7 +98,7 @@ const SCALES = [
 
 L('SECTIONS 7 AND 15: MANAGEMENT ARCHETYPES, annual net');
 L('');
-L('club scale     archetype       shipped      candidate       change');
+L('club scale     archetype     prior law        shipped       change');
 L('-'.repeat(66));
 for (const sc of SCALES) {
   for (const ar of ARCH) {
