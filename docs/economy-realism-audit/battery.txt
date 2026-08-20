@@ -1,0 +1,333 @@
+ERA 2 ECONOMY AUDIT — every figure from the shipped laws
+seats dealt: 256 clubs, 160 at full members; season = 14 league rounds, 7 home
+
+=== §1/§2 THE SEAT, AND WHAT IT IS DEALT (full members, median of 10) ===
+  seat  tier       stat   seats  support   bank0    wage/rd   ops/rd  media/yr  sponsorV
+  D1/0  flagship    1.00   29000    24240 $2,275,000  $443,980 $207,900$2,750,000$2,024,314
+  D1/1  d1a         0.86   27000    20421 $2,091,000  $361,800 $201,700$2,750,000$1,959,904
+  D1/2  d1a         0.82   27000    19508 $2,045,000  $366,960 $201,700$2,750,000$1,943,802
+  D1/3  d1a         0.79   26000    18612 $1,999,000  $368,920 $198,600$2,750,000$1,927,699
+  D1/4  d1b         0.76   26000    17734 $1,953,000  $295,060 $198,600$2,750,000$1,911,597
+  D1/5  d1b         0.72   25000    16873 $1,908,000  $288,160 $195,500$2,750,000$1,895,494
+  D1/6  d1b         0.68   25000    16032 $1,862,000  $290,460 $195,500$2,750,000$1,879,392
+  D1/7  d1b         0.65   24000    15209 $1,816,000  $287,420 $192,400$2,750,000$1,863,289
+  D2/0  d2a         0.62   24000    14520 $1,776,000  $180,370 $132,400$1,650,000$1,119,426
+  D2/1  d2a         0.62   24000    14520 $1,776,000  $182,270 $132,400$1,650,000$1,119,426
+  D2/2  d2a         0.62   24000    14520 $1,776,000  $179,300 $132,400$1,650,000$1,119,426
+  D2/3  d2a         0.62   24000    14520 $1,776,000  $182,450 $132,400$1,650,000$1,119,426
+  D2/4  d2b         0.62   24000    14520 $1,776,000   $97,080 $132,400$1,650,000$1,119,426
+  D2/5  d2b         0.62   24000    14520 $1,776,000   $95,200 $132,400$1,650,000$1,119,426
+  D2/6  d2b         0.62   24000    14520 $1,776,000   $90,890 $132,400$1,650,000$1,119,426
+  D2/7  d2b         0.62   24000    14520 $1,776,000   $95,870 $132,400$1,650,000$1,119,426
+
+=== §2 A MID-TABLE SEASON, BY SEAT (full members) ===
+  seat   revenue      cost       NET   wage/rev  end bank   minbank  P10 net   P90 net
+  D1/0 $7,607,985$9,322,320-$1,716,015       82%   $558,985  $108,985-$2,195,128-$1,477,735
+  D1/1 $7,216,072$8,085,000 -$963,708       70% $1,127,292  $677,292-$1,376,008 -$781,848
+  D1/2 $7,189,563$8,157,240 -$970,617       71% $1,074,383  $624,383-$1,345,817 -$870,517
+  D1/3 $7,069,057$8,141,280-$1,137,883       73%   $861,117  $411,117-$1,468,843 -$705,003
+  D1/4 $6,961,847$7,107,240 -$173,253       59% $1,779,747$1,329,747 -$379,053    $9,307
+  D1/5 $6,932,335$6,967,240 -$119,045       58% $1,788,955$1,338,955 -$413,045  $139,535
+  D1/6 $6,817,952$6,999,440 -$200,528       60% $1,661,472$1,211,472 -$565,088  -$26,368
+  D1/7 $6,720,044$6,913,480 -$227,876       60% $1,588,124$1,138,124 -$394,196 -$100,336
+  D2/0 $4,339,652$4,574,780 -$262,008       58% $1,513,992$1,263,992 -$414,608  -$74,268
+  D2/1 $4,315,128$4,601,380 -$302,912       59% $1,473,088$1,223,088 -$397,972 -$174,952
+  D2/2 $4,302,510$4,559,800 -$280,390       58% $1,495,610$1,245,610 -$367,470 -$225,650
+  D2/3 $4,339,652$4,603,900 -$278,388       59% $1,497,612$1,247,612 -$562,028 -$141,048
+  D2/4 $4,315,128$3,408,720  $897,868       31% $2,673,868$1,776,000  $755,068  $971,648
+  D2/5 $4,302,510$3,382,400  $888,330       31% $2,664,330$1,776,000  $795,930$1,007,050
+  D2/6 $4,339,652$3,322,060  $967,192       29% $2,743,192$1,776,000  $802,272$1,055,672
+  D2/7 $4,315,128$3,391,780  $917,328       31% $2,693,328$1,776,000  $830,388  $983,128
+
+=== §4 PROMOTION, BEFORE ANY STRENGTHENING (the same club, both divisions) ===
+  the promoted side is a D2 champion: slot 8 payroll, finishing 8th of 8 in D1
+  line              in D2 (champion)   in D1 (8th)      change
+  media               $1,650,000    $2,750,000  +$1,100,000
+  sponsor               $987,010    $1,630,713    +$643,703
+  sponsorBonus          $664,719      $299,520    -$365,199
+  prize                 $470,000      $320,000    -$150,000
+  gate                $1,998,435    $1,228,949    -$769,486
+  wages               $2,525,180    $2,525,180          +$0
+  ops                 $1,853,600    $2,693,600    +$840,000
+  upkeep                $196,000      $196,000          +$0
+  REVENUE             $5,770,164    $6,229,182    +$459,018
+  COST                $4,574,780    $5,414,780    +$840,000
+  NET                 $1,195,384      $814,402    -$380,982
+  attendance 15251 -> 9378  (+-39%)
+
+  and if the promoted club STRENGTHENS its squad:
+    sensible +25%     payroll  $225,463   net     $183,100   vs staying down    -$335,242
+    aggressive +60%   payroll  $288,592   net    -$700,706   vs staying down  -$1,219,048
+    to a D1 payroll   payroll  $287,420   net    -$684,298   vs staying down  -$1,202,640
+
+=== §5 RELEGATION (the same club, same squad, one division down) ===
+  line                   stayed up      relegated       change
+  media                  $2,750,000    $1,650,000  -$1,100,000
+  sponsor                $1,135,012      $635,749    -$499,263
+  sponsorBonus             $277,964      $311,384     +$33,420
+  prize                    $360,000      $330,000     -$30,000
+  gate                   $1,060,225    $1,640,584    +$580,359
+  wages                  $4,023,880    $4,023,880          +$0
+  ops                    $2,693,600    $1,853,600    -$840,000
+  upkeep                   $196,000      $196,000          +$0
+  NET                   -$1,330,279   -$1,506,356    -$176,077
+
+=== §13 WHAT SPORTING SUCCESS IS WORTH (a strong D1 club, payroll fixed) ===
+  finish                      prize   sponsorBonus         net      vs 8th
+  8th of 8                 $320,000      $135,286 -$2,612,898         +$0
+  4th of 8                 $520,000      $626,129   -$568,009 +$2,044,889
+  1st, no playoff run      $850,000    $1,163,800  $1,371,836 +$3,984,734
+  1st + lose the semi      $850,000    $1,163,800    $794,336 +$3,407,234
+  1st + lose the final     $850,000    $1,163,800    $216,836 +$2,829,734
+  1st + CHAMPIONS        $1,150,000    $1,163,800    $516,836 +$3,129,734
+  one playoff round costs a club its whole cost base: $577,500 and pays $0; the champions' cheque is $300,000
+
+=== §7 ECON STATURE: what one step does (D1 seat, payroll held) ===
+  stat   seats  support   bank0   sponsorV   gate/yr   ops/yr   revenue      NET
+   0.62   24000    14520$1,776,000 $1,849,487$1,603,872$2,693,600$6,653,361 -$367,079
+   0.68   25000    15913$1,855,000 $1,877,091$1,710,635$2,737,000$6,787,728 -$276,112
+   0.74   26000    17363$1,934,000 $1,904,696$1,821,737$2,780,400$6,926,434 -$180,806
+   0.80   26000    18866$2,013,000 $1,932,300$1,937,015$2,780,400$7,069,316  -$37,924
+   0.86   27000    20421$2,091,000 $1,959,904$2,056,167$2,823,800$7,216,072   $65,432
+   0.92   28000    22026$2,170,000 $1,987,509$2,179,213$2,867,200$7,366,722  $172,682
+   0.98   29000    23679$2,249,000 $2,015,113$2,305,855$2,910,600$7,520,968  $283,528
+
+=== §8 WAGE BURDEN (full members, mid-table season) ===
+  seat   wages/revenue   wages/cost    revenue/rd    wages/rd
+  D1/0           81.7%        66.7%      $543,428    $443,980
+  D1/1           70.2%        62.6%      $515,434    $361,800
+  D1/2           71.5%        63.0%      $513,540    $366,960
+  D1/3           73.1%        63.4%      $504,933    $368,920
+  D1/4           59.3%        58.1%      $497,275    $295,060
+  D1/5           58.2%        57.9%      $495,167    $288,160
+  D1/6           59.6%        58.1%      $486,997    $290,460
+  D1/7           59.9%        58.2%      $480,003    $287,420
+  D2/0           58.2%        55.2%      $309,975    $180,370
+  D2/1           59.1%        55.5%      $308,223    $182,270
+  D2/2           58.3%        55.1%      $307,322    $179,300
+  D2/3           58.9%        55.5%      $309,975    $182,450
+  D2/4           31.5%        39.9%      $308,223     $97,080
+  D2/5           31.0%        39.4%      $307,322     $95,200
+  D2/6           29.3%        38.3%      $309,975     $90,890
+  D2/7           31.1%        39.6%      $308,223     $95,870
+
+=== §9 THE COUNTERFACTUAL SWITCHES (a D1/1 club and a D2/0 club) ===
+  arm                                        D1/1 net     D2/0 net
+  A current                                  -$868,928    -$235,128
+  B D1 wages on D2 commercial              -$3,273,419    -$235,128
+  C D2 wages on D1 commercial               $1,671,092   $1,924,985
+  D equalised operating costs                 -$28,928    -$235,128
+  E equalised media + sponsor              -$2,810,127   $1,594,930
+
+=== §10 ATTENDANCE: what it answers to (a D1/4 club) ===
+  finishing 1st vs 8th        20824 vs 7985
+  D1 vs the same club in D2   14120 vs 11296
+  a boss visiting every home  13831 vs none 13778
+  seats 26,000 vs 45,000      14120 vs 14120
+  (opponent STRENGTH is not read at all - only whether he is the flagship or top three)
+
+=== §11/§12 THE DIVISION PREMIUM, AND WHAT IT BUYS ===
+  media          D1 $2,750,000   D2 $1,650,000   premium $1,100,000
+  sponsor (mid)  D1 $1,863,289   D2 $1,119,426   premium $743,863
+  prize (5th)    D1 $450,000   D2 $250,000   premium $200,000
+  crowd          D1 x1.00  D2 x0.80  -> gate premium about +25%
+  TOP-FLIGHT OPS PREMIUM  $60,000 a round = $840,000 a season
+
+=== §14 MANAGEMENT ARCHETYPES (mid-table finish, payroll is the choice) ===
+  division  style         payroll/rd        net    end bank   admin rds
+  D1       frugal x0.75      $221,295    $887,317  $2,840,317       0
+  D1       normal x1.00      $295,060   -$145,393  $1,807,607       0
+  D1       aggressive x1.45  $427,837 -$2,026,563    -$73,563       0
+  D2       frugal x0.75      $135,278    $396,160  $2,172,160       0
+  D2       normal x1.00      $180,370   -$235,128  $1,540,872       0
+  D2       aggressive x1.45  $261,537 -$1,371,466    $404,534       0
+
+=== §15 A BAD SEASON (bottom of the division, no cup run) ===
+  seat        good year (2nd)     bad year (8th)      swing
+  D1/1            $760,207       -$2,612,898  -$3,373,105   end bank -$521,898
+  D1/7          $1,353,004       -$1,784,979  -$3,137,983   end bank $31,021
+  D2/0            $813,889       -$1,330,240  -$2,144,129   end bank $445,760
+  D2/7          $1,957,090         -$157,519  -$2,114,609   end bank $1,618,481
+
+=== §16/§19 FIVE SEASONS: capital against cashflow ===
+  seat    bank0   after1   after2   after3   after4   after5   admin by
+  D1/0  $2,275,000 $560,665-$1,306,108-$2,050,000-$2,050,000-$2,050,000   season 3
+  D1/1  $2,091,000$1,222,072 $350,238-$596,588-$1,871,654-$2,050,000   season 5
+  D1/4  $1,953,000$1,807,607$1,662,214$1,516,821$1,371,428$1,226,035   -
+  D1/7  $1,816,000$1,622,564$1,429,128$1,235,692$1,042,256 $848,820   -
+  D2/0  $1,776,000$1,540,872$1,305,744$1,070,616 $835,488 $600,360   -
+  D2/4  $1,776,000$2,682,408$3,588,816$4,495,224$5,401,632$6,308,040   -
+
+=== §6 THE SEAT AS PLAYED: each seat finishes where its strength puts it ===
+  seat  finish   payroll/rd    revenue      cost       NET   after 1   after 3   after 5   admin by
+  D1/0      1     $443,980$10,189,676$10,654,080 -$464,404$1,810,596  $881,788  -$57,431   -
+  D1/1      2     $361,800 $8,845,207$9,240,000 -$394,793$1,696,207  $906,621  $117,035   -
+  D1/2      3     $366,960 $8,119,601$8,739,900 -$620,299$1,424,701  $184,103-$1,292,811   -
+  D1/3      4     $368,920 $7,369,852$8,722,800-$1,352,948  $646,052-$2,500,000-$2,500,000   season 3
+  D1/4      5     $295,060 $6,644,687$7,107,240 -$462,553$1,490,447  $565,341 -$453,782   -
+  D1/5      6     $288,160 $6,225,589$6,967,240 -$741,651$1,166,349 -$376,293-$2,100,000   season 5
+  D1/6      7     $290,460 $5,466,933$7,000,355-$1,533,422  $328,578-$2,140,000-$2,140,000   season 3
+  D1/7      8     $287,420 $5,140,486$6,925,465-$1,784,979   $31,021-$2,180,000-$2,180,000   season 3
+  D2/0      1     $180,370 $5,935,164$5,228,320  $706,844$2,482,844$3,896,532$5,310,220   -
+  D2/1      2     $182,270 $5,348,870$5,258,720   $90,150$1,866,150$2,046,450$2,226,750   -
+  D2/2      3     $179,300 $4,894,034$4,885,500    $8,534$1,784,534$1,801,602$1,818,670   -
+  D2/3      4     $182,450 $4,530,400$4,932,750 -$402,350$1,373,650  $568,950 -$251,667   -
+  D2/4      5      $97,080 $4,093,113$3,408,720  $684,393$2,460,393$3,829,179$5,197,965   -
+  D2/5      6      $95,200 $3,824,455$3,382,400  $442,055$2,218,055$3,102,165$3,986,275   -
+  D2/6      7      $90,890 $3,393,828$3,322,060   $71,768$1,847,768$1,991,304$2,134,840   -
+  D2/7      8      $95,870 $3,234,261$3,391,780 -$157,519$1,618,481$1,303,443  $988,405   -
+
+=== §17 THE PROMOTION LOOP: a club that goes up, then comes back down ===
+  season                    revenue      cost       NET   end bank
+  D2, 3rd                $4,941,601$4,574,780  $366,821 $2,142,821
+  D2, 1st - promoted     $5,764,962$5,228,320  $536,642 $2,679,463
+  D1, 8th - relegated    $5,768,701$5,414,780  $353,921 $3,033,384
+  D2, 2nd                $4,896,741$4,901,550   -$4,809 $3,028,575
+  D2, 1st - promoted     $5,850,069$5,228,320  $621,749 $3,650,324
+  D1, 7th                $5,942,462$5,414,780  $527,682 $4,178,006
+
+=== §18 TRANSFERS: how much trading would baseline operations need? ===
+  D1/0   needs     $464,404 of net player trading a season merely to break even
+  D1/1   needs     $394,793 of net player trading a season merely to break even
+  D1/2   needs     $620,299 of net player trading a season merely to break even
+  D1/3   needs   $1,352,948 of net player trading a season merely to break even
+  D1/4   needs     $462,553 of net player trading a season merely to break even
+  D1/5   needs     $741,651 of net player trading a season merely to break even
+  D1/6   needs   $1,533,422 of net player trading a season merely to break even
+  D1/7   needs   $1,784,979 of net player trading a season merely to break even
+  D2/3   needs     $402,350 of net player trading a season merely to break even
+  D2/7   needs     $157,519 of net player trading a season merely to break even
+  (a mid-table D1 squad is $4,130,840 of wages a season, so that is the scale)
+
+=== §21 ROOT CAUSE: the income ladder against the payroll ladder ===
+  the world deals five strength rungs; the economy pays two-and-a-bit
+  rung        seats   payroll/rd   x weakest   revenue/yr   x weakest
+  flagship     29000     $443,980       x4.57  $10,189,676       x2.49
+  d1a          27000     $361,800       x3.73   $8,845,207       x2.16
+  d1b          25000     $288,160       x2.97   $6,225,589       x1.52
+  d2a          24000     $180,370       x1.86   $5,935,164       x1.45
+  d2b          24000      $97,080       x1.00   $4,093,113       x1.00
+
+=== §22 CANDIDATE FIXES, MEASURED (as-played positions, five seasons) ===
+  current law                           ladder x3.15   ruined  4/16   D1 net   -$919,381   D2 net    $180,484   richest end  $5,310,220
+  A media reads stature (span x2.0)     ladder x4.00   ruined  2/16   D1 net    $230,219   D2 net    $180,484   richest end $13,702,980
+  A2 media reads stature (span x3.0)    ladder x4.85   ruined  2/16   D1 net  $1,196,088   D2 net    $180,484   richest end $27,452,980
+  B no top-flight ops premium           ladder x3.15   ruined  2/16   D1 net    -$32,769   D2 net    $180,484   richest end  $5,310,220
+  C playoff rounds are funded           ladder x3.06   ruined  4/16   D1 net   -$500,514   D2 net    $405,538   richest end  $7,752,920
+  A2 + C together                       ladder x4.76   ruined  2/16   D1 net  $1,614,956   D2 net    $405,538   richest end $32,611,780
+  (for reference the PAYROLL ladder across the same sixteen seats is x4.88)
+
+=== §22b MOVING THE COORDINATE, NOT THE PRICE ===
+  current (floor 0.62)              income ladder x3.15   ruined  4/16   worst net -$1,784,979   best end  $5,310,220
+  no floor (stature as written)     income ladder x3.35   ruined  4/16   worst net -$1,784,979   best end  $5,310,220
+  stature from payroll ^0.35        income ladder x3.20   ruined  3/16   worst net -$1,524,669   best end  $6,376,200
+  stature from payroll ^0.50        income ladder x3.35   ruined  3/16   worst net -$1,583,299   best end  $5,514,050
+  stature from payroll ^0.65        income ladder x3.48   ruined  4/16   worst net -$1,677,957   best end  $4,833,395
+  stature from payroll ^0.80        income ladder x3.57   ruined  4/16   worst net -$1,722,956   best end  $4,304,455
+
+  the same arms with the playoff rounds funded as well:
+  current (floor 0.62) + funded PO  income ladder x3.06   ruined  4/16   worst net -$1,784,979   best end  $7,752,920
+  payroll ^0.50 + funded PO         income ladder x3.25   ruined  2/16   worst net -$1,583,299   best end  $7,956,750
+  payroll ^0.65 + funded PO         income ladder x3.37   ruined  3/16   worst net -$1,677,957   best end  $7,245,095
+
+  the seat-by-seat detail of the best arm (payroll^0.65, funded playoffs):
+  payroll^0.65 + funded PO          income ladder x3.37   ruined  3/16   worst net -$1,677,957   best end  $7,245,095
+  seat   stature   revenue/yr     net/yr    bank after 5
+  D1/0      1.000   $9,889,676    $567,356    $5,111,780
+  D1/1      0.875   $8,889,870    $804,870    $6,135,350
+  D1/2      0.884   $8,282,531     $81,891    $2,531,455
+  D1/3      0.887   $7,617,399   -$610,681   -$1,211,591
+  D1/4      0.767   $6,670,880   -$436,360     -$275,868
+  D1/5      0.755   $6,301,468   -$709,172   -$2,100,000
+  D1/6      0.759   $5,603,843 -$1,438,997   -$2,140,000
+  D1/7      0.754   $5,323,662 -$1,677,957   -$2,180,000
+  D2/0      0.557   $5,641,799  $1,110,419    $7,245,095
+  D2/1      0.561   $5,233,425    $675,445    $5,075,225
+  D2/2      0.555   $4,777,023    $260,623    $2,994,115
+  D2/3      0.561   $4,428,511   -$131,989    $1,039,055
+  D2/4      0.372   $3,728,297    $493,177    $3,916,885
+  D2/5      0.368   $3,476,932    $268,132    $2,785,660
+  D2/6      0.357   $3,070,150    -$78,310    $1,039,450
+  D2/7      0.369   $2,930,730   -$287,450       -$1,251
+
+=== §22c RE-DIVIDING THE SAME MEDIA POOL BY MERIT (pool-neutral) ===
+  flat (today)                  income x3.15  ruined  4/16  worst -$1,784,979  best   $706,844  spread  $2,491,823  best end  $5,310,220
+  media ^0.4 of payroll         income x3.47  ruined  4/16  worst -$1,960,619  best   $916,463  spread  $2,877,082  best end  $6,358,315
+  media ^0.7 of payroll         income x3.75  ruined  5/16  worst -$2,094,433  best $1,068,986  spread  $3,163,419  best end  $7,120,930
+  media ^1.0 of payroll         income x4.05  ruined  6/16  worst -$2,227,427  best $1,214,556  spread  $3,441,983  best end  $7,848,780
+  and with the playoff rounds funded too:
+  flat + funded playoffs        income x3.06  ruined  4/16  worst -$1,784,979  best $1,195,384  spread  $2,980,363  best end  $7,752,920
+  media ^0.4 + funded PO        income x3.37  ruined  3/16  worst -$1,960,619  best $1,405,003  spread  $3,365,622  best end  $8,801,015
+  media ^0.7 + funded PO        income x3.64  ruined  4/16  worst -$2,094,433  best $1,557,526  spread  $3,651,959  best end  $9,563,630
+  media ^1.0 + funded PO        income x3.94  ruined  5/16  worst -$2,227,427  best $1,703,096  spread  $3,930,523  best end $10,291,480
+  media ^0.7 + funded PO        income x3.64  ruined  4/16  worst -$2,094,433  best $1,557,526  spread  $3,651,959  best end  $9,563,630
+
+  seat-by-seat, media^0.7 with funded playoffs:
+  seat    media/yr   revenue/yr      net/yr   bank after 5
+  D1/0    $3,337,974  $10,477,650  $1,155,330     $8,051,650
+  D1/1    $2,892,388   $8,987,595    $902,595     $6,603,975
+  D1/2    $2,921,203   $8,290,804    $133,564     $2,712,820
+  D1/3    $2,932,116   $7,551,968   -$589,312    -$1,290,103
+  D1/4    $2,507,644   $6,402,331   -$704,909    -$2,050,000
+  D1/5    $2,466,449   $5,942,038 -$1,025,202    -$2,100,000
+  D1/6    $2,480,213   $5,197,146 -$1,815,300    -$2,140,000
+  D1/7    $2,462,014   $4,852,500 -$2,094,433    -$2,180,000
+  D2/0    $2,012,142   $6,132,306  $1,557,526     $9,563,630
+  D2/1    $2,026,955   $5,725,825  $1,124,445     $7,398,225
+  D2/2    $2,003,778   $5,247,812    $688,012     $5,216,060
+  D2/3    $2,028,356   $4,908,756    $304,856     $3,300,280
+  D2/4    $1,304,170   $3,747,283    $338,563     $3,468,815
+  D2/5    $1,286,440   $3,460,895     $78,495     $2,168,475
+  D2/6    $1,245,388   $2,989,216   -$332,844       $108,196
+  D2/7    $1,292,770   $2,877,031   -$514,749    -$1,097,289
+
+=== §22d THE TWO ARMS THAT ACTUALLY MOVE IT, SEAT BY SEAT ===
+
+  B: the top-flight operations premium removed
+  seat   revenue/yr      net/yr   bank after 5   ruined
+  D1/0    $10,189,676    $495,596     $4,752,980          -
+  D1/1     $8,845,207    $565,207     $4,917,035          -
+  D1/2     $8,119,601    $279,701     $3,443,505          -
+  D1/3     $7,369,852   -$452,948      -$286,005          -
+  D1/4     $6,644,687    $377,447     $3,840,235          -
+  D1/5     $6,225,589     $98,349     $2,399,745          -
+  D1/6     $5,466,933   -$692,507    -$2,140,000   season 5
+  D1/7     $5,140,486   -$932,994    -$2,180,000   season 4
+  D2/0     $5,935,164    $706,844     $5,310,220          -
+  D2/1     $5,348,870     $90,150     $2,226,750          -
+  D2/2     $4,894,034      $8,534     $1,818,670          -
+  D2/3     $4,530,400   -$402,350      -$251,667          -
+  D2/4     $4,093,113    $684,393     $5,197,965          -
+  D2/5     $3,824,455    $442,055     $3,986,275          -
+  D2/6     $3,393,828     $71,768     $2,134,840          -
+  D2/7     $3,234,261   -$157,519       $988,405          -
+  mean D1 net -$32,769   mean D2 net $180,484
+
+  B + C: ...and the playoff rounds funded
+  seat   revenue/yr      net/yr   bank after 5   ruined
+  D1/0     $9,889,676  $1,407,356     $9,311,780          -
+  D1/1     $8,845,207  $1,600,207    $10,092,035          -
+  D1/2     $8,119,601    $802,361     $6,056,805          -
+  D1/3     $7,369,852     $68,572     $2,341,860          -
+  D1/4     $6,644,687    $377,447     $3,840,235          -
+  D1/5     $6,225,589     $98,349     $2,399,745          -
+  D1/6     $5,466,933   -$692,507    -$2,140,000   season 5
+  D1/7     $5,140,486   -$932,994    -$2,180,000   season 4
+  D2/0     $5,770,164  $1,195,384     $7,752,920          -
+  D2/1     $5,348,870    $747,490     $5,513,450          -
+  D2/2     $4,894,034    $334,234     $3,447,170          -
+  D2/3     $4,530,400    -$73,500     $1,408,500          -
+  D2/4     $4,093,113    $684,393     $5,197,965          -
+  D2/5     $3,824,455    $442,055     $3,986,275          -
+  D2/6     $3,393,828     $71,768     $2,134,840          -
+  D2/7     $3,234,261   -$157,519       $988,405          -
+  mean D1 net $341,099   mean D2 net $405,538
+
+=== §20 HOW POSITION-CONTINGENT A CLUB'S INCOME IS ===
+  the same club, payroll fixed, finishing 1st through 8th
+  finish   revenue      net    share of revenue that moved
+     1  $9,149,309  $2,042,069          0% below 1st
+     2  $8,548,813  $1,441,573          7% below 1st
+     4  $7,257,081    $149,841         21% below 1st
+     6  $6,254,648   -$852,592         32% below 1st
+     8  $5,325,942 -$1,785,747         42% below 1st
