@@ -1,0 +1,50 @@
+
+THE ERA-1 BOUNDARY FOR A GLOBAL WAGE CHANGE
+==============================================================================
+
+   asset under test   assets/fo-20260820-1944-1ee3d3.js
+   sha256            0eaffdceb5064d53...
+
+1. THE SHIPPED LAW, ON A REAL DEALT SQUAD
+
+     rating   card    wage
+      55000     55  $12,360
+      57000     57  $14,590
+      45000     45   $6,770
+      32000     32   $2,440
+      43000     43   $5,910
+      49000     49   $8,740
+   ...
+   fifteen-man bill   $124,550 a round
+
+2. THE SAME SQUAD, WITH FO_WAGE_MID HALVED (9290 -> 4645)
+
+     rating   card    wage    was
+      55000     55   $6,180  $12,360
+      57000     57   $7,290  $14,590
+      45000     45   $3,390   $6,770
+      32000     32   $1,220   $2,440
+      43000     43   $2,950   $5,910
+      49000     49   $4,370   $8,740
+   ...
+   fifteen-man bill   $62,280 a round   (was $124,550)
+
+3. WHAT THAT MEANS
+
+   ok    every one of the 15 men was repriced by the constant alone (15 of 15)
+   ok    and not one rating moved - this is the WAGE law, not the player
+   ok    the bill scaled with the midpoint (0.500x for a 0.5x constant)
+
+   NO ERA WAS INVOLVED. No season was dated, no era gate was crossed, and
+   economy.mjs was never called. The repricing happened inside host.derive,
+   which server/living.mjs runs for EVERY club on EVERY settle and whose
+   result it copies onto the player row - `wage` is in that list beside
+   `rating` and `bat`. An era-1 club in production is folded by exactly
+   this path three times an hour.
+
+   ok    the asset was restored byte-identical (sha 0eaffdceb5064d53...)
+
+==============================================================================
+RESULT: a global foWageOf change REPRICES ERA-1 PLAYERS. The era-2 economy
+        gate does not protect it. Phase 5 section 4 STOP condition is met:
+        any wage change needs a versioning mechanism before it can ship.
