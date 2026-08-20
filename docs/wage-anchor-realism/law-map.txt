@@ -1,0 +1,139 @@
+
+1. WHAT A WAGE IS IN THIS GAME
+======================================================================================
+
+   Not A (a persistent contract salary) and not C (an abstract roster-cost
+   proxy). It is B: A DYNAMICALLY DERIVED MARKET-RATE SALARY, and the
+   architecture is unambiguous about it.
+
+   server/living.mjs calls host.derive(squad) for every club on every settle
+   and copies the derived fields back onto the player row. `wage` is in that
+   list beside `rating` and `bat`. The engine's jsDerive ends:
+
+       p.rating = Math.round(foOvr(p) * 1000);
+       p.wage   = foWageOf(p.rating, (p.talents||[]).length, 1);
+
+   So a man's wage is a pure function of his CURRENT card, recomputed three
+   times an hour. Nothing negotiates it, nothing signs it, and it has no
+   term. A cricketer who trains gets a rise the same week; a cricketer who
+   declines takes a cut. There is no contract anywhere in the schema.
+
+   THE ONE PLACE A WAGE IS REMEMBERED is the round it was charged in:
+   migration 101 banks the bill per club per round in wage_rounds, and
+   economy.mjs charges `billAt[...] ?? c.wages`. That is a LEDGER record of
+   what was paid, not a contract - it stops history being restated, and it
+   does not stop the next round being charged at a new price.
+
+   This matters for the whole phase: a wage that re-derives cannot be
+   changed "for new signings only". There are no old signings.
+
+2. THE EXACT FORMULA
+======================================================================================
+
+   foWageOf(rating, talents, scar) =
+       max(400, round( MID x (rating/R50)^K x (1 + 0.06 x talents) x scar / 10) x 10)
+
+   read from engine/src/00-core.js:
+      FO_WAGE_OVR50   50        the median professional, by the ladder's meaning
+      FO_WAGE_R50     50000     ...as a rating, which is the card x 1000
+      FO_WAGE_MID     9290      what that median man earns a round
+      FO_WAGE_K       3       how fast the price of quality climbs
+
+   what each parameter controls:
+      R50    THE MIDPOINT'S LOCATION on the card scale. Not a level: moving
+             it rescales every wage by (old/new)^K without changing any
+             ratio. This is the constant that went stale once - see below.
+      MID    THE ABSOLUTE LEVEL, and only that. Scaling it scales every wage
+             in the world by the same factor and leaves every ratio alone.
+      K      THE SHAPE, and only that. It tilts the ladder about OVR 50: a
+             man above the median gets cheaper as K falls, a man below it
+             gets DEARER. It cannot move the median man at all.
+      400    a floor, in dollars, on what any professional is paid.
+      0.06   a talent premium, multiplicative - worth more on a better man.
+
+   the ladder, at the shipped constants:
+
+      OVR    wage a round   vs median   +5 OVR    +10 OVR
+       20           $590       0.06x      97%       241%
+       30         $2,010       0.22x      59%       137%
+       40         $4,760       0.51x      42%        95%
+       50         $9,290       1.00x      33%        73%
+       60        $16,050       1.73x      27%        59%
+       70        $25,490       2.74x      23%        49%
+       80        $38,050       4.10x      20%        42%
+       90        $54,180       5.83x      18%        37%
+       95        $63,720       6.86x      17%          -
+      100        $74,320       8.00x        -          -
+
+   SECTION 10: a +5 is worth 33% at OVR 50 and 17% at OVR 90; a +10 is 73%
+   and 37%. The PREMIUM IN DOLLARS grows with quality while the premium in
+   PERCENT shrinks, which is the right shape for a power law and is why a
+   star costs a squad rather than a line item. Nothing here demands a linear
+   relationship to measured cricket value, and the brief does not ask for one.
+
+3. WHERE THE LAW LIVES - FOUR COPIES, AND THEY MUST MOVE TOGETHER
+======================================================================================
+
+   CANONICAL
+      engine/src/00-core.js   foWageOf()          the authority
+
+   MIRRORS, each with the constants written out because they cannot import
+      server/market.mjs       wageFromRating()    the umpire's valuations
+      engine 55-market.js     qsPrice()           what the page promises
+      migrations 065 + 098    plpgsql             what MOVES THE MONEY on a
+                                                  quicksell
+
+   Migration 065 says so itself: "THE THREE PLACES THIS SUM LIVES must agree,
+   or a manager is quoted one price and paid another... If any of the four
+   move, all four move."
+
+   AND MIGRATIONS ARE IMMUTABLE. 065 and 098 have run in production and
+   cannot be edited; a wage change needs a NEW numbered migration to
+   redefine the function. That is a cost of any change here, not a blocker.
+
+   the mirror currently agrees with the engine, checked on REAL dealt men:
+      OVR  84  0 talent(s)   engine    $44,050   market.mjs    $44,050   agree
+      OVR  81  0 talent(s)   engine    $39,500   market.mjs    $39,500   agree
+      OVR  85  0 talent(s)   engine    $45,640   market.mjs    $45,640   agree
+      OVR  91  0 talent(s)   engine    $56,010   market.mjs    $56,010   agree
+      OVR  68  0 talent(s)   engine    $23,370   market.mjs    $23,370   agree
+      OVR  62  0 talent(s)   engine    $17,710   market.mjs    $17,710   agree
+   6 of 6 agree (tests/world-fee-agrees holds this mirror to the engine)
+
+   DOWNSTREAM OF THE WAGE, everything that prices a man:
+      market.mjs rawWorth   = wage x 18 x 2.4 x ageCurve x form     -> every fee
+      quickSellOf           = rawWorth x 0.5                      -> every sale
+      botfinance botMoney   = squad wage bill                     -> bot posture
+      economy.mjs           = sum of p.wage over squad + youth    -> the ledger
+      squadStrength / UI    read the card, not the wage
+
+18. PROMOTION AND RELEGATION UNDER EACH CANDIDATE
+======================================================================================
+
+   The SAME club, the SAME squad, the SAME following and the SAME finish,
+   playing one season in Division One instead of Division Two. Promotion is
+   measured BEFORE any discretionary strengthening, which is the guard.
+
+   ON FOUNDING COORDINATES, which is a different basis from the $1,899,801
+   Phase 4 reported: that figure came off the moving pyramid, where a
+   promoted club carries the following it has EARNED rather than the one it
+   was dealt. The level differs between the two bases; what matters here is
+   that the premium does not move with the wage scalar, and it does not on
+   either.
+
+   slot 8, dealt bill $164,670 a round
+
+   scale     in D2        in D1     promotion   relegation
+   ------------------------------------------------------------
+    1.00     $128,445   $2,511,951    $2,383,506  -$2,383,506
+    0.95     $249,854   $2,627,213    $2,377,359  -$2,377,359
+    0.90     $366,154   $2,742,489    $2,376,335  -$2,376,335
+    0.85     $481,416   $2,857,751    $2,376,335  -$2,376,335
+    0.80     $596,692   $2,973,027    $2,376,335  -$2,376,335
+    0.75     $711,954   $3,088,289    $2,376,335  -$2,376,335
+
+   Promotion stays positive and relegation stays negative at every candidate,
+   and by the SAME amount: the promotion premium is media, sponsor and gate
+   against a division cost, and a wage scalar touches none of them. The
+   pyramid guard is untouched by anything this phase could do.
+

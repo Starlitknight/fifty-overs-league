@@ -1,0 +1,90 @@
+
+THE WORLD AS DEALT, AND WHAT IT COSTS
+==========================================================================================
+   8 nations x 16 seats = 128 clubs, 1920 cricketers, shipped generator and shipped wage law
+
+6. VISIBLE OVR (the canonical card)
+
+   population            n       P10       P25    median       P75       P90       P95       P99
+   -----------------------------------------------------------------------------------
+   all players        1920        23        35        51        66        79        84        91
+   starting XI        1408        34        46        59        71        82        86        92
+   reserves            512        12        19        30        40        48        51        61
+
+   by role               n       P10       P25    median       P75       P90       P95       P99
+   -----------------------------------------------------------------------------------
+   batters             710        28        41        57        68        80        84        89
+   bowlers             677        21        33        49        66        79        84        90
+   all-rounders        277        21        33        49        68        83        86        91
+   keepers             256        19        31        44        58        71        79        87
+
+   THE ANCHOR'S OWN CLAIM: FO_WAGE_R50 states the median professional at
+   OVR 50. Measured here:
+      all players   median 51.0
+      starting XI   median 59.0
+      reserves      median 30.0
+
+7. WAGES, AT THE SHIPPED LAW
+
+   population            n       P10       P25    median       P75       P90       P95       P99
+   -----------------------------------------------------------------------------------
+   all players        1920      $900    $3,190    $9,860   $22,350   $36,640   $45,640   $56,010
+   starting XI        1408    $2,920    $7,670   $15,260   $26,600   $40,980   $47,270   $57,870
+   reserves            512      $400      $510    $2,010    $4,760    $8,220    $9,860   $17,275
+   max $69,950 a round
+
+   by division (whole-squad bill a round)
+
+      Division 1   median $300,440   P10 $191,477   P90 $386,370
+      Division 2   median $100,670   P10 $67,539   P90 $188,924
+
+   by seat (median across nations)
+
+      slot  div  tier                squad bill      XI bill   squad med OVR
+         0    1  flagship             $447,705     $399,000            70.0
+         1    1  d1a                  $360,995     $330,540            64.0
+         2    1  d1a                  $366,430     $338,060            63.5
+         3    1  d1a                  $347,950     $321,445            62.0
+         4    1  d1b                  $291,350     $276,385            57.5
+         5    1  d1b                  $282,420     $267,300            57.5
+         6    1  d1b                  $290,105     $274,435            58.0
+         7    1  d1b                  $295,675     $278,440            57.5
+         8    2  d2a                  $176,455     $169,090            47.5
+         9    2  d2a                  $176,960     $168,210            47.0
+        10    2  d2a                  $174,460     $167,350            45.5
+        11    2  d2a                  $186,560     $179,495            47.5
+        12    2  d2b                   $96,925      $94,200            34.5
+        13    2  d2b                   $93,445      $91,595            33.5
+        14    2  d2b                   $95,430      $93,495            34.0
+        15    2  d2b                   $91,900      $89,575            36.0
+
+9. SCALE vs SHAPE - the ladder of relative price
+
+      ratio        value    what it means
+      W95/W85        1.396    (95/85)^K, K=3
+      W90/W80        1.424    (90/80)^K, K=3
+      W80/W70        1.493    (80/70)^K, K=3
+      W70/W60        1.588    (70/60)^K, K=3
+      W60/W50        1.728    (60/50)^K, K=3
+      W50/W40        1.953    (50/40)^K, K=3
+
+   These are FIXED BY K AND NOTHING ELSE. foWageOf is FO_WAGE_MID x
+   (card/50)^3, so every ratio between two cards is (a/b)^3 whatever the
+   midpoint is. An absolute re-anchor cannot change one of them, and no
+   measurement of the population can either. That is what makes SCALE and
+   SHAPE genuinely separable here: FO_WAGE_MID moves the level, K moves the
+   ladder, and they do not interact.
+
+   the ladder in dollars at the shipped midpoint:
+      OVR   wage a round     vs a median man
+       20           $590            0.06x
+       30         $2,010            0.22x
+       40         $4,760            0.51x
+       50         $9,290            1.00x
+       60        $16,050            1.73x
+       70        $25,490            2.74x
+       80        $38,050            4.10x
+       90        $54,180            5.83x
+       95        $63,720            6.86x
+      100        $74,320            8.00x
+

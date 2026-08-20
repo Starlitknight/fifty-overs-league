@@ -1,0 +1,64 @@
+
+16. THE TRANSFER MARKET IS PRICED IN WAGES
+========================================================================================
+
+   market.mjs rawWorth(p) = wage x 18 x 2.4 x ageCurve(age) x form
+
+   The wage enters LINEARLY and nothing else in that expression knows about
+   the anchor. So a scalar s on FO_WAGE_MID multiplies every fee, every
+   quicksell and every bot valuation in the world by exactly s. There is no
+   second-order term to discover and no way to change one without the other.
+
+   man                    OVR  age     fee x1.00     fee x0.90     fee x0.80      quicksell x1.00
+   -------------------------------------------------------------------------------------
+   ordinary starter        55   26      $534,000      $480,500      $427,000             $267,000
+   prime international     80   27    $1,742,500    $1,568,000    $1,394,000             $871,000
+   elite star              92   28    $2,800,000    $2,520,000    $2,240,000           $1,400,000
+   young prospect          62   20      $903,000      $812,500      $722,000             $451,500
+   veteran                 74   34      $551,500      $496,500      $441,500             $276,000
+
+   Every column is the one beside it times the scalar, to the rounding. A
+   re-anchor does not change what a player is worth RELATIVE to another
+   player - it changes what every player is worth relative to MONEY.
+
+17. WHAT A TREASURY CAN BUY - the coupling that is NOT neutral
+========================================================================================
+
+   club            founding bank   elites x1.00   elites x0.90   elites x0.80
+   -------------------------------------------------------------------------------------
+   flagship           $2,275,000           0.81           0.90           1.02
+   mid D1             $1,908,000           0.68           0.76           0.85
+   top D2             $1,776,000           0.63           0.70           0.79
+   minnow             $1,776,000           0.63           0.70           0.79
+
+   how many MEDIAN men a bank buys:
+   flagship           $2,275,000            5.3            5.9            6.7
+   mid D1             $1,908,000            4.5            5.0            5.6
+   top D2             $1,776,000            4.2            4.6            5.2
+   minnow             $1,776,000            4.2            4.6            5.2
+
+   THIS IS THE SECTION-17 RISK, STATED AS ARITHMETIC. Banks, media, sponsor
+   and prize money are fixed in dollars and do not know about the anchor.
+   Cutting it by a fifth makes every cricketer a fifth cheaper against a
+   treasury that did not move: a club that could afford 1.00 elite men can
+   afford 1.25 of them, and it did nothing to earn the difference.
+
+THE CONFLICT AT THE HEART OF AN ANCHOR-ONLY CHANGE
+========================================================================================
+
+   from tools/wage-pyramid.mjs, ten seasons, real promotion and relegation:
+
+   scale   worst D1 seat   clubs over $20m   ever in admin   wage/revenue
+   -------------------------------------------------------------------------------------
+    1.00     -$1,123,085                 0          77/256          60.2%
+    0.90       -$529,425                 9          34/256          54.1%
+    0.80        -$39,504                27          20/256          48.1%
+
+   Phase 4 shipped a law that took clubs over $20m from three to ZERO and
+   called that the flagship money printer being closed. An anchor deep
+   enough to bring the worst Division One seat near break-even reopens it at
+   twenty-seven clubs - nine times what Phase 4 removed. There is no scalar
+   that closes the tail and leaves the top alone, because a scalar moves
+   every club by the same proportion and the two problems sit at opposite
+   ends of the same ladder.
+
