@@ -1,0 +1,85 @@
+CLUB OPERATIONS - THE EXACT LAW AND THE LADDER IT IS CHARGED ON
+==============================================================================
+
+1. THE FORMULA, verbatim from server/financeconfig.mjs:267
+
+   operationsPerRound(seats, div, natOps) =
+     round( (OPS_BASE_ROUND + seats x OPS_PER_SEAT_ROUND
+             + (div === 1 ? OPS_TOPFLIGHT_ROUND : 0)) x natOps )
+
+   OPS_BASE_ROUND       $58,000   every club, every round it plays
+   OPS_PER_SEAT_ROUND   $3.1        per seat of CAPACITY (not of crowd)
+   OPS_TOPFLIGHT_ROUND  $30,000   Division One only
+   OPS_ASSOC            0.88        associate nations, applied to the WHOLE line
+
+   No cap. No floor. No academy term (academy upkeep is its own ledger
+   line, charged beside operations and not part of it). Charged once per
+   round the club PLAYS - home and away alike, play-off rounds included
+   since Phase 2.
+
+2. THE LADDER THE PER-SEAT TERM IS CHARGED ON (a founded world, full member)
+
+slot  div  stature  econStat   seats  support   ops/round      base   ground   flight   fixed%
+----------------------------------------------------------------------------------------------
+   0    1    1.000     1.000  29,000   24,240    $177,900   $58,000  $89,900  $30,000    32.6%
+   1    1    0.860     0.860  27,000   20,421    $171,700   $58,000  $83,700  $30,000    33.8%
+   2    1    0.825     0.825  27,000   19,508    $171,700   $58,000  $83,700  $30,000    33.8%
+   3    1    0.790     0.790  26,000   18,612    $168,600   $58,000  $80,600  $30,000    34.4%
+   4    1    0.755     0.755  26,000   17,734    $168,600   $58,000  $80,600  $30,000    34.4%
+   5    1    0.720     0.720  25,000   16,873    $165,500   $58,000  $77,500  $30,000    35.0%
+   6    1    0.685     0.685  25,000   16,032    $165,500   $58,000  $77,500  $30,000    35.0%
+   7    1    0.650     0.650  24,000   15,209    $162,400   $58,000  $74,400  $30,000    35.7%
+   8    2    0.620     0.620  24,000   14,520    $132,400   $58,000  $74,400       $0    43.8%
+   9    2    0.598     0.620  24,000   14,520    $132,400   $58,000  $74,400       $0    43.8%
+  10    2    0.576     0.620  24,000   14,520    $132,400   $58,000  $74,400       $0    43.8%
+  11    2    0.554     0.620  24,000   14,520    $132,400   $58,000  $74,400       $0    43.8%
+  12    2    0.532     0.620  24,000   14,520    $132,400   $58,000  $74,400       $0    43.8%
+  13    2    0.510     0.620  24,000   14,520    $132,400   $58,000  $74,400       $0    43.8%
+  14    2    0.488     0.620  24,000   14,520    $132,400   $58,000  $74,400       $0    43.8%
+  15    2    0.466     0.620  24,000   14,520    $132,400   $58,000  $74,400       $0    43.8%
+
+3. WHAT THE LADDER SPANS, top to bottom
+
+   seats            29,000 -> 24,000   1.208x
+   supporters       24,240 -> 14,520   1.669x
+   econStature      1.000 -> 0.620     1.613x
+   ops/round        $177,900 -> $132,400   1.344x   (with the division premium)
+   ops, no premium  $147,900 -> $132,400   1.117x   <- the CLUB-SCALE half alone
+
+   Seats are IDENTICAL for slots 7-15 (9 of 16 clubs). For those seats the
+   per-seat term is not a size term at all: it is a second fixed charge of $74,400.
+
+   Effective fixed cost by that reading (base + an unvarying ground term):
+     slot  0  ops  $177,900   varies with own size:  $15,500   =   8.7% of its operations
+     slot  4  ops  $168,600   varies with own size:   $6,200   =   3.7% of its operations
+     slot  7  ops  $162,400   varies with own size:       $0   =   0.0% of its operations
+     slot  8  ops  $132,400   varies with own size:       $0   =   0.0% of its operations
+     slot 15  ops  $132,400   varies with own size:       $0   =   0.0% of its operations
+
+4. THE ONE WAY A CLUB CAN MOVE ITS OWN OPERATIONS: build seats
+
+   seats     ops/round D2   ops/round D1   marginal per 1,000 seats
+   15,000       $104,500       $134,500              $3,100
+   20,000       $120,000       $150,000              $3,100
+   25,000       $135,500       $165,500              $3,100
+   30,000       $151,000       $181,000              $3,100
+   35,000       $166,500       $196,500              $3,100
+   40,000       $182,000       $212,000              $3,100
+   45,000       $197,500       $227,500              $3,100
+
+   A club that builds from its founded ground to the 45,000-seat ceiling adds
+   $65,100 a round to its operations - perfectly smooth, no cliff.
+
+5. CONSUMERS OF THE LAW (every runtime caller)
+
+   server/economy.mjs:922    the settle walk - CHARGES the ledger. Inside
+                             `if (curEra2)`, so era 1 never reaches it.
+   server/economy.mjs:1054   the decomposition served to the client, also
+                             era-2 only (`opsBreakdown: curEra2 ? ...`).
+   server/botfinance.mjs:99  the bot posture projection. `botMoney` returns
+                             `healthy` before this in era 1.
+   engine/src/league/43-finance.js:1257  RENDERS the served breakdown and
+                             owns no copy of the constants.
+   tests + tools             world-economy.test.mjs:208 asserts the charged
+                             line equals the law; :405 asserts the served
+                             rate equals the charged rate.

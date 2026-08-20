@@ -1,0 +1,144 @@
+WHAT THE FLOOR IS WORTH, seat by seat, over 5 seasons.
+The "the floor" column is current minus no-floor: money that exists
+only because econStature refuses to go below 0.62.
+
+
+=== D2 SEAT 8 - the division-two champion, the biggest accumulator in the game  (n=16) ===
+  line                 current/yr      no-floor/yr        the floor
+  + gate                 $2,338,821      $2,338,821              $0
+  + media                $1,464,375      $1,464,375              $0
+  + sponsor                $875,971        $875,971              $0
+  + sponsorBonus           $750,829        $750,829              $0
+  + prize                  $417,125        $417,125              $0
+  = REVENUE              $5,847,121      $5,847,121              $0
+  - wages                $2,467,859      $2,467,859              $0
+  - ops                  $1,770,188      $1,770,188              $0
+  - upkeep                 $196,000        $196,000              $0
+  - interest                     $0              $0              $0
+  = COST                 $4,434,047      $4,434,047              $0
+  ANNUAL NET             $1,413,074      $1,413,074              $0
+  5-SEASON BANK          $8,841,372      $8,841,372              $0
+  founding capital       $1,776,000      $1,776,000              $0
+  rounds in admin               0.0             0.0
+
+  THE FLOOR'S SHARE of this seat's 5-season treasury: 0.0%   (of the SURPLUS above founding capital: 0.0%)
+
+=== D2 SEAT 12 - the cheap squad above the tier cliff  (n=16) ===
+  line                 current/yr      no-floor/yr        the floor
+  + gate                 $1,039,885        $940,324         $99,560
+  + media                $1,464,375      $1,464,375              $0
+  + sponsor                $695,443        $680,220         $15,223
+  + sponsorBonus           $255,468        $249,877          $5,591
+  + prize                  $221,875        $221,875              $0
+  = REVENUE              $3,677,046      $3,556,671        $120,375
+  - wages                $1,362,506      $1,362,506              $0
+  - ops                  $1,770,188      $1,728,741         $41,447
+  - upkeep                 $196,000        $196,000              $0
+  - interest                     $0              $0              $0
+  = COST                 $3,328,694      $3,287,247         $41,447
+  ANNUAL NET               $348,352        $269,424         $78,928
+  5-SEASON BANK          $3,517,760      $3,008,120        $509,640
+  founding capital       $1,776,000      $1,661,000        $115,000
+  rounds in admin               0.0             0.0
+
+  THE FLOOR'S SHARE of this seat's 5-season treasury: 14.5%   (of the SURPLUS above founding capital: 29.3%)
+
+=== D2 SEAT 15 - the bottom of the world, where the floor lifts most  (n=16) ===
+  line                 current/yr      no-floor/yr        the floor
+  + gate                   $543,101        $401,577        $141,523
+  + media                $1,464,375      $1,464,375              $0
+  + sponsor                $560,048        $538,593         $21,455
+  + sponsorBonus                 $0              $0              $0
+  + prize                  $155,313        $155,313              $0
+  = REVENUE              $2,722,836      $2,559,858        $162,978
+  - wages                $1,358,026      $1,358,026              $0
+  - ops                  $1,770,188      $1,687,294         $82,894
+  - upkeep                 $196,000        $196,000              $0
+  - interest               $165,184        $241,611        -$76,427
+  = COST                 $3,489,398      $3,482,931          $6,467
+  ANNUAL NET              -$766,562       -$923,073        $156,511
+  5-SEASON BANK         -$1,024,836     -$1,587,370        $562,533
+  founding capital       $1,776,000      $1,574,000        $202,000
+  rounds in admin               6.3             9.1
+
+  THE FLOOR'S SHARE of this seat's 5-season treasury: -54.9%   (of the SURPLUS above founding capital: -20.1%)
+
+=== D2 as a whole  (n=128) ===
+  line                 current/yr      no-floor/yr        the floor
+  + gate                 $1,192,322      $1,112,181         $80,140
+  + media                $1,464,375      $1,464,375              $0
+  + sponsor                $718,010        $705,553         $12,456
+  + sponsorBonus           $336,731        $333,363          $3,369
+  + prize                  $256,820        $256,820              $0
+  = REVENUE              $3,968,258      $3,872,293         $95,965
+  - wages                $1,927,569      $1,927,569              $0
+  - ops                  $1,770,188      $1,723,560         $46,628
+  - upkeep                 $196,000        $196,000              $0
+  - interest                $54,712         $78,053        -$23,340
+  = COST                 $3,948,469      $3,925,182         $23,288
+  ANNUAL NET                $19,789        -$52,889         $72,678
+  5-SEASON BANK          $2,139,479      $1,814,235        $325,244
+  founding capital       $1,776,000      $1,675,250        $100,750
+  rounds in admin               1.6             2.5
+
+  THE FLOOR'S SHARE of this seat's 5-season treasury: 15.2%   (of the SURPLUS above founding capital: 89.5%)
+
+=== D1 SEAT 7 - the most fragile top-flight seat  (n=16) ===
+  line                 current/yr      no-floor/yr        the floor
+  + gate                 $1,188,439      $1,188,439              $0
+  + media                $2,440,625      $2,440,625              $0
+  + sponsor                $932,202        $932,202              $0
+  + sponsorBonus                 $0              $0              $0
+  + prize                  $284,000        $284,000              $0
+  = REVENUE              $4,845,266      $4,845,266              $0
+  - wages                $4,038,143      $4,038,143              $0
+  - ops                  $2,171,288      $2,171,288              $0
+  - upkeep                 $196,000        $196,000              $0
+  - interest               $624,187        $624,187              $0
+  = COST                 $7,029,617      $7,029,617              $0
+  ANNUAL NET            -$2,184,351     -$2,184,351              $0
+  5-SEASON BANK         -$2,101,942     -$2,101,942              $0
+  founding capital       $1,816,000      $1,816,000              $0
+  rounds in admin              29.3            29.3
+
+  THE FLOOR'S SHARE of this seat's 5-season treasury: 0.0%   (of the SURPLUS above founding capital: 0.0%)
+
+=== D1 SEAT 6 - the second most fragile  (n=16) ===
+  line                 current/yr      no-floor/yr        the floor
+  + gate                 $1,579,541      $1,579,541              $0
+  + media                $2,440,625      $2,440,625              $0
+  + sponsor              $1,016,029      $1,016,029              $0
+  + sponsorBonus           $124,412        $124,412              $0
+  + prize                  $319,500        $319,500              $0
+  = REVENUE              $5,480,107      $5,480,107              $0
+  - wages                $4,037,793      $4,037,793              $0
+  - ops                  $2,212,735      $2,212,735              $0
+  - upkeep                 $196,000        $196,000              $0
+  - interest               $338,612        $338,612              $0
+  = COST                 $6,785,140      $6,785,140              $0
+  ANNUAL NET            -$1,305,033     -$1,305,033              $0
+  5-SEASON BANK         -$1,758,246     -$1,758,246              $0
+  founding capital       $1,862,000      $1,862,000              $0
+  rounds in admin              12.1            12.1
+
+  THE FLOOR'S SHARE of this seat's 5-season treasury: 0.0%   (of the SURPLUS above founding capital: 0.0%)
+
+=== D1 as a whole  (n=128) ===
+  line                 current/yr      no-floor/yr        the floor
+  + gate                 $2,425,734      $2,425,734              $0
+  + media                $2,440,625      $2,440,625              $0
+  + sponsor              $1,239,412      $1,239,412              $0
+  + sponsorBonus           $589,595        $589,595              $0
+  + prize                  $465,938        $465,938              $0
+  = REVENUE              $7,161,303      $7,161,303              $0
+  - wages                $4,759,100      $4,759,100              $0
+  - ops                  $2,259,363      $2,259,363              $0
+  - upkeep                 $196,000        $196,000              $0
+  - interest               $171,329        $171,329              $0
+  = COST                 $7,385,792      $7,385,792              $0
+  ANNUAL NET              -$224,488       -$224,488              $0
+  5-SEASON BANK          $2,515,127      $2,515,127              $0
+  founding capital       $1,993,625      $1,993,625              $0
+  rounds in admin               6.5             6.5
+
+  THE FLOOR'S SHARE of this seat's 5-season treasury: 0.0%   (of the SURPLUS above founding capital: 0.0%)

@@ -1,0 +1,242 @@
+=== MODEL vs SETTLED WORLD (/tmp/econ-oracle-era2.json) ===
+
+  slot 0 (D1, 1st of 8, 1 of 16)   wage/rd $451,370
+    supporters             37051       37051       =  
+    avg attendance         28442       27898     +1.9%
+    gate                 3727077     3655754     +2.0%
+    media                2750000     2750000       =  
+    sponsor              1784860     1784860       =  
+    sponsor bonus        1529878     1529878       =  
+    prize                 850000      850000       =  
+    ops                  2490600     2490600       =  
+    wages                6319180     6319180       =  
+    REVENUE             10641815    10570492     +0.7%
+    NET                  1636035     1564712     +4.6%
+
+  slot 1 (D1, 2nd of 8, 3 of 16)   wage/rd $367,690
+    supporters             32135       31456     +2.2%
+    avg attendance         21304       22445     -5.1%
+    gate                 2791713     2941136     -5.1%
+    media                2750000     2750000       =  
+    sponsor              1639035     1639035       =  
+    sponsor bonus        1204188     1204188       =  
+    prize                 700000      700000       =  
+    ops                  2403800     2403800       =  
+    wages                5147660     5147660       =  
+    REVENUE              9084936     9234359     -1.6%
+    NET                  1337476     1486899    -10.0%
+
+  slot 2 (D1, 3rd of 8, 5 of 16)   wage/rd $366,660
+    supporters             27485       27656     -0.6%
+    avg attendance         18899       21908    -13.7%
+    gate                 2476526     2870787    -13.7%
+    media                2750000     2750000       =  
+    sponsor              1537267     1537267       =  
+    sponsor bonus         941180      941180       =  
+    prize                 600000      600000       =  
+    ops                  2403800     2403800       =  
+    wages                5133240     5133240       =  
+    REVENUE              8304973     8699234     -4.5%
+    NET                   571933      966194    -40.8%
+
+  slot 3 (D1, 4th of 8, 7 of 16)   wage/rd $349,920
+    supporters             24389       24734     -1.4%
+    avg attendance         15556       18254    -14.8%
+    gate                 2038440     2392060    -14.8%
+    media                2750000     2750000       =  
+    sponsor              1436961     1436961       =  
+    sponsor bonus         703816      703816       =  
+    prize                 520000      520000       =  
+    ops                  2360400     2360400       =  
+    wages                4898880     4898880       =  
+    REVENUE              7449217     7802837     -4.5%
+    NET                    -6063      347557   -101.7%
+
+  slot 4 (D1, 5th of 8, 9 of 16)   wage/rd $312,040
+    supporters             20084       20047     +0.2%
+    avg attendance         12335       14352    -14.1%
+    gate                 1616435     1880667    -14.0%
+    media                2750000     2750000       =  
+    sponsor              1338118     1338118       =  
+    sponsor bonus         491556      491556       =  
+    prize                 450000      450000       =  
+    ops                  2360400     2360400       =  
+    wages                4368560     4368560       =  
+    REVENUE              6646109     6910341     -3.8%
+    NET                  -278851      -14619  +1807.5%
+
+  slot 5 (D1, 6th of 8, 11 of 16)   wage/rd $294,700
+    supporters             17087       17029     +0.3%
+    avg attendance         10649        9931     +7.2%
+    gate                 1395465     1301321     +7.2%
+    media                2750000     2750000       =  
+    sponsor              1240738     1240738       =  
+    sponsor bonus         303856      303856       =  
+    prize                 400000      400000       =  
+    ops                  2317000     2317000       =  
+    wages                4125800     4125800       =  
+    REVENUE              6090059     5995915     +1.6%
+    NET                  -548741     -642885    -14.6%
+
+  slot 6 (D1, 7th of 8, 13 of 16)   wage/rd $291,490
+    supporters             14169       14658     -3.3%
+    avg attendance          9097       10860    -16.2%
+    gate                 1192051     1423095    -16.2%
+    media                2750000     2750000       =  
+    sponsor              1144821     1144821       =  
+    sponsor bonus         140182      140182       =  
+    prize                 360000      360000       =  
+    ops                  2317000     2317000       =  
+    wages                4080860     4080860       =  
+    REVENUE              5587054     5818098     -4.0%
+    NET                 -1006806     -775762    +29.8%
+
+  slot 7 (D1, 8th of 8, 15 of 16)   wage/rd $300,200
+    supporters              9851        9953     -1.0%
+    avg attendance          6809        7511     -9.3%
+    gate                  892308      984298     -9.3%
+    media                2750000     2750000       =  
+    sponsor              1050368     1050368       =  
+    sponsor bonus              0           0       =  
+    prize                 320000      320000       =  
+    ops                  2273600     2273600       =  
+    wages                4202800     4202800       =  
+    REVENUE              5012676     5104666     -1.8%
+    NET                 -1664636    -1569886     +6.0%
+
+  slot 8 (D2, 1st of 8, 2 of 16)   wage/rd $175,470
+    supporters             29679       29616     +0.2%
+    avg attendance         17731       17727       =  
+    gate                 2323414     2322947       =  
+    media                1650000     1650000       =  
+    sponsor               987010      987010       =  
+    sponsor bonus         846006      846006       =  
+    prize                 470000      470000       =  
+    ops                  1853600     1853600       =  
+    wages                2456580     2456580       =  
+    REVENUE              6276430     6275963       =  
+    NET                  1770250     1769783       =  
+
+  slot 9 (D2, 2nd of 8, 4 of 16)   wage/rd $170,640
+    supporters             25481       25662     -0.7%
+    avg attendance         12914       14427    -10.5%
+    gate                 1692307     1890569    -10.5%
+    media                1650000     1650000       =  
+    sponsor               936158      936158       =  
+    sponsor bonus         687792      687792       =  
+    prize                 385000      385000       =  
+    ops                  1853600     1853600       =  
+    wages                2388960     2388960       =  
+    REVENUE              5351257     5549519     -3.6%
+    NET                   912697     1110959    -17.8%
+
+  slot 10 (D2, 3rd of 8, 6 of 16)   wage/rd $173,910
+    supporters             22727       22289     +2.0%
+    avg attendance         11039       10144     +8.8%
+    gate                 1446607     1329270     +8.8%
+    media                1650000     1650000       =  
+    sponsor               885305      885305       =  
+    sponsor bonus         542020      542020       =  
+    prize                 330000      330000       =  
+    ops                  1853600     1853600       =  
+    wages                2434740     2434740       =  
+    REVENUE              4853932     4736595     +2.5%
+    NET                   369592      252255    +46.5%
+
+  slot 11 (D2, 4th of 8, 8 of 16)   wage/rd $191,700
+    supporters             20052       20707     -3.2%
+    avg attendance          9849       12128    -18.8%
+    gate                 1290612     1589254    -18.8%
+    media                1650000     1650000       =  
+    sponsor               834452      834452       =  
+    sponsor bonus         408712      408712       =  
+    prize                 285000      285000       =  
+    ops                  1853600     1853600       =  
+    wages                2683800     2683800       =  
+    REVENUE              4468776     4767418     -6.3%
+    NET                  -264624       34018   -877.9%
+
+  slot 12 (D2, 5th of 8, 10 of 16)   wage/rd $100,970
+    supporters             16045       16269     -1.4%
+    avg attendance          7843        9127    -14.1%
+    gate                 1027766     1196002    -14.1%
+    media                1650000     1650000       =  
+    sponsor               783598      783598       =  
+    sponsor bonus         287850      287850       =  
+    prize                 250000      250000       =  
+    ops                  1853600     1853600       =  
+    wages                1413580     1413580       =  
+    REVENUE              3999214     4167450     -4.0%
+    NET                   536034      704270    -23.9%
+
+  slot 13 (D2, 6th of 8, 12 of 16)   wage/rd $92,520
+    supporters             13408       13376     +0.2%
+    avg attendance          6644        6781     -2.0%
+    gate                  870591      888583     -2.0%
+    media                1650000     1650000       =  
+    sponsor               732745      732745       =  
+    sponsor bonus         179448      179448       =  
+    prize                 220000      220000       =  
+    ops                  1853600     1853600       =  
+    wages                1295280     1295280       =  
+    REVENUE              3652784     3670776     -0.5%
+    NET                   307904      325896     -5.5%
+
+  slot 14 (D2, 7th of 8, 14 of 16)   wage/rd $102,350
+    supporters              8968        9406     -4.7%
+    avg attendance          5126        5438     -5.7%
+    gate                  671655      712651     -5.8%
+    media                1650000     1650000       =  
+    sponsor               681892      681892       =  
+    sponsor bonus          83498       83498       =  
+    prize                 200000      200000       =  
+    ops                  1853600     1853600       =  
+    wages                1432900     1432900       =  
+    REVENUE              3287045     3328041     -1.2%
+    NET                  -195455     -154459    +26.5%
+
+  slot 15 (D2, 8th of 8, 16 of 16)   wage/rd $93,870
+    supporters              6775        6775       =  
+    avg attendance          4747        4028    +17.9%
+    gate                  622010      527773    +17.9%
+    media                1650000     1650000       =  
+    sponsor               631040      631040       =  
+    sponsor bonus              0           0       =  
+    prize                 175000      175000       =  
+    ops                  1853600     1853600       =  
+    wages                1314180     1314180       =  
+    REVENUE              3078050     2983813     +3.2%
+    NET                  -285730     -379967    -24.8%
+
+=== WORST DISAGREEMENT ON EACH LINE, across all sixteen seats ===
+  supporters           -4.7%
+  avg attendance      -18.8%
+  gate                -18.8%
+  media                  =  
+  sponsor                =  
+  sponsor bonus          =  
+  prize                  =  
+  ops                    =  
+  wages                  =  
+  REVENUE              -6.3%
+  NET               +1807.5%
+
+=== NET DISAGREEMENT AS A SHARE OF REVENUE (the honest scale) ===
+  slot  0  model NET   $1,636,035   real NET   $1,564,712   miss     $71,323  = +0.7% of revenue
+  slot  1  model NET   $1,337,476   real NET   $1,486,899   miss   -$149,423  = -1.6% of revenue
+  slot  2  model NET     $571,933   real NET     $966,194   miss   -$394,261  = -4.5% of revenue
+  slot  3  model NET      -$6,063   real NET     $347,557   miss   -$353,620  = -4.5% of revenue
+  slot  4  model NET    -$278,851   real NET     -$14,619   miss   -$264,232  = -3.8% of revenue
+  slot  5  model NET    -$548,741   real NET    -$642,885   miss     $94,144  = +1.6% of revenue
+  slot  6  model NET  -$1,006,806   real NET    -$775,762   miss   -$231,044  = -4.0% of revenue
+  slot  7  model NET  -$1,664,636   real NET  -$1,569,886   miss    -$94,750  = -1.9% of revenue
+  slot  8  model NET   $1,770,250   real NET   $1,769,783   miss        $467  = +0.0% of revenue
+  slot  9  model NET     $912,697   real NET   $1,110,959   miss   -$198,262  = -3.6% of revenue
+  slot 10  model NET     $369,592   real NET     $252,255   miss    $117,337  = +2.5% of revenue
+  slot 11  model NET    -$264,624   real NET      $34,018   miss   -$298,642  = -6.3% of revenue
+  slot 12  model NET     $536,034   real NET     $704,270   miss   -$168,236  = -4.0% of revenue
+  slot 13  model NET     $307,904   real NET     $325,896   miss    -$17,992  = -0.5% of revenue
+  slot 14  model NET    -$195,455   real NET    -$154,459   miss    -$40,996  = -1.2% of revenue
+  slot 15  model NET    -$285,730   real NET    -$379,967   miss     $94,237  = +3.2% of revenue
+
+  WORST: slot 11, -6.3% of revenue.
