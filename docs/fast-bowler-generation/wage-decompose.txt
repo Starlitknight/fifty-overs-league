@@ -1,0 +1,42 @@
+
+=== final: THE PAYROLL AT THE SOLVENCY ASSERTION, RUNG BY RUNG (per round) ===
+  club                          OLD    + weights  + field/mix+ gloves 1.80 + experience     total d
+  Essex                    $443,340     $490,050     $463,090     $463,930     $480,080        8.3%
+  Yorkshire                $365,790     $382,950     $369,660     $371,370     $384,780        5.2%
+  Lancashire               $363,940     $386,520     $366,940     $368,370     $376,440        3.4%
+  Surrey                   $365,790     $383,500     $364,870     $365,480     $376,580        2.9%
+  Middlesex                $288,010     $302,740     $295,880     $296,510     $316,570        9.9%
+  Warwickshire             $287,570     $311,250     $293,450     $295,210     $305,240        6.1%
+  Nottinghamshire          $290,570     $306,400     $288,000     $290,260     $300,900        3.6%
+  Kent                     $300,440     $315,830     $300,940     $302,980     $313,750        4.4%
+  Orange Club              $181,200     $186,010     $180,780     $182,350     $186,140        2.7%
+  Somerset                 $180,330     $189,330     $180,400     $182,510     $184,060        2.1%
+  Glamorgan                $176,170     $179,600     $173,690     $178,060     $183,990        4.4%
+  Sussex                   $197,120     $203,340     $196,050     $196,970     $199,370        1.1%
+  Gloucestershire           $95,180     $100,520      $99,670     $100,600     $102,780        8.0%
+  Hampshire                 $91,960      $89,420      $90,420      $93,300      $96,970        5.4%
+  Derbyshire                $95,180      $99,290      $96,740      $97,400      $99,880        4.9%
+  Leicestershire            $92,860      $96,220      $94,340      $95,050      $98,770        6.4%
+
+  world total            $3,815,450   $4,022,970   $3,854,920   $3,880,350   $4,006,300
+  cumulative rise             0.00%        5.44%        1.03%        1.70%        5.00%
+  step alone                  0.00%        5.44%       -4.18%        0.66%        3.25%
+
+=== Kent: WHO CARRIES IT (bank $-1,304,167) ===
+  man                    role              ovr old -> new     wage old -> new        d
+  Sebastian Vickers     topOrderBat          63 -> 66      $18,580 -> $21,370    +$2,790
+  Jack Yardley          seamMedium           88 -> 89      $53,690 -> $55,540    +$1,850
+  Isaac Ogden           allRounder           50 -> 53       $9,290 -> $11,060    +$1,770
+  Mason Bickley         wicketkeeper         37 -> 42        $3,760 -> $5,510    +$1,750
+  Lewis Cole            seamFast             75 -> 76      $33,230 -> $34,580    +$1,350
+  Noah Radcliffe        wristSpin            53 -> 55      $11,060 -> $12,360    +$1,300
+  Tommy Dawson          opener               69 -> 70      $25,880 -> $27,020    +$1,140
+  Luke Foster           opener               62 -> 63      $17,710 -> $18,580      +$870
+  Eddie Norris          seamMedium           59 -> 60      $15,260 -> $16,050      +$790
+  Tom Thorne            wicketkeeper         28 -> 31        $1,630 -> $2,210      +$580
+  Will Dunn             middleOrderBat       50 -> 51        $9,290 -> $9,860      +$570
+  Oscar Gibbs           topOrderBat          35 -> 35        $3,190 -> $3,190        +$0
+  Ollie Harrison        allRounder           47 -> 47        $7,720 -> $7,720        +$0
+  Ben Trott             fingerSpin           88 -> 88      $50,650 -> $50,650        +$0
+  Alfie Jarvis          seamFastMedium       81 -> 80      $39,500 -> $38,050    -$1,450
+  payroll $300,440 -> $313,750  (+$13,310 a round, 4.4%)

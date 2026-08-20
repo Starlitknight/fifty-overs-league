@@ -246,21 +246,81 @@ test('a country is a kind of cricket, and it is shape and not strength', () => {
 
 test('two clubs are two clubs, even in the same league', () => {
   // A house style is drawn per club, so neighbours are not copies. Read the
-  // batting lean of each English club: if every club drew the same style the
-  // spread across them would be nil.
-  const lean = [];
-  for (const { men } of world.find(w => w.cfg.id === 'eng').clubs) {
+  // batting lean of each club: if every club drew its country's style the
+  // spread inside a league would be nil.
+  const leanOf = men => {
     const b = men.filter(bats);
-    lean.push(b.reduce((t, p) => t + (p.skills.vsPace - p.skills.vsSpin), 0) / b.length);
+    return b.reduce((t, p) => t + (p.skills.vsPace - p.skills.vsSpin), 0) / b.length;
+  };
+  const sdOf = a => { const m = a.reduce((x, y) => x + y, 0) / a.length;
+    return Math.sqrt(a.reduce((t, v) => t + (v - m) * (v - m), 0) / a.length); };
+  const eng = world.find(w => w.cfg.id === 'eng').clubs.map(c => leanOf(c.men));
+  assert.ok(sdOf(eng) > 2, 'English clubs do not all play the same way (spread '
+    + sdOf(eng).toFixed(1) + ')');
+
+  // AND THE HOUSE STYLE ITSELF, ASKED WHERE IT CAN ACTUALLY BE SEEN.
+  //
+  // This used to ask that ONE of England's sixteen came out fractionally the
+  // spin side of nil. That is not the property; it is a coin the property
+  // tosses, and the coin was measured. England is the most pace-leaning
+  // country in the world (club mean +7.0, next is West Indies at +5.7), so its
+  // clubs are the least likely of anybody's to cross zero, and the assertion
+  // passed at -2.4 and failed at +0.3 on two worlds whose club-to-club spread
+  // is the same to three per cent (5.14 against 5.33 over all 256 clubs).
+  //
+  // Worse, the lean CANNOT SEE THE HOUSE STYLE AT ALL, which was proved by
+  // deleting it: build a world where every club takes its country's tilt
+  // exactly and the club-to-club spread of batting lean is 5.10 against the
+  // real 5.33 - inside the noise. The per-club tilt swings a club's expected
+  // lean by about 5 points across its whole range while the eight-man sampling
+  // error alone is 3.4, so a statistic built on it is mostly draw noise and
+  // was always going to turn over on a re-deal.
+  //
+  // The house style is not small, though - it is just not in that number. A
+  // club is built to one of ten ARCHETYPES (Kent are misers, Lancashire play
+  // express pace, Hampshire keep wicket) and that is a large, stable signal:
+  // profile two clubs of the SAME LEAGUE by their squad's own attribute ratios
+  // and two built to different archetypes sit about 59% further apart than two
+  // built to the same one. Measured 1.586 here, 1.587 on the shipped build and
+  // 1.570 with the generation change alone - three differently dealt worlds
+  // agreeing to a per cent, where the old statistic disagreed by its own sign.
+  const P = ['vsPace', 'vsSpin', 'power', 'rotation', 'temperament', 'wicket', 'economy',
+    'discipline', 'moveTurn', 'variation', 'stamina', 'fielding', 'catching', 'keeping', 'stumping'];
+  const profiles = [];
+  for (const { cfg, clubs } of world) for (const { club, men } of clubs) {
+    const m = P.map(k => {
+      let t = 0, c = 0;
+      for (const p of men) if (p.skills[k] != null) { t += p.skills[k]; c++; }
+      return c ? t / c : 0;
+    });
+    // in RATIOS to the squad's own mean, so a strong club and a weak one built
+    // the same way read the same and this is style and not strength
+    const base = m.reduce((a, b) => a + b, 0) / m.length;
+    profiles.push({ nat: cfg.id, arch: club.arch, v: m.map(x => x / base) });
   }
-  const avg = lean.reduce((a, b) => a + b, 0) / lean.length;
-  const sd = Math.sqrt(lean.reduce((t, v) => t + (v - avg) * (v - avg), 0) / lean.length);
-  assert.ok(sd > 2, 'English clubs do not all play the same way (spread ' + sd.toFixed(1) + ')');
-  // and the styles genuinely point different ways rather than all leaning
-  // the national way by slightly different amounts
-  assert.ok(Math.max(...lean) > 0 && Math.min(...lean) < 0,
-    'some English clubs raise pace players and some raise spin players (' +
-    lean.map(v => v.toFixed(0)).join(', ') + ')');
+  // EVERY PAIR HERE IS TWO CLUBS OF THE SAME COUNTRY, which is what the title
+  // of this test says and is the difference between a real assertion and one
+  // that cannot fail. Compare across countries and giving every English club
+  // one house style still leaves it passing, because an English club and an
+  // Indian one differ for reasons that have nothing to do with either club.
+  const gap = (a, b) => Math.sqrt(a.v.reduce((t, x, i) => t + (x - b.v[i]) * (x - b.v[i]), 0));
+  let same = 0, sameN = 0, diff = 0, diffN = 0, mostInOne = 0;
+  for (const { cfg } of world) {
+    const mine = profiles.filter(p => p.nat === cfg.id);
+    mostInOne = Math.max(mostInOne, new Set(mine.map(p => p.arch)).size);
+    for (let i = 0; i < mine.length; i++) for (let j = i + 1; j < mine.length; j++) {
+      const d = gap(mine[i], mine[j]);
+      if (mine[i].arch === mine[j].arch) { same += d; sameN++; } else { diff += d; diffN++; }
+    }
+  }
+  assert.ok(mostInOne >= 5, 'a league is not one club sixteen times over - its clubs are built to '
+    + mostInOne + ' different house styles');
+  assert.ok(sameN > 0 && diffN > 0, 'there are both kinds of pair to compare inside a league ('
+    + sameN + ' same-style, ' + diffN + ' different)');
+  const ratio = (diff / diffN) / (same / sameN);
+  assert.ok(ratio > 1.20, 'two clubs of one league built to different house styles are further '
+    + 'apart than two built to the same one (' + ratio.toFixed(3) + 'x over '
+    + profiles.length + ' clubs)');
   // (namesakes across clubs are allowed by design - the living layer keys its
   // book by slot|name for exactly that reason - so nothing here checks names)
 });

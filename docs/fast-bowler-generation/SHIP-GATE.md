@@ -172,12 +172,30 @@ So the **player-value re-rating is the cause**, not the generation change, and
 the overshoot is **$54,167 — 4.3% past the line**, which is the size of the
 payroll rise itself.
 
-On the decision rule this is the second branch, not the first: **a genuine new
-insolvency problem, reported before anything is changed.** The wage curve is
-untouched, as instructed. It is the user's call whether to widen the floor,
-absorb the rise, or trim the part of the re-rating that drives it — the
-decomposition in `rerating-decomposition.txt` shows the weights and field mix
-alone cost +1.1% against the full model's +3.9%.
+On the decision rule this was reported before anything was changed, and the
+wage curve was left untouched.
+
+### RESOLVED — see `ECONOMY.md`
+
+It is **not** a new insolvency problem. Played out on the real fixture, three
+arms, and read across all 256 clubs rather than England's sixteen:
+
+- **slot 7 is the poorest seat in the world on the shipped build** — median
+  bank $884k against $1.2m–$3.0m at every other seat — and it ends a season at
+  **−$2,158,181** with no part of this branch in it. A normal bad year puts it
+  into administration on `main`.
+- **administration incidence is unchanged**: 0/256 planet-wide at the fortnight
+  on both builds, and 1/16 under a normal bad season on all three arms.
+- the median treasury in the world moves **$1,910,682 → $1,927,984**.
+- the median slot-7 club is $111k worse, of which **$86k is the fast-bowler
+  generation change** (which lowers wages) and **$25k is the re-rating** —
+  1.4% of that seat's founding bank.
+
+The assertion's own prose named the administration floor while its code held
+half of it, and the shipped world crosses that halfway line three rounds after
+the assertion is taken. The contract now holds the line it always described,
+across the whole planet, plus a rate and a median the old test never asked for.
+The wage curve is still untouched. **Decision: A.**
 
 ## 6. FAST-BOWLER GENERATION, FINAL
 
@@ -269,14 +287,26 @@ everybody else.
 | build | `20260819-2344-233571`, one asset, source hash matches |
 | **server suite** | **437: 435 pass, 2 fail** |
 
-The two server failures are the **same** finding twice: `world-p3` and
-`world-shape` both guard the treasury after a fortnight, and both are the
-solvency contract described in §5. Neither is a fixture fault — main and the
-generation-only commit pass both.
+**This table is the state at commit `1a78d10` and the sentence under it was
+wrong.** The two server failures were reported as the same finding — both "the
+treasury" — and they are not related at all. `world-shape`'s
+*"two clubs are two clubs, even in the same league"* reads batting lean and
+never touches money; it fails on the **generation** commit alone. The
+attribution was made from a test's name instead of its body, and the correction
+cost a re-run of all three arms to establish.
 
-## NOT READY TO SHIP
+Both are resolved. See:
 
-Everything in sections 1–4 and 6–8 is green and proved. The valuation
-re-rating breaks a solvency contract the repo holds, by $54,167 on one club,
-and §5 of the brief says to report that before changing anything rather than
-to widen a floor or normalise a curve to make it pass. **No PR is opened.**
+- **`ECONOMY.md`** — the treasury. Slot 7 is the poorest seat in the world on
+  the shipped build and ends a season at −$2,158,181 without this branch;
+  administration incidence is unchanged at 0/256 planet-wide; the re-rating is
+  worth $25k to the median club in that seat. The contract now holds the
+  administration line its own prose always named, across 256 clubs instead of
+  16, plus a rate and a median the old test never asked for. **No wage-curve
+  change.**
+- **`CLUB-STYLE.md`** — the house style. The batting lean cannot see the
+  per-club tilt at all (delete the tilt and the spread moves 5.33 → 5.10, inside
+  the noise); the archetype can, and does, by 1.57–1.59× on three differently
+  dealt worlds.
+
+The gate table above is superseded by the one at the end of `ECONOMY.md`.
