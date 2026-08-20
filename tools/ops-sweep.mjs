@@ -36,16 +36,15 @@ const winsOf = pos => Math.round(SEASON_ROUNDS * (8 - pos) / 7 * 0.85 + 1);
 // below is measuring the wrong baseline, so it is checked before anything
 // else runs.
 // ---------------------------------------------------------------------------
-for (const seats of [15000, 24000, 29000, 45000]) {
-  for (const div of [1, 2]) {
-    for (const natOps of [1, 0.88]) {
-      const a = shipped({ seats, div, natOps }), b = operationsPerRound(seats, div, natOps);
-      if (a !== b) {
-        console.error(`ops-laws.shipped disagrees with financeconfig at seats=${seats} `
-          + `div=${div} natOps=${natOps}: ${a} vs ${b}`);
-        process.exit(1);
-      }
-    }
+// (the baseline arm is now frozen as literals in ops-laws.mjs - see the note
+// there. It can no longer be checked against financeconfig, because
+// financeconfig is what this phase changed.)
+{
+  const a = shipped({ seats: 24000, div: 2, natOps: 1 });
+  if (a !== 132400) {
+    console.error('the frozen baseline has drifted: 24,000 seats in division two '
+      + 'was $132,400 before this phase, and this says ' + a);
+    process.exit(1);
   }
 }
 

@@ -1,0 +1,56 @@
+SECTION 16: WHAT TIERFLAT IS WORTH NOW THAT OPERATIONS SCALES
+
+  slot  div   econStature      tierflat     net (shipped stature)   net (tierflat)      change
+  ----------------------------------------------------------------------------------------
+     0    1         1.000         1.000                $205,403         $205,403          0k
+     1    1         0.860         0.825                $542,985         $522,988        -20k
+     2    1         0.825         0.825                 $39,879          $39,879          0k
+     3    1         0.790         0.825               -$534,821        -$518,928        +16k
+     4    1         0.755         0.703               -$161,608        -$182,131        -21k
+     5    1         0.720         0.703               -$554,246        -$560,068         -6k
+     6    1         0.685         0.703               -$798,608        -$793,448         +5k
+     7    1         0.650         0.703             -$1,272,797      -$1,259,742        +13k
+     8    2         0.620         0.587                $589,604         $576,692        -13k
+     9    2         0.620         0.587                $169,572         $158,155        -11k
+    10    2         0.620         0.587                -$30,983         -$41,385        -10k
+    11    2         0.620         0.587               -$368,261        -$377,320         -9k
+    12    2         0.620         0.499                $511,975         $483,353        -29k
+    13    2         0.620         0.499                $207,142         $182,776        -24k
+    14    2         0.620         0.499                 $79,489          $57,927        -22k
+    15    2         0.620         0.499               -$125,619        -$143,508        -18k
+
+  largest single-seat movement: -$28,622
+
+SECTION 17: PAYROLL AGAINST REVENUE AND AGAINST TOTAL COSTS, AFTER THE FIX
+
+  slot  div      revenue        wages   operations   wages/rev   ops/rev   wages/costs   both/rev
+  ----------------------------------------------------------------------------------------------
+     0    1   $9,292,154   $6,294,024   $2,596,727         68%       28%           71%        96%
+     1    1   $8,319,864   $5,176,789   $2,404,090         62%       29%           68%        91%
+     2    1   $7,766,685   $5,169,649   $2,361,157         67%       30%           69%        97%
+     3    1   $7,023,605   $5,110,639   $2,251,378         73%       32%           69%       105%
+     4    1   $6,378,773   $4,148,655   $2,195,727         65%       34%           65%        99%
+     5    1   $5,844,928   $4,097,109   $2,106,066         70%       36%           66%       106%
+     6    1   $5,505,247   $4,037,793   $2,069,798         73%       38%           66%       111%
+     7    1   $4,917,773   $4,038,143   $1,950,626         82%       40%           67%       122%
+     8    2   $4,926,627   $2,467,859   $1,673,164         50%       34%           60%        84%
+     9    2   $4,531,319   $2,541,901   $1,623,846         56%       36%           61%        92%
+    10    2   $4,273,975   $2,510,629   $1,598,330         59%       37%           61%        96%
+    11    2   $3,888,609   $2,504,303   $1,556,568         64%       40%           62%       104%
+    12    2   $3,591,462   $1,362,506   $1,520,981         38%       42%           47%        80%
+    13    2   $3,213,755   $1,350,808   $1,459,806         42%       45%           48%        87%
+    14    2   $3,033,202   $1,324,523   $1,433,190         44%       47%           48%        91%
+    15    2   $2,829,187   $1,358,026   $1,400,780         48%       50%           49%        98%
+
+  Division One  mean wages/revenue 70%   wages as a share of the two big costs 68%
+  Division Two  mean wages/revenue 50%   wages as a share of the two big costs 54%
+
+  The seats still under water, and what is taking their money:
+    slot  3  net    -$534,821   wages   73% of revenue   operations   32%   <- the payroll, not the operations
+    slot  4  net    -$161,608   wages   65% of revenue   operations   34%   <- the payroll, not the operations
+    slot  5  net    -$554,246   wages   70% of revenue   operations   36%   <- the payroll, not the operations
+    slot  6  net    -$798,608   wages   73% of revenue   operations   38%   <- the payroll, not the operations
+    slot  7  net  -$1,272,797   wages   82% of revenue   operations   40%   <- the payroll, not the operations
+    slot 10  net     -$30,983   wages   59% of revenue   operations   37%
+    slot 11  net    -$368,261   wages   64% of revenue   operations   40%   <- the payroll, not the operations
+    slot 15  net    -$125,619   wages   48% of revenue   operations   50%

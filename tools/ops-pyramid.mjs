@@ -26,7 +26,10 @@ import { seasonOf, makeSquadShop, tierOf, mean, pct, $ } from './economy-audit.m
 import {
   econStature, foundingSeats, FOUNDING_SUPPORT, FOUNDING_SEATS
 } from '../server/economy.mjs';
-import { FOUNDING_BANK_ERA2, OPS_TOPFLIGHT_ROUND } from '../server/financeconfig.mjs';
+import {
+  FOUNDING_BANK_ERA2, OPS_TOPFLIGHT_ROUND, OPS_BASE_ROUND, OPS_PER_SEAT_ROUND,
+  OPS_PER_SUPPORTER_ROUND, operationsPerRound
+} from '../server/financeconfig.mjs';
 import { ROUNDS } from '../server/clock.mjs';
 import { shipped, scaled } from './ops-laws.mjs';
 
@@ -40,7 +43,13 @@ const supOf = st => Math.round(FOUNDING_SUPPORT * (0.40 + 1.62 * Math.pow(st, 1.
 // against the median-holding anchor; they are repeated rather than imported so
 // that this run states plainly what it charged.
 const ARMS = {
-  shipped: { law: shipped, note: '$58,000 + seats x $3.10' },
+  // the law as it stood BEFORE this phase, frozen as literals in ops-laws.mjs
+  prior: { law: shipped, note: 'PRIOR LAW: $58,000 + seats x $3.10' },
+  // the law as it now stands, read from financeconfig rather than restated
+  shipped: { law: ({ seats, div, natOps, support }) =>
+    operationsPerRound(seats, div, natOps, support),
+  note: 'SHIPPED NOW: $' + OPS_BASE_ROUND.toLocaleString() + ' + seats x $'
+    + OPS_PER_SEAT_ROUND + ' + support x $' + OPS_PER_SUPPORTER_ROUND },
   sup2: { law: scaled({ base: 48900, perSeat: 1.55, perSupporter: 2 }),
     note: '$48,900 + seats x $1.55 + support x $2.00' },
   sup3: { law: scaled({ base: 29000, perSeat: 1.55, perSupporter: 3 }),
@@ -54,7 +63,7 @@ const ARMS = {
   sup2seat31: { law: scaled({ base: 11700, perSeat: 3.1, perSupporter: 2 }),
     note: '$11,700 + seats x $3.10 + support x $2.00' }
 };
-const wanted = arg('arms', 'shipped,sup2,sup3,sup2seat31').split(',').filter(a => ARMS[a]);
+const wanted = arg('arms', 'prior,shipped').split(',').filter(a => ARMS[a]);
 
 const rng = seed => { let x = seed >>> 0 || 1; return () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return ((x >>> 0) % 1e6) / 1e6; }; };
 

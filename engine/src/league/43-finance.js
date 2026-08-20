@@ -1258,6 +1258,11 @@
       if (ob && Number(ob.perRound) > 0) {
         opsNote = "Staff &amp; support, ground running, travel and facilities &middot; " +
           Mk(ob.base) + " base + " + Mk(ob.ground) + " ground" +
+          // THE CLUB TERM IS WHAT THE FOLLOWING COSTS TO SERVE - the staff,
+          // the match-day operation, the commercial department. Printed only
+          // when the umpire sends one, so a page served by an older world
+          // reads exactly as it did rather than showing an empty term.
+          (Number(ob.club) > 0 ? " + " + Mk(ob.club) + " club" : "") +
           (Number(ob.topFlight) > 0 ? " + " + Mk(ob.topFlight) + " top flight" : "") +
           " each round";
       }

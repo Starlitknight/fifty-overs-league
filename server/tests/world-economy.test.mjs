@@ -39,7 +39,9 @@ import { makeHost } from '../enginehost.mjs';
 import { computeFinance, settleMoney, foundingBankFor, econStature, academyUpkeep } from '../economy.mjs';
 import {
   MEDIA_SEASON, SPONSOR_PACKAGES, sponsorSeasonValue, sponsorWinBonus,
-  operationsPerRound, prizeFor, PRIZE_PLAYOFF_CHAMP, era2Season, ERA2_DAY,
+  operationsPerRound, OPS_PER_SUPPORTER_ROUND, OPS_TOPFLIGHT_ROUND,
+  prizeFor, PRIZE_PLAYOFF_CHAMP,
+  era2Season, ERA2_DAY,
   MATCHDAY_NET, centralInstallment
 } from '../financeconfig.mjs';
 import { FULL_MEMBERS as INIT_FULL } from '../init-world.mjs';
@@ -205,8 +207,23 @@ test('6+7+8: wages, operations and upkeep are charged every round played, at the
     assert.equal(up.length, f.rounds, 'an upkeep line every round played');
     const bill = Math.round(Number(bills.find(b => b.slot === c.slot).bill));
     for (const l of wage) assert.equal(-l.amount, bill, 'the bill as it stands');
-    for (const l of ops) assert.equal(-l.amount, operationsPerRound(c.seats, dv, 1),
-      'the composed rate for ' + c.seats + ' seats in division ' + dv);
+    // OPERATIONS IS NO LONGER ONE NUMBER FOR THE WHOLE SEASON. Since the club
+    // term was added it moves with the following, and the following moves
+    // every round - so asserting a single rate against fourteen lines would
+    // only be asserting that the club term does not work. What must hold is
+    // that every line is the composed law evaluated at SOME following the game
+    // could actually have granted: back out the supporter term and it has to
+    // be a whole number of supporters inside the clamp economy.mjs keeps c.sup
+    // within. That catches a wrong base, a wrong ground term, a wrong premium
+    // and a wrong slope, without needing a round-by-round history of the crowd.
+    for (const l of ops) {
+      const fixed = operationsPerRound(c.seats, dv, 1, 0);
+      const impliedSup = (-l.amount - fixed) / OPS_PER_SUPPORTER_ROUND;
+      assert.ok(Number.isInteger(impliedSup) && impliedSup >= 4000 && impliedSup <= 60000,
+        'slot ' + c.slot + ': an operations line of ' + (-l.amount) + ' for ' + c.seats
+        + ' seats in division ' + dv + ' implies a following of ' + impliedSup
+        + ', which is not a following this world can grant');
+    }
     for (const l of up) assert.equal(-l.amount, academyUpkeep(c.academy));
     // playoff participants played 16 rounds and paid 16 rounds; the rest 14
     assert.ok(f.rounds === ROUNDS || f.rounds === ROUNDS + 1 || f.rounds === ROUNDS + 2);
@@ -402,12 +419,13 @@ test('the finance document states the net share and decomposes club operations e
     const ob = f.opsBreakdown;
     assert.ok(ob, 'slot ' + c.slot + ' carries the breakdown');
     assert.equal(ob.division, dv);
-    assert.equal(ob.perRound, operationsPerRound(c.seats, dv, 1), 'the stated rate is the charged rate');
-    assert.equal(ob.base + ob.ground + ob.topFlight, ob.perRound, 'the parts are the whole');
+    assert.equal(ob.perRound, operationsPerRound(c.seats, dv, 1, f.supporters),
+      'the stated rate is the law on this club’s own ground and following');
+    assert.equal(ob.base + ob.ground + ob.club + ob.topFlight, ob.perRound,
+      'the parts are the whole');
+    assert.equal(ob.club, Math.round(f.supporters * OPS_PER_SUPPORTER_ROUND),
+      'the club term is what this following costs to serve');
     assert.equal(ob.topFlight > 0, dv === 1, 'only the top flight pays the premium');
-    // the ledger's own ops lines charge exactly the stated rate
-    const ops = leds[c.slot].filter(l => l.kind === 'ops');
-    for (const l of ops) assert.equal(-l.amount, ob.perRound);
   }
 });
 
@@ -478,6 +496,84 @@ test('a world founded before the era line keeps the founding economy, exactly', 
     if (f.homeMatches > 0) assert.ok(f.broadcast > 0, 'the van still pays by the head in era 1');
     if (f.rounds > f.homeMatches) assert.ok(f.awayCut > 0, 'the third still travels in era 1');
     assert.equal(f.founded, foundingBankFor(r.slot, r.slot === 0, false), 'era-1 founding capital untouched');
+  }
+  await pool.query(`DELETE FROM matches WHERE country_id='sco'`);
+  await pool.query(`UPDATE seasons SET start_day=$1 WHERE country_id='sco' AND season_no=1`, [START]);
+});
+
+// ---------------------------------------------------------------------------
+// CLUB-SCALE OPERATIONS. The line that used to charge nine of a nation's
+// sixteen clubs exactly the same amount whatever they were.
+// ---------------------------------------------------------------------------
+test('two clubs with the same ground are not charged the same to run', async () => {
+  // The proof obligation this phase exists for. Before the club term, every
+  // seat from 7 down was dealt 24,000 seats and charged an identical
+  // $132,400 a round - a giant and a minnow inheriting one bill. The ground
+  // is deliberately held EQUAL here so the only thing that can separate them
+  // is the following, which is the whole claim.
+  const seats = 24000;
+  const big = operationsPerRound(seats, 2, 1, 36000);
+  const small = operationsPerRound(seats, 2, 1, 8000);
+  assert.ok(big > small, 'the club with four times the following pays more to operate');
+  assert.equal(big - small, Math.round((36000 - 8000) * OPS_PER_SUPPORTER_ROUND),
+    'and pays exactly the supporter term on the difference');
+  // SMOOTH, NOT STEPPED. One more supporter costs the slope and never a cliff:
+  // a manager must never find that his club got one follower bigger and its
+  // running costs jumped.
+  let prev = operationsPerRound(seats, 2, 1, 4000);
+  for (let sup = 5000; sup <= 60000; sup += 1000) {
+    const now = operationsPerRound(seats, 2, 1, sup);
+    assert.equal(now - prev, Math.round(1000 * OPS_PER_SUPPORTER_ROUND),
+      'the step from ' + (sup - 1000) + ' to ' + sup + ' supporters is the slope and nothing else');
+    prev = now;
+  }
+  // and the division premium is still the division's, not the club's
+  assert.equal(operationsPerRound(seats, 1, 1, 20000) - operationsPerRound(seats, 2, 1, 20000),
+    OPS_TOPFLIGHT_ROUND, 'the top-flight premium is untouched by the club term');
+});
+
+test('the club term never reaches a world settling under era 1', async () => {
+  // THE ERA-1 HARD BOUNDARY. Every club in production is still era 1, and the
+  // operations line does not exist there at all - the walk charges it inside
+  // `if (curEra2)`. A club-scale law that leaked backwards would restate the
+  // books of a world that has already been played, so this proves it cannot:
+  // Scotland gets an era-1 calendar and a fabricated round, and every club is
+  // checked to be paying no operations at all.
+  //
+  // The following cannot be forced from here, and that is not a gap in the
+  // test - a club's support is DERIVED, seeded by foundingSupport at genesis
+  // and evolved by the walk, never read back off a column. So the assertion is
+  // made against what the law WOULD have charged: the era-1 clubs each carry a
+  // real following, and a club term on it would be six figures a round.
+  await pool.query(`UPDATE seasons SET start_day=5 WHERE country_id='sco' AND season_no=1`);
+  const sco = (await pool.query(
+    `SELECT slot, name FROM clubs WHERE country_id='sco' ORDER BY slot`)).rows;
+  const sea = (await pool.query(
+    `SELECT schedule FROM seasons WHERE country_id='sco' AND season_no=1`)).rows[0];
+  let n = 0;
+  for (const dv of ['1', '2']) {
+    for (const [h, a] of sea.schedule[dv][0]) {
+      await pool.query(
+        `INSERT INTO matches(id, country_id, season_no, round, home_slot, away_slot, seed,
+                             engine_version, pitch, orders, result, home_name, away_name)
+         VALUES ($1,'sco',1,1,$2,$3,$4,'test','fair','{}'::jsonb,$5::jsonb,$6,$7)`,
+        ['sco-ops-' + (n++), h, a, 700 + n,
+         JSON.stringify({ winner: sco[h].name }), sco[h].name, sco[a].name]);
+    }
+  }
+  const rows = await computeFinance(pool, 'sco', { now: EPOCH + 10 * DAY });
+  for (const r of rows) {
+    const f = r.finance;
+    assert.equal(f.era, 1, 'slot ' + r.slot + ' settles under the founding law');
+    assert.equal(f.ops, 0,
+      'slot ' + r.slot + ' pays no operations at all in era 1, whatever its following');
+    assert.equal(f.opsBreakdown, null, 'and is served no breakdown to read');
+    // the following is real, so the silence above is the era gate and not an
+    // empty club: had the era-2 law been reached it would have charged this
+    assert.ok(f.supporters > 4000, 'slot ' + r.slot + ' has a real following to be charged for');
+    assert.ok(operationsPerRound(r.finance.seats, 2, 1, f.supporters)
+      > operationsPerRound(r.finance.seats, 2, 1, 0),
+      'and the era-2 law would have charged a club term on it');
   }
   await pool.query(`DELETE FROM matches WHERE country_id='sco'`);
   await pool.query(`UPDATE seasons SET start_day=$1 WHERE country_id='sco' AND season_no=1`, [START]);

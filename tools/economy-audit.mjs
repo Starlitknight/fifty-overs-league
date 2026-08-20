@@ -132,9 +132,15 @@ export function seasonOf(opts) {
   // shipped law sees plus the coordinates a candidate might scale on
   // (supporters, stature), so a candidate can be written as economics rather
   // than as arithmetic on `seats`.
+  // THE SHIPPED LAW NOW READS THE FOLLOWING TOO, and calling it with the old
+  // three arguments is not a harmless omission - `support` arrives undefined,
+  // the club term silently evaluates to zero, and every club is charged a
+  // minnow's bill. It surfaced as a bottom-club operations figure BELOW the
+  // law's own minimum, which is the only reason it was caught rather than
+  // quietly flattering every arm.
   const ops = Math.round((opsLaw
     ? opsLaw({ seats, div, natOps, support, stat, statRaw, slot, isBoss })
-    : operationsPerRound(seats, div, natOps)) * opsMult);
+    : operationsPerRound(seats, div, natOps, support)) * opsMult);
   const up = academyUpkeep(academy);
 
   // the mood a club of this standing carries: the shipped reading, from a
@@ -213,7 +219,7 @@ export function seasonOf(opts) {
     const opsR = opsLaw
       ? Math.round(opsLaw({ seats, div, natOps, support: supAtRoundStart,
         stat, statRaw, slot, isBoss }) * opsMult)
-      : ops;
+      : Math.round(operationsPerRound(seats, div, natOps, supAtRoundStart) * opsMult);
     out.ops += opsR; bank -= opsR;
     out.upkeep += up; bank -= up;
     if (bank < 0) { const i = Math.round(-bank * DEBT_ROUND); out.interest += i; bank -= i; }

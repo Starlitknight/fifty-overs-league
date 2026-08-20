@@ -96,7 +96,11 @@ export function botFinanceView(c) {
   const gate = att * (c.ticket || TICKET) * MATCHDAY_NET * 0.5;
   const income = media + sponsor + prize + gate;
   // the costs, at their stated rates
-  const ops = operationsPerRound(c.seats || 15000, div, natOps);
+  // the following is what the organisation costs to run, so the projection
+  // must price it off the same `sup` the gate above was drawn from - a bot
+  // told its operations on a minnow's following while budgeting a flagship's
+  // crowd would post a posture no club could actually hold
+  const ops = operationsPerRound(c.seats || 15000, div, natOps, sup);
   const upkeep = academyUpkeep(c.academy || 2);
   const expense = (c.wageBill || 0) + ops + upkeep;
   const perRoundOp = income - expense;

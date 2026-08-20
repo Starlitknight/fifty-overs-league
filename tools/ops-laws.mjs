@@ -38,16 +38,23 @@
  * following and its operations fall with it, which is negative feedback on
  * exactly the tail this phase is about.
  */
-import {
-  OPS_BASE_ROUND, OPS_PER_SEAT_ROUND, OPS_TOPFLIGHT_ROUND
-} from '../server/financeconfig.mjs';
+import { OPS_TOPFLIGHT_ROUND } from '../server/financeconfig.mjs';
 
-// The shipped law, re-expressed so a sweep can run it through the same door
-// as every candidate. Must agree with financeconfig.operationsPerRound to the
-// dollar; tools/ops-sweep.mjs asserts that it does.
+// THE LAW AS IT STOOD BEFORE THIS PHASE, frozen as literals on purpose. It
+// began as a re-expression that imported the constants, which was right up to
+// the moment the constants changed - at which point the control arm silently
+// became the new law and every "before" column in every saved run would have
+// been measuring the wrong thing. A baseline has to be a baseline, so these
+// three numbers are written out and will not move again.
+//
+//     $58,000 base + seats x $3.10 + (division one ? $30,000)
+//
+// tools/ops-sweep.mjs asserts this against git history rather than against
+// financeconfig, because financeconfig has moved on.
+export const PRIOR = { base: 58000, perSeat: 3.1, premium: 30000 };
 export const shipped = ({ seats, div, natOps }) =>
-  Math.round((OPS_BASE_ROUND + (seats | 0) * OPS_PER_SEAT_ROUND
-    + (div === 1 ? OPS_TOPFLIGHT_ROUND : 0)) * (natOps == null ? 1 : natOps));
+  Math.round((PRIOR.base + (seats | 0) * PRIOR.perSeat
+    + (div === 1 ? PRIOR.premium : 0)) * (natOps == null ? 1 : natOps));
 
 /* THE CANDIDATE FAMILY.
  *
