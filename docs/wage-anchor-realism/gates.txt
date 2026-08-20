@@ -1,0 +1,38 @@
+=== FINAL GATES, claude/wage-anchor-realism ===
+
+No shipped code was changed this phase - git diff against main over
+server/ engine/ assets/ index.html client/ test/ version.json sw.js is EMPTY.
+These gates therefore prove the audit touched nothing, which is the point.
+
+server suite (--test-concurrency=1, all files):
+  ...
+1..441
+# tests 441
+# suites 0
+# pass 441
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 2046827.030087
+
+engine suite:
+  ...
+1..489
+# tests 489
+# suites 0
+# pass 488
+# fail 0
+# cancelled 0
+# skipped 1
+# todo 0
+# duration_ms 1715309.780631
+
+calibration-check (run alone):
+international: 300/300 matches complete (73s)
+flagship_clubs: 300/300 matches complete (145s)
+division_two: 300/300 matches complete (217s)
+international_vs_division_two: 300/300 matches complete (287s)
+
+SMOKE RUN (CAL_N set) — not written to the golden file.
+calibration-check PASS — engine matches calibration-golden.json (engineVersion v3, 300 matches/cell).
