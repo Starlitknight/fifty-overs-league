@@ -51,7 +51,7 @@ import {
   MEDIA_SEASON, MATCHDAY_NET, SPONSOR_PACKAGES, SPONSOR_DEFAULT,
   sponsorSeasonValue, sponsorWinBonus, operationsPerRound,
   centralInstallment,
-  OPS_PER_SEAT_ROUND, OPS_TOPFLIGHT_ROUND,
+  OPS_PER_SEAT_ROUND, OPS_PER_SUPPORTER_ROUND, OPS_TOPFLIGHT_ROUND,
   prizeFor, PRIZE_PLAYOFF_CHAMP, foundingBankEra2
 } from './financeconfig.mjs';
 export { ERA2_DAY, era2Season } from './financeconfig.mjs';
@@ -917,10 +917,16 @@ export async function computeFinance(pool, country, opts = {}) {
       if (curEra2) {
         // CLUB OPERATIONS - the one line that is the cost of BEING a club:
         // staff, ground, admin, travel. Composed in financeconfig.mjs from a
-        // base, the seats and the flight; a bigger ground and a higher
-        // division cost more to run, every round, home or away.
+        // base, the seats, the FOLLOWING and the flight; a bigger club, a
+        // bigger ground and a higher division all cost more to run, every
+        // round, home or away.
+        //
+        // c.sup IS THIS ROUND'S OPENING FOLLOWING, and that is deliberate:
+        // the loop below updates it only after every bill has been taken, so
+        // a club is charged for the organisation it had rather than for the
+        // one this round's result won it.
         const ops = operationsPerRound(c.seats, divOf(R.ms[0].season_no, slot),
-          isFullMember(country) ? 1 : OPS_ASSOC);
+          isFullMember(country) ? 1 : OPS_ASSOC, c.sup);
         c.ops += ops; c.bank -= ops;
         line(slot, roundAt, 'ops', 'Club operations', -ops, c.bank);
       }
@@ -1051,8 +1057,9 @@ export async function computeFinance(pool, country, opts = {}) {
     // construction (the base takes the rounding residue).
     const dvNow = divOf(curSeason != null ? curSeason : maxSeason, c.slot);
     const natOps9 = isFullMember(country) ? 1 : OPS_ASSOC;
-    const opsRound = operationsPerRound(s.seats, dvNow, natOps9);
+    const opsRound = operationsPerRound(s.seats, dvNow, natOps9, s.sup);
     const opsGround = Math.round(s.seats * OPS_PER_SEAT_ROUND * natOps9);
+    const opsClub = Math.round(s.sup * OPS_PER_SUPPORTER_ROUND * natOps9);
     const opsTop = Math.round((dvNow === 1 ? OPS_TOPFLIGHT_ROUND : 0) * natOps9);
     return {
       slot: c.slot, bank: Math.round(s.bank),
@@ -1096,8 +1103,8 @@ export async function computeFinance(pool, country, opts = {}) {
         maxSeats: MAX_SEATS, seatBlock: 1000, homeCut: curEra2 ? 1 : HOME_CUT,
         matchdayNet: curEra2 ? MATCHDAY_NET : null,
         opsBreakdown: curEra2 ? {
-          perRound: opsRound, base: opsRound - opsGround - opsTop,
-          ground: opsGround, topFlight: opsTop, division: dvNow
+          perRound: opsRound, base: opsRound - opsGround - opsClub - opsTop,
+          ground: opsGround, club: opsClub, topFlight: opsTop, division: dvNow
         } : null
       }
     };

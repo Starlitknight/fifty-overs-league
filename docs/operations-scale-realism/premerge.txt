@@ -1,0 +1,70 @@
+PRE-MERGE CONFIRMATIONS - claude/operations-scale-realism
+=========================================================
+
+1. EVERY RUNTIME CALLER SUPPLIES THE FOLLOWING
+----------------------------------------------
+There are three runtime callers of operationsPerRound(seats, div, natOps,
+support). All three pass four arguments:
+
+  server/economy.mjs:928   the settle walk, which CHARGES the ledger
+                           (c.seats, division, nation factor, c.sup)
+                           c.sup is the round's OPENING following - the loop
+                           updates it only after every bill is taken, so a
+                           club is charged for the organisation it had.
+
+  server/economy.mjs:1060  the breakdown SERVED to the client
+                           (s.seats, dvNow, natOps9, s.sup)
+
+  server/botfinance.mjs:103 the bot posture projection
+                           (c.seats || 15000, div, natOps, sup) where
+                           sup = c.supporters > 0 ? c.supporters
+                                                  : foundingSupport(...)
+                           - the same `sup` the gate projection is drawn
+                           from, so a bot cannot budget a flagship's crowd
+                           while being told a minnow's operations.
+
+`sup` can never be absent in the walk: S[c.slot] is built with
+sup: foundingSupport(c.slot, c.is_boss) for every club (economy.mjs:645),
+a pure function of slot and boss flag.
+
+PROVED AT RUNTIME, NOT BY READING. operationsPerRound was temporarily
+patched to throw on a non-finite `support`:
+
+    if (!Number.isFinite(support)) throw new Error('OPS-PROBE: ...');
+
+and the three finance suites run against it:
+
+    world-economy + world-botfinance + world-p3
+    53 tests, 53 pass, 0 fail
+
+Nothing threw. No runtime caller silently falls back to an undefined
+following. The probe was then reverted; it is NOT committed, and the shipped
+law is byte-identical to the approved one.
+
+2. THE CLIENT OWNS NO COPY OF THE LAW
+-------------------------------------
+engine/src/league/43-finance.js renders finance.opsBreakdown and nothing
+else: base, ground, club, top flight, all served figures. A grep of that
+file for every operations constant (58000, 11700, 3.1, 30000, OPS_*) finds
+no arithmetic - the only hits are an unrelated cache TTL, an SVG ellipse
+radius and a timestamp. There is no stale duplicate formula, and the club
+term prints only when the umpire sends one, so a page served by an older
+world reads exactly as it did.
+
+3. THE REFERENCE CASES REPRODUCE EXACTLY
+----------------------------------------
+Not "approximately" - to the dollar, from the shipped function:
+
+  bottom D2   24,000 seats, 12,675 following, D2
+              11,700 + 74,400 + 25,350 + 0        = $111,450  EXACT
+  flagship    29,000 seats, 37,176 following, D1
+              11,700 + 89,900 + 74,352 + 30,000   = $205,952  EXACT
+
+Both followings are STEADY-STATE, not founding: a minnow's support has
+decayed below what it was founded with (14,520 -> 12,675) and a flagship's
+has grown well above it (24,240 -> 37,176). That is the point of the
+coordinate, and it is why the founding ladder alone does not reproduce
+these two numbers.
+
+  the division premium is exactly $30,000 at both ends, and at every seat
+  between them.

@@ -225,8 +225,66 @@ export function sponsorWinBonus(S, pkg) {
 // an associate's second division at -7% a season - both halves measured on
 // the bench.
 // ---------------------------------------------------------------------------
-export const OPS_BASE_ROUND = 58000;
+// THE BASE WAS CARRYING WORK IT COULD NOT DO, AND NINE CLUBS PAID FOR IT.
+//
+// This line was written as a fixed base plus a per-seat term, which reads as
+// though a giant and a minnow were charged differently for being different
+// sizes. They were not. The per-seat term reads CAPACITY, and capacity is
+// dealt almost flat on purpose - foundingSeats was deliberately never
+// steepened with standing (economy.mjs, and steepening it broke stadium
+// building) - so every seat from 7 down is dealt exactly 24,000 seats and
+// charged exactly $132,400 a round. For nine of the sixteen clubs in a nation
+// the "variable" half was a second flat charge, and not one dollar of their
+// operations responded to anything about the club.
+//
+// MEASURED over all sixteen nations with the generator's own squads
+// (tools/ops-burden.mjs): a club earning 3.28x what another earns, and paying
+// 4.63x the wages, was charged 1.11x to operate. The bottom club spent 63% of
+// its revenue on operations and 111% on operations and wages together, and
+// there was no way to manage it into solvency - even a frugal minnow lost
+// $189,809 a year.
+//
+// The base is not really the culprit and lowering it alone would not have
+// helped: the COORDINATE was. tools/ops-sweep.mjs ran that as a control -
+// lower the base, steepen the existing per-seat term, hold the median - and
+// it moved the under-water count not at all, 10/16 before and 10/16 after,
+// because a term nine clubs pay identically moves all nine together.
+//
+// So operations now scales on the FOLLOWING, which is the one existing
+// quantity that means "how large an organisation is this": it is not revenue
+// and not payroll, so it cannot be bought by spending; it spans 5.14x across
+// the same ladder the old coordinate spanned 1.21x; and it already moves with
+// success, so a club that grows gradually costs more to run. It is also a
+// stabiliser rather than a spiral - a club that falls loses following and its
+// operations fall with it, which is negative feedback on exactly the tail
+// this was about.
+//
+// THE BASE IS WHAT IS LEFT WHEN THE OTHER TWO TERMS DO THEIR OWN WORK: the
+// travelling party and the fixtures a club has to fulfil, whatever its size.
+// It is small because the staff and the match-day operation moved to the term
+// that actually describes them. The per-seat term is UNCHANGED at $3.10 -
+// halving it would have paid for the supporter term just as well and is
+// identical for every club on 24,000 seats, but it would have quietly halved
+// what a stand costs to run, and stadium economics were not this phase's to
+// move.
+//
+// Fitted in tools/ops-sweep.mjs against an anchor that binds: the base is
+// SOLVED, not swept, so that the median club's operations are held at what
+// they are today and a candidate cannot pass by being an across-the-board
+// cost cut. Chosen on behaviour (docs/operations-scale-realism/): the bottom
+// of Division Two becomes survivable rather than doomed (seat 15, -$212,844 a
+// year -> +$160,524; a frugal minnow -$189,809 -> +$179,598) without becoming
+// rich; the flagship stays much the richest club in its world at 2.8x the
+// median treasury but stops compounding absurdly (three clubs above $20m over
+// ten seasons -> none); administration falls from 87 clubs in 256 to 73; and
+// the division premium Phase 2 fitted is untouched, so promotion is still
+// worth $1.90m on the same club at the same finish, to within a tenth of a
+// percent.
+export const OPS_BASE_ROUND = 11700;
 export const OPS_PER_SEAT_ROUND = 3.1;
+// what the organisation a following requires costs to run, per supporter per
+// round: the staff, the match-day operation, the commercial department
+export const OPS_PER_SUPPORTER_ROUND = 2.0;
 // THE TOP-FLIGHT PREMIUM, RE-FITTED - AND IT IS A MAGNITUDE, NOT A PRINCIPLE.
 // Division One still costs more to run than Division Two, and should: dearer
 // staff, heavier travel, a higher standard of match operations. What was wrong
@@ -264,8 +322,13 @@ export const OPS_PER_SEAT_ROUND = 3.1;
 // business and not this line's.
 export const OPS_TOPFLIGHT_ROUND = 30000;
 export const OPS_ASSOC = 0.88;
-export function operationsPerRound(seats, div, natOps) {
+// `support` is the club's following as it stood when the round began. The
+// walk updates c.sup at the END of its round loop, after every bill is taken,
+// which is the reading this wants: a club is not billed this week for
+// supporters this week's result won it.
+export function operationsPerRound(seats, div, natOps, support) {
   return Math.round((OPS_BASE_ROUND + (seats | 0) * OPS_PER_SEAT_ROUND
+    + (support | 0) * OPS_PER_SUPPORTER_ROUND
     + (div === 1 ? OPS_TOPFLIGHT_ROUND : 0)) * (natOps == null ? 1 : natOps));
 }
 

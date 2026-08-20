@@ -1,0 +1,90 @@
+=== 3. THE STRENGTH LADDER, RE-MEASURED (16 nations, the shipped generator) ===
+
+  slot  div     n   mean rating   best XI rating    payroll/round   step vs slot above
+     0    1    16        70,904           77,602         $449,573                    
+     1    1    16        65,608           72,727         $369,771               -7.5%
+     2    1    16        65,500           72,722         $369,261               -0.2%
+     3    1    16        65,175           72,369         $365,046               -0.5%
+     4    1    16        59,450           67,313         $296,333               -8.8%
+     5    1    16        59,296           66,960         $292,651               -0.3%
+     6    1    16        58,858           66,472         $288,414               -0.7%
+     7    1    16        58,579           66,438         $288,439               -0.5%
+     8    2    16        48,421           56,330         $176,276              -17.3%
+     9    2    16        49,071           56,903         $181,564                1.3%
+    10    2    16        48,792           56,511         $179,331               -0.6%
+    11    2    16        48,554           56,415         $178,879               -0.5%
+    12    2    16        37,858           45,369          $97,322              -22.0%
+    13    2    16        37,779           45,244          $96,486               -0.2%
+    14    2    16        37,438           44,847          $94,609               -0.9%
+    15    2    16        37,783           45,085          $97,002                0.9%
+
+  THE CLAIM: ratings flatten between 23,000 and 24,300 from slot 6 to slot 15.
+  MEASURED slots 6-15: 37,438 to 58,858  (spread 57.2%)
+  slot 6 = 58,858,  slot 15 = 37,783  ->  the ladder DOES NOT FLATTEN. The premise is dead.
+
+  WHERE THE STRENGTH LADDER REALLY STOPS (step from one seat to the next):
+    slot  0 ->  1   -7.5%
+    slot  1 ->  2   -0.2%   <- flat
+    slot  2 ->  3   -0.5%   <- flat
+    slot  3 ->  4   -8.8%
+    slot  4 ->  5   -0.3%   <- flat
+    slot  5 ->  6   -0.7%   <- flat
+    slot  6 ->  7   -0.5%   <- flat
+    slot  7 ->  8   -17.3%
+    slot  8 ->  9   +1.3%   <- flat
+    slot  9 -> 10   -0.6%   <- flat
+    slot 10 -> 11   -0.5%   <- flat
+    slot 11 -> 12   -22.0%
+    slot 12 -> 13   -0.2%   <- flat
+    slot 13 -> 14   -0.9%   <- flat
+    slot 14 -> 15   +0.9%   <- flat
+
+=== 5. DOES THE COORDINATE STILL TRACK THE CLUB? (rank correlation) ===
+
+  across all 256 clubs:
+    raw stature     vs payroll        0.952
+    floored stature vs payroll        0.915
+    raw stature     vs squad rating   0.957
+    floored stature vs squad rating   0.917
+
+  inside division two only (the 128 clubs the floor touches):
+    raw stature     vs payroll        0.769
+    floored stature vs payroll        constant - no information   <- a constant correlates with nothing
+    raw stature     vs squad rating   0.787
+
+=== 6. SAME-DIVISION STRUCTURAL FAIRNESS ===
+
+  Within one division, before any managerial choice: how much more
+  expensive is the dearest dealt squad than the cheapest, and how much
+  more commercial base does its seat get to pay for it?
+  DIVISION 1   (slot 0 against slot 7)
+    payroll ladder            x1.56   ($449,573 vs $288,439 a round)
+    founding support ladder   x1.59   (24,240 vs 15,209)
+    sponsor ladder            x1.70
+    stature ladder, raw       x1.54   floored x1.54
+  DIVISION 2   (slot 8 against slot 15)
+    payroll ladder            x1.82   ($176,276 vs $97,002 a round)
+    founding support ladder   x1.00   (14,520 vs 14,520)
+    sponsor ladder            x1.56
+    stature ladder, raw       x1.33   floored x1.00
+
+=== 10. WHERE A KNEE WOULD BELONG, IF THE LADDER HAS ONE ===
+
+  A floor is only honest where the thing it mirrors genuinely stops.
+  Payroll by seat, and the ratio to the seat above:
+    slot  0      $449,573
+    slot  1      $369,771   x0.822
+    slot  2      $369,261   x0.999   <- flat
+    slot  3      $365,046   x0.989   <- flat
+    slot  4      $296,333   x0.812
+    slot  5      $292,651   x0.988   <- flat
+    slot  6      $288,414   x0.986   <- flat
+    slot  7      $288,439   x1.000   <- flat
+    slot  8      $176,276   x0.611
+    slot  9      $181,564   x1.030
+    slot 10      $179,331   x0.988   <- flat
+    slot 11      $178,879   x0.997   <- flat
+    slot 12       $97,322   x0.544
+    slot 13       $96,486   x0.991   <- flat
+    slot 14       $94,609   x0.981   <- flat
+    slot 15       $97,002   x1.025
