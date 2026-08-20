@@ -48,15 +48,25 @@ test('the engine credits a trigger only where the talent would have fired', asyn
   assert.deepEqual(Object.keys(tal).sort(), [a.name, b.name].sort(),
     'keyed by side, so a slot resolves and two men sharing a name cannot be confused');
 
-  const byName = {};
-  for (const side of Object.keys(tal)) for (const nm of Object.keys(tal[side])) byName[nm] = tal[side][nm];
-  const squadOf = {}; [...a.squad, ...b.squad].forEach(p => { squadOf[p.name] = p; });
+  // AND THE LOOK-UP KEEPS THE SIDE, which is the whole reason the tally carries
+  // one. Flattening tal into one map by NAME and then resolving the man out of
+  // both squads together undoes the assertion three lines above it: two men in
+  // a match really can share a name, and the second one written wins. Measured
+  // when a generation change re-dealt the world: Alfie Hargreaves the top-order
+  // batsman of one county and Alfie Hargreaves the wrist-spinner of the other.
+  // The engine credited `anchor` to the batsman, entirely correctly - foTalCount
+  // gates on foTalElig before it counts anything - and the test looked the
+  // talent up against the spinner and called the engine wrong.
+  const squadBySide = {
+    [a.name]: Object.fromEntries(a.squad.map(p => [p.name, p])),
+    [b.name]: Object.fromEntries(b.squad.map(p => [p.name, p]))
+  };
 
   let checked = 0;
-  for (const nm of Object.keys(byName)) {
-    const p = squadOf[nm];
-    assert.ok(p, nm + ' is one of the twenty-two');
-    for (const t of Object.keys(byName[nm])) {
+  for (const side of Object.keys(tal)) for (const nm of Object.keys(tal[side])) {
+    const p = (squadBySide[side] || {})[nm];
+    assert.ok(p, nm + ' is one of ' + side + "'s men");
+    for (const t of Object.keys(tal[side][nm])) {
       // never a talent he already owns - there is nothing left to learn
       assert.ok((p.talents || []).indexOf(t) < 0, nm + ' is credited for ' + t + ' he already has');
       // and never one he could not develop: the draft's table and the ball
