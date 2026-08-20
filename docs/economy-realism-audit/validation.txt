@@ -1,0 +1,61 @@
+=== THE FIXED LINES: laws with no trajectory in them ===
+
+  Kent (slot 7, 21 rounds, 11 home)
+  ops / round                $192,400      $172,400   +11.6%
+  academy upkeep / round      $14,000       $14,000    +0.0%
+  seats                       $24,000       $24,000    +0.0%
+  media / round              $196,429      $170,238   +15.4%
+  econStature                   0.650
+
+  Surrey (slot 3, 23 rounds, 9 home)
+  ops / round                $198,600      $198,600    +0.0%
+  academy upkeep / round      $14,000       $14,000    +0.0%
+  seats                       $26,000       $26,000    +0.0%
+  media / round              $196,429      $179,348    +9.5%
+  econStature                   0.790
+
+  Nottinghamshire (slot 6, 21 rounds, 9 home)
+  ops / round                $195,500      $175,500   +11.4%
+  academy upkeep / round      $14,000       $14,000    +0.0%
+  seats                       $25,000       $25,000    +0.0%
+  media / round              $196,429      $170,238   +15.4%
+  econStature                   0.685
+
+=== THE TRAJECTORY: what the model grows ===
+  club                    model att   real att      model $/home    real $/home
+  Kent                        12643       9917          $236,680       $185,646
+    support: model start 15209 -> end 19256   real (after 21 rounds) 21587
+  Surrey                      14815      17182          $277,337       $321,639
+    support: model start 18612 -> end 21638   real (after 23 rounds) 22939
+  Nottinghamshire             13267      14617          $248,366       $273,636
+    support: model start 16032 -> end 19832   real (after 21 rounds) 25559
+
+=== PER ROUND, EVERYTHING ===
+  club                     line        model/rd      real/rd
+  Kent                  gate            $118,340      $97,243     22%
+  Kent                  media           $196,429     $170,238     15%
+  Kent                  sponsor          $93,164      $65,154     43%
+  Kent                  sponsorBonus     $39,928      $17,245    132%
+  Kent                  wages           $307,090     $299,968      2%
+  Kent                  ops             $192,400     $172,400     12%
+  Kent                  REVENUE         $480,003     $365,119     31%
+  Kent                  COST            $513,490     $486,368      6%
+  Kent                  NET             -$33,487    -$121,248    -72%
+  Surrey                gate            $138,668     $125,859     10%
+  Surrey                media           $196,429     $179,348     10%
+  Surrey                sponsor          $96,385      $97,522     -1%
+  Surrey                sponsorBonus     $41,308      $47,300    -13%
+  Surrey                wages           $359,420     $359,442     -0%
+  Surrey                ops             $198,600     $198,600      0%
+  Surrey                REVENUE         $504,933     $476,115      6%
+  Surrey                COST            $572,020     $572,042     -0%
+  Surrey                NET             -$67,087     -$95,926    -30%
+  Nottinghamshire       gate            $124,183     $117,273      6%
+  Nottinghamshire       media           $196,429     $170,238     15%
+  Nottinghamshire       sponsor          $93,970      $71,013     32%
+  Nottinghamshire       sponsorBonus     $40,273      $30,830     31%
+  Nottinghamshire       wages           $295,840     $293,987      1%
+  Nottinghamshire       ops             $195,500     $175,500     11%
+  Nottinghamshire       REVENUE         $486,997     $406,497     20%
+  Nottinghamshire       COST            $505,340     $483,487      5%
+  Nottinghamshire       NET             -$18,343     -$76,990    -76%

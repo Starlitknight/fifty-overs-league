@@ -93,6 +93,41 @@ export const ASSOC_POOL = 0.70;
 export const MEDIA_SEASON = { 1: 2750000, 2: 1650000 };
 
 // ---------------------------------------------------------------------------
+// 1b. HOW A SEASON'S CENTRAL MONEY REACHES A ROUND - one function, because
+// there are two of these grants (the media distribution and the sponsor's
+// guarantee) and they must arrive on the same terms or a club's year does not
+// add up.
+//
+// A LEAGUE ROUND takes its share by CUMULATIVE rounding: installment r is
+// round(G*r/R) - round(G*(r-1)/R), so a season of any length banks its grant to
+// the exact dollar and never a rounding penny more.
+//
+// A PLAYOFF ROUND IS A ROUND, AND UNTIL NOW IT WAS NOT PAID FOR. The settle
+// charges wages, club operations and the academy for every round a club PLAYS,
+// and paid the central money only for rounds 1..R. Rounds R+1 and R+2 are the
+// semi-final and the final, so a club that reached them paid two more weeks of
+// its entire cost base out of a season's income that had stopped. Measured on
+// the audit's model, a strong Division One side: each playoff round billed
+// $577,500 and banked nothing central, against a champions' cheque of
+// $300,000 - so WINNING THE TITLE LEFT A CLUB $855,000 POORER than topping the
+// table and going home. It is visible in the settled world too: Surrey banked
+// operations for all 23 of its rounds while its media came to exactly
+// 2,750,000 + 7/14 x 2,750,000.
+//
+// So a round played is a round funded, at the ordinary round rate. This is not
+// a playoff jackpot and no prize, bonus or gate multiplier moves: the club gets
+// one further ordinary installment for one further ordinary week of being a
+// club, which is the same principle the fourteen league rounds already run on.
+// The season POOL therefore grows only for clubs that earn extra rounds, which
+// is exactly the thing a broadcaster pays extra to televise.
+export function centralInstallment(seasonTotal, round, leagueRounds) {
+  const G = Math.round(seasonTotal || 0), R = Math.max(1, leagueRounds | 0);
+  if (round < 1) return 0;
+  if (round <= R) return Math.round(G * round / R) - Math.round(G * (round - 1) / R);
+  return Math.round(G / R);
+}
+
+// ---------------------------------------------------------------------------
 // 2. MATCHDAY. The home club keeps the gate its own pricing earned - the
 // two-thirds/one-third away split is retired for era 2. The split moved a
 // third of every club's biggest income line onto fixtures it had no lever
@@ -192,7 +227,42 @@ export function sponsorWinBonus(S, pkg) {
 // ---------------------------------------------------------------------------
 export const OPS_BASE_ROUND = 58000;
 export const OPS_PER_SEAT_ROUND = 3.1;
-export const OPS_TOPFLIGHT_ROUND = 60000;
+// THE TOP-FLIGHT PREMIUM, RE-FITTED - AND IT IS A MAGNITUDE, NOT A PRINCIPLE.
+// Division One still costs more to run than Division Two, and should: dearer
+// staff, heavier travel, a higher standard of match operations. What was wrong
+// was the size of it, and the size was never fitted against the income the
+// division actually guarantees.
+//
+// MEASURE IT AGAINST WHAT THE DIVISION GUARANTEES, which is the comparison
+// nobody had made. Promotion brings a club $1,100,000 of extra media and
+// $520,704 of extra sponsor guarantee - $1,620,704 that arrives whatever the
+// crowd does and wherever the club finishes. At $60,000 a round the division
+// took $840,000 of that back in operations before a ball was bowled: a
+// guaranteed premium of only 1.93x its guaranteed cost, while the squads the
+// top flight is DEALT cost 2.5x to 4.6x a second-division squad. The
+// commercial premium covered the wage premium almost exactly and the
+// operations premium was the whole of what was left over - which is why seven
+// of eight top-flight seats drained and four of sixteen clubs reached
+// administration inside five seasons.
+//
+// $30,000 puts the guaranteed premium at 3.86x its guaranteed cost, inside the
+// 2.5-4.6x band the payroll ladder spans. Swept 0 to 60,000 in
+// tools/economy-arms.mjs --sweep and fitted on BEHAVIOUR rather than on parity
+// (docs/economy-realism-phase2/): Division One stops draining on aggregate
+// (mean -$919k -> -$41k a season) without printing; administration falls from
+// four seats in sixteen to two, and both survivors are the two weakest seats,
+// which is what a minnow is for; a normal club is sustainable (+$275k at a
+// mid-table finish, -$43k on its own seat's payroll against a $1.95m bank);
+// an aggressive contender still burns $1.59m a season; promotion is worth
+// MORE (+$1.53m -> +$1.96m) and relegation hurts MORE (-$176k -> -$596k);
+// and Division Two does not move by one dollar, which is the control.
+//
+// It is deliberately not the value that equalises the two divisions. Parity is
+// not the target - a top flight that costs nothing extra to run is not a top
+// flight, and the seats that still lose money here lose it for finishing low
+// with an expensive dealt squad, which is the stale econStature floor's
+// business and not this line's.
+export const OPS_TOPFLIGHT_ROUND = 30000;
 export const OPS_ASSOC = 0.88;
 export function operationsPerRound(seats, div, natOps) {
   return Math.round((OPS_BASE_ROUND + (seats | 0) * OPS_PER_SEAT_ROUND

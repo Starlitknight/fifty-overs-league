@@ -1,0 +1,116 @@
+
+=== phase2: ENG TREASURY AT THE SOLVENCY ASSERTION ===
+   the floor the test holds: $-1,250,000   administration at: $-2,500,000
+  slot club              div  bank         wage/rd   ops/rd  upkeep  media/rd  gate(avg)  sponsor  rounds  admin
+     0 Essex               1   $4,292,476  $480,080 $177,900 $14,000  $196,429   $497,302 $127,490      23   no
+     1 Yorkshire           1   $2,707,922  $384,780 $171,700 $14,000  $196,429   $397,664 $113,027      22   no
+     2 Lancashire          1   $3,307,685  $376,440 $171,700 $14,000  $196,429   $397,706 $109,805      22   no
+     3 Surrey              1   $1,080,833  $376,580 $168,600 $14,000  $196,429   $321,639 $106,448      23   no
+     4 Middlesex           1   $1,627,474  $316,570 $168,600 $14,000  $196,429   $253,564  $93,512      21   no
+     5 Warwickshire        1   $2,323,464  $305,240 $165,500 $14,000  $196,429   $287,262  $90,674      21   no
+     6 Nottinghamshire     1     $665,201  $300,900 $155,500 $14,000  $170,238   $273,636  $71,013      21   no
+     7 Kent                1    $-766,566  $313,750 $152,400 $14,000  $170,238   $169,268  $65,154      21   no
+     8 Orange Club         2   $3,666,082  $186,140 $132,400 $14,000  $117,857   $300,286  $68,189      22   no
+     9 Somerset            2   $4,891,029  $184,060 $141,530 $14,000  $141,770   $319,421  $81,967      23   no
+    10 Glamorgan           2   $2,343,369  $183,990 $141,530 $14,000  $141,770   $227,673  $77,614      23   no
+    11 Sussex              2   $1,241,113  $199,370 $132,400 $14,000  $117,857   $190,753  $59,604      22   no
+    12 Gloucestershire     2   $1,438,757  $102,780 $132,400 $14,000  $117,857    $97,552  $53,550      21   no
+    13 Hampshire           2   $2,612,456   $96,970 $132,400 $14,000  $117,857   $151,384  $53,550      21   no
+    14 Derbyshire          2   $1,918,423   $99,880 $132,400 $14,000  $117,857   $108,601  $49,917      21   no
+    15 Leicestershire      2   $1,419,526   $98,770 $132,400 $14,000  $117,857    $95,972  $45,074      21   no
+
+  === THE WHOLE PLANET AT THIS MOMENT: 256 clubs in 16 countries ===
+      p05 $1,082,674   median $2,128,382   p95 $3,919,142
+      overdrawn 1/256 (0.4%)   past the test floor 0 (0.0%)   in administration 0 (0.0%)
+      by seat (the same seat in every country):
+        slot        0       1       2       3       4       5       6       7       8       9      10      11      12      13      14      15
+        med     3710k   2844k   2334k   2761k   2260k   1799k   1619k   1153k   2781k   2970k   2439k   2281k   2063k   2013k   1837k   1894k
+        <0          0       0       0       0       0       0       0       1       0       0       0       0       0       0       0       0
+
+  --- FULL BOOK: slot 7 Kent (division 1, stature 0.65) ---
+      founded on $1,816,000   now $-766,566   over 21 rounds   (11 home)
+      + gate              $1,861,945
+      + sponsor           $1,368,243
+      + sponsorBonus        $258,923
+      + media             $3,575,000
+      + prize               $320,000
+      - wages             $6,398,990
+      - ops               $3,200,400
+      - upkeep              $294,000
+      - interest             $73,287
+      = in $7,384,111  out $9,966,677  net $-2,582,566   wage share of cost 64.2%
+      supporters 18701  seats 24000  mood content  attendance 9042  academy L2  written off $0  admin no
+      top of the wage bill: Jack Yardley seamMedium ovr 89 $55,540; Ben Trott fingerSpin ovr 88 $50,650; Alfie Jarvis seamFastMedium ovr 80 $38,050; Lewis Cole seamFast ovr 76 $34,580; Tommy Dawson opener ovr 70 $27,020; Sebastian Vickers topOrderBat ovr 66 $21,370
+      squad 15   payroll $313,750
+
+  --- FULL BOOK: slot 6 Nottinghamshire (division 1, stature 0.68) ---
+      founded on $1,862,000   now $665,201   over 21 rounds   (9 home)
+      + gate              $2,462,728
+      + sponsor           $1,491,280
+      + sponsorBonus        $647,423
+      + media             $3,575,000
+      + prize               $360,000
+      - wages             $6,173,730
+      - ops               $3,265,500
+      - upkeep              $294,000
+      = in $8,536,431  out $9,733,230  net $-1,196,799   wage share of cost 63.4%
+      supporters 25559  seats 25000  mood ecstatic  attendance 14617  academy L2  written off $0  admin no
+      top of the wage bill: Jack Wright seamFast ovr 83 $42,500; Archie Mercer seamFastMedium ovr 83 $42,500; Sebastian Taylor seamMedium ovr 81 $39,500; Alfie Chadwick allRounder ovr 75 $31,350; James Norris seamMedium ovr 72 $29,400; Jacob Hargreaves middleOrderBat ovr 69 $24,410
+      squad 15   payroll $300,900
+
+  --- FULL BOOK: slot 3 Surrey (division 1, stature 0.79) ---
+      founded on $1,999,000   now $1,080,833   over 23 rounds   (9 home)
+      + gate              $2,894,749
+      + sponsor           $2,448,293
+      + sponsorBonus      $1,087,893
+      + media             $4,517,858
+      + prize               $600,000
+      - wages             $8,267,160
+      - ops               $3,877,800
+      - upkeep              $322,000
+      = in $11,548,793  out $12,466,960  net $-918,167   wage share of cost 66.3%
+      supporters 22939  seats 26000  mood patient  attendance 17182  academy L2  written off $0  admin no
+      top of the wage bill: Jos Lowe allRounder ovr 93 $63,370; Daniel Sharpe opener ovr 87 $51,880; Mason Foster opener ovr 81 $41,870; Jack Jarvis seamFastMedium ovr 82 $40,980; Theo Mercer topOrderBat ovr 74 $31,920; Jamie Brown allRounder ovr 73 $28,910
+      squad 15   payroll $376,580
+
+  === THE REST OF THE SEASON: 20 further rounds played ===
+  slot club                 at assertion      minimum (rd)        at season end   admin rds
+     0 Essex                   $4,292,476      $3,942,535 (8)          $5,179,045          0
+     1 Yorkshire               $2,707,922      $2,433,795 (8)          $3,943,972          0
+     2 Lancashire              $3,307,685     $2,918,676 (13)          $3,772,279          0
+     3 Surrey                  $1,080,833      $1,080,833 (0)          $2,399,024          0
+     4 Middlesex               $1,627,474     $1,422,385 (12)          $1,734,198          0
+     5 Warwickshire            $2,323,464      $2,063,795 (9)          $2,535,584          0
+     6 Nottinghamshire           $665,201        $665,201 (0)          $1,668,102          0
+     7 Kent                     $-766,566    $-2,212,926 (16)         $-2,212,926          0
+     8 Orange Club             $3,666,082      $3,514,505 (8)          $3,761,558          0
+     9 Somerset                $4,891,029      $4,842,197 (8)          $5,640,064          0
+    10 Glamorgan               $2,343,369      $2,343,369 (0)          $3,315,946          0
+    11 Sussex                  $1,241,113       $990,708 (11)          $1,700,343          0
+    12 Gloucestershire         $1,438,757     $1,339,794 (12)          $1,576,216          0
+    13 Hampshire               $2,612,456      $2,541,394 (8)          $2,835,315          0
+    14 Derbyshire              $1,918,423     $1,764,653 (11)          $2,009,292          0
+    15 Leicestershire          $1,419,526     $1,025,630 (13)          $1,208,258          0
+
+  clubs closing the season under water: 1/16   ever below the test floor: 1/16   ever in administration: 0/16
+  closing wage bill/round across the sixteen: $4,162,060
+
+  === A NORMAL BAD SEASON: gate -20%, no prize cheque, no win bonuses ===
+  slot club                 actual end     stressed end   still solvent
+     0 Essex                    $5,179,045       $1,641,715               yes
+     1 Yorkshire                $3,943,972       $1,550,976               yes
+     2 Lancashire               $3,772,279       $1,186,630               yes
+     3 Surrey                   $2,399,024         $259,628               yes
+     4 Middlesex                $1,734,198         $-46,445         overdrawn
+     5 Warwickshire             $2,535,584         $859,751               yes
+     6 Nottinghamshire          $1,668,102         $-56,663         overdrawn
+     7 Kent                    $-2,212,926      $-3,245,811    ADMINISTRATION
+     8 Orange Club              $3,761,558       $2,134,770               yes
+     9 Somerset                 $5,640,064       $3,972,226               yes
+    10 Glamorgan                $3,315,946       $2,027,109               yes
+    11 Sussex                   $1,700,343         $351,466               yes
+    12 Gloucestershire          $1,576,216         $973,498               yes
+    13 Hampshire                $2,835,315       $1,952,632               yes
+    14 Derbyshire               $2,009,292       $1,301,285               yes
+    15 Leicestershire           $1,208,258         $750,877               yes
+  under water after a bad season: 3/16   in administration: 1/16

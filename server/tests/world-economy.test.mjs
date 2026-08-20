@@ -40,7 +40,7 @@ import { computeFinance, settleMoney, foundingBankFor, econStature, academyUpkee
 import {
   MEDIA_SEASON, SPONSOR_PACKAGES, sponsorSeasonValue, sponsorWinBonus,
   operationsPerRound, prizeFor, PRIZE_PLAYOFF_CHAMP, era2Season, ERA2_DAY,
-  MATCHDAY_NET
+  MATCHDAY_NET, centralInstallment
 } from '../financeconfig.mjs';
 import { FULL_MEMBERS as INIT_FULL } from '../init-world.mjs';
 import { FULL_MEMBERS as CFG_FULL } from '../financeconfig.mjs';
@@ -120,13 +120,22 @@ test('1+2: media money never reads the turnstiles, and a season sums to the gran
   // slot 0 won all 14 and drew the biggest crowds; slot 7 lost all 14. Their
   // media lines are identical anyway - that is the whole point of the line.
   const mediaOf = s => leds[s].filter(l => l.kind === 'media').map(l => l.amount);
-  assert.deepEqual(mediaOf(0), mediaOf(7), 'a full house and an empty one bank the same installment');
+  assert.deepEqual(mediaOf(0).slice(0, ROUNDS), mediaOf(7).slice(0, ROUNDS),
+    'a full house and an empty one bank the same installment');
   for (const c of clubs) {
     const dv = divisions['2'].map(Number).includes(c.slot) ? 2 : 1;
+    const f = fin.find(r => r.slot === c.slot).finance;
     const lines = mediaOf(c.slot);
-    assert.equal(lines.length, ROUNDS, 'slot ' + c.slot + ': one installment per league round, playoffs pay none');
-    assert.equal(lines.reduce((a, b) => a + b, 0), MEDIA_SEASON[dv],
-      'slot ' + c.slot + ': a season of installments IS the division grant, to the dollar');
+    // A ROUND PLAYED IS A ROUND FUNDED. The fourteen league installments still
+    // sum to the grant to the exact dollar - that property is not weakened -
+    // and a play-off round now takes one further ordinary installment, because
+    // it is charged one further ordinary week of wages, operations and academy.
+    assert.equal(lines.length, f.rounds, 'slot ' + c.slot + ': one installment per ROUND PLAYED');
+    assert.equal(lines.slice(0, ROUNDS).reduce((a, b) => a + b, 0), MEDIA_SEASON[dv],
+      'slot ' + c.slot + ': the fourteen league installments ARE the division grant, to the dollar');
+    for (const extra of lines.slice(ROUNDS))
+      assert.equal(extra, centralInstallment(MEDIA_SEASON[dv], ROUNDS + 1, ROUNDS),
+        'slot ' + c.slot + ': a play-off round takes one ordinary round of media');
   }
 });
 
@@ -149,10 +158,15 @@ test('4: the guarantee sums to its share of the signed deal', async () => {
   for (const c of clubs) {
     const f = fin.find(r => r.slot === c.slot).finance;
     const sp = leds[c.slot].filter(l => l.kind === 'sponsor');
-    assert.equal(sp.length, ROUNDS, 'installments on league rounds only');
+    assert.equal(sp.length, f.rounds, 'an installment every round played');
     const G = Math.round(f.sponsorValue * SPONSOR_PACKAGES.balanced.guaranteed);
-    assert.equal(sp.reduce((a, l) => a + l.amount, 0), G,
-      'slot ' + c.slot + ': the season paid the guarantee exactly');
+    assert.equal(sp.slice(0, ROUNDS).reduce((a, l) => a + l.amount, 0), G,
+      'slot ' + c.slot + ': the fourteen league rounds paid the guarantee exactly');
+    // the guarantee travels with the media, on the same law, so a club that
+    // earns a further week is carried through it by both halves of its centre
+    for (const extra of sp.slice(ROUNDS))
+      assert.equal(extra.amount, centralInstallment(G, ROUNDS + 1, ROUNDS),
+        'slot ' + c.slot + ': a play-off round takes one ordinary round of the guarantee');
     assert.equal(f.sponsorPackage, 'balanced', 'nobody picked, so everybody signed the default');
   }
 });
@@ -197,6 +211,71 @@ test('6+7+8: wages, operations and upkeep are charged every round played, at the
     // playoff participants played 16 rounds and paid 16 rounds; the rest 14
     assert.ok(f.rounds === ROUNDS || f.rounds === ROUNDS + 1 || f.rounds === ROUNDS + 2);
   }
+});
+
+test('a play-off week costs a club exactly what an ordinary week costs it', async () => {
+  await settled();
+  // THE INVARIANT, AND WHY IT IS NOT "the champion ends up richer".
+  //
+  // A club that reaches the semi-final plays a fifteenth week: it pays that
+  // week's wages, its club operations and its academy like any other week. The
+  // walk used to pay it no media and no guarantee for that week, so REACHING A
+  // PLAY-OFF WAS BILLED AND NOT FUNDED - and the club that travels to the tie
+  // (the semi-finals are 1v4 and 2v3 with the higher seed hosting, so the third
+  // and fourth seeds are away) took a full week of costs against nothing at
+  // all. Measured on the shipped law: qualifying fourth cost that club
+  // $507,660 for the privilege.
+  //
+  // Comparing champion against runner-up would not catch it - two clubs with
+  // different squads, crowds and finishes can end up any way round for reasons
+  // that have nothing to do with this. What is asserted instead is the thing
+  // that was actually wrong, and it is a statement about ONE club: the money
+  // that arrives in its play-off week, which does not depend on the crowd or
+  // the result, must be the money that arrives in any of its league weeks.
+  //
+  // This fails on the shipped law with the plainest possible message - the
+  // play-off week banks $0 of central money against a league week's full
+  // installment.
+  const seasonRounds = ROUNDS;
+  let checked = 0;
+  for (const c of clubs) {
+    const f = fin.find(r => r.slot === c.slot).finance;
+    if (f.rounds <= seasonRounds) continue;                 // never reached the play-offs
+    const med = leds[c.slot].filter(l => l.kind === 'media').map(l => l.amount);
+    const spn = leds[c.slot].filter(l => l.kind === 'sponsor').map(l => l.amount);
+    const leagueCentre = med[seasonRounds - 1] + spn[seasonRounds - 1];
+    for (let r = seasonRounds; r < f.rounds; r++) {
+      const poCentre = (med[r] || 0) + (spn[r] || 0);
+      assert.equal(poCentre, leagueCentre,
+        'slot ' + c.slot + ', round ' + (r + 1) + ': a play-off week banked $' + poCentre
+        + ' of central money against $' + leagueCentre + ' in an ordinary league week - '
+        + 'the round was charged and not funded');
+      checked++;
+    }
+    // and the costs really were charged for those weeks, which is the other
+    // half of the symmetry: this test would be vacuous if they were not
+    assert.equal(leds[c.slot].filter(l => l.kind === 'wages').length, f.rounds);
+    assert.equal(leds[c.slot].filter(l => l.kind === 'ops').length, f.rounds);
+  }
+  assert.ok(checked >= 6, 'the fixture played play-off rounds to check (' + checked + ')');
+});
+
+test('and end to end: the champion is not made poorer by winning', async () => {
+  await settled();
+  // THE SANITY CHECK, kept alongside the invariant above rather than instead of
+  // it. The fabricated season sends the lower slot through every tie, so slot 0
+  // is champion and slot 1 the beaten finalist; both played sixteen rounds and
+  // both are strong sides, so the comparison is between two clubs that did the
+  // same amount of work and differ by the result.
+  const champ = fin.find(r => r.slot === 0).finance;
+  const runnerUp = fin.find(r => r.slot === 1).finance;
+  assert.equal(champ.rounds, ROUNDS + 2, 'the champion played the semi and the final');
+  assert.equal(runnerUp.rounds, ROUNDS + 2, 'so did the club it beat');
+  const poPrize = leds[0].filter(l => l.kind === 'prize' && /playoff|champions/i.test(l.label));
+  assert.equal(poPrize.length, 1, 'the champions took the champions\' cheque');
+  assert.equal(poPrize[0].amount, PRIZE_PLAYOFF_CHAMP[1], 'at its stated rate');
+  assert.ok(champ.media > runnerUp.media * 0.99,
+    'and the two of them were funded for the same sixteen weeks');
 });
 
 test('9: the installment arithmetic cannot create or destroy a dollar at any season length', () => {
@@ -298,7 +377,14 @@ test('a manager picks a shape and the walk honours it for the season it names', 
   assert.equal(f0.sponsorPackage, 'safe');
   const G = Math.round(f0.sponsorValue * SPONSOR_PACKAGES.safe.guaranteed);
   const led0 = rows.find(r => r.slot === 0).ledger;
-  assert.equal(led0.filter(l => l.kind === 'sponsor').reduce((a, l) => a + l.amount, 0), G);
+  // the fourteen league rounds pay the guarantee exactly, and slot 0's two
+  // play-off weeks take one ordinary installment each - the same law the
+  // media runs on, so a shape cannot drift away from the distribution
+  const sp0 = led0.filter(l => l.kind === 'sponsor');
+  assert.equal(sp0.slice(0, ROUNDS).reduce((a, l) => a + l.amount, 0), G);
+  assert.equal(sp0.length, ROUNDS + 2, 'the champion was funded for all sixteen weeks it played');
+  for (const extra of sp0.slice(ROUNDS))
+    assert.equal(extra.amount, centralInstallment(G, ROUNDS + 1, ROUNDS));
   assert.equal(led0.filter(l => l.kind === 'sponsor-bonus').reduce((a, l) => a + l.amount, 0),
     ROUNDS * sponsorWinBonus(f0.sponsorValue, 'safe'));
   await pool.query(`DELETE FROM sponsor_picks WHERE country_id='eng' AND slot=0`);

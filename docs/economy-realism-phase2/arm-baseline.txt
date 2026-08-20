@@ -1,0 +1,62 @@
+=== ARM: BASELINE (shipped main) ===
+OPS_TOPFLIGHT_ROUND = $60,000 a round ($840,000 a season)
+playoff funding: the model calls the shipped centralInstallment
+
+-- the sixteen seats, five seasons --
+  seat  finish   revenue      cost       NET   after1   after3   after5   admin
+  D1/0       1$11,275,436$10,654,080  $621,356$2,896,356$4,139,068$5,381,780      -
+  D1/1       2 $9,350,647$9,240,000  $110,647$2,201,647$2,422,941$2,644,235      -
+  D1/2       3 $8,119,601$8,739,900 -$620,299$1,424,701 $184,103-$1,292,811      -
+  D1/3       4 $7,369,852$8,722,800-$1,352,948 $646,052-$2,500,000-$2,500,000     s3
+  D1/4       5 $6,644,687$7,107,240 -$462,553$1,490,447 $565,341-$453,782      -
+  D1/5       6 $6,225,589$6,967,240 -$741,651$1,166,349-$376,293-$2,100,000     s5
+  D1/6       7 $5,466,933$7,000,355-$1,533,422 $328,578-$2,140,000-$2,140,000     s3
+  D1/7       8 $5,140,486$6,925,465-$1,784,979  $31,021-$2,180,000-$2,180,000     s3
+  D2/0       1 $6,630,836$5,228,320$1,402,516$3,178,516$5,983,548$8,788,580      -
+  D2/1       2 $5,780,029$5,258,720  $521,309$2,297,309$3,339,927$4,382,545      -
+  D2/2       3 $4,894,034$4,885,500    $8,534$1,784,534$1,801,602$1,818,670      -
+  D2/3       4 $4,530,400$4,932,750 -$402,350$1,373,650 $568,950-$251,667      -
+  D2/4       5 $4,093,113$3,408,720  $684,393$2,460,393$3,829,179$5,197,965      -
+  D2/5       6 $3,824,455$3,382,400  $442,055$2,218,055$3,102,165$3,986,275      -
+  D2/6       7 $3,393,828$3,322,060   $71,768$1,847,768$1,991,304$2,134,840      -
+  D2/7       8 $3,234,261$3,391,780 -$157,519$1,618,481$1,303,443 $988,405      -
+  D1 mean net -$720,481   median -$741,651   losing 6/8
+  D2 mean net $321,338   median $71,768   losing 2/8
+  administration within five seasons: 4/16
+  richest treasury after five: $8,788,580   poorest: -$2,500,000
+
+-- the playoff ladder: the same club, the same league season --
+  outcome                        media   sponsor      gate     prize      cost       NET   step
+  tops the table, no playoff  $2,750,000$1,728,069$2,964,967  $850,000$8,085,000 $1,371,836            
+  loses the semi-final        $2,750,000$1,728,069$3,470,407  $850,000$8,662,500 $1,299,776    -$72,060
+  loses the final             $2,750,000$1,728,069$3,975,847  $850,000$9,240,000 $1,227,716    -$72,060
+  WINS THE FINAL              $2,750,000$1,728,069$3,975,847$1,150,000$9,240,000 $1,527,716   +$300,000
+  CHAMPION vs TOPPING THE TABLE AND GOING HOME: +$155,880
+  a FOURTH-PLACED club, semi-final away: qualifying is worth -$507,660   (missed out $149,841 -> qualified -$357,819)
+  a RUNNER-UP reaching the final (home semi, away final): -$649,560
+
+-- promotion, held fixed (same squad, same finish, one division apart) --
+  D1 net $1,305,264   D2 net -$235,128   PROMOTION WORTH +$1,540,392
+    promoted, no strengthening    net     $814,402
+    promoted, normal +25%         net     $183,100
+    promoted, aggressive +60%     net    -$700,706
+
+-- relegation (same squad, one division down) --
+  stayed up -$1,330,279   relegated -$1,506,356   RELEGATION WORTH -$176,077
+  guaranteed money lost: media -$1,100,000  sponsor -$499,263
+
+-- management archetypes (mid-table finish; payroll is the choice) --
+  div  style              payroll/rd        net     bank after 5
+  D1   frugal x0.75          $221,295    $887,317      $6,389,585
+  D1   normal x1.00          $295,060   -$145,393      $1,226,035
+  D1   aggressive x1.45      $427,837 -$2,026,563     -$2,050,000
+  D2   frugal x0.75          $135,278    $396,160      $3,756,800
+  D2   normal x1.00          $180,370   -$235,128        $600,360
+  D2   aggressive x1.45      $261,537 -$1,371,466     -$2,250,000
+
+-- slot 7, the hardest seat: can normal management survive it? --
+  finish  payroll        net     bank after 5   admin
+  8th, normal payroll      $287,420 -$1,784,979     -$2,180,000      s3
+  8th, frugal x0.80        $229,936   -$968,218     -$2,180,000      s4
+  5th, normal payroll      $287,420   -$193,436        $848,820       -
+  5th, aggressive x1.35    $388,017 -$1,609,203     -$2,050,000      s3
