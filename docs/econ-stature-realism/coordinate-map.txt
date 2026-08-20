@@ -1,0 +1,123 @@
+=== 1. THE LADDER ITSELF ===
+
+  stature(slot):   slot 0 or boss -> 1
+                   slots 1-7      -> 0.86 - 0.035*(s-1)      (division one)
+                   slots 8-15     -> 0.62 - 0.022*(s-8)      (division two)
+  econStature      -> Math.max(0.62, stature(slot, isBoss))
+
+  slot  div       raw   floored   floor bites?
+     0    1     1.000     1.000   no
+     1    1     0.860     0.860   no
+     2    1     0.825     0.825   no
+     3    1     0.790     0.790   no
+     4    1     0.755     0.755   no
+     5    1     0.720     0.720   no
+     6    1     0.685     0.685   no
+     7    1     0.650     0.650   no
+     8    2     0.620     0.620   no
+     9    2     0.598     0.620   YES  +3.7%
+    10    2     0.576     0.620   YES  +7.6%
+    11    2     0.554     0.620   YES  +11.9%
+    12    2     0.532     0.620   YES  +16.5%
+    13    2     0.510     0.620   YES  +21.6%
+    14    2     0.488     0.620   YES  +27.0%
+    15    2     0.466     0.620   YES  +33.0%
+
+=== 4. EVERY CONSUMER, RAW vs FLOORED ===
+
+  A. FOUNDING CAPITAL (era 2)          B. FOUNDING GROUND
+  slot     raw    floored   change      raw   floored   change
+     0$2,275,000 $2,275,000      -      29000     29000      -  
+     1$2,091,000 $2,091,000      -      27000     27000      -  
+     2$2,045,000 $2,045,000      -      27000     27000      -  
+     3$1,999,000 $1,999,000      -      26000     26000      -  
+     4$1,953,000 $1,953,000      -      26000     26000      -  
+     5$1,908,000 $1,908,000      -      25000     25000      -  
+     6$1,862,000 $1,862,000      -      25000     25000      -  
+     7$1,816,000 $1,816,000      -      24000     24000      -  
+     8$1,776,000 $1,776,000      -      24000     24000      -  
+     9$1,747,000 $1,776,000    +1.7%    24000     24000      -  
+    10$1,719,000 $1,776,000    +3.3%    23000     24000    +4.3%
+    11$1,690,000 $1,776,000    +5.1%    23000     24000    +4.3%
+    12$1,661,000 $1,776,000    +6.9%    23000     24000    +4.3%
+    13$1,632,000 $1,776,000    +8.8%    22000     24000    +9.1%
+    14$1,603,000 $1,776,000   +10.8%    22000     24000    +9.1%
+    15$1,574,000 $1,776,000   +12.8%    22000     24000    +9.1%
+
+  C. FOUNDING SUPPORT                  D. SPONSOR STATURE FACTOR
+  slot     raw    floored   change      raw   floored   change
+     0     24240      24240      -     1.1000    1.1000      -  
+     1     20421      20421      -     1.0650    1.0650      -  
+     2     19508      19508      -     1.0562    1.0562      -  
+     3     18612      18612      -     1.0475    1.0475      -  
+     4     17734      17734      -     1.0388    1.0388      -  
+     5     16873      16873      -     1.0300    1.0300      -  
+     6     16032      16032      -     1.0212    1.0212      -  
+     7     15209      15209      -     1.0125    1.0125      -  
+     8     14520      14520      -     1.0050    1.0050      -  
+     9     14024      14520    +3.5%   0.9995    1.0050    +0.6%
+    10     13536      14520    +7.3%   0.9940    1.0050    +1.1%
+    11     13056      14520   +11.2%   0.9885    1.0050    +1.7%
+    12     12585      14520   +15.4%   0.9830    1.0050    +2.2%
+    13     12123      14520   +19.8%   0.9775    1.0050    +2.8%
+    14     11669      14520   +24.4%   0.9720    1.0050    +3.4%
+    15     11225      14520   +29.4%   0.9665    1.0050    +4.0%
+
+  E. WHAT THE CROWD DRIFTS TO (supportTarget) - THE FLOOR NEVER REACHES THIS
+     shown at neutral mood, at the club's own national rank
+  slot   natrank      raw   floored   change   (floored is NOT what the game uses)
+     0         1    30100     30100      -  
+     1         2    26982     26982      -  
+     2         3    25881     25881      -  
+     3         4    24792     24792      -  
+     4         5    23715     23715      -  
+     5         6    22651     22651      -  
+     6         7    21600     21600      -  
+     7         8    20562     20562      -  
+     8         9    19617     19617      -  
+     9        10    18805     19150    +1.8%
+    10        11    18000     18683    +3.8%
+    11        12    17200     18217    +5.9%
+    12        13    16406     17750    +8.2%
+    13        14    15619     17283   +10.7%
+    14        15    14837     16817   +13.3%
+    15        16    14062     16350   +16.3%
+
+  F. A BOT BOARD'S AMBITION (the deficit it will carry)
+  slot   floored-arm   raw-arm   note
+     0       -18.0%    -18.0%   identical - Math.max(0,..) already clamps below the floor
+     1       -12.1%    -12.1%   identical - Math.max(0,..) already clamps below the floor
+     2       -10.6%    -10.6%   identical - Math.max(0,..) already clamps below the floor
+     3        -9.2%     -9.2%   identical - Math.max(0,..) already clamps below the floor
+     4        -7.7%     -7.7%   identical - Math.max(0,..) already clamps below the floor
+     5        -6.2%     -6.2%   identical - Math.max(0,..) already clamps below the floor
+     6        -4.7%     -4.7%   identical - Math.max(0,..) already clamps below the floor
+     7        -3.3%     -3.3%   identical - Math.max(0,..) already clamps below the floor
+     8        -2.0%     -2.0%   identical - Math.max(0,..) already clamps below the floor
+     9        -2.0%     -2.0%   identical - Math.max(0,..) already clamps below the floor
+    10        -2.0%     -2.0%   identical - Math.max(0,..) already clamps below the floor
+    11        -2.0%     -2.0%   identical - Math.max(0,..) already clamps below the floor
+    12        -2.0%     -2.0%   identical - Math.max(0,..) already clamps below the floor
+    13        -2.0%     -2.0%   identical - Math.max(0,..) already clamps below the floor
+    14        -2.0%     -2.0%   identical - Math.max(0,..) already clamps below the floor
+    15        -2.0%     -2.0%   identical - Math.max(0,..) already clamps below the floor
+
+=== 5. HOW MUCH INFORMATION THE FLOOR DESTROYS ===
+
+  top:bottom stature ratio, all sixteen seats   raw 2.146   floored 1.613
+  top:bottom stature ratio, division two only   raw 1.330   floored 1.000   <- the entire second-division spread is erased
+
+  the floor removes 100% of the coordinate spread inside division two,
+  and 29% across the world (the top half is untouched).
+
+  WHAT THAT IS WORTH, per club, on the era-2 economy:
+  slot   founding bank   founding supp   sponsor/season(mid-table D2)   TOTAL one-off + recurring
+     8              $0+              0                             $0
+     9         $29,000+            496                         $6,524
+    10         $57,000+            984                        $13,048
+    11         $86,000+           1464                        $19,572
+    12        $115,000+           1935                        $26,096
+    13        $144,000+           2397                        $32,619
+    14        $173,000+           2851                        $39,143
+    15        $202,000+           3295                        $45,667
+  D2 total        $806,000                                       $182,669  per season
