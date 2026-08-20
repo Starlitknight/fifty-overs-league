@@ -1,0 +1,180 @@
+applied 001-init.sql
+applied 002-result-canonical.sql
+applied 003-read-view.sql
+applied 004-joinable.sql
+applied 005-orders-visibility.sql
+applied 006-hour-before-lock.sql
+applied 007-club-names.sql
+applied 008-auto-claim.sql
+applied 009-friendlies.sql
+applied 010-friendly-scheduling.sql
+applied 011-friendly-detail.sql
+applied 012-living-players.sql
+applied 013-nets-identity-money.sql
+applied 014-flagship-clubs.sql
+applied 015-club-dossier.sql
+applied 016-club-card-numbers.sql
+applied 017-manager-name.sql
+applied 018-academy.sql
+applied 019-colts.sql
+applied 020-economy.sql
+applied 021-debt-cap.sql
+applied 022-invitationals.sql
+applied 023-nations.sql
+applied 024-market.sql
+applied 025-match-cards.sql
+applied 026-thirty-day-season.sql
+applied 027-national-squad.sql
+applied 028-match-ratings.sql
+applied 029-world-generation.sql
+applied 030-newcomer-parity.sql
+applied 031-pyramid.sql
+applied 032-pyramid-clock.sql
+applied 033-fa-cup-comp.sql
+applied 034-founding-name.sql
+applied 035-friendly-where.sql
+applied 036-ledger.sql
+applied 037-club-events.sql
+applied 038-transfer-history.sql
+applied 039-season-of-day.sql
+applied 040-youth-academy.sql
+applied 041-colts-cup.sql
+applied 042-open-market.sql
+applied 043-market-no-doubles.sql
+applied 044-absent-patch-twins.sql
+applied 045-match-logs.sql
+applied 046-nets-report.sql
+applied 047-broadcast-embargo.sql
+applied 048-friendly-broadcast.sql
+applied 049-friendly-two-hours.sql
+applied 050-scouts-fog.sql
+applied 051-head-coach.sql
+applied 052-market-hammer.sql
+applied 053-bidder-address.sql
+applied 054-three-percent-law.sql
+applied 055-card-stretch.sql
+applied 056-no-coach.sql
+applied 057-allrounder-card.sql
+applied 058-academy-ten-nets-book.sql
+applied 059-the-boys-train.sql
+applied 060-notifications.sql
+applied 061-card-parity.sql
+applied 062-pk-num-no-helper.sql
+applied 063-world-generation-public.sql
+applied 064-colt-carries-his-progress.sql
+applied 065-a-fee-is-priced-in-wages.sql
+applied 066-commentary-keeps-the-season.sql
+applied 067-auto-bid-is-the-umpires-sum.sql
+applied 068-the-posted-scout.sql
+applied 069-the-bell-keeps-the-broadcast-clock.sql
+applied 070-the-boys-leave-quietly.sql
+applied 071-the-bell-clears-what-it-showed.sql
+applied 072-the-outbid-ask-retires.sql
+applied 073-the-turnstile-is-yours.sql
+applied 074-a-price-for-every-sunday.sql
+applied 075-the-boys-go-straight-up.sql
+applied 076-the-result-opens-the-report.sql
+applied 077-the-friendly-opens-its-book.sql
+applied 078-the-exhibition-says-who-won.sql
+applied 079-a-deal-names-both-ends.sql
+applied 080-the-register-counts-in-real-seasons.sql
+applied 081-a-story-reaches-every-page.sql
+applied 082-a-rival-wears-the-same-stars.sql
+applied 083-the-home-club-calls-the-pitch.sql
+applied 084-the-hands-get-their-own-scale.sql
+applied 085-the-gloves-cross-the-wire.sql
+applied 086-the-money-shows-the-moment-it-moves.sql
+applied 087-a-tour-has-a-scorecard-too.sql
+applied 088-a-tour-is-watched-before-it-is-read.sql
+applied 089-a-cricketer-is-not-his-name.sql
+applied 090-the-public-card-says-who-he-is.sql
+applied 091-the-hands-a-man-plays-with.sql
+applied 092-a-club-carries-what-its-eleven-is-worth.sql
+applied 093-the-roster-is-not-a-biography.sql
+applied 094-a-life-is-not-kit.sql
+applied 095-a-country-remembers-where-it-got-to.sql
+applied 096-one-paper-the-whole-world-reads.sql
+applied 097-one-card-on-both-sides-of-the-wire.sql
+applied 098-the-money-moves-on-the-canonical-card.sql
+applied 099-a-cricketer-can-be-better-than-ninety-nine.sql
+applied 100-the-sponsor-offers-three-deals.sql
+applied 101-a-wage-is-paid-on-the-day.sql
+applied 102-the-card-is-what-he-is-worth-today.sql
+
+CLUB-SCALE OPERATIONS - PRODUCTION SMOKE
+==============================================================================
+
+the law as shipped:
+   $11,700 base + seats x $3.1 + following x $2 + (D1 ? $30,000)
+   era line ERA2_DAY = 42; this fixture opens on day 101 (era 2: true)
+
+1. ALL FOUR CONSUMERS AGREE, CLUB BY CLUB
+
+   slot  div    seats  founding      round-1 walk         law   |   now    document         bot         law
+   ------------------------------------------------------------------------------------------------
+      0    1    29000     24240     $180,080    $180,080   |  37051    $205,702    $205,702    $205,702
+      1    1    27000     20421     $166,242    $166,242   |  31456    $188,312    $188,312    $188,312
+      2    1    27000     19508     $164,416    $164,416   |  27656    $180,712    $180,712    $180,712
+      3    1    26000     18612     $159,524    $159,524   |  24734    $171,768    $171,768    $171,768
+      4    1    26000     17734     $157,768    $157,768   |  20047    $162,394    $162,394    $162,394
+      5    1    25000     16873     $152,946    $152,946   |  17029    $153,258    $153,258    $153,258
+      6    1    25000     16032     $151,264    $151,264   |  14658    $148,516    $148,516    $148,516
+      7    1    24000     15209     $146,518    $146,518   |   9953    $136,006    $136,006    $136,006
+      8    2    24000     14520     $115,140    $115,140   |  29616    $145,332    $145,332    $145,332
+      9    2    24000     14520     $115,140    $115,140   |  25662    $137,424    $137,424    $137,424
+     10    2    24000     14520     $115,140    $115,140   |  22289    $130,678    $130,678    $130,678
+     11    2    24000     14520     $115,140    $115,140   |  20707    $127,514    $127,514    $127,514
+     12    2    24000     14520     $115,140    $115,140   |  16269    $118,638    $118,638    $118,638
+     13    2    24000     14520     $115,140    $115,140   |  13376    $112,852    $112,852    $112,852
+     14    2    24000     14520     $115,140    $115,140   |   9406    $104,912    $104,912    $104,912
+     15    2    24000     14520     $115,140    $115,140   |   6775     $99,650     $99,650     $99,650
+
+   ok    all four consumers agree on every club (16 of 16)
+
+2. NO MISSING-SUPPORTER FALLBACK
+
+   ok    no club is charged as though it had no following at all
+         the club term runs $13,550 to $74,102 a round
+   ok    and it genuinely separates clubs (5.47x across the ladder)
+
+3. NO DUPLICATE OPERATIONS CHARGE
+
+   ok    no club is charged operations twice in one round
+   ok    every club is charged the same number of rounds (14)
+   ok    and that number is the 14 rounds it played
+
+4. THE PARTS ARE THE WHOLE, AND THE PREMIUM IS THE PREMIUM
+
+   ok    the served parts sum to the charged rate for every club
+   ok    the division premium is exactly $30,000 at every club
+
+5. THE REFERENCE CASES, EXACTLY
+
+   bottom D2   24,000 seats, 12,675 following, D2   $111,450
+   flagship    29,000 seats, 37,176 following, D1   $205,952
+   ok    bottom D2 is exactly $111,450
+   ok    flagship is exactly $205,952
+
+==============================================================================
+OPS SMOKE PASS - all four consumers agree, no fallback, no double charge
+
+PRODUCTION, AT THE MOMENT OF THIS SHIP
+======================================
+Read live from the published world (world_snapshots, league/*):
+
+   all 16 nations   season 1, start_day 14
+   ERA2_DAY = 42    14 < 42, so every club in production is ERA 1
+   world day 17     every snapshot - league, stats, market, gazette - agrees
+
+The operations line does not exist in era 1: the walk charges it inside
+`if (curEra2)`, and botMoney short-circuits to 'healthy' before it can reach
+operationsPerRound at all. So this change is INERT in the production ledger
+today and takes effect at the first season that opens on or after day 42.
+
+That is not an assumption. The shipped contract holds it:
+
+   world-economy: "the club term never reaches a world settling under era 1"
+   ok 1 - # pass 1, # fail 0
+
+and it first asserts the era-1 clubs carry a real following (> 4,000), so the
+zero it then demands is the era gate speaking rather than an empty world.
