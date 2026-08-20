@@ -84,12 +84,35 @@ export function seasonOf(opts) {
     support: supIn, pkg = SPONSOR_DEFAULT, statOverride = null,
     gateMult = 1, mediaMult = 1, sponsorMult = 1, opsMult = 1,
     seed = 1, bossOpponents = 1, topOpponents = 3,
-    playoffRounds = 0, playoffWin = false, playoffHome = null
+    playoffRounds = 0, playoffWin = false, playoffHome = null,
+    // THE CROWD READS A DIFFERENT LADDER FROM THE SPONSOR, and modelling them
+    // on one ladder is the single biggest error this tool ever carried. See
+    // the block below `statRaw`.
+    posCountry: posCountryIn = null, clubsInCountry = 2 * clubsInDiv,
+    statRawOverride = null
   } = opts;
 
   const member = isFullMember(country);
   const natF = member ? 1 : ASSOC_POOL, natOps = member ? 1 : OPS_ASSOC;
   const stat = statOverride == null ? econStature(slot, isBoss) : statOverride;
+  // TWO LADDERS, AND THE MODEL USED TO WALK ONE. economy.mjs stores the club's
+  // RAW stature on the settle row (`stature: stature(c.slot, c.is_boss)`) and
+  // hands THAT to supportTarget, while the sponsor and every founding
+  // coordinate are priced off the FLOORED econStature. The floor therefore
+  // never reaches the crowd at all, and a model that floors the crowd invents
+  // support the game does not grant - most of it in Division Two, which is
+  // precisely where this tool's conclusions about Division Two came from.
+  const statRaw = statRawOverride == null
+    ? (statOverride == null ? stature(slot, isBoss) : statOverride) : statRawOverride;
+  // ...and the crowd reads the NATIONAL table, not the divisional one. The
+  // walk builds `posMap()` over `clubs` - all sixteen of a country - and
+  // passes `N = clubs.length` to both moodOf and supportTarget. A second-
+  // division club that finishes fifth of eight is thirteenth of sixteen to
+  // its own supporters, and modelling it as fifth of eight hands it another
+  // club's following. The sponsor and the prize table stay divisional,
+  // because those the walk really does compute per division.
+  const posCountry = posCountryIn == null
+    ? (div === 1 ? pos : clubsInDiv + pos) : posCountryIn;
   const seats = seatsIn == null ? foundingSeats(slot, isBoss) : seatsIn;
   let support = supIn == null ? foundingSupport(slot, isBoss) : supIn;
   let bank = bank0 == null ? foundingBankFor(slot, isBoss, true) : bank0;
@@ -110,20 +133,34 @@ export function seasonOf(opts) {
   const last5 = [0, 1, 2].map(() => 0).concat([]);   // rebuilt each round below
 
   const out = {
-    slot, div, stat, seats, support0: support, bank0: bank, spV, spG, spWin,
+    slot, div, stat, statRaw, posCountry, seats, support0: support, bank0: bank, spV, spG, spWin,
     media: 0, sponsor: 0, sponsorBonus: 0, gate: 0, prize: 0,
     wages: 0, ops: 0, upkeep: 0, interest: 0, writtenOff: 0,
     att: [], minBank: bank, adminRounds: 0
   };
-  let mood = moodOf([], pos, clubsInDiv);
+  let mood = moodOf([], posCountry, clubsInCountry);
   const form = [];
   for (let r = 1; r <= rounds; r++) {
     // a result consistent with the finish: wins spread evenly through the year
     const won = ((r * wins) % rounds) < wins;
-    form.push(won ? 2 : (r % 5 === 0 ? 1 : 0));
+    // A LOSS IS A LOSS. This used to award a tie every fifth round, which
+    // hands a club points it never took: a winless side came out of the model
+    // with a mood - and therefore a following and a gate - it has no way to
+    // earn. Measured against a settled world it inflated the bottom seat's
+    // support by 25% and its crowd by 24%, and the bottom seat is exactly the
+    // club this phase is about. Ties are real but they are one match in
+    // fourteen, not one in five; the model does not invent them.
+    form.push(won ? 2 : 0);
     while (form.length > 5) form.shift();
-    mood = moodOf(form, pos, clubsInDiv);
-    support = Math.round(support + (supportTarget(mood, pos, clubsInDiv, stat) - support) * 0.25);
+    mood = moodOf(form, posCountry, clubsInCountry);
+    // the shipped drift: eighteen percent of the gap a round, and a following
+    // that can neither vanish nor become a country. economy.mjs:
+    //   c.sup = clamp(round(c.sup + (t - c.sup) * 0.18), 4000, 60000)
+    // The model used a quarter and no clamp, which let it converge on a
+    // target the game reaches far more slowly - and let Division Two's
+    // smallest clubs fall below a following the game will not take off them.
+    support = Math.min(60000, Math.max(4000, Math.round(
+      support + (supportTarget(mood, posCountry, clubsInCountry, statRaw) - support) * 0.18)));
 
     // HOME ROUNDS TAKE A GATE. Who visits matters, so the flagship and the
     // leaders are spread across the home fixtures rather than averaged away.
@@ -165,18 +202,16 @@ export function seasonOf(opts) {
       }
     }
   }
-  // THE PLAYOFF ROUNDS ARE UNFUNDED, AND THAT IS THE LAW AND NOT A GAP IN THIS
-  // MODEL. economy.mjs charges wages, club operations and the academy for
-  // EVERY round a club plays - `for (const slot of playing)` - and pays the
-  // media installment and the sponsor's guarantee only for LEAGUE rounds
-  // (`rdNo >= 1 && rdNo <= curR`, and curR is 14). Rounds 15 and 16 are the
-  // semi-final and the final. A club that reaches them pays two more rounds of
-  // its entire cost base out of a season's income that has stopped.
-  //
-  // Read off the settled world rather than off the source: Surrey banked club
-  // operations for all 23 of its rounds at exactly its Division One rate while
-  // its media came to 2,750,000 + 7/14 x 2,750,000 to the dollar. Sixteen
-  // rounds played in season one; fourteen of them paid.
+  // THE PLAYOFF ROUNDS ARE FUNDED, and this comment used to say the opposite.
+  // It was true when it was written: the walk paid the media installment and
+  // the sponsor's guarantee only for `rdNo >= 1 && rdNo <= curR`, so a club
+  // that reached the semi-final paid two more rounds of its entire cost base
+  // out of a season's income that had stopped. Economy Realism Phase 2 fixed
+  // that - `centralInstallment` now pays one ordinary round's central money
+  // for any round past the fourteenth - and this model calls that shipped law
+  // rather than copying it, so the code below was correct across the change
+  // and only the prose was left behind. Corrected here so the next reader is
+  // not told a law that no longer exists.
   // WHO HOSTS A PLAYOFF. tick.mjs fixturesFor: the semi-finals are 1v4 and 2v3
   // with the HIGHER SEED HOSTING, and the final is the two winners with the
   // higher table seed hosting again. So the club that tops the fourteen hosts
