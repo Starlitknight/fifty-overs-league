@@ -44,9 +44,17 @@ const ARMS = {
   sup2: { law: scaled({ base: 48900, perSeat: 1.55, perSupporter: 2 }),
     note: '$48,900 + seats x $1.55 + support x $2.00' },
   sup3: { law: scaled({ base: 29000, perSeat: 1.55, perSupporter: 3 }),
-    note: '$29,000 + seats x $1.55 + support x $3.00' }
+    note: '$29,000 + seats x $1.55 + support x $3.00' },
+  // THE VARIANT THAT LEAVES THE GROUND ALONE. The candidate halves the
+  // per-seat term, and halving it is a real change to what a stand costs to
+  // run, so the alternative that keeps $3.10 and pays for the supporter term
+  // out of the base alone has to be measured rather than dismissed. Its base
+  // solves to $11,700, which is the objection to it: a club that exists would
+  // cost almost nothing fixed, and the travelling party alone is worth more.
+  sup2seat31: { law: scaled({ base: 11700, perSeat: 3.1, perSupporter: 2 }),
+    note: '$11,700 + seats x $3.10 + support x $2.00' }
 };
-const wanted = arg('arms', 'shipped,sup2,sup3').split(',').filter(a => ARMS[a]);
+const wanted = arg('arms', 'shipped,sup2,sup3,sup2seat31').split(',').filter(a => ARMS[a]);
 
 const rng = seed => { let x = seed >>> 0 || 1; return () => { x ^= x << 13; x ^= x >>> 17; x ^= x << 5; return ((x >>> 0) % 1e6) / 1e6; }; };
 

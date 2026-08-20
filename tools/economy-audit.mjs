@@ -169,6 +169,12 @@ export function seasonOf(opts) {
     // The model used a quarter and no clamp, which let it converge on a
     // target the game reaches far more slowly - and let Division Two's
     // smallest clubs fall below a following the game will not take off them.
+    // THE FOLLOWING A CLUB IS CHARGED FOR IS THE ONE IT HAD. economy.mjs
+    // updates c.sup at the END of the round loop, after every bill is taken,
+    // so a candidate operations law that reads the following must read it as
+    // it stood when the round began - a club is not billed this week for
+    // supporters this week's result won it. Captured before the drift.
+    const supAtRoundStart = support;
     support = Math.min(60000, Math.max(4000, Math.round(
       support + (supportTarget(mood, posCountry, clubsInCountry, statRaw) - support) * 0.18)));
 
@@ -205,7 +211,8 @@ export function seasonOf(opts) {
     // size for a whole season - which is the difference between "success
     // gradually costs more to run" and "nothing a club does moves this line".
     const opsR = opsLaw
-      ? Math.round(opsLaw({ seats, div, natOps, support, stat, statRaw, slot, isBoss }) * opsMult)
+      ? Math.round(opsLaw({ seats, div, natOps, support: supAtRoundStart,
+        stat, statRaw, slot, isBoss }) * opsMult)
       : ops;
     out.ops += opsR; bank -= opsR;
     out.upkeep += up; bank -= up;

@@ -1,0 +1,56 @@
+SECTION 14: WHAT GROWTH COSTS, STEP BY STEP
+
+  A club growing its FOLLOWING (ground held at 24,000, Division Two)
+  support    shipped ops   candidate ops   marginal per 1,000 more supporters
+    6,000      $132,400         $98,100
+   10,000      $132,400        $106,100                        $2,000
+   14,000      $132,400        $114,100                        $2,000
+   18,000      $132,400        $122,100                        $2,000
+   22,000      $132,400        $130,100                        $2,000
+   26,000      $132,400        $138,100                        $2,000
+   30,000      $132,400        $146,100                        $2,000
+   34,000      $132,400        $154,100                        $2,000
+   38,000      $132,400        $162,100                        $2,000
+
+  A club building its GROUND (following held at 15,000, Division Two)
+  seats      shipped ops   candidate ops   marginal per 1,000 more seats
+   15,000      $104,500        $102,150
+   20,000      $120,000        $109,900                    $1,550
+   25,000      $135,500        $117,650                    $1,550
+   30,000      $151,000        $125,400                    $1,550
+   35,000      $166,500        $133,150                    $1,550
+   40,000      $182,000        $140,900                    $1,550
+   45,000      $197,500        $148,650                    $1,550
+
+  Both terms are linear in their coordinate, so the marginal cost is a
+  constant and there is no size at which the bill jumps. The following
+  itself moves 18% of its gap a round, so nothing steps either.
+
+SECTIONS 7 AND 15: MANAGEMENT ARCHETYPES, annual net
+
+club scale     archetype       shipped      candidate       change
+------------------------------------------------------------------
+flagship       FRUGAL            $993,805       $929,629         -64k
+               NORMAL            $934,870       $780,007        -155k
+               AGGRESSIVE     -$2,256,316    -$2,418,843        -163k
+
+large D1       FRUGAL            $182,823       $265,132         +82k
+               NORMAL            $105,407       $102,049          -3k
+               AGGRESSIVE       -$924,716    -$1,020,440         -96k
+
+small D1       FRUGAL           -$535,195      -$314,533        +221k
+               NORMAL         -$1,556,512    -$1,330,377        +226k
+               AGGRESSIVE     -$2,844,656    -$2,685,839        +159k
+
+mid D2         FRUGAL           -$608,433      -$308,916        +300k
+               NORMAL           -$581,882      -$368,261        +214k
+               AGGRESSIVE     -$1,110,219      -$961,094        +149k
+
+minnow D2      FRUGAL           -$189,809       $179,598        +369k
+               NORMAL           -$529,316      -$159,908        +369k
+               AGGRESSIVE       -$808,157      -$487,289        +321k
+
+  The law is charged on the FOLLOWING, which no amount of spending buys
+  directly - so an aggressive manager still meets the bill he ran up. That
+  is the property section 7 asks for, and it is why operations was the
+  right line to move rather than revenue.
