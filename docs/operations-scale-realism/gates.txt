@@ -1,0 +1,36 @@
+=== FINAL GATES, claude/operations-scale-realism ===
+
+server suite (--test-concurrency=1, all files):
+  duration_ms: 0.581297
+  type: 'test'
+  ...
+1..441
+# tests 441
+# suites 0
+# pass 441
+# fail 0
+# cancelled 0
+# skipped 0
+# todo 0
+# duration_ms 1552505.178646
+
+engine suite:
+  ...
+1..489
+# tests 489
+# suites 0
+# pass 488
+# fail 0
+# cancelled 0
+# skipped 1
+# todo 0
+# duration_ms 1241529.914749
+
+calibration-check (run alone):
+international: 300/300 matches complete (52s)
+flagship_clubs: 300/300 matches complete (104s)
+division_two: 300/300 matches complete (156s)
+international_vs_division_two: 300/300 matches complete (209s)
+
+SMOKE RUN (CAL_N set) — not written to the golden file.
+calibration-check PASS — engine matches calibration-golden.json (engineVersion v3, 300 matches/cell).
