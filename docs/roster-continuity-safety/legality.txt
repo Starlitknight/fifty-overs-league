@@ -11,11 +11,11 @@ WHAT THE ENGINE REQUIRES OF A SQUAD
    13 men                                        PLAYS
    12 men                                        PLAYS
    11 men                                        PLAYS
-   10 men                                        FAILS  Cannot read properties of undefined (reading 'p')
-   9 men                                         FAILS  Cannot read properties of undefined (reading 'p')
-   8 men                                         FAILS  Cannot read properties of undefined (reading 'p')
-   7 men                                         FAILS  Cannot read properties of undefined (reading 'p')
-   6 men                                         FAILS  Cannot read properties of undefined (reading 'p')
+   10 men                                        CRASHES  Cannot read properties of undefined (reading 'p')
+   9 men                                         CRASHES  Cannot read properties of undefined (reading 'p')
+   8 men                                         CRASHES  Cannot read properties of undefined (reading 'p')
+   7 men                                         CRASHES  Cannot read properties of undefined (reading 'p')
+   6 men                                         CRASHES  Cannot read properties of undefined (reading 'p')
 
    the largest squad that FAILS is 10 men
 

@@ -28,17 +28,22 @@ const opp = host.derive(host.genSquad('legal|opp', 'England', 'balanced', 'gener
 const roleOf = p => (p.keeper ? 'keeper'
   : (p.bowlTypeFull && p.bowlTypeFull !== 'none' ? 'bowler' : 'bat'));
 
+// A TIE IS NOT A CRASH, and the first cut of this file could not tell them
+// apart. It scored a case as passing only if the result carried a WINNER, so a
+// tied match - engine returns winner: null, which is a perfectly good cricket
+// outcome - was reported as a failure. That is how a twelve-man side came to be
+// listed as crashing in an early sweep when what it had actually done was tie.
+// The two outcomes are separated here: only a THROW is a crash.
 const tryMatch = (squad, label) => {
-  let ok = false, why = '';
+  let out = 'crash', why = '';
   try {
     const r = JSON.parse(host.runMatch(
       { name: 'Probe', players: squad }, { name: 'Opp', players: opp },
       'fair', 4242, {}, 'Sunny', false));
-    ok = !!(r && r.winner);
-    if (!ok) why = 'returned no result';
-  } catch (e) { why = e.message.slice(0, 60); }
-  L('   ' + label.padEnd(46) + (ok ? 'PLAYS' : 'FAILS  ' + why));
-  return ok;
+    out = r ? (r.winner ? 'PLAYS' : 'PLAYS (tied)') : 'no result';
+  } catch (e) { why = e.message.slice(0, 60); out = 'CRASHES'; }
+  L('   ' + label.padEnd(46) + out + (why ? '  ' + why : ''));
+  return out.startsWith('PLAYS');
 };
 
 L('');

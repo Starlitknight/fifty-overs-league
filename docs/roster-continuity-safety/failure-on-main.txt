@@ -1,0 +1,128 @@
+applied 001-init.sql
+applied 002-result-canonical.sql
+applied 003-read-view.sql
+applied 004-joinable.sql
+applied 005-orders-visibility.sql
+applied 006-hour-before-lock.sql
+applied 007-club-names.sql
+applied 008-auto-claim.sql
+applied 009-friendlies.sql
+applied 010-friendly-scheduling.sql
+applied 011-friendly-detail.sql
+applied 012-living-players.sql
+applied 013-nets-identity-money.sql
+applied 014-flagship-clubs.sql
+applied 015-club-dossier.sql
+applied 016-club-card-numbers.sql
+applied 017-manager-name.sql
+applied 018-academy.sql
+applied 019-colts.sql
+applied 020-economy.sql
+applied 021-debt-cap.sql
+applied 022-invitationals.sql
+applied 023-nations.sql
+applied 024-market.sql
+applied 025-match-cards.sql
+applied 026-thirty-day-season.sql
+applied 027-national-squad.sql
+applied 028-match-ratings.sql
+applied 029-world-generation.sql
+applied 030-newcomer-parity.sql
+applied 031-pyramid.sql
+applied 032-pyramid-clock.sql
+applied 033-fa-cup-comp.sql
+applied 034-founding-name.sql
+applied 035-friendly-where.sql
+applied 036-ledger.sql
+applied 037-club-events.sql
+applied 038-transfer-history.sql
+applied 039-season-of-day.sql
+applied 040-youth-academy.sql
+applied 041-colts-cup.sql
+applied 042-open-market.sql
+applied 043-market-no-doubles.sql
+applied 044-absent-patch-twins.sql
+applied 045-match-logs.sql
+applied 046-nets-report.sql
+applied 047-broadcast-embargo.sql
+applied 048-friendly-broadcast.sql
+applied 049-friendly-two-hours.sql
+applied 050-scouts-fog.sql
+applied 051-head-coach.sql
+applied 052-market-hammer.sql
+applied 053-bidder-address.sql
+applied 054-three-percent-law.sql
+applied 055-card-stretch.sql
+applied 056-no-coach.sql
+applied 057-allrounder-card.sql
+applied 058-academy-ten-nets-book.sql
+applied 059-the-boys-train.sql
+applied 060-notifications.sql
+applied 061-card-parity.sql
+applied 062-pk-num-no-helper.sql
+applied 063-world-generation-public.sql
+applied 064-colt-carries-his-progress.sql
+applied 065-a-fee-is-priced-in-wages.sql
+applied 066-commentary-keeps-the-season.sql
+applied 067-auto-bid-is-the-umpires-sum.sql
+applied 068-the-posted-scout.sql
+applied 069-the-bell-keeps-the-broadcast-clock.sql
+applied 070-the-boys-leave-quietly.sql
+applied 071-the-bell-clears-what-it-showed.sql
+applied 072-the-outbid-ask-retires.sql
+applied 073-the-turnstile-is-yours.sql
+applied 074-a-price-for-every-sunday.sql
+applied 075-the-boys-go-straight-up.sql
+applied 076-the-result-opens-the-report.sql
+applied 077-the-friendly-opens-its-book.sql
+applied 078-the-exhibition-says-who-won.sql
+applied 079-a-deal-names-both-ends.sql
+applied 080-the-register-counts-in-real-seasons.sql
+applied 081-a-story-reaches-every-page.sql
+applied 082-a-rival-wears-the-same-stars.sql
+applied 083-the-home-club-calls-the-pitch.sql
+applied 084-the-hands-get-their-own-scale.sql
+applied 085-the-gloves-cross-the-wire.sql
+applied 086-the-money-shows-the-moment-it-moves.sql
+applied 087-a-tour-has-a-scorecard-too.sql
+applied 088-a-tour-is-watched-before-it-is-read.sql
+applied 089-a-cricketer-is-not-his-name.sql
+applied 090-the-public-card-says-who-he-is.sql
+applied 091-the-hands-a-man-plays-with.sql
+applied 092-a-club-carries-what-its-eleven-is-worth.sql
+applied 093-the-roster-is-not-a-biography.sql
+applied 094-a-life-is-not-kit.sql
+applied 095-a-country-remembers-where-it-got-to.sql
+applied 096-one-paper-the-whole-world-reads.sql
+applied 097-one-card-on-both-sides-of-the-wire.sql
+applied 098-the-money-moves-on-the-canonical-card.sql
+applied 099-a-cricketer-can-be-better-than-ninety-nine.sql
+applied 100-the-sponsor-offers-three-deals.sql
+applied 101-a-wage-is-paid-on-the-day.sql
+applied 102-the-card-is-what-he-is-worth-today.sql
+
+THE SHIPPED LIFECYCLE, TAKING A CLUB BELOW A SIDE
+====================================================================================
+
+   BEFORE
+      club                 eng/15
+      squad size           12
+      men at 37, retiring   3
+
+   THE MARKET, for a club in this state
+      posture              critical  (buys: none)
+      botBid on a cheap man 0   <- it will not sign anybody, at any price
+
+   AFTER ageYouth
+      retired              3 across the country
+      squad size           9
+      emergency signings   the field does not exist on this law
+
+   A SEASON OF FIXTURES (14 rounds) FOR THAT SQUAD
+      squad handed to engine 9 men
+      played                 5   tied 0
+      CRASHED                9 of 14   Cannot read properties of undefined (reading '
+
+====================================================================================
+REPRODUCED: the shipped rollover left eng/15 with 9 men, and 9 of its
+            14 fixtures cannot be played at all. This is the defect, on the real path.
