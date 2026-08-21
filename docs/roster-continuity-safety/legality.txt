@@ -1,0 +1,41 @@
+
+WHAT THE ENGINE REQUIRES OF A SQUAD
+==============================================================================
+
+   the dealt squad: 15 men, 2 keeper(s), 7 bowler(s), 6 batter(s)
+
+1. SQUAD SIZE, men removed worst-first
+
+   15 men                                        PLAYS
+   14 men                                        PLAYS
+   13 men                                        PLAYS
+   12 men                                        PLAYS
+   11 men                                        PLAYS
+   10 men                                        FAILS  Cannot read properties of undefined (reading 'p')
+   9 men                                         FAILS  Cannot read properties of undefined (reading 'p')
+   8 men                                         FAILS  Cannot read properties of undefined (reading 'p')
+   7 men                                         FAILS  Cannot read properties of undefined (reading 'p')
+   6 men                                         FAILS  Cannot read properties of undefined (reading 'p')
+
+   the largest squad that FAILS is 10 men
+
+2. ROLE LEGALITY at eleven men
+
+   eleven, normal shape                          PLAYS
+   eleven, NO keeper (11 men)                    PLAYS
+   eleven, NO specialist bowler (11 men)         PLAYS
+   eleven, batters only (11 men)                 PLAYS
+
+3. WHAT THE SHIPPED CODE ALREADY BELIEVES
+==============================================================================
+
+   market.mjs  SQUAD_FLOOR   13    guards SELLING only, in two places:
+                                     :210 a bot will not list below it
+                                     :644 a sale will not complete below it
+   market.mjs  SQUAD_CEILING 18    nobody hoards beyond this
+   youth.mjs   RETIRE_AT     38    and retirement checks NEITHER
+
+   That asymmetry is the defect in one line: a club cannot SELL its way
+   below thirteen, and nothing at all stops it RETIRING its way below
+   eleven.
+
