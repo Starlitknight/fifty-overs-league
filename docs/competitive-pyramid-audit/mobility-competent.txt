@@ -1,0 +1,45 @@
+
+3 + 4 + 14. MOBILITY, WITH REAL CRICKET AND PERSISTENT CLUBS
+================================================================================================
+   3 nations, 10 seasons, "competent" management,
+   every fixture a real match through the shipped engine
+
+   BY STARTING SEAT - the club dealt that seat, followed wherever it went
+
+   seat  tier       XI s0   XI s10   promoted   ever D1   1st up   yrs D1   best finish
+   ---------------------------------------------------------------------------------------------
+      0  flagship     74.0    62.3        0/3       3/3        -     10.0          D1 1
+      1  d1a          68.5    56.0        1/3       3/3      5.0      9.0          D1 1
+      2  d1a          69.3    55.6        1/3       3/3     10.0      9.7          D1 1
+      3  d1a          68.8    58.8        0/3       3/3        -     10.0          D1 1
+      4  d1b          60.5    50.8        3/3       3/3      3.3      5.0          D1 5
+      5  d1b          59.7    56.8        2/3       3/3      5.0      9.0          D1 1
+      6  d1b          61.0    59.0        3/3       3/3      4.0      8.7          D1 1
+      7  d1b          60.4    52.6        2/3       3/3      2.0      8.0          D1 2
+      8  d2a          48.6    53.1        3/3       3/3      1.7      2.0          D1 4
+      9  d2a          48.8    48.5        3/3       3/3      2.0      3.3          D1 7
+     10  d2a          48.5    47.0        3/3       3/3      3.7      2.3          D1 7
+     11  d2a          49.1    48.9        3/3       3/3      2.7      3.0          D1 7
+     12  d2b          39.7    40.5        0/3       0/3        -      0.0          D2 5
+     13  d2b          39.6    40.2        0/3       0/3        -      0.0          D2 3
+     14  d2b          39.9    43.0        0/3       0/3        -      0.0          D2 4
+     15  d2b          39.5    43.3        0/3       0/3        -      0.0          D2 3
+
+14. MOBILITY OF THE PYRAMID
+
+   clubs ever promoted    24 of 48
+   clubs ever relegated   25 of 48
+   yo-yo clubs            24
+   never changed division 23 of 48  (48%)
+   repeat promotions      20
+
+   OF THE BOTTOM FOUR SEATS (12-15): 12 of 12 never won promotion in 10 seasons
+
+   simulation health: 40 walkovers (a club under eleven men), 0 engine failures
+
+12 + 13. THE PROMOTED AND THE RELEGATED
+
+   promoted clubs, first season in Division One:
+      median finish 7   relegated straight back: 24 of 24
+   relegated clubs: 25, of which 24 came back up at least once
+
