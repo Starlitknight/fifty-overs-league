@@ -1,0 +1,66 @@
+
+2. THE TIER LADDER AS DEALT
+============================================================================================
+   8 nations, shipped generator
+
+   slot  tier         best XI                          squad mean     bat  bowl   age   exp
+                         P10   P25   med   P75   P90
+   -----------------------------------------------------------------------------------------
+      0  flagship      72.1  75.8  77.6  78.4  78.8         71.2      56    76  25.5  57.4
+      1  d1a           66.6  70.2  71.8  73.4  74.0         65.0      54    68  26.0  61.0  (-5.8)
+      2  d1a           67.6  70.8  72.8  73.5  73.5         65.3      55    69  25.4  56.3  (+1.0)
+      3  d1a           67.6  69.8  71.5  72.3  73.1         64.2      57    67  25.3  55.5  (-1.3)
+      4  d1b           56.4  64.5  67.2  67.4  68.0         58.7      47    65  25.7  61.1  (-4.3)
+      5  d1b           55.9  63.5  66.3  67.6  68.3         58.3      47    64  25.2  54.2  (-0.9)
+      6  d1b           57.9  64.3  66.8  67.2  67.5         58.7      47    67  25.3  57.8  (+0.5)
+      7  d1b           57.1  60.3  67.0  67.5  68.0         59.1      51    61  25.0  55.6  (+0.3)
+      8  d2a           44.9  50.2  56.4  56.7  57.2         48.4      41    50  24.9  55.3  (-10.7)
+      9  d2a           45.4  53.2  56.2  57.4  58.0         49.2      43    51  25.4  57.8  (-0.1)
+     10  d2a           44.9  53.0  55.9  56.0  56.6         48.2      40    52  25.4  58.1  (-0.4)
+     11  d2a           44.8  53.8  57.4  57.8  58.3         49.5      41    56  25.5  58.8  (+1.5)
+     12  d2b           36.9  42.5  45.2  45.6  46.4         37.4      35    42  25.4  59.3  (-12.2)
+     13  d2b           37.7  42.7  44.7  45.4  45.7         36.7      33    42  25.1  56.1  (-0.5)
+     14  d2b           37.0  43.0  45.0  45.6  46.1         37.6      33    46  25.8  59.9  (+0.4)
+     15  d2b           37.7  42.4  44.7  45.0  45.7         37.0      37    44  25.2  57.3  (-0.3)
+
+   the step between adjacent SEATS is in brackets. The ladder is a staircase
+   with flat treads: seats inside one tier differ by noise, and the whole
+   drop happens at a tier boundary.
+
+17. DISTRIBUTION OVERLAP BETWEEN ADJACENT TIERS
+============================================================================================
+
+   tier          n     P10    P25    med    P75    P90       vs tier above:
+                                                          P(lower > upper)  best low vs worst high
+   -----------------------------------------------------------------------------------------
+   flagship      6    77.0   77.4   78.2   78.5   79.0
+   d1a          20    71.3   71.5   72.5   73.5   73.8             0.0%  74.0 vs 76.9  NO OVERLAP
+   d1b          30    66.3   66.9   67.3   67.5   68.3             0.0%  69.0 vs 70.5  NO OVERLAP
+   d2a          32    55.8   56.0   56.6   57.4   57.8             0.0%  59.3 vs 61.3  NO OVERLAP
+   d2b          32    44.3   44.8   45.1   45.5   46.2             0.0%  46.8 vs 51.8  NO OVERLAP
+   newcomer      8    35.5   36.0   36.9   37.7   38.7             0.0%  38.9 vs 43.5  NO OVERLAP
+
+   the shipped table in init-world.mjs states these bands as MEASURED, and
+   they are restated here off the generator rather than trusted:
+      flagship   declared XI band [72,83]   squad band [68,74]
+      d1a        declared XI band [67,77]   squad band [62,68]
+      d1b        declared XI band [61,71]   squad band [54,60]
+      d2a        declared XI band [51,61]   squad band [44,50]
+      d2b        declared XI band [39,49]   squad band [32,38]
+      newcomer   declared XI band [31,41]   squad band [22,30]
+
+6 + 5. WHAT A CARD GAP COSTS ON THE FIELD
+============================================================================================
+
+   Real matches through the shipped engine. Both sides are the SAME dealt
+   squad put on a chosen overall by the engine's own fitToOvr - a similarity
+   transform, so shape and roles survive and only the level differs. That
+   isolates quality from squad shape, which a tier-vs-tier match cannot.
+
+   a side at each level against a side at 48 (the d2a rung), 200 matches each:
+
+      level   gap    win%   pts/14 rounds   what that is
+   -----------------------------------------------------------------------------------------
+         33   -15     3.0           0.8   effectively out of it
+         36   -12     9.5           2.7   effectively out of it
+         40    -8    12.5           3.5   effectively out of it
