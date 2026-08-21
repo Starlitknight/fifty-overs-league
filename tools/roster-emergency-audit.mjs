@@ -22,7 +22,7 @@ import { makeRecruit } from '../server/youth.mjs';
 import { makeFreeAgent, valueOf } from '../server/market.mjs';
 
 const arg = (k, d) => { const a = process.argv.find(x => x.startsWith(`--${k}=`)); return a ? a.slice(k.length + 3) : d; };
-const N = +arg('n', 400);
+const N = +arg('n', 1200);
 const L = s => console.log(s);
 const $ = n => '$' + Math.round(n).toLocaleString();
 const pct = (xs, p) => {
@@ -101,6 +101,32 @@ L('   poor recruits at OVR 50 or better:               ' + over50 + ' of ' + poo
   + ' (' + (100 * over50 / poor.length).toFixed(1) + '%)');
 L('   most valuable poor recruit drawn:                ' + $(Math.max(...poor.map(p => valueOf(p)))));
 L('   median free-agent value:                         ' + $(pct(fas.map(p => valueOf(p)), 0.5)));
+L('');
+
+// THE COMPARISON THE FINALISATION ACTUALLY ASKS FOR is not against the median
+// free agent - a manager would never buy the median if he only needed a body.
+// It is against the CHEAPEST REALISTIC NORMAL REPLACEMENT: the worst decile of
+// the board, which is what letting the squad shrink is really an alternative to.
+const faSorted = fas.slice().sort((a, b) => (a.rating || 0) - (b.rating || 0));
+const cheapest = faSorted.slice(0, Math.max(1, Math.floor(fas.length * 0.1)));
+L('   AGAINST THE CHEAPEST REALISTIC NORMAL REPLACEMENT (worst decile of board):');
+L('      cheapest normal    median OVR ' + pct(cheapest.map(p => p.rating / 1000), 0.5).toFixed(0)
+  + '   wage ' + $(pct(cheapest.map(p => p.wage || 0), 0.5))
+  + '   value ' + $(pct(cheapest.map(p => valueOf(p)), 0.5)));
+L('      emergency man      median OVR ' + pct(poorC, 0.5).toFixed(0)
+  + '   wage ' + $(pct(poor.map(p => p.wage || 0), 0.5))
+  + '   value ' + $(pct(poor.map(p => valueOf(p)), 0.5)));
+let beatsCheap = 0;
+const cheapC = cheapest.map(p => p.rating / 1000);
+for (const a of poorC) for (const b of cheapC) if (a > b) beatsCheap++;
+L('      P(emergency beats even the cheapest normal man) = '
+  + (100 * beatsCheap / (poorC.length * cheapC.length)).toFixed(1) + '%');
+L('      median experience  emergency ' + pct(poor.map(p => p.exp || 0), 0.5).toFixed(0)
+  + ' vs board ' + pct(fas.map(p => p.exp || 0), 0.5).toFixed(0));
+L('');
+L('      A manager choosing between them is choosing between a man worse than');
+L('      the worst thing on the board and one who is not. There is no version');
+L('      of "let the squad shrink" that pays.');
 L('');
 
 L('   WHAT KIND OF OBJECT HE IS, which matters as much as how good he is:');

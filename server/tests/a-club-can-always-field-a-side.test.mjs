@@ -14,17 +14,22 @@
 // consulted, so a club in trouble cannot sign the eleventh man it needs.
 //
 // ELEVEN IS THE SIMULATOR'S OWN NUMBER, measured rather than chosen
-// (tools/roster-legality.mjs): eleven men play, ten throw inside stepBall
-// reading a striker that was never picked. Role does not enter into it - an
-// eleven with no keeper plays, an eleven with no specialist bowler plays, and
-// eleven batters play. So the invariant is a COUNT, and the repair stops at
-// ROSTER_MIN = 11 rather than at SQUAD_FLOOR = 13: restoring to the transaction
-// floor would hand a distressed club two free bench players it never earned.
+// (tools/roster-legality.mjs). Below eleven a squad enters a probabilistically
+// invalid state: over 192 trials at each size, ten men crashed 65.6% of the
+// time, nine 78.6% and eight 85.9%, while eleven through fifteen crashed not
+// once. Role does not enter into it - an eleven with no keeper plays, an eleven
+// with no specialist bowler plays, and eleven batters play - so the invariant
+// is a COUNT, and the repair stops at ROSTER_MIN = 11 rather than at
+// SQUAD_FLOOR = 13: restoring to the transaction floor would hand a distressed
+// club two free bench players it never earned.
 //
-// PROVING IT FAILS ON MAIN. The first test walks the OLD law by hand - the
-// exact three lines ageYouth used to be - and asserts that it produces a club
-// the engine cannot play. That is the regression: if a future change makes the
-// old law safe again, this test says so out loud rather than passing quietly.
+// WHAT THIS FILE ASSERTS, AND WHAT IT DOES NOT. Because the failure below
+// eleven is probabilistic, nothing here demands that a short side throw - a
+// test like that would pass by luck a third of the time. The DEFECT is the
+// invalid squad state, so that is what is asserted. The crash rate that makes
+// it matter lives in tools/roster-legality.mjs, and the real lifecycle
+// producing it lives in tools/roster-failure-proof.mjs, where a nine-man club
+// loses nine of its fourteen fixtures.
 import { test, before, after } from 'node:test';
 import assert from 'node:assert';
 import { execSync } from 'node:child_process';
@@ -52,12 +57,16 @@ before(async () => {
 });
 after(async () => { if (pool) await pool.end(); });
 
+// A TIE IS A COMPLETED MATCH. The engine returns winner: null for a tie, which
+// is a perfectly good cricket result and not a failure - an earlier version of
+// this helper demanded a winner and would have called a tied fixture a crash.
+// Simulation success is "the match completed", however it ended.
 const canPlay = squad => {
   const opp = host.derive(host.genSquad('roster|opp', 'England', 'balanced', 'general', 1, 'd2a') || []);
   try {
     const r = JSON.parse(host.runMatch({ name: 'Short', players: squad },
       { name: 'Opp', players: opp }, 'fair', 99, {}, 'Sunny', false));
-    return !!(r && r.winner);
+    return !!r;
   } catch (e) { return false; }
 };
 
@@ -75,8 +84,19 @@ const squadOf = (n, retiring) => {
   return out;
 };
 
-test('the OLD law leaves a club that cannot take the field (fails on main)', async () => {
-  // the three lines ageYouth was, before the repair: a year on, retire the old,
+test('the OLD law leaves a club below the simulator minimum', async () => {
+  // THE ASSERTION IS THE SQUAD STATE, NOT A CRASH, and that is deliberate.
+  // Below eleven the engine does not fail every time - it fails MOST times.
+  // Measured over 192 trials a side of ten crashes 65.6%, nine 78.6%, eight
+  // 85.9%; eleven through fifteen crashed not once. A test that ran one short
+  // fixture and demanded a throw would be a coin weighted two-to-one, and would
+  // go green by luck a third of the time. The DEFECT is the invalid squad, so
+  // the invalid squad is what is asserted; the crash rate that makes it matter
+  // is measured in tools/roster-legality.mjs and reproduced on the real
+  // lifecycle in tools/roster-failure-proof.mjs, where a nine-man club loses
+  // nine of its fourteen fixtures.
+  //
+  // The three lines ageYouth was before the repair: a year on, retire the old,
   // write it back. No replacement anywhere.
   const before11 = squadOf(12, 2);
   const older = before11.map(p => ({ ...p, age: (p.age || 27) + 1 }));
@@ -85,11 +105,11 @@ test('the OLD law leaves a club that cannot take the field (fails on main)', asy
   assert.equal(before11.length, 12, 'the club started with a side and a bench');
   assert.equal(afterOld.length, 10, 'two men retired and nothing replaced them');
   assert.ok(afterOld.length < ROSTER_MIN,
-    'which is below the simulator\'s minimum of ' + ROSTER_MIN);
-  assert.equal(canPlay(afterOld), false,
-    'and the engine cannot play a side of ' + afterOld.length + ' - THIS is the defect');
+    'and ten is below the simulator minimum of ' + ROSTER_MIN
+    + ' - a state no club should ever be settled into');
 
-  // and the same squad, repaired, plays
+  // the repair, on the same squad. This side CAN be asserted to play, because
+  // eleven is the size that never crashed in any trial.
   const fixed = ensurePlayableSquad(host, 'eng', afterOld, 'proof|seed').squad;
   assert.equal(fixed.length, ROSTER_MIN, 'the repair restores exactly eleven');
   assert.equal(canPlay(fixed), true, 'and eleven men can take the field');
@@ -104,6 +124,8 @@ test('the repair adds exactly max(0, 11 - what is left), and never more', () => 
     [15, 3, 12, 0],   // 15 -> three retire -> 12: none
     [15, 5, 11, 1],   // 15 -> five retire -> 10: one
     [15, 7, 11, 3],   // 15 -> seven retire -> 8: three
+    [13, 4, 11, 2],   // post-retirement 9: two
+    [14, 7, 11, 4],   // post-retirement 7: four
     [15, 0, 15, 0]    // nobody retires: nothing happens at all
   ];
   for (const [size, retiring, wantSize, wantAdded] of cases) {
