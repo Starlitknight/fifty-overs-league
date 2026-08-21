@@ -1,0 +1,51 @@
+
+4. WHAT makeRecruit MAKES, BY TIER - and what the market offers instead
+============================================================================================
+
+   pool                  n    ovr                     wage       value    age
+                              P10    med    P90    max     median      median
+   -----------------------------------------------------------------------------------------
+   makeRecruit jewel  1200     14     18     24     30       $490     $25,000   18.0
+   makeRecruit good   1200     11     14     19     24       $400     $20,500   18.0
+   makeRecruit average 1200     11     15     19     23       $400     $20,500   18.0
+   makeRecruit poor   1200      3      4      6     13       $400     $20,500   18.0
+   free agent         1200     23     50     77     97     $9,290    $422,250   25.5
+
+   THE COMPARISON SECTION 5 ASKS FOR:
+      a "poor" recruit   median OVR 4, best in 1200 draws 13
+      a free agent       median OVR 50, best in 1200 draws 97
+      P(a poor recruit is better than a free agent) = 0.4%
+
+5. CAN IT BE EXPLOITED?
+============================================================================================
+
+   poor recruits at or above the free-agent MEDIAN: 0 of 1200 (0.0%)
+   poor recruits at OVR 50 or better:               0 of 1200 (0.0%)
+   most valuable poor recruit drawn:                $20,500
+   median free-agent value:                         $422,250
+
+   AGAINST THE CHEAPEST REALISTIC NORMAL REPLACEMENT (worst decile of board):
+      cheapest normal    median OVR 17   wage $400   value $20,500
+      emergency man      median OVR 4   wage $400   value $20,500
+      P(emergency beats even the cheapest normal man) = 4.5%
+      median experience  emergency 7 vs board 61
+
+      A manager choosing between them is choosing between a man worse than
+      the worst thing on the board and one who is not. There is no version
+      of "let the squad shrink" that pays.
+
+   WHAT KIND OF OBJECT HE IS, which matters as much as how good he is:
+      colt flag          true
+      age range          16 to 20
+      carries yseed      yes - a hidden growth seed
+      pid prefix         y (academy ids start "y")
+
+   makeRecruit is the ACADEMY's primitive: every man it returns is a colt of
+   sixteen to twenty carrying a hidden growth rate, which is exactly right
+   for a youth intake and is a question mark for a SENIOR emergency signing.
+   A colt in the senior squad trains at the senior rate - living.mjs runs the
+   men and the boys as separate crews and only the boys crew is handed
+   __ypot - so the growth seed is inert there. The flag itself is the risk:
+   anything that reads `colt` to mean "this man is in the academy" would be
+   wrong about him.
+
