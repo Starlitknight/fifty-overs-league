@@ -64,3 +64,11 @@
          33   -15     3.0           0.8   effectively out of it
          36   -12     9.5           2.7   effectively out of it
          40    -8    12.5           3.5   effectively out of it
+         44    -4    31.0           9.0   underdog, but live  (2.0% tied)
+         48     0    53.0          14.9   a real contest  (0.5% tied)
+         52     4    76.0          21.5   a real contest  (1.5% tied)
+
+   Fourteen rounds is a league season, so pts/14 is what a whole summer of
+   that matchup is worth. Eight clubs, top two promoted: a promotion needs
+   roughly 17-19 points on the measured tables.
+

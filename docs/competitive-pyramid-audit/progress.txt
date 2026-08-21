@@ -1,0 +1,51 @@
+
+7 + 8. WHAT THE SHIPPED PROGRESSION SYSTEMS DO TO A CLUB
+==============================================================================================
+   10 worlds, 10 seasons, nets + ageing + retirement + free agents
+   no boosts, no subsidies, no rule changes - all shipped code
+
+   seat 15 - bottom D2 (d2b)
+      management          s0       s1       s2       s3       s5      s10     gain/yr   retired   signed
+      passive          43.0     43.4     43.8     43.7     42.8     45.0        0.20       2.6      2.6      $8023k        0
+      competent        43.0     43.4     43.7     43.7     42.8     44.6        0.15       2.6      2.6      $8098k        0
+      elite            43.0     51.2     51.5     51.1     50.5     48.3        0.52       2.5     13.1       $485k       86
+
+   seat 12 - lower D2 (d2b)
+      management          s0       s1       s2       s3       s5      s10     gain/yr   retired   signed
+      passive          43.5     43.6     43.7     43.6     42.3     45.2        0.17       3.3      3.3      $7434k        0
+      competent        43.5     43.6     43.6     43.4     42.1     46.1        0.26       3.3      3.3      $7164k        0
+      elite            43.5     51.2     51.2     51.2     50.3     47.9        0.45       2.8     12.9       $529k       81
+
+   seat 9 - top D2 (d2a)
+      management          s0       s1       s2       s3       s5      s10     gain/yr   retired   signed
+      passive          54.7     54.8     54.9     54.6     53.3     47.3       -0.74       3.4      1.7       $460k        2
+      competent        54.7     54.8     54.9     54.6     53.2     48.2       -0.65       3.4      2.7       $714k        5
+      elite            54.7     57.2     57.3     56.9     55.5     43.3       -1.14       3.2      1.2     $-4779k      105
+
+   seat 5 - mid D1 (d1b)
+      management          s0       s1       s2       s3       s5      s10     gain/yr   retired   signed
+      passive          64.6     64.6     64.7     64.4     63.0     59.5       -0.51       3.2      3.1      $5542k        0
+      competent        64.6     64.6     64.7     64.4     63.0     60.1       -0.45       3.2      3.2      $5407k        0
+      elite            64.6     68.1     68.0     67.6     66.0     57.8       -0.69       3.2      6.1       $208k       80
+
+   THE RUNG ABOVE, for reference: d2a sits at best-XI 56.6 and d1b at 67.3.
+   A bottom club needs to reach roughly 52 to be a live promotion candidate
+   (the -4 gap that wins 30% of matches) and roughly 56 to be level.
+
+10. PLAYER SUPPLY - what walks into the world after founding
+==============================================================================================
+
+   free agents, 600 dealt from the world's own tier mix:
+      P10 23.0   P25 35.0   median 51.0   P75 67.0   P90 80.0   max 93.0
+
+      OVR 50+ : 52.2% of the board (313 of 600)
+      OVR 56+ : 42.8% of the board (257 of 600)
+      OVR 60+ : 35.7% of the board (214 of 600)
+      OVR 67+ : 25.8% of the board (155 of 600)
+      OVR 70+ : 22.8% of the board (137 of 600)
+
+   A bottom club's worst man is around OVR 30 and its best around 50. Every
+   free agent above its own worst man is an upgrade IT CAN MAKE, so supply
+   is not obviously the binding constraint - the question the sections above
+   answer is whether taking those upgrades actually moves the best XI.
+
