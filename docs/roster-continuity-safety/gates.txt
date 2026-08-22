@@ -1,11 +1,6 @@
-=== GATES, claude/roster-continuity-safety ===
+=== SHIP GATES, claude/roster-continuity-safety ===
 
-changed shipped code: server/youth.mjs only (ROSTER_MIN + ensurePlayableSquad)
- .../tests/a-club-can-always-field-a-side.test.mjs  | 218 +++++++++++++++++++++
- server/youth.mjs                                   | 106 +++++++++-
- 2 files changed, 321 insertions(+), 3 deletions(-)
-
-server suite (441 baseline + 6 new roster tests):
+server suite:
 # tests 447
 # pass 447
 # fail 0
@@ -18,17 +13,16 @@ engine suite:
 # skipped 1
 
 calibration-check (run alone):
-international: 300/300 matches complete (92s)
-flagship_clubs: 300/300 matches complete (181s)
-division_two: 300/300 matches complete (273s)
-international_vs_division_two: 300/300 matches complete (360s)
+international: 300/300 matches complete (89s)
+flagship_clubs: 300/300 matches complete (177s)
+division_two: 300/300 matches complete (265s)
+international_vs_division_two: 300/300 matches complete (348s)
 
 SMOKE RUN (CAL_N set) — not written to the golden file.
 calibration-check PASS — engine matches calibration-golden.json (engineVersion v3, 300 matches/cell).
 
-roster legality:
-  6/6 in server/tests/a-club-can-always-field-a-side.test.mjs
-
-long-run pyramid: docs/roster-continuity-safety/longrun-{old,new}.txt
-  old: 7 clubs under 11, 54 fixtures forfeited
-  new: 0 clubs under 11, 0 forfeits, 29 emergency men over 1280 club-seasons
+structural confirmations (all pass):
+   SQUAD_FLOOR exactly 13; ROSTER_MIN exactly 11; distinct
+   botBid dangerous/critical bid 0; healthy still bids
+   exactly max(0, 11 - postRetirementSize) at every size 0..15
+   no colt/prospect flags survive; no role guarantee; no cash parameter
