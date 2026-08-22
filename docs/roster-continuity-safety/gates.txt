@@ -1,0 +1,28 @@
+=== SHIP GATES, claude/roster-continuity-safety ===
+
+server suite:
+# tests 447
+# pass 447
+# fail 0
+# skipped 0
+
+engine suite:
+# tests 489
+# pass 488
+# fail 0
+# skipped 1
+
+calibration-check (run alone):
+international: 300/300 matches complete (89s)
+flagship_clubs: 300/300 matches complete (177s)
+division_two: 300/300 matches complete (265s)
+international_vs_division_two: 300/300 matches complete (348s)
+
+SMOKE RUN (CAL_N set) — not written to the golden file.
+calibration-check PASS — engine matches calibration-golden.json (engineVersion v3, 300 matches/cell).
+
+structural confirmations (all pass):
+   SQUAD_FLOOR exactly 13; ROSTER_MIN exactly 11; distinct
+   botBid dangerous/critical bid 0; healthy still bids
+   exactly max(0, 11 - postRetirementSize) at every size 0..15
+   no colt/prospect flags survive; no role guarantee; no cash parameter

@@ -39,6 +39,38 @@ export const ACADEMY_FLOOR = 15;
 export const SQUAD_CAP = 20;
 // and a cricketer does not go on forever
 export const RETIRE_AT = 38;
+
+// ---------------------------------------------------------------------------
+// THE ELEVENTH MAN — and why this number is not SQUAD_FLOOR.
+//
+// market.mjs guards SQUAD_FLOOR = 13 in two places and both are about a club
+// CHOOSING to lose a man: a bot will not list itself below it, and a sale will
+// not complete if the seller would drop under it. Thirteen is a TRANSACTION
+// floor - the point past which a club refuses a deal - and it is deliberately
+// generous, because a side that sells down to the bare eleven has no cover for
+// a bad week.
+//
+// Retirement is not a transaction. Nobody chooses it, no guard sees it, and
+// until this constant existed nothing at all stopped a club retiring its way
+// under a side. ageYouth filtered out the men who reached RETIRE_AT, wrote the
+// shorter squad back, and had no replacement path; the one mechanism that could
+// have refilled - a bot bidding on the free-agent board - is switched off by
+// botBid for exactly the clubs this happens to, because a posture of
+// 'dangerous' or 'critical' buys nobody. A club in trouble could not sign the
+// eleventh man it needed to field a side.
+//
+// ELEVEN IS THE SIMULATOR'S OWN NUMBER, measured rather than chosen
+// (tools/roster-legality.mjs): eleven men play, ten throw inside stepBall
+// reading a striker that was never picked. Role does not enter into it - an
+// eleven with no keeper plays, an eleven with no specialist bowler plays, and
+// eleven batters play - so what has to be restored is a COUNT and not a shape.
+//
+// The repair therefore stops at eleven and NOT at thirteen. Restoring to the
+// transaction floor would hand a distressed club two free bench players it
+// never earned, which is a subsidy wearing a safety fix's clothes. Eleven is
+// what the world needs to remain executable; thirteen is what a club would like
+// to have, and wanting is not the same as needing.
+export const ROSTER_MIN = 11;
 // what a level costs is the books' business, not the academy's
 export { academyUpkeep, ACADEMY_BUILD, SCOUT_FEE_ABROAD, PROMOTE_FEE } from './economy.mjs';
 
@@ -197,6 +229,46 @@ export function nationsOf(host) {
 function archOf(host, country) {
   const r = countryConfigs(host).filter(x => x.id === country)[0];
   return r ? { nat: r.nat, arch: r.arch } : { nat: 'England', arch: 'balanced' };
+}
+
+// ---------------------------------------------------------------------------
+// A SIDE, RESTORED. Pure: hand it a squad and get back one that can take the
+// field, plus the men that had to be found to make it so.
+//
+// WHAT AN EMERGENCY MAN IS. The academy's own worst recruit - makeRecruit at
+// the 'poor' tier - and nothing new was invented to make him. Measured over 400
+// draws (tools/roster-emergency-audit.mjs) he is median OVR 4 and never once
+// reached 13, against a free agent's median of 51; he earns the $400 wage floor
+// against a free agent's $9,860, and he is worth $20,500 against $422,250. The
+// chance that one of him beats a man off the board is 0.3%. He is a local lad
+// pressed into a senior shirt because there was nobody else, and he is meant to
+// read that way.
+//
+// THAT IS ALSO THE ANTI-EXPLOIT ARGUMENT, and it is arithmetic rather than
+// intent: no manager improves his side by letting it shrink, because what walks
+// in is two cards above nothing. The wage is real and the club pays it - there
+// is no cash grant here, no waived wage and no debt forgiven, because the only
+// thing being repaired is that a fixture can be played.
+//
+// HE IS A SENIOR, THOUGH, so the academy's marks come off him. makeRecruit
+// stamps `colt` and a hidden growth seed on every man it makes, which is right
+// for a boy in the youth ranks and wrong for a man on the senior books. Nothing
+// in the server or the engine currently reads that flag as a gate, so leaving
+// it would break nothing today - which is exactly why it is worth removing
+// today, while the reason is still written down.
+export function ensurePlayableSquad(host, country, squad, seed) {
+  const men = Array.isArray(squad) ? squad.slice() : [];
+  const need = Math.max(0, ROSTER_MIN - men.length);
+  if (!need || !host) return { squad: men, added: [] };
+  const { nat, arch } = archOf(host, country);
+  const added = [];
+  for (let i = 0; i < need; i++) {
+    const man = makeRecruit(host, nat, arch, 'poor', seed + '|emg' + i);
+    if (!man) continue;                       // a generator that cannot deal is not made worse by looping
+    delete man.colt; delete man.yseed;
+    men.push(man); added.push(man);
+  }
+  return { squad: men, added };
 }
 
 // ---------------------------------------------------------------------------
@@ -387,11 +459,12 @@ export async function ageYouth(pool, country, seasonNo, host) {
     `INSERT INTO ticks(key, status) VALUES ($1,'running')
      ON CONFLICT (key) DO UPDATE SET key=EXCLUDED.key RETURNING status`, [key]);
   if (claim.rows[0].status === 'done') {
-    return { skipped: true, promoted: 0, retired: 0, released: 0, madeWay: 0 };
+    return { skipped: true, promoted: 0, retired: 0, released: 0, madeWay: 0,
+      emergency: 0, emergencyClubs: 0 };
   }
   const clubs = (await pool.query(
     'SELECT slot, squad, youth FROM clubs WHERE country_id=$1 ORDER BY slot', [country])).rows;
-  let retired = 0, released = 0;
+  let retired = 0, released = 0, emergency = 0, emergencyClubs = 0;
   for (const c of clubs) {
     // A YEAR OLDER IS A YEAR WISER. The rollover used to add a year to the age
     // and leave experience where it was, so the two drifted a season further
@@ -450,6 +523,32 @@ export async function ageYouth(pool, country, seasonNo, host) {
       catch (eDec) { console.error('ageing decline failed for ' + country + '/' + c.slot + ':', eDec.message); }
     }
 
+    // AND A CLUB THAT IS NOW SHORT OF A SIDE GETS ONE. This is the whole of
+    // the roster-continuity repair. It sits after the ageing rather than beside
+    // the retirement filter that caused the shortfall, for one reason: the men
+    // who walk in here are NEW, and putting them in before host.ageDecline
+    // would age a cricketer who has not had a season yet. The shortfall itself
+    // was created at step 1, where `aged.filter` removed everyone who reached
+    // RETIRE_AT - involuntarily, and without passing any of the market's
+    // guards, which is the whole defect in one line.
+    //
+    // It is still before the write, and that is what matters: the world never
+    // holds a settled club that cannot field a side.
+    //
+    // Exactly max(0, ROSTER_MIN - what is left), so a club that retired down to
+    // twelve gets nobody and a club that retired down to nine gets two. See
+    // ROSTER_MIN for why the target is eleven and not SQUAD_FLOOR's thirteen.
+    const fix = ensurePlayableSquad(host, country, squad,
+      country + '|' + c.slot + '|s' + seasonNo);
+    if (fix.added.length) {
+      squad = fix.squad;
+      emergency += fix.added.length;
+      emergencyClubs++;
+      console.log('roster: ' + country + '/' + c.slot + ' fell to '
+        + (squad.length - fix.added.length) + ' after retirement; signed '
+        + fix.added.length + ' emergency ' + (fix.added.length === 1 ? 'man' : 'men'));
+    }
+
     // 2. a year on the boys, and the twenty-one-year-olds walk out of the world
     const youth = (Array.isArray(c.youth) ? c.youth : []).map(y => older(y, 18));
     const stay = youth.filter(y => y.age < LEAVE_AT);
@@ -462,7 +561,8 @@ export async function ageYouth(pool, country, seasonNo, host) {
       [country, c.slot, JSON.stringify(stay), JSON.stringify(squad), squadStrength(squad)]);
   }
   await pool.query(`UPDATE ticks SET status='done', finished_at=now() WHERE key=$1`, [key]);
-  return { skipped: false, promoted: 0, retired, released, madeWay: 0 };
+  return { skipped: false, promoted: 0, retired, released, madeWay: 0,
+    emergency, emergencyClubs };
 }
 
 // who walks at the next turning of the year - the list the warning is built
